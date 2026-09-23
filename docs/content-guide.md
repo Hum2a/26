@@ -1,16 +1,20 @@
 # Content guide
 
-Questions stay in versioned TypeScript. There is no CMS. The pack that ships today is the illustrative demo, version `demo-2026-09-22`, in `apps/api/src/questions/demo-set.ts`. It is not Humza's party script. Fixture names in that file are there so a round can be scored. They are not statements about guests.
+Questions stay in versioned TypeScript. There is no CMS. How to add one is in [question-authoring.md](question-authoring.md).
 
-Humza has not supplied party questions or party media in this repository. Do not paste generated lines into the demo set and call them the party questions.
+The pack a new room plays is the illustrative demo, version `demo-2026-09-22`, in `apps/api/src/questions/packs/demo/`. It is not Humza's party script. Fixture names there exist so a round can be scored. They are not statements about guests. `apps/api/src/questions/demo-set.ts` re-exports that pack.
 
-## Replace the demo
+Humza's own questions go in `apps/api/src/questions/packs/birthday/`. That catalogue starts empty. Its version `birthday-draft` is not pinned to a room. Do not paste generated lines into the demo pack and call them the party questions.
 
-1. Edit `demoQuestions` in `apps/api/src/questions/demo-set.ts`.
-2. Keep each prompt starting with `Illustrative demo:` until the line is one Humza wrote. Then change `demoQuestionSetVersion` in `apps/api/src/room/limits.ts` and drop that prefix on the real lines.
-3. Set the correct option, slider truth, rank order, guess name, or duel target in that same server module. Guest JavaScript must not import it.
-4. Run `npm run content:check`. It checks ids, durations, scoring, phase windows, attribution, the selected trolls, and the sting file.
-5. Run `npm run content:export`. That rewrites the offline answer key and the presenter running order in `docs/content/`.
+## Add a party question
+
+1. Describe the idea. The agent creates `apps/api/src/questions/packs/birthday/<id>.ts` with an existing helper and records any missing answer or asset.
+2. The file is listed in the birthday catalogue and left out of `order` while it is a draft.
+3. Guest JavaScript must not import the question file. Correct answers stay on the server.
+4. Run `npm run content:check`. It checks the demo pack and the birthday catalogue. Incomplete drafts are reported. Invalid data, a draft in a running order, and a missing ready asset fail the check.
+5. Run `npm run content:export`. That rewrites the offline answer keys and presenter running orders in `docs/content/`.
+
+Releasing a birthday version, and pointing new rooms at it, is a separate step from adding a question. Rooms already playing `demo-2026-09-22` keep that pack.
 
 A collection or vote window has to be a whole number of milliseconds from 15 to 45 seconds. Points are a whole number from zero. A choice's correct id has to be one of its options. A complete ranking places every item once. A duel target has to sit on its scale.
 
@@ -34,4 +38,4 @@ The theme song looks for `apps/web/public/assets/demo-sting.wav`. The file in th
 - Photos or voice the questions themselves need. Guest uploads during the night are separate.
 - Which comparison cards should be read on the projector.
 
-Until those arrive, use the illustrative pack and the two exports under `docs/content/` as the offline fallback.
+Until those arrive, use the illustrative pack and the exports under `docs/content/` as the offline fallback. The birthday export states that the catalogue has no playable questions.

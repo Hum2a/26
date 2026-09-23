@@ -1,24 +1,38 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { demoQuestions } from "../apps/api/src/questions/demo-set.ts";
+import { questionPacks } from "../apps/api/src/questions/registry.ts";
 import {
   illustrativeStingAsset,
-  preflightContent,
-} from "../apps/api/src/questions/preflight.ts";
+  validatePack,
+  validateRuntimeEffects,
+} from "../apps/api/src/questions/validate.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const missingAssets = [illustrativeStingAsset].filter(
+const missingSting = [illustrativeStingAsset].filter(
   (asset) => !existsSync(path.join(root, asset)),
 );
-const issues = preflightContent({ questions: demoQuestions, missingAssets });
+let failed = false;
 
-if (issues.length === 0) {
-  console.log("Content preflight passed for the illustrative demo pack.");
-  process.exit(0);
-}
-
-for (const item of issues) {
+for (const item of validateRuntimeEffects()) {
+  failed = true;
   console.error(`${item.code}: ${item.message}`);
 }
-process.exit(1);
+
+for (const pack of questionPacks) {
+  const assets = pack.profile === "illustrative" ? missingSting : [];
+  const issues = validatePack(pack, assets);
+  for (const item of issues) {
+    if (item.level === "incomplete") {
+      console.log(`incomplete (${pack.packId}): ${item.message}`);
+      continue;
+    }
+    failed = true;
+    console.error(`${pack.packId} ${item.code}: ${item.message}`);
+  }
+  if (!issues.some((item) => item.level === "error")) {
+    console.log(`Content preflight passed for ${pack.packId} (${pack.version}).`);
+  }
+}
+
+process.exit(failed ? 1 : 0);

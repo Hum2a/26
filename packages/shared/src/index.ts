@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { statCardSchema } from "./stats";
+import { statCardSchema } from "./stats.ts";
 
-export { clientApiKeyHeader, clientApiKeyQueryParam } from "./client-api-key";
-export { minimumComparisonGroup, statCardSchema } from "./stats";
-export type { StatCard } from "./stats";
-export { resultsStatusSchema } from "./archive";
-export type { ResultsStatus } from "./archive";
+export { clientApiKeyHeader, clientApiKeyQueryParam } from "./client-api-key.ts";
+export { minimumComparisonGroup, statCardSchema } from "./stats.ts";
+export type { StatCard } from "./stats.ts";
+export { resultsStatusSchema } from "./archive.ts";
+export type { ResultsStatus } from "./archive.ts";
 export {
   emailVerifyTtlMs,
   galleryAttribution,
@@ -16,8 +16,8 @@ export {
   publicStandingSchema,
   recapLinkTtlMs,
   resultsEmailSchema,
-} from "./results";
-export type { PersonalResults, PublicResults, ResultsEmailStatus } from "./results";
+} from "./results.ts";
+export type { PersonalResults, PublicResults, ResultsEmailStatus } from "./results.ts";
 
 export {
   collectorVersion,
@@ -37,13 +37,13 @@ export {
   screenGroupVersion,
   telemetryRetentionJobId,
   widerScreenShortEdge,
-} from "./device-context";
+} from "./device-context.ts";
 export type {
   DeviceClassification,
   DeviceFamily,
   NetworkQuality,
   NormalisedDeviceReport,
-} from "./device-context";
+} from "./device-context.ts";
 
 /** Runtime configuration supplied as a Worker var, not a process environment. */
 export const appEnvironmentSchema = z.enum(["local", "staging", "production"]);
@@ -184,23 +184,47 @@ export const lobbyPlayerSchema = z
 
 export type LobbyPlayer = z.infer<typeof lobbyPlayerSchema>;
 
-const publicOptionIdSchema = z.string().regex(/^[a-z0-9-]{1,16}$/);
+/** Limits shared by authoring checks and the public question contract. */
+export const contentLimits = {
+  questionId: /^[a-z0-9-]{1,40}$/,
+  optionId: /^[a-z0-9-]{1,16}$/,
+  presentationId: /^[a-z0-9-]{1,40}$/,
+  promptMax: 200,
+  instructionsMax: 200,
+  titleMax: 80,
+  labelMax: 80,
+  notesMax: 500,
+  explanationMax: 400,
+  pointsMin: 0,
+  pointsMax: 1000,
+  optionMin: 2,
+  optionMax: 6,
+  rankMax: 8,
+  collectMinMs: 15_000,
+  collectMaxMs: 45_000,
+  packMax: 40,
+  unitMax: 24,
+} as const;
+
+const publicOptionIdSchema = z.string().regex(contentLimits.optionId);
 
 export const publicChoiceSchema = z
   .object({
     id: publicOptionIdSchema,
-    label: z.string().min(1).max(80),
+    label: z.string().min(1).max(contentLimits.labelMax),
   })
   .strict();
 
 const publicQuestionCore = {
-  id: z.string().regex(/^[a-z0-9-]{1,32}$/),
-  index: z.number().int().min(1).max(40),
-  total: z.number().int().min(1).max(40),
-  prompt: z.string().min(1).max(200),
-  points: z.number().int().min(1).max(1000),
-  illustrative: z.literal(true),
+  id: z.string().regex(contentLimits.questionId),
+  index: z.number().int().min(1).max(contentLimits.packMax),
+  total: z.number().int().min(1).max(contentLimits.packMax),
+  prompt: z.string().min(1).max(contentLimits.promptMax),
+  instructions: z.string().min(1).max(contentLimits.instructionsMax).optional(),
+  points: z.number().int().min(contentLimits.pointsMin).max(contentLimits.pointsMax),
+  illustrative: z.boolean(),
   attribution: z.enum(["never", "after", "live"]),
+  presentation: z.string().regex(contentLimits.presentationId),
 };
 
 const publicPlacementSchema = z
@@ -592,6 +616,8 @@ export const playSnapshotSchema = z
       )
       .max(80)
       .optional(),
+    explanation: z.string().min(1).max(contentLimits.explanationMax).nullable(),
+    presenterNotes: z.string().min(1).max(contentLimits.notesMax).optional(),
   })
   .strict();
 

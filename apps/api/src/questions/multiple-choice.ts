@@ -9,11 +9,9 @@ import {
 import { createSqlStore } from "../room/sql-store.ts";
 import { queueFinalExport } from "../archive/schedule.ts";
 import { purgeDetailedTelemetry } from "../device/store.ts";
-import { liveSampleSize } from "../room/limits.ts";
+import { demoQuestionSetVersion, liveSampleSize } from "../room/limits.ts";
 import {
   demoAnswerKeyMarker,
-  demoCollectWindows,
-  demoQuestionAt,
   type ChoiceQuestion,
   type DuelQuestion,
   type FinaleQuestion,
@@ -21,7 +19,9 @@ import {
   type RankQuestion,
   type SliderQuestion,
   type VoteQuestion,
-} from "./demo-set.ts";
+} from "./definition.ts";
+import { attachAudienceFields, publicQuestionCore } from "./project.ts";
+import { questionFor, requirePlayable } from "./registry.ts";
 import {
   publicRankQuestion,
   rankHostResponses,
@@ -77,7 +77,9 @@ export type ChoiceAnswer = {
 };
 
 export function multipleChoicePlugin(): RoundPlugin {
-  const windows = demoCollectWindows();
+  const windows = requirePlayable(demoQuestionSetVersion).questions.map(
+    (question) => question.collectMs,
+  );
   return {
     kind: "multiple-choice",
     phases: ["intro", "prompt", "collect", "reveal", "scores"],
@@ -149,7 +151,7 @@ export function createGameStore(sql: SqlStorage): GameStore {
       settleTrolls(sql, createSqlStore(sql).readRoom(), now);
       applyQuestionClock(createSqlStore(sql));
       const current = createSqlStore(sql).readRoom();
-      const question = demoQuestionAt(current.questionIndex);
+      const question = questionFor(current);
       if (
         current.questionCount > 0 &&
         question?.kind === "vote" &&
@@ -210,7 +212,7 @@ export function acceptChoice(
   if (room.phase !== "collect") {
     return { ok: false, reason: "phase" };
   }
-  const question = demoQuestionAt(room.questionIndex);
+  const question = questionFor(room);
   if (
     !question ||
     question.kind !== "choice" ||
@@ -261,7 +263,7 @@ export function recordRevealScores(
   room: RoomClock,
   now: number,
 ): void {
-  const question = demoQuestionAt(room.questionIndex);
+  const question = questionFor(room);
   if (!question) {
     return;
   }
@@ -346,6 +348,26 @@ export function ledgerCount(sql: SqlStorage): number {
   return row?.total ?? 0;
 }
 
+function parsePlay(
+  view: object,
+  question: { notes?: string; explanation?: string },
+  audience: "guest" | "stage" | "control",
+  scored: boolean,
+): PlaySnapshot {
+  const sealed = attachAudienceFields(view, question, audience, scored);
+  const text = JSON.stringify(sealed);
+  if (text.includes(demoAnswerKeyMarker)) {
+    throw new Error("The public quiz view included the answer-key marker.");
+  }
+  if (audience !== "control" && question.notes && text.includes(question.notes)) {
+    throw new Error("The public quiz view included presenter notes.");
+  }
+  if (!scored && question.explanation && text.includes(question.explanation)) {
+    throw new Error("The public quiz view included a future reveal.");
+  }
+  return playSnapshotSchema.parse(sealed);
+}
+
 export function projectPlay(
   sql: SqlStorage,
   room: RoomClock,
@@ -356,7 +378,7 @@ export function projectPlay(
   if (room.phase === "lobby" || room.questionCount <= 0) {
     return null;
   }
-  const question = demoQuestionAt(room.questionIndex);
+  const question = questionFor(room);
   if (!question || (audience === "stage" && stageHidden)) {
     return null;
   }
@@ -393,21 +415,15 @@ export function projectPlay(
     : undefined;
   const view = {
     question: {
-      id: question.id,
-      index: room.questionIndex + 1,
-      total: room.questionCount,
-      prompt: question.prompt,
+      ...publicQuestionCore(question, room.questionIndex + 1, room.questionCount),
       options: question.options.map((option) => ({
         id: option.id,
         label: option.label,
       })),
       kind: "choice" as const,
-      points: question.points,
       speedBonus: question.speedBonus !== null,
       modifiers: [...(question.modifiers ?? [])],
       suppressSpeedBonus: question.suppressSpeedBonus === true,
-      illustrative: true as const,
-      attribution: question.attribution,
     },
     submissionCount: countRow?.total ?? 0,
     selfAnswer: self ? { kind: "choice" as const, optionId: self.option_id } : null,
@@ -436,11 +452,7 @@ export function projectPlay(
       ? { hostAnswers: hostAnswerRows(sql, question.id) }
       : {}),
   };
-  const text = JSON.stringify(view);
-  if (text.includes(demoAnswerKeyMarker)) {
-    throw new Error("The public quiz view included the answer-key marker.");
-  }
-  return playSnapshotSchema.parse(view);
+  return parsePlay(view, question, audience, scored);
 }
 
 function projectBallot(
@@ -475,11 +487,7 @@ function projectBallot(
     attributions: null,
     duel: null,
   };
-  const text = JSON.stringify(view);
-  if (text.includes(demoAnswerKeyMarker)) {
-    throw new Error("The public quiz view included the answer-key marker.");
-  }
-  return playSnapshotSchema.parse(view);
+  return parsePlay(view, question, audience, scored);
 }
 
 function projectDuel(
@@ -513,11 +521,7 @@ function projectDuel(
           })),
     attributions: null,
   };
-  const text = JSON.stringify(view);
-  if (text.includes(demoAnswerKeyMarker)) {
-    throw new Error("The public quiz view included the answer-key marker.");
-  }
-  return playSnapshotSchema.parse(view);
+  return parsePlay(view, question, audience, scored);
 }
 
 function projectSpecial(
@@ -542,7 +546,7 @@ function projectSpecial(
       : undefined;
   const ranking =
     question.kind === "rank"
-      ? readRanking(sql, selfPlayerId ?? "", question.id)
+      ? readRanking(sql, selfPlayerId ?? "", question)
       : undefined;
   const view = {
     question:
@@ -593,11 +597,7 @@ function projectSpecial(
         }
       : {}),
   };
-  const text = JSON.stringify(view);
-  if (text.includes(demoAnswerKeyMarker)) {
-    throw new Error("The public quiz view included the answer-key marker.");
-  }
-  return playSnapshotSchema.parse(view);
+  return parsePlay(view, question, audience, scored);
 }
 
 function selfAward(

@@ -303,6 +303,7 @@ function lobbyStore(): MemoryStore {
     questionCount: 0,
     collectWindows: [],
     finishAfterRound: false,
+    questionSetVersion: "unreleased",
   });
 }
 

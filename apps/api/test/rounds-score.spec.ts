@@ -242,6 +242,10 @@ function tiedQuestion(): RankQuestion {
   return {
     kind: "rank",
     id: "tied",
+    title: "Tied fixture",
+    status: "ready",
+    presentation: "standard",
+    illustrative: true,
     prompt: "Illustrative tie.",
     points: 60,
     collectMs: 20_000,
@@ -268,6 +272,10 @@ function unorderedQuestion(): RankQuestion {
   return {
     kind: "rank",
     id: "unordered",
+    title: "Unordered fixture",
+    status: "ready",
+    presentation: "standard",
+    illustrative: true,
     prompt: "Illustrative unordered pair.",
     points: 40,
     collectMs: 20_000,

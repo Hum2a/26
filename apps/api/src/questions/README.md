@@ -1,10 +1,26 @@
 # Questions
 
-The illustrative demo set lives in `demo-set.ts`. It is versioned TypeScript, not a CMS. The file is marked illustrative and is not the party script.
+Questions are versioned TypeScript. There is no CMS and no client-side pack. The authoring workflow is `docs/question-authoring.md`.
+
+| Path                                                               | What it holds                                                       |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| `definition.ts`                                                    | Question types, missing requirements, and the answer wrapper        |
+| `defaults.ts`                                                      | Ordinary defaults used when a setting is omitted                    |
+| `authoring.ts`                                                     | Helpers for the seven existing mechanics                            |
+| `registry.ts`                                                      | Resolves a room's stored version to one pack                        |
+| `validate.ts`                                                      | Content checks. `preflight.ts` re-exports them                      |
+| `project.ts`                                                       | Public fields, and the split between guest, stage, and control      |
+| `presentation.ts`                                                  | Presentation ids the server will accept. `standard` is the only one |
+| `packs/demo/`                                                      | One file per illustrative question, plus `manifest.ts`              |
+| `packs/birthday/manifest.ts`                                       | Humza's catalogue. Empty, and not pinned to a room                  |
+| `demo-set.ts`                                                      | Re-exports the demo pack and the shared types                       |
+| `multiple-choice.ts`, `slider.ts`, `rank.ts`, `vote.ts`, `duel.ts` | Scoring and phases. They do not own the question text               |
+
+A room plays the pack named by its stored `question_set_version`. `demo-2026-09-22` is the illustrative pack. `unreleased` is the lobby. `birthday-draft` is not playable. An unknown version is unavailable and is not replaced with the demo pack.
+
+Correct answers stay in the question file. A public snapshot adds `reveal.correctOptionId` only in reveal, scores, final, and podium. Presenter notes are control-only. A reveal explanation is sent only after scoring. The private marker `demo-answer-key-v1` must not appear in guest JavaScript or in any snapshot. `standard` presentation uses the existing phone and stage components.
 
 `multiple-choice.ts` is the first round contract: public question shape, submission check, phases, and server-only scoring. Phone and stage components render the public snapshot. They do not score.
-
-Correct option ids stay in `demo-set.ts`. A public snapshot adds `reveal.correctOptionId` only in reveal, scores, final, and podium. The private marker `demo-answer-key-v1` must not appear in guest JavaScript or in any snapshot.
 
 Collection windows are 15 to 45 seconds, set per question. Points are per question. There is no universal floor and no automatic round multiplier.
 

@@ -6,6 +6,7 @@ import { GuestDuel } from "./guest-duel";
 import { GuestRank } from "./guest-rank";
 import { GuestSlider } from "./guest-slider";
 import { GuestText } from "./guest-text";
+import { renderPresentation } from "./presentation";
 
 export function GuestPlay({
   snapshot,
@@ -44,16 +45,28 @@ export function GuestPlay({
     !pending;
   const revealed =
     play.reveal?.kind === "choice" ? play.reveal.correctOptionId : undefined;
+  const custom = renderPresentation(play.question.presentation, {
+    surface: "phone",
+    play,
+  });
+  if (custom) {
+    return custom;
+  }
 
   return (
     <section className="grid gap-4" aria-label="Your question" aria-busy={pending}>
       <p className="text-base text-muted">
-        Illustrative demo. Question {play.question.index} of {play.question.total}.
+        {play.question.illustrative ? "Illustrative demo. " : null}
+        Question {play.question.index} of {play.question.total}.
         {play.question.kind === "choice" && play.question.speedBonus
           ? " A faster answer can score a bonus."
           : ""}
       </p>
       <p className="phone-prompt">{play.question.prompt}</p>
+      {play.question.instructions ? (
+        <p className="text-base text-muted">{play.question.instructions}</p>
+      ) : null}
+      {play.explanation ? <p>{play.explanation}</p> : null}
       {play.question.kind === "slider" ? (
         <GuestSlider play={play} open={open} onSubmit={onEstimate} />
       ) : null}

@@ -39,7 +39,47 @@ Applies to `apps/api/src/questions/**/*.ts`.
 - Keep the party script in versioned TypeScript in this folder. There is no CMS and no client-side question pack.
 - Public snapshots exclude correct answers, scoring secrets, and future reveals.
 - Do not copy answer keys or truth nicknames into `apps/web`.
-- The pack that ships is the illustrative demo until Humza replaces it. Do not invent party questions.
+- The pack a room plays is the one named by its stored version. The illustrative demo stays `demo-2026-09-22` until a birthday version is explicitly released.
+- New party questions are files in `apps/api/src/questions/packs/birthday/`, registered on the catalogue and left out of the running order while they are drafts. Do not invent party questions, and do not edit the demo pack to hold them.
+
+### Question authoring workflow
+
+Applies to `apps/api/src/questions/**/*.ts` and `docs/question-authoring.md`.
+
+# Question authoring
+
+Read `docs/question-authoring.md` before adding or editing a question. Party questions are TypeScript files, not a CMS.
+
+Recognise:
+
+- "Next question idea: …"
+- "Add a question where …"
+- "Make this question ready."
+- "Move this question before …"
+- "Change the answer/options for …"
+- "Now customise the design of this question."
+
+For a new idea:
+
+1. Read the birthday manifest, `authoring.ts`, `defaults.ts`, and any related question.
+2. Choose an existing mechanic when it fits: choice, slider, rank, vote, guess, duel, or finale.
+3. Create `apps/api/src/questions/packs/birthday/<id>.ts` with the matching helper. The id and filename are a stable slug, with no running-order number.
+4. Apply defaults from `defaults.ts` for ordinary settings the user did not specify.
+5. Keep the user's wording. Record a material assumption in the question file only when it changes the mechanic.
+6. Record a missing answer or asset with `{ missing: { code, name, detail } }` or a required media ref that has no `asset`. Do not invent the fact, the person, or the file.
+7. Import the question in `packs/birthday/manifest.ts` `catalogue`. Do not add a draft to `order`. Do not change `startDemo`, the demo pack, a room, or a deployment.
+8. Run `npm run content:check`.
+9. Report the id, mechanic, draft or ready status, and anything still missing.
+
+Ask a short question only when the ambiguity changes the meaning or the mechanic. Otherwise save a draft.
+
+If the interaction is not one of the seven mechanics, explain the gap and still save a draft. Do not force the wrong mechanic or rewrite scoring.
+
+A later edit finds the existing file by id. Reordering changes `order` in the manifest only. "Make this question ready" fills real supplied facts and, once it validates, still does not enter `order` unless the user asked to include it.
+
+"Now customise the design of this question" keeps the same id and mechanic. Set `presentation`, register it in `apps/api/src/questions/presentation.ts`, and add the component in `apps/web/src/play/presentation.ts`. Do not put the answer key in the client.
+
+Do not edit a released pack's question files in place. A content change needs a new version id. Rooms keep the version they stored.
 
 ### Worker, room, and shared validation
 
@@ -61,9 +101,81 @@ Applies to `apps/web/**/*.ts` and `apps/web/**/*.tsx`.
 # Web app
 
 - Use British English, accessible controls, and clear phone states. Support reduced motion. Keep audio optional.
+- Follow the design and motion rules. Open the live library docs listed there before copying a component; ease every visible change.
 - Keep secrets and personal diagnostics off the projector and the stage screen.
 - Do not import server auth modules into the web app.
 - Do not put answer keys, truth nicknames, or scoring secrets in client code.
+
+### Party UI libraries, fluid motion, and reduced-motion fallbacks
+
+Applies to `apps/web/**/*.ts` and `apps/web/**/*.tsx` and `apps/web/**/*.css`.
+
+# Design and motion
+
+Maximise the libraries below. Reach for their current components, primitives, and effects first. Install and pin a missing package when a screen needs it. Do not invent a parallel primitive kit or one-off visual language beside `apps/web/src/ui`.
+
+Before using or copying anything, open the live site (and the specific component or API page). Do not reconstruct APIs, class names, or install commands from memory. If the page and training data disagree, the page wins.
+
+Compose those libraries into the existing surfaces (phone, stage, host, admin, results). Do not copy LifeSmart branding. Keep British English, large tappable phone controls, and stage type readable from across a room.
+
+Screen colours come from `apps/web/src/theme/themes.ts`.
+
+## Libraries to check
+
+Primitives and motion engine:
+
+- [shadcn/ui](https://ui.shadcn.com)
+- [Motion](https://motion.dev) (`motion/react`)
+- [Base UI](https://base-ui.com)
+
+Animated registries and kits (use freely, mix as needed):
+
+- [Animate UI](https://animate-ui.com)
+- [Magic UI](https://magicui.design)
+- [React Bits](https://reactbits.dev)
+- [Aceternity UI](https://ui.aceternity.com)
+- [Origin UI](https://originui.com)
+- [Kokonut UI](https://kokonutui.com)
+- [Fancy Components](https://www.fancycomponents.dev)
+- [Motion Primitives](https://motion-primitives.com)
+- [Cult UI](https://www.cult-ui.com)
+- [Animata](https://animata.design)
+- [21st.dev](https://21st.dev)
+
+Targeted motion utilities:
+
+- [Number Flow](https://number-flow.barvian.me)
+- [AutoAnimate](https://auto-animate.formkit.com)
+
+## Fluid motion
+
+Every visible change is eased. Nothing snaps: hover, press, focus, disabled, open/close, mount/unmount, list insert/remove/reorder, page or phase change, loading, success, and error. Subtle motion is required; instant `display`, un-eased colour cuts, and zero-duration transitions are not.
+
+Use Motion springs or shared duration/easing tokens. Prefer enter/exit and layout animation over CSS that only styles the resting state. Decorative loops belong on the stage or idle screens, not on controls a guest must hit quickly.
+
+```tsx
+// ❌ BAD — appears and vanishes instantly
+{
+  open ? <Panel /> : null;
+}
+
+// ✅ GOOD — eased presence, still uses the shared panel
+<AnimatePresence>
+  {open ? (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 8 }}
+    >
+      <Panel />
+    </motion.div>
+  ) : null}
+</AnimatePresence>;
+```
+
+## Reduced motion and stage safety
+
+Honour `prefers-reduced-motion`. Turn off loops, parallax, blur storms, and layout thrash. Keep a short opacity or colour fade for state changes so the UI still does not pop. Motion must never hide a question, option, score, or answer on the projector, and must never put secrets or personal diagnostics on stage.
 
 ## Paths to leave closed
 

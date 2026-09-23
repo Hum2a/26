@@ -1,8 +1,7 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { clientApiKeyHeader, clientApiKeyQueryParam } from "@26/shared";
-import { readEnvValues } from "../../../scripts/env-files.ts";
 
 const devVarsPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -13,6 +12,25 @@ export const routingTestClientApiKey = "routing-test-client-api-key";
 
 let cachedDevVars: Record<string, string> | undefined;
 
+function readDevVars(filePath: string): Record<string, string> {
+  const values: Record<string, string> = {};
+  if (!existsSync(filePath)) {
+    return values;
+  }
+  for (const line of readFileSync(filePath, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+    const separator = trimmed.indexOf("=");
+    if (separator === -1) {
+      continue;
+    }
+    values[trimmed.slice(0, separator).trim()] = trimmed.slice(separator + 1).trim();
+  }
+  return values;
+}
+
 export function readTestClientApiKey(bindingValue?: string, explicit?: string): string {
   const fromExplicit = explicit?.trim();
   if (fromExplicit) {
@@ -22,10 +40,7 @@ export function readTestClientApiKey(bindingValue?: string, explicit?: string): 
   if (fromBinding) {
     return fromBinding;
   }
-  if (!existsSync(devVarsPath)) {
-    return "";
-  }
-  cachedDevVars ??= readEnvValues(devVarsPath);
+  cachedDevVars ??= readDevVars(devVarsPath);
   return cachedDevVars.CLIENT_API_KEY?.trim() ?? "";
 }
 

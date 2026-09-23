@@ -1,6 +1,6 @@
 import { reportedScreenGroup } from "@26/shared";
-import { demoQuestions } from "../questions/demo-set.ts";
-import { demoQuestionSetVersion } from "../room/limits.ts";
+import { resolveContent } from "../questions/registry.ts";
+import type { Question } from "../questions/definition.ts";
 import { trollDefinitions, type TrollKind } from "../troll/catalogue.ts";
 import type { StatsAnswer, StatsQuestion, StatsSource } from "./aggregate.ts";
 
@@ -103,9 +103,11 @@ export function readStatsSource(sql: SqlStorage): StatsSource {
       .toArray()
       .map((row) => [`${row.question_id}:${row.player_id}`, row.detail]),
   );
+  const resolved = resolveContent(room.question_set_version);
+  const packQuestions = resolved.status === "playable" ? resolved.pack.questions : [];
   const answers: StatsAnswer[] = [
     ...choice.map((row) => {
-      const question = demoQuestions.find((item) => item.id === row.question_id);
+      const question = packQuestions.find((item) => item.id === row.question_id);
       const optionLabel =
         question && question.kind === "choice"
           ? (question.options.find((option) => option.id === row.option_id)?.label ??
@@ -146,7 +148,7 @@ export function readStatsSource(sql: SqlStorage): StatsSource {
       };
     }),
   ];
-  const questions = questionRows(sql, players, answers, openedAt);
+  const questions = questionRows(sql, players, answers, openedAt, packQuestions);
   const ledger = sql
     .exec<{ player_id: string; points: number }>(
       `SELECT player_id, points FROM score_ledger`,
@@ -178,7 +180,7 @@ export function readStatsSource(sql: SqlStorage): StatsSource {
   return {
     gameId: room.game_id,
     sourceRevision: room.state_version,
-    illustrative: room.question_set_version === demoQuestionSetVersion,
+    illustrative: resolved.status === "playable" && resolved.pack.illustrative,
     complete: room.phase === "podium" || room.phase === "final",
     players: players.map((player) => {
       const report = participating.get(player.player_id);
@@ -223,6 +225,7 @@ function questionRows(
   players: { player_id: string; joined_at: string | null }[],
   answers: StatsAnswer[],
   openedAt: number,
+  packQuestions: readonly Question[],
 ): StatsQuestion[] {
   const ids = new Set<string>([
     ...answers.map((answer) => answer.questionId),
@@ -242,7 +245,7 @@ function questionRows(
     ]),
   );
   return [...ids].map((questionId) => {
-    const demo = demoQuestions.find((question) => question.id === questionId);
+    const demo = packQuestions.find((question) => question.id === questionId);
     const electors = sql
       .exec<{ player_id: string }>(
         `SELECT player_id FROM vote_elector WHERE question_id = ?`,

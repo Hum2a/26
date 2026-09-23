@@ -1272,3 +1272,150 @@ Not run in a browser. Schema and seed were checked with SQL.
 ### Next stage
 
 The numbered prompt sequence stays complete. Remaining setup is the Resend from-address, `BETTER_AUTH_URL`, and Cloudflare Worker secrets in `docs/deployment.md`.
+
+## Client API key protection layer
+
+Status: complete.
+
+### Files and interfaces
+
+- `packages/shared/src/client-api-key.ts` exports `clientApiKeyHeader` (`x-26-client-key`) and `clientApiKeyQueryParam` (`clientKey`).
+- `apps/api/src/security/client-api-key.ts` provides path matching, header/query reading, and constant-time rejection via `rejectUnlessClientApiKey`.
+- Global Hono middleware in `apps/api/src/index.ts` enforces the key on `/api/*` except `/api/health` and `/api/auth/*`, and on all `/ws/*`.
+- `apps/api/src/room/party-room.ts` repeats the check on direct Durable Object WebSocket upgrades.
+- `apps/web/src/api/client-key.ts` supplies `clientApiHeaders()` and `withClientApiKey()` for fetch, WebSocket, and media URLs.
+- `scripts/client-api-key-rotate.ts` and `npm run client-api-key:rotate` write the same value to `CLIENT_API_KEY` and `VITE_CLIENT_API_KEY`.
+- Test helpers: `apps/api/test/api-fetch.ts`, `client-api-key.ts`, `client-api-key-values.ts`, `apps/api/test/client-api-key.spec.ts`, and `scripts/e2e-client-api-key.ts`.
+
+### Decisions and defaults
+
+- Local development skips the check when `CLIENT_API_KEY` is blank. Staging and production require the secret.
+- The Vite value is embedded in the client bundle at build time. It blocks casual direct API access; it is not a hidden server secret.
+- Vite `envDir` points at the repo root so `env:sync` files are read during dev and build.
+
+### Commands and results
+
+- `npm run cf-typegen` passed. `CLIENT_API_KEY` is on the generated Env.
+- `npm run typecheck` passed.
+- `npm run build` passed. Checked 243 build files for secrets.
+- `npm run test -w @26/api -- test/client-api-key.spec.ts test/routing.spec.ts test/room.spec.ts test/hardening.spec.ts` passed: 4 files, 32 tests.
+- `room.spec.ts` guest WebSocket tests now use a relative join timestamp so guest credentials stay inside the 12-hour TTL when `identify()` uses real time.
+- `npm run build` injects `VITE_CLIENT_API_KEY` from `.env.local` (or `.env.staging` / `.env.production` when `CLOUDFLARE_ENV` is set), because Vite's default production mode would otherwise prefer an empty `.env.production` value over `.env.local`.
+- `npm run smoke` passed 5/9 tests with a rotated local `CLIENT_API_KEY`. Admin sign-in passed. Lobby creation in preview still fails when the key is set, because the Worker cannot reach Vite's Node auth middleware over an in-isolate fetch. Use `npm run dev` for manual checks after rotation, or leave `CLIENT_API_KEY` blank for preview smoke.
+- Full `npm test` was not re-run to completion in this session. Earlier runs still showed unrelated `auth.spec.ts` database-schema and `results-room.spec.ts` Durable Object I/O failures when a Neon `DATABASE_URL` is present in `.dev.vars`.
+
+### Manual verification
+
+Not run in the IDE browser for this layer. After `npm run client-api-key:rotate -- --env local`, restart dev or rebuild so the SPA picks up `VITE_CLIENT_API_KEY`.
+
+### Unresolved issues
+
+- Remote `CLIENT_API_KEY` secrets are not uploaded automatically on rotate. Use `npx wrangler secret put CLIENT_API_KEY --env staging` (or production) after rotation, then rebuild with the matching `.env.{env}` file.
+
+### Next stage
+
+The numbered prompt sequence stays complete. No further build prompt is queued for this layer.
+
+## Party theme palettes
+
+Status: complete.
+
+The current look is registered as **26 basic**. Every screen colour is written in one typed palette. Tailwind utilities, the browser chrome, and the join code read that palette.
+
+### Files and interfaces
+
+- `apps/web/src/theme/themes.ts` exports `themes`, `DEFAULT_THEME_ID` (`"26-basic"`), `paletteRoles`, and `themeDocumentHead()`.
+- `apps/web/src/theme/install.ts` sets `data-theme` and `color-scheme` before React renders. `?theme=` selects a known id. Anything else stays on the default.
+- `apps/web/vite.config.ts` injects a blocking style for every palette and the `theme-color` meta from the default background.
+- `apps/web/src/index.css` maps Tailwind colour utilities with `@theme inline`. It no longer contains hex values.
+- The join code uses `var(--mark)` and `var(--mark-quiet)`. The dialog scrim mixes the theme background at 72% opacity.
+- `.agents/rules/40-design.md` says screen colours come from the theme file. `npm run agents:sync` copied that rule.
+
+### Decisions and defaults
+
+- Themes are client palettes. The room does not sync a theme between phones and the projector.
+- Adding a theme is one object in `themes.ts`. Preview it with `?theme=its-id`. Changing the party default is changing `DEFAULT_THEME_ID`. There is no settings screen and no saved override.
+- Fonts stay Fraunces and Outfit. This pass is colour only.
+- `public/favicon.svg` stays a static mark painted with the 26 basic accent and background.
+- Each theme must set every palette role: background, foreground, muted, accent, accent foreground, highlight, highlight foreground, surface, surface foreground, line, mark, and mark quiet zone. It also sets `colorScheme` to `dark` or `light`.
+
+### Commands and results
+
+- `npm run agents:sync` updated the design rule copies.
+- `npm run typecheck` passed.
+- `npx eslint` on the theme, install, main, join-code, and Vite config files passed.
+
+### Manual verification
+
+In the IDE browser against `http://localhost:5173`:
+
+- Guest, stage, and admin rendered with `data-theme="26-basic"`. Background `#14110e`, foreground `#fff6e8`, accent `#ff4d3a`, highlight `#ffc43a`, and surface `#2c241c`.
+- `theme-color` was `#14110e`. `color-scheme` was `dark`.
+- The about dialog scrim computed to the background colour at 72% opacity.
+- `?theme=not-a-theme` stayed on `26-basic`.
+
+### Unresolved issues
+
+- The favicon does not follow a theme change until its two fills are updated with the 26 basic accent and background.
+- A new palette is not applied on the projector and phones together. That would be a later host control.
+
+### Next stage
+
+The numbered prompt sequence stays complete. The next design change is a new palette object and, when wanted, a new `DEFAULT_THEME_ID`.
+
+## Question authoring
+
+Status: complete for the authoring structure. The full API suite and the Playwright quiz were not re-run.
+
+A question is one TypeScript file. The birthday catalogue can hold drafts. A room still plays the pack named by its stored version, which for a new game is `demo-2026-09-22`.
+
+### Files and interfaces
+
+- `apps/api/src/questions/definition.ts` holds the question types. A private answer is `{ known }` or `{ missing: { code, name, detail } }`.
+- `defaults.ts` is the only list of ordinary defaults. `authoring.ts` has one helper for each existing mechanic.
+- `registry.ts` resolves `demo-2026-09-22` to the demo pack, `unreleased` to the lobby, and `birthday-draft` or any unknown id to unavailable. It does not substitute another pack.
+- `validate.ts` checks packs. Illustrative rules stay on the demo pack. Incomplete drafts are reported and do not fail `content:check` while they are outside the running order.
+- `packs/demo/` has one file per current question. The manifest order is the previous order. `packs/birthday/manifest.ts` has an empty catalogue and an empty order.
+- `demo-set.ts` re-exports that demo pack. Gameplay, scoring, trolls, diagnostics, and statistics read the room's version.
+- Public questions use a boolean `illustrative`, points from 0, question ids up to 40 characters, `presentation`, and optional phone `instructions`. `explanation` is on the play snapshot only after scoring. Presenter notes are added only for the control audience.
+- `apps/web/src/play/presentation.ts` exports `resolvePresentation`. `standard` returns nothing, so the existing phone and stage components render the question.
+- `docs/question-authoring.md` is the workflow. `.agents/rules/15-question-authoring.md` points agents at it. `npm run agents:sync` copied that rule.
+
+### Decisions and defaults
+
+- Adding a birthday file does not change `startDemo`, an existing room, or a deployment.
+- Ready means the mechanic and the required facts validate. It does not mean a custom visual. Custom design is a later `presentation` id.
+- A released pack is not edited in place. A content change needs a new version id. Rooms keep the version they stored.
+- Defaults, when a setting is omitted: 20 seconds, attribution `after`, presentation `standard`, no modifier, no speed bonus. Choice 100, slider 100, rank 80, vote 60 with a 20 second vote, guess 80, duel 50, finale 70 and 30.
+- No party questions were invented. The childhood-photo shape exists only as a test fixture.
+
+### How to run it
+
+1. `npm run content:check` and `npm run content:export`.
+2. `npm run dev`, then start the illustrative demo as before.
+3. For a real question, say: `Next question idea: show everyone a childhood photo and ask them to guess who it is.`
+
+### Commands and results
+
+- `npm run agents:sync` updated `AGENTS.md` and the question-authoring rule copies.
+- `npm run content:check` passed for `demo` (`demo-2026-09-22`) and `birthday` (`birthday-draft`).
+- `npm run content:export` wrote the illustrative key and running order unchanged, and wrote `docs/content/birthday-answer-key.md` and `docs/content/birthday-running-order.md`. Both birthday files say the catalogue has no playable questions.
+- `npx tsc -b packages/shared apps/api apps/web/tsconfig.app.json` passed.
+- `npm run lint` passed.
+- `npm run format:check` failed on 15 files outside this change, including theme, lobby, and script files that were already unformatted. The question-authoring files were formatted with Prettier.
+- `npx vitest run test/content-preflight.spec.ts test/question-authoring.spec.ts` in `apps/api` passed: 2 files, 14 tests.
+- `npm test` was not run. The Playwright quiz was not run. Nothing was deployed.
+
+### Manual verification
+
+Not run in the browser. The demo pack's prompts and running order are unchanged, and the public snapshot still goes through the existing phone and stage components for `standard`.
+
+### Unresolved issues
+
+- The full API suite and the three-phone Playwright quiz were not re-run after the public snapshot gained `presentation` and `explanation`.
+- `npm run format:check` still fails on files that this change did not own.
+- Humza has not supplied party questions. The birthday catalogue is empty. `startDemo` still pins `demo-2026-09-22`.
+
+### Next stage
+
+No further build stage. The next step is Humza's first real question, phrased as `Next question idea: …`.

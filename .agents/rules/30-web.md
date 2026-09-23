@@ -9,6 +9,7 @@ globs:
 # Web app
 
 - Use British English, accessible controls, and clear phone states. Support reduced motion. Keep audio optional.
+- Follow the design and motion rules. Open the live library docs listed there before copying a component; ease every visible change.
 - Keep secrets and personal diagnostics off the projector and the stage screen.
 - Do not import server auth modules into the web app.
 - Do not put answer keys, truth nicknames, or scoring secrets in client code.

@@ -12,7 +12,9 @@ import {
   rankUnknownMessage,
 } from "../room/limits.ts";
 import { submissionGate, type GameStore } from "../room/lifecycle.ts";
-import { demoQuestions, type RankPlacement, type RankQuestion } from "./demo-set.ts";
+import type { RankPlacement, RankQuestion } from "./definition.ts";
+import { publicQuestionCore } from "./project.ts";
+import { playableQuestions, questionPacks } from "./registry.ts";
 
 export function assertRankQuestion(question: RankQuestion): void {
   const itemIds = new Set(question.items.map((item) => item.id));
@@ -176,7 +178,7 @@ export function acceptRanking(
   if (!checked.ok) {
     return checked;
   }
-  if (readRanking(sql, playerId, question.id)) {
+  if (readRanking(sql, playerId, question)) {
     return { ok: false, message: answerDuplicateMessage };
   }
   const deadline = store
@@ -209,21 +211,21 @@ export function acceptRanking(
 export function readRanking(
   sql: SqlStorage,
   playerId: string,
-  questionId: string,
+  question: RankQuestion,
 ): RankPlacement[] | undefined {
   const row = sql
     .exec<{ payload: string }>(
       `SELECT payload FROM round_response
        WHERE player_id = ? AND question_id = ? AND kind = 'rank'`,
       playerId,
-      questionId,
+      question.id,
     )
     .toArray()[0];
   if (!row) {
     return undefined;
   }
   const parsed = JSON.parse(row.payload) as { placements?: unknown };
-  const checked = checkRanking(rankQuestionOrEmpty(questionId), parsed.placements);
+  const checked = checkRanking(question, parsed.placements);
   if (checked.ok) {
     return checked.placements;
   }
@@ -251,7 +253,7 @@ export function rankScores(sql: SqlStorage, question: RankQuestion, now: number)
   for (const player of players) {
     const scored = pointsForRanking(
       question,
-      readRanking(sql, player.player_id, question.id),
+      readRanking(sql, player.player_id, question),
     );
     sql.exec(
       `INSERT OR IGNORE INTO score_ledger (
@@ -272,14 +274,8 @@ export function publicRankQuestion(
   total: number,
 ) {
   return {
+    ...publicQuestionCore(question, index, total),
     kind: "rank" as const,
-    id: question.id,
-    index,
-    total,
-    prompt: question.prompt,
-    points: question.points,
-    illustrative: true as const,
-    attribution: question.attribution,
     mode: question.mode,
     ties: question.ties,
     items: question.items.map((item) => ({ id: item.id, label: item.label })),
@@ -402,28 +398,13 @@ function compare(
   return leftRank < rightRank ? -1 : 1;
 }
 
-function rankQuestionOrEmpty(questionId: string): RankQuestion {
-  const found = demoQuestions.find((question) => question.id === questionId);
-  if (found?.kind === "rank") {
-    return found;
+for (const pack of questionPacks) {
+  if (pack.release !== "released") {
+    continue;
   }
-  return {
-    kind: "rank",
-    id: questionId,
-    prompt: "Ranking",
-    points: 1,
-    collectMs: 15_000,
-    attribution: "after",
-    mode: "partial",
-    ties: "shared",
-    items: [],
-    tiers: [],
-    truth: [],
-  };
-}
-
-for (const question of demoQuestions) {
-  if (question.kind === "rank") {
-    assertRankQuestion(question);
+  for (const question of playableQuestions(pack)) {
+    if (question.kind === "rank") {
+      assertRankQuestion(question);
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { env, runInDurableObject, SELF } from "cloudflare:test";
+import { env, runInDurableObject } from "cloudflare:test";
 import { apiFetch } from "./api-fetch.ts";
 import { withClientApiKeyHeaders, withClientApiQuery } from "./client-api-key.ts";
 import { describe, expect, it } from "vitest";

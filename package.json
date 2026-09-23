@@ -19,7 +19,7 @@
     "loc:report": "node --experimental-strip-types scripts/loc.ts --report",
     "build": "npm run build -w @26/web && node scripts/strip-generated-secrets.mjs && node scripts/check-artifacts.mjs && npm run content:check",
     "content:check": "node --experimental-strip-types scripts/content-preflight.ts",
-    "content:export": "node --experimental-strip-types scripts/content-export.ts && prettier --write docs/content/illustrative-answer-key.md docs/content/illustrative-running-order.md",
+    "content:export": "node --experimental-strip-types scripts/content-export.ts && prettier --write docs/content/illustrative-answer-key.md docs/content/illustrative-running-order.md docs/content/birthday-answer-key.md docs/content/birthday-running-order.md",
     "preview": "npm run preview -w @26/web",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint .",

@@ -29,6 +29,8 @@ export const answerPausedMessage = "The game is paused.";
 export const answerHeldMessage = "Waiting for the host.";
 export const answerDuplicateMessage = "This phone already answered this phase.";
 export const answerUnknownMessage = "That option is not on this question.";
+export const contentUnavailableMessage =
+  "This room's question version is not available.";
 export const answerRoleMessage = "This screen cannot answer.";
 export const controlMissingMessage = "This screen needs its room session.";
 export const skipClosedMessage = "This question cannot be skipped.";

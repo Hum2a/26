@@ -1,4 +1,5 @@
-import { adminSessionSchema } from "@26/shared";
+import { adminSessionSchema, clientApiKeyHeader } from "@26/shared";
+import { presentBinding } from "../auth/bindings.ts";
 import { authFailure } from "../auth/http.ts";
 import { administratorForRequest } from "../auth/routes.ts";
 import { sameOriginRejection } from "../credentials/cookies.ts";
@@ -17,7 +18,7 @@ export async function rejectUnlessRoomCreator(
     return authFailure("forbidden", 403);
   }
   if (env.APP_ENV === "local") {
-    return localAdministrator(request);
+    return localAdministrator(request, env);
   }
   const admin = await administratorForRequest(env, request);
   if (admin instanceof Response) {
@@ -26,11 +27,19 @@ export async function rejectUnlessRoomCreator(
   return undefined;
 }
 
-async function localAdministrator(request: Request): Promise<Response | undefined> {
+async function localAdministrator(
+  request: Request,
+  env: Env,
+): Promise<Response | undefined> {
+  const headers = new Headers({ cookie: request.headers.get("cookie") ?? "" });
+  const clientApiKey = presentBinding(env.CLIENT_API_KEY);
+  if (clientApiKey) {
+    headers.set(clientApiKeyHeader, clientApiKey);
+  }
   let response: Response;
   try {
     response = await fetch(new URL("/api/admin/session", request.url), {
-      headers: { cookie: request.headers.get("cookie") ?? "" },
+      headers,
     });
   } catch {
     return authFailure("unauthenticated", 401);

@@ -16,11 +16,12 @@ export function apiFetch(input: string | Request, init: RequestInit = {}): Promi
   }
 
   const headers = withClientApiKeyHeaders(Object.fromEntries(input.headers.entries()));
-  return SELF.fetch(withClientApiQuery(input.url), {
+  const requestInit = {
     method: input.method,
     headers,
     body: input.body,
     redirect: input.redirect,
-    duplex: input.body ? "half" : undefined,
-  });
+    ...(input.body ? { duplex: "half" as const } : {}),
+  } as RequestInit;
+  return SELF.fetch(withClientApiQuery(input.url), requestInit);
 }

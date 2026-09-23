@@ -1,5 +1,5 @@
 import { roomDiagnosticsSchema, type RoomDiagnostics } from "@26/shared";
-import { demoQuestionAt } from "../questions/demo-set.ts";
+import { questionFor } from "../questions/registry.ts";
 
 export function readRoomDiagnostics(
   sql: SqlStorage,
@@ -108,7 +108,12 @@ export function readRoomDiagnostics(
     )
     .toArray()[0];
   const questionId =
-    room.question_count > 0 ? (demoQuestionAt(room.question_index)?.id ?? null) : null;
+    room.question_count > 0
+      ? (questionFor({
+          questionSetVersion: room.question_set_version,
+          questionIndex: room.question_index,
+        })?.id ?? null)
+      : null;
   return roomDiagnosticsSchema.parse({
     gameId: room.game_id,
     phase: room.phase,

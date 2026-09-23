@@ -21,12 +21,12 @@ import {
 } from "../room/lifecycle.ts";
 import {
   assertCollectWindow,
-  demoQuestionAt,
-  demoQuestions,
   type AttributionMode,
   type DuelQuestion,
   type FinaleQuestion,
-} from "./demo-set.ts";
+} from "./definition.ts";
+import { publicQuestionCore } from "./project.ts";
+import { playableQuestions, questionFor, questionPacks } from "./registry.ts";
 import { shuffleIds, stageCardCap } from "./vote.ts";
 
 const stepTolerance = 1e-8;
@@ -150,7 +150,10 @@ export function nextDemoIndex(sql: SqlStorage, room: RoomClock): number | "final
   let index = room.questionIndex + 1;
   const totals = pointTotals(sql);
   while (index < room.questionCount) {
-    const question = demoQuestionAt(index);
+    const question = questionFor({
+      questionSetVersion: room.questionSetVersion,
+      questionIndex: index,
+    });
     if (
       !question ||
       (question.kind !== "duel" && question.kind !== "finale") ||
@@ -480,14 +483,8 @@ export function duelPlayFields(
   const questionView =
     question.kind === "duel"
       ? {
+          ...publicQuestionCore(question, index, room.questionCount),
           kind: "duel" as const,
-          id: question.id,
-          index,
-          total: room.questionCount,
-          prompt: question.prompt,
-          points: question.points,
-          illustrative: true as const,
-          attribution: question.attribution,
           minimum: question.minimum,
           maximum: question.maximum,
           step: question.step,
@@ -500,14 +497,8 @@ export function duelPlayFields(
           tieBreak: question.tieBreak,
         }
       : {
+          ...publicQuestionCore(question, index, room.questionCount),
           kind: "finale" as const,
-          id: question.id,
-          index,
-          total: room.questionCount,
-          prompt: question.prompt,
-          points: question.points,
-          illustrative: true as const,
-          attribution: question.attribution,
           minimum: question.minimum,
           maximum: question.maximum,
           step: question.step,
@@ -1009,8 +1000,13 @@ function gateMessage(store: GameStore, now: number): string | undefined {
   return answerClosedMessage;
 }
 
-for (const question of demoQuestions) {
-  if (question.kind === "duel" || question.kind === "finale") {
-    assertDuelQuestion(question);
+for (const pack of questionPacks) {
+  if (pack.release !== "released") {
+    continue;
+  }
+  for (const question of playableQuestions(pack)) {
+    if (question.kind === "duel" || question.kind === "finale") {
+      assertDuelQuestion(question);
+    }
   }
 }

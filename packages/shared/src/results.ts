@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { statCardSchema } from "./stats";
+import { statCardSchema } from "./stats.ts";
 
 /**
  * Named standings and shared media stay with the archive.

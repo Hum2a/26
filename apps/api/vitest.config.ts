@@ -96,6 +96,7 @@ export default defineConfig({
             "test/archive.spec.ts",
             "test/results.spec.ts",
             "test/content-preflight.spec.ts",
+            "test/question-authoring.spec.ts",
             "test/client-api-key.spec.ts",
           ],
           environment: "node",

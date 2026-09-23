@@ -3,7 +3,6 @@ import {
   evictDurableObject,
   runDurableObjectAlarm,
   runInDurableObject,
-  SELF,
 } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 import { apiFetch } from "./api-fetch.ts";

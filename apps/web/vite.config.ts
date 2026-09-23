@@ -1,6 +1,7 @@
 import { Buffer } from "node:buffer";
 import { existsSync, readFileSync } from "node:fs";
 import type { ServerResponse } from "node:http";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   createServer,
@@ -13,16 +14,17 @@ import {
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { cloudflare } from "@cloudflare/vite-plugin";
+import { DEFAULT_THEME_ID, themeDocumentHead } from "./src/theme/themes.ts";
 
 const localAuthPrefixes = ["/api/auth", "/api/admin", "/api/dev", "/api/stage"];
 const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 const devVarsPath = fileURLToPath(new URL("../api/.dev.vars", import.meta.url));
 
-function readDevVar(name: string): string {
-  if (!existsSync(devVarsPath)) {
+function readEnvValue(filePath: string, name: string): string {
+  if (!existsSync(filePath)) {
     return "";
   }
-  for (const line of readFileSync(devVarsPath, "utf8").split(/\r?\n/)) {
+  for (const line of readFileSync(filePath, "utf8").split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) {
       continue;
@@ -45,6 +47,25 @@ function readDevVar(name: string): string {
     return value;
   }
   return "";
+}
+
+function readDevVar(name: string): string {
+  return readEnvValue(devVarsPath, name);
+}
+
+function resolveClientApiKeyForBuild(): string {
+  const fromProcess = process.env.VITE_CLIENT_API_KEY?.trim();
+  if (fromProcess) {
+    return fromProcess;
+  }
+  const target = process.env.CLOUDFLARE_ENV?.trim();
+  if (target === "staging" || target === "production") {
+    return readEnvValue(path.join(repoRoot, `.env.${target}`), "VITE_CLIENT_API_KEY");
+  }
+  return (
+    readEnvValue(path.join(repoRoot, ".env.local"), "VITE_CLIENT_API_KEY") ||
+    readDevVar("CLIENT_API_KEY")
+  );
 }
 
 // PGlite's initdb cannot run inside the Worker runtime. Local dev and preview
@@ -187,9 +208,41 @@ async function writeNodeResponse(res: ServerResponse, response: Response) {
   res.end(Buffer.from(await response.arrayBuffer()));
 }
 
+function partyThemes(): Plugin {
+  return {
+    name: "party-themes",
+    transformIndexHtml: {
+      order: "pre",
+      handler(html) {
+        if (html.includes('id="party-themes"')) {
+          return html;
+        }
+        const { style, themeColor } = themeDocumentHead();
+        const tags = [
+          `<meta name="theme-color" content="${themeColor}" />`,
+          `<style id="party-themes">\n${style}\n    </style>`,
+        ].join("\n    ");
+        const withTheme = html.replace(/<html\b([^>]*)>/, (_match, attrs: string) => {
+          if (/\bdata-theme=/.test(attrs)) {
+            return `<html${attrs}>`;
+          }
+          return `<html${attrs} data-theme="${DEFAULT_THEME_ID}">`;
+        });
+        return withTheme.replace("</head>", `    ${tags}\n  </head>`);
+      },
+    },
+  };
+}
+
 export default defineConfig({
   envDir: repoRoot,
+  define: {
+    "import.meta.env.VITE_CLIENT_API_KEY": JSON.stringify(
+      resolveClientApiKeyForBuild(),
+    ),
+  },
   plugins: [
+    partyThemes(),
     localAuthInNode(),
     react(),
     tailwindcss(),

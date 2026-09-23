@@ -87,7 +87,8 @@ import {
 import { commitAndArm } from "./scheduler.ts";
 import { ensurePartySchema } from "./schema.ts";
 import { createSqlStore } from "./sql-store.ts";
-import { demoQuestionAt, type DemoQuestion } from "../questions/demo-set.ts";
+import type { Question } from "../questions/definition.ts";
+import { questionFor, unavailableContentMessage } from "../questions/registry.ts";
 import {
   acceptChoice,
   createGameStore,
@@ -2337,7 +2338,18 @@ export class PartyRoom extends DurableObject<Env> {
         return;
       }
       const room = createSqlStore(sql).readRoom();
-      const question = demoQuestionAt(room.questionIndex);
+      const unavailable = unavailableContentMessage(room);
+      if (unavailable) {
+        accepted = false;
+        error = unavailable;
+        this.writeReceipt(attachment.principalId, requestId, digest, {
+          accepted,
+          error,
+          name: command.name,
+        });
+        return;
+      }
+      const question = questionFor(room);
       const result = acceptRoundCommand(
         sql,
         createSqlStore(sql),
@@ -2436,6 +2448,18 @@ export class PartyRoom extends DurableObject<Env> {
         };
         accepted = stored.accepted === true;
         error = stored.error;
+        return;
+      }
+      const room = createSqlStore(sql).readRoom();
+      const unavailable = unavailableContentMessage(room);
+      if (unavailable) {
+        accepted = false;
+        error = unavailable;
+        this.writeReceipt(attachment.principalId, requestId, digest, {
+          accepted,
+          error,
+          name: "answer",
+        });
         return;
       }
       const result = acceptChoice(
@@ -3040,7 +3064,7 @@ function acceptRoundCommand(
     | { name: "troll"; kind: unknown; targetId: unknown; mediaId?: string }
     | { name: "troll-escape"; effectId: unknown },
   now: number,
-  question: DemoQuestion | undefined,
+  question: Question | undefined,
 ): { ok: true } | { ok: false; message: string } {
   if (command.name === "estimate") {
     if (!question || question.kind !== "slider") {

@@ -1,6 +1,7 @@
 import type { LobbySnapshot, PlaySnapshot, RoomPhaseName } from "@26/shared";
 import { Panel } from "../ui/primitives";
 import { AnswerNames } from "./attributions";
+import { renderPresentation } from "./presentation";
 
 function stagePhaseTitle(phase: RoomPhaseName): string {
   switch (phase) {
@@ -36,6 +37,10 @@ export function StagePlay({ snapshot }: { snapshot: LobbySnapshot }) {
     snapshot.phase === "scores" ||
     snapshot.phase === "final" ||
     snapshot.phase === "podium";
+  const custom = renderPresentation(play.question.presentation, {
+    surface: "stage",
+    play,
+  });
   return (
     <Panel title={stagePhaseTitle(snapshot.phase)} display="stage">
       <div data-phase={snapshot.phase} hidden />
@@ -44,8 +49,13 @@ export function StagePlay({ snapshot }: { snapshot: LobbySnapshot }) {
       snapshot.phase !== "podium" ? (
         <p>This is the last question.</p>
       ) : null}
-      {leadBoard ? <Standings play={play} /> : null}
-      <QuestionView play={play} omitBoard={leadBoard} />
+      {custom ?? (
+        <>
+          {leadBoard ? <Standings play={play} /> : null}
+          <QuestionView play={play} omitBoard={leadBoard} />
+          {play.explanation ? <p className="stage-answer">{play.explanation}</p> : null}
+        </>
+      )}
     </Panel>
   );
 }
@@ -73,7 +83,8 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
   return (
     <div className="grid gap-4">
       <p>
-        Illustrative demo. Question {play.question.index} of {play.question.total}.
+        {play.question.illustrative ? "Illustrative demo. " : null}
+        Question {play.question.index} of {play.question.total}.
       </p>
       <p className="stage-prompt">{play.question.prompt}</p>
       <ul className="grid gap-3">

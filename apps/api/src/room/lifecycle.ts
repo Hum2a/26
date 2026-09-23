@@ -76,6 +76,8 @@ export type RoomClock = {
   questionCount: number;
   collectWindows: number[];
   finishAfterRound: boolean;
+  /** Stored content version. `unreleased` is the lobby before a pack is chosen. */
+  questionSetVersion: string;
 };
 
 export type GameStore = {

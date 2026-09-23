@@ -25,13 +25,13 @@ import {
 } from "../room/lifecycle.ts";
 import {
   assertCollectWindow,
-  demoQuestionAt,
-  demoQuestions,
   type AttributionMode,
-  type DemoQuestion,
   type GuessQuestion,
+  type Question,
   type VoteQuestion,
-} from "./demo-set.ts";
+} from "./definition.ts";
+import { publicQuestionCore } from "./project.ts";
+import { playableQuestions, questionFor, questionPacks } from "./registry.ts";
 
 export const stageCardCap = 8;
 
@@ -54,7 +54,7 @@ type CandidateRow = {
 type BallotAwardMode = "authors" | "voters" | "none";
 type WinnerRule = "tally" | "named" | "majority";
 
-export function phasesForQuestion(question: DemoQuestion): RoundPhase[] {
+export function phasesForQuestion(question: Question): RoundPhase[] {
   const phases: RoundPhase[] = ["intro", "prompt"];
   if (question.kind === "finale") {
     phases.push("predict");
@@ -72,7 +72,7 @@ export function applyQuestionClock(store: GameStore): void {
   if (room.questionCount <= 0) {
     return;
   }
-  const question = demoQuestionAt(room.questionIndex);
+  const question = questionFor(room);
   if (!question) {
     return;
   }
@@ -736,14 +736,8 @@ export function ballotPlayFields(
   const questionView =
     question.kind === "vote"
       ? {
+          ...publicQuestionCore(question, index, room.questionCount),
           kind: "vote" as const,
-          id: question.id,
-          index,
-          total: room.questionCount,
-          prompt: question.prompt,
-          points: question.points,
-          illustrative: true as const,
-          attribution: question.attribution,
           candidateMode: question.candidateMode,
           selfVote: question.selfVote,
           votes: 1 as const,
@@ -752,14 +746,8 @@ export function ballotPlayFields(
           lateJoin: "ineligible" as const,
         }
       : {
+          ...publicQuestionCore(question, index, room.questionCount),
           kind: "guess" as const,
-          id: question.id,
-          index,
-          total: room.questionCount,
-          prompt: question.prompt,
-          points: question.points,
-          illustrative: true as const,
-          attribution: question.attribution,
           roster: question.roster,
           selfVote: question.selfVote,
           tie: "shared" as const,
@@ -1121,25 +1109,33 @@ function shortlisted(sql: SqlStorage, questionId: string, playerId: string): boo
 }
 
 function currentVote(sql: SqlStorage): VoteQuestion | undefined {
-  const question = demoQuestionAt(readIndex(sql));
+  const question = questionFor(readRoomQuestion(sql));
   return question?.kind === "vote" ? question : undefined;
 }
 
 function currentBallotQuestion(
   sql: SqlStorage,
 ): VoteQuestion | GuessQuestion | undefined {
-  const question = demoQuestionAt(readIndex(sql));
+  const question = questionFor(readRoomQuestion(sql));
   if (question?.kind === "vote" || question?.kind === "guess") {
     return question;
   }
   return undefined;
 }
 
-function readIndex(sql: SqlStorage): number {
+function readRoomQuestion(sql: SqlStorage): {
+  questionSetVersion: string;
+  questionIndex: number;
+} {
   const row = sql
-    .exec<{ question_index: number }>(`SELECT question_index FROM room`)
+    .exec<{ question_index: number; question_set_version: string }>(
+      `SELECT question_index, question_set_version FROM room`,
+    )
     .toArray()[0];
-  return row?.question_index ?? 0;
+  return {
+    questionIndex: row?.question_index ?? 0,
+    questionSetVersion: row?.question_set_version ?? "unreleased",
+  };
 }
 
 function readPhase(sql: SqlStorage): string {
@@ -1247,11 +1243,16 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-for (const question of demoQuestions) {
-  if (question.kind === "vote") {
-    assertVoteQuestion(question);
+for (const pack of questionPacks) {
+  if (pack.release !== "released") {
+    continue;
   }
-  if (question.kind === "guess") {
-    assertGuessQuestion(question);
+  for (const question of playableQuestions(pack)) {
+    if (question.kind === "vote") {
+      assertVoteQuestion(question);
+    }
+    if (question.kind === "guess") {
+      assertGuessQuestion(question);
+    }
   }
 }

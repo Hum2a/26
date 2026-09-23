@@ -1,46 +1,89 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { demoQuestionSetVersion } from "../apps/api/src/room/limits.ts";
+import type { Question } from "../apps/api/src/questions/definition.ts";
 import {
-  demoQuestions,
-  type DemoQuestion,
-} from "../apps/api/src/questions/demo-set.ts";
+  playableQuestions,
+  questionPacks,
+} from "../apps/api/src/questions/registry.ts";
+import { validatePack } from "../apps/api/src/questions/validate.ts";
 import { implementedTrollKinds } from "../apps/api/src/troll/catalogue.ts";
-import { preflightContent } from "../apps/api/src/questions/preflight.ts";
 
-const issues = preflightContent({ questions: demoQuestions, missingAssets: [] });
-if (issues.length > 0) {
-  for (const item of issues) {
-    console.error(`${item.code}: ${item.message}`);
-  }
+const selected = process.argv[2];
+const packs = selected
+  ? questionPacks.filter((pack) => pack.packId === selected)
+  : [...questionPacks];
+if (packs.length === 0) {
+  console.error(`Unknown pack "${selected}". Use demo or birthday.`);
   process.exit(1);
+}
+for (const pack of packs) {
+  const errors = validatePack(pack).filter((item) => item.level === "error");
+  if (errors.length > 0) {
+    for (const item of errors) {
+      console.error(`${pack.packId} ${item.code}: ${item.message}`);
+    }
+    process.exit(1);
+  }
 }
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const directory = path.join(root, "docs/content");
 mkdirSync(directory, { recursive: true });
 
-const banner = [
-  "Illustrative fixture pack.",
-  `Question set \`${demoQuestionSetVersion}\`.`,
-  "These lines are not Humza's party questions and they are not facts about guests.",
-  "Fixture names such as Amina and Bilal exist so the demo can score a round.",
-  "",
-].join("\n");
+const demo = packs.find((pack) => pack.packId === "demo");
+if (demo) {
+  const demoQuestions = playableQuestions(demo);
+  const banner = [
+    "Illustrative fixture pack.",
+    `Question set \`${demo.version}\`.`,
+    "These lines are not Humza's party questions and they are not facts about guests.",
+    "Fixture names such as Amina and Bilal exist so the demo can score a round.",
+    "",
+  ].join("\n");
+  writeFileSync(
+    path.join(directory, "illustrative-answer-key.md"),
+    `${banner}# Offline answer key\n\n${demoQuestions.map(answerBlock).join("\n")}`,
+  );
+  writeFileSync(
+    path.join(directory, "illustrative-running-order.md"),
+    `${banner}# Presenter running order\n\nSelected trolls in this build: ${implementedTrollKinds.join(", ")}.\n\n${demoQuestions.map(orderBlock).join("\n")}`,
+  );
+  console.log("Wrote docs/content/illustrative-answer-key.md");
+  console.log("Wrote docs/content/illustrative-running-order.md");
+}
 
-writeFileSync(
-  path.join(directory, "illustrative-answer-key.md"),
-  `${banner}# Offline answer key\n\n${demoQuestions.map(answerBlock).join("\n")}`,
-);
-writeFileSync(
-  path.join(directory, "illustrative-running-order.md"),
-  `${banner}# Presenter running order\n\nSelected trolls in this build: ${implementedTrollKinds.join(", ")}.\n\n${demoQuestions.map(orderBlock).join("\n")}`,
-);
-console.log("Wrote docs/content/illustrative-answer-key.md");
-console.log("Wrote docs/content/illustrative-running-order.md");
+const birthday = packs.find((pack) => pack.packId === "birthday");
+if (birthday) {
+  const playable = playableQuestions(birthday);
+  const banner = [
+    "Birthday catalogue.",
+    `Question set \`${birthday.version}\`.`,
+    "This version is not pinned to a room.",
+    "Drafts stay out of the running order until they are ready and explicitly included.",
+    "",
+  ].join("\n");
+  const answerBody =
+    playable.length === 0
+      ? "The birthday catalogue has no playable questions.\n"
+      : playable.map(answerBlock).join("\n");
+  const orderBody =
+    playable.length === 0
+      ? "The birthday catalogue has no playable questions.\n"
+      : playable.map(orderBlock).join("\n");
+  writeFileSync(
+    path.join(directory, "birthday-answer-key.md"),
+    `${banner}# Offline answer key\n\n${answerBody}`,
+  );
+  writeFileSync(
+    path.join(directory, "birthday-running-order.md"),
+    `${banner}# Presenter running order\n\n${orderBody}`,
+  );
+  console.log("Wrote docs/content/birthday-answer-key.md");
+  console.log("Wrote docs/content/birthday-running-order.md");
+}
 
-function answerBlock(question: DemoQuestion, index: number): string {
+function answerBlock(question: Question, index: number): string {
   return [
     `## ${index + 1}. ${question.id}`,
     "",
@@ -51,7 +94,7 @@ function answerBlock(question: DemoQuestion, index: number): string {
   ].join("\n");
 }
 
-function orderBlock(question: DemoQuestion, index: number): string {
+function orderBlock(question: Question, index: number): string {
   const extra =
     question.kind === "vote"
       ? `, then ${question.voteMs / 1000}s to vote`
@@ -69,7 +112,7 @@ function orderBlock(question: DemoQuestion, index: number): string {
   ].join("\n");
 }
 
-function revealLine(question: DemoQuestion): string {
+function revealLine(question: Question): string {
   if (question.kind === "choice") {
     return (
       question.options.find((option) => option.id === question.correctOptionId)

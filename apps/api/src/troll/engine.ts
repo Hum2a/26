@@ -1,4 +1,4 @@
-import { demoQuestionAt } from "../questions/demo-set.ts";
+import { questionFor } from "../questions/registry.ts";
 import {
   isTrollPayload,
   type GameStore,
@@ -489,12 +489,12 @@ export function hostTrollRows(sql: SqlStorage): {
 }
 
 function questionAllowsDouble(room: RoomClock): boolean {
-  const question = demoQuestionAt(room.questionIndex);
+  const question = questionFor(room);
   return question?.kind === "choice" && question.modifiers?.includes("double") === true;
 }
 
 function questionAllowsTyping(room: RoomClock): boolean {
-  return demoQuestionAt(room.questionIndex)?.attribution === "live";
+  return questionFor(room)?.attribution === "live";
 }
 
 function roomHasActiveTyping(sql: SqlStorage): boolean {

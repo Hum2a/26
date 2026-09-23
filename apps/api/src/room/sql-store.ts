@@ -23,6 +23,7 @@ type RoomRecord = {
   question_count: number;
   collect_windows_json: string;
   finish_after: number;
+  question_set_version: string;
 };
 
 type JobRecord = {
@@ -78,7 +79,8 @@ function readRoom(sql: SqlStorage): RoomClock {
     .exec<RoomRecord>(
       `SELECT phase, phase_generation, scope_generation, paused, controller_present,
               stage_present, hold, round_id, phases_json, durations_json, fault,
-              question_index, question_count, collect_windows_json, finish_after
+              question_index, question_count, collect_windows_json, finish_after,
+              question_set_version
        FROM room`,
     )
     .toArray()[0];
@@ -101,6 +103,7 @@ function readRoom(sql: SqlStorage): RoomClock {
     questionCount: row.question_count,
     collectWindows: windowsOf(row.collect_windows_json),
     finishAfterRound: row.finish_after === 1,
+    questionSetVersion: row.question_set_version,
   };
 }
 

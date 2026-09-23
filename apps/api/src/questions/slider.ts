@@ -9,11 +9,9 @@ import {
   estimateStepMessage,
 } from "../room/limits.ts";
 import { submissionGate, type GameStore, type RoomPhase } from "../room/lifecycle.ts";
-import {
-  demoQuestions,
-  type AttributionMode,
-  type SliderQuestion,
-} from "./demo-set.ts";
+import type { AttributionMode, SliderQuestion } from "./definition.ts";
+import { publicQuestionCore } from "./project.ts";
+import { playableQuestions, questionPacks } from "./registry.ts";
 
 const stepTolerance = 1e-8;
 
@@ -193,14 +191,8 @@ export function publicSliderQuestion(
   total: number,
 ) {
   return {
+    ...publicQuestionCore(question, index, total),
     kind: "slider" as const,
-    id: question.id,
-    index,
-    total,
-    prompt: question.prompt,
-    points: question.points,
-    illustrative: true as const,
-    attribution: question.attribution,
     minimum: question.minimum,
     maximum: question.maximum,
     step: question.step,
@@ -364,8 +356,13 @@ export function wrongKindEstimate(): string {
   return estimateClosedMessage;
 }
 
-for (const question of demoQuestions) {
-  if (question.kind === "slider") {
-    assertSliderQuestion(question);
+for (const pack of questionPacks) {
+  if (pack.release !== "released") {
+    continue;
+  }
+  for (const question of playableQuestions(pack)) {
+    if (question.kind === "slider") {
+      assertSliderQuestion(question);
+    }
   }
 }
