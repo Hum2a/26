@@ -1,0 +1,27 @@
+{
+  "name": "@26/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@26/shared": "0.0.0",
+    "@electric-sql/pglite": "0.5.8",
+    "@neondatabase/serverless": "1.1.0",
+    "aws4fetch": "1.0.20",
+    "better-auth": "1.7.5",
+    "hono": "4.13.8",
+    "jpeg-js": "0.4.4",
+    "kysely": "0.29.6",
+    "resend": "6.28.1"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.2.3",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11",
+    "wrangler": "4.136.3"
+  }
+}

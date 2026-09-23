@@ -1,0 +1,143 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "26-humza-website-local",
+  "account_id": "e6d408ebc85e159e6e22ee963641d342",
+  "main": "./src/index.ts",
+  "compatibility_date": "2026-09-22",
+  "compatibility_flags": ["nodejs_compat"],
+  // Local development. Staging and production override the name and APP_ENV.
+  // The media bucket binding is local simulation. This stage does not create a
+  // remote bucket. Blank strings are unset. A local .dev.vars file overrides them.
+  "vars": {
+    "APP_ENV": "local",
+    "ADMIN_EMAIL": "humza@localhost.test",
+    "BETTER_AUTH_SECRET": "",
+    "BETTER_AUTH_URL": "",
+    "DATABASE_URL": "",
+    "RESEND_API_KEY": "",
+    "RESEND_FROM": "",
+    "R2_ACCOUNT_ID": "",
+    "R2_ACCESS_KEY_ID": "",
+    "R2_SECRET_ACCESS_KEY": "",
+    "MEDIA_BUCKET_NAME": "26-humza-media-local",
+    "EMAIL_TEST_RECIPIENT": "",
+    "CLIENT_API_KEY": "",
+  },
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "26-humza-media-local",
+    },
+  ],
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // Include the bare prefixes. A pattern of /api/* does not match /api.
+    "run_worker_first": ["/api", "/api/*", "/ws", "/ws/*"],
+  },
+  // One Worker serves the React assets and the API. Staging and production
+  // attach custom domains so a single `wrangler deploy` publishes both.
+  "durable_objects": {
+    "bindings": [
+      { "name": "PARTY_ROOM", "class_name": "PartyRoom" },
+      { "name": "ROOM_CODE_REGISTRY", "class_name": "RoomCodeRegistry" },
+    ],
+  },
+  // Inherited by staging and production. Add a later tag only for a new class. Do not delete or recreate these classes.
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["PartyRoom", "RoomCodeRegistry"],
+    },
+  ],
+  "env": {
+    "staging": {
+      "name": "26-humza-website-staging",
+      "workers_dev": false,
+      "routes": [
+        {
+          "pattern": "26-staging.humza.website",
+          "custom_domain": true,
+        },
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "PARTY_ROOM", "class_name": "PartyRoom" },
+          { "name": "ROOM_CODE_REGISTRY", "class_name": "RoomCodeRegistry" },
+        ],
+      },
+      "vars": {
+        "APP_ENV": "staging",
+        "MEDIA_BUCKET_NAME": "26-humza-media-staging",
+      },
+      "secrets": {
+        "required": [
+          "ADMIN_EMAIL",
+          "BETTER_AUTH_SECRET",
+          "BETTER_AUTH_URL",
+          "DATABASE_URL",
+          "RESEND_API_KEY",
+          "RESEND_FROM",
+          "R2_ACCOUNT_ID",
+          "R2_ACCESS_KEY_ID",
+          "R2_SECRET_ACCESS_KEY",
+          "EMAIL_TEST_RECIPIENT",
+          "CLIENT_API_KEY",
+        ],
+      },
+      "r2_buckets": [
+        {
+          "binding": "MEDIA_BUCKET",
+          "bucket_name": "26-humza-media-staging",
+        },
+      ],
+      "images": {
+        "binding": "IMAGES",
+      },
+    },
+    "production": {
+      "name": "26-humza-website",
+      "workers_dev": false,
+      "routes": [
+        {
+          "pattern": "26.humza.website",
+          "custom_domain": true,
+        },
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "PARTY_ROOM", "class_name": "PartyRoom" },
+          { "name": "ROOM_CODE_REGISTRY", "class_name": "RoomCodeRegistry" },
+        ],
+      },
+      "vars": {
+        "APP_ENV": "production",
+        "MEDIA_BUCKET_NAME": "26-humza-media",
+      },
+      "secrets": {
+        "required": [
+          "ADMIN_EMAIL",
+          "BETTER_AUTH_SECRET",
+          "BETTER_AUTH_URL",
+          "DATABASE_URL",
+          "RESEND_API_KEY",
+          "RESEND_FROM",
+          "R2_ACCOUNT_ID",
+          "R2_ACCESS_KEY_ID",
+          "R2_SECRET_ACCESS_KEY",
+          "EMAIL_TEST_RECIPIENT",
+          "CLIENT_API_KEY",
+        ],
+      },
+      "r2_buckets": [
+        {
+          "binding": "MEDIA_BUCKET",
+          "bucket_name": "26-humza-media",
+        },
+      ],
+      "images": {
+        "binding": "IMAGES",
+      },
+    },
+  },
+}

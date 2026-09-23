@@ -1,0 +1,39 @@
+# Secret template. This file has no values.
+# npm run env:sync creates one vars file per environment:
+#   local:      apps/api/.dev.vars
+#   staging:    apps/api/.dev.vars.staging
+#   production: apps/api/.dev.vars.production
+# Those copies are gitignored. Do not commit real secrets.
+#
+# Migration and seed commands refuse to run without --env, and each flag
+# reads only its own file:
+#   npm run auth:migrate -- --env local
+#   npm run auth:seed -- --env local
+#
+# Blank Wrangler vars are unset. When a name is absent here, local development
+# uses PGlite, a development-only auth secret, and the local email inbox.
+# Staging and production do not fall back to those.
+#
+# Presigned browser uploads need the three R2 S3 credentials below.
+# MEDIA_BUCKET_NAME is set in wrangler.jsonc and must match the bucket binding.
+# Staging and production declare an Images binding named IMAGES. It is not
+# attached to an account in this repository.
+#
+# Results email on staging is sent only to EMAIL_TEST_RECIPIENT. Leave it unset
+# locally. Set the same name as a Worker secret before a staging deploy.
+
+# Shared with VITE_CLIENT_API_KEY in .env.{env}. Rotate with npm run client-api-key:rotate.
+CLIENT_API_KEY=
+
+ADMIN_EMAIL=
+BETTER_AUTH_SECRET=
+# Staging: https://26-staging.humza.website
+# Production: https://26.humza.website
+BETTER_AUTH_URL=
+DATABASE_URL=
+RESEND_API_KEY=
+RESEND_FROM=
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+EMAIL_TEST_RECIPIENT=

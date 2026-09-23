@@ -1,0 +1,17 @@
+{
+  "rules": [
+    {
+      "id": "expire-temporary-media",
+      "enabled": true,
+      "conditions": {
+        "prefix": "tmp/"
+      },
+      "deleteObjectsTransition": {
+        "condition": {
+          "type": "Age",
+          "maxAge": 86400
+        }
+      }
+    }
+  ]
+}

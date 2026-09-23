@@ -1,0 +1,71 @@
+{
+  "name": "26-humza-website",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @26/web",
+    "dev:kill": "node scripts/kill-dev-servers.mjs",
+    "env:sync": "node --experimental-strip-types scripts/env-sync.ts",
+    "client-api-key:rotate": "node --experimental-strip-types scripts/client-api-key-rotate.ts",
+    "agents:sync": "node --experimental-strip-types scripts/agents-sync.ts",
+    "loc": "node --experimental-strip-types scripts/loc.ts",
+    "loc:report": "node --experimental-strip-types scripts/loc.ts --report",
+    "build": "npm run build -w @26/web && node scripts/strip-generated-secrets.mjs && node scripts/check-artifacts.mjs && npm run content:check",
+    "content:check": "node --experimental-strip-types scripts/content-preflight.ts",
+    "content:export": "node --experimental-strip-types scripts/content-export.ts && prettier --write docs/content/illustrative-answer-key.md docs/content/illustrative-running-order.md",
+    "preview": "npm run preview -w @26/web",
+    "typecheck": "tsc -b --pretty false",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test:release && npm run test -w @26/api",
+    "smoke": "playwright test",
+    "cf-typegen": "npm run cf-typegen -w @26/api",
+    "auth:generate": "node --experimental-strip-types scripts/auth-generate.ts",
+    "auth:migrate": "node --experimental-strip-types scripts/auth-migrate.ts",
+    "archive:migrate": "node --experimental-strip-types scripts/archive-migrate.ts",
+    "archive:retain": "node --experimental-strip-types scripts/archive-retain.ts",
+    "auth:seed": "node --experimental-strip-types scripts/auth-seed.ts",
+    "test:release": "node --experimental-strip-types --test scripts/release-support.test.ts",
+    "secrets-sync:staging": "node --experimental-strip-types scripts/release.ts secrets-sync --env staging",
+    "secrets-sync:prod": "node --experimental-strip-types scripts/release.ts secrets-sync --env production",
+    "secrets-sync:both": "node --experimental-strip-types scripts/release.ts secrets-sync --env both",
+    "db:migrate:dev": "node --experimental-strip-types scripts/release.ts migrate --env local",
+    "db:migrate:staging": "node --experimental-strip-types scripts/release.ts migrate --env staging",
+    "db:migrate:prod": "node --experimental-strip-types scripts/release.ts migrate --env production",
+    "deploy:staging": "node --experimental-strip-types scripts/release.ts deploy --env staging",
+    "deploy:prod": "node --experimental-strip-types scripts/release.ts deploy --env production",
+    "deploy:both": "node --experimental-strip-types scripts/release.ts deploy --env both",
+    "deploy:staging:full": "node --experimental-strip-types scripts/release.ts full --env staging",
+    "deploy:prod:full": "node --experimental-strip-types scripts/release.ts full --env production",
+    "deploy:both:full": "node --experimental-strip-types scripts/release.ts full --env both"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "workerd@1.20260921.1": true
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@playwright/test": "1.63.0",
+    "@types/node": "26.6.2",
+    "eslint": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.7",
+    "globals": "17.12.0",
+    "prettier": "3.9.8",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.1"
+  },
+  "dependencies": {
+    "@neon/config": "1.7.3",
+    "@neon/env": "1.4.4"
+  }
+}
