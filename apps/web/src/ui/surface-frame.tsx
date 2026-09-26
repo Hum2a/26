@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { NavLink } from "react-router";
 import { EXAMPLE_GAME_ID } from "../example-game";
+import { SkinMotif } from "../theme/skin-motif";
 import { ThemePicker } from "../theme/theme-picker";
 import { Wordmark } from "../theme/wordmark";
 
@@ -36,7 +37,9 @@ export function SurfaceFrame({
     <div
       className={`relative ${size === "stage" ? "min-h-full" : "min-h-dvh"} bg-background text-foreground`}
     >
-      <div className="skin-ground" aria-hidden="true" />
+      <div className="skin-ground" aria-hidden="true">
+        <SkinMotif />
+      </div>
       <a
         href="#content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-20 focus:rounded-full focus:bg-highlight focus:px-4 focus:py-3 focus:font-bold focus:text-highlight-foreground"

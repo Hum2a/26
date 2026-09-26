@@ -40,6 +40,13 @@ export function applyTheme(id: ThemeId) {
   root.dataset.ground = skin.ground;
   root.dataset.shape = skin.shape;
   root.dataset.mark = skin.mark;
+  root.dataset.finish = skin.finish;
+  root.dataset.motif = skin.motif;
+  if (skin.motif === "none") {
+    delete root.dataset.motifIcon;
+  } else {
+    root.dataset.motifIcon = skin.icon;
+  }
   root.style.colorScheme = theme.colorScheme;
   document
     .querySelector('meta[name="theme-color"]')

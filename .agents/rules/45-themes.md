@@ -43,7 +43,7 @@ Add the palette in `themes.ts`. That file is the only place colour values are wr
 
 Choose the skin for the idea, not for whichever family was used last.
 
-1. Join an existing family when that ground, shape, and mark already say the idea. School lines, a nightclub stripe, a terminal grid, a floodlight, and a foil edge are families. Reuse them.
+1. Join an existing family when that ground, shape, mark, and finish already say the idea. School lines, a nightclub stripe, a terminal grid, a floodlight, and a foil edge are families. Reuse them.
 2. Add a ground, shape, or mark only when no family fits. Put the ground in `theme-skin.css`, built from the theme's own variables (`--background`, `--surface`, `--accent`, `--highlight`, `--line`). Take the mark from the icon packs below. Draw a new stroke in `wordmark.tsx` only when none of those packs has a fitting icon.
 3. Do not leave the new theme on the plain chrome.
 
@@ -52,6 +52,8 @@ The skin changes the shared frame only:
 - **Ground.** A fixed layer behind the page. It never sits on a question, option, score, or answer.
 - **Shape.** `--radius-control` and `--radius-panel` on the shared controls.
 - **Mark.** The navbar 26, shown from `data-mark`.
+- **Finish.** How solid the frame is: `solid`, `glass`, `cartoon`, `realistic`, `minimal`, or `extravagant`. Pick the one that fits the idea. `26 basic` stays `solid`. Glass keeps a readable plate over the ground, and reduced motion turns its blur off. Cartoon is a thick outline and a hard shadow, with no bounce. Realistic is depth only. A finish never outlines the heading, never covers an option, and never loops.
+- **Motif.** An optional static icon on the ground: `none`, `crest`, `scatter`, or `bleed`. Use `none` when the ground pattern is already the picture, including `26 basic`. Company marks come from Simple Icons. Other motifs come from Lucide. The icon stays behind the question.
 
 Question flow, scoring, and copy stay put. Patterns are static. Do not add a looping animation on a control. Reduced motion already removes the corner transition.
 
@@ -95,4 +97,4 @@ The favicon stays the 26 basic mark.
 
 - `npx tsc -b apps/web`
 - `npx vitest run src/theme/skins.test.ts` in `apps/web`
-- Preview with `?theme=its-id` and confirm the ground, corners, and mark are visible while the question text stays readable.
+- Preview with `?theme=its-id` and confirm the ground, corners, mark, and finish are visible while the question text stays readable. If the theme has a motif, the icon shows in the margin and a point on the heading still hits the heading.

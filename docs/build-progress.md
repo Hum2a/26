@@ -2152,5 +2152,91 @@ Status: complete.
 
 The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`.
 
+## Theme finishes
+
+Status: complete.
+
+Every skin now has a finish. The shared frame can be solid, glass, cartoon, realistic, minimal, or extravagant. Question text, scoring, and copy stay put.
+
+### Files and interfaces
+
+- `finish` on `ThemeSkin` in `apps/web/src/theme/skins.ts`. `applyTheme` writes `data-finish`.
+- `apps/web/src/theme/theme-skin.css` paints the six treatments from the existing palette variables.
+- `.agents/rules/45-themes.md` tells a new theme to pick a finish. `npm run agents:sync` updated the generated copies.
+
+### Decisions and defaults
+
+- `26 basic` stays solid. School lines, service tickets, and the two cars are solid. Glow and horizon are glass. Slash, tape, and Spoon World are cartoon. Paper, Leblanc tea, the floodlights, and PS2 are realistic. The terminal grid is minimal. Club, show, mic, foil, and Vice are extravagant.
+- Glass is a translucent plate with a light blur. Reduced motion removes the blur and raises the plate. Cartoon is a thick outline and a hard offset shadow. Realistic is a soft shadow and an inner highlight. Extravagant adds a highlight edge, a deeper shadow, and a larger mark.
+- A finish does not outline the heading. Panels stay opaque except for glass, which stays readable over the ground.
+
+### Commands and results
+
+- `npx vitest run src/theme/skins.test.ts` in `apps/web` passed: 4 tests.
+- `npx tsc -b apps/web` passed.
+- `npm run agents:sync` updated the theme rule copies.
+
+### Manual verification
+
+In the IDE browser on `http://127.0.0.1:5173`:
+
+- `?theme=26-basic` is solid: the question card has no extra shadow, and a point on Guest hits the heading.
+- `?theme=the-velvet-room` is glass: the card is 82% surface with a 16px blur. A point on Guest hits the heading.
+- `?theme=persona-5-take-your-time` is cartoon: controls and the card have a thick outline and a hard offset shadow. The heading itself has no shadow.
+- `?theme=fratton-park-matchday-shift` is realistic: the card is opaque, with an inner highlight and a soft shadow.
+- `?theme=humza-os` is minimal: the card has a hairline border and no shadow. A point on the card heading hits the heading, and the panel background is opaque over the grid.
+- `?theme=26-karat` is extravagant: the card has a highlight edge and a deep shadow, and the navbar mark is larger.
+
+### Unresolved issues
+
+- The favicon does not follow a theme change. Phones and the projector still choose a theme separately.
+
+### Next stage
+
+The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`.
+
+## Background motifs
+
+Status: complete.
+
+Some themes now draw a static icon on the ground. The icon stays behind the question. Themes whose ground is already a pattern stay clear, and so does 26 basic.
+
+### Files and interfaces
+
+- `motif` and `icon` on `ThemeSkin` in `apps/web/src/theme/skins.ts`. `applyTheme` writes `data-motif` and, when there is an icon, `data-motif-icon`.
+- `apps/web/src/theme/skin-motif.tsx` renders the icons inside `.skin-ground`. Crest, scatter, and bleed are positioned in `apps/web/src/theme/theme-skin.css`.
+- `.agents/rules/45-themes.md` tells a new theme when to add a motif. `npm run agents:sync` updated the generated copies.
+
+### Decisions and defaults
+
+- Crest: Nissan on LEAF, Toyota on Prius+, a sun on the horizon family, a card on PS2, a mic on Baseer.
+- Scatter: stars on the foil family, utensils on Spoon World.
+- Bleed: a mask on the slash family, cropped off the left edge.
+- None: 26 basic, the terminal grid, school lines, tape, club stripes, service tiles, paper, floodlights, and the Velvet Room glow.
+- Company marks come from Simple Icons. The other motifs come from Lucide. Nothing moves.
+
+### Commands and results
+
+- `npx vitest run src/theme/skins.test.ts` in `apps/web` passed: 4 tests.
+- `npx tsc -b apps/web` passed.
+- `npm run agents:sync` updated the theme rule copies.
+
+### Manual verification
+
+In the IDE browser on `http://127.0.0.1:5173`:
+
+- `?theme=nissan-leaf` shows the Nissan mark in the corner, partly behind the card. A point on Guest hits the heading.
+- `?theme=26-karat` shows six stars in the margins. A point on Guest hits the heading.
+- `?theme=persona-5-take-your-time` shows one large mask cropped off the left. A point on Guest hits the heading.
+- `?theme=humza-os` stays the grid. No motif is displayed.
+
+### Unresolved issues
+
+- The favicon does not follow a theme change. Phones and the projector still choose a theme separately.
+
+### Next stage
+
+The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`.
+
 
 

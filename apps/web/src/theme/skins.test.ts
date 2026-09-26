@@ -11,6 +11,9 @@ describe("theme skins", () => {
     expect(document.documentElement.dataset.ground).toBe("flat");
     expect(document.documentElement.dataset.shape).toBe("round");
     expect(document.documentElement.dataset.mark).toBe("numeral");
+    expect(document.documentElement.dataset.finish).toBe("solid");
+    expect(document.documentElement.dataset.motif).toBe("none");
+    expect(document.documentElement.dataset.motifIcon).toBeUndefined();
   });
 
   it("gives the six trials a distinct ground, shape, and mark", () => {
@@ -80,6 +83,19 @@ describe("theme skins", () => {
       shape: "soft",
       mark: "plus",
     });
+    expect(skinFor("the-velvet-room").finish).toBe("glass");
+    expect(skinFor("persona-5-take-your-time").finish).toBe("cartoon");
+    expect(skinFor("fratton-park-matchday-shift").finish).toBe("realistic");
+    expect(skinFor("humza-os").finish).toBe("minimal");
+    expect(skinFor("26-karat").finish).toBe("extravagant");
+    expect(skinFor("wallington-grammar-school-arc").finish).toBe("solid");
+    expect(skinFor("humza-os").motif).toBe("none");
+    expect(skinFor("nissan-leaf")).toMatchObject({ motif: "crest", icon: "nissan" });
+    expect(skinFor("26-karat")).toMatchObject({ motif: "scatter", icon: "star" });
+    expect(skinFor("persona-5-take-your-time")).toMatchObject({
+      motif: "bleed",
+      icon: "mask",
+    });
   });
 
   it("writes the skin onto the document when a trial theme is chosen", () => {
@@ -89,5 +105,6 @@ describe("theme skins", () => {
     expect(document.documentElement.dataset.ground).toBe("sunset");
     expect(document.documentElement.dataset.shape).toBe("cut");
     expect(document.documentElement.dataset.mark).toBe("skyline");
+    expect(document.documentElement.dataset.finish).toBe("extravagant");
   });
 });

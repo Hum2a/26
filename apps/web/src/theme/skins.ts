@@ -44,31 +44,72 @@ export const skinMarks = [
   "plus",
 ] as const;
 
+export const skinFinishes = [
+  "solid",
+  "glass",
+  "cartoon",
+  "realistic",
+  "minimal",
+  "extravagant",
+] as const;
+
+export const skinMotifs = ["none", "crest", "scatter", "bleed"] as const;
+
+export const motifIcons = [
+  "nissan",
+  "toyota",
+  "sun",
+  "card",
+  "mic",
+  "star",
+  "utensils",
+  "mask",
+] as const;
+
 export type SkinGround = (typeof skinGrounds)[number];
 export type SkinShape = (typeof skinShapes)[number];
 export type SkinMark = (typeof skinMarks)[number];
+export type SkinFinish = (typeof skinFinishes)[number];
+export type SkinMotif = (typeof skinMotifs)[number];
+export type MotifIcon = (typeof motifIcons)[number];
 
-export type ThemeSkin = {
+type SkinBase = {
   id: string;
   ground: SkinGround;
   shape: SkinShape;
   mark: SkinMark;
+  finish: SkinFinish;
 };
+
+export type ThemeSkin = SkinBase &
+  (
+    | { motif: "none" }
+    | { motif: Exclude<SkinMotif, "none">; icon: MotifIcon }
+  );
+
+type SkinInput = SkinBase &
+  (
+    | { motif?: "none" }
+    | { motif: Exclude<SkinMotif, "none">; icon: MotifIcon }
+  );
 
 export const plainSkin: ThemeSkin = {
   id: "plain",
   ground: "flat",
   shape: "round",
   mark: "numeral",
+  finish: "solid",
+  motif: "none",
 };
 
 type SkinnedThemeId = Exclude<ThemeId, "26-basic">;
 
 function family<const T extends readonly SkinnedThemeId[]>(
   ids: T,
-  skin: ThemeSkin,
+  skin: SkinInput,
 ): { [K in T[number]]: ThemeSkin } {
-  return Object.fromEntries(ids.map((id) => [id, skin])) as {
+  const full = { motif: "none" as const, ...skin } as ThemeSkin;
+  return Object.fromEntries(ids.map((id) => [id, full])) as {
     [K in T[number]]: ThemeSkin;
   };
 }
@@ -79,36 +120,48 @@ const skinned = {
     ground: "slash",
     shape: "sharp",
     mark: "mask",
+    finish: "cartoon",
+    motif: "bleed",
+    icon: "mask",
   }),
   ...family(["ps2-memory-card"], {
     id: "ps2",
     ground: "grid",
     shape: "chunky",
     mark: "card",
+    finish: "realistic",
+    motif: "crest",
+    icon: "card",
   }),
   ...family(["cafe-leblanc-but-make-it-tea"], {
     id: "leblanc-tea",
     ground: "split",
     shape: "soft",
     mark: "cup",
+    finish: "realistic",
   }),
   ...family(["pitbull-mr-worldwide"], {
     id: "pitbull",
     ground: "stripes",
     shape: "round",
     mark: "shades",
+    finish: "extravagant",
   }),
   ...family(["spoon-world-portsmouth-edition"], {
     id: "spoon-world",
     ground: "tiles",
     shape: "ticket",
     mark: "spoon",
+    finish: "cartoon",
+    motif: "scatter",
+    icon: "utensils",
   }),
   ...family(["gta-vi-vice-birthday"], {
     id: "vice",
     ground: "sunset",
     shape: "cut",
     mark: "skyline",
+    finish: "extravagant",
   }),
   ...family(
     [
@@ -119,19 +172,33 @@ const skinned = {
       "persona-3-portable-pink-route",
       "my-hero-academia-plus-ultra",
     ],
-    { id: "slash", ground: "slash", shape: "sharp", mark: "mask" },
+    {
+      id: "slash",
+      ground: "slash",
+      shape: "sharp",
+      mark: "mask",
+      finish: "cartoon",
+      motif: "bleed",
+      icon: "mask",
+    },
   ),
   ...family(["fullmetal-alchemist-equivalent-exchange"], {
     id: "slash",
     ground: "slash",
     shape: "sharp",
     mark: "ring",
+    finish: "cartoon",
+    motif: "bleed",
+    icon: "mask",
   }),
   ...family(["smash-final-destination"], {
     id: "slash",
     ground: "slash",
     shape: "sharp",
     mark: "star",
+    finish: "cartoon",
+    motif: "bleed",
+    icon: "mask",
   }),
   ...family(
     [
@@ -147,7 +214,7 @@ const skinned = {
       "humzas-control-room",
       "usual-table-laptop-open",
     ],
-    { id: "crt", ground: "grid", shape: "chunky", mark: "terminal" },
+    { id: "crt", ground: "grid", shape: "chunky", mark: "terminal", finish: "minimal" },
   ),
   ...family(
     [
@@ -163,7 +230,7 @@ const skinned = {
       "lavender-menace",
       "soft-launch-hard-questions",
     ],
-    { id: "paper", ground: "split", shape: "soft", mark: "cup" },
+    { id: "paper", ground: "split", shape: "soft", mark: "cup", finish: "realistic" },
   ),
   ...family(
     [
@@ -181,13 +248,14 @@ const skinned = {
       "ember-room",
       "mixtape-26",
     ],
-    { id: "club", ground: "stripes", shape: "round", mark: "shades" },
+    { id: "club", ground: "stripes", shape: "round", mark: "shades", finish: "extravagant" },
   ),
   ...family(["rick-astley-never-gonna-log-you-out"], {
     id: "club",
     ground: "stripes",
     shape: "round",
     mark: "note",
+    finish: "extravagant",
   }),
   ...family(
     [
@@ -196,19 +264,21 @@ const skinned = {
       "amazon-out-for-delivery",
       "501-fun-maximum-fun",
     ],
-    { id: "service", ground: "tiles", shape: "ticket", mark: "spoon" },
+    { id: "service", ground: "tiles", shape: "ticket", mark: "spoon", finish: "solid" },
   ),
   ...family(["corestream-risk-accepted", "made-by-humza"], {
     id: "service",
     ground: "tiles",
     shape: "ticket",
     mark: "stamp",
+    finish: "solid",
   }),
   ...family(["gta-vi-made-me-late", "retro-future"], {
     id: "sunset",
     ground: "sunset",
     shape: "cut",
     mark: "skyline",
+    finish: "extravagant",
   }),
   ...family(
     [
@@ -218,13 +288,16 @@ const skinned = {
       "humza-according-to-everyone",
       "21-november",
     ],
-    { id: "show", ground: "stripes", shape: "round", mark: "star" },
+    { id: "show", ground: "stripes", shape: "round", mark: "star", finish: "extravagant" },
   ),
   ...family(["baseer-live", "baseer-has-the-mic"], {
     id: "mic",
     ground: "glow",
     shape: "round",
     mark: "mic",
+    finish: "extravagant",
+    motif: "crest",
+    icon: "mic",
   }),
   ...family(
     [
@@ -236,7 +309,7 @@ const skinned = {
       "pokemon-gengar-hours",
       "final-fantasy-vii-mako",
     ],
-    { id: "glow", ground: "glow", shape: "soft", mark: "mask" },
+    { id: "glow", ground: "glow", shape: "soft", mark: "mask", finish: "glass" },
   ),
   ...family(
     [
@@ -252,7 +325,15 @@ const skinned = {
       "dragon-ball-capsule-corp",
       "bunny-girl-senpai-after-school",
     ],
-    { id: "horizon", ground: "horizon", shape: "soft", mark: "sun" },
+    {
+      id: "horizon",
+      ground: "horizon",
+      shape: "soft",
+      mark: "sun",
+      finish: "glass",
+      motif: "crest",
+      icon: "sun",
+    },
   ),
   ...family(
     [
@@ -261,7 +342,7 @@ const skinned = {
       "portsmouth-student-save-file",
       "the-humza-archives",
     ],
-    { id: "ruled", ground: "ruled", shape: "chunky", mark: "numeral" },
+    { id: "ruled", ground: "ruled", shape: "chunky", mark: "numeral", finish: "solid" },
   ),
   ...family(
     [
@@ -271,7 +352,7 @@ const skinned = {
       "queens-centre-court",
       "goodwood-all-access",
     ],
-    { id: "floodlight", ground: "floodlight", shape: "cut", mark: "beam" },
+    { id: "floodlight", ground: "floodlight", shape: "cut", mark: "beam", finish: "realistic" },
   ),
   ...family(
     [
@@ -286,7 +367,15 @@ const skinned = {
       "super-saiyan-closing-shift",
       "humza-studio",
     ],
-    { id: "foil", ground: "foil", shape: "round", mark: "star" },
+    {
+      id: "foil",
+      ground: "foil",
+      shape: "round",
+      mark: "star",
+      finish: "extravagant",
+      motif: "scatter",
+      icon: "star",
+    },
   ),
   ...family(
     [
@@ -299,19 +388,25 @@ const skinned = {
       "the-hot-seat",
       "final-answer",
     ],
-    { id: "tape", ground: "tape", shape: "sharp", mark: "numeral" },
+    { id: "tape", ground: "tape", shape: "sharp", mark: "numeral", finish: "cartoon" },
   ),
   ...family(["nissan-leaf"], {
     id: "leaf",
     ground: "charge",
     shape: "soft",
     mark: "leaf",
+    finish: "solid",
+    motif: "crest",
+    icon: "nissan",
   }),
   ...family(["toyota-prius-plus"], {
     id: "prius",
     ground: "horizon",
     shape: "soft",
     mark: "plus",
+    finish: "solid",
+    motif: "crest",
+    icon: "toyota",
   }),
 } satisfies Record<SkinnedThemeId, ThemeSkin>;
 

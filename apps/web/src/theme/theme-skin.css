@@ -1,5 +1,5 @@
 /*
- * Skin chrome. Grounds, corners, and marks use the palette variables
+ * Skin chrome. Grounds, corners, marks, and finishes use the palette variables
  * already set by the theme. Nothing here introduces a new colour.
  */
 
@@ -291,6 +291,182 @@ html[data-mark="plus"] .mark-plus {
   display: block;
 }
 
+/*
+ * Finish. The shared frame only: panels, controls, fields, and status.
+ * Question text stays on the panel. Nothing here loops.
+ */
+
+html[data-finish="solid"] .skin-panel,
+html[data-finish="solid"] .skin-control,
+html[data-finish="solid"] .skin-field,
+html[data-finish="solid"] .skin-status,
+html[data-finish="solid"] dialog {
+  box-shadow: none;
+}
+
+html[data-finish="glass"] .skin-panel,
+html[data-finish="glass"] .skin-field,
+html[data-finish="glass"] .skin-status,
+html[data-finish="glass"] dialog {
+  background-color: color-mix(in srgb, var(--surface) 82%, transparent);
+  border-color: color-mix(in srgb, var(--highlight) 35%, transparent);
+  backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--highlight) 28%, transparent);
+}
+
+html[data-finish="cartoon"] .skin-panel,
+html[data-finish="cartoon"] .skin-control,
+html[data-finish="cartoon"] .skin-field,
+html[data-finish="cartoon"] .skin-status,
+html[data-finish="cartoon"] dialog {
+  border-width: 2.5px;
+  border-style: solid;
+  border-color: var(--foreground);
+  box-shadow: 4px 4px 0 var(--foreground);
+}
+
+html[data-finish="realistic"] .skin-panel,
+html[data-finish="realistic"] dialog {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--highlight) 45%, transparent),
+    0 10px 24px color-mix(in srgb, var(--foreground) 18%, transparent);
+}
+
+html[data-finish="realistic"] .skin-control,
+html[data-finish="realistic"] .skin-field,
+html[data-finish="realistic"] .skin-status {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--highlight) 35%, transparent),
+    0 4px 12px color-mix(in srgb, var(--foreground) 14%, transparent);
+}
+
+html[data-finish="minimal"] .skin-panel,
+html[data-finish="minimal"] .skin-control,
+html[data-finish="minimal"] .skin-field,
+html[data-finish="minimal"] .skin-status,
+html[data-finish="minimal"] dialog {
+  border-color: color-mix(in srgb, var(--line) 55%, transparent);
+  box-shadow: none;
+}
+
+html[data-finish="extravagant"] .skin-panel,
+html[data-finish="extravagant"] dialog {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--highlight) 72%, transparent),
+    0 18px 42px color-mix(in srgb, var(--foreground) 28%, transparent);
+}
+
+html[data-finish="extravagant"] .skin-control,
+html[data-finish="extravagant"] .skin-field,
+html[data-finish="extravagant"] .skin-status {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--highlight) 55%, transparent),
+    0 8px 18px color-mix(in srgb, var(--foreground) 22%, transparent);
+}
+
+html[data-finish="extravagant"] .skin-mark {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+/*
+ * Motif. A static icon on the ground. Cards paint above it.
+ */
+
+.motif {
+  display: none;
+  position: absolute;
+  color: var(--accent);
+  pointer-events: none;
+}
+
+.motif-copy {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+html[data-motif="crest"][data-motif-icon="nissan"] .motif-nissan,
+html[data-motif="crest"][data-motif-icon="toyota"] .motif-toyota,
+html[data-motif="crest"][data-motif-icon="sun"] .motif-sun,
+html[data-motif="crest"][data-motif-icon="card"] .motif-card,
+html[data-motif="crest"][data-motif-icon="mic"] .motif-mic,
+html[data-motif="scatter"][data-motif-icon="star"] .motif-star,
+html[data-motif="scatter"][data-motif-icon="utensils"] .motif-utensils,
+html[data-motif="bleed"][data-motif-icon="mask"] .motif-mask {
+  display: block;
+}
+
+html[data-motif="crest"] .motif {
+  right: -10vmin;
+  bottom: -8vmin;
+  width: 40vmin;
+  height: 40vmin;
+  opacity: 0.16;
+}
+
+html[data-motif="crest"][data-motif-icon="sun"] .motif-sun {
+  top: -10vmin;
+  right: -6vmin;
+  bottom: auto;
+}
+
+html[data-motif="crest"] .motif-copy:not(.motif-copy-0),
+html[data-motif="bleed"] .motif-copy:not(.motif-copy-0) {
+  display: none;
+}
+
+html[data-motif="bleed"] .motif {
+  top: 18vh;
+  left: -28vmin;
+  width: 70vmin;
+  height: 70vmin;
+  opacity: 0.14;
+}
+
+html[data-motif="scatter"] .motif {
+  inset: 0;
+  opacity: 0.12;
+}
+
+html[data-motif="scatter"] .motif-copy {
+  width: 12vmin;
+  height: 12vmin;
+}
+
+html[data-motif="scatter"] .motif-copy-0 {
+  top: 8vh;
+  left: 6vw;
+}
+
+html[data-motif="scatter"] .motif-copy-1 {
+  top: 22vh;
+  right: 8vw;
+  left: auto;
+}
+
+html[data-motif="scatter"] .motif-copy-2 {
+  top: 48vh;
+  left: 12vw;
+}
+
+html[data-motif="scatter"] .motif-copy-3 {
+  bottom: 18vh;
+  right: 10vw;
+  left: auto;
+}
+
+html[data-motif="scatter"] .motif-copy-4 {
+  bottom: 8vh;
+  left: 28vw;
+}
+
+html[data-motif="scatter"] .motif-copy-5 {
+  top: 36vh;
+  right: 22vw;
+  left: auto;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skin-control,
   .skin-panel,
@@ -298,5 +474,13 @@ html[data-mark="plus"] .mark-plus {
   .skin-status,
   dialog {
     transition: none;
+  }
+
+  html[data-finish="glass"] .skin-panel,
+  html[data-finish="glass"] .skin-field,
+  html[data-finish="glass"] .skin-status,
+  html[data-finish="glass"] dialog {
+    backdrop-filter: none;
+    background-color: color-mix(in srgb, var(--surface) 94%, transparent);
   }
 }
