@@ -2031,12 +2031,56 @@ In the IDE browser on `http://localhost:5173`:
 
 ### Unresolved issues
 
-- The other themes are still colour-only. The idea groups above are not implemented.
 - The favicon does not follow a theme change. Phones and the projector still choose a theme separately.
 
 ### Next stage
 
 The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`. A later skin can join one of the families above.
+
+## Skins for the full catalogue
+
+Status: complete.
+
+Every theme except `26 basic` now has a skin. Themes in one family share the ground, the corner radius, and the mark. The palette still changes per theme. `26 basic` stays flat.
+
+### Files and interfaces
+
+- `skinGrounds` and `skinMarks` in `apps/web/src/theme/skins.ts` gained glow, horizon, ruled, floodlight, foil, and tape, plus terminal, note, sun, beam, ring, stamp, star, and mic.
+- The skin map is `Record<Exclude<ThemeId, "26-basic">, ThemeSkin>`, so a missing theme fails typecheck.
+- `apps/web/src/theme/theme-skin.css` paints the new grounds from the existing palette variables. Foil is a highlight edge on panels. Tape is a static strip along the top.
+- `apps/web/src/theme/wordmark.tsx` draws the new marks.
+
+### Decisions and defaults
+
+- The six trials keep their ids and look. PS2 still adds scanlines on top of the grid.
+- Smash joins the slash family with a star. Rick Astley joins the club stripes with a note, and nothing moves.
+- Ruled and tape keep the numeral, so the lines and the strip are the identity.
+- Show themes (Version 26, Main Character, The Humza Show, Humza According to Everyone, 21 November) use stripes and a star. Baseer Live and Baseer Has the Mic use a glow and a mic.
+- Grounds stay behind the question card. Nothing loops.
+
+### Commands and results
+
+- `npx vitest run src/theme/skins.test.ts` in `apps/web` passed: 4 tests.
+- `npx tsc -b apps/web` passed.
+
+### Manual verification
+
+In the IDE browser on `http://localhost:5173`:
+
+- The Velvet Room shows a highlight wash, soft corners, and the mask. The question text stays on the card.
+- Your Name shows a sun and a twilight band across the top.
+- Wallington shows exercise-book lines and a margin. A point on the question hits the card, not the ground.
+- Fratton Park shows a floodlight band and a beam beside the 26.
+- 26 Karat shows a star and a highlight edge on the question card.
+- Absolutely Rigged shows a static caution strip along the top and sharp controls. The strip does not cover the question.
+
+### Unresolved issues
+
+- The favicon does not follow a theme change. Phones and the projector still choose a theme separately.
+
+### Next stage
+
+The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`.
 
 
 

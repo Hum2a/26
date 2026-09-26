@@ -70,7 +70,8 @@ dialog {
     border-radius 200ms var(--ease-party),
     background-color 150ms var(--ease-party),
     color 150ms var(--ease-party),
-    border-color 150ms var(--ease-party);
+    border-color 150ms var(--ease-party),
+    box-shadow 200ms var(--ease-party);
 }
 
 html[data-shape] dialog {
@@ -166,6 +167,60 @@ html[data-ground="sunset"] .skin-ground {
   );
 }
 
+html[data-ground="glow"] .skin-ground {
+  background: radial-gradient(
+    ellipse at 50% 12%,
+    color-mix(in srgb, var(--highlight) 34%, transparent),
+    transparent 58%
+  );
+}
+
+html[data-ground="horizon"] .skin-ground {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--highlight) 30%, var(--background)) 0,
+    var(--background) 34vh
+  );
+}
+
+html[data-ground="ruled"] .skin-ground {
+  background-image:
+    linear-gradient(
+      to right,
+      transparent 1.4rem,
+      color-mix(in srgb, var(--accent) 40%, transparent) 1.4rem,
+      color-mix(in srgb, var(--accent) 40%, transparent) calc(1.4rem + 2px),
+      transparent calc(1.4rem + 2px)
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 1.7rem,
+      color-mix(in srgb, var(--line) 50%, transparent) 1.7rem calc(1.7rem + 1px)
+    );
+}
+
+html[data-ground="floodlight"] .skin-ground {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--highlight) 45%, var(--background)) 0,
+    transparent 26vh
+  );
+}
+
+html[data-ground="foil"] .skin-panel {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--highlight) 72%, transparent);
+}
+
+html[data-ground="tape"] .skin-ground {
+  inset: 0 0 auto 0;
+  height: 0.7rem;
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--highlight) 78%, var(--background)) 0 8px,
+    color-mix(in srgb, var(--background) 86%, var(--foreground)) 8px 16px
+  );
+}
+
 html[data-shape="ticket"] .skin-panel {
   position: relative;
 }
@@ -205,12 +260,7 @@ html[data-shape="ticket"] .skin-panel::after {
   height: 100%;
 }
 
-html[data-mark="mask"] .skin-mark,
-html[data-mark="card"] .skin-mark,
-html[data-mark="cup"] .skin-mark,
-html[data-mark="shades"] .skin-mark,
-html[data-mark="spoon"] .skin-mark,
-html[data-mark="skyline"] .skin-mark {
+html[data-mark]:not([data-mark="numeral"]) .skin-mark {
   display: block;
 }
 
@@ -219,7 +269,15 @@ html[data-mark="card"] .mark-card,
 html[data-mark="cup"] .mark-cup,
 html[data-mark="shades"] .mark-shades,
 html[data-mark="spoon"] .mark-spoon,
-html[data-mark="skyline"] .mark-skyline {
+html[data-mark="skyline"] .mark-skyline,
+html[data-mark="terminal"] .mark-terminal,
+html[data-mark="note"] .mark-note,
+html[data-mark="sun"] .mark-sun,
+html[data-mark="beam"] .mark-beam,
+html[data-mark="ring"] .mark-ring,
+html[data-mark="stamp"] .mark-stamp,
+html[data-mark="star"] .mark-star,
+html[data-mark="mic"] .mark-mic {
   display: block;
 }
 

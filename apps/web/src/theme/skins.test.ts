@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyTheme } from "./install";
 import { plainSkin, skinFor, skinnedThemeIds } from "./skins";
+import { themes, type ThemeId } from "./themes";
 
 describe("theme skins", () => {
   it("keeps 26 basic on the plain chrome", () => {
@@ -13,7 +14,6 @@ describe("theme skins", () => {
   });
 
   it("gives the six trials a distinct ground, shape, and mark", () => {
-    expect(skinnedThemeIds).toHaveLength(6);
     expect(skinFor("persona-5-take-your-time")).toMatchObject({
       id: "persona-5",
       ground: "slash",
@@ -45,6 +45,31 @@ describe("theme skins", () => {
       shape: "cut",
       mark: "skyline",
     });
+  });
+
+  it("skins every theme except 26 basic", () => {
+    const ids = Object.keys(themes) as ThemeId[];
+    expect(skinnedThemeIds).toHaveLength(ids.length - 1);
+    for (const id of ids) {
+      if (id === "26-basic") {
+        expect(skinFor(id).id).toBe("plain");
+      } else {
+        expect(skinnedThemeIds).toContain(id);
+        expect(skinFor(id).id).not.toBe("plain");
+      }
+    }
+    expect(skinFor("the-velvet-room").ground).toBe("glow");
+    expect(skinFor("your-name-twilight-thread")).toMatchObject({
+      ground: "horizon",
+      mark: "sun",
+    });
+    expect(skinFor("wallington-grammar-school-arc").ground).toBe("ruled");
+    expect(skinFor("fratton-park-matchday-shift")).toMatchObject({
+      ground: "floodlight",
+      mark: "beam",
+    });
+    expect(skinFor("26-karat")).toMatchObject({ ground: "foil", mark: "star" });
+    expect(skinFor("absolutely-rigged").ground).toBe("tape");
   });
 
   it("writes the skin onto the document when a trial theme is chosen", () => {
