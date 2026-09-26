@@ -1,26 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import { entertainmentCueDecision, type LobbySnapshot } from "@26/shared";
 import { withClientApiKey } from "../api/client-key.ts";
-import { Button } from "../ui/primitives";
+import { stageShow } from "./audio";
 
 const playedKey = "26-stage-played";
-const muteKey = "26-stage-mute";
 
 export function StageSound({
   gameId,
   announcement,
+  unlocked,
+  muted,
 }: {
   gameId: string;
   announcement: LobbySnapshot["trolls"]["announcement"];
+  unlocked: boolean;
+  muted: boolean;
 }) {
-  const audio = useRef<HTMLAudioElement>(null);
   const initialCue = useRef<string | null | undefined>(undefined);
   const startedCue = useRef<string | null>(null);
-  const [unlocked, setUnlocked] = useState(false);
-  const [muted, setMuted] = useState(readMute);
   const [played, setPlayed] = useState<string[]>(readPlayed);
   const [notice, setNotice] = useState(
-    "Browsers block sound until you enable it on this screen.",
+    "Browsers block sound until you start the show on this screen.",
   );
   const cueId = announcement?.cueId ?? null;
 
@@ -35,19 +35,14 @@ export function StageSound({
       playedIds: played,
       presentBeforeListening: cueId !== null && cueId === initialCue.current,
     });
-    const element = audio.current;
-    if (!element || !announcement || !cueId) {
-      element?.pause();
+    if (!announcement || !cueId) {
       return;
     }
     if (decision === "wait") {
-      setNotice("Sound is waiting. Enable it to hear the next cue.");
+      setNotice("Sound is waiting. Start the show to hear the next cue.");
       return;
     }
     if (decision === "drop") {
-      if (startedCue.current !== cueId) {
-        element.pause();
-      }
       remember(cueId, played, setPlayed);
       return;
     }
@@ -56,95 +51,34 @@ export function StageSound({
       : announcement.mediaKind === "voice"
         ? withClientApiKey(`/api/rooms/${gameId}/media/${announcement.mediaId}`)
         : "";
-    if (!source) {
-      remember(cueId, played, setPlayed);
+    if (!source || startedCue.current === cueId) {
+      if (!source) {
+        remember(cueId, played, setPlayed);
+      }
       return;
     }
-    if (startedCue.current === cueId) {
-      return;
-    }
-    element.src = source;
-    element.muted = false;
-    void element.play().then(
-      () => {
-        startedCue.current = cueId;
+    startedCue.current = cueId;
+    let cancelled = false;
+    void stageShow.playUrl(source).then((playedCue) => {
+      if (cancelled) {
+        return;
+      }
+      if (playedCue) {
         setNotice("Playing the stage cue.");
         remember(cueId, played, setPlayed);
-      },
-      () => {
-        if (element.error) {
-          setNotice("This cue did not load. The game continues.");
-          remember(cueId, played, setPlayed);
-          return;
-        }
-        setNotice("The browser blocked sound. Enable it and the next cue can play.");
-        setUnlocked(false);
-      },
-    );
+        return;
+      }
+      setNotice("This cue did not play. The game continues.");
+      remember(cueId, played, setPlayed);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [announcement, cueId, gameId, muted, played, unlocked]);
 
   return (
     <div className="grid gap-3">
       <p aria-live="polite">{notice}</p>
-      <div className="flex flex-wrap gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            const element = audio.current;
-            if (!element) {
-              return;
-            }
-            element.src = "/assets/demo-sting.wav";
-            element.muted = true;
-            void element.play().then(
-              () => {
-                element.pause();
-                element.muted = false;
-                setUnlocked(true);
-                setNotice("Sound is on for new cues. A refresh asks again.");
-              },
-              () => {
-                setNotice(
-                  element.error
-                    ? "The sound file did not load. Cues can still show on screen."
-                    : "The browser still blocked sound.",
-                );
-              },
-            );
-          }}
-        >
-          Enable sound
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          aria-pressed={muted}
-          onClick={() => {
-            const next = !muted;
-            setMuted(next);
-            sessionStorage.setItem(muteKey, next ? "1" : "0");
-            audio.current?.pause();
-            setNotice(next ? "Stage sound is muted." : "Stage sound is unmuted.");
-          }}
-        >
-          {muted ? "Unmute stage" : "Mute stage"}
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            audio.current?.pause();
-            if (cueId) {
-              remember(cueId, played, setPlayed);
-            }
-            setNotice("The current cue was stopped.");
-          }}
-        >
-          Stop cue
-        </Button>
-      </div>
-      <audio ref={audio} preload="none" />
       {announcement ? (
         <div className="grid gap-3 rounded-3xl border border-line p-4">
           <p className="text-3xl font-bold" role="status">
@@ -152,7 +86,9 @@ export function StageSound({
           </p>
           {announcement.mediaKind === "photo" && announcement.mediaId ? (
             <CuePhoto
-              src={withClientApiKey(`/api/rooms/${gameId}/media/${announcement.mediaId}`)}
+              src={withClientApiKey(
+                `/api/rooms/${gameId}/media/${announcement.mediaId}`,
+              )}
             />
           ) : null}
           {announcement.assetLabel === "Demo sponsor" ? (
@@ -189,7 +125,11 @@ function remember(
   }
   const next = [...played, cueId].slice(-20);
   setPlayed(next);
-  sessionStorage.setItem(playedKey, JSON.stringify(next));
+  try {
+    sessionStorage.setItem(playedKey, JSON.stringify(next));
+  } catch {
+    // The cue still will not repeat during this page.
+  }
 }
 
 function readPlayed(): string[] {
@@ -201,8 +141,4 @@ function readPlayed(): string[] {
   } catch {
     return [];
   }
-}
-
-function readMute(): boolean {
-  return sessionStorage.getItem(muteKey) === "1";
 }

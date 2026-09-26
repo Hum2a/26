@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { PlaySnapshot } from "@26/shared";
+import { OptionText } from "../rounds/OptionText";
+import { SubmitButton } from "../rounds/SubmitButton";
 import { Button, TextField } from "../ui/primitives";
 
 export function GuestDuel({
   play,
   blocked,
+  pending,
   onSubmit,
   onPredict,
 }: {
   play: PlaySnapshot;
   blocked: boolean;
+  pending: boolean;
   onSubmit: (value: number) => void;
   onPredict: (contestantId: string) => void;
 }) {
@@ -26,11 +30,20 @@ export function GuestDuel({
   if (duel.role === "spectator") {
     if (duel.reason === "waiting") {
       return (
-        <p>
-          {play.selfBallot
-            ? "The duel is on. Your prediction is in."
-            : "The duel is on. Predictions are closed."}
-        </p>
+        <div className="grid gap-3">
+          <p>
+            {play.selfBallot
+              ? "The duel is on. Your prediction is in."
+              : "The duel is on. Predictions are closed."}
+          </p>
+          {play.selfBallot ? (
+            <SubmitButton
+              label="Send prediction"
+              state="locked"
+              onClick={() => undefined}
+            />
+          ) : null}
+        </div>
       );
     }
     return (
@@ -39,6 +52,7 @@ export function GuestDuel({
         cards={duel.cards}
         accepted={play.selfBallot?.candidateId}
         blocked={blocked || duel.reason !== "open" || play.selfBallot !== null}
+        pending={pending}
         onPredict={onPredict}
       />
     );
@@ -48,12 +62,18 @@ export function GuestDuel({
   }
   const accepted = play.selfAnswer?.kind === "duel" ? play.selfAnswer.value : undefined;
   if (accepted !== undefined) {
-    return <p>Your number: {accepted}</p>;
+    return (
+      <div className="grid gap-3">
+        <p>Your number: {accepted}</p>
+        <SubmitButton label="Send number" state="locked" onClick={() => undefined} />
+      </div>
+    );
   }
   return (
     <NumberDraft
       key={play.question.id}
       blocked={blocked || duel.reason !== "open"}
+      pending={pending}
       onSubmit={onSubmit}
     />
   );
@@ -61,12 +81,15 @@ export function GuestDuel({
 
 function NumberDraft({
   blocked,
+  pending,
   onSubmit,
 }: {
   blocked: boolean;
+  pending: boolean;
   onSubmit: (value: number) => void;
 }) {
   const [draft, setDraft] = useState("");
+  const submit = useRef<HTMLButtonElement>(null);
   const value = Number(draft);
   const ready = draft.trim().length > 0 && Number.isFinite(value);
   return (
@@ -74,9 +97,7 @@ function NumberDraft({
       className="grid gap-3"
       onSubmit={(event) => {
         event.preventDefault();
-        if (ready) {
-          onSubmit(value);
-        }
+        submit.current?.click();
       }}
     >
       <TextField
@@ -87,9 +108,17 @@ function NumberDraft({
         disabled={blocked}
         onChange={(event) => setDraft(event.target.value)}
       />
-      <Button type="submit" disabled={blocked || !ready}>
-        Send number
-      </Button>
+      <SubmitButton
+        ref={submit}
+        label="Send number"
+        state={pending ? "sending" : "idle"}
+        disabled={blocked || !ready}
+        onClick={() => {
+          if (ready) {
+            onSubmit(value);
+          }
+        }}
+      />
     </form>
   );
 }
@@ -98,11 +127,13 @@ function PredictionCards({
   cards,
   accepted,
   blocked,
+  pending,
   onPredict,
 }: {
   cards: NonNullable<PlaySnapshot["duel"]>["cards"];
   accepted: string | undefined;
   blocked: boolean;
+  pending: boolean;
   onPredict: (contestantId: string) => void;
 }) {
   const [selected, setSelected] = useState<string>();
@@ -118,25 +149,23 @@ function PredictionCards({
             <Button
               key={card.id}
               type="button"
+              className="option-button"
               variant={pressed ? "primary" : "secondary"}
               aria-pressed={pressed}
               disabled={blocked || !card.selectable}
               onClick={() => setSelected(card.id)}
             >
-              {card.label}
+              <OptionText text={card.label} />
             </Button>
           );
         })}
       </div>
-      {accepted ? null : (
-        <Button
-          type="button"
-          disabled={blocked || !selected}
-          onClick={() => selected && onPredict(selected)}
-        >
-          Send prediction
-        </Button>
-      )}
+      <SubmitButton
+        label="Send prediction"
+        state={accepted ? "locked" : pending ? "sending" : "idle"}
+        disabled={!accepted && (blocked || !selected)}
+        onClick={() => selected && onPredict(selected)}
+      />
     </div>
   );
 }

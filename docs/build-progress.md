@@ -1602,7 +1602,7 @@ In the IDE browser against `http://localhost:5173/host`:
 - PS2 — Memory Card paints abyss `#070c18` and cobalt `#3d74ff`.
 - Your Name paints twilight `#1a1030` and thread-red headings `#ff5a4a`.
 - Café Leblanc, but Make It Tea paints tea brown `#1c140e` and brass `#c47a3a`, and the button reads that name.
-- Category chips wrap onto several rows, so Persona, Games, Anime, Everyday, School, Work, Musicians, and Crossovers are on screen with the earlier tabs. Choosing Persona lists Persona 1 — Origins first.
+- Categories sit in a two-column grid of small icon pills. Themes sit in a recessed tray as two-column cards, each with a colour chip and a short title. The full name stays on the control.
 
 ### Unresolved issues
 
@@ -1612,3 +1612,366 @@ In the IDE browser against `http://localhost:5173/host`:
 ### Next stage
 
 The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`.
+
+## Phone controller hygiene
+
+Status: complete.
+
+The guest phone at `/` keeps the screen awake after joining, buzzes when a question opens and when a troll lands on that phone, and asks for portrait on a short landscape screen. The stage and admin screens are unchanged.
+
+### Files and interfaces
+
+- `apps/web/src/controller/ControllerRoot.tsx` and `controller.css` wrap only the guest page. The root is `100dvh`, scrolls inside itself, pads for `env(safe-area-inset-*)`, and sets `overscroll-behavior: none` and `touch-action: manipulation`. Buttons, options, and range inputs inside it are at least 48px and cannot be selected as text.
+- `apps/web/src/controller/RotateHint.tsx` listens for landscape screens shorter than 32rem.
+- `apps/web/src/device/wakeLock.ts` exports `useWakeLock(active)`. The guest page holds a screen lock while a session exists, asks again when the page becomes visible, and releases on cleanup.
+- `apps/web/src/device/haptics.ts` exports `buzz(pattern)`. A missing Vibration API, including iOS Safari, does nothing.
+- `apps/web/src/controller/haptic-triggers.ts` buzzes for a phase change into `prompt` and for a newly active troll whose role is `target`. The first snapshot is a baseline. There is no new socket message and no new troll kind.
+- Web unit tests run with Vitest, jsdom, and Testing Library. `npm run test:unit` runs them.
+
+### Decisions and defaults
+
+- Wire phases stay lowercase. `PROMPT` in the tests is the existing `prompt` phase.
+- A self-targeted troll is an existing guest snapshot row with `role: "target"` and `status: "active"`.
+- `buzz` is the function a later haptic troll can call. The server catalogue is unchanged.
+
+### Commands and results
+
+- `npm run test:unit` passed: 5 files, 14 tests.
+- `npm run typecheck` passed.
+- `npx eslint` on the guest page, device adapters, controller, test setup, and Vitest config passed.
+
+### Manual verification
+
+In the IDE browser against `http://localhost:5173`:
+
+- `/` has `.controller-root`. Computed height was the viewport (`780px` from `100dvh`), `overscroll-behavior` was `none` on the root and the document, `touch-action` was `manipulation`, and the Join button’s minimum size was `48px` with `user-select: none`. The rotate hint was hidden.
+- A short landscape viewport (`844×390`) showed “Rotate your phone”.
+- `/host` and `/admin` have no `.controller-root`, and the document overscroll style set by the guest page was cleared after leaving it.
+
+### Unresolved issues
+
+- Safe-area padding computed to `0px` on this desktop browser, which has no inset. A phone with a notch was not checked.
+- The wake lock and vibration call were not exercised on a physical iPhone or Android. The unit tests cover the missing-API path.
+
+### Next stage
+
+The numbered prompt sequence stays complete. Further phone behaviour is a new request.
+
+## Join and reconnect
+
+Status: complete.
+
+A guest who opens `/?room=` skips typing the room code. The nickname field remembers the last name, counts characters, and shows a taken name in the field. After the phone has been connected, a drop of 1.5 seconds shows a reconnect banner and blocks inputs until the next snapshot.
+
+### Files and interfaces
+
+- `apps/web/src/join/JoinRoomCode.tsx` reads `?room=` and `/j/:code`. A complete code hides the field. Typed codes are uppercased and limited to `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`.
+- The room QR in `apps/web/src/lobby/join-mark.tsx` now points at `/?room=`.
+- `apps/web/src/join/Nickname.tsx` prefills `26-nickname` from localStorage, shows `n/24`, and focuses the field when the join error mentions the nickname.
+- `apps/web/src/net/ReconnectBanner.tsx` shows “Reconnecting…” after 1.5 seconds disconnected, disables inputs, then clears that banner and shows “Back in ✓” when a snapshot arrives.
+- `apps/web/src/net/ConnectionDot.tsx` sits with the existing connection sentence.
+
+### Decisions and defaults
+
+- O, 0, I, and 1 are dropped as the guest types. The code is still six characters.
+- A nickname collision is the existing join error whose message mentions “nickname”. No message or payload was added.
+- The reconnect banner starts only after this phone has been open once, so the first connection does not show “Back in”.
+
+### Commands and results
+
+- `npm run test:unit` passed: 8 files, 21 tests.
+- `npm run typecheck` passed.
+- `npx eslint` on the guest page, join fields, reconnect banner, and join mark passed.
+
+### Manual verification
+
+In the IDE browser against `http://localhost:5173`:
+
+- `/?room=k7m2qp` showed “Room code K7M2QP” and the nickname field, with no join-code box.
+- Typing `ab0oI1z` into the join code left `ABZ`.
+- Typing `Bo` changed the counter to 2/24.
+- After storing `Amina`, a fresh load of `/` filled the nickname and showed 5/24.
+
+### Unresolved issues
+
+- The reconnect banner and “Back in” toast were not watched on a dropped socket in the browser. The unit test covers the 1.5 second delay, disabled inputs, and the snapshot.
+- A taken nickname was not submitted against a live room. The field focuses and shows whatever nickname error the existing join response already returns.
+
+### Next stage
+
+Round controls on the phone: slider readout and tick, rank assign, submit states, and wrapping options.
+
+## Round controls
+
+Status: complete.
+
+The phone slider shows a large value with its unit and ticks on each step. Ranking highlights the selected item, lets a second tap clear it, undoes the last placement, and shows a count on each tier. Every send button goes idle, then sending, then “Locked in ✓”. Long options wrap, and drop one font step when they run past three lines.
+
+### Files and interfaces
+
+- `apps/web/src/rounds/Slider.tsx` is the estimate control: a display readout, a large thumb, and a haptic tick at most once every 50ms. `GuestSlider` uses it.
+- `apps/web/src/rounds/TierAssign.tsx` is tap-to-assign. The selected item uses `tier-selected`. “Undo last” restores the previous placements. Each tier button keeps its name and shows a `tier-count` badge.
+- `apps/web/src/rounds/SubmitButton.tsx` is idle, sending (spinner, disabled), or “Locked in ✓”. A second tap does not call `onClick` again. Choice, slider, rank, text, ballot, guess, duel, and finale send through it.
+- `apps/web/src/rounds/OptionText.tsx` wraps option labels. More than three measured lines adds `option-text-small`.
+
+### Decisions and defaults
+
+- The tick calls the existing `buzz([8])`. The value still updates on every step; only the vibration is throttled.
+- Locked means the phone already has `selfAnswer` or `selfBallot`. No new socket message.
+- The tier badge is hidden from the accessible name, so the button stays “1st”.
+- Undo keeps a stack of placement lists, so a replacement can be restored.
+
+### Commands and results
+
+- `npm run test:unit` passed: 12 files, 25 tests.
+- `npm run typecheck` passed.
+- `npx eslint` on `apps/web/src/rounds` and the guest round components passed.
+
+### Manual verification
+
+In the IDE browser, a signed-in admin opened lobby `LJPEGL` and a phone joined as Amina:
+
+- On the candle question, choosing 26 enabled “Send answer”. The click changed it to “Sending”, disabled, with `aria-busy`. The round then closed and the server returned “That answer is too late”, so “Locked in ✓” was not seen on that question.
+- Option text used `white-space: normal`, `overflow: visible`, and `text-overflow: clip`.
+- The letters slider showed the readout “10 letters” before answers opened. The thumb and the tick were not measured on that screen; the round had moved on.
+- On the ranking question, Friends gained `tier-selected` and a gold outline, a second tap cleared it, assigning it to 1st showed the badge `1` and “Friends · 1st”, and the tier button’s name stayed “1st”. “Undo last” was enabled after that assignment and disabled once the round closed, before the undo click landed.
+
+### Unresolved issues
+
+- “Locked in ✓” was confirmed by the unit test, not by a live accepted answer. The candle send was rejected as late.
+- The slider tick was not felt on this desktop. Vibration is missing here; the unit test checks the throttled `navigator.vibrate` call.
+- Undo-last was not clicked in the browser before the ranking round closed. The unit test covers the undo.
+
+### Next stage
+
+Projector type, overscan inset, fullscreen, the final-five countdown, and a waiting line.
+
+## Projector stage
+
+Status: complete.
+
+The stage at `/host` uses projector type, keeps every text and background pair at 7:1, and sits inside a 5% inset. Full screen is a button and the F key. The cursor hides after two seconds still. The last five seconds of a live countdown pulse in the accent colour. While answers are open, “Waiting on N” and a bar come from the existing submission count and the player list.
+
+### Files and interfaces
+
+- `apps/web/src/stage/tokens.ts` and `tokens.css` set body 40px, question 72px, and timer 120px, and list the stage colour pairs.
+- `apps/web/src/stage/SafeArea.tsx` pads the stage by 5%. O toggles `stage-safe-outline` only when the build is dev.
+- `apps/web/src/stage/fullscreen.tsx` and `apps/web/src/device/fullscreen.ts` request fullscreen. The cursor class is `stage-cursor-hidden` after 2 seconds idle.
+- `apps/web/src/stage/Countdown.tsx` adds `stage-countdown-pulse` and the accent colour when the existing remaining time is inside the final 5 seconds. `remainingUntil` is unchanged.
+- `apps/web/src/stage/waiting.ts` exports `waitingSummary(count, players)`. `WaitingLine` renders it from `play.submissionCount` and `players.length`.
+
+### Decisions and defaults
+
+- The stage pins its own pairs inside `.stage-safe`, including a lighter accent (`#ffa08a`), so a theme accent that is under 7:1 does not land on the projector.
+- The pulse runs while remaining time is greater than 0 and at most 5000ms. Paused and held clocks do not pulse.
+- “Waiting on N” is the players who have not submitted. Zero players yields waiting 0 and 0%. Everyone submitted yields waiting 0 and 100%.
+- The line shows during collect, vote, and predict.
+
+### Commands and results
+
+- `npm run test:unit` passed: 17 files, 32 tests.
+- `npm run typecheck` passed.
+- `npx eslint` on `apps/web/src/stage`, `apps/web/src/device/fullscreen.ts`, and `apps/web/src/ui/surface-frame.tsx` passed.
+
+### Manual verification
+
+In the IDE browser at `http://localhost:5173/host`:
+
+- The safe area padding computed to about 5% of the width (50.5px), body text was 40px, and the preview timer was 120px in the question yellow on the dark background.
+- O added `stage-safe-outline`. After two seconds still, the stage root gained `stage-cursor-hidden`.
+- Connecting lobby `LJPEGL` showed the podium. The question was 72px. There was no live countdown and no waiting line, because that phase does not collect answers.
+- The Full screen button was on the page. This embedded browser did not enter fullscreen.
+
+### Unresolved issues
+
+- The final-five pulse and “Waiting on N” were not watched on a live collect phase. The unit tests cover the pulse boundary and the waiting maths.
+- Fullscreen was refused by the embedded browser. The unit test checks that F calls `requestFullscreen`.
+
+### Next stage
+
+Stage sound, host shortcuts, and the operator count.
+
+## Stage sound and operator keys
+
+Status: complete.
+
+Sound for the show is on `/host` only. Start show unlocks the AudioContext once. M mutes it and the small icon shows that state. Space, P, and H send the existing advance, pause, and hide play actions. ? lists those shortcuts. D shows a small corner count, the phase, and this screen’s socket. The phone no longer plays an accept beep.
+
+### Files and interfaces
+
+- `apps/web/src/stage/audio.ts` exports `createStageShow()`. `play()` does nothing until `unlock()`, and nothing again while muted.
+- `apps/web/src/stage/StageShow.tsx` and `use-stage-show.ts` are the Start show button, the mute icon, and the M key.
+- `apps/web/src/stage/stage-sound.tsx` plays a cue through that same context after the existing cue decision says play.
+- `apps/web/src/stage/shortcuts.tsx` maps Space to `advance`, P to `pause`, and H to `hide`. Those are the play actions the admin buttons already send.
+- `apps/web/src/stage/presence.ts` exports `connectedCount` for `PLAYER_JOINED` and `PLAYER_LEFT`. The stage shows `snapshot.players.length`, which is that list.
+- `apps/web/src/stage/OperatorHud.tsx` is hidden until D. It shows the count, the phase, and the stage socket state.
+
+### Decisions and defaults
+
+- There is no `HOST_ADVANCE`, `HOST_PAUSE`, `HOST_HIDE_PHOTO`, `PLAYER_JOINED`, or `PLAYER_LEFT` message. The keys call `playRoom` with `advance`, `pause`, and `hide`. H is the existing “Hide stage content” action. Hiding one photo still needs that photo’s id on the admin screen.
+- P sends pause, the same action as the Pause button. Resume stays the separate admin button.
+- Shortcuts do nothing while an input, textarea, select, or contenteditable is focused, and nothing until a room is connected.
+- The operator panel is 16px so it stays a corner tool. Show text on the stage stays at the 40px minimum.
+- Mute is remembered for the tab. Unlock is not. A refresh asks for Start show again.
+- The phone’s Sound on/off control and accept beep are gone. Guest voice clips still play on the stage.
+
+### Commands and results
+
+- `npm run test:unit` passed: 21 files, 36 tests.
+- `npm run typecheck` passed.
+- `npx eslint` on the stage files, `apps/web/src/controller/noAudio.test.ts`, and `apps/web/src/guest/guest-page.tsx` passed.
+
+### Manual verification
+
+In the IDE browser at `http://localhost:5173/host`:
+
+- Start show replaced the button with “The show audio is unlocked on this screen.”
+- M changed the control to “Muted” with `aria-pressed`. The icon was 24px.
+- ? showed “Space advances.”, “P pauses.”, and “H hides the stage.”
+- D showed “Connected 0”, “Phase none”, and “Socket idle” at 16px, fixed in the corner. That panel was absent before D.
+- With the join code focused, D and ? left the panel and the shortcut list as they were.
+- The guest page had no Sound on/off control. The about text says sound plays on the stage.
+
+### Unresolved issues
+
+- Space, P, and H were not sent to a live room. No room was connected, and those actions also need the admin sign-in cookie in the same browser.
+- A cue file was not heard. The unit test checks that a mocked AudioContext does not start before unlock and does not start while muted.
+- The connected count was 0 because no players were on this screen. The unit test checks joins and leaves.
+
+### Next stage
+
+Phone camera capture in front of the existing photo upload.
+
+## Phone camera
+
+Status: complete.
+
+The phone takes a photo with the camera, shows a preview, and uploads only when Send is pressed. That upload is still the existing downscale, presigned PUT, and finalise path.
+
+### Files and interfaces
+
+- `apps/web/src/device/camera.ts` exports `useCamera()`. It opens `getUserMedia` with `facingMode` `environment`, then `user` when toggled. A rejection sets `fallback`. Tracks stop on unmount, on a facing change, and when `release()` runs.
+- `apps/web/src/photo/CaptureFlow.tsx` is the camera, the preview, Retake, and Send. The fallback is `<input type="file" accept="image/*" capture>`.
+- `apps/web/src/photo/capture-frame.ts` copies the current video frame into a JPEG blob. Send passes that file to `sendPhoto` in `guest-media.tsx`.
+- `sendPhoto` still downsizes the longest edge to about 1280 pixels, requests a slot, PUTs the JPEG, and finalises. It now returns whether that finished.
+
+### Decisions and defaults
+
+- The rear camera is the default. Front camera is the toggle.
+- Nothing is uploaded on capture or when a file is chosen. Send is the upload.
+- The button reads Sending, then Sent ✓. A failed upload reads Failed and the button becomes Retry, which calls the same upload.
+- The camera stays open through the preview so Retake can return to it. Send stops every track.
+- HEIC is still rejected by the existing check, with the same sentence.
+
+### Commands and results
+
+- `npm run test:unit` passed: 23 files, 38 tests.
+- `npm run typecheck` passed.
+- `npx eslint` on `apps/web/src/device/camera.ts`, `apps/web/src/photo/CaptureFlow.tsx`, `apps/web/src/photo/capture-frame.ts`, and `apps/web/src/media/guest-media.tsx` passed.
+- `apps/web/e2e/media.spec.ts` was updated to press Send, then Retake, before the second file. That Playwright spec was not run.
+
+### Manual verification
+
+In the IDE browser, a new lobby `SM5WPR` was started and the phone joined as Amina. The quiz had already reached the last questions, so a photo could not be accepted.
+
+- The camera opened. Capture showed the preview with Retake and Send. Retake returned to a live camera, 640 pixels wide, with a live track.
+- Front camera changed the control to Rear camera. The previous track ended and a new track was live.
+- Send changed the button to Sending and the status to “Preparing the photo.” The camera track then ended.
+- The server answered “Media uploads open once a question is running.” The button became Retry and the page showed Failed.
+
+### Unresolved issues
+
+- A photo was not accepted, because no question was still collecting media. The unit test checks that Send calls the upload once and that Retry calls it again.
+- The file-input fallback was not shown in this browser, because `getUserMedia` succeeded. The unit test checks the fallback flag when `getUserMedia` rejects.
+- The updated Playwright media spec was not run.
+
+### Next stage
+
+A searchable troll picker, a confirm step, and a victim toast.
+
+## Troll picker
+
+Status: complete.
+
+The phone lists other players in alphabetical order, with a search box, and keeps the token line on screen. Firing still uses the existing troll command, after a confirm step. The server rules are unchanged.
+
+### Files and interfaces
+
+- `apps/web/src/troll/players.ts` exports `trollChoices`, `trollPickerLocked`, and `trollTokenLabel`. Round one is public question index 1. The picker locks when that index is below 2, or the token is spent.
+- `apps/web/src/troll/Picker.tsx` is the search box and the player list. This phone's own player id is left out.
+- `apps/web/src/troll/Confirm.tsx` asks "Troll Sam with Fake Call?" before `onSend`. Cancel does not send. Confirm sends once.
+- `apps/web/src/troll/applied.ts` exports `newSelfTroll`. `VictimToast` shows "🎯 You've been trolled" and dismisses after 4 seconds.
+- `docs/qol-map.md` marks a named toast BLOCKED.
+
+### Decisions and defaults
+
+- "1 troll left" stays visible before round two and while the token is ready. "Troll used" replaces it after the token is spent. The list and the search box are disabled in both locked cases.
+- The public question index comes from `play.question.index`. No play counts as before round two.
+- Confirm calls the existing socket command `name: "troll"`. There is no `USE_TROLL` message.
+- The guest effect does not include the sender. The toast stays anonymous. The admin `hostEffects` list has the sender, and the phone does not receive that list.
+
+### Commands and results
+
+- `npm run test:unit` passed: 26 files, 41 tests.
+- `npm run typecheck` passed.
+- `npx eslint` on `apps/web/src/troll` passed.
+- `apps/web/e2e/quiz.spec.ts` now presses Confirm after Send troll. That Playwright spec was not run.
+
+### Manual verification
+
+In the IDE browser the phone was still Amina in lobby `SM5WPR`, after the quiz had finished:
+
+- The token line read "1 troll left".
+- Find a player was enabled. Amina was not in the list, and nobody else was in the room, so the list was empty.
+- The troll kinds were disabled, so the confirm step was not opened on that screen.
+
+### Unresolved issues
+
+- Confirm, search filtering, and the toast were not watched with two phones on a live round. The unit tests cover the filter, the excluded name, the lock, cancel, one confirm send, and the toast dismiss.
+- A named toast is BLOCKED in `docs/qol-map.md` until a guest payload already includes the sender.
+
+### Next stage
+
+Caution tape between rounds, on pause, and on the phone waiting screen, plus a shared phase transition.
+
+## Caution tape and phase transitions
+
+Status: complete.
+
+The coming-soon tape is the portable black-and-yellow marquee. It sits on the stage between rounds, on the paused overlay, and on the phone when the round copy is “Waiting for the next question.” Stage and phone content re-mount when the phase changes. Reduced motion keeps the tape still and the phase change instant.
+
+### Files and interfaces
+
+- `apps/web/src/anim/CautionTape.tsx` and `caution-tape.css` are the tape. Class names, copy, colours, and the 9 second marquee match the portable contract.
+- `apps/web/src/anim/PhaseTransition.tsx` keys its child on the phase. Duration is 0 when `prefers-reduced-motion: reduce` matches.
+- `apps/web/src/stage/BetweenRounds.tsx` shows the tape during `intro` and `scores`.
+- `apps/web/src/stage/Paused.tsx` is the paused overlay.
+- `apps/web/src/play/WaitingNext.tsx` is the phone waiting screen.
+
+### Decisions and defaults
+
+- The tape markup and CSS values are unchanged from the contract, including `aria-hidden` on the tape. The screen’s own sentence sits outside the tape.
+- Between rounds is the `intro` and `scores` phases. The question panel stays in the page; the tape is in its own clipped host.
+- The phone waiting card appears only when `guestRoundCopy` is “Waiting for the next question.”
+- Reduced motion sets `data-force-reduced-motion="true"` and `animation: none` on the track. The phase wrapper uses `data-phase-motion="instant"`.
+
+### Commands and results
+
+- `npm run test:unit` passed: 29 files, 44 tests.
+- `npm run typecheck` passed.
+- `npx eslint` on the new animation, stage, and guest files passed.
+
+### Manual verification
+
+The stage at `/host` had no room connected. Admin was signed in, and lobby `SM5WPR` reported “The lobby connection is closed,” so the demo did not start. The between-rounds tape, the pause overlay, and the phone waiting screen were not seen on a live round.
+
+### Unresolved issues
+
+- Those three screens were not watched in a running quiz. The unit tests cover the marquee, reduced motion, the phase re-key, and the tape on the paused overlay.
+
+### Next stage
+
+The numbered prompt sequence stays complete. Further phone or stage behaviour is a new request.
+
+
+

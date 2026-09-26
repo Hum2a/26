@@ -24,11 +24,13 @@ test("a phone sends a photo, the stage shows it, and hiding stops later access",
   await expect(amina.getByLabel("Photo")).toBeVisible();
 
   await amina.getByLabel("Photo").setInputFiles("apps/web/e2e/fixtures/snap.heic");
+  await amina.getByRole("button", { name: "Send" }).click();
   await expect(
     amina.getByText(
       "Choose a JPEG or PNG, or take a new photo. This phone cannot read HEIC.",
     ),
   ).toBeVisible();
+  await amina.getByRole("button", { name: "Retake" }).click();
 
   await amina.getByRole("button", { name: "Record a 3 second clip" }).click();
   await expect(
@@ -46,6 +48,7 @@ test("a phone sends a photo, the stage shows it, and hiding stops later access",
     );
   });
   await amina.getByLabel("Photo").setInputFiles("apps/web/e2e/fixtures/pixel.png");
+  await amina.getByRole("button", { name: "Send" }).click();
   await expect(amina.getByText("Photo accepted.")).toBeVisible();
   const image = await shown;
   expect(image.headers()["cache-control"]).toContain("no-store");

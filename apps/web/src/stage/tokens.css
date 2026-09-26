@@ -1,0 +1,165 @@
+.stage-safe {
+  --stage-background: #14110e;
+  --stage-body: #fff6e8;
+  --stage-muted: #e4d5c0;
+  --stage-question: #ffc43a;
+  --stage-accent: #ffa08a;
+  --stage-ink: #1a100e;
+  --stage-surface: #2c241c;
+  --background: var(--stage-background);
+  --foreground: var(--stage-body);
+  --muted: var(--stage-muted);
+  --accent: var(--stage-accent);
+  --accent-foreground: var(--stage-ink);
+  --highlight: var(--stage-question);
+  --highlight-foreground: var(--stage-ink);
+  --surface: var(--stage-surface);
+  --surface-foreground: var(--stage-body);
+  box-sizing: border-box;
+  min-height: 100dvh;
+  padding: 5%;
+  background: var(--stage-background);
+  color: var(--stage-body);
+  font-size: 40px;
+  line-height: 1.25;
+}
+
+.stage-safe .text-sm,
+.stage-safe .text-base,
+.stage-safe .text-lg,
+.stage-safe .text-xl,
+.stage-safe .text-2xl,
+.stage-safe .text-3xl,
+.stage-safe .text-4xl {
+  font-size: 40px;
+}
+
+.stage-safe .stage-prompt,
+.stage-safe .stage-question,
+.stage-safe .stage-answer {
+  font-size: max(72px, 5.2vw);
+  line-height: 1.05;
+}
+
+.stage-safe .stage-prompt,
+.stage-safe .stage-question {
+  color: var(--stage-question);
+}
+
+.stage-safe .stage-answer,
+.stage-safe .stage-timer-accent {
+  color: var(--stage-accent);
+}
+
+.stage-safe .stage-option,
+.stage-safe .stage-score {
+  font-size: max(40px, 3.4vw);
+}
+
+.stage-timer {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: max(120px, 10vw);
+  line-height: 0.95;
+  color: var(--stage-question, #ffc43a);
+}
+
+.stage-safe-outline {
+  outline: 4px dashed var(--stage-question);
+  outline-offset: -8px;
+}
+
+.stage-cursor-hidden,
+.stage-cursor-hidden * {
+  cursor: none;
+}
+
+.stage-progress {
+  height: 1.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--stage-surface);
+}
+
+.stage-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--stage-question);
+  transition: width 200ms ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .stage-countdown-pulse .stage-timer {
+    animation: stage-countdown-pulse 0.9s ease-in-out infinite;
+  }
+}
+
+@keyframes stage-countdown-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-countdown-pulse .stage-timer {
+    animation: none;
+  }
+
+  .stage-progress > span {
+    transition: none;
+  }
+}
+
+.stage-safe .stage-mute {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  color: var(--stage-body);
+  background: var(--stage-surface);
+}
+
+.stage-mute-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.stage-safe .stage-shortcuts {
+  position: fixed;
+  left: 5%;
+  bottom: 5%;
+  z-index: 40;
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  background: var(--stage-surface);
+  color: var(--stage-body);
+}
+
+.stage-safe .operator-hud {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 40;
+  max-width: 18rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.75rem;
+  background: var(--stage-surface);
+  color: var(--stage-body);
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.stage-safe .operator-hud p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.3;
+}

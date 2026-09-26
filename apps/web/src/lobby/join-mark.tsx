@@ -7,7 +7,7 @@ export function JoinMark({
   code: string;
   compact?: boolean;
 }) {
-  const url = `${location.origin}/j/${code}`;
+  const url = `${location.origin}/?room=${code}`;
   const svg = renderSVG(url, {
     pixelSize: compact ? 3 : 4,
     whiteColor: "var(--mark-quiet)",

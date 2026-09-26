@@ -1,15 +1,19 @@
 import { useState } from "react";
 import type { PlaySnapshot } from "@26/shared";
+import { OptionText } from "../rounds/OptionText";
+import { SubmitButton } from "../rounds/SubmitButton";
 import { Button, TextField } from "../ui/primitives";
 
 export function GuestBallot({
   play,
   blocked,
+  pending,
   search,
   onSubmit,
 }: {
   play: PlaySnapshot;
   blocked: boolean;
+  pending: boolean;
   search: boolean;
   onSubmit: (candidateId: string) => void;
 }) {
@@ -21,6 +25,7 @@ export function GuestBallot({
       cards={cards}
       accepted={accepted}
       blocked={blocked || play.ballot?.reason !== "open" || accepted !== undefined}
+      pending={pending}
       reason={play.ballot?.reason ?? "closed"}
       candidateMode={
         play.question.kind === "vote" ? play.question.candidateMode : "all"
@@ -35,6 +40,7 @@ function BallotCards({
   cards,
   accepted,
   blocked,
+  pending,
   reason,
   candidateMode,
   search,
@@ -43,6 +49,7 @@ function BallotCards({
   cards: NonNullable<PlaySnapshot["ballot"]>["cards"];
   accepted: string | undefined;
   blocked: boolean;
+  pending: boolean;
   reason: NonNullable<PlaySnapshot["ballot"]>["reason"];
   candidateMode: "all" | "shortlist";
   search: boolean;
@@ -82,13 +89,21 @@ function BallotCards({
             <Button
               key={card.id}
               type="button"
+              className="option-button"
               variant={pressed ? "primary" : "secondary"}
               aria-pressed={pressed}
               disabled={blocked || !card.selectable}
               onClick={() => setSelected(card.id)}
             >
-              {card.own ? `${card.label} (your answer)` : card.label}
-              {card.author ? ` — ${card.author}` : ""}
+              <OptionText
+                text={
+                  card.own
+                    ? `${card.label} (your answer)`
+                    : card.author
+                      ? `${card.label} — ${card.author}`
+                      : card.label
+                }
+              />
             </Button>
           );
         })}
@@ -98,15 +113,12 @@ function BallotCards({
           Selected: {cards.find((card) => card.id === chosen)?.label ?? "your choice"}.
         </p>
       ) : null}
-      {accepted ? null : (
-        <Button
-          type="button"
-          disabled={blocked || !selected}
-          onClick={() => selected && onSubmit(selected)}
-        >
-          {search ? "Send guess" : "Send vote"}
-        </Button>
-      )}
+      <SubmitButton
+        label={search ? "Send guess" : "Send vote"}
+        state={accepted ? "locked" : pending ? "sending" : "idle"}
+        disabled={!accepted && (blocked || !selected)}
+        onClick={() => selected && onSubmit(selected)}
+      />
     </div>
   );
 }

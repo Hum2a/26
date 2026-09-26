@@ -1,0 +1,19 @@
+.controller-root {
+  height: 100dvh;
+  overflow-y: auto;
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+.controller-root button,
+.controller-root [role="option"],
+.controller-root input[type="range"] {
+  min-width: 48px;
+  min-height: 48px;
+  user-select: none;
+  -webkit-user-select: none;
+}

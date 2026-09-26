@@ -1,0 +1,41 @@
+.option-text {
+  display: block;
+  min-width: 0;
+  overflow: visible;
+  font-size: 1.125rem;
+  line-height: 1.35;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.option-text-small {
+  font-size: 1rem;
+}
+
+.option-button {
+  height: auto;
+  max-width: 100%;
+  justify-content: flex-start;
+  white-space: normal;
+  text-align: left;
+}
+
+.tier-selected {
+  outline: 3px solid var(--highlight);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--highlight) 35%, transparent);
+}
+
+.tier-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  margin-left: 0.45rem;
+  border-radius: 999px;
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+  font-size: 0.875rem;
+  line-height: 1;
+}

@@ -1,0 +1,65 @@
+.coming-soon-tape {
+  pointer-events: none;
+  position: absolute;
+  left: -35%;
+  top: 42%;
+  z-index: 2;
+  width: 170%;
+  transform: translateY(-50%) rotate(-28deg);
+  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.35));
+}
+
+.coming-soon-tape__edge {
+  height: 5px;
+  background: repeating-linear-gradient(-45deg, #111827 0 6px, #f5c518 6px 12px);
+}
+
+.coming-soon-tape__band {
+  overflow: hidden;
+  border-block: 2px solid #111827;
+  background: #f5c518;
+}
+
+.coming-soon-tape__track {
+  display: flex;
+  width: max-content;
+  animation: coming-soon-marquee 9s linear infinite;
+}
+
+.coming-soon-tape__text {
+  flex-shrink: 0;
+  padding: 0.2rem 0;
+  font-family: Outfit, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #111827;
+  white-space: nowrap;
+}
+
+@keyframes coming-soon-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coming-soon-tape__track {
+    animation: none;
+  }
+}
+
+[data-force-reduced-motion="true"] .coming-soon-tape__track {
+  animation: none;
+}
+
+.tape-host {
+  position: relative;
+  overflow: hidden;
+  min-height: 7.5rem;
+}

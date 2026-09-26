@@ -1,41 +1,59 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { PlaySnapshot } from "@26/shared";
-import { Button, TextField } from "../ui/primitives";
+import { SubmitButton } from "../rounds/SubmitButton";
+import { TextField } from "../ui/primitives";
 
 export function GuestText({
   play,
   blocked,
+  pending,
   onSubmit,
   onDraft,
 }: {
   play: PlaySnapshot;
   blocked: boolean;
+  pending: boolean;
   onSubmit: (body: string) => void;
   onDraft?: (body: string) => void;
 }) {
   const accepted = play.selfAnswer?.kind === "text" ? play.selfAnswer.body : undefined;
   if (accepted) {
-    return <p>Your line: {accepted}</p>;
+    return (
+      <div className="grid gap-3">
+        <p>Your line: {accepted}</p>
+        <SubmitButton label="Send line" state="locked" onClick={() => undefined} />
+      </div>
+    );
   }
-  return <TextDraft blocked={blocked} onSubmit={onSubmit} onDraft={onDraft} />;
+  return (
+    <TextDraft
+      blocked={blocked}
+      pending={pending}
+      onSubmit={onSubmit}
+      onDraft={onDraft}
+    />
+  );
 }
 
 function TextDraft({
   blocked,
+  pending,
   onSubmit,
   onDraft,
 }: {
   blocked: boolean;
+  pending: boolean;
   onSubmit: (body: string) => void;
   onDraft?: (body: string) => void;
 }) {
   const [draft, setDraft] = useState("");
+  const submit = useRef<HTMLButtonElement>(null);
   return (
     <form
       className="grid gap-3"
       onSubmit={(event) => {
         event.preventDefault();
-        onSubmit(draft);
+        submit.current?.click();
       }}
     >
       <TextField
@@ -49,9 +67,13 @@ function TextDraft({
           onDraft?.(event.target.value);
         }}
       />
-      <Button type="submit" disabled={blocked || draft.trim().length === 0}>
-        Send line
-      </Button>
+      <SubmitButton
+        ref={submit}
+        label="Send line"
+        state={pending ? "sending" : "idle"}
+        disabled={blocked || draft.trim().length === 0}
+        onClick={() => onSubmit(draft)}
+      />
     </form>
   );
 }

@@ -1,17 +1,19 @@
 import { useState } from "react";
 import type { PlaySnapshot } from "@26/shared";
-import { Button } from "../ui/primitives";
-
-type Placement = { itemId: string; tierId: string };
+import { SubmitButton } from "../rounds/SubmitButton";
+import { roundSubmitState } from "../rounds/submit-state";
+import { TierAssign, type TierPlacement } from "../rounds/TierAssign";
 
 export function GuestRank({
   play,
   open,
+  pending,
   onSubmit,
 }: {
   play: PlaySnapshot;
   open: boolean;
-  onSubmit: (placements: Placement[]) => void;
+  pending: boolean;
+  onSubmit: (placements: TierPlacement[]) => void;
 }) {
   const question = play.question;
   if (question.kind !== "rank") {
@@ -25,6 +27,7 @@ export function GuestRank({
       question={question}
       accepted={accepted}
       open={open}
+      pending={pending}
       onSubmit={onSubmit}
     />
   );
@@ -34,15 +37,17 @@ function RankControl({
   question,
   accepted,
   open,
+  pending,
   onSubmit,
 }: {
   question: Extract<PlaySnapshot["question"], { kind: "rank" }>;
-  accepted: Placement[] | undefined;
+  accepted: TierPlacement[] | undefined;
   open: boolean;
-  onSubmit: (placements: Placement[]) => void;
+  pending: boolean;
+  onSubmit: (placements: TierPlacement[]) => void;
 }) {
-  const [selected, setSelected] = useState<string>();
-  const [placements, setPlacements] = useState<Placement[]>(accepted ?? []);
+  const [placements, setPlacements] = useState<TierPlacement[]>(accepted ?? []);
+  const locked = accepted !== undefined;
   const ready =
     question.mode === "partial"
       ? placements.length > 0
@@ -50,65 +55,23 @@ function RankControl({
           placements.some((placement) => placement.itemId === item.id),
         );
 
-  function place(tierId: string) {
-    if (!selected) {
-      return;
-    }
-    setPlacements((current) => {
-      const withoutItem = current.filter((placement) => placement.itemId !== selected);
-      const withoutTier =
-        question.ties === "forbidden"
-          ? withoutItem.filter((placement) => placement.tierId !== tierId)
-          : withoutItem;
-      return [...withoutTier, { itemId: selected, tierId }];
-    });
-    setSelected(undefined);
-  }
-
   return (
     <div className="grid gap-3">
-      <p>Tap an item, then tap its position.</p>
-      <div className="flex flex-wrap gap-2">
-        {question.items.map((item) => (
-          <Button
-            key={item.id}
-            type="button"
-            variant={selected === item.id ? "primary" : "secondary"}
-            aria-pressed={selected === item.id}
-            disabled={!open}
-            onClick={() =>
-              setSelected((current) => (current === item.id ? undefined : item.id))
-            }
-          >
-            {item.label}
-          </Button>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {question.tiers.map((tier) => (
-          <Button
-            key={tier.id}
-            type="button"
-            variant="secondary"
-            disabled={!open || !selected}
-            onClick={() => place(tier.id)}
-          >
-            {tier.label}
-          </Button>
-        ))}
-      </div>
-      <ul className="grid gap-1">
-        {(accepted ?? placements).map((placement) => (
-          <li key={placement.itemId}>
-            {question.items.find((item) => item.id === placement.itemId)?.label} ·{" "}
-            {question.tiers.find((tier) => tier.id === placement.tierId)?.label}
-          </li>
-        ))}
-      </ul>
-      {open ? (
-        <Button type="button" disabled={!ready} onClick={() => onSubmit(placements)}>
-          Send ranking
-        </Button>
+      <TierAssign
+        items={question.items}
+        tiers={question.tiers}
+        ties={question.ties}
+        open={open}
+        initial={accepted ?? []}
+        onPlacements={setPlacements}
+      />
+      {open || pending || locked ? (
+        <SubmitButton
+          label="Send ranking"
+          state={roundSubmitState(locked, pending)}
+          disabled={!ready}
+          onClick={() => onSubmit(placements)}
+        />
       ) : null}
     </div>
   );

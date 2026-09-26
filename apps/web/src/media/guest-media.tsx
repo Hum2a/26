@@ -1,40 +1,17 @@
 import { useState } from "react";
 import { Button } from "../ui/primitives";
 import { noteUpload } from "../device/connection-log";
+import { CaptureFlow } from "../photo/CaptureFlow";
 import { finalise, putWithProgress, requestSlot } from "./media-transfer";
 import { recordWav } from "./wav";
 
 export function GuestMedia({ gameId }: { gameId: string }) {
-  const [photoStatus, setPhotoStatus] = useState("Choose a photo.");
   const [voiceStatus, setVoiceStatus] = useState("Record up to 3 seconds.");
-  const [photoBusy, setPhotoBusy] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
 
   return (
     <div className="grid min-w-0 gap-4" data-media="">
-      <div className="grid min-w-0 gap-3">
-        <label className="grid min-w-0 gap-2 font-bold">
-          Photo
-          <input
-            className="block w-full min-w-0 max-w-full min-h-12 overflow-hidden font-normal"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            disabled={photoBusy}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              event.target.value = "";
-              if (!file) {
-                return;
-              }
-              setPhotoBusy(true);
-              void sendPhoto(gameId, file, setPhotoStatus).finally(() =>
-                setPhotoBusy(false),
-              );
-            }}
-          />
-        </label>
-        <p aria-live="polite">{photoStatus}</p>
-      </div>
+      <CaptureFlow upload={(file, setStatus) => sendPhoto(gameId, file, setStatus)} />
       <div className="grid gap-3">
         <Button
           type="button"
@@ -58,12 +35,12 @@ async function sendPhoto(
   gameId: string,
   file: File,
   setStatus: (status: string) => void,
-): Promise<void> {
+): Promise<boolean> {
   if (isHeic(file)) {
     setStatus(
       "Choose a JPEG or PNG, or take a new photo. This phone cannot read HEIC.",
     );
-    return;
+    return false;
   }
   setStatus("Preparing the photo.");
   let blob: Blob;
@@ -73,9 +50,9 @@ async function sendPhoto(
     setStatus(
       "Choose a JPEG or PNG, or take a new photo. This phone cannot read HEIC.",
     );
-    return;
+    return false;
   }
-  await uploadBlob(gameId, "photo", blob, "image/jpeg", setStatus, "Photo accepted.");
+  return uploadBlob(gameId, "photo", blob, "image/jpeg", setStatus, "Photo accepted.");
 }
 
 async function sendVoice(
@@ -107,13 +84,13 @@ async function uploadBlob(
   contentType: "image/jpeg" | "audio/wav",
   setStatus: (status: string) => void,
   accepted: string,
-): Promise<void> {
+): Promise<boolean> {
   const started = Date.now();
   const slot = await requestSlot(gameId, kind);
   if ("error" in slot) {
     noteUpload({ ok: false, durationMs: Date.now() - started });
     setStatus(slot.error);
-    return;
+    return false;
   }
   try {
     await putWithProgress(slot.uploadUrl, blob, contentType, (ratio) => {
@@ -122,15 +99,17 @@ async function uploadBlob(
   } catch {
     noteUpload({ ok: false, durationMs: Date.now() - started });
     setStatus("Upload failed. Try again.");
-    return;
+    return false;
   }
   setStatus("Checking the file.");
   const final = await finalise(gameId, slot.uploadId);
+  const ok = !("error" in final);
   noteUpload({
-    ok: !("error" in final),
+    ok,
     durationMs: Date.now() - started,
   });
-  setStatus("error" in final ? final.error : accepted);
+  setStatus(ok ? accepted : final.error);
+  return ok;
 }
 
 async function compactJpeg(file: File): Promise<Blob> {

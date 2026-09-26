@@ -1,4 +1,7 @@
 import type { LobbySnapshot } from "@26/shared";
+import { OptionText } from "../rounds/OptionText";
+import { SubmitButton } from "../rounds/SubmitButton";
+import { roundSubmitState } from "../rounds/submit-state";
 import { Button } from "../ui/primitives";
 import { AnswerNames } from "./attributions";
 import { GuestBallot } from "./guest-ballot";
@@ -68,15 +71,16 @@ export function GuestPlay({
       ) : null}
       {play.explanation ? <p>{play.explanation}</p> : null}
       {play.question.kind === "slider" ? (
-        <GuestSlider play={play} open={open} onSubmit={onEstimate} />
+        <GuestSlider play={play} open={open} pending={pending} onSubmit={onEstimate} />
       ) : null}
       {play.question.kind === "rank" ? (
-        <GuestRank play={play} open={open} onSubmit={onRank} />
+        <GuestRank play={play} open={open} pending={pending} onSubmit={onRank} />
       ) : null}
       {play.question.kind === "vote" && snapshot.phase === "collect" ? (
         <GuestText
           play={play}
           blocked={snapshot.paused || snapshot.held || pending}
+          pending={pending}
           onSubmit={onText}
           onDraft={onDraft}
         />
@@ -85,6 +89,7 @@ export function GuestPlay({
         <GuestBallot
           play={play}
           blocked={snapshot.paused || snapshot.held || pending}
+          pending={pending}
           search={false}
           onSubmit={onBallot}
         />
@@ -93,6 +98,7 @@ export function GuestPlay({
         <GuestBallot
           play={play}
           blocked={snapshot.paused || snapshot.held || pending}
+          pending={pending}
           search
           onSubmit={onBallot}
         />
@@ -101,6 +107,7 @@ export function GuestPlay({
         <GuestDuel
           play={play}
           blocked={snapshot.paused || snapshot.held || pending}
+          pending={pending}
           onSubmit={onDuel}
           onPredict={onBallot}
         />
@@ -116,21 +123,23 @@ export function GuestPlay({
             return (
               <Button
                 key={option.id}
+                className="option-button"
                 variant={selected ? "primary" : "secondary"}
                 aria-pressed={selected}
                 disabled={!open}
                 onClick={() => onSelect(option.id)}
               >
-                {option.label}
-                {correct ? " — the answer" : ""}
+                <OptionText
+                  text={correct ? `${option.label} — the answer` : option.label}
+                />
               </Button>
             );
           })}
         </div>
       ) : null}
       <AnswerNames play={play} />
-      {open && play.question.kind === "choice" ? (
-        <Button
+      {play.question.kind === "choice" && (open || pending || play.selfAnswer) ? (
+        <SubmitButton
           className={
             snapshot.trolls.active.some(
               (effect) =>
@@ -141,11 +150,11 @@ export function GuestPlay({
               ? "troll-dodge"
               : ""
           }
-          disabled={!selectedId}
+          label="Send answer"
+          state={roundSubmitState(Boolean(play.selfAnswer), pending)}
+          disabled={!play.selfAnswer && !selectedId}
           onClick={onSubmit}
-        >
-          Send answer
-        </Button>
+        />
       ) : null}
     </section>
   );

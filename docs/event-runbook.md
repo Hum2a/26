@@ -8,7 +8,7 @@ Baseer presents. Humza operates the administrator screen. Guests play on their o
 2. Sign in at `/admin` with the administrator magic link. Confirm with the Sign in button. Opening the link page does not sign in.
 3. Create the lobby. Leave that admin tab open. It holds the control connection.
 4. Open `/host` on the projector browser and connect it to the same room. The stage cookie is separate from the admin cookie.
-5. On the stage, press Enable sound once. A refresh asks again. Mute stage and Stop cue are on that screen. Personal diagnostics stay on the admin screen.
+5. On the stage, press Start show once. A refresh asks again. M mutes the stage, and the icon shows that state. Personal diagnostics stay on the admin screen. D shows a small operator count on the stage, and ? lists the stage shortcuts.
 6. Print or save `docs/content/illustrative-answer-key.md` and `docs/content/illustrative-running-order.md` before the night. Those files are the offline question, answer, and presenter script. Refresh them with `npm run content:export` after the real questions replace the demo.
 7. Press Refresh room health. Expect phase `lobby`, a control connection, and no failed scheduler jobs.
 
@@ -95,7 +95,7 @@ These checks cannot be completed from the development machine:
 
 - A physical phone joining over the venue Wi-Fi.
 - The projector or an HDMI output, including type size from the back of the room.
-- Enable sound on the venue browser after a full refresh.
+- Start show on the venue browser after a full refresh.
 - A photo and a voice note from a guest phone into the deployed bucket.
 - Staging admin login, a full mixed game, recovery, export, and results on the deployed URL.
 - A results email to the configured test recipient. No test recipient is configured, and no message has been sent.

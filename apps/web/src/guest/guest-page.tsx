@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import type { GuestSession, LobbySnapshot } from "@26/shared";
 import { Button, Dialog, Panel, StatusMessage, TextField } from "../ui/primitives";
 import { SurfaceFrame } from "../ui/surface-frame";
@@ -7,17 +7,35 @@ import { JoinMark } from "../lobby/join-mark";
 import { NameCloud, NameReveal } from "../lobby/name-cloud";
 import { joinLobby, redeemTransfer, resumeGuest } from "../live/room-api";
 import { openRoomSocket } from "../live/room-socket";
+import { PhaseTransition } from "../anim/PhaseTransition";
 import { guestRoundCopy } from "../play/copy";
 import { GuestPlay } from "../play/guest-play";
+import { WaitingNext } from "../play/WaitingNext";
 import { GuestMedia } from "../media/guest-media";
 import { GuestTrolls } from "../troll/guest-troll";
+import { ControllerRoot } from "../controller/ControllerRoot";
+import {
+  hapticCues,
+  triggerHaptic,
+  type HapticView,
+} from "../controller/haptic-triggers";
+import { useWakeLock } from "../device/wakeLock";
+import { JoinRoomCode } from "../join/JoinRoomCode";
+import { NicknameField } from "../join/Nickname";
+import { rememberNickname } from "../join/nickname-storage";
+import { roomCodeFromQuery } from "../join/room-code";
+import { ConnectionDot } from "../net/ConnectionDot";
+import { ReconnectBanner } from "../net/ReconnectBanner";
 
 export function GuestPage() {
   const params = useParams();
+  const [search] = useSearchParams();
+  const linked =
+    roomCodeFromQuery(search.get("room")) ?? roomCodeFromQuery(params.code ?? null);
   const [session, setSession] = useState<GuestSession>();
   const [snapshot, setSnapshot] = useState<LobbySnapshot>();
-  const [code, setCode] = useState(params.code ?? "");
-  const [nickname, setNickname] = useState("");
+  const [code, setCode] = useState(linked ?? "");
+  const [nicknameError, setNicknameError] = useState("");
   const [transferCode, setTransferCode] = useState("");
   const [notice, setNotice] = useState("You have not joined a room.");
   const [connection, setConnection] = useState<
@@ -27,11 +45,14 @@ export function GuestPage() {
   const [selectedId, setSelectedId] = useState<string>();
   const [pending, setPending] = useState(false);
   const [rejection, setRejection] = useState<string>();
-  const [sound, setSound] = useState(readSound);
+  const [snapshotPulse, setSnapshotPulse] = useState(0);
+  const [seenOpen, setSeenOpen] = useState(false);
   const socketRef = useRef<ReturnType<typeof openRoomSocket> | null>(null);
   const pendingRequest = useRef<string | null>(null);
   const inFlight = useRef(false);
   const reactionRequest = useRef<string | null>(null);
+  const hapticBaseline = useRef<HapticView | null>(null);
+  useWakeLock(session !== undefined);
 
   useEffect(() => {
     function onHide() {
@@ -76,12 +97,26 @@ export function GuestPage() {
 
   useEffect(() => {
     if (!gameId || !playerId) {
-      return;
+      return () => {};
     }
+    hapticBaseline.current = null;
     const socket = openRoomSocket({
       gameId,
       role: "guest",
       onSnapshot(next) {
+        const view: HapticView = {
+          phase: next.phase,
+          effects: next.trolls.active.map((effect) => ({
+            effectId: effect.effectId,
+            role: effect.role,
+            status: effect.status,
+          })),
+        };
+        for (const cue of hapticCues(hapticBaseline.current, view)) {
+          triggerHaptic(cue);
+        }
+        hapticBaseline.current = view;
+        setSnapshotPulse((count) => count + 1);
         if (next.phase === "intro" || next.phase === "prompt") {
           setSelectedId(undefined);
           setPending(false);
@@ -120,20 +155,22 @@ export function GuestPage() {
           return;
         }
         setRejection(undefined);
-        if (readSound()) {
-          playAcceptedTone();
-        }
       },
       onReplaced(message) {
+        hapticBaseline.current = null;
         setSnapshot(undefined);
         setNotice(message);
       },
       onConnection(state) {
+        if (state === "open") {
+          setSeenOpen(true);
+        }
         setConnection(state);
       },
     });
     socketRef.current = socket;
     return () => {
+      hapticBaseline.current = null;
       socketRef.current = null;
       socket.close();
     };
@@ -162,17 +199,26 @@ export function GuestPage() {
     if (busy) {
       return;
     }
+    const form = new FormData(event.currentTarget);
+    const enteredName = String(form.get("nickname") ?? "");
     setBusy(true);
     const joined = await joinLobby({
-      code,
-      nickname,
+      code: linked ?? code,
+      nickname: enteredName,
       requestId: crypto.randomUUID(),
     });
     setBusy(false);
     if ("error" in joined) {
-      setNotice(joined.error);
+      if (joined.error.toLowerCase().includes("nickname")) {
+        setNicknameError(joined.error);
+      } else {
+        setNicknameError("");
+        setNotice(joined.error);
+      }
       return;
     }
+    setNicknameError("");
+    rememberNickname(enteredName);
     setSession(joined);
     setNotice(`You are in. This phone is ${joined.nickname}.`);
   }
@@ -295,151 +341,145 @@ export function GuestPage() {
             : "The lobby connection is closed."
           : "The lobby connects after you join."
     : "The lobby connects after you join.";
+  const reconnecting = seenOpen && connection !== "open";
 
   return (
-    <SurfaceFrame
-      current="guest"
-      title="Guest"
-      lede="Enter the join code and a nickname. This phone plays on its own."
-    >
-      <StatusMessage>{status}</StatusMessage>
-      <p>{connectionCopy}</p>
-      {session ? (
-        <Panel title={playing ? "This question" : "In the lobby"}>
-          <p>You are in. This phone is {liveNickname(snapshot, session)}.</p>
-          {snapshot?.phase === "lobby" ? (
-            <div className="mt-4 grid gap-4">
-              <JoinMark code={snapshot.joinCode} />
-              {snapshot.namesReveal ? (
-                <NameReveal reveal={snapshot.namesReveal} />
-              ) : null}
-              <NameCloud
-                names={snapshot.cloud}
-                selfId={session.playerId}
-                reactions={snapshot.selfReactions}
-                onReact={onReact}
-                minRem={0.875}
-              />
-            </div>
-          ) : null}
-          {snapshot ? (
-            <GuestPlay
-              snapshot={snapshot}
-              selectedId={selectedId}
-              pending={pending}
-              onSelect={setSelectedId}
-              onSubmit={onSubmit}
-              onEstimate={onEstimate}
-              onRank={onRank}
-              onText={onText}
-              onDraft={(body) => socketRef.current?.submitDraft(body)}
-              onBallot={onBallot}
-              onDuel={onDuel}
-            />
-          ) : (
-            <p>Waiting for the quiz to start.</p>
-          )}
-          {snapshot && session && snapshot.phase !== "lobby" ? (
-            <>
-              <GuestTrolls
-                snapshot={snapshot}
-                gameId={session.gameId}
-                selfId={session.playerId}
-                pending={pending}
-                onSend={onTroll}
-                onEscape={onTrollEscape}
-              />
-              <GuestMedia gameId={session.gameId} />
-            </>
-          ) : null}
-          <form className="mt-4 grid gap-4" onSubmit={(event) => void onRedeem(event)}>
-            <TextField
-              label="Transfer code"
-              hint="Humza can read you a one-use code if you change phones."
-              value={transferCode}
-              onChange={(event) => setTransferCode(event.target.value)}
-              autoComplete="off"
-            />
-            <Button type="submit" disabled={busy}>
-              Use this phone
-            </Button>
-          </form>
-        </Panel>
-      ) : (
-        <form className="grid gap-4" onSubmit={(event) => void onJoin(event)}>
-          <TextField
-            label="Join code"
-            hint="Six characters from the stage or the admin screen."
-            value={code}
-            onChange={(event) => setCode(event.target.value)}
-            autoComplete="off"
-            autoCapitalize="characters"
-            autoCorrect="off"
-            spellCheck={false}
-            enterKeyHint="next"
-            required
-          />
-          <TextField
-            label="Nickname"
-            hint="1 to 24 characters. Someone else in the room cannot use the same name."
-            name="nickname"
-            autoComplete="nickname"
-            value={nickname}
-            onChange={(event) => setNickname(event.target.value)}
-            required
-          />
-          <Button type="submit" disabled={busy}>
-            Join
-          </Button>
-        </form>
-      )}
-      {snapshot?.recap && snapshot.recap.length > 0 ? (
-        <Panel title="Your recap">
-          <ul className="grid gap-3">
-            {snapshot.recap.map((card) => (
-              <li key={card.id}>
-                {card.illustrative ? <p className="font-bold">Illustrative</p> : null}
-                <p className="break-words">{card.results}</p>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      <Panel title="On this phone">
-        <p>
-          Join the lobby and answer on this phone. The stage shows the question to the
-          room.
-        </p>
-        <p className="mt-4">
-          This phone can send browser and screen details for end-of-game statistics.
-          They do not decide who you are or what you score, and you can play if that
-          report never arrives. The screen size is CSS pixels, not inches, and a network
-          quality of 4g is not proof of a mobile 4G service.
-        </p>
-        <Button
-          className="mt-4"
-          variant="secondary"
-          aria-pressed={sound}
-          onClick={() => {
-            const next = !sound;
-            setSound(next);
-            sessionStorage.setItem("26-sound", next ? "on" : "off");
-          }}
-        >
-          {sound ? "Sound on" : "Sound off"}
-        </Button>
-        <div className="mt-4">
-          <Dialog title="About this build" triggerLabel="About this build">
-            <p>
-              This phone keeps your nickname for this game. The illustrative questions
-              are a demo, not the party script. Sound is optional and starts off. Device
-              details are for statistics after the game. An unclear iPhone or iPad stays
-              marked that way.
-            </p>
-          </Dialog>
+    <ControllerRoot>
+      <SurfaceFrame
+        current="guest"
+        title="Guest"
+        lede="Enter the join code and a nickname. This phone plays on its own."
+      >
+        <StatusMessage>{status}</StatusMessage>
+        <div className="flex items-center gap-2">
+          <ConnectionDot connection={connection} />
+          <p>{connectionCopy}</p>
         </div>
-      </Panel>
-    </SurfaceFrame>
+        <ReconnectBanner disconnected={reconnecting} snapshotId={snapshotPulse}>
+          {session ? (
+            <Panel title={playing ? "This question" : "In the lobby"}>
+              <p>You are in. This phone is {liveNickname(snapshot, session)}.</p>
+              {snapshot?.phase === "lobby" ? (
+                <div className="mt-4 grid gap-4">
+                  <JoinMark code={snapshot.joinCode} />
+                  {snapshot.namesReveal ? (
+                    <NameReveal reveal={snapshot.namesReveal} />
+                  ) : null}
+                  <NameCloud
+                    names={snapshot.cloud}
+                    selfId={session.playerId}
+                    reactions={snapshot.selfReactions}
+                    onReact={onReact}
+                    minRem={0.875}
+                  />
+                </div>
+              ) : null}
+              <PhaseTransition phase={snapshot?.phase ?? "lobby"}>
+                {snapshot ? (
+                  <GuestPlay
+                    snapshot={snapshot}
+                    selectedId={selectedId}
+                    pending={pending}
+                    onSelect={setSelectedId}
+                    onSubmit={onSubmit}
+                    onEstimate={onEstimate}
+                    onRank={onRank}
+                    onText={onText}
+                    onDraft={(body) => socketRef.current?.submitDraft(body)}
+                    onBallot={onBallot}
+                    onDuel={onDuel}
+                  />
+                ) : (
+                  <p>Waiting for the quiz to start.</p>
+                )}
+                {snapshot &&
+                guestRoundCopy(snapshot) === "Waiting for the next question." ? (
+                  <WaitingNext />
+                ) : null}
+              </PhaseTransition>
+              {snapshot && session && snapshot.phase !== "lobby" ? (
+                <>
+                  <GuestTrolls
+                    snapshot={snapshot}
+                    gameId={session.gameId}
+                    selfId={session.playerId}
+                    pending={pending}
+                    onSend={onTroll}
+                    onEscape={onTrollEscape}
+                  />
+                  <GuestMedia gameId={session.gameId} />
+                </>
+              ) : null}
+              <form
+                className="mt-4 grid gap-4"
+                onSubmit={(event) => void onRedeem(event)}
+              >
+                <TextField
+                  label="Transfer code"
+                  hint="Humza can read you a one-use code if you change phones."
+                  value={transferCode}
+                  onChange={(event) => setTransferCode(event.target.value)}
+                  autoComplete="off"
+                />
+                <Button type="submit" disabled={busy}>
+                  Use this phone
+                </Button>
+              </form>
+            </Panel>
+          ) : (
+            <form className="grid gap-4" onSubmit={(event) => void onJoin(event)}>
+              <JoinRoomCode
+                roomQuery={search.get("room")}
+                pathCode={params.code}
+                value={code}
+                onChange={setCode}
+              />
+              <NicknameField
+                error={nicknameError}
+                onEdit={() => setNicknameError("")}
+              />
+              <Button type="submit" disabled={busy}>
+                Join
+              </Button>
+            </form>
+          )}
+        </ReconnectBanner>
+        {snapshot?.recap && snapshot.recap.length > 0 ? (
+          <Panel title="Your recap">
+            <ul className="grid gap-3">
+              {snapshot.recap.map((card) => (
+                <li key={card.id}>
+                  {card.illustrative ? <p className="font-bold">Illustrative</p> : null}
+                  <p className="break-words">{card.results}</p>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        ) : null}
+        <Panel title="On this phone">
+          <p>
+            Join the lobby and answer on this phone. The stage shows the question to the
+            room.
+          </p>
+          <p className="mt-4">
+            This phone can send browser and screen details for end-of-game statistics.
+            They do not decide who you are or what you score, and you can play if that
+            report never arrives. The screen size is CSS pixels, not inches, and a
+            network quality of 4g is not proof of a mobile 4G service.
+          </p>
+          <div className="mt-4">
+            <Dialog title="About this build" triggerLabel="About this build">
+              <p>
+                This phone keeps your nickname for this game. The illustrative questions
+                are a demo, not the party script. Sound plays on the stage. Device
+                details are for statistics after the game. An unclear iPhone or iPad
+                stays marked that way.
+              </p>
+            </Dialog>
+          </div>
+        </Panel>
+      </SurfaceFrame>
+    </ControllerRoot>
   );
 }
 
@@ -479,27 +519,4 @@ function liveNickname(
     snapshot?.players.find((player) => player.playerId === session.playerId)
       ?.nickname ?? session.nickname
   );
-}
-
-function readSound(): boolean {
-  try {
-    return sessionStorage.getItem("26-sound") === "on";
-  } catch {
-    return false;
-  }
-}
-
-function playAcceptedTone(): void {
-  const context = new AudioContext();
-  const oscillator = context.createOscillator();
-  const gain = context.createGain();
-  oscillator.frequency.value = 660;
-  gain.gain.value = 0.04;
-  oscillator.connect(gain);
-  gain.connect(context.destination);
-  oscillator.start();
-  oscillator.stop(context.currentTime + 0.12);
-  oscillator.onended = () => {
-    void context.close();
-  };
 }

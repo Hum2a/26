@@ -32,7 +32,9 @@ export function SurfaceFrame({
       : "font-display text-5xl leading-none text-highlight";
 
   return (
-    <div className="min-h-dvh bg-background text-foreground">
+    <div
+      className={`${size === "stage" ? "min-h-full" : "min-h-dvh"} bg-background text-foreground`}
+    >
       <a
         href="#content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-20 focus:rounded-full focus:bg-highlight focus:px-4 focus:py-3 focus:font-bold focus:text-highlight-foreground"

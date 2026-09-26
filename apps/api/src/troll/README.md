@@ -12,9 +12,9 @@ Presentation effects do not change the player id or the score ledger. A nickname
 
 ## Stage sound
 
-The stage has Enable sound, Mute stage, and Stop cue. Browsers will not play audio until Enable sound runs from a click on that screen. A refresh asks again. Mute is remembered for the tab. Stop cue silences the current cue.
+The stage has Start show and a mute control. Browsers will not play audio until Start show runs from a click on that screen. A refresh asks again. M toggles mute, and the small icon shows when the stage is muted. Mute is remembered for the tab and stops the sound that is playing.
 
-Entertainment audio is not exactly-once if the browser crashes. A cue that is already on screen when the stage loads, already played, muted, or left over from an earlier question is dropped. A cue that arrives while sound is locked waits for Enable sound, then plays once. The played cue id is stored in the tab. Score changes and the troll token stay exactly-once in the room.
+Entertainment audio is not exactly-once if the browser crashes. A cue that is already on screen when the stage loads, already played, muted, or left over from an earlier question is dropped. A cue that arrives while sound is locked waits for Start show, then plays once. The played cue id is stored in the tab. Score changes and the troll token stay exactly-once in the room.
 
 Live typing keeps only the latest draft, in memory, and only the stage snapshot includes it. Closing the phone, hiding it, changing phase, or restarting the room clears that draft. The sent answer is still the normal stored answer. The effect is offered only when the question's attribution is `live`.
 

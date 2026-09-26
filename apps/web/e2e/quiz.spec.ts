@@ -90,6 +90,7 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
   await bilal.getByRole("button", { name: "Cracked screen" }).click();
   await bilal.getByRole("button", { name: "Troll Amina", exact: true }).click();
   await bilal.getByRole("button", { name: "Send troll" }).click();
+  await bilal.getByRole("button", { name: "Confirm" }).click();
   await expect(amina.getByRole("dialog", { name: "Demo crack" })).toBeVisible();
   const trollOverflow = await amina.evaluate(
     () =>

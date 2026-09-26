@@ -22,6 +22,7 @@
     "content:export": "node --experimental-strip-types scripts/content-export.ts && prettier --write docs/content/illustrative-answer-key.md docs/content/illustrative-running-order.md docs/content/birthday-answer-key.md docs/content/birthday-running-order.md",
     "preview": "npm run preview -w @26/web",
     "typecheck": "tsc -b --pretty false",
+    "test:unit": "npm run test:unit -w @26/web",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
