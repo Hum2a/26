@@ -2082,5 +2082,45 @@ In the IDE browser on `http://localhost:5173`:
 
 The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`.
 
+## Nissan LEAF and Toyota Prius+
+
+Status: complete.
+
+Two car themes sit in Everyday. Each has a light cabin palette and its own skin. The marks are original drawings.
+
+### Files and interfaces
+
+- `nissan-leaf` and `toyota-prius-plus` in `apps/web/src/theme/themes.ts`, listed once under Everyday.
+- `apps/web/src/theme/skins.ts`: LEAF uses a charge glow, soft corners, and a leaf. Prius+ uses a daylight band, soft corners, and a plus.
+- `charge` is a new ground in `apps/web/src/theme/theme-skin.css`. The leaf and plus marks are in `apps/web/src/theme/wordmark.tsx`.
+
+### Decisions and defaults
+
+- Colours are inspired readings of the cars, not official badges or brand palettes.
+- Both grounds are light, so both themes use `colorScheme: "light"`.
+- `DEFAULT_THEME_ID` stays `26-basic`. The favicon is unchanged.
+
+### Commands and results
+
+- Contrast pairs for both palettes passed the text and mark checks.
+- `npx vitest run src/theme/skins.test.ts` in `apps/web` passed: 4 tests.
+- `npx tsc -b apps/web` passed.
+
+### Manual verification
+
+In the IDE browser on `http://127.0.0.1:5173`:
+
+- `?theme=nissan-leaf` shows a pale leaf page, a green charge glow at the bottom, soft controls, and a leaf beside the 26. The Guest heading is the page text, not the ground.
+- `?theme=toyota-prius-plus` shows an aqua cabin, a blue band across the top, soft controls, and a plus beside the 26. The heading stays readable.
+- Everyday in the theme picker lists Nissan LEAF and Toyota Prius+, and Prius+ is the selected card.
+
+### Unresolved issues
+
+- The favicon does not follow a theme change. Phones and the projector still choose a theme separately.
+
+### Next stage
+
+The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`.
+
 
 

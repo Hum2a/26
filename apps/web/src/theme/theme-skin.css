@@ -167,6 +167,14 @@ html[data-ground="sunset"] .skin-ground {
   );
 }
 
+html[data-ground="charge"] .skin-ground {
+  background: radial-gradient(
+    ellipse at 50% 118%,
+    color-mix(in srgb, var(--accent) 32%, transparent),
+    transparent 52%
+  );
+}
+
 html[data-ground="glow"] .skin-ground {
   background: radial-gradient(
     ellipse at 50% 12%,
@@ -277,7 +285,9 @@ html[data-mark="beam"] .mark-beam,
 html[data-mark="ring"] .mark-ring,
 html[data-mark="stamp"] .mark-stamp,
 html[data-mark="star"] .mark-star,
-html[data-mark="mic"] .mark-mic {
+html[data-mark="mic"] .mark-mic,
+html[data-mark="leaf"] .mark-leaf,
+html[data-mark="plus"] .mark-plus {
   display: block;
 }
 

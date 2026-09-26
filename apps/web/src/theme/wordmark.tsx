@@ -65,6 +65,14 @@ export function Wordmark() {
           <rect x="6" y="2.2" width="4" height="6.4" rx="2" />
           <path d="M4.2 7.4a3.8 3.8 0 0 0 7.6 0M8 11.2v2.4" />
         </svg>
+        <svg className="mark-leaf" viewBox="0 0 16 16" {...stroke}>
+          <path d="M8.1 13.6c-3.8-2.1-5.2-5.6-4.5-8.6 2.1.4 3.8 1.7 4.5 3.6.7-1.9 2.4-3.2 4.5-3.6.7 3-.7 6.5-4.5 8.6z" />
+          <path d="M8.1 13.2V6.4" />
+        </svg>
+        <svg className="mark-plus" viewBox="0 0 16 16" {...stroke}>
+          <rect x="2.8" y="2.8" width="10.4" height="10.4" rx="2.4" />
+          <path d="M8 5.3v5.4M5.3 8h5.4" />
+        </svg>
       </span>
       26
     </p>

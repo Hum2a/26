@@ -1728,6 +1728,45 @@ export const themes = {
       markQuiet: "#f2f6fc",
     },
   },
+  // Inspired readings of the cars, not official badges.
+  "nissan-leaf": {
+    id: "nissan-leaf",
+    name: "Nissan LEAF",
+    colorScheme: "light",
+    colors: {
+      background: "#e8f3dc",
+      foreground: "#12210e",
+      muted: "#3a5230",
+      accent: "#0f6a2e",
+      accentForeground: "#f4fff6",
+      highlight: "#0c4a62",
+      highlightForeground: "#f3fbff",
+      surface: "#f7fbf3",
+      surfaceForeground: "#12210e",
+      line: "#c6d8b6",
+      mark: "#12210e",
+      markQuiet: "#f7fbf3",
+    },
+  },
+  "toyota-prius-plus": {
+    id: "toyota-prius-plus",
+    name: "Toyota Prius+",
+    colorScheme: "light",
+    colors: {
+      background: "#e6f3f1",
+      foreground: "#102028",
+      muted: "#3a5560",
+      accent: "#0c6270",
+      accentForeground: "#f3fffe",
+      highlight: "#1a3d78",
+      highlightForeground: "#f4f7ff",
+      surface: "#f5fbfb",
+      surfaceForeground: "#102028",
+      line: "#c3ddd8",
+      mark: "#102028",
+      markQuiet: "#f5fbfb",
+    },
+  },
 
   // School
   "wallington-grammar-school-arc": {
@@ -2350,6 +2389,8 @@ export const themeCategories = [
       "rum-and-coke",
       "usual-table-laptop-open",
       "just-one-more-game",
+      "nissan-leaf",
+      "toyota-prius-plus",
     ],
   },
   {

@@ -13,6 +13,7 @@ export const skinGrounds = [
   "grid",
   "tiles",
   "sunset",
+  "charge",
   "glow",
   "horizon",
   "ruled",
@@ -39,6 +40,8 @@ export const skinMarks = [
   "stamp",
   "star",
   "mic",
+  "leaf",
+  "plus",
 ] as const;
 
 export type SkinGround = (typeof skinGrounds)[number];
@@ -298,6 +301,18 @@ const skinned = {
     ],
     { id: "tape", ground: "tape", shape: "sharp", mark: "numeral" },
   ),
+  ...family(["nissan-leaf"], {
+    id: "leaf",
+    ground: "charge",
+    shape: "soft",
+    mark: "leaf",
+  }),
+  ...family(["toyota-prius-plus"], {
+    id: "prius",
+    ground: "horizon",
+    shape: "soft",
+    mark: "plus",
+  }),
 } satisfies Record<SkinnedThemeId, ThemeSkin>;
 
 export function skinFor(id: ThemeId): ThemeSkin {

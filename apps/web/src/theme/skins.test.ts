@@ -70,6 +70,16 @@ describe("theme skins", () => {
     });
     expect(skinFor("26-karat")).toMatchObject({ ground: "foil", mark: "star" });
     expect(skinFor("absolutely-rigged").ground).toBe("tape");
+    expect(skinFor("nissan-leaf")).toMatchObject({
+      ground: "charge",
+      shape: "soft",
+      mark: "leaf",
+    });
+    expect(skinFor("toyota-prius-plus")).toMatchObject({
+      ground: "horizon",
+      shape: "soft",
+      mark: "plus",
+    });
   });
 
   it("writes the skin onto the document when a trial theme is chosen", () => {
