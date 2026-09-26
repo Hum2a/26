@@ -2086,11 +2086,11 @@ The numbered prompt sequence stays complete. Changing the party default is a new
 
 Status: complete.
 
-Two car themes sit in Everyday. Each has a light cabin palette and its own skin. The marks are original drawings.
+Two car themes sit in a Cars category. Each has a light cabin palette and its own skin. The marks are original drawings.
 
 ### Files and interfaces
 
-- `nissan-leaf` and `toyota-prius-plus` in `apps/web/src/theme/themes.ts`, listed once under Everyday.
+- `nissan-leaf` and `toyota-prius-plus` in `apps/web/src/theme/themes.ts`, listed once under Cars.
 - `apps/web/src/theme/skins.ts`: LEAF uses a charge glow, soft corners, and a leaf. Prius+ uses a daylight band, soft corners, and a plus.
 - `charge` is a new ground in `apps/web/src/theme/theme-skin.css`. The leaf and plus marks are in `apps/web/src/theme/wordmark.tsx`.
 
@@ -2112,7 +2112,37 @@ In the IDE browser on `http://127.0.0.1:5173`:
 
 - `?theme=nissan-leaf` shows a pale leaf page, a green charge glow at the bottom, soft controls, and a leaf beside the 26. The Guest heading is the page text, not the ground.
 - `?theme=toyota-prius-plus` shows an aqua cabin, a blue band across the top, soft controls, and a plus beside the 26. The heading stays readable.
-- Everyday in the theme picker lists Nissan LEAF and Toyota Prius+, and Prius+ is the selected card.
+- The theme picker has a Cars tab. Nissan LEAF and Toyota Prius+ are listed there, and no longer under Everyday.
+
+### Unresolved issues
+
+- The favicon does not follow a theme change. Phones and the projector still choose a theme separately.
+
+### Next stage
+
+The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`.
+
+## Theme icon packs
+
+Status: complete.
+
+`@26/web` depends on Iconify's offline renderer and four per-icon packs. The theme rule tells later agents which pack covers which category.
+
+### Files and interfaces
+
+- Dependencies in `apps/web/package.json`: `@iconify/react@6.0.2`, `@iconify-icons/lucide@2.0.13`, `@iconify-icons/simple-icons@2.0.4`, `@iconify-icons/game-icons@2.0.0`, `@iconify-icons/mdi@2.0.0`.
+- `.agents/rules/45-themes.md` lists the install commands, the offline import, and which pack to search for each category. `.agents/rules/40-design.md` and `.agents/rules/30-web.md` point at that rule.
+
+### Decisions and defaults
+
+- Import one icon from `@iconify-icons/{prefix}/{name}` and render it with `@iconify/react/dist/offline`.
+- Lucide covers the everyday category glyphs. Simple Icons covers a named company, bank, car brand, platform, or artist. Game Icons covers a game pictogram that is not a publisher logo. Material Design Icons is the fallback when Lucide has no shape.
+- A navbar mark comes from those packs. A new hand-drawn stroke is only for an idea none of the packs has. The favicon stays 26 basic.
+
+### Commands and results
+
+- `npm install @iconify/react@6.0.2 @iconify-icons/lucide@2.0.13 @iconify-icons/simple-icons@2.0.4 @iconify-icons/game-icons@2.0.0 @iconify-icons/mdi@2.0.0 -w @26/web` added 6 packages. npm reported 0 vulnerabilities. It also warned that `eslint-visitor-keys@5.0.1` wants Node `^22.13.0` and this machine is `v22.12.0`.
+- `npm run agents:sync` updated the generated copies of the theme, design, and web rules.
 
 ### Unresolved issues
 

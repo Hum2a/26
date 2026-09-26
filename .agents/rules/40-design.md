@@ -15,7 +15,7 @@ Before using or copying anything, open the live site (and the specific component
 
 Compose those libraries into the existing surfaces (phone, stage, host, admin, results). Do not copy LifeSmart branding. Keep British English, large tappable phone controls, and stage type readable from across a room.
 
-Screen colours come from `apps/web/src/theme/themes.ts`. A theme also has a skin, so the chrome fits the idea. Follow the theme rule when adding or changing one.
+Screen colours come from `apps/web/src/theme/themes.ts`. A theme also has a skin, so the chrome fits the idea. Follow the theme rule when adding or changing one. Category and brand icons come from the packs listed in that rule: Lucide, Simple Icons, Game Icons, and Material Design Icons, rendered with `@iconify/react/dist/offline`.
 
 ## Libraries to check
 

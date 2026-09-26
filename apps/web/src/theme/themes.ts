@@ -2389,9 +2389,12 @@ export const themeCategories = [
       "rum-and-coke",
       "usual-table-laptop-open",
       "just-one-more-game",
-      "nissan-leaf",
-      "toyota-prius-plus",
     ],
+  },
+  {
+    id: "cars",
+    name: "Cars",
+    themes: ["nissan-leaf", "toyota-prius-plus"],
   },
   {
     id: "school",

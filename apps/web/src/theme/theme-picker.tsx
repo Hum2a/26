@@ -110,6 +110,15 @@ function categoryGlyph(id: string) {
           <path d="M10.4 5.1h1.3a1.6 1.6 0 0 1 0 3.2h-1.3M4.8 13.4h6.2" />
         </>
       );
+    case "cars":
+      return (
+        <>
+          <path d="M2.4 9.2 4.1 6.4h5.6l1.8 2.8" />
+          <path d="M2.2 9.2h11.6v2.6H2.2z" />
+          <circle cx="4.6" cy="11.8" r="1.05" />
+          <circle cx="11.2" cy="11.8" r="1.05" />
+        </>
+      );
     case "school":
       return (
         <>

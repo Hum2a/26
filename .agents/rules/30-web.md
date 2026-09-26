@@ -13,4 +13,4 @@ globs:
 - Keep secrets and personal diagnostics off the projector and the stage screen.
 - Do not import server auth modules into the web app.
 - Do not put answer keys, truth nicknames, or scoring secrets in client code.
-- A new theme is a palette plus a skin. Follow the theme rule. Do not ship colours alone.
+- A new theme is a palette plus a skin. Follow the theme rule. Do not ship colours alone. Icons for a category or a brand come from the packs named there.

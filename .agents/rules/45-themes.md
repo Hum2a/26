@@ -44,7 +44,7 @@ Add the palette in `themes.ts`. That file is the only place colour values are wr
 Choose the skin for the idea, not for whichever family was used last.
 
 1. Join an existing family when that ground, shape, and mark already say the idea. School lines, a nightclub stripe, a terminal grid, a floodlight, and a foil edge are families. Reuse them.
-2. Add a ground, shape, or mark only when no family fits. Put the ground in `theme-skin.css`, built from the theme's own variables (`--background`, `--surface`, `--accent`, `--highlight`, `--line`). Add a small original stroke in `wordmark.tsx`. Do not copy an official logo, crest, or album mark.
+2. Add a ground, shape, or mark only when no family fits. Put the ground in `theme-skin.css`, built from the theme's own variables (`--background`, `--surface`, `--accent`, `--highlight`, `--line`). Take the mark from the icon packs below. Draw a new stroke in `wordmark.tsx` only when none of those packs has a fitting icon.
 3. Do not leave the new theme on the plain chrome.
 
 The skin changes the shared frame only:
@@ -54,6 +54,42 @@ The skin changes the shared frame only:
 - **Mark.** The navbar 26, shown from `data-mark`.
 
 Question flow, scoring, and copy stay put. Patterns are static. Do not add a looping animation on a control. Reduced motion already removes the corner transition.
+
+## Icons
+
+Icon packs are installed in `@26/web`. Search the live set before adding an icon, and import one icon at a time. Do not trace a logo from a brand site or a fan page. If Simple Icons has no slug, say so and use a generic icon.
+
+Render with the offline Iconify component so a missing icon does not call the network:
+
+```tsx
+import { Icon } from "@iconify/react/dist/offline";
+import car from "@iconify-icons/lucide/car";
+
+<Icon icon={car} />
+```
+
+From the repo root, the pinned installs are:
+
+```
+npm install @iconify/react@6.0.2 -w @26/web
+npm install @iconify-icons/lucide@2.0.13 -w @26/web
+npm install @iconify-icons/simple-icons@2.0.4 -w @26/web
+npm install @iconify-icons/game-icons@2.0.0 -w @26/web
+npm install @iconify-icons/mdi@2.0.0 -w @26/web
+```
+
+The import path is `@iconify-icons/{prefix}/{icon-name}`.
+
+| Category | Pack | Look for |
+| --- | --- | --- |
+| 26 basic, Personal to 26, Quiz and chaos, Dark and atmospheric, Light and nostalgic, Personal to the night, Everyday, School, Work, Musicians, Cars | [Lucide](https://icon-sets.iconify.design/lucide/) | circle, user, circle-help, moon, sun, star, coffee, graduation-cap, briefcase, music, car |
+| Cars, Work, Musicians, Games, and any named company, bank, platform, or artist | [Simple Icons](https://icon-sets.iconify.design/simple-icons/) | nissan, toyota, and the brand slug |
+| Games, and a pictogram that is not a publisher logo | [Game Icons](https://icon-sets.iconify.design/game-icons/) | dice, swords, cards |
+| A shape Lucide does not have | [Material Design Icons](https://icon-sets.iconify.design/mdi/) | the closest generic glyph |
+
+Persona, Anime, and Crossovers use Lucide for the tab. Use Simple Icons only when that studio, series, or platform has a slug. Game Icons does not include franchise characters.
+
+The favicon stays the 26 basic mark.
 
 ## Check
 
