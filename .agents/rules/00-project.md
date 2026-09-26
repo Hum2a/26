@@ -13,6 +13,33 @@ Every later prompt starts by reading this file.
 
 ## Rules that apply to every prompt
 
+# Project: 26.humza.website (birthday quiz)
+
+## Stack
+- npm workspaces + Turborepo (npm only, never pnpm/yarn)
+- apps/web: React 19 + Vite. Routes: /play (phones), /screen (projector), /host (control panel)
+- apps/worker: Hono on Cloudflare Workers + one Durable Object class `Room` (WebSocket Hibernation API, SQLite storage, alarms)
+- packages/shared: Zod schemas, pure game logic (reducer, scoring, awards, time sync, rate limiter, troll rules)
+- packages/emails: React Email templates, sent via Resend
+- Post-game persistence: Neon Postgres + Drizzle, RLS enabled on every table
+- Photos: Cloudflare R2
+- Tests: Vitest (unit + component via Testing Library + jsdom), @cloudflare/vitest-pool-workers (DO/Worker), Playwright (e2e), Node bot harness (load)
+
+## Architecture rules
+- The server is authoritative. Clients send intents and render state. They never compute scores, timers or phase changes.
+- All game logic is a pure reducer in packages/shared: `reduce(state, event, now) -> { state, effects }`. The DO is a thin shell that feeds events in and executes effects (broadcast, set alarm, persist). This is what makes everything unit-testable.
+- Time is always injected (`now: number`), never `Date.now()` inside logic.
+- Browser APIs (wakeLock, vibrate, getUserMedia, Audio) are wrapped in small adapters so tests can mock them.
+
+## Testing rules (non-negotiable)
+- Every feature has at least one test file, named in the phase prompt. Write the tests first or alongside the code, never after "it works".
+- Never skip, `.only`, or delete a failing test to get green. Fix the code or ask.
+- Pure logic → plain Vitest. DO behaviour → vitest-pool-workers. UI → Testing Library. Cross-device flows → Playwright.
+- A phase is done only when `npm run test:unit` and `npm run typecheck` pass.
+
+## Scripts
+- Naming: `<domain>:<action>` (e.g. `test:unit`, `questions:check`, `email:preview`, `dev:jump`)
+
 - This is a separate birthday project. Never change LifeSmart, use its production resources or copy its pupil-specific rules into this project.
 - The plan's agreed decisions take precedence over its suggested defaults. Later explicit user decisions take precedence over both. Record material implementation choices.
 - Baseer presents and Humza controls. Guests play individually. No pods, guest accounts, CMS, compulsory scoring floor or automatic score multipliers.

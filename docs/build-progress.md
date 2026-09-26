@@ -1419,3 +1419,196 @@ Not run in the browser. The demo pack's prompts and running order are unchanged,
 ### Next stage
 
 No further build stage. The next step is Humza's first real question, phrased as `Next question idea: …`.
+
+## Forty party themes
+
+Status: complete.
+
+Forty topical palettes now sit beside **26 basic**. The default is still `26-basic`. Preview any theme with `?theme=its-id`.
+
+### Files and interfaces
+
+- `apps/web/src/theme/themes.ts` holds the catalogue. Each theme sets every palette role and `colorScheme`.
+- No switcher was added. The room still does not choose a theme.
+
+### Decisions and defaults
+
+- `DEFAULT_THEME_ID` stays `"26-basic"`.
+- Supporting colours (surface, line, muted, button ink, join-code pair) are mixed from each theme's ground, ink, accent, and highlight so text stays readable and the QR stays dark on a light quiet zone.
+- Mixtape 26 is dark. Confetti Department is light.
+- The favicon stays the 26 basic mark.
+
+### Catalogue
+
+Personal to 26: `version-26`, `humza-after-hours`, `humza-os`, `main-character`, `baseer-live`, `26-karat`, `november-nights`, `birthday-exe`, `the-humza-show`, `quarter-life-deluxe`.
+
+Quiz, competition and chaos: `friendly-sabotage`, `final-answer`, `big-red-button`, `high-score-club`, `plot-twist`, `the-hot-seat`, `bragging-rights`, `steal-the-spotlight`, `confetti-department`, `absolutely-rigged`.
+
+Polished, dark and atmospheric: `cobalt-club`, `velvet-rope`, `midnight-matcha`, `black-cherry`, `petrol-and-peach`, `ultraviolet`, `ember-room`, `moonlit-chrome`, `electric-orchid`, `deep-sea-disco`.
+
+Light, nostalgic and unexpected: `soft-launch-hard-questions`, `pistachio-party`, `peach-please`, `blue-hour`, `retro-future`, `poolside-2000`, `mixtape-26`, `paper-party`, `sorbet-social`, `lavender-menace`.
+
+### Commands and results
+
+- `npm run typecheck` passed.
+
+### Manual verification
+
+In the IDE browser against `http://localhost:5173`:
+
+- No query stayed on `26-basic`: background `#14110e`, accent `#ff4d3a`, highlight `#ffc43a`, quiet zone `#fff6e8`.
+- `version-26`: ink `#07090f`, electric blue `#3d74ff` on the mark and the join button, acid lime headings, quiet zone `#f4f7ff`.
+- `friendly-sabotage`: ink purple `#1a0e28`, acid yellow `#e6ff3a`, coral headings, quiet zone `#f6f4ef`.
+- `cobalt-club`: near-black `#07080c`, cobalt `#6b93ff`, sharp lime headings, quiet zone `#f4f6fb`.
+- `soft-launch-hard-questions`: butter `#ffe9a3`, ink blue `#163a8a`, tomato headings, light scheme, quiet zone `#fffaf2`.
+
+### Unresolved issues
+
+- The favicon does not follow a theme change.
+- Phones and the projector still choose a theme separately, with `?theme=`.
+
+### Next stage
+
+The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`.
+
+## Personal night themes
+
+Status: complete.
+
+Twelve more palettes sit in the same registry. The default is still `26-basic`.
+
+### Files and interfaces
+
+- `apps/web/src/theme/themes.ts` gained the twelve themes below. Preview with `?theme=its-id`.
+
+### Decisions and defaults
+
+- Display names keep punctuation (`Localhost:26`, `26.humza.website`, `Humza's Control Room`, `Commit: Twenty-Six`). Ids stay lowercase letters, numbers, and hyphens.
+- Humza Studio and Humza, According to Everyone are light. The other ten are dark.
+- `DEFAULT_THEME_ID` is unchanged.
+
+### Catalogue
+
+`overengineered-birthday`, `humza-studio`, `one-more-tweak`, `localhost-26`, `26-humza-website`, `humzas-control-room`, `baseer-has-the-mic`, `commit-twenty-six`, `humza-according-to-everyone`, `the-humza-archives`, `21-november`, `made-by-humza`.
+
+### Commands and results
+
+- `npm run typecheck` passed.
+
+### Manual verification
+
+In the IDE browser against `http://localhost:5173`:
+
+- `overengineered-birthday`: blueprint navy `#0a1830`, electric blue `#5b93ff`, warning orange headings, quiet zone `#f7f9fc`.
+- `humza-studio`: warm ivory `#f4efe6`, signature coral `#c23b2c`, light scheme, quiet zone `#fffaf4`.
+- `21-november`: oxblood `#3a0c14`, copper `#e09058`, candlelight headings, quiet zone `#f8edd8`.
+
+### Unresolved issues
+
+- The favicon does not follow a theme change.
+- Phones and the projector still choose a theme separately, with `?theme=`.
+
+### Next stage
+
+The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`.
+
+## Theme picker
+
+Status: complete.
+
+Theme sits in the navbar on every shell. It opens a small panel. Category tabs swipe sideways, and the themes for that category are listed inside.
+
+### Files and interfaces
+
+- `apps/web/src/theme/theme-picker.tsx` is the navbar control.
+- `themeCategories` in `apps/web/src/theme/themes.ts` groups every palette.
+- `applyTheme` in `apps/web/src/theme/install.ts` paints the choice immediately and remembers it for the browser tab.
+- `motion` 13.4.4 eases the panel open and closed.
+
+### Decisions and defaults
+
+- A `?theme=` link still wins over the remembered choice. Otherwise the tab keeps the last pick, including after a refresh. A new tab starts on `26-basic`.
+- Categories: 26 basic, Personal to 26, Quiz and chaos, Dark and atmospheric, Light and nostalgic, Personal to the night.
+
+### Commands and results
+
+- `npx tsc -b apps/web` passed.
+- `npx eslint` on the picker, installer, and surface frame passed.
+
+### Manual verification
+
+In the IDE browser against `http://localhost:5173`:
+
+- Theme is in the navbar. Opening it shows the category tabs and 26 basic inside the first tab.
+- Swiping the panel selects Personal to 26. Choosing Version 26 paints ink `#07090f` and electric blue `#3d74ff`, and the button reads “Theme, Version 26”.
+- Loading `/host` in the same tab keeps Version 26.
+
+### Unresolved issues
+
+- The room still does not push one theme to every phone and the projector.
+
+### Next stage
+
+The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`.
+
+## Persona and life themes
+
+Status: complete.
+
+Eight new tabs sit in the theme picker: Persona, Games, Anime, Everyday, School, Work, Musicians, and Crossovers. They hold 58 inspired palettes. The default stays `26-basic`.
+
+### Files and interfaces
+
+- `themeCategories` and `themes` in `apps/web/src/theme/themes.ts` gained the eight tabs and the palettes below. Preview with `?theme=its-id`.
+
+### Decisions and defaults
+
+- Colours are inspired readings of each idea. They are not official brand, school, club, or publisher palettes.
+- Display names keep punctuation, including `bbno$`, `Café`, and `Keijo!!!!!!!!`. Ids stay lowercase letters, numbers, and hyphens, so the Pitbull title is shortened only in `pitbull-mr-worldwide`.
+- Light grounds: Persona 4, Chocobo Crossing, Pallet Town, Crystal Prelude, Platinum Trophy, Capsule Corp, Hidden Leaf, Chinese Takeaway, One More Plate, Tea Obviously, Amazon, McHumza, and Queen’s. The rest are dark, including Café Leblanc, PS2, GTA VI, Rum & Coke, Spoon World, and the three school themes.
+- `DEFAULT_THEME_ID` is unchanged.
+
+### Catalogue
+
+Persona: `persona-1-origins`, `persona-2-innocent-birthday`, `persona-3-midnight-hour`, `persona-3-portable-pink-route`, `persona-4-golden-hour`, `persona-5-take-your-time`, `the-velvet-room`, `cafe-leblanc`.
+
+Games: `final-fantasy-crystal-prelude`, `final-fantasy-vii-mako`, `chocobo-crossing`, `pokemon-pallet-town`, `pokemon-gengar-hours`, `smash-final-destination`, `scarlet-nexus-brain-drive`, `gta-vi-vice-birthday`, `ps2-memory-card`, `playstation-platinum-trophy`.
+
+Anime: `dragon-ball-birthday-saiyan`, `dragon-ball-capsule-corp`, `my-hero-academia-plus-ultra`, `naruto-hidden-leaf`, `naruto-akatsuki`, `bunny-girl-senpai-after-school`, `tsukigakirei-moonlit-walk`, `your-name-twilight-thread`, `fullmetal-alchemist-equivalent-exchange`, `keijo-absolutely-necessary`.
+
+Everyday: `chinese-takeaway-at-humzas`, `one-more-plate`, `tea-obviously`, `rum-and-coke`, `usual-table-laptop-open`, `just-one-more-game`.
+
+School: `wallington-grammar-school-arc`, `greenshaw-next-chapter`, `portsmouth-student-save-file`.
+
+Work: `amazon-out-for-delivery`, `mchumza-birthday-meal`, `spoon-world-portsmouth-edition`, `restaurant-shift-last-orders`, `fratton-park-matchday-shift`, `stamford-bridge-on-the-clock`, `goodwood-all-access`, `queens-centre-court`, `twickenham-under-the-floodlights`, `corestream-risk-accepted`, `501-fun-maximum-fun`.
+
+Musicians: `pitbull-mr-worldwide`, `dj-khaled-another-one`, `bbno-birthday-budget`, `yung-gravy-gravy-boat`, `rick-astley-never-gonna-log-you-out`.
+
+Crossovers: `phantom-thieves-of-portsmouth`, `cafe-leblanc-but-make-it-tea`, `super-saiyan-closing-shift`, `gta-vi-made-me-late`, `risk-assessment-keijo`.
+
+### Commands and results
+
+- A contrast check of every text pair and the join code passed for all 111 themes.
+- `npx tsc -b apps/web` passed.
+- `npx prettier --write apps/web/src/theme/themes.ts` left the file unchanged.
+
+### Manual verification
+
+In the IDE browser against `http://localhost:5173/host`:
+
+- Theme opens on the remembered category. The new tabs are Persona, Games, Anime, Everyday, School, Work, Musicians, and Crossovers.
+- Choosing Persona selects that tab. Persona 5 paints ink `#0c0c0e`, signal red `#ff3b30`, and steel headings `#d5dae2`.
+- Café Leblanc paints coffee `#1c120e`, burgundy `#e05060`, and amber headings `#e8a040`.
+- PS2 — Memory Card paints abyss `#070c18` and cobalt `#3d74ff`.
+- Your Name paints twilight `#1a1030` and thread-red headings `#ff5a4a`.
+- Café Leblanc, but Make It Tea paints tea brown `#1c140e` and brass `#c47a3a`, and the button reads that name.
+- Category chips wrap onto several rows, so Persona, Games, Anime, Everyday, School, Work, Musicians, and Crossovers are on screen with the earlier tabs. Choosing Persona lists Persona 1 — Origins first.
+
+### Unresolved issues
+
+- The favicon does not follow a theme change.
+- Phones and the projector still choose a theme separately.
+
+### Next stage
+
+The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`.

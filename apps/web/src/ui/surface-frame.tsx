@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { NavLink } from "react-router";
 import { EXAMPLE_GAME_ID } from "../example-game";
+import { ThemePicker } from "../theme/theme-picker";
 
 const surfaces = [
   { to: "/", label: "Guest", id: "guest" },
@@ -38,7 +39,7 @@ export function SurfaceFrame({
       >
         Skip to content
       </a>
-      <header className="border-b border-line">
+      <header className="relative z-20 border-b border-line">
         <div
           className={`${width} mx-auto flex flex-wrap items-center justify-between gap-4 px-5 py-4`}
         >
@@ -51,7 +52,7 @@ export function SurfaceFrame({
                     to={surface.to}
                     aria-current={surface.id === current ? "page" : undefined}
                     className={({ isActive }) =>
-                      `inline-flex min-h-12 items-center rounded-full px-4 text-base font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight ${
+                      `inline-flex min-h-12 items-center rounded-full px-4 text-base font-bold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight ${
                         isActive
                           ? "bg-accent text-accent-foreground"
                           : "text-foreground"
@@ -62,6 +63,9 @@ export function SurfaceFrame({
                   </NavLink>
                 </li>
               ))}
+              <li>
+                <ThemePicker />
+              </li>
             </ul>
           </nav>
         </div>
