@@ -29,7 +29,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`motion-press inline-flex min-h-12 touch-manipulation items-center justify-center rounded-full px-5 text-lg font-bold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing} ${tone} ${className}`}
+      className={`motion-press skin-control inline-flex min-h-12 touch-manipulation items-center justify-center px-5 text-lg font-bold disabled:cursor-not-allowed disabled:opacity-60 ${focusRing} ${tone} ${className}`}
       {...props}
     />
   );
@@ -53,7 +53,7 @@ export function TextField({ label, hint, id, ...props }: TextFieldProps) {
       <input
         id={fieldId}
         aria-describedby={hintId}
-        className={`min-h-12 rounded-2xl border border-line bg-background px-4 text-lg text-foreground disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
+        className={`skin-field min-h-12 border border-line bg-background px-4 text-lg text-foreground disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
         {...props}
       />
       <p id={hintId} className="text-base leading-snug text-muted">
@@ -77,7 +77,7 @@ export function Panel({
       ? "font-display text-5xl leading-none text-highlight"
       : "font-display text-3xl text-highlight";
   return (
-    <section className="rounded-3xl border border-line bg-surface px-5 py-5">
+    <section className="skin-panel border border-line bg-surface px-5 py-5">
       <h2 className={heading}>{title}</h2>
       <div className="mt-3 text-lg leading-relaxed">{children}</div>
     </section>
@@ -88,7 +88,7 @@ export function StatusMessage({ children }: { children: ReactNode }) {
   return (
     <p
       role="status"
-      className="rounded-2xl bg-highlight px-4 py-3 text-lg leading-snug font-bold text-highlight-foreground"
+      className="skin-status bg-highlight px-4 py-3 text-lg leading-snug font-bold text-highlight-foreground"
     >
       {children}
     </p>
@@ -106,7 +106,7 @@ export function CountdownLayout({
 }) {
   return (
     <div
-      className="rounded-3xl border border-line bg-surface px-6 py-10 text-center"
+      className="skin-panel border border-line bg-surface px-6 py-10 text-center"
       aria-label={label}
     >
       <p className="text-sm font-bold tracking-[0.18em] text-muted uppercase">

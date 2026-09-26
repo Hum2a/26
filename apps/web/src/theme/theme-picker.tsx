@@ -268,7 +268,7 @@ export function ThemePicker() {
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={`Theme, ${themes[current].name}`}
-        className={`motion-press inline-flex min-h-12 touch-manipulation items-center rounded-full px-4 text-base font-bold transition-colors duration-150 ${focusRing} ${
+        className={`motion-press skin-control inline-flex min-h-12 touch-manipulation items-center px-4 text-base font-bold ${focusRing} ${
           open ? "bg-accent text-accent-foreground" : "text-foreground"
         }`}
         onClick={() => (open ? closePicker() : openPicker())}
@@ -284,7 +284,7 @@ export function ThemePicker() {
             aria-modal="false"
             aria-labelledby={titleId}
             tabIndex={-1}
-            className="fixed z-40 flex max-h-[calc(100dvh-5.5rem)] w-[min(22rem,calc(100vw-2rem))] flex-col gap-3 overflow-y-auto overscroll-y-contain rounded-3xl border border-line bg-surface p-3 text-surface-foreground shadow-lg outline-none [scrollbar-color:var(--line)_transparent] [scrollbar-width:thin]"
+            className="skin-panel fixed z-40 flex max-h-[calc(100dvh-5.5rem)] w-[min(22rem,calc(100vw-2rem))] flex-col gap-3 overflow-y-auto overscroll-y-contain border border-line bg-surface p-3 text-surface-foreground shadow-lg outline-none [scrollbar-color:var(--line)_transparent] [scrollbar-width:thin]"
             style={{ top: anchor.top, left: anchor.left }}
             initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
             animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}

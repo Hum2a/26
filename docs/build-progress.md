@@ -1973,5 +1973,70 @@ The stage at `/host` had no room connected. Admin was signed in, and lobby `SM5W
 
 The numbered prompt sequence stays complete. Further phone or stage behaviour is a new request.
 
+## Theme identity skins
+
+Status: complete.
+
+Six themes now change more than the palette. A skin sets the page ground, the corner radius of the shared controls, and the mark beside the 26. Every other theme stays on the plain chrome. `26 basic` is unchanged.
+
+### Files and interfaces
+
+- `apps/web/src/theme/skins.ts` exports `skinFor`, `plainSkin`, and `skinnedThemeIds`.
+- `applyTheme` in `apps/web/src/theme/install.ts` sets `data-skin`, `data-ground`, `data-shape`, and `data-mark` on the document.
+- `apps/web/src/theme/theme-skin.css` paints the ground and the radius tokens from the existing palette variables.
+- `apps/web/src/theme/wordmark.tsx` is the navbar 26. `SurfaceFrame` mounts it, plus a decorative ground layer.
+- `Button`, `TextField`, `Panel`, `StatusMessage`, and `CountdownLayout` use the radius tokens.
+
+### Decisions and defaults
+
+- Colours stay in `themes.ts`. Grounds are mixes of those variables. Marks are original drawings, not official logos.
+- A theme with no skin entry is `plain`: flat ground, round controls, numeral only.
+- The six trials: Persona 5 is a sharp slash and a mask. PS2 is a chunky grid and a memory card. Café Leblanc, but Make It Tea is a warm split, soft corners, and a cup. Pitbull keeps round controls, with nightclub stripes and shades. Spoon World is a dotted ground, ticket-stub panels, and a spoon. GTA VI is a sunset split, cut corners, and a skyline.
+- The ground sits behind the page. It does not cover a question card. Patterns are static, including under reduced motion. Corner changes ease over 200ms, and that ease is removed when reduced motion is on.
+- Phone and stage share the skin because the theme is already chosen per device.
+
+### Ideas not built
+
+Later themes can join a family instead of growing a new system.
+
+- Slash and stencil: Phantom Thieves of Portsmouth, Akatsuki, Fullmetal.
+- CRT and terminal: HumzaOS, Birthday.exe, Localhost:26, Commit: Twenty-Six, Just One More Game, Scarlet Nexus.
+- Paper and steam: Café Leblanc, Tea Obviously, Paper Party, Chinese Takeaway, One More Plate.
+- Club and neon: DJ Khaled, bbno$, Yung Gravy, Velvet Rope, Ultraviolet, Electric Orchid, Deep Sea Disco, Cobalt Club.
+- Shift and service: McHumza, Restaurant Shift, Amazon, CoreStream, 501 Fun.
+- Floodlights: Fratton Park, Stamford Bridge, Twickenham, Queen’s, Goodwood. A band of light, not a club badge.
+- Exercise book: Wallington, Greenshaw, Portsmouth Student Save File.
+- Daylight: Persona 4, Your Name, Tsukigakirei, Hidden Leaf, Pallet Town, Chocobo Crossing.
+- Foil: 26 Karat, PlayStation Platinum, Confetti Department.
+- Velvet: The Velvet Room, Persona 3, Moonlit Chrome, November Nights.
+- Chaos tape: Absolutely Rigged, Big Red Button, Keijo, Risk Assessment: Keijo. Frame only.
+
+Rick Astley stays a colour theme.
+
+### Commands and results
+
+- `npx vitest run src/theme/skins.test.ts` in `apps/web` passed: 3 tests.
+- `npx tsc -b apps/web` passed.
+
+### Manual verification
+
+In the IDE browser on `http://localhost:5173`:
+
+- Persona 5 shows the mask, sharp Guest control, and a red slash that stays off the question card.
+- PS2 shows the memory-card mark, a screen grid, and chunkier corners.
+- Café Leblanc, but Make It Tea shows the cup and soft corners. On `/host` the same skin paints a warm split above the stage title, and the title stays readable.
+- Pitbull shows the shades, round controls, and diagonal stripes behind the page.
+- Spoon World shows the spoon, a dotted ground, and ticket notches beside the question heading.
+- GTA VI shows the skyline, cut corners, and a sunset toward the bottom of the screen. The question text stays on the card.
+
+### Unresolved issues
+
+- The other themes are still colour-only. The idea groups above are not implemented.
+- The favicon does not follow a theme change. Phones and the projector still choose a theme separately.
+
+### Next stage
+
+The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`. A later skin can join one of the families above.
+
 
 

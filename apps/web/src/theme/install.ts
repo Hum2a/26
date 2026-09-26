@@ -1,3 +1,4 @@
+import { skinFor } from "./skins";
 import { DEFAULT_THEME_ID, isThemeId, themes, type ThemeId } from "./themes";
 
 const themeStorageKey = "26-theme";
@@ -32,8 +33,13 @@ function rememberTheme(id: ThemeId) {
 
 export function applyTheme(id: ThemeId) {
   const theme = themes[id];
+  const skin = skinFor(id);
   const root = document.documentElement;
   root.dataset.theme = id;
+  root.dataset.skin = skin.id;
+  root.dataset.ground = skin.ground;
+  root.dataset.shape = skin.shape;
+  root.dataset.mark = skin.mark;
   root.style.colorScheme = theme.colorScheme;
   document
     .querySelector('meta[name="theme-color"]')

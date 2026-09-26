@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { NavLink } from "react-router";
 import { EXAMPLE_GAME_ID } from "../example-game";
 import { ThemePicker } from "../theme/theme-picker";
+import { Wordmark } from "../theme/wordmark";
 
 const surfaces = [
   { to: "/", label: "Guest", id: "guest" },
@@ -33,8 +34,9 @@ export function SurfaceFrame({
 
   return (
     <div
-      className={`${size === "stage" ? "min-h-full" : "min-h-dvh"} bg-background text-foreground`}
+      className={`relative ${size === "stage" ? "min-h-full" : "min-h-dvh"} bg-background text-foreground`}
     >
+      <div className="skin-ground" aria-hidden="true" />
       <a
         href="#content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-20 focus:rounded-full focus:bg-highlight focus:px-4 focus:py-3 focus:font-bold focus:text-highlight-foreground"
@@ -45,7 +47,7 @@ export function SurfaceFrame({
         <div
           className={`${width} mx-auto flex flex-wrap items-center justify-between gap-4 px-5 py-4`}
         >
-          <p className="font-display text-3xl text-accent">26</p>
+          <Wordmark />
           <nav aria-label="Surfaces">
             <ul className="flex flex-wrap gap-2">
               {surfaces.map((surface) => (
@@ -54,7 +56,7 @@ export function SurfaceFrame({
                     to={surface.to}
                     aria-current={surface.id === current ? "page" : undefined}
                     className={({ isActive }) =>
-                      `inline-flex min-h-12 items-center rounded-full px-4 text-base font-bold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight ${
+                      `skin-control inline-flex min-h-12 items-center px-4 text-base font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight ${
                         isActive
                           ? "bg-accent text-accent-foreground"
                           : "text-foreground"
@@ -74,7 +76,7 @@ export function SurfaceFrame({
       </header>
       <main
         id="content"
-        className={`${width} mx-auto grid gap-6 px-5 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] motion-rise`}
+        className={`relative z-10 ${width} mx-auto grid gap-6 px-5 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] motion-rise`}
       >
         <header className="grid gap-3">
           <p className="text-sm font-bold tracking-[0.18em] text-muted uppercase">

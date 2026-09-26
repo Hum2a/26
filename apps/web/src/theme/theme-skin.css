@@ -1,0 +1,234 @@
+/*
+ * Skin chrome. Grounds, corners, and marks use the palette variables
+ * already set by the theme. Nothing here introduces a new colour.
+ */
+
+:root {
+  --radius-control: 999px;
+  --radius-panel: 1.5rem;
+  --radius-field: 1rem;
+  --radius-status: 1rem;
+}
+
+html[data-shape="sharp"] {
+  --radius-control: 0.2rem;
+  --radius-panel: 0.35rem;
+  --radius-field: 0.2rem;
+  --radius-status: 0.2rem;
+}
+
+html[data-shape="chunky"] {
+  --radius-control: 0.55rem;
+  --radius-panel: 0.85rem;
+  --radius-field: 0.45rem;
+  --radius-status: 0.55rem;
+}
+
+html[data-shape="soft"] {
+  --radius-control: 999px;
+  --radius-panel: 2rem;
+  --radius-field: 1.35rem;
+  --radius-status: 1.35rem;
+}
+
+html[data-shape="ticket"] {
+  --radius-control: 0.3rem;
+  --radius-panel: 0.45rem;
+  --radius-field: 0.3rem;
+  --radius-status: 0.35rem;
+}
+
+html[data-shape="cut"] {
+  --radius-control: 0.45rem;
+  --radius-panel: 0.85rem;
+  --radius-field: 0.4rem;
+  --radius-status: 0.45rem;
+}
+
+.skin-control {
+  border-radius: var(--radius-control);
+}
+
+.skin-panel {
+  border-radius: var(--radius-panel);
+}
+
+.skin-field {
+  border-radius: var(--radius-field);
+}
+
+.skin-status {
+  border-radius: var(--radius-status);
+}
+
+.skin-control,
+.skin-panel,
+.skin-field,
+.skin-status,
+dialog {
+  transition:
+    border-radius 200ms var(--ease-party),
+    background-color 150ms var(--ease-party),
+    color 150ms var(--ease-party),
+    border-color 150ms var(--ease-party);
+}
+
+html[data-shape] dialog {
+  border-radius: var(--radius-panel);
+}
+
+.skin-ground {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+html[data-ground="slash"] .skin-ground {
+  background: linear-gradient(
+    128deg,
+    transparent 0 6%,
+    color-mix(in srgb, var(--accent) 42%, transparent) 6% 11%,
+    transparent 11% 100%
+  );
+}
+
+html[data-ground="split"] .skin-ground {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 40%, var(--background)) 0%,
+    var(--background) 34%
+  );
+}
+
+html[data-ground="stripes"] .skin-ground {
+  background: repeating-linear-gradient(
+    -28deg,
+    transparent 0 20px,
+    color-mix(in srgb, var(--highlight) 16%, transparent) 20px 22px
+  );
+}
+
+html[data-ground="grid"] .skin-ground {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--accent) 22%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--accent) 22%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 18px 18px;
+}
+
+html[data-skin="ps2"] .skin-ground {
+  background-image:
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--foreground) 7%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--accent) 20%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--accent) 20%, transparent) 1px,
+      transparent 1px
+    );
+  background-size:
+    100% 4px,
+    18px 18px,
+    18px 18px;
+}
+
+html[data-ground="tiles"] .skin-ground {
+  background-image: radial-gradient(
+    circle at center,
+    color-mix(in srgb, var(--accent) 32%, transparent) 1.4px,
+    transparent 1.7px
+  );
+  background-size: 26px 26px;
+}
+
+html[data-ground="sunset"] .skin-ground {
+  background: linear-gradient(
+    180deg,
+    var(--background) 0,
+    var(--background) 42vh,
+    color-mix(in srgb, var(--accent) 38%, var(--background)) 100vh
+  );
+}
+
+html[data-shape="ticket"] .skin-panel {
+  position: relative;
+}
+
+html[data-shape="ticket"] .skin-panel::before,
+html[data-shape="ticket"] .skin-panel::after {
+  content: "";
+  position: absolute;
+  top: 2.75rem;
+  z-index: 1;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: var(--background);
+  box-shadow: 0 0 0 1px var(--line);
+  pointer-events: none;
+}
+
+html[data-shape="ticket"] .skin-panel::before {
+  left: -0.7rem;
+}
+
+html[data-shape="ticket"] .skin-panel::after {
+  right: -0.7rem;
+}
+
+.skin-mark {
+  display: none;
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: none;
+}
+
+.skin-mark svg {
+  display: none;
+  width: 100%;
+  height: 100%;
+}
+
+html[data-mark="mask"] .skin-mark,
+html[data-mark="card"] .skin-mark,
+html[data-mark="cup"] .skin-mark,
+html[data-mark="shades"] .skin-mark,
+html[data-mark="spoon"] .skin-mark,
+html[data-mark="skyline"] .skin-mark {
+  display: block;
+}
+
+html[data-mark="mask"] .mark-mask,
+html[data-mark="card"] .mark-card,
+html[data-mark="cup"] .mark-cup,
+html[data-mark="shades"] .mark-shades,
+html[data-mark="spoon"] .mark-spoon,
+html[data-mark="skyline"] .mark-skyline {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skin-control,
+  .skin-panel,
+  .skin-field,
+  .skin-status,
+  dialog {
+    transition: none;
+  }
+}
