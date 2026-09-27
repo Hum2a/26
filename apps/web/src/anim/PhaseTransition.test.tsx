@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhaseTransition } from "./PhaseTransition";
 
@@ -23,7 +23,8 @@ describe("PhaseTransition", () => {
     vi.unstubAllGlobals();
   });
 
-  it("re-keys when the phase changes and is instant under reduced motion", () => {
+  it("re-keys when the phase changes and is instant under reduced motion", async () => {
+    vi.stubGlobal("matchMedia", matchMedia(true));
     let mounts = 0;
     function Mark() {
       useEffect(() => {
@@ -40,13 +41,16 @@ describe("PhaseTransition", () => {
     expect(mounts).toBe(1);
     expect(document.querySelector("[data-phase='lobby']")).toBeTruthy();
 
-    view.rerender(
-      <PhaseTransition phase="prompt">
-        <Mark />
-      </PhaseTransition>,
-    );
-    expect(mounts).toBe(2);
+    await act(async () => {
+      view.rerender(
+        <PhaseTransition phase="prompt">
+          <Mark />
+        </PhaseTransition>,
+      );
+    });
+    expect(document.querySelector("[data-phase='lobby']")).toBeNull();
     expect(document.querySelector("[data-phase='prompt']")).toBeTruthy();
+    expect(mounts).toBe(2);
 
     vi.stubGlobal("matchMedia", matchMedia(true));
     render(

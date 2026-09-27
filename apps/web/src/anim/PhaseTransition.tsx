@@ -10,7 +10,7 @@ export function PhaseTransition({
 }) {
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       <motion.div
         key={phase}
         data-phase={phase}

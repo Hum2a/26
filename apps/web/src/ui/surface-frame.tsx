@@ -35,7 +35,8 @@ export function SurfaceFrame({
 
   return (
     <div
-      className={`relative ${size === "stage" ? "min-h-full" : "min-h-dvh"} bg-background text-foreground`}
+      data-size={size}
+      className={`surface-frame relative max-w-full overflow-x-clip ${size === "stage" ? "min-h-full" : "min-h-dvh"} bg-background text-foreground`}
     >
       <div className="skin-ground" aria-hidden="true">
         <SkinMotif />
@@ -46,13 +47,13 @@ export function SurfaceFrame({
       >
         Skip to content
       </a>
-      <header className="relative z-20 border-b border-line">
+      <header className="relative z-20 max-w-full border-b border-line">
         <div
-          className={`${width} mx-auto flex flex-wrap items-center justify-between gap-4 px-5 py-4`}
+          className={`${width} mx-auto flex min-w-0 max-w-full flex-wrap items-center justify-between gap-3 pt-[max(1rem,env(safe-area-inset-top))] pr-[max(1.25rem,env(safe-area-inset-right))] pb-4 pl-[max(1.25rem,env(safe-area-inset-left))]`}
         >
           <Wordmark />
-          <nav aria-label="Surfaces">
-            <ul className="flex flex-wrap gap-2">
+          <nav aria-label="Surfaces" className="max-w-full">
+            <ul className="flex max-w-full flex-wrap gap-2">
               {surfaces.map((surface) => (
                 <li key={surface.id}>
                   <NavLink
@@ -79,7 +80,7 @@ export function SurfaceFrame({
       </header>
       <main
         id="content"
-        className={`relative z-10 ${width} mx-auto grid gap-6 px-5 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] motion-rise`}
+        className={`relative z-10 ${width} mx-auto grid min-w-0 gap-6 pt-8 pr-[max(1.25rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] pl-[max(1.25rem,env(safe-area-inset-left))] motion-rise`}
       >
         <header className="grid gap-3">
           <p className="text-sm font-bold tracking-[0.18em] text-muted uppercase">

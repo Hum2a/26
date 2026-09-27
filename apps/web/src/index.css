@@ -34,6 +34,8 @@
 html {
   background: var(--background);
   color: var(--foreground);
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -139,6 +141,21 @@ dialog::backdrop {
   }
 }
 
+.motion-press {
+  transition:
+    transform 120ms var(--ease-party),
+    background-color 150ms var(--ease-party),
+    color 150ms var(--ease-party),
+    border-color 150ms var(--ease-party),
+    box-shadow 200ms var(--ease-party);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .motion-press:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .motion-rise,
   .troll-dodge {
@@ -146,6 +163,8 @@ dialog::backdrop {
   }
 
   .motion-press {
-    transition: none;
+    transition:
+      background-color 150ms var(--ease-party),
+      color 150ms var(--ease-party);
   }
 }

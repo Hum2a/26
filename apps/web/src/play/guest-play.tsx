@@ -65,7 +65,7 @@ export function GuestPlay({
           ? " A faster answer can score a bonus."
           : ""}
       </p>
-      <p className="phone-prompt">{play.question.prompt}</p>
+      <h1 className="phone-prompt">{play.question.prompt}</h1>
       {play.question.instructions ? (
         <p className="text-base text-muted">{play.question.instructions}</p>
       ) : null}

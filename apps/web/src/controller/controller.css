@@ -1,12 +1,15 @@
 .controller-root {
+  display: flex;
+  flex-direction: column;
   height: 100dvh;
-  overflow-y: auto;
+  overflow: hidden;
   padding-top: env(safe-area-inset-top);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   overscroll-behavior: none;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .controller-root button,

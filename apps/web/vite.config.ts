@@ -214,15 +214,25 @@ function partyThemes(): Plugin {
     transformIndexHtml: {
       order: "pre",
       handler(html) {
-        if (html.includes('id="party-themes"')) {
-          return html;
-        }
         const { style, themeColor } = themeDocumentHead();
+        const themeColorTag = `<meta name="theme-color" content="${themeColor}" />`;
+        let next = html;
+        if (/<meta\s+name="theme-color"/i.test(next)) {
+          next = next.replace(
+            /<meta\s+name="theme-color"\s+content="[^"]*"\s*\/?>/i,
+            themeColorTag,
+          );
+        }
+        if (next.includes('id="party-themes"')) {
+          return next;
+        }
         const tags = [
-          `<meta name="theme-color" content="${themeColor}" />`,
+          /<meta\s+name="theme-color"/i.test(next) ? "" : themeColorTag,
           `<style id="party-themes">\n${style}\n    </style>`,
-        ].join("\n    ");
-        const withTheme = html.replace(/<html\b([^>]*)>/, (_match, attrs: string) => {
+        ]
+          .filter((tag) => tag.length > 0)
+          .join("\n    ");
+        const withTheme = next.replace(/<html\b([^>]*)>/, (_match, attrs: string) => {
           if (/\bdata-theme=/.test(attrs)) {
             return `<html${attrs}>`;
           }

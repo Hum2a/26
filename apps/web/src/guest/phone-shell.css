@@ -1,0 +1,78 @@
+html.phone-lock,
+html.phone-lock body,
+html.phone-lock #root {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.phone-shell {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding-bottom: var(--keyboard-inset, 0px);
+}
+
+.phone-bar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  padding: 0.75rem 1.25rem;
+}
+
+.phone-scroll {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 1rem;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  padding: 1.25rem 1.25rem 1.5rem;
+  scroll-padding-bottom: 1.5rem;
+}
+
+.phone-dock:empty {
+  display: none;
+}
+
+.phone-dock:not(:empty) {
+  position: relative;
+  z-index: 30;
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid var(--line);
+  background: var(--background);
+  padding: 0.75rem 1.25rem 1rem;
+}
+
+.phone-dock > button {
+  width: 100%;
+}
+
+@media (max-width: 48rem) {
+  html:has(.surface-frame[data-size="phone"]),
+  html:has(.surface-frame[data-size="phone"]) body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .surface-frame[data-size="phone"] {
+    height: 100dvh;
+    overflow-x: clip;
+    overflow-y: auto;
+    overscroll-behavior: none;
+  }
+}

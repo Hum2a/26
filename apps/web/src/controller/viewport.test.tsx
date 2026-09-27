@@ -1,5 +1,9 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import indexHtml from "../../index.html?raw";
+import manifest from "../../public/manifest.webmanifest?raw";
+import indexCss from "../index.css?raw";
+import { PhoneShell } from "../guest/phone-shell";
 import { Button } from "../ui/primitives";
 import { ControllerRoot } from "./ControllerRoot";
 
@@ -32,4 +36,60 @@ describe("controller viewport", () => {
     expect(Number.parseFloat(buttonStyle.minWidth)).toBeGreaterThanOrEqual(48);
     expect(buttonStyle.userSelect).toBe("none");
   });
+
+  it("covers the screen, presses in, and lifts the dock above the keyboard", () => {
+    expect(indexHtml).toContain("viewport-fit=cover");
+    expect(indexHtml).toContain("interactive-widget=resizes-content");
+    expect(indexHtml).toContain('name="theme-color"');
+    expect(indexHtml).toContain('name="apple-mobile-web-app-capable"');
+    expect(indexCss).toContain("scale(0.98)");
+    expect(indexCss).not.toContain("transition: none");
+    expect(manifest).toContain('"display": "standalone"');
+    expect(manifest).not.toContain("serviceWorker");
+
+    const viewport = {
+      height: 400,
+      offsetTop: 0,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+    const previousHeight = window.innerHeight;
+    const previousViewport = window.visualViewport;
+    Object.defineProperty(window, "visualViewport", {
+      configurable: true,
+      value: viewport,
+    });
+    Object.defineProperty(window, "innerHeight", {
+      configurable: true,
+      value: 800,
+    });
+
+    try {
+      render(
+        <PhoneShell connection="idle">
+          <p>Question</p>
+        </PhoneShell>,
+      );
+      expect(document.querySelector("nav[aria-label='Surfaces']")).toBeNull();
+      expect(document.querySelector(".phone-scroll")).not.toBeNull();
+      expect(document.documentElement.classList.contains("phone-lock")).toBe(true);
+      expect(document.documentElement.style.getPropertyValue("--keyboard-inset")).toBe(
+        "400px",
+      );
+    } finally {
+      Object.defineProperty(window, "visualViewport", {
+        configurable: true,
+        value: previousViewport,
+      });
+      Object.defineProperty(window, "innerHeight", {
+        configurable: true,
+        value: previousHeight,
+      });
+    }
+  });
+});
+
+afterEach(() => {
+  document.documentElement.style.removeProperty("--keyboard-inset");
+  document.documentElement.classList.remove("phone-lock");
 });

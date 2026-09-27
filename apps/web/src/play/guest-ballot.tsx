@@ -82,7 +82,7 @@ function BallotCards({
       ) : (
         <p>One vote. You cannot choose your own line. A tie shares the win.</p>
       )}
-      <div className="grid max-h-80 gap-2 overflow-y-auto" data-ballot="">
+      <div className="grid gap-2" data-ballot="">
         {visible.map((card) => {
           const pressed = chosen === card.id;
           return (

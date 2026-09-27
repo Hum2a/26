@@ -1,4 +1,5 @@
 import { useEffect, useRef, type Ref } from "react";
+import { PhoneDock } from "../controller/phone-dock";
 import { Button } from "../ui/primitives";
 import type { SubmitState } from "./submit-state";
 import "./submit.css";
@@ -38,26 +39,28 @@ export function SubmitButton({
   const sending = state === "sending";
   const locked = state === "locked";
   return (
-    <Button
-      ref={ref}
-      type="button"
-      className={className}
-      disabled={disabled || sending || locked}
-      aria-busy={sending || undefined}
-      onClick={activate}
-    >
-      <span className="submit-label">
-        {sending ? (
-          <>
-            <span className="submit-spinner" aria-hidden="true" />
-            Sending
-          </>
-        ) : locked ? (
-          "Locked in ✓"
-        ) : (
-          label
-        )}
-      </span>
-    </Button>
+    <PhoneDock>
+      <Button
+        ref={ref}
+        type="button"
+        className={className}
+        disabled={disabled || sending || locked}
+        aria-busy={sending || undefined}
+        onClick={activate}
+      >
+        <span className="submit-label">
+          {sending ? (
+            <>
+              <span className="submit-spinner" aria-hidden="true" />
+              Sending
+            </>
+          ) : locked ? (
+            "Locked in ✓"
+          ) : (
+            label
+          )}
+        </span>
+      </Button>
+    </PhoneDock>
   );
 }

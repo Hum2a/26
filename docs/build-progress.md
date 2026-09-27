@@ -2238,5 +2238,43 @@ In the IDE browser on `http://127.0.0.1:5173`:
 
 The numbered prompt sequence stays complete. Changing the party default is a new `DEFAULT_THEME_ID`.
 
+## Phone app shell
+
+Status: complete for the guest phone. A physical handset was not used.
+
+Guest routes `/` and `/j/:code` use a full-screen phone shell. Stage, admin, and results keep the shared surface frame. There is no service worker and no install prompt.
+
+### Files and interfaces
+
+- `apps/web/src/guest/phone-shell.tsx` is the phone frame: top bar, scrolling middle, and a bottom dock. It locks the document while it is mounted and sets `--keyboard-inset` from `visualViewport`.
+- `apps/web/src/controller/phone-dock.tsx` portals Join and every send control into that dock. A reconnect disables those controls.
+- `apps/web/index.html` uses `viewport-fit=cover` and `interactive-widget=resizes-content`, and links `apps/web/public/manifest.webmanifest` with `display: standalone`.
+- `.motion-press` scales slightly on press. Reduced motion keeps a colour fade and drops the scale.
+- Phase changes wait for the outgoing question to leave before the next one enters. Under reduced motion that wait has no duration.
+
+### Decisions and defaults
+
+- The development surface nav is not on the guest phone. Transfer stays behind “Changed phones?”. The device-statistics sentence stays on the join screen.
+- Pinch zoom stays available. Inputs stay at 18px so focusing one does not zoom the page.
+- On a narrow screen, results and admin scroll inside the dynamic viewport. The stage stays a projector layout.
+
+### Commands and results
+
+- `npm run test:unit -w @26/web` passed: 30 files, 49 tests.
+- `npx tsc -b --pretty false` passed.
+
+### Manual verification
+
+In the IDE browser against `http://127.0.0.1:5173` and `http://localhost:5173`, at 390×844:
+
+- The join screen has no surface nav. Join sits in the bottom dock, 48px tall and the width of the dock. The nickname field is 18px. The page does not scroll sideways.
+- A resumed game kept “Send number” in the dock while the question body scrolled.
+- A 700×320 viewport showed “Rotate your phone”.
+
+### Unresolved issues
+
+- A physical phone, the on-screen keyboard, and Add to Home Screen were not checked. The keyboard inset is covered by the unit test.
+- The party script is still the illustrative pack.
+
 
 

@@ -1,0 +1,17 @@
+{
+  "name": "26",
+  "short_name": "26",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#14110e",
+  "theme_color": "#14110e",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

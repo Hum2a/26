@@ -1,12 +1,16 @@
 import { expect, test } from "@playwright/test";
 
-test("guest shell stays a development screen", async ({ page }) => {
+test("guest shell is the phone join screen", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Guest · 26");
-  await expect(page.getByRole("heading", { level: 1, name: "Guest" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Join the room" }),
+  ).toBeVisible();
   await expect(page.getByText("Enter the join code and a nickname.")).toBeVisible();
   await expect(page.getByLabel("Nickname")).toBeEnabled();
   await expect(page.getByRole("status")).toContainText("You have not joined a room.");
+  await expect(page.getByRole("navigation", { name: "Surfaces" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Join" })).toBeVisible();
 
   await page.getByRole("button", { name: "About this build" }).click();
   const dialog = page.getByRole("dialog", { name: "About this build" });
@@ -20,8 +24,11 @@ test("guest shell stays a development screen", async ({ page }) => {
 test("guest shell fits a phone width", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Guest" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Join the room" }),
+  ).toBeVisible();
   await expect(page.getByLabel("Nickname")).toBeEnabled();
+  await expect(page.getByRole("navigation", { name: "Surfaces" })).toHaveCount(0);
   const overflow = await page.evaluate(
     () =>
       document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
@@ -99,7 +106,9 @@ test("an administrator can open a lobby and a guest can join it", async ({ page 
   await expect(page.getByRole("status")).toContainText(
     "You are in. This phone is Amina.",
   );
-  await expect(page.getByText("Connected to the lobby.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "In the lobby" })).toBeVisible();
+  await expect(page.getByText("Connected", { exact: true })).toBeAttached();
+  await expect(page.getByText("Connected to the lobby.")).toHaveCount(0);
 
   await page.goto(`/host?code=${joinCode}`);
   await page.getByRole("button", { name: "Show the lobby" }).click();

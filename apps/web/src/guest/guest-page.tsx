@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useParams, useSearchParams } from "react-router";
 import type { GuestSession, LobbySnapshot } from "@26/shared";
 import { Button, Dialog, Panel, StatusMessage, TextField } from "../ui/primitives";
-import { SurfaceFrame } from "../ui/surface-frame";
+import { PhoneDock } from "../controller/phone-dock";
 import { JoinMark } from "../lobby/join-mark";
 import { NameCloud, NameReveal } from "../lobby/name-cloud";
 import { joinLobby, redeemTransfer, resumeGuest } from "../live/room-api";
@@ -24,8 +25,8 @@ import { JoinRoomCode } from "../join/JoinRoomCode";
 import { NicknameField } from "../join/Nickname";
 import { rememberNickname } from "../join/nickname-storage";
 import { roomCodeFromQuery } from "../join/room-code";
-import { ConnectionDot } from "../net/ConnectionDot";
 import { ReconnectBanner } from "../net/ReconnectBanner";
+import { PhoneShell } from "./phone-shell";
 
 export function GuestPage() {
   const params = useParams();
@@ -326,41 +327,33 @@ export function GuestPage() {
         snapshot,
       })
     : notice;
-  const connectionCopy = session
-    ? connection === "open"
-      ? playing
-        ? "Connected to the game."
-        : "Connected to the lobby."
-      : connection === "connecting"
-        ? playing
-          ? "Reconnecting to the game."
-          : "Reconnecting to the lobby."
-        : connection === "closed"
-          ? playing
-            ? "The game connection is closed. This page will try again."
-            : "The lobby connection is closed."
-          : "The lobby connects after you join."
-    : "The lobby connects after you join.";
   const reconnecting = seenOpen && connection !== "open";
+  const nickname = session ? liveNickname(snapshot, session) : undefined;
+  const questionVisible = playing && snapshot?.play;
 
   return (
     <ControllerRoot>
-      <SurfaceFrame
-        current="guest"
-        title="Guest"
-        lede="Enter the join code and a nickname. This phone plays on its own."
+      <PhoneShell
+        nickname={nickname}
+        connection={connection}
+        held={reconnecting}
+        scrollKey={snapshot?.phase ?? "join"}
       >
+        {questionVisible ? null : (
+          <h1 className="phone-prompt">
+            {session
+              ? snapshot?.phase === "lobby"
+                ? "In the lobby"
+                : "This phone"
+              : "Join the room"}
+          </h1>
+        )}
         <StatusMessage>{status}</StatusMessage>
-        <div className="flex items-center gap-2">
-          <ConnectionDot connection={connection} />
-          <p>{connectionCopy}</p>
-        </div>
         <ReconnectBanner disconnected={reconnecting} snapshotId={snapshotPulse}>
           {session ? (
-            <Panel title={playing ? "This question" : "In the lobby"}>
-              <p>You are in. This phone is {liveNickname(snapshot, session)}.</p>
+            <div className="grid gap-4">
               {snapshot?.phase === "lobby" ? (
-                <div className="mt-4 grid gap-4">
+                <div className="grid gap-4">
                   <JoinMark code={snapshot.joinCode} />
                   {snapshot.namesReveal ? (
                     <NameReveal reveal={snapshot.namesReveal} />
@@ -397,7 +390,7 @@ export function GuestPage() {
                   <WaitingNext />
                 ) : null}
               </PhaseTransition>
-              {snapshot && session && snapshot.phase !== "lobby" ? (
+              {snapshot && snapshot.phase !== "lobby" ? (
                 <>
                   <GuestTrolls
                     snapshot={snapshot}
@@ -410,76 +403,120 @@ export function GuestPage() {
                   <GuestMedia gameId={session.gameId} />
                 </>
               ) : null}
-              <form
-                className="mt-4 grid gap-4"
+              {snapshot?.recap && snapshot.recap.length > 0 ? (
+                <Panel title="Your recap">
+                  <ul className="grid gap-3">
+                    {snapshot.recap.map((card) => (
+                      <li key={card.id}>
+                        {card.illustrative ? (
+                          <p className="font-bold">Illustrative</p>
+                        ) : null}
+                        <p className="break-words">{card.results}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </Panel>
+              ) : null}
+              <TransferPhone
+                busy={busy}
+                code={transferCode}
+                onCode={setTransferCode}
                 onSubmit={(event) => void onRedeem(event)}
-              >
-                <TextField
-                  label="Transfer code"
-                  hint="Humza can read you a one-use code if you change phones."
-                  value={transferCode}
-                  onChange={(event) => setTransferCode(event.target.value)}
-                  autoComplete="off"
-                />
-                <Button type="submit" disabled={busy}>
-                  Use this phone
-                </Button>
-              </form>
-            </Panel>
+              />
+            </div>
           ) : (
-            <form className="grid gap-4" onSubmit={(event) => void onJoin(event)}>
-              <JoinRoomCode
-                roomQuery={search.get("room")}
-                pathCode={params.code}
-                value={code}
-                onChange={setCode}
-              />
-              <NicknameField
-                error={nicknameError}
-                onEdit={() => setNicknameError("")}
-              />
-              <Button type="submit" disabled={busy}>
-                Join
-              </Button>
-            </form>
+            <div className="grid gap-4">
+              <p className="text-lg leading-relaxed">
+                Enter the join code and a nickname. This phone plays on its own.
+              </p>
+              <form
+                id="join-room"
+                className="grid gap-4"
+                onSubmit={(event) => void onJoin(event)}
+              >
+                <JoinRoomCode
+                  roomQuery={search.get("room")}
+                  pathCode={params.code}
+                  value={code}
+                  onChange={setCode}
+                />
+                <NicknameField
+                  error={nicknameError}
+                  onEdit={() => setNicknameError("")}
+                />
+              </form>
+              <p className="text-base leading-snug text-muted">
+                This phone can send screen and browser details for later statistics.
+                They do not decide who you are or what you score, the size is CSS pixels
+                not inches, and a network quality of 4g is not a mobile 4G service.
+              </p>
+              <Dialog title="About this build" triggerLabel="About this build">
+                <p>
+                  This phone keeps your nickname for this game. The illustrative
+                  questions are a demo, not the party script. Sound plays on the stage.
+                  Device details are for statistics after the game. An unclear iPhone or
+                  iPad stays marked that way.
+                </p>
+              </Dialog>
+              <PhoneDock>
+                <Button type="submit" form="join-room" disabled={busy}>
+                  Join
+                </Button>
+              </PhoneDock>
+            </div>
           )}
         </ReconnectBanner>
-        {snapshot?.recap && snapshot.recap.length > 0 ? (
-          <Panel title="Your recap">
-            <ul className="grid gap-3">
-              {snapshot.recap.map((card) => (
-                <li key={card.id}>
-                  {card.illustrative ? <p className="font-bold">Illustrative</p> : null}
-                  <p className="break-words">{card.results}</p>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        ) : null}
-        <Panel title="On this phone">
-          <p>
-            Join the lobby and answer on this phone. The stage shows the question to the
-            room.
-          </p>
-          <p className="mt-4">
-            This phone can send browser and screen details for end-of-game statistics.
-            They do not decide who you are or what you score, and you can play if that
-            report never arrives. The screen size is CSS pixels, not inches, and a
-            network quality of 4g is not proof of a mobile 4G service.
-          </p>
-          <div className="mt-4">
-            <Dialog title="About this build" triggerLabel="About this build">
-              <p>
-                This phone keeps your nickname for this game. The illustrative questions
-                are a demo, not the party script. Sound plays on the stage. Device
-                details are for statistics after the game. An unclear iPhone or iPad
-                stays marked that way.
-              </p>
-            </Dialog>
-          </div>
-        </Panel>
-      </SurfaceFrame>
+      </PhoneShell>
     </ControllerRoot>
+  );
+}
+
+function TransferPhone({
+  busy,
+  code,
+  onCode,
+  onSubmit,
+}: {
+  busy: boolean;
+  code: string;
+  onCode: (code: string) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return (
+    <div className="grid gap-3">
+      <Button
+        variant="secondary"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        Changed phones?
+      </Button>
+      <AnimatePresence initial={false}>
+        {open ? (
+          <motion.form
+            className="grid gap-4"
+            onSubmit={onSubmit}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
+            animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
+            transition={{ duration: reduce ? 0.01 : 0.2, ease: [0.2, 0, 0, 1] }}
+          >
+            <TextField
+              label="Transfer code"
+              hint="Humza can read you a one-use code if you change phones."
+              value={code}
+              onChange={(event) => onCode(event.target.value)}
+              autoComplete="off"
+            />
+            <Button type="submit" disabled={busy}>
+              Use this phone
+            </Button>
+          </motion.form>
+        ) : null}
+      </AnimatePresence>
+    </div>
   );
 }
 
