@@ -9,19 +9,27 @@ export function GuestText({
   pending,
   onSubmit,
   onDraft,
+  label = "Your line",
+  action = "Send line",
+  maxLength = 80,
 }: {
   play: PlaySnapshot;
   blocked: boolean;
   pending: boolean;
   onSubmit: (body: string) => void;
   onDraft?: (body: string) => void;
+  label?: string;
+  action?: string;
+  maxLength?: number;
 }) {
   const accepted = play.selfAnswer?.kind === "text" ? play.selfAnswer.body : undefined;
   if (accepted) {
     return (
       <div className="grid gap-3">
-        <p>Your line: {accepted}</p>
-        <SubmitButton label="Send line" state="locked" onClick={() => undefined} />
+        <p>
+          {label}: {accepted}
+        </p>
+        <SubmitButton label={action} state="locked" onClick={() => undefined} />
       </div>
     );
   }
@@ -31,6 +39,9 @@ export function GuestText({
       pending={pending}
       onSubmit={onSubmit}
       onDraft={onDraft}
+      label={label}
+      action={action}
+      maxLength={maxLength}
     />
   );
 }
@@ -40,11 +51,17 @@ function TextDraft({
   pending,
   onSubmit,
   onDraft,
+  label,
+  action,
+  maxLength,
 }: {
   blocked: boolean;
   pending: boolean;
   onSubmit: (body: string) => void;
   onDraft?: (body: string) => void;
+  label: string;
+  action: string;
+  maxLength: number;
 }) {
   const [draft, setDraft] = useState("");
   const submit = useRef<HTMLButtonElement>(null);
@@ -57,10 +74,10 @@ function TextDraft({
       }}
     >
       <TextField
-        label="Your line"
-        hint="1 to 80 characters. Sending stores this text."
+        label={label}
+        hint={`1 to ${maxLength} characters. Sending stores this text.`}
         value={draft}
-        maxLength={80}
+        maxLength={maxLength}
         disabled={blocked}
         onChange={(event) => {
           setDraft(event.target.value);
@@ -69,7 +86,7 @@ function TextDraft({
       />
       <SubmitButton
         ref={submit}
-        label="Send line"
+        label={action}
         state={pending ? "sending" : "idle"}
         disabled={blocked || draft.trim().length === 0}
         onClick={() => onSubmit(draft)}

@@ -6,6 +6,7 @@ import {
   isKnown,
   missingRequirements,
   type AuthoredQuestion,
+  type ChoiceOutcome,
   type PackProfile,
   type Question,
   type QuestionPack,
@@ -318,13 +319,103 @@ function suppliedIssues(
 }
 
 function knownAnswerIssues(question: AuthoredQuestion): ContentIssue[] {
-  if (question.kind === "choice" && isKnown(question.correctOption)) {
+  if (question.kind === "typed") {
+    return typedIssues(
+      question.id,
+      question.maxLength,
+      isKnown(question.accepted) ? question.accepted.known : [],
+    );
+  }
+  if (question.kind !== "choice") {
+    return [];
+  }
+  const outcome = outcomeIssues(question);
+  if (outcome.length > 0) {
+    return outcome;
+  }
+  if (isKnown(question.correctOption) && question.correctOption.known !== null) {
     const ids = new Set(question.options.map((option) => option.id));
     if (question.options.length > 0 && !ids.has(question.correctOption.known)) {
       return [
         issue("error", "choice", `${question.id} correct option is not in the list.`),
       ];
     }
+  }
+  return [];
+}
+
+/**
+ * A poll scores 0 and has no speed bonus. A threshold names options on the
+ * question, and its share sits strictly between 0 and 1.
+ */
+function outcomeIssues(question: {
+  id: string;
+  outcome: ChoiceOutcome;
+  options: { id: string }[];
+  points: number;
+  speedBonus: { maxPoints: number } | null;
+}): ContentIssue[] {
+  const outcome = question.outcome;
+  if (outcome.kind === "correct") {
+    return [];
+  }
+  if (question.speedBonus) {
+    return [
+      issue(
+        "error",
+        "choice",
+        `${question.id} ${outcome.kind} cannot have a speed bonus.`,
+      ),
+    ];
+  }
+  if (outcome.kind === "poll") {
+    return question.points === 0
+      ? []
+      : [issue("error", "score", `${question.id} is a poll, so its points must be 0.`)];
+  }
+  const ids = new Set(question.options.map((option) => option.id));
+  const named = [
+    outcome.optionId,
+    ...(outcome.met === "everyone" ? [] : outcome.met),
+    ...(outcome.otherwise === "everyone" ? [] : outcome.otherwise),
+  ];
+  if (question.options.length > 0 && named.some((id) => !ids.has(id))) {
+    return [
+      issue(
+        "error",
+        "choice",
+        `${question.id} threshold names an option that is not in the list.`,
+      ),
+    ];
+  }
+  if (!Number.isFinite(outcome.above) || outcome.above <= 0 || outcome.above >= 1) {
+    return [
+      issue(
+        "error",
+        "choice",
+        `${question.id} threshold share must be between 0 and 1.`,
+      ),
+    ];
+  }
+  return [];
+}
+
+function typedIssues(
+  id: string,
+  maxLength: number,
+  accepted: readonly string[],
+): ContentIssue[] {
+  if (
+    !Number.isInteger(maxLength) ||
+    maxLength < 1 ||
+    maxLength > contentLimits.typedMax
+  ) {
+    return [issue("error", "typed", `${id} answer box must hold 1 to 80 characters.`)];
+  }
+  if (accepted.some((answer) => answer.trim().length > contentLimits.typedMax)) {
+    return [
+      issue("error", "typed", `${id} accepted answer is longer than 80 characters.`),
+    ];
   }
   return [];
 }
@@ -438,7 +529,10 @@ function checkPlayable(question: Question): ContentIssue[] {
     if (
       ids.size !== question.options.length ||
       question.options.length < contentLimits.optionMin ||
-      question.options.length > contentLimits.optionMax
+      question.options.length >
+        (question.outcome.kind === "poll"
+          ? contentLimits.pollOptionMax
+          : contentLimits.optionMax)
     ) {
       return [issue("error", "choice", `${question.id} needs distinct options.`)];
     }
@@ -457,7 +551,14 @@ function checkPlayable(question: Question): ContentIssue[] {
         ];
       }
     }
-    if (!ids.has(question.correctOptionId)) {
+    const outcome = outcomeIssues(question);
+    if (outcome.length > 0) {
+      return outcome;
+    }
+    if (
+      question.outcome.kind === "correct" &&
+      (question.correctOptionId === null || !ids.has(question.correctOptionId))
+    ) {
       return [
         issue("error", "choice", `${question.id} correct option is not in the list.`),
       ];
@@ -499,6 +600,12 @@ function checkPlayable(question: Question): ContentIssue[] {
       ];
     }
     return [];
+  }
+  if (question.kind === "typed") {
+    if (question.accepted.every((answer) => !answer.trim())) {
+      return [issue("error", "typed", `${question.id} has no accepted answer.`)];
+    }
+    return typedIssues(question.id, question.maxLength, question.accepted);
   }
   if (question.kind === "vote") {
     return windowIssue(question.id, "vote", question.voteMs);

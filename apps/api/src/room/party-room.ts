@@ -161,6 +161,7 @@ import {
 } from "../troll/engine.ts";
 import { acceptRanking, wrongKindRank } from "../questions/rank.ts";
 import { acceptEstimate, wrongKindEstimate } from "../questions/slider.ts";
+import { acceptTypedAnswer } from "../questions/typed.ts";
 import {
   acceptBallot,
   acceptText,
@@ -3079,6 +3080,9 @@ function acceptRoundCommand(
     return acceptRanking(sql, store, playerId, command.placements, now, question);
   }
   if (command.name === "text") {
+    if (question?.kind === "typed") {
+      return acceptTypedAnswer(sql, store, playerId, command.body, now, question);
+    }
     if (!question || question.kind !== "vote") {
       return { ok: false, message: wrongKindText() };
     }

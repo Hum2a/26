@@ -22,7 +22,7 @@ Recognise:
 For a new idea:
 
 1. Read the birthday manifest, `authoring.ts`, `defaults.ts`, and any related question.
-2. Choose an existing mechanic when it fits: choice, slider, rank, vote, guess, duel, or finale.
+2. Choose an existing mechanic when it fits: choice (with a correct, poll, or threshold outcome), typed, slider, rank, vote, guess, duel, or finale.
 3. Create `apps/api/src/questions/packs/birthday/<id>.ts` with the matching helper. The id and filename are a stable slug, with no running-order number.
 4. Apply defaults from `defaults.ts` for ordinary settings the user did not specify.
 5. Keep the user's wording. Record a material assumption in the question file only when it changes the mechanic.
@@ -33,10 +33,10 @@ For a new idea:
 
 Ask a short question only when the ambiguity changes the meaning or the mechanic. Otherwise save a draft.
 
-If the interaction is not one of the seven mechanics, explain the gap and still save a draft. Do not force the wrong mechanic or rewrite scoring.
+If the interaction is not one of these mechanics, explain the gap and still save a draft. Do not force the wrong mechanic or rewrite scoring.
 
 A later edit finds the existing file by id. Reordering changes `order` in the manifest only. "Make this question ready" fills real supplied facts and, once it validates, still does not enter `order` unless the user asked to include it.
 
-"Now customise the design of this question" keeps the same id and mechanic. Set `presentation`, register it in `apps/api/src/questions/presentation.ts`, and add the component in `apps/web/src/play/presentation.ts`. Do not put the answer key in the client.
+"Now customise the design of this question" keeps the same id and mechanic. Add the slug to `customPresentationIds` in `packages/shared`, set `presentation` on the question, write the design in `apps/web/src/play/designs/<slug>.tsx` with the shared kit, and register it in `designs/registry.ts`. Check it at `/design` in development. Do not put the answer key in the client.
 
 Do not edit a released pack's question files in place. A content change needs a new version id. Rooms keep the version they stored.

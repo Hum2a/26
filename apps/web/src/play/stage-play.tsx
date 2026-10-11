@@ -37,10 +37,13 @@ export function StagePlay({ snapshot }: { snapshot: LobbySnapshot }) {
     snapshot.phase === "scores" ||
     snapshot.phase === "final" ||
     snapshot.phase === "podium";
-  const custom = renderPresentation(play.question.presentation, {
-    surface: "stage",
-    play,
-  });
+  const custom = leadBoard
+    ? undefined
+    : renderPresentation(play.question.presentation, {
+        surface: "stage",
+        phase: snapshot.phase,
+        play,
+      });
   return (
     <Panel title={stagePhaseTitle(snapshot.phase)} display="stage">
       <div data-phase={snapshot.phase} hidden />
@@ -67,6 +70,9 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
   if (play.question.kind === "rank") {
     return <RankView play={play} omitBoard={omitBoard} />;
   }
+  if (play.question.kind === "typed") {
+    return <TypedView play={play} omitBoard={omitBoard} />;
+  }
   if (play.question.kind === "vote" || play.question.kind === "guess") {
     return <BallotView play={play} omitBoard={omitBoard} />;
   }
@@ -74,9 +80,12 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
     return <DuelView play={play} omitBoard={omitBoard} />;
   }
   const reveal = play.reveal?.kind === "choice" ? play.reveal : undefined;
+  const options = play.question.options;
   const answer = reveal
-    ? play.question.options.find((option) => option.id === reveal.correctOptionId)
+    ? options.find((option) => option.id === reveal.correctOptionId)
     : undefined;
+  const count = (optionId: string) =>
+    reveal?.tally?.find((row) => row.optionId === optionId)?.count;
   const countLabel =
     play.submissionCount === 1 ? "1 answer in." : `${play.submissionCount} answers in.`;
 
@@ -87,16 +96,77 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
         Question {play.question.index} of {play.question.total}.
       </p>
       <p className="stage-prompt">{play.question.prompt}</p>
-      <ul className="grid gap-3">
-        {play.question.options.map((option) => (
-          <li key={option.id} className="stage-option">
-            {option.label}
-          </li>
-        ))}
+      <ul className={options.length > 6 ? "stage-option-grid" : "grid gap-3"}>
+        {options.map((option) => {
+          const votes = count(option.id);
+          return (
+            <li key={option.id} className="stage-option">
+              {option.label}
+              {votes === undefined
+                ? ""
+                : ` — ${votes} ${votes === 1 ? "vote" : "votes"}`}
+            </li>
+          );
+        })}
       </ul>
       <p>{countLabel}</p>
       <AnswerNames play={play} />
       {answer ? <p className="stage-answer">The answer is {answer.label}.</p> : null}
+      {reveal && !answer ? (
+        <p className="stage-answer">{outcomeLine(reveal, options)}</p>
+      ) : null}
+      {omitBoard ? null : <Standings play={play} />}
+    </div>
+  );
+}
+
+export function outcomeLine(
+  reveal: Extract<NonNullable<PlaySnapshot["reveal"]>, { kind: "choice" }>,
+  options: readonly { id: string; label: string }[],
+): string {
+  const label = (id: string) => options.find((option) => option.id === id)?.label ?? id;
+  if (reveal.outcome === "poll") {
+    const tally = reveal.tally ?? [];
+    const top = Math.max(0, ...tally.map((row) => row.count));
+    if (top === 0) {
+      return "No votes were cast.";
+    }
+    const leaders = tally
+      .filter((row) => row.count === top)
+      .map((row) => label(row.optionId));
+    return leaders.length === 1
+      ? `${leaders[0]} wins the room.`
+      : `A tie between ${leaders.join(" and ")}.`;
+  }
+  if (reveal.everyone) {
+    return "Everyone who answered scores.";
+  }
+  const winners = (reveal.winners ?? []).map(label);
+  return winners.length > 0 ? `${winners.join(" and ")} scores.` : "Nobody scores.";
+}
+
+function TypedView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolean }) {
+  if (play.question.kind !== "typed") {
+    return null;
+  }
+  const reveal = play.reveal?.kind === "typed" ? play.reveal : undefined;
+  return (
+    <div className="grid gap-4">
+      <p className="stage-prompt">{play.question.prompt}</p>
+      <p>
+        {play.submissionCount === 1
+          ? "1 answer in."
+          : `${play.submissionCount} answers in.`}
+      </p>
+      {reveal ? <p className="stage-answer">The answer is {reveal.answer}.</p> : null}
+      {reveal ? (
+        <p>
+          {reveal.correctCount} of {reveal.responseCount} got it.
+        </p>
+      ) : null}
+      {reveal?.correctNames && reveal.correctNames.length > 0 ? (
+        <p>Got it: {reveal.correctNames.join(", ")}.</p>
+      ) : null}
       {omitBoard ? null : <Standings play={play} />}
     </div>
   );

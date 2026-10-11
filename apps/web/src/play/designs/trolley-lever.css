@@ -1,0 +1,119 @@
+/* Trolley lever: a junction drawn in SVG from the theme's own colours. */
+
+.trolley-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-panel, 1.25rem);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 80%, var(--highlight)) 0 60%,
+    color-mix(in srgb, var(--surface) 85%, var(--accent)) 60%
+  );
+}
+
+.trolley-sleepers {
+  fill: none;
+  stroke: color-mix(in srgb, var(--muted) 70%, transparent);
+  stroke-width: 26;
+  stroke-dasharray: 5 14;
+}
+
+.trolley-rail {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.trolley-rail[data-lit] {
+  stroke: var(--highlight);
+  filter: drop-shadow(0 0 6px var(--highlight));
+}
+
+.trolley-points {
+  stroke: var(--accent);
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+
+.trolley-person circle {
+  fill: var(--foreground);
+}
+
+.trolley-person path {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.trolley-body {
+  fill: var(--accent);
+  stroke: var(--foreground);
+  stroke-width: 3;
+}
+
+.trolley-window {
+  fill: var(--background);
+}
+
+.trolley-wheel {
+  fill: var(--foreground);
+}
+
+.trolley-label {
+  fill: var(--foreground);
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.trolley-controls {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.trolley-choice {
+  display: grid;
+  grid-template-columns: 3rem 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  min-height: 4.5rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-control, 1rem);
+  background: var(--surface);
+  padding: 0.5rem 1rem;
+  color: var(--surface-foreground);
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.trolley-choice[data-chosen] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.trolley-choice:disabled {
+  cursor: default;
+}
+
+.trolley-choice-icon {
+  display: grid;
+  place-items: center;
+  font-size: 2.2rem;
+  transform-origin: bottom center;
+}
+
+.trolley-choice-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.trolley-stage .trolley-scene {
+  max-height: 46vh;
+  margin: 0 auto;
+  width: auto;
+  max-width: 100%;
+}

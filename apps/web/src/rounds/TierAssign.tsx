@@ -5,7 +5,7 @@ import "./option-text.css";
 
 export type TierPlacement = { itemId: string; tierId: string };
 
-function assignTier(
+export function assignTier(
   current: TierPlacement[],
   itemId: string,
   tierId: string,

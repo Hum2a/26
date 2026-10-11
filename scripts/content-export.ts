@@ -114,10 +114,26 @@ function orderBlock(question: Question, index: number): string {
 
 function revealLine(question: Question): string {
   if (question.kind === "choice") {
+    const outcome = question.outcome;
+    if (outcome.kind === "poll") {
+      return "No right answer. Read out the room's split.";
+    }
+    if (outcome.kind === "threshold") {
+      const label = (id: string) =>
+        question.options.find((option) => option.id === id)?.label ?? id;
+      const who = (side: "everyone" | readonly string[]) =>
+        side === "everyone" ? "everyone who answered" : side.map(label).join(", ");
+      return `If more than ${Math.round(outcome.above * 100)}% pick ${label(outcome.optionId)}, ${who(outcome.met)} scores. Otherwise ${who(outcome.otherwise)} scores.`;
+    }
     return (
       question.options.find((option) => option.id === question.correctOptionId)
-        ?.label ?? question.correctOptionId
+        ?.label ??
+      question.correctOptionId ??
+      ""
     );
+  }
+  if (question.kind === "typed") {
+    return `${question.accepted.join(" / ")} (close spellings count)`;
   }
   if (question.kind === "slider") {
     return `${question.truth} ${question.unit}`;

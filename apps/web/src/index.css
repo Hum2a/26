@@ -115,6 +115,13 @@ dialog::backdrop {
   line-height: 1.15;
 }
 
+/* A long poll, such as every party on a ballot, fills the projector in columns. */
+.stage-option-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+}
+
 .stage-option {
   border: 2px solid var(--color-line);
   border-radius: 1.5rem;

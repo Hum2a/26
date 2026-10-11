@@ -13,5 +13,17 @@ export const router = createBrowserRouter([
   { path: "/admin", element: <AdminPage /> },
   { path: "/admin/confirm", element: <AdminConfirmPage /> },
   { path: "/r/:gameId", element: <ResultsPage /> },
+  // Development-only design bench for the custom question designs.
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: "/design",
+          lazy: async () => ({
+            Component: (await import("./play/designs/preview/design-preview"))
+              .DesignPreview,
+          }),
+        },
+      ]
+    : []),
   { path: "*", element: <NotFoundPage /> },
 ]);

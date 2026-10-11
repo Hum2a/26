@@ -11,7 +11,9 @@ import {
   type AuthoredQuestion,
   type AuthoredRank,
   type AuthoredSlider,
+  type AuthoredTyped,
   type AuthoredVote,
+  type ChoiceOutcome,
   type ChoiceQuestion,
   type DuelQuestion,
   type FinaleQuestion,
@@ -23,6 +25,7 @@ import {
   type RankQuestion,
   type SliderBand,
   type SliderQuestion,
+  type TypedQuestion,
   type VoteQuestion,
 } from "./definition.ts";
 
@@ -83,6 +86,12 @@ const missingChoice: MissingRequirement = {
   detail: "The correct choice has not been chosen.",
 };
 
+const missingAccepted: MissingRequirement = {
+  code: "correct-answer",
+  name: "accepted",
+  detail: "The accepted answer has not been supplied.",
+};
+
 const missingTruth: MissingRequirement = {
   code: "truth",
   name: "truth",
@@ -101,22 +110,36 @@ const missingContestants: MissingRequirement = {
   detail: "The two contestants have not been named.",
 };
 
+/**
+ * A poll scores nothing, so its points default to 0. A threshold outcome
+ * names who scores, so it has no single correct option.
+ */
 export function choiceQuestion(
   input: SharedInput & {
     options?: { id: string; label: string }[];
+    outcome?: ChoiceOutcome;
     correctOption?: Answer<string>;
     speedBonus?: { maxPoints: number } | null;
     modifiers?: readonly "double"[];
     suppressSpeedBonus?: boolean;
   },
 ): AuthoredChoice {
-  const points = input.points ?? ordinaryDefaults.choicePoints;
+  const outcome = input.outcome ?? { kind: "correct" };
+  const points =
+    input.points ??
+    (outcome.kind === "poll"
+      ? ordinaryDefaults.pollPoints
+      : ordinaryDefaults.choicePoints);
   return finish(
     {
       ...shared(input, points),
       kind: "choice",
+      outcome,
       options: input.options ?? [],
-      correctOption: input.correctOption ?? { missing: missingChoice },
+      correctOption:
+        outcome.kind === "correct"
+          ? (input.correctOption ?? { missing: missingChoice })
+          : { known: null },
       speedBonus:
         input.speedBonus === undefined ? ordinaryDefaults.speedBonus : input.speedBonus,
       modifiers: input.modifiers,
@@ -149,6 +172,24 @@ export function sliderQuestion(
       initial: input.initial ?? Number.NaN,
       truth: input.truth ?? { missing: missingTruth },
       bands: input.bands ?? [{ within: 0, points }],
+    },
+    input.status,
+  );
+}
+
+/** Guests type a short answer. Matching ignores case, accents, punctuation, and a small typo. */
+export function typedQuestion(
+  input: SharedInput & {
+    accepted?: Answer<readonly string[]>;
+    maxLength?: number;
+  },
+): AuthoredTyped {
+  return finish(
+    {
+      ...shared(input, input.points ?? ordinaryDefaults.typedPoints),
+      kind: "typed",
+      maxLength: input.maxLength ?? ordinaryDefaults.typedMaxLength,
+      accepted: input.accepted ?? { missing: missingAccepted },
     },
     input.status,
   );
@@ -324,6 +365,7 @@ export function toPlayable(
     const playable: ChoiceQuestion = {
       ...core,
       kind: "choice",
+      outcome: question.outcome,
       options: question.options,
       correctOptionId: question.correctOption.known,
       speedBonus: question.speedBonus,
@@ -346,6 +388,18 @@ export function toPlayable(
       initial: question.initial,
       truth: question.truth.known,
       bands: question.bands,
+    };
+    return playable;
+  }
+  if (question.kind === "typed") {
+    if (!isKnown(question.accepted)) {
+      return undefined;
+    }
+    const playable: TypedQuestion = {
+      ...core,
+      kind: "typed",
+      maxLength: question.maxLength,
+      accepted: question.accepted.known,
     };
     return playable;
   }

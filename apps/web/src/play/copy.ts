@@ -93,6 +93,15 @@ export function guestRoundCopy(snapshot: LobbySnapshot): string {
     if (snapshot.play?.question.kind === "slider") {
       return "Send an estimate.";
     }
+    if (snapshot.play?.question.kind === "typed") {
+      return "Type your answer.";
+    }
+    if (
+      snapshot.play?.question.kind === "choice" &&
+      snapshot.play.question.outcome === "poll"
+    ) {
+      return "Cast your vote.";
+    }
     if (snapshot.play?.question.kind === "rank") {
       return "Place the items, then send.";
     }
@@ -160,9 +169,21 @@ function revealResult(
     return "No answer was received.";
   }
   if (reveal?.kind === "choice" && answer.kind === "choice") {
+    if (reveal.outcome === "poll") {
+      return "Your vote is in the count.";
+    }
+    if (reveal.outcome === "threshold") {
+      return award ? `Your side scored. You got ${award}.` : "Your side scored 0.";
+    }
     return answer.optionId === reveal.correctOptionId
       ? "You were right."
       : "That was not the answer.";
+  }
+  if (reveal?.kind === "typed") {
+    if (award === undefined || award === null) {
+      return "Answer accepted.";
+    }
+    return award > 0 ? `You got it. You scored ${award}.` : "That was not the answer.";
   }
   if (award === undefined || award === null) {
     return "Answer accepted.";

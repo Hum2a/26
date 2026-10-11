@@ -2278,3 +2278,188 @@ In the IDE browser against `http://127.0.0.1:5173` and `http://localhost:5173`, 
 
 
 
+
+## First birthday question drafts
+
+Status: drafts saved. The running order is still empty, and no room, demo pack or deployment changed.
+
+### Files and interfaces
+
+Ten files in `apps/api/src/questions/packs/birthday/`, registered in `catalogue` in `manifest.ts`. Each file opens with a short design brief for the later custom presentation step.
+
+| Id | Helper | Status | Still needs |
+| --- | --- | --- | --- |
+| `favourite-genre` | choice | draft | correct option |
+| `leviticus-18-7` | choice | ready (not in order) | nothing |
+| `car-name` | choice | draft | correct option |
+| `ignorance-triggers` | rank | draft | correct order |
+| `mock-election` | choice, 0 points | draft | unscored poll mechanic; 6-option limit |
+| `red-pill-blue-pill` | choice | draft | majority-rule scoring mechanic |
+| `trolley-problem` | choice, 0 points | draft | unscored poll mechanic |
+| `real-name-count-binface` | choice | draft | typed-answer mechanic |
+| `real-name-zack-polanski` | choice | draft | typed-answer mechanic |
+| `real-name-tommy-robinson` | choice | draft | typed-answer mechanic |
+
+### Decisions and defaults
+
+- Leviticus uses neutral option ids (`a` to `d`). The wrong options are the real KJV verses 18:8, 18:13 and 18:16. The labels are opening words because a label is at most 80 characters. The full verse is the explanation.
+- Three interactions are not one of the seven mechanics: an unscored poll, a majority-conditional score, and a typed answer. Those drafts use the choice helper only to hold their content, and carry an explicit requirement that names the gap. No scoring was changed.
+- The real names are Jon Harvey, David Paulden and Stephen Yaxley-Lennon. They are kept server-side in the explanation and the file comment.
+- The mock election lists the six largest British parties. The rest are named in the requirement.
+
+### Commands and results
+
+- `npm run content:check` passed. Demo passed. Birthday passed with incomplete drafts reported.
+
+### Unresolved issues
+
+- Humza still has to supply the answers for genre, car name, and the ranking order.
+- Poll, majority-rule and typed-answer mechanics do not exist yet.
+- Every presentation is still `standard`.
+
+### Next stage
+
+Pick the next step: supply the missing answers, add the missing mechanics to the shared reducer, or customise a question's design.
+
+## Poll, threshold, and typed-answer mechanics
+
+Status: complete. Eight of the ten birthday questions are ready. None is in the running order, and no room, demo pack or deployment changed.
+
+### Files and interfaces
+
+- `ChoiceOutcome` on `ChoiceBody` in `apps/api/src/questions/definition.ts`: `correct`, `poll`, or `threshold`. A playable choice's `correctOptionId` is null for poll and threshold.
+- `apps/api/src/questions/choice-outcome.ts`: pure `settleChoice`, `choiceWins`, `choiceTally`. `pointsFor` takes the settlement as an optional fourth argument.
+- New kind `typed`: `typedQuestion` in `authoring.ts`, `TypedQuestion` in `definition.ts`, `apps/api/src/questions/typed.ts` (accept, score, reveal, host rows), and the pure matcher in `apps/api/src/questions/typed-match.ts`. Answers use `round_response` with kind `typed`; no migration.
+- The guest `text` command routes to the typed question when one is open, so there is no new message type.
+- `packages/shared`: public choice `outcome`, public `typed` question, choice reveal `tally`/`winners`/`everyone`/`met`, typed reveal, `contentLimits.typedMax`.
+- Web: `GuestText` takes a label, action and length; the phone shows counts and who scored; the stage shows a poll leader, threshold winners, and typed results. `choiceNote` and `outcomeLine` are exported for tests.
+- `.agents/rules/15-question-authoring.md` and `docs/question-authoring.md` list the new mechanics. `npm run agents:sync` updated the copies.
+
+### Decisions and defaults
+
+- Ordinary choice reveals keep their one-field shape, so existing rooms and tests see no change.
+- A poll's points default to 0 in `defaults.ts`, and validation rejects a scored poll or a poll with a speed bonus.
+- Threshold share is measured over answers received, strictly greater than `above`. With no answers, the threshold is not met.
+- A typed answer is matched at the reveal, not when it arrives. The stage shows the right answer, how many got it, and their names when attribution allows. Wrong answers stay off the stage; the host panel sees each one.
+- Birthday answers: genre `white-girl`, car `hagakure`. Tommy Robinson accepts Stephen Yaxley-Lennon, Stephen Lennon and Stephen Yaxley. Count Binface accepts Jon Harvey and Jonathan Harvey.
+- An assertion in `question-authoring.spec.ts` that required an empty birthday catalogue now checks only that its fixture question is not in it.
+
+### Commands and results
+
+- `npm run typecheck` passed.
+- `npx vitest run --maxWorkers=2` in `apps/web` passed: 31 files, 54 tests. `npm run test:unit` at default parallelism timed out starting 15 jsdom workers on a loaded machine; 16 files that started all passed.
+- `npx vitest run --project auth` in `apps/api`: 113 passed, 1 failed. The failure is `auth.spec.ts` "does not offer public registration or a production inbox" (403, expected 404). It fails the same way with these changes stashed.
+- `npx vitest run --project room test/quiz.spec.ts test/rounds.spec.ts test/troll.spec.ts` in `apps/api` passed: 6 tests.
+- `npm run content:check` passed. Birthday reports two incomplete drafts.
+
+### Manual verification
+
+None. No playable pack contains a poll, threshold or typed question yet, so no room has played one end to end.
+
+### Unresolved issues
+
+- `ignorance-triggers` needs the full order. Only the first (conspiracy theories) was supplied.
+- `mock-election` lists six parties; the rest do not fit the 6-option limit.
+- The new reveal lines use the standard components and are not yet eased; the bespoke designs come next.
+- The pre-existing `auth.spec.ts` failure.
+
+### Next stage
+
+Settle the two open questions, then customise each question's design one at a time.
+
+## Birthday answers and long polls
+
+Status: complete. All ten birthday questions validate as ready. None is in the running order, and no room, demo pack or deployment changed.
+
+### Files and interfaces
+
+- `contentLimits.pollOptionMax` (16) in `packages/shared`. Public choice options, attributions, tally and winners allow up to 16; `checkPlayable` keeps an ordinary choice at 6 and lets a poll reach 16.
+- `.stage-option-grid` in `apps/web/src/index.css`: the stage shows more than six options in columns, keeping the 40px projector minimum.
+- `mock-election` lists 16 parties. `ignorance-triggers` has its order.
+
+### Decisions and defaults
+
+- Humza's trigger order, fastest first: Apple, Palm Beach Pete, politics, conspiracy theories. This replaces the earlier reading of "Conspiracy" as the fastest.
+- The higher limit applies to polls only, as Humza asked to raise it for the election.
+
+### Commands and results
+
+- `npm run typecheck` passed.
+- `npm run test:unit` passed: 31 files, 54 tests.
+- `npx vitest run --project auth test/question-authoring.spec.ts test/quiz-score.spec.ts test/typed-score.spec.ts test/content-preflight.spec.ts` in `apps/api` passed: 31 tests.
+- `npx vitest run --project room test/quiz.spec.ts test/rounds.spec.ts test/social.spec.ts` in `apps/api` passed: 10 tests.
+- `npm run content:check` passed with no incomplete birthday questions.
+
+### Manual verification
+
+None. The stage grid has not been seen on a projector, because no playable pack contains the election yet.
+
+### Unresolved issues
+
+- The pre-existing `auth.spec.ts` production-inbox failure.
+- Every question still uses the standard presentation.
+
+### Next stage
+
+Customise each question's design one at a time, then choose the running order and release a birthday version.
+
+## Custom question designs
+
+Status: complete. All ten birthday questions have their own phone and projector design. None is in the running order, and no room or deployment changed.
+
+### Designs
+
+| Question | Presentation | Phone | Projector |
+| --- | --- | --- | --- |
+| `favourite-genre` | `now-playing` | A playlist; picking a track kicks its equaliser | A spinning turntable; the label flips to the winner |
+| `leviticus-18-7` | `scripture` | An illuminated page; a ribbon bookmark follows the pick | An open bible swings open; the verse is haloed and the full KJV printed |
+| `car-name` | `number-plate` | UK plates screwed on when picked; "Registered" stamp | The back of a car; the right plate flies into the holder and the lights flash |
+| `ignorance-triggers` | `rage-meter` | A heat tube; tap a trigger then its heat; true order glides in at the reveal | A rage gauge; triggers drop in from coolest to hottest, the top one boils over |
+| `mock-election` | `ballot-paper` | A ballot paper with a drawn pen cross | A ballot box filling with papers, then election-night bars and a winner banner |
+| `red-pill-blue-pill` | `red-blue-pill` | Two pills in open palms on a Matrix ground | Code rain; a red/blue split races to the 50% line; the losing side flatlines |
+| `trolley-problem` | `trolley-lever` | A junction whose points switch with the pick | The room's majority throws the points and the tram rolls up to the junction |
+| `real-name-count-binface` | `bin-unmasked` | A nomination paper under a bin-headed candidate | The bin is yanked off to unmask the name in a spotlight |
+| `real-name-zack-polanski` | `deed-poll` | A change-of-name deed; "Witnessed" stamp | "Renounced" stamp and the former name typed out |
+| `real-name-tommy-robinson` | `redacted-file` | A case file; the answer is typed into a redaction bar | The redaction bar peels away to declassify the name |
+
+### Files and interfaces
+
+- `customPresentationIds` in `packages/shared` is the single list. `apps/api/src/questions/presentation.ts` accepts `standard` plus those ids; `apps/web/src/play/designs/registry.ts` must map every id.
+- `apps/web/src/play/presentation.ts`: a phone design receives `phase` and `controls` (open, pending, selectedId, dodge, onSelect, onSubmit, onRank, onText). The stage keeps the standard scoreboard for scores, final, and podium.
+- `apps/web/src/play/designs/kit.tsx`: `useDesignMotion`, `choiceView`, `typedView`, `useTypedDraft`, `ChoiceSend`, `TypedSend`, `TypedField`, `StagePrompt`, `QuestionTag`, `Count`, `LiveCount`.
+- `assignTier` is exported from `rounds/TierAssign.tsx` for the rage meter.
+- `contentColours` in `apps/web/src/theme/themes.ts`: pill red and blue, the Matrix scene, and redaction ink. These are the only colour values outside palettes.
+- `@number-flow/react@0.6.2` pinned for rolling counts.
+- Development-only bench at `/design` (`designs/preview/`), registered behind `import.meta.env.DEV`. It drives the real `GuestPlay` and `StagePlay` with public fields and a stand-in reveal. `&still=1` sets Motion's `skipAnimations`.
+- `.claude/launch.json` starts the web dev server for previews.
+
+### Decisions and defaults
+
+- Every visible change uses Motion springs or eased tweens from `useDesignMotion`. Reduced motion keeps a 0.2s fade and drops movement; CSS loops (equaliser, code rain) run only without reduced motion, and only on the stage.
+- Phone controls never loop. Stage decoration may loop.
+- Long stage prompts step down a size (`StagePrompt`). Each projector design fits about 1,030px at 1920×1080.
+- Stamps and overlays never cover an option or the answer.
+- The bench's fixture repeats public prompts and options only; its reveal is a stand-in, so no answer key reaches `apps/web`.
+
+### Commands and results
+
+- `npm run typecheck` passed.
+- `npm run test:unit` passed: 32 files, 72 tests, including `designs/designs.test.tsx` (every design on both surfaces at prompt, collect and reveal; choice, typed and ranking interactions; fallback to standard).
+- `npx vitest run --project auth test/question-authoring.spec.ts test/content-preflight.spec.ts test/quiz-score.spec.ts test/typed-score.spec.ts` in `apps/api` passed: 31 tests.
+- `npm run content:check` passed.
+
+### Manual verification
+
+- Headless Chromium (Playwright) screenshots of every design at 1920×1080 (stage) and 390×844 (phone), collect and reveal, settled with `still=1`: no page errors, no sideways overflow. Phones also checked on the light `pistachio-party` theme.
+- The in-app browser pane was hidden, so it ran no animation frames; motion timing itself was not watched live.
+
+### Unresolved issues
+
+- The production build was not run, because it writes to `dist/`. The bench route relies on Vite replacing `import.meta.env.DEV` with `false`.
+- No room has played these questions end to end; the birthday pack is still a draft with an empty running order.
+- The pre-existing `auth.spec.ts` production-inbox failure.
+
+### Next stage
+
+Choose the running order, then release a birthday version.
+

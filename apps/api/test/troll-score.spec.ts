@@ -37,8 +37,10 @@ describe("troll scoring rules", () => {
     if (
       !candles ||
       candles.kind !== "choice" ||
+      !candles.correctOptionId ||
       !shape ||
       shape.kind !== "choice" ||
+      !shape.correctOptionId ||
       !shape.speedBonus
     ) {
       throw new Error("The demo speed questions are missing.");

@@ -199,12 +199,34 @@ export const contentLimits = {
   pointsMax: 1000,
   optionMin: 2,
   optionMax: 6,
+  /** A poll may list more options, such as every party on a ballot. */
+  pollOptionMax: 16,
   rankMax: 8,
   collectMinMs: 15_000,
   collectMaxMs: 45_000,
   packMax: 40,
   unitMax: 24,
+  typedMax: 80,
 } as const;
+
+/**
+ * Custom question designs. A question names one of these as its `presentation`.
+ * The server accepts only these ids, and the web app must render every one.
+ */
+export const customPresentationIds = [
+  "now-playing",
+  "scripture",
+  "number-plate",
+  "rage-meter",
+  "ballot-paper",
+  "red-blue-pill",
+  "trolley-lever",
+  "bin-unmasked",
+  "deed-poll",
+  "redacted-file",
+] as const;
+
+export type CustomPresentationId = (typeof customPresentationIds)[number];
 
 const publicOptionIdSchema = z.string().regex(contentLimits.optionId);
 
@@ -269,7 +291,9 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
     .object({
       ...publicQuestionCore,
       kind: z.literal("choice"),
-      options: z.array(publicChoiceSchema).min(2).max(6),
+      options: z.array(publicChoiceSchema).min(2).max(contentLimits.pollOptionMax),
+      /** Absent for an ordinary question with one right option. */
+      outcome: z.enum(["poll", "threshold"]).optional(),
       speedBonus: z.boolean(),
       modifiers: z.array(z.literal("double")).max(1),
       suppressSpeedBonus: z.boolean(),
@@ -284,6 +308,13 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
       step: z.number().finite().positive(),
       unit: z.string().min(1).max(24),
       initial: z.number().finite(),
+    })
+    .strict(),
+  z
+    .object({
+      ...publicQuestionCore,
+      kind: z.literal("typed"),
+      maxLength: z.number().int().min(1).max(contentLimits.typedMax),
     })
     .strict(),
   z
@@ -446,7 +477,35 @@ const revealSchema = z
     z
       .object({
         kind: z.literal("choice"),
-        correctOptionId: publicOptionIdSchema,
+        /** Null for a poll or a threshold outcome. */
+        correctOptionId: publicOptionIdSchema.nullable(),
+        outcome: z.enum(["poll", "threshold"]).optional(),
+        tally: z
+          .array(
+            z
+              .object({
+                optionId: publicOptionIdSchema,
+                count: z.number().int().nonnegative(),
+              })
+              .strict(),
+          )
+          .max(contentLimits.pollOptionMax)
+          .optional(),
+        winners: z
+          .array(publicOptionIdSchema)
+          .max(contentLimits.pollOptionMax)
+          .optional(),
+        everyone: z.boolean().optional(),
+        met: z.boolean().nullable().optional(),
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal("typed"),
+        answer: z.string().min(1).max(contentLimits.typedMax),
+        correctCount: z.number().int().nonnegative(),
+        responseCount: z.number().int().nonnegative(),
+        correctNames: z.array(z.string().min(1).max(24)).max(80).nullable(),
       })
       .strict(),
     z
@@ -587,7 +646,7 @@ export const playSnapshotSchema = z
           })
           .strict(),
       )
-      .max(6)
+      .max(contentLimits.pollOptionMax)
       .nullable(),
     hostAnswers: z
       .array(

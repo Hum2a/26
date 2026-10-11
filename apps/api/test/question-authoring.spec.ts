@@ -4,6 +4,7 @@ import {
   choiceQuestion,
   guessQuestion,
   toPlayable,
+  typedQuestion,
 } from "../src/questions/authoring.ts";
 import { demoQuestionSetVersion } from "../src/room/limits.ts";
 import type { QuestionPack } from "../src/questions/definition.ts";
@@ -114,7 +115,9 @@ describe("question authoring", () => {
     ).toEqual(["incomplete", "incomplete"]);
     expect(JSON.stringify(draft)).not.toContain('"known"');
     expect(birthdayPack.order).not.toContain(draft.id);
-    expect(birthdayPack.catalogue).toEqual([]);
+    expect(birthdayPack.catalogue.map((question) => question.id)).not.toContain(
+      draft.id,
+    );
   });
 
   it("rejects a draft that was placed in the running order", () => {
@@ -271,6 +274,183 @@ describe("question authoring", () => {
       "birthday-draft",
     ]);
     expect(birthdayPack.release).toBe("draft");
+    expect(birthdayPack.order).toEqual([]);
+  });
+
+  it("authors polls, threshold outcomes, and typed answers without a correct option", () => {
+    const poll = choiceQuestion({
+      id: "poll",
+      title: "Poll",
+      prompt: "Pick one.",
+      outcome: { kind: "poll" },
+      options: fixtureOptions,
+    });
+    expect(poll.status).toBe("ready");
+    expect(poll.points).toBe(0);
+    expect(toPlayable(poll)).toMatchObject({ correctOptionId: null, points: 0 });
+
+    const split = choiceQuestion({
+      id: "split",
+      title: "Split",
+      prompt: "Pick one.",
+      options: fixtureOptions,
+      outcome: {
+        kind: "threshold",
+        optionId: "yes",
+        above: 0.5,
+        met: "everyone",
+        otherwise: ["no"],
+      },
+    });
+    expect(split.status).toBe("ready");
+    expect(split.points).toBe(100);
+
+    const typed = typedQuestion({
+      id: "typed",
+      title: "Typed",
+      prompt: "Type it.",
+      accepted: { known: ["Jon Harvey"] },
+    });
+    expect(typed.status).toBe("ready");
+    expect(toPlayable(typed)).toMatchObject({ kind: "typed", maxLength: 60 });
+    const missing = typedQuestion({
+      id: "typed-draft",
+      title: "Typed",
+      prompt: "Type it.",
+    });
+    expect(missing.status).toBe("draft");
+    expect(toPlayable(missing)).toBeUndefined();
+
+    const pack = partyPack({
+      catalogue: [poll, split, typed],
+      order: ["poll", "split", "typed"],
+    });
+    expect(validatePack(pack).filter((item) => item.level === "error")).toEqual([]);
+  });
+
+  it("rejects a scored poll, a threshold on a missing option, and an oversized answer box", () => {
+    const scoredPoll = choiceQuestion({
+      id: "scored-poll",
+      title: "Poll",
+      prompt: "Pick one.",
+      outcome: { kind: "poll" },
+      points: 50,
+      options: fixtureOptions,
+    });
+    const badSplit = choiceQuestion({
+      id: "bad-split",
+      title: "Split",
+      prompt: "Pick one.",
+      options: fixtureOptions,
+      outcome: {
+        kind: "threshold",
+        optionId: "maybe",
+        above: 0.5,
+        met: "everyone",
+        otherwise: ["no"],
+      },
+    });
+    const wideBox = typedQuestion({
+      id: "wide-box",
+      title: "Typed",
+      prompt: "Type it.",
+      maxLength: 200,
+      accepted: { known: ["x"] },
+    });
+    const pack = partyPack({
+      catalogue: [scoredPoll, badSplit, wideBox],
+      order: ["scored-poll", "bad-split", "wide-box"],
+    });
+    const errors = validatePack(pack)
+      .filter((item) => item.level === "error")
+      .map((item) => item.message);
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        "scored-poll is a poll, so its points must be 0.",
+        "bad-split threshold names an option that is not in the list.",
+        "wide-box answer box must hold 1 to 80 characters.",
+      ]),
+    );
+  });
+
+  it("projects a typed question without its accepted answers", () => {
+    const typed = toPlayable(
+      typedQuestion({
+        id: "typed",
+        title: "Typed",
+        prompt: "Type it.",
+        accepted: { known: ["Jon Harvey"] },
+      }),
+    );
+    if (!typed || typed.kind !== "typed") {
+      throw new Error("The typed fixture is ready.");
+    }
+    const view = publicQuestionSchema.parse({
+      ...publicQuestionCore(typed, 1, 1),
+      kind: "typed",
+      maxLength: typed.maxLength,
+    });
+    expect(JSON.stringify(view)).not.toContain("Jon Harvey");
+  });
+
+  it("lets a poll list up to 16 options but keeps an ordinary choice at 6", () => {
+    const many = Array.from({ length: 16 }, (_, index) => ({
+      id: `party-${index}`,
+      label: `Party ${index}`,
+    }));
+    const ballot = choiceQuestion({
+      id: "ballot",
+      title: "Ballot",
+      prompt: "Vote for a party.",
+      outcome: { kind: "poll" },
+      options: many,
+    });
+    const crowded = choiceQuestion({
+      id: "crowded",
+      title: "Crowded",
+      prompt: "Pick one.",
+      options: many.slice(0, 7),
+      correctOption: { known: "party-0" },
+    });
+    const tooMany = choiceQuestion({
+      id: "too-many",
+      title: "Too many",
+      prompt: "Vote.",
+      outcome: { kind: "poll" },
+      options: [...many, { id: "party-16", label: "Party 16" }],
+    });
+    const pack = partyPack({
+      catalogue: [ballot, crowded, tooMany],
+      order: ["ballot", "crowded", "too-many"],
+    });
+    const failing = validatePack(pack)
+      .filter((item) => item.level === "error")
+      .map((item) => item.message);
+    expect(failing).toEqual([
+      "crowded needs distinct options.",
+      "too-many needs distinct options.",
+    ]);
+    const ballotPlayable = toPlayable(ballot);
+    if (!ballotPlayable || ballotPlayable.kind !== "choice") {
+      throw new Error("The ballot is ready.");
+    }
+    expect(() =>
+      publicQuestionSchema.parse({
+        ...publicQuestionCore(ballotPlayable, 1, 1),
+        kind: "choice",
+        options: ballotPlayable.options,
+        outcome: "poll",
+        speedBonus: false,
+        modifiers: [],
+        suppressSpeedBonus: false,
+      }),
+    ).not.toThrow();
+  });
+
+  it("keeps the birthday catalogue valid with drafts out of the running order", () => {
+    expect(validatePack(birthdayPack).filter((item) => item.level === "error")).toEqual(
+      [],
+    );
     expect(birthdayPack.order).toEqual([]);
   });
 });

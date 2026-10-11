@@ -1,0 +1,126 @@
+/* Shared bits for the question designs. Colours come from the theme variables. */
+
+.design-tag {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stage-safe .design-tag {
+  font-size: 40px;
+  letter-spacing: 0.08em;
+}
+
+.design-tag-extra {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.1rem 0.7rem;
+}
+
+.design-stage {
+  display: grid;
+  gap: 1.75rem;
+  min-width: 0;
+}
+
+.design-stage-prompt {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: max(72px, 5.2vw);
+  line-height: 1.04;
+  color: var(--highlight);
+}
+
+.design-stage-prompt[data-size="medium"] {
+  font-size: max(60px, 4vw);
+}
+
+.design-stage-prompt[data-size="long"] {
+  font-size: max(48px, 3vw);
+  line-height: 1.12;
+}
+
+.design-stage-line {
+  margin: 0;
+  font-size: max(40px, 2.6vw);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.design-phone {
+  display: grid;
+  gap: 1rem;
+}
+
+.design-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.typed-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.typed-field-label {
+  font-weight: 700;
+}
+
+.typed-field-input {
+  min-height: 3.25rem;
+  width: 100%;
+  font: inherit;
+  font-size: 1.25rem;
+}
+
+.typed-field-input:disabled {
+  cursor: default;
+}
+
+/* Development design bench (`/design`). */
+.design-bench {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.design-bench-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.design-bench-bar button,
+.design-bench-bar select {
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--background);
+  padding: 0.25rem 0.5rem;
+  color: var(--foreground);
+  font: inherit;
+}
+
+.design-bench-phone {
+  margin: 0 auto;
+  width: min(100%, 26rem);
+}

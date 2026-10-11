@@ -1,0 +1,217 @@
+/* Rage meter: a thermometer on the phone, a heat gauge on the stage. */
+
+.rage-help {
+  margin: 0;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.rage-tube {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  border: 3px solid var(--line);
+  border-radius: 2rem;
+  background: var(--surface);
+  padding: 0.5rem;
+  list-style: none;
+}
+
+.rage-slot {
+  position: relative;
+  display: grid;
+  grid-template-columns: 6.5rem 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+  min-height: 3.75rem;
+  border: 2px dashed color-mix(in srgb, var(--accent) var(--heat), var(--line));
+  border-radius: 1.5rem;
+  background: color-mix(
+    in srgb,
+    var(--accent) calc(var(--heat) * 0.45),
+    var(--surface)
+  );
+  padding: 0.4rem 0.6rem;
+  color: var(--surface-foreground);
+  font: inherit;
+  text-align: left;
+}
+
+.rage-slot[data-armed] {
+  border-style: solid;
+  box-shadow: 0 0 0 2px var(--highlight);
+}
+
+.rage-slot:disabled {
+  cursor: default;
+}
+
+.rage-level {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rage-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.rage-chip {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  min-height: 3rem;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--background);
+  padding: 0.3rem 0.9rem;
+  color: var(--foreground);
+  font: inherit;
+  font-weight: 700;
+}
+
+.rage-chip[data-picked] {
+  border-color: var(--highlight);
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+}
+
+.rage-chip[data-placed] {
+  min-height: 2.5rem;
+}
+
+.rage-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.rage-verdict {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--foreground);
+  color: var(--background);
+  font-weight: 700;
+}
+
+.rage-verdict[data-right] {
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+}
+
+.rage-truth {
+  margin: 0.25rem 0 0 1rem;
+  color: var(--muted);
+}
+
+.rage-undo {
+  justify-self: start;
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  min-height: 3rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  padding: 0 1rem;
+  color: var(--foreground);
+  font: inherit;
+  font-weight: 700;
+}
+
+/* Stage */
+
+.rage-gauge {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  border: 4px solid var(--line);
+  border-radius: 2.5rem;
+  background: var(--surface);
+  padding: 1.5rem;
+  overflow: hidden;
+}
+
+.rage-mercury {
+  position: absolute;
+  inset: auto 1.5rem 1rem;
+  height: 1.2rem;
+  border-radius: 1rem;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 20%, var(--surface)),
+    var(--accent) 70%,
+    var(--highlight)
+  );
+  transform-origin: left center;
+}
+
+.rage-column {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 1rem;
+  min-height: 15rem;
+  border-radius: 1.75rem;
+  background: color-mix(
+    in srgb,
+    var(--accent) calc(var(--heat) * 0.55),
+    var(--surface)
+  );
+  padding: 1.25rem 1rem 2.5rem;
+}
+
+.rage-column-label {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  font-size: max(40px, 2.2vw);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.rage-column-well {
+  display: grid;
+  align-content: end;
+  justify-items: center;
+  gap: 1rem;
+}
+
+.rage-stage-chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+  border: 3px solid var(--line);
+  border-radius: 1.75rem;
+  background: var(--background);
+  padding: 0.6rem 1.25rem;
+  line-height: 1.1;
+  font-size: max(40px, 2.2vw);
+  font-weight: 700;
+  text-align: center;
+}
+
+.rage-stage-chip[data-hottest] {
+  border-color: var(--highlight);
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+  box-shadow: 0 0 3rem var(--highlight);
+}
+
+.rage-floaters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  justify-content: center;
+}

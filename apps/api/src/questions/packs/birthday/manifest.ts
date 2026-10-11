@@ -1,4 +1,14 @@
 import type { QuestionPack } from "../../definition.ts";
+import { carName } from "./car-name.ts";
+import { favouriteGenre } from "./favourite-genre.ts";
+import { ignoranceTriggers } from "./ignorance-triggers.ts";
+import { leviticus187 } from "./leviticus-18-7.ts";
+import { mockElection } from "./mock-election.ts";
+import { realNameCountBinface } from "./real-name-count-binface.ts";
+import { realNameTommyRobinson } from "./real-name-tommy-robinson.ts";
+import { realNameZackPolanski } from "./real-name-zack-polanski.ts";
+import { redPillBluePill } from "./red-pill-blue-pill.ts";
+import { trolleyProblem } from "./trolley-problem.ts";
 
 /**
  * Working catalogue for Humza's questions.
@@ -13,5 +23,16 @@ export const birthdayPack: QuestionPack = {
   profile: "party",
   illustrative: false,
   order: [],
-  catalogue: [],
+  catalogue: [
+    favouriteGenre,
+    leviticus187,
+    carName,
+    ignoranceTriggers,
+    mockElection,
+    redPillBluePill,
+    trolleyProblem,
+    realNameCountBinface,
+    realNameZackPolanski,
+    realNameTommyRobinson,
+  ],
 };

@@ -319,7 +319,7 @@ function contains(question: SliderQuestion, value: number): boolean {
   );
 }
 
-function collectDeadline(
+export function collectDeadline(
   store: GameStore,
   phaseGeneration: number,
 ): number | undefined {
@@ -335,7 +335,7 @@ function collectDeadline(
   return due === null ? undefined : due;
 }
 
-function gateMessage(store: GameStore, now: number): string | undefined {
+export function gateMessage(store: GameStore, now: number): string | undefined {
   const gate = submissionGate(store, now);
   if (gate.ok) {
     return undefined;

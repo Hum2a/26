@@ -58,8 +58,26 @@ type AuthorFields = {
   requirements?: readonly MissingRequirement[];
 };
 
+/**
+ * How a choice is settled. `correct` has one right option.
+ * `poll` has none and scores nothing. `threshold` scores by the room's split:
+ * when more than `above` (0 to 1) of the answers pick `optionId`, `met` scores;
+ * otherwise `otherwise` scores. `everyone` means every guest who answered.
+ */
+export type ChoiceOutcome =
+  | { kind: "correct" }
+  | { kind: "poll" }
+  | {
+      kind: "threshold";
+      optionId: string;
+      above: number;
+      met: "everyone" | readonly string[];
+      otherwise: "everyone" | readonly string[];
+    };
+
 export type ChoiceBody = {
   kind: "choice";
+  outcome: ChoiceOutcome;
   options: { id: string; label: string }[];
   speedBonus: { maxPoints: number } | null;
   modifiers?: readonly "double"[];
@@ -99,6 +117,12 @@ export type VoteBody = {
   lateJoin: "ineligible";
 };
 
+/** A typed answer, matched against accepted spellings at the reveal. */
+export type TypedBody = {
+  kind: "typed";
+  maxLength: number;
+};
+
 export type GuessBody = {
   kind: "guess";
   roster: "room" | "shortlist";
@@ -132,9 +156,10 @@ export type FinaleBody = DuelScale & {
   predictMs: number;
 };
 
+/** `known: null` means the outcome has no single right option. */
 export type AuthoredChoice = AuthorFields &
   ChoiceBody & {
-    correctOption: Answer<string>;
+    correctOption: Answer<string | null>;
   };
 
 export type AuthoredSlider = AuthorFields &
@@ -145,6 +170,12 @@ export type AuthoredSlider = AuthorFields &
 export type AuthoredRank = AuthorFields &
   RankBody & {
     truth: Answer<{ tierId: string; itemIds: string[] }[]>;
+  };
+
+/** The first accepted spelling is the one shown at the reveal. */
+export type AuthoredTyped = AuthorFields &
+  TypedBody & {
+    accepted: Answer<readonly string[]>;
   };
 
 export type AuthoredVote = AuthorFields & VoteBody;
@@ -165,6 +196,7 @@ export type AuthoredQuestion =
   | AuthoredChoice
   | AuthoredSlider
   | AuthoredRank
+  | AuthoredTyped
   | AuthoredVote
   | AuthoredGuess
   | AuthoredDuel
@@ -176,9 +208,10 @@ type PlayableFields = AuthorFields & {
   illustrative: boolean;
 };
 
+/** `correctOptionId` is null for a poll or a threshold outcome. */
 export type ChoiceQuestion = PlayableFields &
   ChoiceBody & {
-    correctOptionId: string;
+    correctOptionId: string | null;
   };
 
 export type SliderQuestion = PlayableFields &
@@ -189,6 +222,11 @@ export type SliderQuestion = PlayableFields &
 export type RankQuestion = PlayableFields &
   RankBody & {
     truth: { tierId: string; itemIds: string[] }[];
+  };
+
+export type TypedQuestion = PlayableFields &
+  TypedBody & {
+    accepted: readonly string[];
   };
 
 export type VoteQuestion = PlayableFields & VoteBody;
@@ -210,6 +248,7 @@ export type Question =
   | ChoiceQuestion
   | SliderQuestion
   | RankQuestion
+  | TypedQuestion
   | VoteQuestion
   | GuessQuestion
   | DuelQuestion
@@ -282,6 +321,17 @@ export function missingRequirements(question: AuthoredQuestion): MissingRequirem
     }
     if (!isKnown(question.truth)) {
       add(question.truth.missing);
+    }
+  }
+  if (question.kind === "typed") {
+    if (!isKnown(question.accepted)) {
+      add(question.accepted.missing);
+    } else if (question.accepted.known.every((answer) => !answer.trim())) {
+      add({
+        code: "correct-answer",
+        name: "accepted",
+        detail: "The accepted answer has not been supplied.",
+      });
     }
   }
   if (question.kind === "rank") {

@@ -55,6 +55,7 @@ export const rankTieMessage = "Each position can hold one item.";
 export const rankPartialMessage = "Place at least one item.";
 export const textInvalidMessage = "Write an answer of 1 to 80 characters.";
 export const textClosedMessage = "This question is not collecting written answers.";
+export const typedInvalidMessage = "Type an answer that fits the box.";
 export const ballotClosedMessage = "This question is not collecting votes.";
 export const ballotUnknownMessage = "That answer is not on the ballot.";
 export const ballotSelfMessage = "You cannot vote for your own answer.";

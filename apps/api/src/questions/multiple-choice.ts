@@ -18,8 +18,22 @@ import {
   type GuessQuestion,
   type RankQuestion,
   type SliderQuestion,
+  type TypedQuestion,
   type VoteQuestion,
 } from "./definition.ts";
+import {
+  choiceTally,
+  choiceWins,
+  settleChoice,
+  type ChoiceSettlement,
+} from "./choice-outcome.ts";
+import {
+  publicTypedQuestion,
+  readTypedAnswer,
+  typedHostResponses,
+  typedReveal,
+  typedScores,
+} from "./typed.ts";
 import { attachAudienceFields, publicQuestionCore } from "./project.ts";
 import { questionFor, requirePlayable } from "./registry.ts";
 import {
@@ -97,6 +111,8 @@ export function multipleChoicePlugin(): RoundPlugin {
 }
 
 /**
+ * A poll scores nothing. A threshold outcome scores whoever the room's split
+ * names, from `settlement`. Without one, the correct option wins.
  * Speed bonus uses the server receipt.
  * `receivedAt` is the Durable Object clock when the answer row is inserted.
  * `deadlineAt` is the collect job's due time read in that same transaction.
@@ -107,11 +123,12 @@ export function pointsFor(
   question: ChoiceQuestion,
   answer: { optionId: string; receivedAt: number; deadlineAt: number } | undefined,
   troll?: { suppressSpeed: boolean; modifiers: readonly string[] },
+  settlement: ChoiceSettlement = settleChoice(question, []),
 ): { points: number; detail: string } {
-  if (!answer || answer.optionId !== question.correctOptionId) {
+  if (!answer || !choiceWins(settlement, answer.optionId)) {
     return applyScoreModifiers(
       0,
-      "miss",
+      settlement.outcome === "poll" && answer ? "poll" : "miss",
       question.modifiers ?? [],
       troll?.modifiers ?? [],
     );
@@ -283,6 +300,10 @@ export function recordRevealScores(
     scoreDuelQuestion(sql, question, now);
     return;
   }
+  if (question.kind === "typed") {
+    typedScores(sql, question, now);
+    return;
+  }
   const players = sql
     .exec<{ player_id: string }>(
       `SELECT player_id FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
@@ -303,6 +324,10 @@ export function recordRevealScores(
       .toArray()
       .map((row) => [row.player_id, row] as const),
   );
+  const settlement = settleChoice(
+    question,
+    [...answers.values()].map((row) => row.option_id),
+  );
   for (const player of players) {
     const answer = answers.get(player.player_id);
     const scored = pointsFor(
@@ -320,6 +345,7 @@ export function recordRevealScores(
           : false,
         modifiers: activeModifierKinds(sql, player.player_id, room.questionIndex),
       },
+      settlement,
     );
     sql.exec(
       `INSERT OR IGNORE INTO score_ledger (
@@ -421,6 +447,9 @@ export function projectPlay(
         label: option.label,
       })),
       kind: "choice" as const,
+      ...(question.outcome.kind === "correct"
+        ? {}
+        : { outcome: question.outcome.kind }),
       speedBonus: question.speedBonus !== null,
       modifiers: [...(question.modifiers ?? [])],
       suppressSpeedBonus: question.suppressSpeedBonus === true,
@@ -430,9 +459,7 @@ export function projectPlay(
     selfBallot: null,
     ballot: null,
     duel: null,
-    reveal: scored
-      ? { kind: "choice" as const, correctOptionId: question.correctOptionId }
-      : null,
+    reveal: scored ? choiceReveal(sql, question) : null,
     selfAward: selfAward(sql, question.id, audience, scored, selfPlayerId),
     selfStanding:
       audience === "guest" && showStanding && selfRow
@@ -453,6 +480,32 @@ export function projectPlay(
       : {}),
   };
   return parsePlay(view, question, audience, scored);
+}
+
+/** An ordinary question keeps its one-field reveal. Polls and thresholds add the room's split. */
+function choiceReveal(sql: SqlStorage, question: ChoiceQuestion) {
+  if (question.outcome.kind === "correct") {
+    return { kind: "choice" as const, correctOptionId: question.correctOptionId };
+  }
+  const answers = sql
+    .exec<{ option_id: string }>(
+      `SELECT choice_answer.option_id FROM choice_answer
+       JOIN player ON player.player_id = choice_answer.player_id
+       WHERE choice_answer.question_id = ? AND player.revoked_at IS NULL`,
+      question.id,
+    )
+    .toArray()
+    .map((row) => row.option_id);
+  const settlement = settleChoice(question, answers);
+  return {
+    kind: "choice" as const,
+    correctOptionId: null,
+    outcome: question.outcome.kind,
+    tally: choiceTally(question.options, answers),
+    winners: [...settlement.optionIds],
+    everyone: settlement.everyone,
+    met: settlement.met,
+  };
 }
 
 function projectBallot(
@@ -529,7 +582,7 @@ function projectSpecial(
   room: RoomClock,
   audience: "guest" | "stage" | "control",
   selfPlayerId: string | undefined,
-  question: SliderQuestion | RankQuestion,
+  question: SliderQuestion | RankQuestion | TypedQuestion,
   scored: boolean,
 ): PlaySnapshot | null {
   const totals = standings(sql);
@@ -548,25 +601,35 @@ function projectSpecial(
     question.kind === "rank"
       ? readRanking(sql, selfPlayerId ?? "", question)
       : undefined;
+  const typed =
+    question.kind === "typed"
+      ? readTypedAnswer(sql, selfPlayerId ?? "", question.id)
+      : undefined;
   const view = {
     question:
       question.kind === "slider"
         ? publicSliderQuestion(question, index, room.questionCount)
-        : publicRankQuestion(question, index, room.questionCount),
+        : question.kind === "typed"
+          ? publicTypedQuestion(question, index, room.questionCount)
+          : publicRankQuestion(question, index, room.questionCount),
     submissionCount: responseCount(sql, question.id),
     selfAnswer:
       question.kind === "slider" && estimate !== undefined
         ? { kind: "slider" as const, value: estimate }
         : question.kind === "rank" && ranking
           ? { kind: "rank" as const, placements: ranking }
-          : null,
+          : question.kind === "typed" && typed !== undefined
+            ? { kind: "text" as const, body: typed }
+            : null,
     selfBallot: null,
     ballot: null,
     duel: null,
     reveal:
       question.kind === "slider"
         ? sliderReveal(sql, question, scored, showNames && scored)
-        : rankReveal(sql, question, scored, showNames && scored),
+        : question.kind === "typed"
+          ? typedReveal(sql, question, scored, showNames && scored)
+          : rankReveal(sql, question, scored, showNames && scored),
     selfAward: selfAward(sql, question.id, audience, scored, selfPlayerId),
     selfStanding:
       audience === "guest" && showStanding && selfRow
@@ -593,7 +656,9 @@ function projectSpecial(
           hostResponses:
             question.kind === "slider"
               ? sliderHostResponses(sql, question)
-              : rankHostResponses(sql, question),
+              : question.kind === "typed"
+                ? typedHostResponses(sql, question)
+                : rankHostResponses(sql, question),
         }
       : {}),
   };

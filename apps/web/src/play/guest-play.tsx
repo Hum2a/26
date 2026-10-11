@@ -1,4 +1,4 @@
-import type { LobbySnapshot } from "@26/shared";
+import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
 import { OptionText } from "../rounds/OptionText";
 import { SubmitButton } from "../rounds/SubmitButton";
 import { roundSubmitState } from "../rounds/submit-state";
@@ -46,11 +46,25 @@ export function GuestPlay({
     !snapshot.held &&
     !play.selfAnswer &&
     !pending;
-  const revealed =
-    play.reveal?.kind === "choice" ? play.reveal.correctOptionId : undefined;
+  const choiceReveal = play.reveal?.kind === "choice" ? play.reveal : undefined;
+  const dodge = snapshot.trolls.active.some(
+    (effect) =>
+      effect.kind === "yield" && effect.role === "target" && effect.status === "active",
+  );
   const custom = renderPresentation(play.question.presentation, {
     surface: "phone",
+    phase: snapshot.phase,
     play,
+    controls: {
+      open,
+      pending,
+      selectedId,
+      dodge,
+      onSelect,
+      onSubmit,
+      onRank,
+      onText,
+    },
   });
   if (custom) {
     return custom;
@@ -64,6 +78,9 @@ export function GuestPlay({
         {play.question.kind === "choice" && play.question.speedBonus
           ? " A faster answer can score a bonus."
           : ""}
+        {play.question.kind === "choice" && play.question.outcome === "poll"
+          ? " Just for fun. No points."
+          : ""}
       </p>
       <h1 className="phone-prompt">{play.question.prompt}</h1>
       {play.question.instructions ? (
@@ -75,6 +92,20 @@ export function GuestPlay({
       ) : null}
       {play.question.kind === "rank" ? (
         <GuestRank play={play} open={open} pending={pending} onSubmit={onRank} />
+      ) : null}
+      {play.question.kind === "typed" &&
+      (snapshot.phase === "collect" || play.selfAnswer) ? (
+        <GuestText
+          play={play}
+          blocked={
+            snapshot.phase !== "collect" || snapshot.paused || snapshot.held || pending
+          }
+          pending={pending}
+          onSubmit={onText}
+          label="Your answer"
+          action="Send answer"
+          maxLength={play.question.maxLength}
+        />
       ) : null}
       {play.question.kind === "vote" && snapshot.phase === "collect" ? (
         <GuestText
@@ -119,7 +150,7 @@ export function GuestPlay({
               selectedId === option.id ||
               (play.selfAnswer?.kind === "choice" &&
                 play.selfAnswer.optionId === option.id);
-            const correct = revealed === option.id;
+            const note = choiceNote(choiceReveal, option.id);
             return (
               <Button
                 key={option.id}
@@ -129,9 +160,7 @@ export function GuestPlay({
                 disabled={!open}
                 onClick={() => onSelect(option.id)}
               >
-                <OptionText
-                  text={correct ? `${option.label} — the answer` : option.label}
-                />
+                <OptionText text={`${option.label}${note}`} />
               </Button>
             );
           })}
@@ -140,16 +169,7 @@ export function GuestPlay({
       <AnswerNames play={play} />
       {play.question.kind === "choice" && (open || pending || play.selfAnswer) ? (
         <SubmitButton
-          className={
-            snapshot.trolls.active.some(
-              (effect) =>
-                effect.kind === "yield" &&
-                effect.role === "target" &&
-                effect.status === "active",
-            )
-              ? "troll-dodge"
-              : ""
-          }
+          className={dodge ? "troll-dodge" : ""}
           label="Send answer"
           state={roundSubmitState(Boolean(play.selfAnswer), pending)}
           disabled={!play.selfAnswer && !selectedId}
@@ -158,4 +178,23 @@ export function GuestPlay({
       ) : null}
     </section>
   );
+}
+
+/** Phone label suffix at the reveal: the right answer, or the room's count and who scored. */
+export function choiceNote(
+  reveal: Extract<NonNullable<PlaySnapshot["reveal"]>, { kind: "choice" }> | undefined,
+  optionId: string,
+): string {
+  if (!reveal) {
+    return "";
+  }
+  if (reveal.correctOptionId === optionId) {
+    return " — the answer";
+  }
+  const count = reveal.tally?.find((row) => row.optionId === optionId)?.count;
+  const tally =
+    count === undefined ? "" : ` — ${count} ${count === 1 ? "vote" : "votes"}`;
+  const scored =
+    reveal.everyone || reveal.winners?.includes(optionId) ? ", scored" : "";
+  return `${tally}${scored}`;
 }

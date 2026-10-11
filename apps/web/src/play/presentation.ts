@@ -1,30 +1,54 @@
 import type { ReactNode } from "react";
-import type { PlaySnapshot } from "@26/shared";
+import type { CustomPresentationId, PlaySnapshot, RoomPhaseName } from "@26/shared";
+import type { TierPlacement } from "../rounds/TierAssign";
+import { designs } from "./designs/registry";
 
-export type QuestionPresentation = (props: {
-  surface: "phone" | "stage";
-  play: PlaySnapshot;
-}) => ReactNode;
+/** What a phone design may do. The server still decides whether an answer is accepted. */
+export type PhoneControls = {
+  /** Answers are open, and this phone has not answered yet. */
+  open: boolean;
+  pending: boolean;
+  selectedId?: string;
+  /** The send button should dodge (a troll is active). */
+  dodge: boolean;
+  onSelect: (optionId: string) => void;
+  onSubmit: () => void;
+  onRank: (placements: TierPlacement[]) => void;
+  onText: (body: string) => void;
+};
 
-const customPresentations: Record<string, QuestionPresentation | undefined> = {};
+export type PresentationProps =
+  | {
+      surface: "phone";
+      phase: RoomPhaseName;
+      play: PlaySnapshot;
+      controls: PhoneControls;
+    }
+  | {
+      surface: "stage";
+      phase: RoomPhaseName;
+      play: PlaySnapshot;
+    };
+
+/** A design returns nothing when the snapshot is not the kind it draws, and the standard view takes over. */
+export type QuestionPresentation = (props: PresentationProps) => ReactNode | undefined;
+
+const customPresentations: Record<CustomPresentationId, QuestionPresentation> = designs;
 
 /**
  * `standard` keeps the existing phone and stage components.
- * A later design can register another id without changing the question's mechanic.
+ * A custom id draws its own phone and stage without changing the question's mechanic.
  */
 export function resolvePresentation(id: string): QuestionPresentation | undefined {
   if (id === "standard") {
     return undefined;
   }
-  return customPresentations[id];
+  return (customPresentations as Record<string, QuestionPresentation | undefined>)[id];
 }
 
 export function renderPresentation(
   id: string,
-  props: {
-    surface: "phone" | "stage";
-    play: PlaySnapshot;
-  },
+  props: PresentationProps,
 ): ReactNode | undefined {
-  return resolvePresentation(id)?.(props);
+  return resolvePresentation(id)?.(props) ?? undefined;
 }

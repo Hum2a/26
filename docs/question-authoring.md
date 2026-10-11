@@ -23,15 +23,22 @@ Register that export in `catalogue` inside `apps/api/src/questions/packs/birthda
 
 Helpers live in `apps/api/src/questions/authoring.ts`. Defaults live only in `apps/api/src/questions/defaults.ts`.
 
-| Idea                                    | Helper           | Mechanic |
-| --------------------------------------- | ---------------- | -------- |
-| Pick one option                         | `choiceQuestion` | `choice` |
-| Estimate a number                       | `sliderQuestion` | `slider` |
-| Put items in order                      | `rankQuestion`   | `rank`   |
-| Write a line, then vote                 | `voteQuestion`   | `vote`   |
-| Name a person                           | `guessQuestion`  | `guess`  |
-| One-against-one number                  | `duelQuestion`   | `duel`   |
-| Two contestants, everyone else predicts | `finaleQuestion` | `finale` |
+| Idea                                    | Helper                                                      | Mechanic |
+| --------------------------------------- | ----------------------------------------------------------- | -------- |
+| Pick one option                         | `choiceQuestion`                                            | `choice` |
+| Vote with no right answer               | `choiceQuestion` with `outcome: { kind: "poll" }`           | `choice` |
+| The room's split decides who scores     | `choiceQuestion` with `outcome: { kind: "threshold", ... }` | `choice` |
+| Type a short answer                     | `typedQuestion`                                             | `typed`  |
+| Estimate a number                       | `sliderQuestion`                                            | `slider` |
+| Put items in order                      | `rankQuestion`                                              | `rank`   |
+| Write a line, then vote                 | `voteQuestion`                                              | `vote`   |
+| Name a person                           | `guessQuestion`                                             | `guess`  |
+| One-against-one number                  | `duelQuestion`                                              | `duel`   |
+| Two contestants, everyone else predicts | `finaleQuestion`                                            | `finale` |
+
+A threshold outcome names an option, a share, and who scores either way. `{ kind: "threshold", optionId: "blue", above: 0.5, met: "everyone", otherwise: ["red"] }` means: if more than half of the answers are blue, everyone who answered scores; otherwise only red scores. A guest with no answer never scores.
+
+A typed question lists its accepted spellings. The first is shown at the reveal. Matching ignores case, accents, punctuation, hyphens and spacing, and forgives a small typo: none up to 4 letters, one up to 9, two beyond that. Wrong answers stay off the stage.
 
 If the idea needs an interaction that is not in that list, say so and still save a draft. Do not force it into the wrong mechanic, and do not start a new scoring engine.
 
@@ -70,7 +77,8 @@ That file is a draft. The photo and the person are still required. Nothing here 
 When an ordinary setting is omitted, the helper uses `apps/api/src/questions/defaults.ts`:
 
 - 20 seconds to answer, attribution `after`, presentation `standard`, no score modifier, no speed bonus.
-- Choice: 100 points.
+- Choice: 100 points, 2 to 6 options. A poll is 0 points, cannot have a speed bonus, and may list up to 16 options.
+- Typed: 100 points, a 60-character box (at most 80).
 - Slider: 100 points, with full points for an exact value.
 - Rank: 80 points, complete order, ties forbidden.
 - Vote: 60 points, 20 seconds to vote, every line, no self-vote, the authors of the winning lines score, a tie shares the points.
@@ -95,6 +103,16 @@ Editing the birthday catalogue does not change a room. `startDemo` still pins `d
 
 `npm run content:export` rewrites the offline answer key and presenter order. Pass `birthday` to export that catalogue only. The default writes both. Those files stay in `docs/content/` and are not public web assets.
 
-## Custom design, later
+## Custom design
 
-Say `Now customise the design of this question.` The question file keeps its id and mechanic. Set `presentation` to a new slug, register that slug in `apps/api/src/questions/presentation.ts`, and add a component in `apps/web/src/play/presentation.ts`. Until then, `resolvePresentation` returns nothing for `standard`, and the existing phone and stage components render the question. The client receives only the public presentation id, the prompt, and the fields that role and phase already allow.
+Say `Now customise the design of this question.` The question file keeps its id and mechanic.
+
+1. Add a slug to `customPresentationIds` in `packages/shared/src/index.ts`. The server accepts only those ids, and the web registry must draw every one, or the typecheck fails.
+2. Set `presentation` to that slug on the question.
+3. Write `apps/web/src/play/designs/<slug>.tsx` and its CSS. Use the kit in `designs/kit.tsx`: `useDesignMotion` for eased, reduced-motion-safe motion, `choiceView` or `typedView` for state, `ChoiceSend` or `TypedSend` for the dock button, and `StagePrompt` for the projector question. A design returns nothing for a kind it does not draw, and the standard view takes over.
+4. Register it in `designs/registry.ts`.
+5. Look at it in development at `/design?q=<slug>&surface=phone|stage&phase=prompt|collect|reveal`. Add `&still=1` to skip to the end of every animation. The bench uses public question fields only and a stand-in reveal, never the answer key.
+
+A phone design receives the phone's `open`, `pending`, `selectedId`, and the select, send, rank, and text handlers. The stage keeps the standard scoreboard for scores, final, and podium. Colours come from the theme variables. A colour that is the content itself, such as the red and blue pill, is a named entry in `contentColours` in `themes.ts`.
+
+`standard` keeps the existing phone and stage components. The client receives only the public presentation id, the prompt, and the fields that role and phase already allow.

@@ -1,0 +1,164 @@
+/* Redacted file: a manila case file with a redaction bar. */
+
+.dossier-folder {
+  position: relative;
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  border-radius: 0 0.75rem 0.75rem 0.75rem;
+  background: color-mix(in srgb, var(--highlight) 30%, var(--surface));
+  padding: 1.25rem 1rem;
+  color: var(--surface-foreground);
+  box-shadow: 0 0.5rem 1.5rem color-mix(in srgb, var(--foreground) 20%, transparent);
+}
+
+.dossier-tab {
+  position: absolute;
+  top: -1.6rem;
+  left: 0;
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  border-radius: 0.6rem 0.6rem 0 0;
+  background: color-mix(in srgb, var(--highlight) 30%, var(--surface));
+  padding: 0.25rem 0.9rem;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.dossier-fields {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.dossier-fields div {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.dossier-fields dt {
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.dossier-fields dd {
+  margin: 0;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-weight: 700;
+}
+
+.dossier-field .typed-field-label {
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.dossier-field .typed-field-input {
+  border: 0;
+  border-radius: 0.2rem;
+  background: var(--redaction-ink);
+  padding: 0.4rem 0.75rem;
+  color: var(--redaction-text);
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 1.3rem;
+  letter-spacing: 0.04em;
+  caret-color: var(--highlight);
+}
+
+.dossier-field .typed-field-input::placeholder {
+  color: color-mix(in srgb, var(--redaction-text) 35%, var(--redaction-ink));
+}
+
+.dossier-field .typed-field-input:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 3px;
+}
+
+.dossier-stamp,
+.dossier-classified {
+  position: absolute;
+  top: -1.9rem;
+  right: 0.5rem;
+  background: var(--background);
+  border: 3px solid var(--accent);
+  border-radius: 0.4rem;
+  padding: 0.1rem 0.6rem;
+  color: var(--accent);
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.dossier-truth {
+  margin: 0;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 1.15rem;
+}
+
+/* Stage */
+
+.dossier-folder-stage {
+  gap: 2rem;
+  margin: 3rem auto 0;
+  width: min(100%, 84rem);
+  padding: 3rem 3.5rem;
+}
+
+.dossier-folder-stage .dossier-tab {
+  top: -3.6rem;
+  gap: 1rem;
+  padding: 0.5rem 1.75rem;
+  font-size: 40px;
+}
+
+.dossier-folder-stage .dossier-classified {
+  top: -4.5rem;
+  right: 2rem;
+  border-width: 6px;
+  padding: 0.2rem 1.25rem;
+  font-size: max(44px, 2.4vw);
+}
+
+.dossier-folder-stage .dossier-fields {
+  gap: 2rem;
+}
+
+.dossier-folder-stage .dossier-fields div {
+  grid-template-columns: 22rem 1fr;
+}
+
+.dossier-folder-stage .dossier-fields dt {
+  font-size: 40px;
+}
+
+.dossier-folder-stage .dossier-fields dd {
+  font-size: max(64px, 4vw);
+}
+
+.dossier-redaction {
+  position: relative;
+  justify-self: start;
+}
+
+.dossier-name {
+  color: var(--highlight);
+}
+
+.dossier-bar {
+  position: absolute;
+  inset: -0.15em -0.3em;
+  background: var(--redaction-ink);
+  transform-origin: right center;
+}

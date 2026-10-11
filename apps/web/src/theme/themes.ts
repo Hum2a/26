@@ -2477,3 +2477,23 @@ export function themeDocumentHead(): { style: string; themeColor: string } {
     themeColor: fallback.colors.background,
   };
 }
+
+/**
+ * Colours that belong to a question's content, not to the screen theme.
+ * The red and blue pill keep these in every theme, because the colour is the choice.
+ */
+export const contentColours = {
+  pillRed: "#e8343c",
+  pillRedGlow: "#ff7a6e",
+  pillBlue: "#2f6bff",
+  pillBlueGlow: "#7fb0ff",
+  /** The Matrix scene behind the pills. */
+  matrixInk: "#03100a",
+  matrixCode: "#39ff88",
+  /** Light and shade on the pill capsules and the split bar. */
+  pillShine: "#ffffff",
+  pillShade: "#000000",
+  /** A redaction bar is black ink with paper-white text in every theme. */
+  redactionInk: "#0c0c0c",
+  redactionText: "#f4f1e8",
+} as const;

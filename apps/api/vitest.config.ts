@@ -85,6 +85,7 @@ export default defineConfig({
             "test/credentials.spec.ts",
             "test/schedule.spec.ts",
             "test/quiz-score.spec.ts",
+            "test/typed-score.spec.ts",
             "test/rounds-score.spec.ts",
             "test/vote-score.spec.ts",
             "test/duel-score.spec.ts",
