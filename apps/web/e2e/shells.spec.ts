@@ -56,7 +56,7 @@ test("admin can request a local sign-in link and confirm it", async ({ page }) =
     page.getByRole("button", { name: /pause|advance|recover/i }),
   ).toHaveCount(0);
 
-  await page.getByLabel("Administrator email").fill("humza@localhost.test");
+  await page.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
   await page.getByRole("button", { name: "Email me a sign-in link" }).click();
   await expect(page.getByRole("status")).toContainText(
     "If this address is the administrator, a sign-in link is ready.",
@@ -71,7 +71,7 @@ test("admin can request a local sign-in link and confirm it", async ({ page }) =
   );
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("status")).toContainText(
-    "You are signed in as humza@localhost.test.",
+    "You are signed in as humzab1711@hotmail.com.",
   );
   await expect(
     page.getByText("Create a lobby, then start the demo quiz."),
@@ -87,7 +87,7 @@ test("admin can request a local sign-in link and confirm it", async ({ page }) =
 
 test("an administrator can open a lobby and a guest can join it", async ({ page }) => {
   await page.goto("/admin");
-  await page.getByLabel("Administrator email").fill("humza@localhost.test");
+  await page.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
   await page.getByRole("button", { name: "Email me a sign-in link" }).click();
   await page
     .getByRole("link", { name: "Open the sign-in confirmation" })

@@ -34,7 +34,7 @@ export function readAuthTarget(): AuthTarget {
   const bindings: AuthBindings = {
     APP_ENV: target,
     ADMIN_EMAIL:
-      values.ADMIN_EMAIL || (target === "local" ? "humza@localhost.test" : ""),
+      values.ADMIN_EMAIL || (target === "local" ? "humzab1711@hotmail.com" : ""),
     BETTER_AUTH_SECRET: values.BETTER_AUTH_SECRET || "",
     BETTER_AUTH_URL: values.BETTER_AUTH_URL || "",
     DATABASE_URL: values.DATABASE_URL || "",

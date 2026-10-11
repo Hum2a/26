@@ -8,7 +8,7 @@ import { ensurePrepared } from "../src/auth/prepare.ts";
 import { app } from "../src/index.ts";
 
 const roomId = "ABCDEFGH";
-const adminEmail = "humza@localhost.test";
+const adminEmail = "humzab1711@hotmail.com";
 const origin = "http://example.com";
 
 function unusedRoomNamespace<T>(): T {

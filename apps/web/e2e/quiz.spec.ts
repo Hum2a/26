@@ -269,7 +269,7 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
 
 async function signIn(page: Page) {
   await page.goto("/admin");
-  await page.getByLabel("Administrator email").fill("humza@localhost.test");
+  await page.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
   await page.getByRole("button", { name: "Email me a sign-in link" }).click();
   await page
     .getByRole("link", { name: "Open the sign-in confirmation" })
@@ -277,7 +277,7 @@ async function signIn(page: Page) {
     .click();
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("status")).toContainText(
-    "You are signed in as humza@localhost.test.",
+    "You are signed in as humzab1711@hotmail.com.",
   );
 }
 

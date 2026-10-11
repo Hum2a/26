@@ -14,7 +14,7 @@ const root = projectRoot();
 
 const devDefaults: Record<TargetEnvironment, Record<string, string>> = {
   local: {
-    ADMIN_EMAIL: "humza@localhost.test",
+    ADMIN_EMAIL: "humzab1711@hotmail.com",
   },
   staging: {
     BETTER_AUTH_URL: "https://26-staging.humza.website",

@@ -8,13 +8,13 @@ import { createAuth } from "../apps/api/src/auth/create-auth.ts";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const database = await createDatabase({
   APP_ENV: "local",
-  ADMIN_EMAIL: "humza@localhost.test",
+  ADMIN_EMAIL: "humzab1711@hotmail.com",
   LOCAL_DATABASE_ID: "schema-generate",
 });
 
 try {
   const auth = createAuth(
-    { APP_ENV: "local", ADMIN_EMAIL: "humza@localhost.test" },
+    { APP_ENV: "local", ADMIN_EMAIL: "humzab1711@hotmail.com" },
     {
       origin: "http://localhost",
       database,

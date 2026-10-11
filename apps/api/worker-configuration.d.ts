@@ -7,7 +7,7 @@ interface __BaseEnv_Env {
 	ASSETS: Fetcher;
 	APP_ENV: "staging" | "production" | "local";
 	MEDIA_BUCKET_NAME: "26-humza-media-staging" | "26-humza-media" | "26-humza-media-local";
-	ADMIN_EMAIL: string | "humza@localhost.test";
+	ADMIN_EMAIL: string | "humzab1711@hotmail.com";
 	BETTER_AUTH_SECRET: string | "";
 	BETTER_AUTH_URL: string | "";
 	DATABASE_URL: string | "";

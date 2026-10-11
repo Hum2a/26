@@ -15,7 +15,7 @@ type Phase = "loading" | "signed-out" | "requesting" | "link-sent" | "signed-in"
 
 export function AdminPage() {
   const [phase, setPhase] = useState<Phase>("loading");
-  const [email, setEmail] = useState("humza@localhost.test");
+  const [email, setEmail] = useState("humzab1711@hotmail.com");
   const [sessionEmail, setSessionEmail] = useState<string>();
   const [notice, setNotice] = useState("Checking the administrator session.");
   const [links, setLinks] = useState<string[]>([]);

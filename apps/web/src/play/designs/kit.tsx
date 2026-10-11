@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import NumberFlow from "@number-flow/react";
 import { useReducedMotion, type Transition } from "motion/react";
 import type { PlaySnapshot } from "@26/shared";
@@ -110,19 +110,30 @@ export function typedView(play: PlaySnapshot) {
 /** Draft text for a typed design. The phone keeps the draft until it is sent. */
 export function useTypedDraft(play: PlaySnapshot, controls: PhoneControls) {
   const [draft, setDraft] = useState("");
-  const submitRef = useRef<HTMLButtonElement>(null);
+  const sent = useRef(false);
   const view = typedView(play);
   const locked = view?.sent !== undefined;
   const editable = controls.open && !locked;
+  const ready = draft.trim().length > 0;
+
+  useEffect(() => {
+    if (!locked && !controls.pending) sent.current = false;
+  }, [locked, controls.pending]);
+
+  function send() {
+    if (sent.current || !editable || controls.pending || !ready) return;
+    sent.current = true;
+    controls.onText(draft);
+  }
+
   return {
     draft: view?.sent ?? draft,
     setDraft,
     editable,
     locked,
     maxLength: view?.question.maxLength ?? 80,
-    send: () => controls.onText(draft),
-    ready: draft.trim().length > 0,
-    submitRef,
+    send,
+    ready,
   };
 }
 
@@ -140,7 +151,6 @@ export function TypedSend({
   }
   return (
     <SubmitButton
-      ref={typed.submitRef}
       className={controls.dodge ? "troll-dodge" : ""}
       label={label}
       state={roundSubmitState(typed.locked, controls.pending)}
@@ -151,8 +161,8 @@ export function TypedSend({
 }
 
 /**
- * The answer box for a typed design. The keyboard's Go key presses the same
- * send button, so a double press still sends once.
+ * The answer box for a typed design. The keyboard's Go key uses the same send
+ * action as the button, and a second press is ignored.
  */
 export function TypedField({
   typed,
@@ -173,7 +183,7 @@ export function TypedField({
       className={`typed-field ${className}`}
       onSubmit={(event) => {
         event.preventDefault();
-        typed.submitRef.current?.click();
+        typed.send();
       }}
     >
       <label htmlFor={id} className="typed-field-label">

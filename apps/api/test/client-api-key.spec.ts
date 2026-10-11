@@ -10,7 +10,7 @@ import {
 function testEnv(overrides: Partial<Env> = {}): Env {
   return {
     APP_ENV: "local",
-    ADMIN_EMAIL: "humza@localhost.test",
+    ADMIN_EMAIL: "humzab1711@hotmail.com",
     BETTER_AUTH_SECRET: "",
     BETTER_AUTH_URL: "",
     CLIENT_API_KEY: "",

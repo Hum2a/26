@@ -47,7 +47,7 @@ function readParams() {
 }
 
 export function DesignPreview() {
-  const initial = useMemo(readParams, []);
+  const initial = useMemo(() => readParams(), []);
   const [id, setId] = useState<CustomPresentationId>(initial.id);
   const [surface, setSurface] = useState(initial.surface);
   const [phase, setPhase] = useState<(typeof phases)[number]>(initial.phase);
