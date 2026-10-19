@@ -2774,7 +2774,7 @@ Encore was read only at `../Encore`: `packages/game-glyph/src/mark.ts`, `play.ts
 - `npx vitest run --project auth test/question-authoring.spec.ts` passed in E: and the matching C: copy: 24 tests. Covers supplied options/answers/defaults, blocked unsupported mechanics, confirmed direction/answer set, public answer-key exclusion, catalogue registration and unchanged release/running order/demo.
 - Earlier combined authoring/admin access checks passed 3 files / 34 tests in the C: copy before the latest wording clarifications. The final authoring-only run above covers those clarifications.
 - Targeted ESLint passed for the eight question/manifest modules and authoring tests. `git diff --check` passed.
-- Final web unit run in the verification copy passed: 50 files / 159 tests. The owned question files and authoring tests were synchronised before this run. A duplicate E: web unit run did not finish after the copy had passed and was interrupted; it is not reported as passed. E: content, type and authoring checks above completed successfully. Other concurrent code changes are outside this verification/commit scope.
+- Final web unit runs passed: 50 files / 159 tests in the verification copy, and 50 files / 161 tests in E:. The E: run completed successfully between polls (144 seconds); it was not interrupted. Its extra read-helper tests belong to concurrent work excluded from this content commit. The owned question files and authoring tests were synchronised to the copy before verification. E: content, type and authoring checks above also completed successfully.
 
 ### Scope and next work
 
