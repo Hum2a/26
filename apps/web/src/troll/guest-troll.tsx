@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { LobbySnapshot } from "@26/shared";
 import { uploadVoiceClip } from "../media/media-transfer";
 import { VoiceTake } from "../media/voice-take";
-import { Button } from "../ui/primitives";
+import { Button, Disclosure } from "../ui/primitives";
 import { newSelfTroll } from "./applied";
 import { TrollConfirm } from "./Confirm";
 import { TrollPicker } from "./Picker";
@@ -55,13 +55,15 @@ export function GuestTrolls({
           onEscape={onEscape}
         />
       ))}
-      <TrollPanel
-        snapshot={snapshot}
-        gameId={gameId}
-        selfId={selfId}
-        pending={pending}
-        onSend={onSend}
-      />
+      <Disclosure title="Play a troll">
+        <TrollPanel
+          snapshot={snapshot}
+          gameId={gameId}
+          selfId={selfId}
+          pending={pending}
+          onSend={onSend}
+        />
+      </Disclosure>
     </div>
   );
 }

@@ -174,6 +174,8 @@ describe("admin entry", () => {
     "/admin/content/birthday-draft/question?token=secret",
     "/admin/content/birthday-draft/../settings",
     "/admin/content/birthday-draft/question/extra",
+    "/admin/phone-preview/birthday-draft/question?token=secret",
+    "/admin/phone-preview/birthday-draft/../settings",
   ])("rejects unsafe return path %s", (path) => {
     expect(safeAdminReturnTo(path)).toBe("/admin");
   });
@@ -187,5 +189,9 @@ describe("admin entry", () => {
     expect(safeAdminReturnTo(path)).toBe(path);
     rememberAdminReturn(path);
     expect(localStorage.getItem("26-admin-return")).toBe(path);
+  });
+  it("allows a full-screen rehearsal after signing in on another device", () => {
+    const path = "/admin/phone-preview/birthday-draft/favourite-pokemon";
+    expect(safeAdminReturnTo(path)).toBe(path);
   });
 });

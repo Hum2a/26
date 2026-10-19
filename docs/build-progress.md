@@ -2753,15 +2753,15 @@ The completed admin redesign was committed separately as `4ebe630` (`Redesign ad
 
 ### Catalogue entries
 
-| Id | Mechanic/status | Recorded facts or remaining work |
-| --- | --- | --- |
-| `favourite-pokemon` | Choice / ready | Supplied options preserved; Mudkip is correct. |
-| `how-italian-is-humza` | Choice / ready | Supplied options preserved; 0.5% is correct. |
-| `inflation-freddo` | Slider / draft | Confirmed: show 2012 price and guess 2026. Needs actual prices/dates, Freddo size/location/units and slider bounds. |
-| `inflation-petrol` | Slider / draft | Same confirmed direction. Needs fuel grade/location/units, actual prices/dates and slider bounds. |
-| `christianity-branches` | Multiple-selection requested / draft | User confirmed ARE, with Muggletonians, the Jumpers and Ranters selected. Current single-correct-choice schema cannot represent that set; the answer set is preserved in private notes and an explicit mechanic requirement. |
-| `common-password` | Room-frequency ranking requested / draft | User confirmed matching other guests' made-up passwords. Needs matching/tie rules, points schedule and an authoritative ranking mechanic. No real-password or third-party popularity dataset is used. |
-| `complete-a-wordle` | Wordle requested / draft | Encore located beside 26. Needs a repeated-guess mechanic, target word and attempt/time/scoring rules. |
+| Id                      | Mechanic/status                          | Recorded facts or remaining work                                                                                                                                                                                             |
+| ----------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `favourite-pokemon`     | Choice / ready                           | Supplied options preserved; Mudkip is correct.                                                                                                                                                                               |
+| `how-italian-is-humza`  | Choice / ready                           | Supplied options preserved; 0.5% is correct.                                                                                                                                                                                 |
+| `inflation-freddo`      | Slider / draft                           | Confirmed: show 2012 price and guess 2026. Needs actual prices/dates, Freddo size/location/units and slider bounds.                                                                                                          |
+| `inflation-petrol`      | Slider / draft                           | Same confirmed direction. Needs fuel grade/location/units, actual prices/dates and slider bounds.                                                                                                                            |
+| `christianity-branches` | Multiple-selection requested / draft     | User confirmed ARE, with Muggletonians, the Jumpers and Ranters selected. Current single-correct-choice schema cannot represent that set; the answer set is preserved in private notes and an explicit mechanic requirement. |
+| `common-password`       | Room-frequency ranking requested / draft | User confirmed matching other guests' made-up passwords. Needs matching/tie rules, points schedule and an authoritative ranking mechanic. No real-password or third-party popularity dataset is used.                        |
+| `complete-a-wordle`     | Wordle requested / draft                 | Encore located beside 26. Needs a repeated-guess mechanic, target word and attempt/time/scoring rules.                                                                                                                       |
 
 The password/Wordle files use blocked typed authoring placeholders, and Christianity uses a blocked choice placeholder. These do not claim to implement the requested mechanics: explicit requirements and missing answer representations prevent them from becoming playable accidentally. This follows `docs/question-authoring.md`: unsupported interactions are saved as drafts rather than forced into unrelated mechanics or a new score engine. No missing prices, Wordle target or scoring rules were invented.
 
@@ -2806,3 +2806,35 @@ Status: implemented. Admin → Question packs now links each question title to i
 ### Scope and next work
 
 No deployment, push or commit was performed for this request. Normal development: `npm run dev`, then Admin → Question packs → a question title. Editing questions and supplying the outstanding content/mechanics remain separate work. Next stage: the user's next requested change; do not automatically release the birthday pack or begin another redesign stage.
+
+## Phone rehearsal and full-screen question foundation — 19 October 2026
+
+Status: implemented. The agreed direction is a hosted Kahoot/Jackbox-style show: clear question beats, bespoke designs within shared controls, generous phone layouts and fluid motion.
+
+### What changed
+
+- Question packs has a question selector and an interactive phone frame, with 320/390/430px maximum widths, get-ready/answering states, reset and an open-at-full-size link. Each individual question page has the same preview; each catalogue row can select its phone preview.
+- Added the authenticated, uncached `/api/admin/content/:version/questions/:questionId/preview` projection and shared `AdminQuestionPreview` validation. It sends only renderable public fields. Missing scales/prompts/options remain unavailable; unsupported Wordle, room-frequency ranking and multiple-selection drafts are labelled and non-interactive. No answers, notes or future reveal keys enter this payload.
+- `/admin/phone-preview/:version/:questionId` uses the actual `GuestPlay`, `PhoneShell`, phone dock and bespoke presentation registry. Rehearsal input is local component state only: no room, WebSocket, scoring or persistence. Names in roster/duel rehearsals are explicit stand-ins. The route supports sign-in returns when opened on another device.
+- `QuestionExperience` gives phone questions a screen-filling frame, progress and mechanic/role/phase-specific action cue. Standard choices use large labelled tiles with eased staggered entrances; existing bespoke compositions remain registered under their own presentation ids. Selection and accepted answers remain distinct. Sending/locked labels animate while their accessible name changes immediately.
+- The existing dock keeps the send action accessible. Photo/sound tools and troll selection are collapsed. Incoming troll notices/escape controls remain visible. Phase exits disable outgoing controls, including the portalled dock button; normal stage headings still update immediately with authoritative server state.
+- Added `.agents/rules/35-question-experience.md`, updated the authoring rule and guide, and regenerated agent copies with `npm run agents:sync`. Future question work must use full-screen compositions, explicit next actions, eased transitions, reduced-motion fades and the real admin phone rehearsal.
+
+### Verification for the question experience
+
+- Final C: `npm run typecheck` passed. `npm run test:unit` passed 54 files / 195 tests, including all eight preview mechanics, role-aware cues, draft/error handling, sign-in return safety and outgoing portalled-control locking. E: typecheck and the bounded-concurrency full unit run also passed (54 files / 192 tests, before the three extra phone-preview return-path cases).
+- `npm run test -w @26/api -- test/admin-rooms-auth.spec.ts` passed 12 tests. Checks include authenticated/no-store previews, cross-origin/anonymous denial, public-field projection of every catalogue entry, unsupported mechanic labelling and missing scales without invented values.
+- `npm run build` passed in the matching C: copy, including the generated-secret and 342-file artifact checks and content preflight. The birthday's documented incomplete drafts are still reported. Existing PGlite eval and bundle-size warnings remain; no deployed resources were touched.
+- Targeted ESLint passed with zero errors. Existing fast-refresh warnings for `choiceNote` and the routes module remain. Targeted Prettier checks and `git diff --check` passed. All changed source files matched the verification copy by hash. `npm run agents:sync` completed, and its final rerun made no changes.
+- Browser screenshots in `.codex/previews/question-experience/` show the real standard phone layout at 320/390/430px and its admin frame. Choice controls fit the frame, remain at least 48px tall, and cause no horizontal overflow. Existing admin detail checks also cover six viewport widths, reduced motion and 200% CSS zoom. Screenshots were reviewed and the initial stretched pill shapes were replaced with the theme's panel corners.
+- Final `npx playwright test --config playwright.dev.config.ts apps/web/e2e/question-phone-preview.spec.ts apps/web/e2e/quiz.spec.ts apps/web/e2e/media.spec.ts apps/web/e2e/admin-sections.spec.ts apps/web/e2e/admin-question-details.spec.ts apps/web/e2e/admin-entry.spec.ts --workers=1` passed all 11 cases together (1.8 minutes). Includes separate-device sign-in return, real bespoke/standard phone rendering, selection/send/lock/reset/pause, no game sockets from previews, anonymous denial, honest drafts, full quiz, media/troll/reload/reconnect, results and responsive admin journeys.
+- Chrome manually confirmed local sign-in, the new pack selector and “Preview on phone” shortcut, automatic scroll to the chosen question's loaded phone frame and the real Pokémon option layout. The local pack preview is left open for review; the existing production tab was left untouched.
+- Tests caught and fixed duplicate accessible send labels during an exit, unstable portal-child keys during disabling, and the distinction between accepted guesses and accepted text/choice answers. One admin browser run raced an automatic final-phase transition; its click now has a bounded timeout and accepts the alternate path only after the completed game is visibly verified. No assertion or error filter was removed.
+
+### Scope and limitations
+
+This is the shared presentation foundation, not a claim that each party question has received its final bespoke design. The preview covers prompt/collect, selected/accepted and pause states. Real reveal answers/scores are not simulated; the existing development design bench retains labelled stand-in reveals. Vote rounds preview writing and duel/finale rounds preview the contestant number entry; room-specific ballots/prediction assignments still require a real rehearsal. Long ballots, long text, keyboard entry and enlarged text may scroll vertically.
+
+No question facts, answer keys, running order, released versions, live rooms or deployments were changed. The Wordle, frequency-ranking and multiple-selection mechanics, and the inflation prices/scales, remain separate unfinished content work. Next: customise the questions one at a time using this preview and the full-screen standard; do not automatically release the birthday pack.
+
+Development still prints the existing local Better Auth schema-startup and Motion reduced-motion notices; the explicit local adapter and functional assertions pass. Deployed authentication, physical phone keyboards/OS zoom and venue projector/audio checks remain unverified. Preview review: `http://localhost:4173/admin/content` in the matching C: copy with `LOCAL_DATABASE_ID=browser-checks`; normal development from the project is `npm run dev`. The C: preview does not watch E: edits. No commit, push or deployment was performed for this request.

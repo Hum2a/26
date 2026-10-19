@@ -1,0 +1,105 @@
+.question-experience {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+  min-height: max(24rem, calc(100dvh - 14rem));
+}
+.question-direction {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-block: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  min-height: 3rem;
+}
+.question-progress {
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 0.45rem 0.65rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.question-experience-body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.question-experience-body > * {
+  width: 100%;
+  min-width: 0;
+}
+.question-standard {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.question-standard .phone-prompt {
+  font-size: clamp(1.75rem, 7.5vw, 3rem);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+.question-standard-meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.question-choice-grid {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  align-content: stretch;
+}
+.question-choice-grid[data-count="3"],
+.question-choice-grid[data-count="4"],
+.question-choice-grid[data-count="5"],
+.question-choice-grid[data-count="6"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.question-choice-grid .option-button {
+  border-radius: var(--radius-panel);
+  flex-direction: column;
+  align-items: start;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 5rem;
+  padding: 1rem 0.75rem;
+  font-size: clamp(1.1rem, 5vw, 1.5rem);
+  text-align: start;
+  justify-content: space-between;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.question-choice-mark {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font-size: 0.8rem;
+  color: inherit;
+}
+.question-choice-tile {
+  display: flex;
+  min-width: 0;
+}
+.question-experience-body > .design-phone {
+  align-content: start;
+}
+@media (max-width: 340px), (orientation: landscape) and (max-height: 32rem) {
+  .question-choice-grid {
+    gap: 0.5rem;
+  }
+  .question-choice-grid .option-button {
+    min-height: 4rem;
+    padding: 0.75rem 0.6rem;
+  }
+  .question-experience {
+    gap: 0.75rem;
+  }
+}

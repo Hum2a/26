@@ -1,18 +1,23 @@
 import { Link, useSearchParams } from "react-router";
+import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "../ui/primitives";
 import { EntryNotice } from "../ui/entry-frame";
 import { readContent } from "./sections-api";
 import { useSection } from "./use-section";
+import { PhonePreviewPanel } from "./phone-preview-panel";
 
 export function ContentPage() {
   const content = useSection(readContent);
   const [params, setParams] = useSearchParams();
   const version = params.get("pack") ?? "";
+  const [previewId, setPreviewId] = useState("");
   const pack =
     content.data?.packs.find((pack) => pack.version === version) ??
     content.data?.packs.find((pack) => pack.id === "birthday") ??
     content.data?.packs[0];
+  const preview =
+    pack?.questions.find((question) => question.id === previewId) ?? pack?.questions[0];
   return (
     <section className="admin-section">
       <header className="admin-page-heading">
@@ -79,6 +84,28 @@ export function ContentPage() {
                     : "Released version. Existing rooms keep the version they started with."}
                 </p>
               </header>
+              {preview ? (
+                <>
+                  <label className="admin-preview-select">
+                    Preview a question
+                    <select
+                      value={preview.id}
+                      onChange={(event) => setPreviewId(event.target.value)}
+                    >
+                      {pack.questions.map((question) => (
+                        <option key={question.id} value={question.id}>
+                          {question.title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <PhonePreviewPanel
+                    key={`${pack.version}/${preview.id}`}
+                    version={pack.version}
+                    questionId={preview.id}
+                  />
+                </>
+              ) : null}
               <ol className="admin-question-list">
                 {pack.questions.map((question) => (
                   <li key={question.id}>
@@ -95,6 +122,23 @@ export function ContentPage() {
                         </Link>
                       </h3>
                       <p>{question.prompt}</p>
+                      <button
+                        type="button"
+                        className="entry-text-link"
+                        onClick={() => {
+                          setPreviewId(question.id);
+                          document.getElementById("phone-preview")?.scrollIntoView({
+                            behavior: window.matchMedia(
+                              "(prefers-reduced-motion: reduce)",
+                            ).matches
+                              ? "instant"
+                              : "smooth",
+                            block: "start",
+                          });
+                        }}
+                      >
+                        Preview on phone ↑
+                      </button>
                       <p className="admin-meta">
                         {question.mechanic} · {question.presentation} ·{" "}
                         {question.status} ·{" "}

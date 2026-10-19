@@ -62,6 +62,26 @@ html.phone-lock #root {
   width: 100%;
 }
 
+.phone-shell[data-immersive] .phone-scroll {
+  padding: 0.5rem 1rem 1rem;
+}
+.phone-shell[data-immersive] .phone-bar {
+  padding: 0.5rem 1rem;
+}
+.phone-shell[data-immersive] .skin-status {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+.phone-shell[data-immersive] .phone-dock {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+.phone-secondary-tools {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+
 @media (max-width: 48rem) {
   html:has(.surface-frame[data-size="phone"]),
   html:has(.surface-frame[data-size="phone"]) body {

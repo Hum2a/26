@@ -37,6 +37,6 @@ If the interaction is not one of these mechanics, explain the gap and still save
 
 A later edit finds the existing file by id. Reordering changes `order` in the manifest only. "Make this question ready" fills real supplied facts and, once it validates, still does not enter `order` unless the user asked to include it.
 
-"Now customise the design of this question" keeps the same id and mechanic. Add the slug to `customPresentationIds` in `packages/shared`, set `presentation` on the question, write the design in `apps/web/src/play/designs/<slug>.tsx` with the shared kit, and register it in `designs/registry.ts`. Check it at `/design` in development. Do not put the answer key in the client.
+"Now customise the design of this question" keeps the same id and mechanic. Add the slug to `customPresentationIds` in `packages/shared`, set `presentation` on the question, write the design in `apps/web/src/play/designs/<slug>.tsx` with the shared kit, and register it in `designs/registry.ts`. Follow the full-screen question experience rule. Check the actual question in Admin → Question packs → Phone preview, plus `/design` for stand-in reveal states in development. Do not put the answer key in the client.
 
 Do not edit a released pack's question files in place. A content change needs a new version id. Rooms keep the version they stored.

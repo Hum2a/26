@@ -10,6 +10,8 @@ import { GuestRank } from "./guest-rank";
 import { GuestSlider } from "./guest-slider";
 import { GuestText } from "./guest-text";
 import { renderPresentation } from "./presentation";
+import { QuestionExperience } from "./question-experience";
+import { motion, useReducedMotion } from "motion/react";
 
 export function GuestPlay({
   snapshot,
@@ -36,6 +38,7 @@ export function GuestPlay({
   onBallot: (candidateId: string) => void;
   onDuel: (value: number) => void;
 }) {
+  const reduce = useReducedMotion();
   const play = snapshot.play;
   if (!play) {
     return null;
@@ -67,116 +70,155 @@ export function GuestPlay({
     },
   });
   if (custom) {
-    return custom;
+    return (
+      <QuestionExperience snapshot={snapshot} pending={pending}>
+        {custom}
+      </QuestionExperience>
+    );
   }
 
   return (
-    <section className="grid gap-4" aria-label="Your question" aria-busy={pending}>
-      <p className="text-base text-muted">
-        {play.question.illustrative ? "Illustrative demo. " : null}
-        Question {play.question.index} of {play.question.total}.
-        {play.question.kind === "choice" && play.question.speedBonus
-          ? " A faster answer can score a bonus."
-          : ""}
-        {play.question.kind === "choice" && play.question.outcome === "poll"
-          ? " Just for fun. No points."
-          : ""}
-      </p>
-      <h1 className="phone-prompt">{play.question.prompt}</h1>
-      {play.question.instructions ? (
-        <p className="text-base text-muted">{play.question.instructions}</p>
-      ) : null}
-      {play.explanation ? <p>{play.explanation}</p> : null}
-      {play.question.kind === "slider" ? (
-        <GuestSlider play={play} open={open} pending={pending} onSubmit={onEstimate} />
-      ) : null}
-      {play.question.kind === "rank" ? (
-        <GuestRank play={play} open={open} pending={pending} onSubmit={onRank} />
-      ) : null}
-      {play.question.kind === "typed" &&
-      (snapshot.phase === "collect" || play.selfAnswer) ? (
-        <GuestText
-          play={play}
-          blocked={
-            snapshot.phase !== "collect" || snapshot.paused || snapshot.held || pending
-          }
-          pending={pending}
-          onSubmit={onText}
-          label="Your answer"
-          action="Send answer"
-          maxLength={play.question.maxLength}
-        />
-      ) : null}
-      {play.question.kind === "vote" && snapshot.phase === "collect" ? (
-        <GuestText
-          play={play}
-          blocked={snapshot.paused || snapshot.held || pending}
-          pending={pending}
-          onSubmit={onText}
-          onDraft={onDraft}
-        />
-      ) : null}
-      {play.question.kind === "vote" && snapshot.phase === "vote" ? (
-        <GuestBallot
-          play={play}
-          blocked={snapshot.paused || snapshot.held || pending}
-          pending={pending}
-          search={false}
-          onSubmit={onBallot}
-        />
-      ) : null}
-      {play.question.kind === "guess" ? (
-        <GuestBallot
-          play={play}
-          blocked={snapshot.paused || snapshot.held || pending}
-          pending={pending}
-          search
-          onSubmit={onBallot}
-        />
-      ) : null}
-      {play.question.kind === "duel" || play.question.kind === "finale" ? (
-        <GuestDuel
-          play={play}
-          blocked={snapshot.paused || snapshot.held || pending}
-          pending={pending}
-          onSubmit={onDuel}
-          onPredict={onBallot}
-        />
-      ) : null}
-      {play.question.kind === "choice" ? (
-        <div className="grid gap-3">
-          {play.question.options.map((option) => {
-            const selected =
-              selectedId === option.id ||
-              (play.selfAnswer?.kind === "choice" &&
-                play.selfAnswer.optionId === option.id);
-            const note = choiceNote(choiceReveal, option.id);
-            return (
-              <Button
-                key={option.id}
-                className="option-button"
-                variant={selected ? "primary" : "secondary"}
-                aria-pressed={selected}
-                disabled={!open}
-                onClick={() => onSelect(option.id)}
-              >
-                <OptionText text={`${option.label}${note}`} />
-              </Button>
-            );
-          })}
-        </div>
-      ) : null}
-      <AnswerNames play={play} />
-      {play.question.kind === "choice" && (open || pending || play.selfAnswer) ? (
-        <SubmitButton
-          className={dodge ? "troll-dodge" : ""}
-          label="Send answer"
-          state={roundSubmitState(Boolean(play.selfAnswer), pending)}
-          disabled={!play.selfAnswer && !selectedId}
-          onClick={onSubmit}
-        />
-      ) : null}
-    </section>
+    <QuestionExperience snapshot={snapshot} pending={pending}>
+      <section
+        className="question-standard"
+        aria-label="Your question"
+        aria-busy={pending}
+      >
+        {play.question.illustrative ||
+        (play.question.kind === "choice" &&
+          (play.question.speedBonus || play.question.outcome === "poll")) ? (
+          <p className="question-standard-meta">
+            {play.question.illustrative ? "Illustrative demo. " : null}
+            {play.question.kind === "choice" && play.question.speedBonus
+              ? " A faster answer can score a bonus."
+              : ""}
+            {play.question.kind === "choice" && play.question.outcome === "poll"
+              ? " Just for fun. No points."
+              : ""}
+          </p>
+        ) : null}
+        <h1 className="phone-prompt">{play.question.prompt}</h1>
+        {play.question.instructions ? (
+          <p className="text-base text-muted">{play.question.instructions}</p>
+        ) : null}
+        {play.explanation ? <p>{play.explanation}</p> : null}
+        {play.question.kind === "slider" ? (
+          <GuestSlider
+            play={play}
+            open={open}
+            pending={pending}
+            onSubmit={onEstimate}
+          />
+        ) : null}
+        {play.question.kind === "rank" ? (
+          <GuestRank play={play} open={open} pending={pending} onSubmit={onRank} />
+        ) : null}
+        {play.question.kind === "typed" &&
+        (snapshot.phase === "collect" || play.selfAnswer) ? (
+          <GuestText
+            play={play}
+            blocked={
+              snapshot.phase !== "collect" ||
+              snapshot.paused ||
+              snapshot.held ||
+              pending
+            }
+            pending={pending}
+            onSubmit={onText}
+            label="Your answer"
+            action="Send answer"
+            maxLength={play.question.maxLength}
+          />
+        ) : null}
+        {play.question.kind === "vote" && snapshot.phase === "collect" ? (
+          <GuestText
+            play={play}
+            blocked={snapshot.paused || snapshot.held || pending}
+            pending={pending}
+            onSubmit={onText}
+            onDraft={onDraft}
+          />
+        ) : null}
+        {play.question.kind === "vote" && snapshot.phase === "vote" ? (
+          <GuestBallot
+            play={play}
+            blocked={snapshot.paused || snapshot.held || pending}
+            pending={pending}
+            search={false}
+            onSubmit={onBallot}
+          />
+        ) : null}
+        {play.question.kind === "guess" ? (
+          <GuestBallot
+            play={play}
+            blocked={snapshot.paused || snapshot.held || pending}
+            pending={pending}
+            search
+            onSubmit={onBallot}
+          />
+        ) : null}
+        {play.question.kind === "duel" || play.question.kind === "finale" ? (
+          <GuestDuel
+            play={play}
+            blocked={snapshot.paused || snapshot.held || pending}
+            pending={pending}
+            onSubmit={onDuel}
+            onPredict={onBallot}
+          />
+        ) : null}
+        {play.question.kind === "choice" ? (
+          <div
+            className="question-choice-grid"
+            data-count={play.question.options.length}
+          >
+            {play.question.options.map((option, index) => {
+              const selected =
+                selectedId === option.id ||
+                (play.selfAnswer?.kind === "choice" &&
+                  play.selfAnswer.optionId === option.id);
+              const note = choiceNote(choiceReveal, option.id);
+              return (
+                <motion.div
+                  key={option.id}
+                  className="question-choice-tile"
+                  initial={{ opacity: 0.5, y: reduce ? 0 : 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.24,
+                    delay: reduce ? 0 : index * 0.035,
+                    ease: "easeOut",
+                  }}
+                >
+                  <Button
+                    key={option.id}
+                    className="option-button"
+                    variant={selected ? "primary" : "secondary"}
+                    aria-pressed={selected}
+                    disabled={!open}
+                    onClick={() => onSelect(option.id)}
+                  >
+                    <span className="question-choice-mark" aria-hidden="true">
+                      {String.fromCharCode(65 + index)}
+                    </span>
+                    <OptionText text={`${option.label}${note}`} />
+                  </Button>
+                </motion.div>
+              );
+            })}
+          </div>
+        ) : null}
+        <AnswerNames play={play} />
+        {play.question.kind === "choice" && (open || pending || play.selfAnswer) ? (
+          <SubmitButton
+            className={dodge ? "troll-dodge" : ""}
+            label="Send answer"
+            state={roundSubmitState(Boolean(play.selfAnswer), pending)}
+            disabled={!play.selfAnswer && !selectedId}
+            onClick={onSubmit}
+          />
+        ) : null}
+      </section>
+    </QuestionExperience>
   );
 }
 

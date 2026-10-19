@@ -75,7 +75,7 @@ function TextDraft({
     >
       <TextField
         label={label}
-        hint={`1 to ${maxLength} characters. Sending stores this text.`}
+        hint={`Up to ${maxLength} characters. Tap ${action.toLowerCase()} when you’re ready.`}
         value={draft}
         maxLength={maxLength}
         disabled={blocked}

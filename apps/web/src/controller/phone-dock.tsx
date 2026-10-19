@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { useIsPresent } from "motion/react";
 import {
   Children,
   cloneElement,
@@ -29,18 +30,19 @@ export function PhoneDockTarget({
 }
 
 export function PhoneDock({ children }: { children: ReactNode }) {
+  const present = useIsPresent();
   const target = useContext(DockContext);
   const held = useContext(HoldContext);
-  const content = held ? holdControls(children) : children;
+  const content = holdControls(children, held || !present);
   if (!target) {
     return content;
   }
   return createPortal(content, target);
 }
 
-function holdControls(children: ReactNode): ReactNode {
+function holdControls(children: ReactNode, held: boolean): ReactNode {
   return Children.map(children, (child) => {
-    if (!isValidElement<{ disabled?: boolean }>(child)) {
+    if (!held || !isValidElement<{ disabled?: boolean }>(child)) {
       return child;
     }
     return cloneElement(child as ReactElement<{ disabled?: boolean }>, {

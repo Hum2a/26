@@ -2,6 +2,8 @@ import {
   adminContentSchema,
   adminMediaSchema,
   adminQuestionDetailSchema,
+  adminQuestionPreviewSchema,
+  type AdminQuestionPreview,
   type AdminQuestionDetail,
   type AdminContent,
   type AdminMedia,
@@ -18,6 +20,14 @@ export const readQuestion = (
   readSection(
     `/api/admin/content/${encodeURIComponent(version)}/questions/${encodeURIComponent(id)}`,
     adminQuestionDetailSchema,
+  );
+export const readQuestionPreview = (
+  version: string,
+  id: string,
+): Promise<AdminQuestionPreview | { error: string }> =>
+  readSection(
+    `/api/admin/content/${encodeURIComponent(version)}/questions/${encodeURIComponent(id)}/preview`,
+    adminQuestionPreviewSchema,
   );
 export const readMediaPage = (
   gameId: string,

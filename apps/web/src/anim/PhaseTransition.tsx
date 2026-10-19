@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useIsPresent } from "motion/react";
 
 export function PhaseTransition({
   phase,
@@ -28,20 +28,39 @@ export function PhaseTransition({
     );
   return (
     <AnimatePresence mode="wait">
-      <motion.div
-        key={phase}
-        data-phase={phase}
-        data-phase-motion={reduce ? "fade" : "eased"}
-        initial={reduce ? { opacity: 0.96, y: 0 } : { opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={reduce ? { opacity: 0.96, y: 0 } : { opacity: 0, y: -8 }}
-        transition={{
-          duration: reduce ? 0.12 : 0.28,
-          ease: [0.2, 0, 0, 1],
-        }}
-      >
+      <PhonePhase key={phase} phase={phase} reduce={reduce}>
         {children}
-      </motion.div>
+      </PhonePhase>
     </AnimatePresence>
+  );
+}
+
+function PhonePhase({
+  phase,
+  reduce,
+  children,
+}: {
+  phase: string;
+  reduce: boolean;
+  children: ReactNode;
+}) {
+  const present = useIsPresent();
+  return (
+    <motion.fieldset
+      disabled={!present}
+      aria-hidden={!present || undefined}
+      className="m-0 min-w-0 border-0 p-0"
+      data-phase={phase}
+      data-phase-motion={reduce ? "fade" : "eased"}
+      initial={reduce ? { opacity: 0.96, y: 0 } : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={reduce ? { opacity: 0.96, y: 0 } : { opacity: 0, y: -8 }}
+      transition={{
+        duration: reduce ? 0.12 : 0.28,
+        ease: [0.2, 0, 0, 1],
+      }}
+    >
+      {children}
+    </motion.fieldset>
   );
 }

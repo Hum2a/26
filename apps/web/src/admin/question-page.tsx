@@ -5,6 +5,7 @@ import { Button, Disclosure } from "../ui/primitives";
 import { EntryNotice } from "../ui/entry-frame";
 import { readQuestion } from "./sections-api";
 import { useSection } from "./use-section";
+import { PhonePreviewPanel } from "./phone-preview-panel";
 
 export function QuestionPage() {
   const { version = "", questionId = "" } = useParams();
@@ -175,6 +176,11 @@ export function QuestionPage() {
               ) : null}
             </aside>
           </div>
+          <PhonePreviewPanel
+            key={`${version}/${questionId}`}
+            version={version}
+            questionId={questionId}
+          />
         </motion.div>
       ) : null}
     </section>

@@ -392,6 +392,16 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
     .strict(),
 ]);
 
+/** Admin-only design rehearsal: a public-field projection, never an answer key. */
+export const adminQuestionPreviewSchema = z
+  .object({
+    question: publicQuestionSchema.nullable(),
+    limitation: z.string().nullable(),
+    interactive: z.boolean(),
+  })
+  .strict();
+export type AdminQuestionPreview = z.infer<typeof adminQuestionPreviewSchema>;
+
 const selfAnswerSchema = z
   .discriminatedUnion("kind", [
     z

@@ -5,6 +5,7 @@ import { missingRequirements } from "../questions/definition.ts";
 import { questionPacks } from "../questions/registry.ts";
 import { rejectUnlessRoomCreator } from "./access.ts";
 import { adminQuestion } from "./admin-question.ts";
+import { questionPreview } from "./question-preview.ts";
 
 /** Explicit read-only authoring projection. Never serialise authored objects. */
 export function adminContent(): AdminContent | null {
@@ -49,6 +50,23 @@ export function adminContent(): AdminContent | null {
 }
 
 export function registerAdminContentRoutes(app: Hono<{ Bindings: Env }>) {
+  app.get("/api/admin/content/:version/questions/:questionId/preview", async (c) => {
+    const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
+    if (rejected) return rejected;
+    const pack = questionPacks.find((pack) => pack.version === c.req.param("version"));
+    const question = pack?.catalogue.find(
+      (question) => question.id === c.req.param("questionId"),
+    );
+    if (!pack || !question)
+      return jsonData(
+        {
+          error: "not_found",
+          message: "That question could not be found in this pack.",
+        },
+        404,
+      );
+    return jsonData(questionPreview(pack, question));
+  });
   app.get("/api/admin/content/:version/questions/:questionId", async (c) => {
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
     if (rejected) return rejected;

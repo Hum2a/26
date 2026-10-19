@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhaseTransition } from "./PhaseTransition";
+import { PhoneDockTarget } from "../controller/phone-dock";
+import { SubmitButton } from "../rounds/SubmitButton";
 
 function matchMedia(matches: boolean) {
   return vi.fn((query: string) => {
@@ -65,6 +67,33 @@ describe("PhaseTransition", () => {
     expect(Number(faded.style.opacity)).toBeGreaterThanOrEqual(0.96);
     expect(faded.style.transform === "" || faded.style.transform === "none").toBe(true);
   });
+});
+it("disables outgoing question controls and the portalled send button during an exit", async () => {
+  const dock = document.createElement("div");
+  document.body.append(dock);
+  const view = render(
+    <PhoneDockTarget node={dock} held={false}>
+      <PhaseTransition phase="collect">
+        <button>Old option</button>
+        <SubmitButton label="Send answer" state="idle" onClick={() => undefined} />
+      </PhaseTransition>
+    </PhoneDockTarget>,
+  );
+  const option = screen.getByRole("button", { name: "Old option" });
+  const send = screen.getByRole("button", { name: "Send answer" }) as HTMLButtonElement;
+  view.rerender(
+    <PhoneDockTarget node={dock} held={false}>
+      <PhaseTransition phase="reveal">
+        <p>Reveal</p>
+      </PhaseTransition>
+    </PhoneDockTarget>,
+  );
+  expect(option.closest("fieldset")?.disabled).toBe(true);
+  expect(send.disabled).toBe(true);
+  await screen.findByText("Reveal");
+  expect(screen.queryByText("Old option")).toBeNull();
+  view.unmount();
+  dock.remove();
 });
 it("keeps the projector readable and switches its heading with the authoritative phase", () => {
   const view = render(

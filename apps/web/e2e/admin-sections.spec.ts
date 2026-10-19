@@ -34,6 +34,7 @@ test("media, health, content and results have real private workflows and respons
   await page.getByRole("button", { name: "Start the illustrative demo" }).click();
   await page.getByRole("button", { name: "Pause", exact: true }).click();
   const phone = phones[0]!.page;
+  await phone.getByRole("button", { name: /Photos & sound/ }).click();
   await phone.getByLabel("Photo").setInputFiles("apps/web/e2e/fixtures/pixel.png");
   await phone.getByRole("button", { name: "Send", exact: true }).click();
   await expect(phone.getByText("Photo accepted.")).toBeVisible();
@@ -83,7 +84,15 @@ test("media, health, content and results have real private workflows and respons
   ) {
     const finish = page.getByRole("button", { name: "Finish quiz", exact: true });
     if (await finish.isVisible()) {
-      await finish.click();
+      try {
+        await finish.click({ timeout: 2_000 });
+      } catch (error) {
+        // The authoritative final-phase alarm can reach the podium while clicking.
+        // Accept that outcome only after observing the completed game.
+        if (await page.getByText("The quiz is complete.", { exact: true }).isVisible())
+          break;
+        throw error;
+      }
       await page
         .getByRole("dialog")
         .getByRole("button", { name: "Finish quiz", exact: true })

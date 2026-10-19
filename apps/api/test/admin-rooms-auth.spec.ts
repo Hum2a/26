@@ -7,6 +7,7 @@ import { registerAdminRoomRoutes } from "../src/room/admin-routes";
 import { registerAdminContentRoutes, adminContent } from "../src/room/admin-content";
 import { questionPacks } from "../src/questions/registry";
 import { adminQuestion } from "../src/room/admin-question";
+import { questionPreview } from "../src/room/question-preview";
 const app = new Hono<{ Bindings: Env }>();
 registerAdminRoomRoutes(app);
 registerAdminContentRoutes(app);
@@ -288,4 +289,68 @@ it("projects every catalogue mechanic without exposing raw authoring objects or 
     "typed",
     "vote",
   ]);
+});
+it("rehearses authored public fields without leaking answers, notes, truth or future reveals", async () => {
+  for (const pack of questionPacks)
+    for (const q of pack.catalogue) {
+      const preview = shared.adminQuestionPreviewSchema.parse(questionPreview(pack, q));
+      if (preview.question) {
+        expect(preview.question.id).toBe(q.id);
+        for (const secret of [
+          "correctOption",
+          "correctOptionId",
+          "truth",
+          "accepted",
+          "notes",
+          "explanation",
+          "requirements",
+        ])
+          expect(preview.question).not.toHaveProperty(secret);
+      } else expect(preview.limitation).toContain("No placeholder values");
+    }
+  const response = await app.request(
+    "https://example.com/api/admin/content/birthday-draft/questions/favourite-pokemon/preview",
+    {},
+    bindings,
+  );
+  expect(response.status).toBe(200);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  const data = shared.adminQuestionPreviewSchema.parse(await response.json());
+  expect(data.question?.kind).toBe("choice");
+  expect(data.question?.presentation).toBe("standard");
+});
+it("requires administrator access to previews and reports incomplete/placeholder mechanics honestly", async () => {
+  const base = "https://example.com/api/admin/content/birthday-draft/questions";
+  const unsupported = await app.request(
+    `${base}/christianity-branches/preview`,
+    {},
+    bindings,
+  );
+  expect(
+    ((await unsupported.json()) as shared.AdminQuestionPreview).limitation,
+  ).toContain("not implemented");
+  const incomplete = await app.request(
+    `${base}/inflation-freddo/preview`,
+    {},
+    bindings,
+  );
+  const draft = shared.adminQuestionPreviewSchema.parse(await incomplete.json());
+  expect(draft.question).toBeNull();
+  expect(draft.limitation).toContain("scale");
+  expect((await app.request(`${base}/unknown/preview`, {}, bindings)).status).toBe(404);
+  expect(
+    (
+      await app.request(
+        `${base}/favourite-pokemon/preview`,
+        { headers: { origin: "https://other.example" } },
+        bindings,
+      )
+    ).status,
+  ).toBe(403);
+  vi.mocked(administratorForRequest).mockResolvedValue(
+    Response.json({ error: "unauthenticated" }, { status: 401 }),
+  );
+  const denied = await app.request(`${base}/favourite-pokemon/preview`, {}, bindings);
+  expect(denied.status).toBe(401);
+  expect(await denied.text()).not.toContain("options");
 });

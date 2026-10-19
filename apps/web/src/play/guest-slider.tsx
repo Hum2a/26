@@ -59,7 +59,7 @@ function SliderControl({
         disabled={!open}
         onChange={setDraft}
       />
-      <p>Arrow keys move by {question.step}. Sending stores this number.</p>
+      <p>Drag to choose your estimate. Arrow keys move by {question.step}.</p>
       {open || pending || locked ? (
         <SubmitButton
           label="Send estimate"

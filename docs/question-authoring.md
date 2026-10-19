@@ -105,6 +105,10 @@ Editing the birthday catalogue does not change a room. `startDemo` still pins `d
 
 ## Custom design
 
+The phone is a full-screen game controller. Give each question a clear action, large controls and a considered composition. Use the shared `QuestionExperience` frame around the existing standard or bespoke renderer. The show moves through get-ready, answering, locked-in and reveal beats, with eased transitions and reduced-motion fades; only the server advances the live game. Keep photos, sound and other secondary tools out of the main answer area.
+
+Admin → Question packs now includes a selectable phone preview. Each question's detail page has the same preview. Try get-ready and answering, select/type/slide, submit a rehearsal answer, pause and reset, and open the preview on a phone. It uses the actual guest components with an authenticated public-field projection. Rehearsal inputs never reach a live room. Missing scales stay unavailable, unsupported mechanics are labelled as draft placeholders, and stand-in players are identified. Real answers, author notes and reveal keys never enter the preview payload. Use the development bench for stand-in reveal layouts.
+
 Say `Now customise the design of this question.` The question file keeps its id and mechanic.
 
 1. Add a slug to `customPresentationIds` in `packages/shared/src/index.ts`. The server accepts only those ids, and the web registry must draw every one, or the typecheck fails.

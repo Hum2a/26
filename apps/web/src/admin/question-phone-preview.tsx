@@ -1,0 +1,150 @@
+import { useCallback, useEffect, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router";
+import { playSnapshotSchema, type LobbySnapshot, type PlaySnapshot } from "@26/shared";
+import { ControllerRoot } from "../controller/ControllerRoot";
+import { PhoneShell } from "../guest/phone-shell";
+import { GuestPlay } from "../play/guest-play";
+import { PhaseTransition } from "../anim/PhaseTransition";
+import { Button } from "../ui/primitives";
+import { readQuestionPreview } from "./sections-api";
+import { useSection } from "./use-section";
+import "./phone-preview.css";
+
+/** Authenticated isolated rehearsal. It never opens a socket or sends a guest action. */
+export function QuestionPhonePreview() {
+  const { version = "", questionId = "" } = useParams();
+  const reader = useCallback(
+    () => readQuestionPreview(version, questionId),
+    [version, questionId],
+  );
+  const content = useSection(reader);
+  const [params] = useSearchParams();
+  const data = !content.loading && !content.error ? content.data : undefined;
+  useEffect(() => {
+    document.title = "Phone preview · 26";
+  }, []);
+  if (!data?.question)
+    return (
+      <div className="phone-preview-unavailable">
+        <p className="entry-eyebrow">Phone preview</p>
+        <h1>{content.loading ? "Loading the phone…" : "Preview unavailable"}</h1>
+        <p role="status">{content.error || data?.limitation}</p>
+        {content.error ? (
+          <Link
+            className="entry-text-link"
+            to={`/admin/login?returnTo=${encodeURIComponent(`/admin/phone-preview/${version}/${questionId}`)}`}
+            target="_top"
+          >
+            Admin sign in →
+          </Link>
+        ) : null}
+        {!content.loading ? (
+          <Button onClick={() => void content.refresh()}>Try again</Button>
+        ) : null}
+      </div>
+    );
+  return (
+    <PhoneRehearsal
+      key={`${version}/${questionId}/${params.get("phase")}/${params.get("take")}`}
+      question={data.question}
+      phase={params.get("phase") === "prompt" ? "prompt" : "collect"}
+      limitation={data.limitation}
+      interactive={data.interactive}
+    />
+  );
+}
+
+function PhoneRehearsal({
+  question,
+  phase,
+  limitation,
+  interactive,
+}: {
+  question: PlaySnapshot["question"];
+  phase: "prompt" | "collect";
+  limitation: string | null;
+  interactive: boolean;
+}) {
+  const [selectedId, setSelectedId] = useState<string>();
+  const [answer, setAnswer] = useState<PlaySnapshot["selfAnswer"]>(null);
+  const [ballot, setBallot] = useState<PlaySnapshot["selfBallot"]>(null);
+  const [paused, setPaused] = useState(false);
+  const play = playSnapshotSchema.parse({
+    question,
+    selfAnswer: answer,
+    selfBallot: ballot,
+    submissionCount: answer || ballot ? 1 : 0,
+    ballot:
+      question.kind === "guess"
+        ? {
+            total: 3,
+            reason: phase === "collect" ? "open" : "closed",
+            cards: [1, 2, 3].map((value) => ({
+              id: `preview-${value}`,
+              label: `Sample guest ${value}`,
+              own: false,
+              selectable: true,
+              author: null,
+            })),
+          }
+        : null,
+    duel:
+      question.kind === "duel" || question.kind === "finale"
+        ? {
+            role: "solo",
+            reason: phase === "collect" ? "open" : "waiting",
+            opponentId: null,
+            opponent: null,
+            board: null,
+            cards: [],
+          }
+        : null,
+    reveal: null,
+    selfAward: null,
+    selfStanding: null,
+    standings: null,
+    liveSample: null,
+    attributions: null,
+    explanation: null,
+  });
+  const snapshot = {
+    phase,
+    paused,
+    held: !interactive,
+    play,
+    trolls: { active: [] },
+  } as unknown as LobbySnapshot;
+  return (
+    <ControllerRoot>
+      <PhoneShell
+        nickname="Preview guest"
+        connection="idle"
+        immersive
+        scrollKey={phase}
+      >
+        <p className="phone-preview-notice">
+          Private rehearsal · no answers are sent.{limitation ? ` ${limitation}` : ""}
+        </p>
+        <PhaseTransition phase={phase}>
+          <GuestPlay
+            snapshot={snapshot}
+            selectedId={selectedId}
+            pending={false}
+            onSelect={setSelectedId}
+            onSubmit={() => {
+              if (selectedId) setAnswer({ kind: "choice", optionId: selectedId });
+            }}
+            onEstimate={(value) => setAnswer({ kind: "slider", value })}
+            onRank={(placements) => setAnswer({ kind: "rank", placements })}
+            onText={(body) => setAnswer({ kind: "text", body })}
+            onBallot={(candidateId) => setBallot({ candidateId })}
+            onDuel={(value) => setAnswer({ kind: "duel", value })}
+          />
+        </PhaseTransition>
+        <Button variant="secondary" onClick={() => setPaused((value) => !value)}>
+          {paused ? "Resume preview" : "Pause preview"}
+        </Button>
+      </PhoneShell>
+    </ControllerRoot>
+  );
+}

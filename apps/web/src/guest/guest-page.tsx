@@ -2,7 +2,14 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Link, useParams, useSearchParams } from "react-router";
 import type { GuestSession, LobbySnapshot } from "@26/shared";
-import { Button, Dialog, Panel, StatusMessage, TextField } from "../ui/primitives";
+import {
+  Button,
+  Dialog,
+  Disclosure,
+  Panel,
+  StatusMessage,
+  TextField,
+} from "../ui/primitives";
 import { JoinMark } from "../lobby/join-mark";
 import { NameCloud, NameReveal } from "../lobby/name-cloud";
 import { joinLobby, redeemTransfer, resumeGuest } from "../live/room-api";
@@ -423,7 +430,8 @@ export function GuestPage() {
         nickname={nickname}
         connection={connection}
         held={reconnecting}
-        scrollKey={snapshot?.phase ?? "join"}
+        immersive={Boolean(questionVisible)}
+        scrollKey={`${snapshot?.play?.question.id ?? "join"}/${snapshot?.phase ?? "lobby"}`}
       >
         {questionVisible ? null : (
           <h1 className="phone-prompt">
@@ -481,7 +489,11 @@ export function GuestPage() {
                   onSend={onTroll}
                   onEscape={onTrollEscape}
                 />
-                <GuestMedia gameId={session.gameId} />
+                <div className="phone-secondary-tools">
+                  <Disclosure title="Photos & sound">
+                    <GuestMedia gameId={session.gameId} />
+                  </Disclosure>
+                </div>
               </>
             ) : null}
             {snapshot?.recap && snapshot.recap.length > 0 ? (

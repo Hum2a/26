@@ -102,7 +102,7 @@ function NumberDraft({
     >
       <TextField
         label="Your number"
-        hint="Sending stores this number for your duel."
+        hint="Choose your number, then send it when you’re ready."
         inputMode="decimal"
         value={draft}
         disabled={blocked}

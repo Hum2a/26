@@ -39,6 +39,9 @@ it("shows draft readiness and order without editing or releasing a pack", async 
   expect(
     screen.getByRole("link", { name: "View Draft question" }).getAttribute("href"),
   ).toBe("/admin/content/birthday-draft/draft-question");
+  expect(screen.getByTitle("Interactive phone preview").getAttribute("src")).toContain(
+    "/admin/phone-preview/birthday-draft/draft-question",
+  );
   expect(
     screen.queryByRole("button", { name: /Start|Publish|Save|Release/ }),
   ).toBeNull();

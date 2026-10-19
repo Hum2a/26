@@ -112,6 +112,7 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
 
   await advanceUntil(admin, stage, "how many letters are in birthday?");
   await advanceUntil(admin, stage, "Answers are open");
+  await bilal.getByRole("button", { name: /Play a troll/ }).click();
   await bilal.getByRole("button", { name: "Cracked screen" }).click();
   await bilal.getByRole("button", { name: "Troll Amina", exact: true }).click();
   await bilal.getByRole("button", { name: "Send troll" }).click();

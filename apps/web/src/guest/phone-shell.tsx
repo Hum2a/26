@@ -11,12 +11,14 @@ export function PhoneShell({
   connection,
   held = false,
   scrollKey,
+  immersive = false,
   children,
 }: {
   nickname?: string;
   connection: "connecting" | "open" | "closed" | "idle";
   held?: boolean;
   scrollKey?: string;
+  immersive?: boolean;
   children: ReactNode;
 }) {
   const scrollRef = useRef<HTMLElement>(null);
@@ -77,7 +79,7 @@ export function PhoneShell({
 
   return (
     <PhoneDockTarget node={dockNode} held={held}>
-      <div className="phone-shell">
+      <div className="phone-shell" data-immersive={immersive || undefined}>
         <div className="skin-ground" aria-hidden="true">
           <SkinMotif />
         </div>

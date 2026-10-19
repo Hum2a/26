@@ -26,6 +26,7 @@ test("a phone sends a photo, the stage shows it, and hiding stops later access",
   await expect(stage.getByRole("heading", { name: "In the lobby" })).toBeVisible();
   await join(amina, joinCode, "Amina");
   await admin.getByRole("button", { name: "Start the illustrative demo" }).click();
+  await amina.getByRole("button", { name: /Photos & sound/ }).click();
   await expect(amina.getByLabel("Photo")).toBeVisible();
 
   await amina.getByLabel("Photo").setInputFiles("apps/web/e2e/fixtures/snap.heic");
