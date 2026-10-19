@@ -5,7 +5,7 @@ import {
   healthResponseSchema,
   liveConnectionNotFoundMessage,
 } from "@26/shared";
-import { authFailure } from "./auth/http.ts";
+import { authFailure, logAuthFailure } from "./auth/http.ts";
 import { registerAuthRoutes } from "./auth/routes";
 import { registerMediaRoutes } from "./media/routes";
 import { registerRoomRoutes } from "./room/routes";
@@ -29,6 +29,11 @@ function jsonNotFound(message: string): Response {
   });
   return Response.json(body, { status: 404 });
 }
+
+app.onError((error, _c) => {
+  logAuthFailure(error);
+  return authFailure("invalid", 500);
+});
 
 app.get("/api/health", (c) => {
   const parsed = healthResponseSchema.safeParse({
@@ -86,8 +91,13 @@ app.notFound((c) => {
 });
 
 const worker = {
-  fetch(request, env, ctx) {
-    return app.fetch(request, env, ctx);
+  async fetch(request, env, ctx) {
+    try {
+      return await app.fetch(request, env, ctx);
+    } catch (error) {
+      logAuthFailure(error);
+      return authFailure("invalid", 500);
+    }
   },
 } satisfies ExportedHandler<Env>;
 

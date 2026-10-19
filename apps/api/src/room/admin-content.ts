@@ -1,13 +1,13 @@
-import { adminContentSchema } from "@26/shared";
+import { adminContentSchema, type AdminContent } from "@26/shared";
 import type { Hono } from "hono";
-import { jsonData } from "../auth/http.ts";
+import { authFailure, jsonData } from "../auth/http.ts";
 import { missingRequirements } from "../questions/definition.ts";
 import { questionPacks } from "../questions/registry.ts";
 import { rejectUnlessRoomCreator } from "./access.ts";
 
 /** Explicit read-only authoring projection. Never serialise authored objects. */
-export function adminContent() {
-  return adminContentSchema.parse({
+export function adminContent(): AdminContent | null {
+  const parsed = adminContentSchema.safeParse({
     packs: questionPacks.map((pack) => ({
       id: pack.packId,
       version: pack.version,
@@ -37,10 +37,26 @@ export function adminContent() {
         })),
     })),
   });
+  if (!parsed.success) {
+    const paths = parsed.error.issues
+      .map((issue) => issue.path.join(".") || "(root)")
+      .slice(0, 12);
+    console.error("Admin content projection failed", paths.join(", "));
+    return null;
+  }
+  return parsed.data;
 }
+
 export function registerAdminContentRoutes(app: Hono<{ Bindings: Env }>) {
   app.get("/api/admin/content", async (c) => {
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
-    return rejected ?? jsonData(adminContent());
+    if (rejected) {
+      return rejected;
+    }
+    const content = adminContent();
+    if (!content) {
+      return authFailure("invalid", 500);
+    }
+    return jsonData(content);
   });
 }

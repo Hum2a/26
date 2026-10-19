@@ -18,7 +18,9 @@ it("bounds a read whose server never responds", async () => {
   );
   const result = readSection("/api/test", publicResultsSchema);
   await vi.advanceTimersByTimeAsync(12_000);
-  expect(await result).toMatchObject({ error: expect.any(String) });
+  expect(await result).toEqual({
+    error: "We couldn’t load this information. Check your connection and try again.",
+  });
 });
 it.each(["malformed", "unauthorised"])(
   "never treats %s data as a report",
@@ -41,3 +43,29 @@ it.each(["malformed", "unauthorised"])(
     expect(JSON.stringify(result)).not.toContain("private");
   },
 );
+it("surfaces a JSON server failure message instead of a connection error", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      Response.json(
+        {
+          error: "misconfigured",
+          message: "Authentication is not configured for this environment.",
+        },
+        { status: 503 },
+      ),
+    ),
+  );
+  expect(await readSection("/api/test", publicResultsSchema)).toEqual({
+    error: "Authentication is not configured for this environment.",
+  });
+});
+it("does not pretend a non-JSON failure is a connection drop", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(new Response("Internal Server Error", { status: 500 })),
+  );
+  expect(await readSection("/api/test", publicResultsSchema)).toEqual({
+    error: "This information is unavailable. Try again.",
+  });
+});

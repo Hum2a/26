@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { beforeEach, expect, it, vi } from "vitest";
 vi.mock("../src/auth/routes.ts", () => ({ administratorForRequest: vi.fn() }));
+import * as shared from "@26/shared";
 import { administratorForRequest } from "../src/auth/routes";
 import { registerAdminRoomRoutes } from "../src/room/admin-routes";
 import { registerAdminContentRoutes, adminContent } from "../src/room/admin-content";
@@ -48,12 +49,13 @@ it("protects a read-only content projection and excludes answer/reveal fields", 
   );
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
-  expect(await response.json()).toEqual(adminContent());
   const content = adminContent();
-  const birthday = content.packs.find((pack) => pack.id === "birthday")!;
+  expect(content).not.toBeNull();
+  expect(await response.json()).toEqual(content);
+  const birthday = content!.packs.find((pack) => pack.id === "birthday")!;
   expect(birthday.release).toBe("draft");
   expect(birthday.questions.every((question) => question.order === null)).toBe(true);
-  for (const pack of content.packs)
+  for (const pack of content!.packs)
     for (const question of pack.questions) {
       expect(Object.keys(question).sort()).toEqual([
         "id",
@@ -85,6 +87,48 @@ it("protects a read-only content projection and excludes answer/reveal fields", 
       )
     ).status,
   ).toBe(404);
+});
+it("returns JSON 503 when administrator auth is misconfigured", async () => {
+  vi.mocked(administratorForRequest).mockResolvedValue(
+    Response.json(
+      {
+        error: "misconfigured",
+        message: "Authentication is not configured for this environment.",
+      },
+      { status: 503 },
+    ),
+  );
+  const response = await app.request(
+    "https://example.com/api/admin/content",
+    {},
+    bindings,
+  );
+  expect(response.status).toBe(503);
+  expect(await response.json()).toEqual({
+    error: "misconfigured",
+    message: "Authentication is not configured for this environment.",
+  });
+});
+it("returns JSON 500 when the content projection cannot be prepared", async () => {
+  const spy = vi.spyOn(shared.adminContentSchema, "safeParse").mockReturnValue({
+    success: false,
+    error: { issues: [{ path: ["packs"], message: "invalid" }] },
+  } as never);
+  try {
+    const response = await app.request(
+      "https://example.com/api/admin/content",
+      {},
+      bindings,
+    );
+    expect(response.status).toBe(500);
+    expect(response.headers.get("content-type")).toMatch(/json/);
+    expect(await response.json()).toEqual({
+      error: "invalid",
+      message: "That request was not accepted.",
+    });
+  } finally {
+    spy.mockRestore();
+  }
 });
 it("requires scoped operator access for preview even when another guest cookie exists", async () => {
   const mediaId = "00000000-0000-4000-8000-000000000001";

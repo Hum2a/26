@@ -402,11 +402,16 @@ export async function administratorForRequest(
   if (ready instanceof Response) {
     return ready;
   }
-  const email = await readAdministrator(ready, request);
-  if (!email) {
-    return authFailure("unauthenticated", 401);
+  try {
+    const email = await readAdministrator(ready, request);
+    if (!email) {
+      return authFailure("unauthenticated", 401);
+    }
+    return { email };
+  } catch (error) {
+    logAuthFailure(error);
+    return authFailure("misconfigured", 503);
   }
-  return { email };
 }
 
 async function readAdministrator(
@@ -424,7 +429,12 @@ async function readAdministrator(
   if (!response.ok) {
     return undefined;
   }
-  const body: unknown = await response.json();
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    return undefined;
+  }
   if (!body || typeof body !== "object" || !("user" in body)) {
     return undefined;
   }
