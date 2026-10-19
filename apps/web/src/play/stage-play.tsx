@@ -96,7 +96,11 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
         Question {play.question.index} of {play.question.total}.
       </p>
       <p className="stage-prompt">{play.question.prompt}</p>
-      <ul className={options.length > 6 ? "stage-option-grid" : "grid gap-3"}>
+      <ul
+        className={
+          options.length > 6 ? "stage-option-grid" : "stage-options grid gap-3"
+        }
+      >
         {options.map((option) => {
           const votes = count(option.id);
           return (

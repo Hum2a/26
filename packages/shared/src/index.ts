@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { statCardSchema } from "./stats.ts";
+export { adminContentSchema, adminMediaSchema } from "./admin.ts";
+export type { AdminContent, AdminMedia } from "./admin.ts";
 
 export { clientApiKeyHeader, clientApiKeyQueryParam } from "./client-api-key.ts";
 export { minimumComparisonGroup, statCardSchema } from "./stats.ts";
@@ -697,6 +699,21 @@ export const lobbySnapshotSchema = z
     questionSetVersion: contentVersionSchema,
     scoringVersion: contentVersionSchema,
     players: z.array(lobbyPlayerSchema),
+    // Private operator projection. Never present on stage or guest snapshots.
+    adminPlayers: z
+      .array(
+        z
+          .object({
+            playerId: z.uuid(),
+            nickname: nicknameSchema,
+            points: z.number().int(),
+            connected: z.boolean(),
+            removed: z.boolean(),
+            answered: z.boolean().nullable(),
+          })
+          .strict(),
+      )
+      .optional(),
     selfPlayerId: z.uuid().optional(),
     play: playSnapshotSchema.nullable(),
     cloud: z
@@ -898,6 +915,20 @@ export const lobbyCreatedSchema = z
   .strict();
 
 export type LobbyCreated = z.infer<typeof lobbyCreatedSchema>;
+
+// Registry entries deliberately contain no live counts or phase: only the room
+// can provide those authoritatively. Listing never wakes every game object.
+export const adminRoomListSchema = z.object({
+  rooms: z.array(
+    z.object({
+      gameId: gameIdSchema,
+      joinCode: joinCodeSchema,
+      createdAt: z.string().datetime(),
+    }),
+  ),
+  nextCursor: z.string().nullable(),
+});
+export type AdminRoomList = z.infer<typeof adminRoomListSchema>;
 
 export const mediaSlotSchema = z
   .object({

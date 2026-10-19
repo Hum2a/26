@@ -5,8 +5,29 @@ import { EmailUncertain, type OutboundEmail } from "../src/auth/create-email.ts"
 import { acceptedKey } from "../src/media/keys.ts";
 import { payloadDigest } from "../src/room/digest.ts";
 import { PartyRoom } from "../src/room/party-room.ts";
+import { unavailableArchive } from "../src/archive/store.ts";
 
 describe("public results stay separate from a personal recap", () => {
+  it("does not report an empty ready archive when a verified publication cannot be read", async () => {
+    const created = await createRoom();
+    const stub = room(created.gameId);
+    await join(stub, "Amina");
+    await reachPodium(stub, created);
+    await finishArchive(stub);
+    await runInDurableObject(stub, async (instance) => {
+      (instance as PartyRoom).useArchiveWriter(unavailableArchive());
+    });
+    expect(await stub.publishedResults()).toEqual({ state: "preparing" });
+    await runInDurableObject(stub, async (instance) => {
+      (instance as PartyRoom).useArchiveWriter({
+        ...unavailableArchive(),
+        async readPublic() {
+          return null;
+        },
+      });
+    });
+    expect(await stub.publishedResults()).toEqual({ state: "preparing" });
+  });
   it("shows standings without credentials, device rows, or another player's recap", async () => {
     const created = await createRoom();
     const stub = room(created.gameId);

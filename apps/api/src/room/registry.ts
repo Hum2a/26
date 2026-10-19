@@ -43,6 +43,26 @@ export class RoomCodeRegistry extends DurableObject<Env> {
     return Boolean(row);
   }
 
+  async listRooms(input: { before?: number; limit: number }) {
+    const rows = this.ctx.storage.sql
+      .exec<{ cursor: number; game_id: string; join_code: string; created_at: string }>(
+        `SELECT rowid AS cursor, game_id, join_code, created_at FROM code
+       WHERE rowid < ? ORDER BY rowid DESC LIMIT ?`,
+        input.before ?? Number.MAX_SAFE_INTEGER,
+        input.limit + 1,
+      )
+      .toArray();
+    const page = rows.slice(0, input.limit);
+    return {
+      rooms: page.map((row) => ({
+        gameId: row.game_id,
+        joinCode: row.join_code,
+        createdAt: row.created_at,
+      })),
+      nextCursor: rows.length > input.limit ? String(page.at(-1)!.cursor) : null,
+    };
+  }
+
   async resolve(joinCode: string): Promise<{ gameId: string } | null> {
     const row = this.ctx.storage.sql
       .exec<{ game_id: string }>(

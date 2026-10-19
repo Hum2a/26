@@ -1,3 +1,4 @@
+import { themes } from "../theme/themes";
 /**
  * Projector type and the text/background pairs the stage is allowed to use.
  * Sizes are pixels. Every pair is checked at 7:1.
@@ -15,17 +16,33 @@ export type StagePair = {
   background: string;
 };
 
+const palette = themes["26-basic"].colors;
 export const stagePairs: readonly StagePair[] = [
-  { name: "body on background", text: "#fff6e8", background: "#14110e" },
-  { name: "body on surface", text: "#fff6e8", background: "#2c241c" },
-  { name: "muted on background", text: "#e4d5c0", background: "#14110e" },
-  { name: "muted on surface", text: "#e4d5c0", background: "#2c241c" },
-  { name: "question on background", text: "#ffc43a", background: "#14110e" },
-  { name: "question on surface", text: "#ffc43a", background: "#2c241c" },
-  { name: "accent on background", text: "#ffa08a", background: "#14110e" },
-  { name: "accent on surface", text: "#ffa08a", background: "#2c241c" },
-  { name: "ink on accent", text: "#1a100e", background: "#ffa08a" },
-  { name: "ink on question", text: "#1a100e", background: "#ffc43a" },
+  {
+    name: "body on background",
+    text: palette.foreground,
+    background: palette.background,
+  },
+  { name: "body on surface", text: palette.foreground, background: palette.surface },
+  { name: "muted on background", text: palette.muted, background: palette.background },
+  { name: "muted on surface", text: palette.muted, background: palette.surface },
+  {
+    name: "question on background",
+    text: palette.highlight,
+    background: palette.background,
+  },
+  { name: "question on surface", text: palette.highlight, background: palette.surface },
+  {
+    name: "accent on background",
+    text: palette.highlight,
+    background: palette.background,
+  },
+  { name: "accent on surface", text: palette.highlight, background: palette.surface },
+  {
+    name: "ink on question",
+    text: palette.highlightForeground,
+    background: palette.highlight,
+  },
 ];
 
 const stageContrastMinimum = 7;

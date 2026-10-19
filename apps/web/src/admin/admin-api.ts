@@ -9,68 +9,87 @@ import {
 } from "@26/shared";
 import { clientApiHeaders } from "../api/client-key.ts";
 
-export async function fetchAdminSession(): Promise<AdminSession | { error: string }> {
-  const response = await fetch("/api/admin/session", { headers: clientApiHeaders() });
-  const body: unknown = await response.json();
-  if (!response.ok) {
-    return { error: failureMessage(body) };
+type Failure = { error: string };
+
+// Bound every auth request, including response decoding, so the UI can recover.
+async function authRequest(
+  path: string,
+  body?: unknown,
+): Promise<{ ok: boolean; body: unknown } | Failure> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 12_000);
+  try {
+    const response = await fetch(path, {
+      method: body === undefined ? "GET" : "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+      signal: controller.signal,
+      headers: clientApiHeaders(
+        body === undefined ? {} : { "content-type": "application/json" },
+      ),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+    return { ok: response.ok, body: await response.json() };
+  } catch {
+    return { error: "We couldn’t reach sign-in. Check your connection and try again." };
+  } finally {
+    window.clearTimeout(timeout);
   }
-  return adminSessionSchema.parse(body);
+}
+
+export async function fetchAdminSession(): Promise<AdminSession | Failure> {
+  const result = await authRequest("/api/admin/session");
+  if ("error" in result) return result;
+  if (!result.ok) return { error: failureMessage(result.body) };
+  const parsed = adminSessionSchema.safeParse(result.body);
+  return parsed.success
+    ? parsed.data
+    : { error: "We couldn’t check your session. Try again." };
 }
 
 export async function requestMagicLink(
   email: string,
-): Promise<MagicLinkAcceptance | { error: string }> {
-  const response = await fetch("/api/admin/magic-link", {
-    method: "POST",
-    headers: clientApiHeaders({ "content-type": "application/json" }),
-    body: JSON.stringify({ email }),
-  });
-  const body: unknown = await response.json();
-  if (!response.ok) {
-    return { error: failureMessage(body) };
-  }
-  return magicLinkAcceptanceSchema.parse(body);
+): Promise<MagicLinkAcceptance | Failure> {
+  const result = await authRequest("/api/admin/magic-link", { email });
+  if ("error" in result) return result;
+  if (!result.ok) return { error: failureMessage(result.body) };
+  const parsed = magicLinkAcceptanceSchema.safeParse(result.body);
+  return parsed.success
+    ? parsed.data
+    : { error: "The sign-in request was not accepted. Try again." };
 }
 
-export async function confirmMagicLink(
-  token: string,
-): Promise<AdminSession | { error: string }> {
-  const response = await fetch("/api/admin/magic-link/verify", {
-    method: "POST",
-    headers: clientApiHeaders({ "content-type": "application/json" }),
-    body: JSON.stringify({ token }),
-  });
-  const body: unknown = await response.json();
-  if (!response.ok) {
-    return { error: "This sign-in link is invalid or has expired." };
-  }
-  return adminSessionSchema.parse(body);
+export async function confirmMagicLink(token: string): Promise<AdminSession | Failure> {
+  const result = await authRequest("/api/admin/magic-link/verify", { token });
+  if ("error" in result) return result;
+  if (!result.ok) return { error: "This sign-in link is invalid or has expired." };
+  const parsed = adminSessionSchema.safeParse(result.body);
+  return parsed.success
+    ? parsed.data
+    : { error: "We couldn’t confirm sign-in. Try again." };
 }
 
-export async function signOutAdmin(): Promise<void> {
-  await fetch("/api/admin/sign-out", { method: "POST", headers: clientApiHeaders() });
+export async function signOutAdmin(): Promise<Failure | undefined> {
+  const result = await authRequest("/api/admin/sign-out", {});
+  if ("error" in result) return result;
+  if (!result.ok) return { error: failureMessage(result.body) };
 }
 
 export async function fetchLocalInbox(): Promise<DevInbox["messages"]> {
-  const response = await fetch("/api/dev/inbox", { headers: clientApiHeaders() });
-  if (!response.ok) {
-    return [];
-  }
-  return devInboxSchema.parse(await response.json()).messages;
+  const result = await authRequest("/api/dev/inbox");
+  if ("error" in result || !result.ok) return [];
+  const parsed = devInboxSchema.safeParse(result.body);
+  return parsed.success ? parsed.data.messages : [];
 }
 
 export function confirmPath(text: string): string | undefined {
   const match = text.match(/https?:\/\/\S+/);
-  if (!match) {
-    return undefined;
-  }
+  if (!match) return undefined;
   try {
     const url = new URL(match[0]);
-    if (url.pathname !== "/admin/confirm") {
-      return undefined;
-    }
-    return `${url.pathname}${url.search}`;
+    return url.pathname === "/admin/confirm"
+      ? `${url.pathname}${url.search}`
+      : undefined;
   } catch {
     return undefined;
   }
@@ -78,5 +97,7 @@ export function confirmPath(text: string): string | undefined {
 
 function failureMessage(body: unknown): string {
   const parsed = authFailureSchema.safeParse(body);
-  return parsed.success ? parsed.data.message : "Authentication is not available.";
+  return parsed.success
+    ? parsed.data.message
+    : "Authentication is not available. Try again.";
 }

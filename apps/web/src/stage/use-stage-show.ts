@@ -59,7 +59,7 @@ export function useStageShow() {
 
   function startShow() {
     stageShow.unlock();
-    setUnlocked(true);
+    setUnlocked(stageShow.unlocked);
   }
 
   function toggleMute() {

@@ -6,7 +6,7 @@ import { ThemePicker } from "../theme/theme-picker";
 import { Wordmark } from "../theme/wordmark";
 
 const surfaces = [
-  { to: "/", label: "Guest", id: "guest" },
+  { to: "/join", label: "Join", id: "guest" },
   { to: "/host", label: "Stage", id: "stage" },
   { to: "/admin", label: "Admin", id: "admin" },
   { to: `/r/${EXAMPLE_GAME_ID}`, label: "Results", id: "results" },

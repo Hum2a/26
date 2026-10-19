@@ -15,7 +15,7 @@ describe("SafeArea", () => {
     const css = [...document.querySelectorAll("style")]
       .map((style) => style.textContent ?? "")
       .join("\n");
-    expect(css).toContain("padding: 5%");
+    expect(css).toContain("padding: max(1rem, 5vh) max(1rem, 5vw)");
 
     const { unmount } = render(
       <SafeArea dev={false}>

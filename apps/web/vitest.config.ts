@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
+    // Node 25+ otherwise shadows jsdom's real browser Storage globals.
+    execArgv: ["--no-webstorage"],
     css: true,
     setupFiles: ["./test/setup.ts"],
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],

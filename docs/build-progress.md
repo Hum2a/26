@@ -2276,9 +2276,6 @@ In the IDE browser against `http://127.0.0.1:5173` and `http://localhost:5173`, 
 - A physical phone, the on-screen keyboard, and Add to Home Screen were not checked. The keyboard inset is covered by the unit test.
 - The party script is still the illustrative pack.
 
-
-
-
 ## First birthday question drafts
 
 Status: drafts saved. The running order is still empty, and no room, demo pack or deployment changed.
@@ -2287,18 +2284,18 @@ Status: drafts saved. The running order is still empty, and no room, demo pack o
 
 Ten files in `apps/api/src/questions/packs/birthday/`, registered in `catalogue` in `manifest.ts`. Each file opens with a short design brief for the later custom presentation step.
 
-| Id | Helper | Status | Still needs |
-| --- | --- | --- | --- |
-| `favourite-genre` | choice | draft | correct option |
-| `leviticus-18-7` | choice | ready (not in order) | nothing |
-| `car-name` | choice | draft | correct option |
-| `ignorance-triggers` | rank | draft | correct order |
-| `mock-election` | choice, 0 points | draft | unscored poll mechanic; 6-option limit |
-| `red-pill-blue-pill` | choice | draft | majority-rule scoring mechanic |
-| `trolley-problem` | choice, 0 points | draft | unscored poll mechanic |
-| `real-name-count-binface` | choice | draft | typed-answer mechanic |
-| `real-name-zack-polanski` | choice | draft | typed-answer mechanic |
-| `real-name-tommy-robinson` | choice | draft | typed-answer mechanic |
+| Id                         | Helper           | Status               | Still needs                            |
+| -------------------------- | ---------------- | -------------------- | -------------------------------------- |
+| `favourite-genre`          | choice           | draft                | correct option                         |
+| `leviticus-18-7`           | choice           | ready (not in order) | nothing                                |
+| `car-name`                 | choice           | draft                | correct option                         |
+| `ignorance-triggers`       | rank             | draft                | correct order                          |
+| `mock-election`            | choice, 0 points | draft                | unscored poll mechanic; 6-option limit |
+| `red-pill-blue-pill`       | choice           | draft                | majority-rule scoring mechanic         |
+| `trolley-problem`          | choice, 0 points | draft                | unscored poll mechanic                 |
+| `real-name-count-binface`  | choice           | draft                | typed-answer mechanic                  |
+| `real-name-zack-polanski`  | choice           | draft                | typed-answer mechanic                  |
+| `real-name-tommy-robinson` | choice           | draft                | typed-answer mechanic                  |
 
 ### Decisions and defaults
 
@@ -2409,18 +2406,18 @@ Status: complete. All ten birthday questions have their own phone and projector 
 
 ### Designs
 
-| Question | Presentation | Phone | Projector |
-| --- | --- | --- | --- |
-| `favourite-genre` | `now-playing` | A playlist; picking a track kicks its equaliser | A spinning turntable; the label flips to the winner |
-| `leviticus-18-7` | `scripture` | An illuminated page; a ribbon bookmark follows the pick | An open bible swings open; the verse is haloed and the full KJV printed |
-| `car-name` | `number-plate` | UK plates screwed on when picked; "Registered" stamp | The back of a car; the right plate flies into the holder and the lights flash |
-| `ignorance-triggers` | `rage-meter` | A heat tube; tap a trigger then its heat; true order glides in at the reveal | A rage gauge; triggers drop in from coolest to hottest, the top one boils over |
-| `mock-election` | `ballot-paper` | A ballot paper with a drawn pen cross | A ballot box filling with papers, then election-night bars and a winner banner |
-| `red-pill-blue-pill` | `red-blue-pill` | Two pills in open palms on a Matrix ground | Code rain; a red/blue split races to the 50% line; the losing side flatlines |
-| `trolley-problem` | `trolley-lever` | A junction whose points switch with the pick | The room's majority throws the points and the tram rolls up to the junction |
-| `real-name-count-binface` | `bin-unmasked` | A nomination paper under a bin-headed candidate | The bin is yanked off to unmask the name in a spotlight |
-| `real-name-zack-polanski` | `deed-poll` | A change-of-name deed; "Witnessed" stamp | "Renounced" stamp and the former name typed out |
-| `real-name-tommy-robinson` | `redacted-file` | A case file; the answer is typed into a redaction bar | The redaction bar peels away to declassify the name |
+| Question                   | Presentation    | Phone                                                                        | Projector                                                                      |
+| -------------------------- | --------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `favourite-genre`          | `now-playing`   | A playlist; picking a track kicks its equaliser                              | A spinning turntable; the label flips to the winner                            |
+| `leviticus-18-7`           | `scripture`     | An illuminated page; a ribbon bookmark follows the pick                      | An open bible swings open; the verse is haloed and the full KJV printed        |
+| `car-name`                 | `number-plate`  | UK plates screwed on when picked; "Registered" stamp                         | The back of a car; the right plate flies into the holder and the lights flash  |
+| `ignorance-triggers`       | `rage-meter`    | A heat tube; tap a trigger then its heat; true order glides in at the reveal | A rage gauge; triggers drop in from coolest to hottest, the top one boils over |
+| `mock-election`            | `ballot-paper`  | A ballot paper with a drawn pen cross                                        | A ballot box filling with papers, then election-night bars and a winner banner |
+| `red-pill-blue-pill`       | `red-blue-pill` | Two pills in open palms on a Matrix ground                                   | Code rain; a red/blue split races to the 50% line; the losing side flatlines   |
+| `trolley-problem`          | `trolley-lever` | A junction whose points switch with the pick                                 | The room's majority throws the points and the tram rolls up to the junction    |
+| `real-name-count-binface`  | `bin-unmasked`  | A nomination paper under a bin-headed candidate                              | The bin is yanked off to unmask the name in a spotlight                        |
+| `real-name-zack-polanski`  | `deed-poll`     | A change-of-name deed; "Witnessed" stamp                                     | "Renounced" stamp and the former name typed out                                |
+| `real-name-tommy-robinson` | `redacted-file` | A case file; the answer is typed into a redaction bar                        | The redaction bar peels away to declassify the name                            |
 
 ### Files and interfaces
 
@@ -2463,3 +2460,289 @@ Status: complete. All ten birthday questions have their own phone and projector 
 
 Choose the running order, then release a birthday version.
 
+## Admin experience and page redesign — planning
+
+Status: planning complete; implementation has not started. User requested a full plan for easier admin access and more thoughtful page layouts.
+
+### Files and interfaces
+
+- Added `docs/admin-experience-plan.md`: observed issues, public/admin journeys, proposed routes, page compositions, required server interfaces, design constraints, five implementation stages and acceptance criteria.
+- No runtime interfaces, application code, dependencies or deployment changed.
+
+### Decisions and defaults
+
+- Proposed home with Join the party and Admin sign in; separate joining and login screens.
+- Proposed wide admin workspace with server-backed room discovery/resume, contextual live/player/media/results/health sections and a read-only content overview.
+- Preserve email-link authentication, explicit email confirmation, existing credentials/transport/reducer, independent themes and custom question designs.
+- Preserve direct QR joins, legacy root room queries and `/host` projector links during route migration.
+- Default to one selected control room per browser pending cookie-scope verification. No CMS, auth-method change or remote projector pairing is included by default.
+
+### Commands and results
+
+- Read project instructions, relevant source and existing progress. Reviewed room routes/registry and current auth/credential integration.
+- `git status --short` returned no existing tracked changes before writing the plan.
+- Application tests and typecheck were not run: this stage changes documentation only. No implementation check is claimed as passed.
+
+### Manual verification
+
+- Chrome: inspected live home and signed-out admin at 1920px wide, including settled session-check state; inspected LifeSmart's public home as a navigation reference.
+- Observed stretched guest form, narrow admin frame, development navigation and stale session-check copy after the form became enabled.
+- Did not request a login email, authenticate, create a room or change a live game. Signed-in findings are source-based; mobile and projector behaviour were not manually verified.
+
+### Unresolved issues
+
+- Live admin email prefill differs from current source; verify deployed build provenance during implementation without exposing configuration.
+- Room discovery/resume needs real server support; tab storage alone cannot provide reliable recovery.
+- Existing reported production-inbox auth-test failure has not been re-run or resolved in this planning stage.
+- Proposed layouts remain unimplemented and have no visual/browser acceptance yet.
+
+### Exact next stage
+
+Stage A in `docs/admin-experience-plan.md`: implement the home, dedicated join/login routes, compatibility links and reliable authentication UI states. Stop after its checks and review; do not automatically begin Stage B.
+
+## Admin redesign Stage A — front door and access
+
+Status: complete and locally verified on 19 October 2026; ready for review. Not deployed.
+
+### Files and interfaces
+
+- Public home in `apps/web/src/home`; focused entry frame and theme-aware styling in `apps/web/src/ui/entry-frame.tsx` and `entry.css`.
+- Dedicated `/join`, `/play` and `/admin/login` routes; root `?room=` compatibility; direct `/j/:code` preserved. `/screen` aliases the existing projector without changing `/host`.
+- Login/session hook, bounded validated auth requests, safe navigation return preference, explicit confirmation recovery, and honest sign-out feedback under `apps/web/src/admin`.
+- Existing guest component and room transport retained. Joining now uses the entry frame; the joined guest retains the phone controller. Recovery checks are bounded and uncertain join retries reuse their request id.
+- Added home, route, auth UI, auth client and guest-session tests; added `e2e/admin-entry.spec.ts`. Updated existing guest e2e entry URLs for the new home route.
+- Added `playwright.dev.config.ts` for browser checks directly against source without a production build.
+- Vitest disables Node's native web storage so the browser tests use jsdom's Storage; the shared test setup supplies jsdom's missing `scrollTo` for Motion layout measurements.
+
+### Decisions and defaults
+
+- Keep email-link authentication and existing session expiry, cookies and server policies. Remove the prefilled admin email from public UI.
+- Store only an allowlisted admin destination, without queries or tokens, as an optional browser navigation preference. This supports email confirmation opened in another tab; blocked storage falls back to `/admin`.
+- Keep existing `AdminLobby` controls for this stage, with a wider frame. Nested workspace navigation and authoritative room discovery remain Stage B.
+- Login remains usable while a background session check runs. Auth and guest recovery requests have a bounded wait; failures offer a retry.
+- No new dependencies, theme palettes, game logic, question packs, deployments or remote resources. Browser checks use the existing explicit local adapters and local test rooms.
+
+### Commands and results
+
+- Initial `npm run typecheck` could not start because the compiler was not installed.
+- Dependency installation on E: was unusually slow (100 small files took about 49 seconds versus 61 milliseconds on C:). Created a temporary verification copy at `C:/Users/Humza/AppData/Local/Temp/26-admin-entry-94b544a3`, excluding secrets and generated directories. `npm ci --ignore-scripts --prefer-offline --no-audit --no-fund` and `npm rebuild esbuild workerd` passed there. The lockfile is unchanged.
+- Final source synchronisation checked all 34 changed/new files plus the selected manifests/lockfile: zero hash mismatches. Checks below ran against that matching temporary copy; they are not claimed as runs in the original E: checkout.
+- `npm run typecheck` passed.
+- `npm run test:unit` passed: 37 files, 106 tests, no skipped tests.
+- `npx playwright test --config playwright.dev.config.ts apps/web/e2e/admin-entry.spec.ts apps/web/e2e/shells.spec.ts` passed: 11 browser checks. Covers home choices, compatibility joins, email confirmation in another tab, existing-session reuse, sign-out, local room creation/join, and existing shell routes.
+- `git diff --check` passed. No production build or deployment ran.
+
+### Manual verification
+
+- Chrome reviewed the local home, admin login and join pages. Login has an empty email field and an obvious route home; public pages have clear join/admin navigation.
+- Browser checks covered widths 320, 390, 768, 1280 and 1920 pixels, with no sideways overflow and bounded form widths. Reduced-motion behaviour checked.
+- Saved home, join and login screenshots at 390 and 1920 pixels under `.codex/previews/admin-redesign/` (local ignored previews).
+- Local preview is available at `http://localhost:4173/`, served from the matching temporary copy. It does not watch edits in the E: checkout. Normal development remains `npm run dev` after the checkout's dependencies finish installing.
+
+### Unresolved issues
+
+- Dependency installation in the original E: checkout remained slow at completion; the verified temporary copy supplies the running preview.
+- Production email delivery and deployed build provenance are outside local verification.
+- The pre-existing reported production-inbox `auth.spec.ts` failure was not rerun or resolved. This stage's browser checks exercise the explicit local inbox only.
+
+### Exact next stage
+
+Review Stage A. The exact next implementation stage is Stage B in `docs/admin-experience-plan.md`: recoverable admin workspace, authoritative room discovery/resume and contextual sidebar navigation. Do not begin it automatically.
+
+## Admin redesign Stage B — recoverable workspace
+
+Status: complete and locally verified on 19 October 2026; ready for review. Not deployed.
+
+### Files and interfaces
+
+- Wide shared shell and responsive contextual navigation in `apps/web/src/ui/admin-shell.tsx` and `admin.css`. Distinct overview (`/admin`), full saved-room list (`/admin/rooms`), room overview (`/admin/rooms/:gameId`), existing live controls (`/live`) and account/appearance (`/admin/settings`). Protected deep links preserve their destination and pages identify their location in the title/navigation.
+- `rooms-page.tsx` provides server-backed room discovery, current selection, creation, older pages, real room state/connections, guest link/QR and stage link. The home overview limits recent entries; Rooms provides full pagination. Empty, missing, expired, stale-tab and network states have recovery routes.
+- One `room-provider.tsx` owns the snapshot, socket lifecycle, command pending state and feedback across nested room sections. `AdminLobby` now consumes that provider; its individual copies of snapshot fields and separate socket/storage restore were removed. Its existing controls remain available for Stage C's layout work.
+- Shared `adminRoomListSchema`; authenticated `GET /api/admin/rooms` (`cursor`, `limit` 1–50), `GET /api/admin/rooms/current`, `GET /api/admin/rooms/:gameId` and idempotent `POST /api/admin/rooms/:gameId/resume` (`requestId`). The existing registry supplies stable keyset pages. The room DO supplies current snapshots and persisted renewed credentials.
+- `admin-routes.ts` reuses existing authentication, credential preparation, validation and receipt/storage mechanisms. Existing creation records a selected-room hint and releases the browser's previous scoped access. No new database schema, room directory, scheduler, socket client or game engine.
+- New UI tests `admin-shell.test.tsx` and `rooms.test.tsx`; Worker tests `admin-rooms.spec.ts`; authentication-boundary tests `admin-rooms-auth.spec.ts`; browser flow `e2e/admin-room-recovery.spec.ts`. Existing entry/shell/quiz/media/dense-lobby checks navigate the new room routes. Dense-lobby setup uses the verified room URL instead of removed tab storage.
+
+### Decisions and defaults
+
+- A registry list contains identity, join code and creation time only. Phase and player/connection counts are fetched authoritatively on opening a room; listing does not fan out to every game object. Dashboard selection details explicitly describe a last check; the room overview updates through the live socket.
+- Browser-wide root-scoped control/presentation cookies mean one selected control room per browser. Switching is explicit, preserves game data/other operators/guest access, revokes only the previously presented browser credentials, and closes matching sockets. Expired/revoked sockets cannot receive later snapshots. Stage access in that browser may need reconnecting after a switch.
+- `26_admin_room` is an HttpOnly location hint checked against actual scoped control credentials. It grants no access. Optional tab notifications improve stale-tab feedback; server verification/revocation remains authoritative. `26-lobby` tab storage is no longer used to recover admin rooms.
+- Resume retries reuse a persisted request receipt and return the same still-valid credentials; the snapshot/time remains current. A revoked/expired receipt requires a fresh explicit opening. No game phase, score, player, content version or bootstrap is reset during recovery.
+- Canonical guest links/QR now use `/j/:code`; old root query links remain supported. Reused the existing QR renderer and shared dialog.
+- Local Vite auth middleware excludes `/api/admin/rooms` so those requests reach the real Worker/DO. Browser checks explicitly set `LOCAL_DATABASE_ID` to use the existing ephemeral local auth adapter, avoiding a damaged development database without reading/resetting its data. Production auth paths are unchanged.
+- No dependencies/lockfile, question content, themes, remote resources or deployments changed. Remaining section navigation appears when those sections are implemented; no placeholder metrics or unsupported page actions were added.
+
+### Commands and results
+
+- `npm run typecheck` passed in the original E: checkout. `npm run test:unit` passed there: 39 files, 114 tests, no skips.
+- After the final canonical QR-link change, both commands also passed against the matching C: verification copy used in Stage A (39 files, 114 tests). Source was synchronised with zero hash mismatches before validation.
+- In `apps/api`: `npx vitest run --project room test/admin-rooms.spec.ts test/room.spec.ts test/phase.spec.ts test/operations.spec.ts --project auth test/admin-rooms-auth.spec.ts test/credentials.spec.ts` passed: 6 files, 39 tests. Covers registry paging/empty state, saved credentials, current state, missing room, expiry/revocation, old socket replacement, authentication and origin boundaries, plus existing lifecycle/operations.
+- Browser regression command: `npx playwright test --config playwright.dev.config.ts apps/web/e2e/admin-room-recovery.spec.ts apps/web/e2e/admin-entry.spec.ts apps/web/e2e/shells.spec.ts apps/web/e2e/quiz.spec.ts apps/web/e2e/media.spec.ts apps/web/e2e/lobby-layout.spec.ts --workers=1`. The latest combined run passed 16 of 17 cases. The full quiz needed further selector updates, then `npx playwright test --config playwright.dev.config.ts apps/web/e2e/quiz.spec.ts --workers=1` passed (38.9 seconds). All 17 distinct flows have now passed across those runs; no claim of a single all-green 17-case run. Recovery/responsive cases also passed again after the final navigation transition change.
+- Updated older browser selectors to distinguish the account/main phone status from toast messages, the phase animation wrapper from a hidden phase marker, photo Send from Send troll, and ballot search from troll search. Ballot-order equality after reload now waits for the animated controls to mount and still checks the full saved order. No assertions/cases were removed or skipped. The quiz verifies scoring, phase controls, reload recovery, voting, player guesses, duels, final podium and public/private separation across three phones.
+- `git diff --check` passed; lockfile unchanged. No production build or deployment.
+
+### Manual verification
+
+- Reviewed saved 390px and 1920px screenshots. Corrected join-code contrast to use the theme foreground and compacted phone navigation/account chrome. Responsive browser checks cover 320, 390, 768, 1280 and 1920px with reduced motion and no horizontal overflow.
+- Saved room list and connected room-overview screenshots at 390px and 1920px under `.codex/previews/admin-redesign/`. The browser checks wait for the live connection before capturing the overview. The shared guest QR uses the direct join link and its dialog was checked in the recovery flow.
+- The review preview is served from the matching temporary source copy at `http://localhost:4173/admin`. It uses an explicit ephemeral local auth database and does not watch edits to the E: checkout. Use the local captured sign-in confirmation to enter; normal project development remains `npm run dev`. The source changes are saved in the original project.
+
+### Unresolved issues
+
+- Production email delivery, deployed build provenance and remote existing-room recovery are not verified by local tests. The previously reported production-inbox `auth.spec.ts` failure was not rerun or resolved.
+- Full live/player page composition and command confirmation/retry improvements belong to Stage C. Media/results/content/health navigation and their tailored layouts remain Stage D. Projector presentation work remains Stage E.
+
+### Exact next stage
+
+Review Stage B after its final checks. The next implementation is Stage C in `docs/admin-experience-plan.md`: live desk and player tools, with deliberate command confirmations and scoped feedback. Do not start it automatically.
+
+## Admin redesign Stage C — live desk and player tools
+
+Status: complete and locally verified on 19 October 2026; ready for review. Not deployed.
+
+### Files and interfaces
+
+- `apps/web/src/admin/live-console.tsx` replaces the long host deck with the current question/phase, server-based countdown and submissions, contextual moderation, room context and persistent main action. Phase-specific controls, deliberate Skip/Finish confirmations, private presenter notes and guarded shortcuts use existing actions. `admin-lobby.tsx` is a compatibility re-export.
+- `players-page.tsx` adds `/admin/rooms/:gameId/players`: searchable stable-ID rows with connected/removed/score/available answer state, and an adjacent individual workspace. Nickname, Phones, Score and Remove buttons show one task at a time: rename/swap, transfer, signed score changes with reason/history, kick and removed-player recovery. One-use codes are private, hideable and tied to the selected record.
+- `room-provider.tsx` remains the single room state/socket owner, now centralising command intents, scoped feedback, uncertain retries and private code display. `command-feedback.tsx`, `command-notices.ts` and `room-extras.tsx` preserve messages and occasional health/download/archive/email/media recovery. Unsupported placeholder media/effect buttons were removed.
+- `apps/api/src/room/admin-players.ts` and the existing control snapshot add optional shared `adminPlayers`: stable identity, stored nickname, ledger-plus-adjustment total, live connected state, removed state and nullable answer state. Guests/projector omit it. No database migration or new score engine.
+- `live/room-api.ts` bounds play/transfer requests and decoding at twelve seconds. `live/use-phase-countdown.ts` extracts the existing server-deadline display from Stage, without calculating phases. Routes, navigation/title, `ui/admin.css` and shared `ConfirmDialog`/`Disclosure` provide responsive composition, focus restoration and reduced-motion transitions.
+- New tests: `admin/live-console.test.tsx`, `admin/players-page.test.tsx`, `live/room-api.test.ts`, `controls.test-support.tsx`, `e2e/admin-live-controls.spec.ts`; private projection regression added to `apps/api/test/admin-rooms.spec.ts`. Existing shell/quiz tests use focused player tasks and confirmed final action. Admin, room and UI READMEs updated.
+
+### Decisions and defaults
+
+- HTTP receipts provide feedback; authoritative snapshots update phase, score and player data. One in-flight intent blocks duplicate clicks. Network failures, invalid successful responses and server failures retain the exact intent/request ID for explicit Retry; replacement commands remain blocked. Pending/uncertain feedback follows navigation across the mounted room provider. Refresh reads current server state and never automatically replays commands. Private intents/codes are not persisted in browser storage.
+- Skip/Finish confirmations recheck question/phase. Player confirmations recheck stable ID, nickname, removed state and swap target. Changed context disables confirmation. Final Finish uses the same review; ordinary Finish preserves finish-after-question semantics.
+- Shortcuts ignore repeat/modifier events, typing/contenteditable targets, open dialogs, disconnected state and pending/uncertain commands. Right arrow resumes a paused game and reviews Finish on the final screen. Player pages register no live shortcuts.
+- Scores read existing accepted ledger/adjustment records. Older snapshots label unavailable details accurately. Public projections exclude removed records, private reasons, codes and host fields. The Worker test verifies persistence after eviction and that idempotent score retries do not duplicate the adjustment.
+- Active effects, announcement dismissal and urgent accepted-media Hide stay on Live. Occasional records/recovery remain reachable under a disclosure until Stage D. No new dependency, theme, question content, auth policy, remote resource or deployment.
+
+### Commands and results
+
+- `npm run typecheck` passed in the original E: checkout after the final provider loading-state cleanup.
+- `npm run test:unit` passed in the original checkout: 42 files, 131 tests, no skips. New tests cover transport timeouts/ambiguous responses, authoritative reconnect state, same-ID retry, phase actions, stale confirmations, private codes and validated score changes. A harness race was fixed by awaiting socket subscription before simulating connection.
+- In the matching C: verification copy: `npx vitest run --project room test/admin-rooms.spec.ts test/room.spec.ts test/phase.spec.ts test/operations.spec.ts --project auth test/admin-rooms-auth.spec.ts test/credentials.spec.ts` passed: 6 files, 40 tests. Includes existing host actions/auth boundaries and new private player projection regression.
+- `npx playwright test --config playwright.dev.config.ts apps/web/e2e/admin-live-controls.spec.ts apps/web/e2e/admin-room-recovery.spec.ts apps/web/e2e/admin-entry.spec.ts apps/web/e2e/shells.spec.ts apps/web/e2e/quiz.spec.ts apps/web/e2e/media.spec.ts apps/web/e2e/lobby-layout.spec.ts --workers=1` passed all 18 cases in one run (1.8 minutes): entry, dense lobby, full quiz with three phones, media, discovery/recovery, rename/score/transfer/kick/recover, pause/reload/resume, finish/podium and projector frame exclusion.
+- After the final provider loading-state cleanup, `npx playwright test --config playwright.dev.config.ts apps/web/e2e/admin-live-controls.spec.ts apps/web/e2e/admin-room-recovery.spec.ts --workers=1` passed again: all 4 cases, 37 seconds.
+- Targeted ESLint across ten changed production modules passed with zero errors and one existing Fast Refresh organisation warning for the provider's exported hook. Synchronous loading updates were moved out of the initial effect; no rule was weakened.
+- Public changed source was copied to the C: verification checkout with zero hash mismatches before the combined browser run. Final provider/test support changes were copied before their targeted checks. Screenshots are ignored local previews. `git diff --check` passed. No production build/deployment.
+
+### Manual verification
+
+- Reviewed Live at 1280px and Players at 390px/1920px. Replaced the initially long player detail form with task buttons and reviewed the improved captures.
+- Browser checks cover 320, 390, 768, 1280 and 1920px with reduced motion and no sideways scrolling. At laptop/desktop widths the main live action is in the viewport and the current question starts above 650px. Cancelling a confirmation restores trigger focus.
+- Chrome reviewed local sign-in/resume and selected player Nickname/Score panels. Populated Live/Players captures at 390, 1280 and 1920px are under `.codex/previews/admin-redesign/`.
+- Try `npm run dev`, sign in through the explicit local inbox, open a room, and select Live controls or Players. Local browser verification uses the existing explicit ephemeral auth adapter; normal development retains its configured database. The review preview at `http://localhost:4173/admin` uses the matching C: copy and does not watch the E: checkout.
+
+### Unresolved issues
+
+- Production email delivery, deployed build provenance and real venue/device behaviour remain unverified. The pre-existing production-inbox auth test issue was outside this stage. Local startup logs the existing development database schema diagnostic before the explicit isolated auth adapter is used; no private database files were opened or reset.
+- Dedicated Media, Results, Content and Health layouts/interfaces remain Stage D. Projector setup/presentation polish remains Stage E.
+
+### Exact next stage
+
+Review Stage C. Next is Stage D in `docs/admin-experience-plan.md`: dedicated Media, Results, Content and Health pages, their backing interfaces, and public results composition. Do not begin automatically.
+
+## Admin redesign Stage D — media, results, content and health
+
+Status: complete and locally verified on 19 October 2026; ready for review. Not deployed.
+
+### Files and interfaces
+
+- Dedicated room `/media`, `/results` and `/health` pages, plus global `/admin/content` (Question packs), are registered in `routes.tsx` and contextual navigation/title handling. All room pages retain the existing provider/socket. Live keeps urgent media/effect controls and links to occasional tools; the former records disclosure is replaced by those destinations.
+- `admin/media-page.tsx` provides an accepted-photo grid and labelled opt-in voice controls, owner/status, hidden filter, failed-preview retry and real Hide commands. Metadata pages contain up to 50 records with an Older/Newest cursor. Filters apply to that page. `ui/media-preview.tsx`/CSS is shared with public results; hidden items create no preview element and audio never autoplays.
+- New authenticated `GET /api/admin/rooms/:gameId/media?cursor=…` and `GET /api/admin/rooms/:gameId/media/:mediaId` use the current admin session and verified scoped control credential. `room/admin-media.ts` reads existing accepted SQLite records; `PartyRoom.adminMediaPage` enforces scope. Previews reuse the existing media reader/R2 adapter and no-store headers. A stale guest cookie does not override operator access. Hidden media stays unavailable, including to the operator. No object keys/credentials are projected.
+- `admin/health-page.tsx` gives live connection state and a timestamped diagnostics report for scheduler, processing, archive and delivery. Unavailable counts stay unavailable; failed refreshes retain a clearly stale last check and disable recovery. Existing release/retry commands require review and use shared pending/error/same-ID retry feedback.
+- `admin/results-page.tsx` composes live totals or authoritative final standings, highlights, archive status/retry, public report link and bounded score-summary download. Delivery links to Health; personal results stay separate. No browser score/rank calculation is added.
+- `room/admin-content.ts` supplies authenticated read-only `GET /api/admin/content`. Shared strict schemas live in `packages/shared/src/admin.ts`. The explicit projection contains pack identity/release state and question title/prompt/mechanic/presentation/status/order/recorded missing requirements. It excludes answer/truth, presenter notes and reveal fields. `content-page.tsx` shows the catalogue and on-page authoring workflow without edit, reorder, start or release controls.
+- Public `/r/:gameId` now uses the entry frame and report composition: podium, broad standings/highlights, shared moments, retention information and separately labelled private result/email form. `results-report.tsx` and `results.css` retain server positions, including equal visual treatment of ties. Invalid IDs, unknown/preparing archives, read failures and retries have useful copy instead of old scaffold claims.
+- `api/read-data.ts` and `api/use-resource.ts` provide bounded validated reads and ignore stale/out-of-order responses. They hold section resources only; no new room store/socket. Command scopes now cover Media, Results and Health. `vite.config.ts` routes the new content endpoint to the real Worker rather than the local auth middleware.
+- Tests added alongside work: `admin/media-page.test.tsx`, `health-page.test.tsx`, `content-page.test.tsx`, `results-page.test.tsx`, public `results/results-page.test.tsx`, transport/resource lifecycle tests and `e2e/admin-sections.spec.ts`. Existing API auth/room/results tests cover new projection boundaries, pagination, hidden bytes and unavailable archive reads. Existing shell expectations now check actual results states.
+
+### Decisions and defaults
+
+- Reuse existing authentication, command receipts, diagnostics, accepted-media checks, archive projection, RLS and delivery semantics. No database migration, new scoring engine, dependency, resource creation, question edit/release or deployment.
+- The media list refreshes on relevant live projection/command changes and offers explicit Refresh for all newer records beyond the 20-item live projection. Rejected/stuck processing belongs to Health. No unsupported restore/unhide control is offered.
+- Health counts describe the last successful read. Connection counts remain socket-owned. Retry explanations distinguish expired media leases, archive export and uncertain provider delivery; no invented recipient list or success count.
+- Readiness means recorded authoring requirements, not a claim that every deployment asset is available. The existing birthday pack remains draft with its unchanged running order and catalogue; rooms still keep stored versions.
+- A verified archive whose publication cannot be read now returns preparing instead of an empty ready result. The public page offers another check without exposing database failures. This is covered for both a failed read and a missing publication. Optional email requests preserve entered values and never claim delivery from a failed HTTP response. Changing the game/recap identity clears old private results. Verification cleanup preserves an independent recap query.
+
+### Commands and results
+
+- `npm run typecheck` passed in the original E: checkout.
+- `npm run test:unit` passed: 49 files, 151 tests, no skips. Covers all required Stage D UI files, public/private composition, archive preparing/failure/retry, no autoplay, hidden/failed previews, unavailable counts, same shared mutation path, bounded reads and stale-response exclusion. The pre-existing stale-tab shell test now waits for its socket subscription before emitting the simulated storage event, fixing a harness race without weakening its assertions.
+- In the matching C: verification copy, `npx vitest run --project room test/admin-rooms.spec.ts test/media.spec.ts test/operations.spec.ts test/results-room.spec.ts --project auth test/admin-rooms-auth.spec.ts test/results.spec.ts` passed: 6 files, 33 tests. Runtime output included workerd/Vitest shutdown `EnvironmentTeardownError` diagnostics after test execution; exit status was zero and all assertions passed. No error filter or test was weakened.
+- Targeted ESLint across the eleven new/changed production modules passed with zero errors/warnings. The resource lifecycle was corrected to perform effect-triggered updates in asynchronous response callbacks rather than disabling the React rule.
+- `npx playwright test --config playwright.dev.config.ts apps/web/e2e/admin-sections.spec.ts apps/web/e2e/admin-live-controls.spec.ts apps/web/e2e/admin-room-recovery.spec.ts apps/web/e2e/admin-entry.spec.ts apps/web/e2e/shells.spec.ts apps/web/e2e/quiz.spec.ts apps/web/e2e/media.spec.ts apps/web/e2e/lobby-layout.spec.ts --workers=1` passed all 19 cases in one run (2.3 minutes). Includes a real upload/protected preview/hide/denied later read, three guests, finish/archive/public report, recognised personal result, draft restrictions and prior entry/live/recovery/full-quiz/media regressions.
+- Final copy adjustments clarify archive read unavailability and remove technical question IDs from displayed best-answer text; unit/type checks rerun afterwards. Public source synchronised to the C: copy with zero hash mismatches. `git diff --check` passed. No production build or deployment.
+
+### Manual verification
+
+- Checked loaded Media, Health, admin Results, Question packs and public Results layouts at 320, 390, 768, 1280 and 1920px with reduced motion and no horizontal overflow. Screenshot checks wait for the correct page heading, completed resource check and full entry-frame opacity; initial transitional captures were replaced.
+- Reviewed Health at phone width, the full desktop catalogue and the public report. Corrected tied podium styling so equal positions share treatment. The public page has no admin navigation; private personal results remain in a distinct section.
+- Chrome reviewed local sign-in and the real read-only birthday catalogue, showing draft status, unchanged order and authoring workflow. Left the catalogue open for review.
+- Loaded screenshots at 390 and 1920px are saved under `.codex/previews/admin-redesign/`: `media-*`, `health-*`, `content-*`, `admin-results-*`, `public-results-*`. These are ignored previews.
+- Try `npm run dev`, use the local sign-in confirmation, open a room and choose Media, Results or Health; Question packs is global. The running review preview is `http://localhost:4173/admin`, served from the matching C: copy with the existing explicit ephemeral local auth adapter. It does not watch E: checkout edits.
+
+### Unresolved issues
+
+- Production mail/provider delivery, deployed build provenance and real venue/device behaviour remain unverified. The existing local database startup schema diagnostic and earlier production-inbox auth-test issue are unchanged; no private database files were opened/reset. Cloudflare test-runtime shutdown diagnostics are recorded above.
+- The catalogue is deliberately read-only and no birthday version was released. Interface readiness does not certify remote assets or live venue connectivity.
+
+### Exact next stage
+
+Review Stage D. Next is Stage E in `docs/admin-experience-plan.md`: separate projector setup/presentation, whole-site responsive polish and the controller/presenter rehearsal. Do not begin automatically.
+
+## Admin experience Stage E — complete locally (19 October 2026)
+
+### What now works
+
+- `/screen` and the compatible `/host` have focused setup: connect, optionally enable local sound/full screen, then explicitly present. Present requires an open scoped stage socket. It does not start the quiz or force full screen. Failed lookups preserve the entered code and stop after twelve seconds.
+- Presentation separates lobby invitation/names from the live question, compact timer, options, public media, standings and room footer. It uses the existing theme palette/skin. Site navigation, forms, internal audio/connection diagnostics, operator HUD and host-command shortcuts are absent. F, M and Escape act locally on display/sound only.
+- Disconnect/replacement hides stale questions behind a public reconnect state. Private recovery guidance stays in setup; reconnecting the same room opens a fresh scoped socket after renewed access. A guest identity or join code does not confer presentation authority. Host hiding removes question/media/cues and mutes local audio.
+- Escape, the setup control and leaving browser full screen return to setup with keyboard focus restoration. Presentation receives focus without projecting a browser focus box. The operator return control retains ordinary-sized text and no longer covers answer options.
+- Admin breakpoints respond to available workspace width, including 200% zoom. Home columns fit naturally and its ticket mark is readable. Setup stacks on narrow/zoomed displays. Standard stage options use columns; the custom question kit wraps/stacks its existing compositions on narrow screens while retaining each design's identity.
+- Stage phase changes show the current server snapshot immediately with a short, almost-opaque fade. An outgoing animation cannot retain the old phase heading. Reduced-motion phone transitions also retain a brief fade without movement.
+
+### Files and interfaces
+
+- Added `apps/web/src/stage/stage-presentation.tsx`, `projector.css`, `stage-page.test.tsx` and `apps/web/e2e/admin-stage-flow.spec.ts`.
+- Updated the existing stage page, countdown (`compact`), fullscreen wrapper (`controls`/`onExit`), fullscreen adapter (`exitStageFullscreen`), local audio hook/captions, shared phase transition (`stage`), safe-area palette/type tokens, standard option layout and bounded stage lookup. Reused the socket, credentials, countdown and sound adapters; no new state store or server mutation interface.
+- Updated shared entry/admin CSS, the question design kit and development-only stage preview, projector README, phase/safe-area/lookup tests and existing browser expectations for Connect then Present. The quiz test explicitly waits for the phone slider to become enabled before keyboard input: keyboard events do not wait for readiness like clicks/fills do.
+- No dependencies, question content, running order, pack versions or scoring rules changed in Stage E. Prior A–D work remains intact and uncommitted.
+
+### Decisions and defaults
+
+- Same-browser projector access retains the existing scoped presentation cookie. A separate presenter computer needs a deliberate pairing feature; this stage does not make a join code authoritative.
+- Full screen is optional and separate from Present. Browser refusal never blocks presentation. Audio stays local/optional, stops outside presentation or on disconnect/hide, and does not catch up past cues. Audio unlocking is not a promise of venue audibility.
+- Colours come from `theme/themes.ts`. Guest-facing stage body text remains at least 40px, standard prompts 72px and the timer 120px; custom designs retain their existing readable hierarchy. The inset is 5vh vertically and 5vw horizontally, at least 1rem. Long reveals/narrow previews may scroll vertically rather than clip content or shrink readable type.
+- No deployment, paid resource creation, content release or unrelated remote change.
+
+### Commands and results
+
+- `npm run typecheck` passed in the original E: checkout.
+- `npm run test:unit` passed in E: 50 files, 159 tests, no skips. Includes scoped connection/preflight, failure/retry, stale-content exclusion, hiding/audio, replacement/reconnect, display-only keys, focus/fullscreen return, bounded lookup, safe-area/contrast and immediate readable phase changes.
+- Targeted ESLint across fifteen Stage E production/test modules passed with zero errors/warnings. The separately checked `play/stage-play.tsx` retains its existing fast-refresh warning for the exported `outcomeLine` helper; no lint rule was disabled. Targeted Prettier checks and `git diff --check` passed.
+- Safe changed source files matched the C: verification copy with zero hash mismatches before the final browser run.
+- From `apps/api` in that copy: `npx vitest run --project room test/phase.spec.ts test/stage-effects.spec.ts test/admin-rooms.spec.ts --project auth test/credentials.spec.ts test/admin-rooms-auth.spec.ts` passed 5 files / 26 tests. An existing dependency sourcemap warning was printed; no shutdown error occurred in this run.
+- Final browser run: `npx playwright test --config playwright.dev.config.ts apps/web/e2e/admin-stage-flow.spec.ts apps/web/e2e/admin-sections.spec.ts apps/web/e2e/admin-live-controls.spec.ts apps/web/e2e/admin-room-recovery.spec.ts apps/web/e2e/admin-entry.spec.ts apps/web/e2e/shells.spec.ts apps/web/e2e/quiz.spec.ts apps/web/e2e/media.spec.ts apps/web/e2e/lobby-layout.spec.ts --workers=1` passed all 21 cases together (2.8 minutes).
+- Early runs caught zoom overflow, an oversized return control, narrow ballot/name reveals, delayed phase headings and an early keyboard interaction with a disabled phone slider. These were fixed. No assertion, test or error filter was removed to obtain the final pass. Making full screen deliberate also prevents native full-screen window resizing from interfering with responsive browser checks.
+
+### Manual and browser verification
+
+- Checked 320×800, 390×844, 768×900, 1280×800, 1440×900 and 1920×1080 across home, join, room discovery/overview, live, players, content, media, results, health and projector setup/presentation, plus 200% CSS zoom at 1440×900 and reduced motion. No sideways scrolling. Standard projector prompts/options are fully in view at laptop/desktop sizes. Long pages retain vertical scrolling.
+- All ten real question designs checked in collect/reveal: phones at 320/390 and stage previews at 320/768/1280/1920, covering 120 combinations. Readable prompt type, visible content, full-opacity resting state and overflow checks passed. The development-only preview uses stand-in reveals and the shared stage frame; it publishes no questions or real answers.
+- The real Worker/DO rehearsal covers admin sign-in/create, guest join, restricted projector access, display-only keys, setup/presentation focus, optional full screen, pause/resume, guest reload, admin reload, stage hiding, finish/archive and public results. The existing three-phone quiz reaches the podium with its answer/reveal/recovery checks intact.
+- Chrome inspected home and the real design preview. Reviewed saved setup, laptop question, zoomed home, narrow phone and custom reveal screenshots. Removed duplicate pause display and corrected oversized return text after visual review.
+- Screenshots are in the ignored `.codex/previews/admin-redesign/` folder: `projector-setup-*`, `projector-lobby-*`, `projector-question-*`, `projector-zoom-*`, `polish-*`, `zoom-*` and `design-<id>-<surface>-<phase>-<width>.png`. They contain local demo/preview data.
+- Review preview: `http://localhost:4173/`, served from the matching C: copy with the explicit ephemeral local auth adapter (`LOCAL_DATABASE_ID=browser-checks`). Open Admin, use the local sign-in confirmation, create/resume a room, then Open projector → Connect room → Present on this screen. F/M/Escape work while presenting. The preview does not watch E: edits; normal project development remains `npm run dev`.
+
+### Unresolved verification and continuation
+
+- Venue projector/speaker checks remain: physical readability, brightness, overscan, audible cues, real-device browser audio/fullscreen policy, native browser zoom/OS scaling and room Wi-Fi. Automated 200% checks use CSS zoom and narrow viewport reflow; they do not certify physical checks.
+- Production mail/provider delivery and deployed provenance remain unverified. Existing local Better Auth schema-startup diagnostics and design-route hydration/reduced-motion development notices remain; the explicit local adapter and functional assertions passed. No private database files were opened or reset.
+- The user-requested conditional continuation heartbeat `resume-stage-e-after-usage-reset` was created for 18:38 London, shortly after the reported reset. Work finished without exhausting usage; it is now PAUSED so it cannot duplicate completed work or start another stage. No credits were bought or reset credits spent.
+
+### Exact next stage
+
+Review Stage E, then rehearse on the actual venue projector, speakers and phones. Stages A–E of the admin plan are implemented locally. There is no automatic next implementation stage or deployment; await the user's next instruction.

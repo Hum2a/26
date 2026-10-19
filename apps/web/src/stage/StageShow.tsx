@@ -16,7 +16,7 @@ export function StageShowControls({
       {unlocked ? (
         <p>The show audio is unlocked on this screen.</p>
       ) : (
-        <Button type="button" onClick={onStart}>
+        <Button type="button" variant="secondary" onClick={onStart}>
           Start show
         </Button>
       )}

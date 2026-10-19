@@ -12,6 +12,7 @@ import { StagePlay } from "../../stage-play";
 import { SafeArea } from "../../../stage/SafeArea";
 import type { TierPlacement } from "../../../rounds/TierAssign";
 import { previewQuestions, previewReveal } from "./fixtures";
+import "../../../stage/projector.css";
 
 /**
  * Development-only design bench at `/design`. It drives the real phone and
@@ -180,7 +181,9 @@ export function DesignPreview() {
         </div>
       ) : (
         <SafeArea dev={false}>
-          <StagePlay snapshot={snapshot} />
+          <div className="stage-presentation">
+            <StagePlay snapshot={snapshot} />
+          </div>
         </SafeArea>
       )}
     </div>

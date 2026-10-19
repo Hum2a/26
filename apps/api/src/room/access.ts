@@ -2,7 +2,10 @@ import { adminSessionSchema, clientApiKeyHeader } from "@26/shared";
 import { presentBinding } from "../auth/bindings.ts";
 import { authFailure } from "../auth/http.ts";
 import { administratorForRequest } from "../auth/routes.ts";
-import { sameOriginRejection } from "../credentials/cookies.ts";
+import {
+  sameOriginRejection,
+  sameOriginReadRejection,
+} from "../credentials/cookies.ts";
 
 /**
  * Local development asks the existing session route, which Node answers
@@ -14,7 +17,11 @@ export async function rejectUnlessRoomCreator(
   request: Request,
   env: Env,
 ): Promise<Response | undefined> {
-  if (sameOriginRejection(request)) {
+  if (
+    request.method === "GET"
+      ? sameOriginReadRejection(request)
+      : sameOriginRejection(request)
+  ) {
     return authFailure("forbidden", 403);
   }
   if (env.APP_ENV === "local") {

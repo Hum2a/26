@@ -11,23 +11,31 @@ test("a dense lobby and the host deck stay readable", async ({ page }) => {
     .click();
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.getByRole("button", { name: "Create a lobby" }).click();
-  await expect(page.getByText("The lobby is open.")).toBeVisible();
-  const joinCode = (await page.locator("dd").first().textContent())?.trim() ?? "";
+  await expect(
+    page.getByRole("heading", { name: "Ready for the room." }),
+  ).toBeVisible();
+  const joinCode = (await page.locator(".admin-room-code").textContent())?.trim() ?? "";
+  const gameId = new URL(page.url()).pathname.split("/").at(-1)!;
+  await page.getByRole("link", { name: "Live controls", exact: true }).click();
 
-  const seeded = await page.evaluate(async (headers) => {
-    const stored = sessionStorage.getItem("26-lobby");
-    const lobby = stored ? (JSON.parse(stored) as { gameId?: string }) : {};
-    const response = await fetch("/api/rooms/demo-cloud", {
-      method: "POST",
-      credentials: "same-origin",
-      headers,
-      body: JSON.stringify({
-        gameId: lobby.gameId,
-        requestId: crypto.randomUUID(),
-      }),
-    });
-    return response.status;
-  }, clientApiHeadersForTests({ "content-type": "application/json" }));
+  const seeded = await page.evaluate(
+    async ({ headers, gameId }) => {
+      const response = await fetch("/api/rooms/demo-cloud", {
+        method: "POST",
+        credentials: "same-origin",
+        headers,
+        body: JSON.stringify({
+          gameId,
+          requestId: crypto.randomUUID(),
+        }),
+      });
+      return response.status;
+    },
+    {
+      headers: clientApiHeadersForTests({ "content-type": "application/json" }),
+      gameId,
+    },
+  );
   expect(seeded).toBe(200);
 
   await page.setViewportSize({ width: 1280, height: 720 });
@@ -51,7 +59,8 @@ test("a dense lobby and the host deck stay readable", async ({ page }) => {
 
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto(`/host?code=${joinCode}`);
-  await page.getByRole("button", { name: "Show the lobby" }).click();
+  await page.getByRole("button", { name: "Connect room" }).click();
+  await page.getByRole("button", { name: "Present on this screen" }).click();
   await expect(page.getByText("Demo 75")).toBeVisible();
   await expect(page.getByText(/\/j\//)).toBeVisible();
   const stageOverflow = await page.evaluate(

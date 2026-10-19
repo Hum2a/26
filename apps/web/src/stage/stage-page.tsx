@@ -1,369 +1,234 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { useSearchParams } from "react-router";
-import { formatPhaseClock, remainingUntil, type LobbySnapshot } from "@26/shared";
-import { Button, Panel, StatusMessage, TextField } from "../ui/primitives";
-import { StageCountdown } from "./Countdown";
-import { StageFullscreen } from "./fullscreen";
-import { SafeArea } from "./SafeArea";
-import { WaitingLine } from "./WaitingLine";
-import { SurfaceFrame } from "../ui/surface-frame";
-import { JoinMark } from "../lobby/join-mark";
-import { NameCloud, NameReveal } from "../lobby/name-cloud";
-import { withClientApiKey } from "../api/client-key.ts";
-import { lookupStage, playRoom } from "../live/room-api";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useSearchParams } from "react-router";
+import { AnimatePresence, motion } from "motion/react";
+import type { LobbySnapshot } from "@26/shared";
+import { Button, TextField } from "../ui/primitives";
+import { EntryFrame, EntryNotice } from "../ui/entry-frame";
+import { lookupStage } from "../live/room-api";
 import { openRoomSocket } from "../live/room-socket";
-import { PhaseTransition } from "../anim/PhaseTransition";
-import { StagePlay } from "../play/stage-play";
-import { BetweenRounds } from "./BetweenRounds";
-import { PausedOverlay } from "./Paused";
-import { OperatorHud } from "./OperatorHud";
+import { requestStageFullscreen, exitStageFullscreen } from "../device/fullscreen";
 import { StageShowControls } from "./StageShow";
-import { StageShortcuts, type HostCommand } from "./shortcuts";
-import { StageSound } from "./stage-sound";
 import { useStageShow } from "./use-stage-show";
+import { StageSound } from "./stage-sound";
+import { stageShow } from "./audio";
+import { StagePresentation } from "./stage-presentation";
+import "./projector.css";
 
 export function StagePage() {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [code, setCode] = useState(params.get("code") ?? "");
   const [snapshot, setSnapshot] = useState<LobbySnapshot>();
-  const [observedAt, setObservedAt] = useState(() => Date.now());
+  const [observedAt, setObservedAt] = useState(Date.now);
   const [notice, setNotice] = useState("No room is connected.");
   const [busy, setBusy] = useState(false);
   const [connection, setConnection] = useState<
-    "connecting" | "open" | "closed" | "idle"
+    "idle" | "connecting" | "open" | "closed"
   >("idle");
+  const [accessLost, setAccessLost] = useState(false);
+  const [connectionAttempt, setConnectionAttempt] = useState(0);
+  const [presenting, setPresenting] = useState(false);
+  const presentButton = useRef<HTMLButtonElement>(null);
+  const wasPresenting = useRef(false);
   const show = useStageShow();
-
   useEffect(() => {
-    document.title = "Stage · 26";
-  }, []);
-
+    if (!presenting && wasPresenting.current) presentButton.current?.focus();
+    wasPresenting.current = presenting;
+  }, [presenting]);
   const gameId = snapshot?.gameId;
-  const countdown = usePhaseCountdown(snapshot, observedAt);
-
+  const connected = connection === "open" && !accessLost;
+  const displayEnabled = presenting && connected && !snapshot?.stageHidden;
   useEffect(() => {
-    if (!gameId) {
-      return;
-    }
+    document.title = presenting ? "Projector · 26" : "Projector setup · 26";
+  }, [presenting]);
+  useEffect(() => {
+    stageShow.setMuted(show.muted || !displayEnabled);
+    return () => stageShow.setMuted(true);
+  }, [show.muted, displayEnabled]);
+  useEffect(() => {
+    if (!gameId) return;
     const socket = openRoomSocket({
       gameId,
       role: "stage",
       onSnapshot(next) {
-        setObservedAt(Date.now());
         setSnapshot(next);
-        setNotice(
-          next.phase === "lobby" ? "The lobby is on screen." : "The quiz is on screen.",
-        );
+        setObservedAt(Date.now());
       },
       onAck() {},
-      onReplaced(message) {
-        setNotice(message);
-      },
-      onConnection(state) {
-        setConnection(state);
+      onConnection: setConnection,
+      onReplaced() {
+        setAccessLost(true);
+        setNotice(
+          "This projector session changed. Open the room from admin in this browser, then reconnect here.",
+        );
       },
     });
-    return () => {
-      socket.close();
-      setConnection("idle");
-    };
-  }, [gameId]);
-
-  async function onShow(event: FormEvent<HTMLFormElement>) {
+    return () => socket.close();
+  }, [gameId, connectionAttempt]);
+  function setup() {
+    setPresenting(false);
+    exitStageFullscreen();
+  }
+  useEffect(() => {
+    if (!presenting) return;
+    let wasFullscreen = Boolean(document.fullscreenElement);
+    function changed() {
+      if (document.fullscreenElement) wasFullscreen = true;
+      else if (wasFullscreen) setPresenting(false);
+    }
+    document.addEventListener("fullscreenchange", changed);
+    return () => document.removeEventListener("fullscreenchange", changed);
+  }, [presenting]);
+  async function connect(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     setBusy(true);
-    const found = await lookupStage(code);
-    setBusy(false);
-    if ("error" in found) {
-      setSnapshot(undefined);
-      setNotice(found.error);
-      return;
-    }
-    setObservedAt(Date.now());
-    setSnapshot(found);
-    setNotice(
-      found.phase === "lobby" ? "The lobby is on screen." : "The quiz is on screen.",
-    );
-  }
-
-  function onHostCommand(action: HostCommand) {
-    if (!snapshot) {
-      return;
-    }
-    void playRoom({
-      gameId: snapshot.gameId,
-      action,
-      requestId: crypto.randomUUID(),
-    }).then((result) => {
-      if ("error" in result) {
-        setNotice(result.error);
+    try {
+      const found = await lookupStage(code.trim().toUpperCase());
+      if ("error" in found) {
+        setNotice(found.error);
+        return;
       }
-    });
+      setConnection("connecting");
+      setConnectionAttempt((current) => current + 1);
+      setSnapshot(found);
+      setObservedAt(Date.now());
+      setAccessLost(false);
+      setNotice("Room connected. Check sound and display, then present when ready.");
+      setParams(
+        (previous) => {
+          const next = new URLSearchParams(previous);
+          next.set("code", found.joinCode);
+          return next;
+        },
+        { replace: true },
+      );
+    } catch {
+      setNotice("The room could not be reached. Check the connection and try again.");
+    } finally {
+      setBusy(false);
+    }
   }
-
-  const accepting =
-    snapshot?.play !== null &&
-    snapshot?.play !== undefined &&
-    (snapshot.phase === "collect" ||
-      snapshot.phase === "vote" ||
-      snapshot.phase === "predict");
-
   return (
-    <SafeArea>
-      <StageFullscreen>
-        <SurfaceFrame
-          current="stage"
-          size="stage"
-          title="Stage"
-          lede="This is the projector. Host controls stay on the admin screen."
+    <div className={presenting ? "projector-page is-presenting" : "projector-page"}>
+      {presenting && snapshot ? (
+        <StagePresentation
+          snapshot={snapshot}
+          observedAt={observedAt}
+          connected={connected}
+          onSetup={setup}
+        />
+      ) : (
+        <EntryFrame
+          wide
+          navigation={
+            <Link className="entry-text-link" to="/admin">
+              Open admin
+            </Link>
+          }
         >
-          <StatusMessage>{notice}</StatusMessage>
-          <StageShowControls
-            unlocked={show.unlocked}
-            muted={show.muted}
-            onStart={show.startShow}
-            onToggleMute={show.toggleMute}
-          />
-          <StageShortcuts onCommand={onHostCommand} />
-          <OperatorHud
-            count={snapshot?.players.length ?? 0}
-            phase={snapshot?.phase ?? "none"}
-            socket={connection}
-          />
-          {snapshot ? (
-            <details className="rounded-3xl border border-line px-5 py-4">
-              <summary className="cursor-pointer text-xl font-bold">
-                Change room
-              </summary>
-              <RoomCodeForm code={code} busy={busy} onCode={setCode} onShow={onShow} />
-            </details>
-          ) : (
-            <RoomCodeForm code={code} busy={busy} onCode={setCode} onShow={onShow} />
-          )}
-          {countdown ? (
-            <StageCountdown
-              label={countdown.label}
-              value={countdown.value}
-              note={countdown.note}
-              remainingMs={countdown.remainingMs}
-            />
-          ) : snapshot?.phase === "lobby" ? (
-            <StageCountdown label="Lobby" value="—" note="No round is running." />
-          ) : snapshot ? null : (
-            <StageCountdown
-              label="Countdown preview"
-              value="0:30"
-              note="Preview only. No round is running."
-            />
-          )}
-          {accepting && snapshot?.play ? (
-            <WaitingLine
-              count={snapshot.play.submissionCount}
-              players={snapshot.players.length}
-            />
-          ) : null}
-          {snapshot?.stageHidden && snapshot.phase !== "lobby" ? (
-            <p className="text-3xl font-bold">Hidden by the host.</p>
-          ) : null}
-          {snapshot?.highlights && snapshot.highlights.length > 0 ? (
-            <Panel title="From this room" display="stage">
-              <ul className="grid gap-4">
-                {snapshot.highlights.map((card) => (
-                  <li key={card.id}>
-                    {card.illustrative ? (
-                      <p className="font-bold">Illustrative</p>
-                    ) : null}
-                    <p className="break-words text-3xl font-bold">{card.stage}</p>
-                    <p className="break-words">{card.results}</p>
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-          ) : null}
-          {snapshot?.paused ? <PausedOverlay /> : null}
-          <PhaseTransition phase={snapshot?.phase ?? "idle"}>
-            {snapshot && (snapshot.phase === "intro" || snapshot.phase === "scores") ? (
-              <BetweenRounds />
-            ) : null}
-            {snapshot?.play ? <StagePlay snapshot={snapshot} /> : null}
-          </PhaseTransition>
-          {snapshot && snapshot.media.length > 0 ? (
-            <div className="grid gap-4">
-              {snapshot.media.map((item) =>
-                item.kind === "photo" ? (
-                  <StagePhoto
-                    key={item.mediaId}
-                    nickname={item.nickname}
-                    src={withClientApiKey(
-                      `/api/rooms/${snapshot.gameId}/media/${item.mediaId}`,
-                    )}
-                  />
+          <section className="projector-setup">
+            <header>
+              <p className="entry-eyebrow">Baseer’s screen</p>
+              <h1>Projector setup</h1>
+              <p>
+                Connect the room, choose sound and get the display ready. Humza’s
+                controls stay in admin.
+              </p>
+            </header>
+            <EntryNotice message={notice} />
+            <div className="projector-setup-grid">
+              <form
+                onSubmit={(event) => void connect(event)}
+                className="projector-connect"
+              >
+                <h2>1. Connect a room</h2>
+                <p>
+                  Use a projector tab in the browser that opened this room from admin.
+                </p>
+                <TextField
+                  label="Join code"
+                  hint="The six-character code on the admin screen."
+                  value={code}
+                  onChange={(event) => setCode(event.target.value)}
+                  maxLength={6}
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+                <Button
+                  type="submit"
+                  variant={snapshot ? "secondary" : "primary"}
+                  disabled={busy}
+                >
+                  {busy ? "Connecting…" : "Connect room"}
+                </Button>
+                {snapshot ? (
+                  <p role="status">
+                    {snapshot.joinCode} · {snapshot.phase} · {snapshot.players.length}{" "}
+                    players ·{" "}
+                    {connected ? "Connected" : "Waiting for the room connection"}
+                  </p>
                 ) : (
-                  <div key={item.mediaId} className="grid gap-2">
-                    <p className="text-2xl font-bold">
-                      Voice clip from {item.nickname}
-                    </p>
-                    <audio
-                      controls
-                      preload="none"
-                      src={withClientApiKey(
-                        `/api/rooms/${snapshot.gameId}/media/${item.mediaId}`,
-                      )}
-                    >
-                      Voice clip from {item.nickname}
-                    </audio>
-                  </div>
-                ),
-              )}
+                  <p>Preview only. No round is running.</p>
+                )}
+              </form>
+              <section className="projector-preflight">
+                <h2>2. Sound & display</h2>
+                <p>
+                  Sound is optional and controlled on this screen only. Starting show
+                  audio does not start the quiz.
+                </p>
+                <StageShowControls
+                  unlocked={show.unlocked}
+                  muted={show.muted}
+                  onStart={show.startShow}
+                  onToggleMute={show.toggleMute}
+                />
+                <Button variant="secondary" onClick={() => requestStageFullscreen()}>
+                  Full screen
+                </Button>
+                <p>
+                  While presenting, F requests full screen and Escape returns to setup.
+                  M toggles sound. Browser full screen is optional.
+                </p>
+                <h2>3. Present</h2>
+                <p>
+                  Presentation hides these settings, site navigation and private
+                  connection details.
+                </p>
+                <Button
+                  ref={presentButton}
+                  disabled={!snapshot || !connected || busy}
+                  onClick={() => setPresenting(true)}
+                >
+                  Present on this screen
+                </Button>
+              </section>
             </div>
-          ) : null}
-          {snapshot?.draft ? (
-            <p className="text-3xl font-bold" aria-live="polite">
-              {snapshot.draft.nickname} is typing: {snapshot.draft.text}
-            </p>
-          ) : null}
+          </section>
+        </EntryFrame>
+      )}
+      <AnimatePresence initial={false}>
+        <motion.div
+          key={presenting ? "cue-on-stage" : "cue-setup"}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.12 }}
+          className={presenting ? "projector-cue" : "projector-audio-notice"}
+        >
           {snapshot ? (
             <StageSound
               gameId={snapshot.gameId}
-              announcement={snapshot.trolls.announcement}
-              unlocked={show.unlocked}
-              muted={show.muted}
+              announcement={displayEnabled ? snapshot.trolls.announcement : null}
+              unlocked={displayEnabled && show.unlocked}
+              muted={show.muted || !displayEnabled}
+              presentation={presenting}
             />
           ) : null}
-          {snapshot ? (
-            <Panel
-              title={snapshot.phase === "lobby" ? "In the lobby" : "Join"}
-              display="stage"
-            >
-              {snapshot.phase === "lobby" ? (
-                <div className="grid gap-4">
-                  <p className="stage-answer tracking-[0.14em]">{snapshot.joinCode}</p>
-                  <JoinMark code={snapshot.joinCode} />
-                  {snapshot.namesReveal ? (
-                    <NameReveal reveal={snapshot.namesReveal} />
-                  ) : null}
-                  {snapshot.cloud.length > 0 ? (
-                    <NameCloud names={snapshot.cloud} minRem={2.75} maxRem={4.5} />
-                  ) : (
-                    <p>Nicknames appear here after guests join.</p>
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center gap-4">
-                  <p className="text-2xl font-bold">
-                    {snapshot.players.length} players
-                  </p>
-                  <JoinMark code={snapshot.joinCode} compact />
-                </div>
-              )}
-            </Panel>
-          ) : (
-            <Panel title="In the lobby">
-              <p>Nicknames appear here after guests join.</p>
-            </Panel>
-          )}
-        </SurfaceFrame>
-      </StageFullscreen>
-    </SafeArea>
+        </motion.div>
+      </AnimatePresence>
+    </div>
   );
-}
-
-function RoomCodeForm({
-  code,
-  busy,
-  onCode,
-  onShow,
-}: {
-  code: string;
-  busy: boolean;
-  onCode: (value: string) => void;
-  onShow: (event: FormEvent<HTMLFormElement>) => void;
-}) {
-  return (
-    <form className="mt-4 grid gap-4" onSubmit={onShow}>
-      <TextField
-        label="Join code"
-        hint="The code from the admin screen. This screen does not show secrets."
-        value={code}
-        onChange={(event) => onCode(event.target.value)}
-        autoComplete="off"
-        autoCapitalize="characters"
-        autoCorrect="off"
-        spellCheck={false}
-      />
-      <Button type="submit" disabled={busy}>
-        Show the lobby
-      </Button>
-    </form>
-  );
-}
-
-function StagePhoto({ nickname, src }: { nickname: string; src: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) {
-    return <p>The photo from {nickname} did not load. The game continues.</p>;
-  }
-  return (
-    <img
-      alt={`Photo from ${nickname}`}
-      className="max-h-[70vh] w-full object-contain"
-      src={src}
-      onError={() => setFailed(true)}
-    />
-  );
-}
-
-function usePhaseCountdown(
-  snapshot: LobbySnapshot | undefined,
-  observedAt: number,
-): { label: string; value: string; note: string; remainingMs: number | null } | null {
-  const deadlineAt = snapshot?.deadlineAt ?? null;
-  const serverNow = snapshot?.serverNow ?? 0;
-  const [now, setNow] = useState(observedAt);
-
-  useEffect(() => {
-    if (deadlineAt === null) {
-      return;
-    }
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const timer = window.setInterval(
-      () => {
-        setNow(Date.now());
-      },
-      reduce ? 1000 : 250,
-    );
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [deadlineAt, serverNow]);
-
-  if (!snapshot) {
-    return null;
-  }
-  if (snapshot.held) {
-    return {
-      label: "Waiting",
-      value: "—",
-      note: "Waiting for the host.",
-      remainingMs: null,
-    };
-  }
-  if (snapshot.paused) {
-    return {
-      label: "Paused",
-      value: formatPhaseClock(snapshot.remainingMs ?? 0),
-      note: "Paused.",
-      remainingMs: null,
-    };
-  }
-  if (deadlineAt === null) {
-    return null;
-  }
-  const remainingMs = remainingUntil(deadlineAt, serverNow, observedAt, now);
-  return {
-    label: "Time left",
-    value: formatPhaseClock(remainingMs),
-    note: "Time left in this phase.",
-    remainingMs,
-  };
 }

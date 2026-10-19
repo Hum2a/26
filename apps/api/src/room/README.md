@@ -48,8 +48,24 @@ Reveal nickname votes is a lobby beat. It does not write the score ledger. Start
 
 ## Local administrator check
 
-`vite dev` and `vite preview` still answer `/api/auth`, `/api/admin`, `/api/dev`, and `/api/stage` from Node. Room HTTP and `/ws` reach the Worker. When `APP_ENV` is `local`, creating a room or a transfer forwards the caller's cookie to `GET /api/admin/session`. Staging and production use the in-Worker session check and do not loop back. A missing session is 401.
+Admin discovery uses authenticated, same-origin `GET /api/admin/rooms` with a bounded keyset cursor (`cursor`, `limit` 1–50). It reads identity/creation metadata from the existing code registry, without waking every room for live counts. `GET /api/admin/rooms/current` verifies the browser's selection hint and actual control credentials. `GET /api/admin/rooms/:gameId` verifies scoped access and reads the authoritative control snapshot.
+
+`POST /api/admin/rooms/:gameId/resume` requires an administrator session, same-origin mutation and request id. The room persists renewed control/presentation credentials before responding; uncertain retries reuse the receipt. Only cookies carry secrets. Replacing access releases the credentials actually presented by that browser and closes matching sockets. Guest data, scores, content versions and other operators' credentials are preserved. Expired/revoked sockets cannot receive later snapshots. The `26_admin_room` HttpOnly cookie is only a location hint, never authentication.
+
+`vite dev` and `vite preview` answer auth endpoints under `/api/auth`, `/api/admin`, `/api/dev`, and `/api/stage` from Node, excluding `/api/admin/rooms`. All room HTTP and `/ws` reach the Worker. When `APP_ENV` is `local`, privileged room routes forward the caller's cookie to `GET /api/admin/session`. Staging and production use the in-Worker session check and do not loop back. A missing session is 401. Browser checks set the explicit local-only `LOCAL_DATABASE_ID` adapter to use an ephemeral auth database; normal development keeps its existing database.
 
 Player rows have nullable `device_context_id` and `device_context_version`. A guest device report writes the latest context id. Transfer clears that pointer. The notes are `apps/api/src/device/README.md`.
 
 Inbound socket text is capped at 4 KB. The room allows 80 active players. Join, transfer, and message counters are SQLite rows, so a reconnect does not reset them. Device and connection reports do not use the gameplay message counter. The room does not store an IP address.
+
+## Private player workspace projection
+
+Only control snapshots include `adminPlayers`. `admin-players.ts` reads stable player records (including removed records for recovery), accepted score ledger plus adjustment totals, active guest sockets and available host answer state. It does not add scoring rules. Guests and the stage never receive this field, removed identities, score reasons, transfer codes or presenter notes. The worker regression covers idempotent adjustment, kick, eviction/recovery and projection boundaries.
+
+## Administrative content and media
+
+`GET /api/admin/content` requires the existing administrator session and same-origin checks. It projects versioned server packs explicitly: pack identity/release/illustrative state and question title/prompt/mechanic/presentation/status/order plus recorded missing requirements. Answer fields, truth, presenter notes and reveal copy are never serialised. No write/release endpoint exists.
+
+`GET /api/admin/rooms/:gameId/media?cursor=…` also requires current scoped control credentials. It reads 50 accepted records newest-first from existing SQLite storage and returns a stable rowid cursor, owner nickname/kind/hidden state only. Rejected/unfinished uploads and storage keys stay out. The preview at the same path plus `/:mediaId` verifies the admin session and control credential explicitly (ignoring unrelated/stale guest cookies), reuses the accepted-media reader and R2 adapter, and returns no-store headers. Hidden bytes remain unavailable to every role. A metadata listing grants no authority to read bytes.
+
+Published result reads return preparing when a verified archive cannot actually be read, instead of advertising an empty ready report. Archive storage, RLS, scoring and delivery policies are unchanged.

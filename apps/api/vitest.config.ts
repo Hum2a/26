@@ -50,6 +50,7 @@ export default defineConfig({
           name: "room",
           include: [
             "test/room.spec.ts",
+            "test/admin-rooms.spec.ts",
             "test/phase.spec.ts",
             "test/quiz.spec.ts",
             "test/social.spec.ts",
@@ -82,6 +83,7 @@ export default defineConfig({
           name: "auth",
           include: [
             "test/auth.spec.ts",
+            "test/admin-rooms-auth.spec.ts",
             "test/credentials.spec.ts",
             "test/schedule.spec.ts",
             "test/quiz-score.spec.ts",

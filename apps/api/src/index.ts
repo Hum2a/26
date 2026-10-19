@@ -9,6 +9,8 @@ import { authFailure } from "./auth/http.ts";
 import { registerAuthRoutes } from "./auth/routes";
 import { registerMediaRoutes } from "./media/routes";
 import { registerRoomRoutes } from "./room/routes";
+import { registerAdminRoomRoutes } from "./room/admin-routes";
+import { registerAdminContentRoutes } from "./room/admin-content";
 import {
   rejectUnlessClientApiKey,
   requiresClientApiKey,
@@ -61,6 +63,8 @@ app.use("*", async (c, next) => {
 
 registerAuthRoutes(app);
 registerRoomRoutes(app);
+registerAdminRoomRoutes(app);
+registerAdminContentRoutes(app);
 registerMediaRoutes(app);
 
 // Missing API and WebSocket routes answer here. They must not call ASSETS,

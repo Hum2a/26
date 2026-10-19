@@ -9,23 +9,25 @@ export function StageCountdown({
   value,
   note,
   remainingMs = null,
+  compact = false,
 }: {
   label: string;
   value: string;
   note: string;
   remainingMs?: number | null;
+  compact?: boolean;
 }) {
   const pulse = remainingMs !== null && finalCountdown(remainingMs);
   return (
     <div
-      className={pulse ? "stage-countdown stage-countdown-pulse" : "stage-countdown"}
+      className={`${pulse ? "stage-countdown stage-countdown-pulse" : "stage-countdown"}${compact ? " stage-clock-compact" : ""}`}
       aria-label={label}
     >
       <p className="text-sm font-bold tracking-[0.18em] uppercase">{label}</p>
       <p className={pulse ? "stage-timer stage-timer-accent" : "stage-timer"}>
         {value}
       </p>
-      <p className="mt-5">{note}</p>
+      {!compact ? <p className="mt-5">{note}</p> : null}
     </div>
   );
 }

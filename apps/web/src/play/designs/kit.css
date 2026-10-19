@@ -124,3 +124,134 @@
   margin: 0 auto;
   width: min(100%, 26rem);
 }
+
+/* Public stage content wraps naturally on a narrow display or at high zoom. */
+.stage-safe :where(p, h1, h2, h3, li, dd, dt, span) {
+  overflow-wrap: anywhere;
+}
+.stage-safe :where(section, div, ul, ol, li, dl, dd) {
+  min-width: 0;
+}
+@media (max-width: 800px) {
+  .stage-safe .np-stage-track {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  .stage-safe .np-stage-track .np-sleeve {
+    width: 3rem;
+    grid-column: 1;
+  }
+  .stage-safe .np-stage-track .np-title {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .stage-safe .np-stage-track .np-meter {
+    grid-column: 1;
+  }
+  .stage-safe .scr-book-spread,
+  .stage-safe .pill-stage-hands,
+  .stage-safe .rage-gauge {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stage-safe .scr-leaf {
+    padding: 1.25rem;
+    border-radius: var(--radius-panel);
+  }
+  .stage-safe .scr-stage-verse {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0.5rem;
+  }
+  .stage-safe .car-body {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+  .stage-safe .car-holder {
+    min-width: 0;
+    width: 100%;
+  }
+  .stage-safe .car-light {
+    width: 100%;
+    height: 0.5rem;
+  }
+  .stage-safe .plate {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  .stage-safe .plate[data-size="stage"] .plate-text {
+    padding: 0.5rem;
+    font-size: 56px;
+  }
+  .stage-safe .ballot-box {
+    max-width: 100%;
+  }
+  .stage-safe .ballot-result {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+  .stage-safe .ballot-result-name {
+    white-space: normal;
+    overflow: visible;
+  }
+  .stage-safe .ballot-result-votes {
+    justify-content: start;
+  }
+  .stage-safe .ballot-banner {
+    padding: 1rem;
+    max-width: 100%;
+  }
+  .stage-safe .pill-flatline {
+    position: static;
+  }
+  .stage-safe .bin-candidate[data-size="stage"] .bin-body {
+    width: min(100%, 20rem);
+  }
+  .stage-safe .bin-face {
+    white-space: normal;
+  }
+  .stage-safe .bin-candidate[data-size="stage"] .bin-face {
+    padding: 1rem 0.5rem;
+  }
+  .stage-safe .deed-paper-stage,
+  .stage-safe .dossier-folder-stage {
+    padding: 1rem;
+  }
+  .stage-safe .deed-stamp[data-size="stage"],
+  .stage-safe .dossier-classified,
+  .stage-safe .dossier-folder-stage .dossier-tab {
+    position: static;
+    justify-self: start;
+    max-width: 100%;
+  }
+  .stage-safe .dossier-folder-stage .dossier-fields div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .stage-safe .ballot-station {
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+  .stage-safe .ballot-urn {
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+  }
+}
+
+@media (max-width: 800px) {
+  .stage-safe .bin-candidate {
+    width: 100%;
+  }
+  .stage-safe .bin-candidate[data-size="stage"] .bin-head {
+    width: 100%;
+    min-width: 0;
+    min-height: 14rem;
+    height: auto;
+  }
+  .stage-safe .bin-face {
+    max-width: 100%;
+  }
+}

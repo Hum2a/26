@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { adminPlayerRows } from "./admin-players.ts";
 import {
   guestSessionSchema,
   lobbySnapshotSchema,
@@ -126,6 +127,7 @@ import { presentStats } from "../stats/aggregate.ts";
 import { readStatsSource } from "../stats/source.ts";
 import { readRoomArchive } from "../archive/schedule.ts";
 import { readRoomDiagnostics } from "./diagnostics.ts";
+import { adminMedia } from "./admin-media.ts";
 import { scoreSummaryMarkdown } from "./score-summary.ts";
 import { archiveWriterFor, settleArchive } from "../archive/settle.ts";
 import type { ArchiveWriter } from "../archive/store.ts";
@@ -733,11 +735,11 @@ export class PartyRoom extends DurableObject<Env> {
     try {
       const published = await (await this.resultsWriter()).readPublic(room.game_id);
       if (!published) {
-        return { state: "ready" };
+        return { state: "preparing" };
       }
       return toPublicResults(published);
     } catch {
-      return { state: "ready" };
+      return { state: "preparing" };
     }
   }
 
@@ -1201,6 +1203,21 @@ export class PartyRoom extends DurableObject<Env> {
     return result;
   }
 
+  async adminMediaPage(input: {
+    credentialId: string;
+    secret: string;
+    nowMs: number;
+    before?: number;
+  }) {
+    const allowed = await this.requireControl(
+      input.credentialId,
+      input.secret,
+      input.nowMs,
+    );
+    if (!allowed.ok) return allowed;
+    return { ok: true as const, page: adminMedia(this.ctx.storage.sql, input.before) };
+  }
+
   async diagnostics(input: {
     credentialId: string;
     secret: string;
@@ -1499,6 +1516,101 @@ export class PartyRoom extends DurableObject<Env> {
   ): Promise<LobbySnapshot> {
     const self = audience === "guest" ? principalId : undefined;
     return this.buildSnapshot(audience, self);
+  }
+
+  // Only the authenticated Worker routes call these RPCs; they never accept
+  // administrator claims from a guest or a WebSocket message.
+  async adminRoom(input: { credentialId: string; secret: string; now: string }) {
+    const allowed = await this.requireControl(
+      input.credentialId,
+      input.secret,
+      Date.parse(input.now),
+    );
+    if (!allowed.ok) return allowed;
+    return { ok: true as const, snapshot: this.buildSnapshot("control") };
+  }
+
+  async resumeAdmin(input: { requestId: string; now: string }) {
+    if (!this.readRoom())
+      return { ok: false as const, error: "not_found", message: roomMissingMessage };
+    const principal = "admin-resume";
+    const digest = await payloadDigest({ action: "resume-admin" });
+    const prior = this.readReceipt(principal, input.requestId);
+    if (prior) {
+      const saved = JSON.parse(prior.resultJson) as {
+        control: CredentialSecrets;
+        presentation: CredentialSecrets;
+      };
+      const allowed = await this.requireControl(
+        saved.control.credentialId,
+        saved.control.secret,
+        Date.parse(input.now),
+      );
+      if (!allowed.ok)
+        return {
+          ok: false as const,
+          error: "expired",
+          message: "That opening request expired. Try opening the room again.",
+        };
+      return { ok: true as const, ...saved, snapshot: this.buildSnapshot("control") };
+    }
+    const control = await this.prepareCredential("control", new Date(input.now));
+    const presentation = await this.prepareCredential(
+      "presentation",
+      new Date(input.now),
+    );
+    const saved = {
+      control: publicSecret(control),
+      presentation: publicSecret(presentation),
+    };
+    this.ctx.storage.transactionSync(() => {
+      // A concurrent retry may have completed while hashing credentials.
+      if (this.readReceipt(principal, input.requestId)) return;
+      for (const [role, value] of [
+        ["control", control],
+        ["presentation", presentation],
+      ] as const) {
+        insertCredential(this.ctx.storage.sql, {
+          id: value.credentialId,
+          principal: role,
+          playerId: null,
+          secretHash: value.secretHash,
+          expiresAt: value.expiresAt,
+        });
+      }
+      this.writeReceipt(principal, input.requestId, digest, saved);
+      this.writeAudit("admin_room_resumed", "control", input.now, {});
+    });
+    const persisted = JSON.parse(
+      this.readReceipt(principal, input.requestId)!.resultJson,
+    ) as typeof saved;
+    return { ok: true as const, ...persisted, snapshot: this.buildSnapshot("control") };
+  }
+
+  async releaseAdmin(input: {
+    credentialId: string;
+    secret: string;
+    now: string;
+    role: RoomCredentialRole;
+  }) {
+    const allowed = await this.requireCredential(
+      input.role,
+      input.credentialId,
+      input.secret,
+      Date.parse(input.now),
+    );
+    if (!allowed.ok) return;
+    await createSqliteRoomCredentialDirectory(this.ctx.storage.sql).revoke(
+      input.credentialId,
+      input.now,
+    );
+    for (const socket of this.ctx.getWebSockets(input.role)) {
+      if (this.attachment(socket)?.principalId !== input.credentialId) continue;
+      const message =
+        "Room access changed in this browser. Reopen the room from admin.";
+      this.send(socket, { kind: "replaced", scope: "private", message });
+      socket.close(4000, message);
+    }
   }
 
   override async fetch(request: Request): Promise<Response> {
@@ -2679,6 +2791,16 @@ export class PartyRoom extends DurableObject<Env> {
             },
             hostEffects: hostTrollRows(this.ctx.storage.sql),
             adjustments: recentAdjustments(this.ctx.storage.sql),
+            adminPlayers: adminPlayerRows(
+              this.ctx.storage.sql,
+              new Set(
+                this.ctx
+                  .getWebSockets("guest")
+                  .filter((socket) => socket.readyState === WebSocket.OPEN)
+                  .map((socket) => this.attachment(socket)?.principalId ?? ""),
+              ),
+              play,
+            ),
           }
         : {}),
       ...(highlights && highlights.length > 0 ? { highlights } : {}),
@@ -2818,6 +2940,24 @@ export class PartyRoom extends DurableObject<Env> {
     const attachment = this.attachment(ws);
     if (!attachment) {
       return;
+    }
+    if (attachment.role !== "guest") {
+      const credential = this.ctx.storage.sql
+        .exec<{ expires_at: string; revoked_at: string | null }>(
+          "SELECT expires_at, revoked_at FROM credential WHERE id = ?",
+          attachment.principalId,
+        )
+        .toArray()[0];
+      if (
+        !credential ||
+        credential.revoked_at ||
+        Date.parse(credential.expires_at) <= Date.now()
+      ) {
+        const message = "Room access expired or changed. Reopen the room from admin.";
+        this.send(ws, { kind: "replaced", scope: "private", message });
+        ws.close(4000, message);
+        return;
+      }
     }
     const snapshot = this.buildSnapshot(
       attachment.role === "guest"

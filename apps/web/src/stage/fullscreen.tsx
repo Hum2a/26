@@ -12,7 +12,15 @@ function typingTarget(target: EventTarget | null): boolean {
   );
 }
 
-export function StageFullscreen({ children }: { children?: ReactNode }) {
+export function StageFullscreen({
+  children,
+  controls = true,
+  onExit,
+}: {
+  children?: ReactNode;
+  controls?: boolean;
+  onExit?: () => void;
+}) {
   const [idle, setIdle] = useState(false);
 
   useEffect(() => {
@@ -25,6 +33,14 @@ export function StageFullscreen({ children }: { children?: ReactNode }) {
     function onKey(event: KeyboardEvent) {
       wake();
       if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+      if (
+        event.key === "Escape" &&
+        !typingTarget(event.target) &&
+        !document.querySelector("dialog[open]")
+      ) {
+        onExit?.();
         return;
       }
       if (event.key !== "f" && event.key !== "F") {
@@ -42,13 +58,15 @@ export function StageFullscreen({ children }: { children?: ReactNode }) {
       window.removeEventListener("pointermove", wake);
       window.removeEventListener("keydown", onKey);
     };
-  }, []);
+  }, [onExit]);
 
   return (
     <div className={idle ? "stage-fullscreen stage-cursor-hidden" : "stage-fullscreen"}>
-      <Button type="button" onClick={() => requestStageFullscreen()}>
-        Full screen
-      </Button>
+      {controls ? (
+        <Button type="button" onClick={() => requestStageFullscreen()}>
+          Full screen
+        </Button>
+      ) : null}
       {children}
     </div>
   );

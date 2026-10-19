@@ -12,19 +12,24 @@ test("a phone sends a photo, the stage shows it, and hiding stops later access",
 
   await signIn(admin);
   await admin.getByRole("button", { name: "Create a lobby" }).click();
-  await expect(admin.getByText("The lobby is open.")).toBeVisible();
-  const joinCode = (await admin.locator("dd").first().textContent())?.trim() ?? "";
+  await expect(
+    admin.getByRole("heading", { name: "Ready for the room." }),
+  ).toBeVisible();
+  const joinCode =
+    (await admin.locator(".admin-room-code").textContent())?.trim() ?? "";
   expect(joinCode).toHaveLength(6);
+  await admin.getByRole("link", { name: "Live controls", exact: true }).click();
 
   await stage.goto(`/host?code=${joinCode}`);
-  await stage.getByRole("button", { name: "Show the lobby" }).click();
-  await expect(stage.getByText("The lobby is on screen.")).toBeVisible();
+  await stage.getByRole("button", { name: "Connect room" }).click();
+  await stage.getByRole("button", { name: "Present on this screen" }).click();
+  await expect(stage.getByRole("heading", { name: "In the lobby" })).toBeVisible();
   await join(amina, joinCode, "Amina");
   await admin.getByRole("button", { name: "Start the illustrative demo" }).click();
   await expect(amina.getByLabel("Photo")).toBeVisible();
 
   await amina.getByLabel("Photo").setInputFiles("apps/web/e2e/fixtures/snap.heic");
-  await amina.getByRole("button", { name: "Send" }).click();
+  await amina.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
     amina.getByText(
       "Choose a JPEG or PNG, or take a new photo. This phone cannot read HEIC.",
@@ -48,7 +53,7 @@ test("a phone sends a photo, the stage shows it, and hiding stops later access",
     );
   });
   await amina.getByLabel("Photo").setInputFiles("apps/web/e2e/fixtures/pixel.png");
-  await amina.getByRole("button", { name: "Send" }).click();
+  await amina.getByRole("button", { name: "Send", exact: true }).click();
   await expect(amina.getByText("Photo accepted.")).toBeVisible();
   const image = await shown;
   expect(image.headers()["cache-control"]).toContain("no-store");
@@ -85,13 +90,13 @@ async function signIn(page: Page) {
     .first()
     .click();
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("status")).toContainText(
-    "You are signed in as humzab1711@hotmail.com.",
-  );
+  await expect(
+    page.getByRole("status").filter({ hasText: "You are signed in as" }),
+  ).toContainText("You are signed in as humzab1711@hotmail.com.");
 }
 
 async function join(page: Page, code: string, nickname: string) {
-  await page.goto("/");
+  await page.goto("/join");
   await page.getByLabel("Join code").fill(code);
   await page.getByLabel("Nickname").fill(nickname);
   await page.getByRole("button", { name: "Join" }).click();

@@ -10,17 +10,19 @@ export function StageSound({
   announcement,
   unlocked,
   muted,
+  presentation = false,
 }: {
   gameId: string;
   announcement: LobbySnapshot["trolls"]["announcement"];
   unlocked: boolean;
   muted: boolean;
+  presentation?: boolean;
 }) {
   const initialCue = useRef<string | null | undefined>(undefined);
   const startedCue = useRef<string | null>(null);
   const [played, setPlayed] = useState<string[]>(readPlayed);
   const [notice, setNotice] = useState(
-    "Browsers block sound until you start the show on this screen.",
+    "Sound plays on this screen only. Missing audio never stops the quiz.",
   );
   const cueId = announcement?.cueId ?? null;
 
@@ -78,7 +80,7 @@ export function StageSound({
 
   return (
     <div className="grid gap-3">
-      <p aria-live="polite">{notice}</p>
+      {!presentation ? <p aria-live="polite">{notice}</p> : null}
       {announcement ? (
         <div className="grid gap-3 rounded-3xl border border-line p-4">
           <p className="text-3xl font-bold" role="status">
@@ -91,7 +93,7 @@ export function StageSound({
               )}
             />
           ) : null}
-          {announcement.assetLabel === "Demo sponsor" ? (
+          {!presentation && announcement.assetLabel === "Demo sponsor" ? (
             <p>Demo sponsor. Replace this caption with the party line.</p>
           ) : null}
         </div>

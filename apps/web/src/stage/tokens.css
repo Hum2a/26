@@ -1,23 +1,14 @@
 .stage-safe {
-  --stage-background: #14110e;
-  --stage-body: #fff6e8;
-  --stage-muted: #e4d5c0;
-  --stage-question: #ffc43a;
-  --stage-accent: #ffa08a;
-  --stage-ink: #1a100e;
-  --stage-surface: #2c241c;
-  --background: var(--stage-background);
-  --foreground: var(--stage-body);
-  --muted: var(--stage-muted);
-  --accent: var(--stage-accent);
-  --accent-foreground: var(--stage-ink);
-  --highlight: var(--stage-question);
-  --highlight-foreground: var(--stage-ink);
-  --surface: var(--stage-surface);
-  --surface-foreground: var(--stage-body);
+  --stage-background: var(--background);
+  --stage-body: var(--foreground);
+  --stage-muted: var(--muted);
+  --stage-question: var(--highlight);
+  --stage-accent: var(--highlight);
+  --stage-ink: var(--highlight-foreground);
+  --stage-surface: var(--surface);
   box-sizing: border-box;
   min-height: 100dvh;
-  padding: 5%;
+  padding: max(1rem, 5vh) max(1rem, 5vw);
   background: var(--stage-background);
   color: var(--stage-body);
   font-size: 40px;
@@ -61,7 +52,7 @@
   font-family: var(--font-display);
   font-size: max(120px, 10vw);
   line-height: 0.95;
-  color: var(--stage-question, #ffc43a);
+  color: var(--stage-question);
 }
 
 .stage-safe-outline {
@@ -111,7 +102,7 @@
   }
 
   .stage-progress > span {
-    transition: none;
+    transition: width 120ms ease;
   }
 }
 

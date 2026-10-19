@@ -1,0 +1,254 @@
+.projector-setup {
+  display: grid;
+  gap: 2rem;
+  padding-block: 1rem 3rem;
+}
+.projector-setup header {
+  display: grid;
+  gap: 1rem;
+  max-width: 52rem;
+}
+.projector-setup h1 {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  line-height: 1.1;
+}
+.projector-setup h2 {
+  font-weight: 700;
+  font-size: 1.4rem;
+}
+.projector-setup-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 28rem) minmax(0, 1fr);
+  gap: clamp(2rem, 6vw, 6rem);
+  align-items: start;
+}
+.projector-connect,
+.projector-preflight {
+  display: grid;
+  gap: 1.25rem;
+}
+.projector-connect {
+  border-top: 1px solid var(--line);
+  padding-top: 1.5rem;
+}
+.projector-preflight {
+  border-inline-start: 1px solid var(--line);
+  padding-inline-start: 2rem;
+}
+.projector-audio-notice {
+  max-width: 85rem;
+  margin-inline: auto;
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.stage-presentation {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1.2rem;
+  min-height: 90dvh;
+  align-content: start;
+  min-width: 0;
+  padding-bottom: 3rem;
+}
+.projector-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+.projector-top > p {
+  font-size: 40px;
+}
+.stage-clock-compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+.stage-clock-compact .stage-timer {
+  font-size: 120px;
+}
+.projector-lobby {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  padding-block: 2rem;
+}
+.projector-invitation {
+  display: grid;
+  gap: 1.5rem;
+  align-content: start;
+  min-width: 0;
+}
+.projector-code {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: clamp(72px, 7vw, 144px);
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}
+.projector-invitation > div {
+  max-width: 100%;
+}
+.projector-invitation svg {
+  max-width: 100%;
+  height: auto;
+}
+.projector-invitation p {
+  overflow-wrap: anywhere;
+}
+.projector-names {
+  min-width: 0;
+  display: grid;
+  gap: 1.5rem;
+  align-content: start;
+}
+.projector-names h2,
+.projector-wait h2 {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: max(48px, 3.4vw);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.projector-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  margin-top: auto;
+}
+.projector-pause {
+  border-inline-start: 4px solid var(--highlight);
+  padding: 0.5rem 1rem;
+  background: var(--surface);
+}
+.projector-wait {
+  min-height: 55vh;
+  display: grid;
+  align-content: center;
+  gap: 1.5rem;
+}
+.projector-setup-return {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  z-index: 50;
+  font-size: 1rem;
+  min-height: 2.75rem;
+  opacity: 0.65;
+  transition: opacity 0.2s ease;
+}
+.projector-setup-return:hover,
+.projector-setup-return:focus-visible {
+  opacity: 1;
+}
+.projector-media {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+}
+.projector-media img {
+  width: 100%;
+  max-height: 16rem;
+  object-fit: contain;
+}
+.projector-media audio {
+  width: 100%;
+  max-width: 100%;
+}
+.projector-highlights {
+  display: grid;
+  gap: 1rem;
+}
+.projector-cue {
+  position: relative;
+  padding-inline: 5vw;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 40px;
+  overflow-wrap: anywhere;
+}
+.stage-presentation .skin-panel {
+  padding: clamp(1rem, 2vw, 2rem);
+  min-width: 0;
+}
+.stage-presentation p,
+.stage-presentation li {
+  overflow-wrap: anywhere;
+}
+.stage-presentation .stage-options,
+.stage-presentation .stage-option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1.5rem;
+}
+.stage-presentation .stage-option {
+  padding: 0.4rem 0.75rem;
+  border-inline-start: 2px solid var(--line);
+}
+@container workspace (max-width: 800px) {
+  .projector-setup-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .projector-preflight {
+    border-inline-start: 0;
+    border-top: 1px solid var(--line);
+    padding: 1.5rem 0 0;
+  }
+}
+@media (max-width: 800px) {
+  .projector-setup-grid,
+  .projector-lobby {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .projector-preflight {
+    border-inline-start: 0;
+    border-top: 1px solid var(--line);
+    padding: 1.5rem 0 0;
+  }
+  .stage-presentation .stage-options,
+  .stage-presentation .stage-option-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .projector-setup-return {
+    transition-duration: 0.12s;
+  }
+}
+
+.projector-preflight .stage-mute {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--foreground);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+.projector-preflight .stage-mute:focus-visible {
+  outline: 2px solid var(--highlight);
+  outline-offset: 4px;
+}
+
+/* Focus enters the presentation for keyboard use; the projector needs no focus box. */
+.stage-presentation:focus {
+  outline: none;
+}
+.stage-safe .projector-setup-return {
+  font-size: 1rem;
+}
+.projector-cue .text-3xl {
+  font-size: 40px;
+}

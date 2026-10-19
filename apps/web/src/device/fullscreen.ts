@@ -13,3 +13,12 @@ export function requestStageFullscreen(
     // The browser exposed fullscreen and then refused the call.
   }
 }
+
+export function exitStageFullscreen(): void {
+  try {
+    if (document.fullscreenElement && typeof document.exitFullscreen === "function")
+      void document.exitFullscreen().catch(() => undefined);
+  } catch {
+    /* Full screen is optional; setup remains available. */
+  }
+}

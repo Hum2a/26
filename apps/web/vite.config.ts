@@ -113,9 +113,12 @@ function loadLocalApp(apiEntry: string): Promise<LocalApp> {
 function attachLocalAuth(server: ViteDevServer | PreviewServer, apiEntry: string) {
   server.middlewares.use(async (req, res, next) => {
     const path = (req.url ?? "").split("?")[0] ?? "";
-    const handled = localAuthPrefixes.some(
-      (prefix) => path === prefix || path.startsWith(`${prefix}/`),
-    );
+    const handled =
+      !path.startsWith("/api/admin/rooms") &&
+      path !== "/api/admin/content" &&
+      localAuthPrefixes.some(
+        (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+      );
     if (!handled) {
       next();
       return;
@@ -153,6 +156,8 @@ function localAuthEnv() {
     BETTER_AUTH_SECRET: "",
     BETTER_AUTH_URL: "",
     DATABASE_URL: "",
+    // Explicit ephemeral auth database for isolated local browser checks.
+    LOCAL_DATABASE_ID: process.env.LOCAL_DATABASE_ID,
     RESEND_API_KEY: "",
     RESEND_FROM: "",
     CLIENT_API_KEY: readDevVar("CLIENT_API_KEY"),

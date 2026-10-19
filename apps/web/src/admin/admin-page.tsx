@@ -1,135 +1,116 @@
-import { useEffect, useState, type FormEvent } from "react";
-import type { AdminSession } from "@26/shared";
-import { Button, Panel, StatusMessage, TextField } from "../ui/primitives";
-import { SurfaceFrame } from "../ui/surface-frame";
-import { AdminLobby } from "./admin-lobby";
-import {
-  confirmPath,
-  fetchAdminSession,
-  fetchLocalInbox,
-  requestMagicLink,
-  signOutAdmin,
-} from "./admin-api";
+import { useState } from "react";
 
-type Phase = "loading" | "signed-out" | "requesting" | "link-sent" | "signed-in";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router";
+
+import { Button, StatusMessage } from "../ui/primitives";
+
+import { EntryFrame, EntryHeading } from "../ui/entry-frame";
+
+import { AdminShell } from "../ui/admin-shell";
+
+import { signOutAdmin } from "./admin-api";
+
+import { safeAdminReturnTo } from "./admin-return";
+
+import { useAdminSession } from "./use-admin-session";
 
 export function AdminPage() {
-  const [phase, setPhase] = useState<Phase>("loading");
-  const [email, setEmail] = useState("humzab1711@hotmail.com");
-  const [sessionEmail, setSessionEmail] = useState<string>();
-  const [notice, setNotice] = useState("Checking the administrator session.");
-  const [links, setLinks] = useState<string[]>([]);
+  const auth = useAdminSession();
 
-  function applySession(
-    session: AdminSession | { error: string },
-    signedOutPhase: Phase,
-  ) {
-    if ("error" in session) {
-      setNotice(session.error);
-      setPhase("signed-out");
-      return;
-    }
-    if (session.signedIn && session.email) {
-      setSessionEmail(session.email);
-      setNotice(`You are signed in as ${session.email}.`);
-      setPhase("signed-in");
-      return;
-    }
-    setSessionEmail(undefined);
-    setPhase(signedOutPhase);
-  }
+  const location = useLocation();
 
-  useEffect(() => {
-    document.title = "Admin · 26";
-    void fetchAdminSession().then((session) => {
-      applySession(session, "signed-out");
-    });
-  }, []);
+  const navigate = useNavigate();
 
-  async function onRequest(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setPhase("requesting");
-    setNotice("Sending a sign-in link.");
-    setLinks([]);
-    const result = await requestMagicLink(email);
-    if ("error" in result) {
-      setNotice(result.error);
-      setPhase("signed-out");
-      return;
-    }
-    setNotice("If this address is the administrator, a sign-in link is ready.");
-    if (result.delivery === "local-inbox") {
-      const messages = await fetchLocalInbox();
-      setLinks(
-        messages.flatMap((message) => {
-          const href = confirmPath(message.text);
-          return href ? [href] : [];
-        }),
-      );
-    }
-    setPhase("link-sent");
-  }
+  const [notice, setNotice] = useState("");
+
+  const [pending, setPending] = useState(false);
 
   async function onSignOut() {
-    await signOutAdmin();
-    setNotice("You are signed out.");
-    setSessionEmail(undefined);
-    setLinks([]);
-    setPhase("signed-out");
+    setPending(true);
+
+    const result = await signOutAdmin();
+
+    setPending(false);
+
+    if (result?.error) {
+      setNotice(result.error);
+
+      return;
+    }
+
+    await navigate("/admin/login", { replace: true });
   }
 
-  const lede =
-    phase === "signed-in"
-      ? "The administrator session is active."
-      : "Sign in with the administrator email.";
+  if (auth.state === "ready" && !auth.session.signedIn) {
+    return (
+      <Navigate
+        replace
+
+        to={`/admin/login?returnTo=${encodeURIComponent(safeAdminReturnTo(location.pathname))}`}
+      />
+    );
+  }
+
+  if (auth.state === "ready" && auth.session.signedIn) {
+    return (
+      <AdminShell
+        account={
+          <>
+            <p role="status">You are signed in as {auth.session.email}.</p>
+            <Button
+              variant="secondary"
+              disabled={pending}
+              onClick={() => void onSignOut()}
+            >
+              {pending ? "Signing out…" : "Sign out"}
+            </Button>
+          </>
+        }
+      >
+        {notice ? <StatusMessage>{notice}</StatusMessage> : null}
+
+        <Outlet />
+      </AdminShell>
+    );
+  }
 
   return (
-    <SurfaceFrame current="admin" title="Admin" lede={lede}>
-      <StatusMessage>{notice}</StatusMessage>
-      {phase === "signed-in" ? (
-        <Panel title="Session">
-          <p>You are signed in as {sessionEmail}.</p>
-          <p>Create a lobby, then start the demo quiz.</p>
-          <div className="mt-4">
-            <AdminLobby />
-          </div>
-          <Button className="mt-4" onClick={() => void onSignOut()}>
-            Sign out
-          </Button>
-        </Panel>
-      ) : (
-        <form className="grid gap-4" onSubmit={(event) => void onRequest(event)}>
-          <TextField
-            label="Administrator email"
-            hint="A link is sent only for the configured administrator."
-            type="email"
-            autoComplete="username"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            disabled={phase === "loading" || phase === "requesting"}
-            required
-          />
-          <Button
-            type="submit"
-            disabled={phase === "loading" || phase === "requesting"}
-          >
-            Email me a sign-in link
-          </Button>
-        </form>
-      )}
-      {phase === "link-sent" && links.length > 0 ? (
-        <Panel title="Local inbox">
-          <ul className="grid gap-3">
-            {links.map((href) => (
-              <li key={href}>
-                <a className="font-bold underline" href={href}>
-                  Open the sign-in confirmation
-                </a>
-              </li>
-            ))}
-          </ul>
-        </Panel>
+    <EntryFrame wide>
+      <EntryHeading eyebrow="Running the night" title="Admin">
+        Your rooms and controls.
+      </EntryHeading>
+
+      {auth.state === "loading" ? (
+        <StatusMessage>Checking the administrator session.</StatusMessage>
       ) : null}
-    </SurfaceFrame>
+
+      {auth.state === "error" ? (
+        <div className="grid gap-4">
+          <StatusMessage>{auth.message}</StatusMessage>
+          <Button onClick={auth.retry}>Try again</Button>
+          <Link to="/admin/login">Admin sign in</Link>
+        </div>
+      ) : null}
+    </EntryFrame>
+  );
+}
+
+export function AdminSettingsPage() {
+  return (
+    <section className="admin-section">
+      <p className="entry-eyebrow">Your workspace</p>
+      <h1>Account & appearance</h1>
+      <p>
+        Your administrator session is shown in the sidebar. Use Theme in the header to
+        choose how this browser looks.
+      </p>
+      <p>
+        Phones and the projector choose their themes independently. Changing this
+        browser does not change anyone else’s screen.
+      </p>
+      <Link className="entry-text-link" to="/admin/rooms">
+        Back to rooms
+      </Link>
+    </section>
   );
 }

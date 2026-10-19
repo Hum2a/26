@@ -34,6 +34,7 @@ import {
   roomMissingMessage,
 } from "./limits.ts";
 import { rejectUnlessRoomCreator } from "./access.ts";
+import { selectedRoomCookie, releasePreviousAdmin } from "./admin-routes.ts";
 
 export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
   app.post("/api/rooms", async (c) => {
@@ -55,6 +56,8 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       return roomFailure(409, created.error, created.message);
     }
     const headers = new Headers();
+    await releasePreviousAdmin(c.req.raw, c.env, new Date().toISOString(), created.result);
+    headers.append("set-cookie", selectedRoomCookie(created.result.gameId));
     headers.append(
       "set-cookie",
       serializeCredentialCookie({

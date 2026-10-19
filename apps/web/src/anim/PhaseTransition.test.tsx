@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhaseTransition } from "./PhaseTransition";
 
@@ -23,7 +23,7 @@ describe("PhaseTransition", () => {
     vi.unstubAllGlobals();
   });
 
-  it("re-keys when the phase changes and is instant under reduced motion", async () => {
+  it("re-keys when the phase changes and keeps a short fade without movement under reduced motion", async () => {
     vi.stubGlobal("matchMedia", matchMedia(true));
     let mounts = 0;
     function Mark() {
@@ -48,7 +48,9 @@ describe("PhaseTransition", () => {
         </PhaseTransition>,
       );
     });
-    expect(document.querySelector("[data-phase='lobby']")).toBeNull();
+    await waitFor(() =>
+      expect(document.querySelector("[data-phase='lobby']")).toBeNull(),
+    );
     expect(document.querySelector("[data-phase='prompt']")).toBeTruthy();
     expect(mounts).toBe(2);
 
@@ -58,11 +60,31 @@ describe("PhaseTransition", () => {
         <p>Still here</p>
       </PhaseTransition>,
     );
-    const instant = screen.getByText("Still here").parentElement as HTMLElement;
-    expect(instant.dataset.phaseMotion).toBe("instant");
-    expect(instant.style.opacity === "" || instant.style.opacity === "1").toBe(true);
-    expect(instant.style.transform === "" || instant.style.transform === "none").toBe(
-      true,
-    );
+    const faded = screen.getByText("Still here").parentElement as HTMLElement;
+    expect(faded.dataset.phaseMotion).toBe("fade");
+    expect(Number(faded.style.opacity)).toBeGreaterThanOrEqual(0.96);
+    expect(faded.style.transform === "" || faded.style.transform === "none").toBe(true);
   });
+});
+it("keeps the projector readable and switches its heading with the authoritative phase", () => {
+  const view = render(
+    <PhaseTransition phase="prompt" stage>
+      <h2>Read the question</h2>
+    </PhaseTransition>,
+  );
+  expect(
+    Number(screen.getByText("Read the question").parentElement!.style.opacity),
+  ).toBeGreaterThanOrEqual(0.96);
+  view.rerender(
+    <PhaseTransition phase="collect" stage>
+      <h2>Answers are open</h2>
+    </PhaseTransition>,
+  );
+  expect(screen.queryByText("Read the question")).toBeNull();
+  expect(screen.getByText("Answers are open").parentElement!.dataset.phase).toBe(
+    "collect",
+  );
+  expect(
+    Number(screen.getByText("Answers are open").parentElement!.style.opacity),
+  ).toBeGreaterThanOrEqual(0.96);
 });

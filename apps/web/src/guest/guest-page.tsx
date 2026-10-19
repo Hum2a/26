@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { useParams, useSearchParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import type { GuestSession, LobbySnapshot } from "@26/shared";
 import { Button, Dialog, Panel, StatusMessage, TextField } from "../ui/primitives";
-import { PhoneDock } from "../controller/phone-dock";
 import { JoinMark } from "../lobby/join-mark";
 import { NameCloud, NameReveal } from "../lobby/name-cloud";
 import { joinLobby, redeemTransfer, resumeGuest } from "../live/room-api";
@@ -27,6 +26,7 @@ import { rememberNickname } from "../join/nickname-storage";
 import { roomCodeFromQuery } from "../join/room-code";
 import { ReconnectBanner } from "../net/ReconnectBanner";
 import { PhoneShell } from "./phone-shell";
+import { EntryFrame, EntryHeading, EntryNotice } from "../ui/entry-frame";
 
 export function GuestPage() {
   const params = useParams();
@@ -43,6 +43,8 @@ export function GuestPage() {
     "connecting" | "open" | "closed" | "idle"
   >("idle");
   const [busy, setBusy] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const joinRequest = useRef<{ payload: string; requestId: string } | null>(null);
   const [selectedId, setSelectedId] = useState<string>();
   const [pending, setPending] = useState(false);
   const [rejection, setRejection] = useState<string>();
@@ -85,12 +87,27 @@ export function GuestPage() {
 
   useEffect(() => {
     document.title = "Guest · 26";
-    void resumeGuest().then((resumed) => {
-      if (resumed) {
-        setSession(resumed);
-        setNotice(`You are in. This phone is ${resumed.nickname}.`);
-      }
-    });
+    let active = true;
+    void resumeGuest()
+      .then((resumed) => {
+        if (!active) return;
+        if (resumed) {
+          setSession(resumed);
+          setNotice(`You are in. This phone is ${resumed.nickname}.`);
+        }
+      })
+      .catch(() => {
+        if (active)
+          setNotice(
+            "We couldn’t check for an existing game. You can try joining with your code.",
+          );
+      })
+      .finally(() => {
+        if (active) setCheckingSession(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const gameId = session?.gameId;
@@ -197,17 +214,22 @@ export function GuestPage() {
 
   async function onJoin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy) {
+    if (busy || checkingSession) {
       return;
     }
     const form = new FormData(event.currentTarget);
     const enteredName = String(form.get("nickname") ?? "");
     setBusy(true);
+    const payload = JSON.stringify([linked ?? code, enteredName]);
+    if (joinRequest.current?.payload !== payload)
+      joinRequest.current = { payload, requestId: crypto.randomUUID() };
     const joined = await joinLobby({
       code: linked ?? code,
       nickname: enteredName,
-      requestId: crypto.randomUUID(),
-    });
+      requestId: joinRequest.current.requestId,
+    }).catch(() => ({
+      error: "We couldn’t join the room. Check your connection and try again.",
+    }));
     setBusy(false);
     if ("error" in joined) {
       if (joined.error.toLowerCase().includes("nickname")) {
@@ -331,6 +353,70 @@ export function GuestPage() {
   const nickname = session ? liveNickname(snapshot, session) : undefined;
   const questionVisible = playing && snapshot?.play;
 
+  if (!session)
+    return (
+      <EntryFrame
+        navigation={
+          <Link to="/admin/login" className="entry-text-link">
+            Admin sign in
+          </Link>
+        }
+      >
+        <EntryHeading eyebrow="You’re invited" title="Join the room">
+          Enter the join code and a nickname. This phone plays on its own.
+        </EntryHeading>
+        <EntryNotice
+          message={
+            checkingSession
+              ? "Checking for your game…"
+              : notice === "You have not joined a room."
+                ? ""
+                : notice
+          }
+        />
+        <form
+          id="join-room"
+          className="entry-form"
+          onSubmit={(event) => void onJoin(event)}
+        >
+          <JoinRoomCode
+            roomQuery={search.get("room")}
+            pathCode={params.code}
+            value={code}
+            onChange={setCode}
+          />
+          <NicknameField error={nicknameError} onEdit={() => setNicknameError("")} />
+          <p className="entry-note">
+            This phone can send screen and browser details for game statistics. They do
+            not decide who you are or what you score.
+          </p>
+          <Button type="submit" disabled={busy || checkingSession}>
+            {busy ? "Joining…" : "Join"}
+          </Button>
+        </form>
+        <div className="mt-5">
+          <Dialog
+            title="About this game"
+            triggerLabel="About this game"
+            triggerVariant="secondary"
+          >
+            <p>
+              You play individually. This phone keeps your nickname for this game. Sound
+              plays on the stage.
+            </p>
+            <p className="mt-3">
+              Device details are used for later statistics. Screen size is measured in
+              CSS pixels, not inches. A network quality of 4g is not a mobile 4G
+              service. An unclear iPhone or iPad stays marked that way.
+            </p>
+          </Dialog>
+        </div>
+        <Link className="entry-text-link mt-4" to="/">
+          ← Back to the party
+        </Link>
+      </EntryFrame>
+    );
+
   return (
     <ControllerRoot>
       <PhoneShell
@@ -341,130 +427,84 @@ export function GuestPage() {
       >
         {questionVisible ? null : (
           <h1 className="phone-prompt">
-            {session
-              ? snapshot?.phase === "lobby"
-                ? "In the lobby"
-                : "This phone"
-              : "Join the room"}
+            {snapshot?.phase === "lobby" ? "In the lobby" : "This phone"}
           </h1>
         )}
         <StatusMessage>{status}</StatusMessage>
         <ReconnectBanner disconnected={reconnecting} snapshotId={snapshotPulse}>
-          {session ? (
-            <div className="grid gap-4">
-              {snapshot?.phase === "lobby" ? (
-                <div className="grid gap-4">
-                  <JoinMark code={snapshot.joinCode} />
-                  {snapshot.namesReveal ? (
-                    <NameReveal reveal={snapshot.namesReveal} />
-                  ) : null}
-                  <NameCloud
-                    names={snapshot.cloud}
-                    selfId={session.playerId}
-                    reactions={snapshot.selfReactions}
-                    onReact={onReact}
-                    minRem={0.875}
-                  />
-                </div>
-              ) : null}
-              <PhaseTransition phase={snapshot?.phase ?? "lobby"}>
-                {snapshot ? (
-                  <GuestPlay
-                    snapshot={snapshot}
-                    selectedId={selectedId}
-                    pending={pending}
-                    onSelect={setSelectedId}
-                    onSubmit={onSubmit}
-                    onEstimate={onEstimate}
-                    onRank={onRank}
-                    onText={onText}
-                    onDraft={(body) => socketRef.current?.submitDraft(body)}
-                    onBallot={onBallot}
-                    onDuel={onDuel}
-                  />
-                ) : (
-                  <p>Waiting for the quiz to start.</p>
-                )}
-                {snapshot &&
-                guestRoundCopy(snapshot) === "Waiting for the next question." ? (
-                  <WaitingNext />
+          <div className="grid gap-4">
+            {snapshot?.phase === "lobby" ? (
+              <div className="grid gap-4">
+                <JoinMark code={snapshot.joinCode} />
+                {snapshot.namesReveal ? (
+                  <NameReveal reveal={snapshot.namesReveal} />
                 ) : null}
-              </PhaseTransition>
-              {snapshot && snapshot.phase !== "lobby" ? (
-                <>
-                  <GuestTrolls
-                    snapshot={snapshot}
-                    gameId={session.gameId}
-                    selfId={session.playerId}
-                    pending={pending}
-                    onSend={onTroll}
-                    onEscape={onTrollEscape}
-                  />
-                  <GuestMedia gameId={session.gameId} />
-                </>
-              ) : null}
-              {snapshot?.recap && snapshot.recap.length > 0 ? (
-                <Panel title="Your recap">
-                  <ul className="grid gap-3">
-                    {snapshot.recap.map((card) => (
-                      <li key={card.id}>
-                        {card.illustrative ? (
-                          <p className="font-bold">Illustrative</p>
-                        ) : null}
-                        <p className="break-words">{card.results}</p>
-                      </li>
-                    ))}
-                  </ul>
-                </Panel>
-              ) : null}
-              <TransferPhone
-                busy={busy}
-                code={transferCode}
-                onCode={setTransferCode}
-                onSubmit={(event) => void onRedeem(event)}
-              />
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              <p className="text-lg leading-relaxed">
-                Enter the join code and a nickname. This phone plays on its own.
-              </p>
-              <form
-                id="join-room"
-                className="grid gap-4"
-                onSubmit={(event) => void onJoin(event)}
-              >
-                <JoinRoomCode
-                  roomQuery={search.get("room")}
-                  pathCode={params.code}
-                  value={code}
-                  onChange={setCode}
+                <NameCloud
+                  names={snapshot.cloud}
+                  selfId={session.playerId}
+                  reactions={snapshot.selfReactions}
+                  onReact={onReact}
+                  minRem={0.875}
                 />
-                <NicknameField
-                  error={nicknameError}
-                  onEdit={() => setNicknameError("")}
+              </div>
+            ) : null}
+            <PhaseTransition phase={snapshot?.phase ?? "lobby"}>
+              {snapshot ? (
+                <GuestPlay
+                  snapshot={snapshot}
+                  selectedId={selectedId}
+                  pending={pending}
+                  onSelect={setSelectedId}
+                  onSubmit={onSubmit}
+                  onEstimate={onEstimate}
+                  onRank={onRank}
+                  onText={onText}
+                  onDraft={(body) => socketRef.current?.submitDraft(body)}
+                  onBallot={onBallot}
+                  onDuel={onDuel}
                 />
-              </form>
-              <p className="text-base leading-snug text-muted">
-                This phone can send screen and browser details for later statistics.
-                They do not decide who you are or what you score, the size is CSS pixels
-                not inches, and a network quality of 4g is not a mobile 4G service.
-              </p>
-              <Dialog title="About this build" triggerLabel="About this build">
-                <p>
-                  This phone keeps your nickname for this game. The illustrative
-                  questions are a demo, not the party script. Sound plays on the stage.
-                  Device details are for statistics after the game. An unclear iPhone or
-                  iPad stays marked that way.
-                </p>
-              </Dialog>
-              <PhoneDock>
-                <Button type="submit" form="join-room" disabled={busy}>
-                  Join
-                </Button>
-              </PhoneDock>
-            </div>
-          )}
+              ) : (
+                <p>Waiting for the quiz to start.</p>
+              )}
+              {snapshot &&
+              guestRoundCopy(snapshot) === "Waiting for the next question." ? (
+                <WaitingNext />
+              ) : null}
+            </PhaseTransition>
+            {snapshot && snapshot.phase !== "lobby" ? (
+              <>
+                <GuestTrolls
+                  snapshot={snapshot}
+                  gameId={session.gameId}
+                  selfId={session.playerId}
+                  pending={pending}
+                  onSend={onTroll}
+                  onEscape={onTrollEscape}
+                />
+                <GuestMedia gameId={session.gameId} />
+              </>
+            ) : null}
+            {snapshot?.recap && snapshot.recap.length > 0 ? (
+              <Panel title="Your recap">
+                <ul className="grid gap-3">
+                  {snapshot.recap.map((card) => (
+                    <li key={card.id}>
+                      {card.illustrative ? (
+                        <p className="font-bold">Illustrative</p>
+                      ) : null}
+                      <p className="break-words">{card.results}</p>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            ) : null}
+            <TransferPhone
+              busy={busy}
+              code={transferCode}
+              onCode={setTransferCode}
+              onSubmit={(event) => void onRedeem(event)}
+            />
+          </div>
         </ReconnectBanner>
       </PhoneShell>
     </ControllerRoot>

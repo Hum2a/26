@@ -2,6 +2,12 @@ import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
 function installBrowserStubs(): void {
+  // Motion measures layout with scroll restoration; jsdom has no viewport scroll.
+  Object.defineProperty(window, "scrollTo", {
+    configurable: true,
+    writable: true,
+    value: vi.fn(),
+  });
   const matchMedia = vi.fn((query: string) => {
     return {
       matches: false,
