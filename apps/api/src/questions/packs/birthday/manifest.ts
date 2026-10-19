@@ -9,6 +9,13 @@ import { realNameTommyRobinson } from "./real-name-tommy-robinson.ts";
 import { realNameZackPolanski } from "./real-name-zack-polanski.ts";
 import { redPillBluePill } from "./red-pill-blue-pill.ts";
 import { trolleyProblem } from "./trolley-problem.ts";
+import { favouritePokemon } from "./favourite-pokemon.ts";
+import { howItalianIsHumza } from "./how-italian-is-humza.ts";
+import { christianityBranches } from "./christianity-branches.ts";
+import { inflationFreddo } from "./inflation-freddo.ts";
+import { inflationPetrol } from "./inflation-petrol.ts";
+import { commonPassword } from "./common-password.ts";
+import { completeAWordle } from "./complete-a-wordle.ts";
 
 /**
  * Working catalogue for Humza's questions.
@@ -34,5 +41,12 @@ export const birthdayPack: QuestionPack = {
     realNameCountBinface,
     realNameZackPolanski,
     realNameTommyRobinson,
+    favouritePokemon,
+    commonPassword,
+    completeAWordle,
+    inflationFreddo,
+    inflationPetrol,
+    howItalianIsHumza,
+    christianityBranches,
   ],
 };

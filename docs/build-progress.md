@@ -2746,3 +2746,38 @@ Review Stage D. Next is Stage E in `docs/admin-experience-plan.md`: separate pro
 ### Exact next stage
 
 Review Stage E, then rehearse on the actual venue projector, speakers and phones. Stages A–E of the admin plan are implemented locally. There is no automatic next implementation stage or deployment; await the user's next instruction.
+
+## Birthday question batch — 19 October 2026
+
+The completed admin redesign was committed separately as `4ebe630` (`Redesign admin workspace and projector experience`). This batch adds seven server-side question files and registers them in the existing birthday catalogue, preserving the demo, empty running order, pack version and room state.
+
+### Catalogue entries
+
+| Id | Mechanic/status | Recorded facts or remaining work |
+| --- | --- | --- |
+| `favourite-pokemon` | Choice / ready | Supplied options preserved; Mudkip is correct. |
+| `how-italian-is-humza` | Choice / ready | Supplied options preserved; 0.5% is correct. |
+| `inflation-freddo` | Slider / draft | Confirmed: show 2012 price and guess 2026. Needs actual prices/dates, Freddo size/location/units and slider bounds. |
+| `inflation-petrol` | Slider / draft | Same confirmed direction. Needs fuel grade/location/units, actual prices/dates and slider bounds. |
+| `christianity-branches` | Multiple-selection requested / draft | User confirmed ARE, with Muggletonians, the Jumpers and Ranters selected. Current single-correct-choice schema cannot represent that set; the answer set is preserved in private notes and an explicit mechanic requirement. |
+| `common-password` | Room-frequency ranking requested / draft | User confirmed matching other guests' made-up passwords. Needs matching/tie rules, points schedule and an authoritative ranking mechanic. No real-password or third-party popularity dataset is used. |
+| `complete-a-wordle` | Wordle requested / draft | Encore located beside 26. Needs a repeated-guess mechanic, target word and attempt/time/scoring rules. |
+
+The password/Wordle files use blocked typed authoring placeholders, and Christianity uses a blocked choice placeholder. These do not claim to implement the requested mechanics: explicit requirements and missing answer representations prevent them from becoming playable accidentally. This follows `docs/question-authoring.md`: unsupported interactions are saved as drafts rather than forced into unrelated mechanics or a new score engine. No missing prices, Wordle target or scoring rules were invented.
+
+Encore was read only at `../Encore`: `packages/game-glyph/src/mark.ts`, `play.ts`, `glyph-game-module.ts`, dictionary licence, tests and `apps/web/src/games/glyph-board.tsx`. Its root licence is MIT, copyright 2026 Encore contributors; copied substantial code must preserve its notice and dictionary attribution. No code has been copied yet. The draft records the useful source locations and the need to keep its answer-bearing puzzle/play state server-side when porting. Encore was not modified.
+
+### Verification
+
+- `npm run content:check` passed after the confirmed rules were applied. Both packs validate; the five incomplete entries are deliberately reported as drafts.
+- `npm run typecheck` passed in E: and in the verification copy.
+- `npx vitest run --project auth test/question-authoring.spec.ts` passed in E: and the matching C: copy: 24 tests. Covers supplied options/answers/defaults, blocked unsupported mechanics, confirmed direction/answer set, public answer-key exclusion, catalogue registration and unchanged release/running order/demo.
+- Earlier combined authoring/admin access checks passed 3 files / 34 tests in the C: copy before the latest wording clarifications. The final authoring-only run above covers those clarifications.
+- Targeted ESLint passed for the eight question/manifest modules and authoring tests. `git diff --check` passed.
+- Final web unit run in the verification copy passed: 50 files / 159 tests. The owned question files and authoring tests were synchronised before this run. A duplicate E: web unit run did not finish after the copy had passed and was interrupted; it is not reported as passed. E: content, type and authoring checks above completed successfully. Other concurrent code changes are outside this verification/commit scope.
+
+### Scope and next work
+
+Only the new question files, birthday manifest, authoring tests and this progress entry belong to the content commit. Other concurrent auth/API/read-helper changes are left untouched. Nothing was pushed, deployed, released or inserted into an active game. Ready means content-ready in the catalogue, not live.
+
+Next: supply/source the specified prices and define/build the Wordle, room-frequency ranking and multiple-selection support within the existing authoritative architecture. Then validate ready questions, explicitly include them in the running order and release a new birthday version separately. Do not silently repoint existing rooms or the illustrative demo.

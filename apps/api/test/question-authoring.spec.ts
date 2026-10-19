@@ -17,6 +17,14 @@ import {
 import { birthdayPack } from "../src/questions/packs/birthday/manifest.ts";
 import { demoPack } from "../src/questions/packs/demo/manifest.ts";
 import { validatePack } from "../src/questions/validate.ts";
+import { missingRequirements } from "../src/questions/definition.ts";
+import { favouritePokemon } from "../src/questions/packs/birthday/favourite-pokemon.ts";
+import { howItalianIsHumza } from "../src/questions/packs/birthday/how-italian-is-humza.ts";
+import { christianityBranches } from "../src/questions/packs/birthday/christianity-branches.ts";
+import { inflationFreddo } from "../src/questions/packs/birthday/inflation-freddo.ts";
+import { inflationPetrol } from "../src/questions/packs/birthday/inflation-petrol.ts";
+import { commonPassword } from "../src/questions/packs/birthday/common-password.ts";
+import { completeAWordle } from "../src/questions/packs/birthday/complete-a-wordle.ts";
 
 const fixtureOptions = [
   { id: "yes", label: "Yes" },
@@ -452,5 +460,114 @@ describe("question authoring", () => {
       [],
     );
     expect(birthdayPack.order).toEqual([]);
+  });
+});
+
+describe("October birthday question additions", () => {
+  it.each([
+    [favouritePokemon, "mudkip", ["Turtwig", "Mudkip", "Tepig", "Osama bin laden"]],
+    [
+      howItalianIsHumza,
+      "half-percent",
+      [
+        "1%",
+        "pineapple belongs on pizza",
+        "dominos pizza is better than rome pizza",
+        "0.5%",
+      ],
+    ],
+  ] as const)(
+    "keeps supplied choices and answer for $0.id",
+    (question, answer, labels) => {
+      expect(question.status).toBe("ready");
+      expect(question.options.map((option) => option.label)).toEqual(labels);
+      expect(question.correctOption).toEqual({ known: answer });
+      expect(missingRequirements(question)).toEqual([]);
+      expect(question.points).toBe(100);
+      expect(question.collectMs).toBe(20_000);
+      const playable = toPlayable(question);
+      expect(playable?.kind).toBe("choice");
+      expect(publicQuestionCore(playable!, 1, 2)).not.toHaveProperty("correctOptionId");
+      expect(publicQuestionCore(playable!, 1, 2)).not.toHaveProperty("notes");
+    },
+  );
+  it.each([
+    commonPassword,
+    completeAWordle,
+    inflationFreddo,
+    inflationPetrol,
+    christianityBranches,
+  ])("keeps $id blocked until the real requirements are supplied", (question) => {
+    expect(question.status).toBe("draft");
+    expect(missingRequirements(question).length).toBeGreaterThan(0);
+    expect(toPlayable(question)).toBeUndefined();
+    expect(birthdayPack.order).not.toContain(question.id);
+  });
+  it("records unsupported mechanics rather than silently substituting typed scoring", () => {
+    expect(missingRequirements(commonPassword).map((item) => item.name)).toContain(
+      "ranking-mechanic",
+    );
+    expect(missingRequirements(completeAWordle).map((item) => item.name)).toContain(
+      "wordle-mechanic",
+    );
+    expect(commonPassword.accepted).not.toHaveProperty("known");
+    expect(completeAWordle.accepted).not.toHaveProperty("known");
+    expect(christianityBranches.options.map((option) => option.label)).toEqual([
+      "unorthodox",
+      "jisraeli",
+      "Irish Catholic terrorists",
+      "muggletonians",
+      "the jumpers",
+      "ranters",
+    ]);
+    expect(christianityBranches.correctOption).not.toHaveProperty("known");
+    expect(christianityBranches.prompt).toBe(
+      "Which of these ARE branches of Christianity?",
+    );
+    expect(christianityBranches.instructions).toBe("Select all that apply.");
+    expect(christianityBranches.notes).toContain("muggletonians, the jumpers, ranters");
+    expect(
+      missingRequirements(christianityBranches).map((item) => item.name),
+    ).toContain("multiple-selection");
+    expect(commonPassword.notes).toContain("matching other guests");
+    expect(missingRequirements(commonPassword).map((item) => item.name)).not.toContain(
+      "commonness-definition",
+    );
+    expect(completeAWordle.notes).toContain(
+      "Glyph source and MIT licence have been located",
+    );
+    for (const slider of [inflationFreddo, inflationPetrol]) {
+      expect(slider.kind).toBe("slider");
+      expect(slider.prompt).toContain("guess the price in 2026");
+      expect(slider.notes).toContain("show the 2012 price");
+      expect(slider.truth).not.toHaveProperty("known");
+      expect(missingRequirements(slider).map((item) => item.name)).toEqual(
+        expect.arrayContaining([
+          "comparison",
+          "reference-price",
+          "scale",
+          "target-price",
+        ]),
+      );
+    }
+  });
+  it("registers all seven entries without releasing or replacing the running game", () => {
+    const entries = [
+      favouritePokemon,
+      commonPassword,
+      completeAWordle,
+      inflationFreddo,
+      inflationPetrol,
+      howItalianIsHumza,
+      christianityBranches,
+    ];
+    for (const question of entries) expect(birthdayPack.catalogue).toContain(question);
+    expect(birthdayPack.release).toBe("draft");
+    expect(birthdayPack.order).toEqual([]);
+    expect(resolveContent("birthday-draft").status).toBe("unavailable");
+    expect(resolveContent(demoQuestionSetVersion).status).toBe("playable");
+    expect(
+      validatePack(birthdayPack).filter((issue) => issue.level === "error"),
+    ).toEqual([]);
   });
 });
