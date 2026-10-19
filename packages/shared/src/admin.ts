@@ -34,6 +34,40 @@ export const adminContentSchema = z
   .strict();
 export type AdminContent = z.infer<typeof adminContentSchema>;
 
+/** Fetched only from the authenticated, uncached question-inspection route. */
+export const adminQuestionDetailSchema = z
+  .object({
+    version: z.string(),
+    release: z.enum(["draft", "released"]),
+    question: adminContentSchema.shape.packs.element.shape.questions.element
+      .extend({
+        instructions: z.string().nullable(),
+        notes: z.string().nullable(),
+        explanation: z.string().nullable(),
+        options: z.array(z.object({ id: z.string(), label: z.string() }).strict()),
+        settings: z.array(z.object({ label: z.string(), value: z.string() }).strict()),
+        answer: z
+          .object({
+            status: z.enum(["recorded", "missing", "not-applicable"]),
+            lines: z.array(z.string()),
+          })
+          .strict(),
+        media: z.array(
+          z
+            .object({
+              name: z.string(),
+              kind: z.enum(["image", "audio"]),
+              required: z.boolean(),
+              supplied: z.boolean(),
+            })
+            .strict(),
+        ),
+      })
+      .strict(),
+  })
+  .strict();
+export type AdminQuestionDetail = z.infer<typeof adminQuestionDetailSchema>;
+
 export const adminMediaSchema = z
   .object({
     items: z

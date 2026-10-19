@@ -2781,3 +2781,28 @@ Encore was read only at `../Encore`: `packages/game-glyph/src/mark.ts`, `play.ts
 Only the new question files, birthday manifest, authoring tests and this progress entry belong to the content commit. Other concurrent auth/API/read-helper changes are left untouched. Nothing was pushed, deployed, released or inserted into an active game. Ready means content-ready in the catalogue, not live.
 
 Next: supply/source the specified prices and define/build the Wordle, room-frequency ranking and multiple-selection support within the existing authoritative architecture. Then validate ready questions, explicitly include them in the running order and release a new birthday version separately. Do not silently repoint existing rooms or the illustrative demo.
+
+## Individual question inspection — 19 October 2026
+
+Status: implemented. Admin → Question packs now links each question title to its own read-only page at `/admin/content/:version/:questionId`. The page shows wording, instructions, options or ranking items, settings, readiness gaps and media requirements. Answer rules, reveal explanations and author notes are in a deliberately closed disclosure. Back returns to the selected pack; refresh and direct links work, including returning to a question after sign-in.
+
+### Interfaces and decisions
+
+- Added `adminQuestionDetailSchema` / `AdminQuestionDetail` in shared validation, the server-only `admin-question.ts` projection, and authenticated `GET /api/admin/content/:version/questions/:questionId`. Authentication precedes lookup; responses are uncached. Unknown questions return JSON 404. The existing pack-list projection remains answer/notes/reveal-free. Raw authored objects and media paths are never serialised by this endpoint.
+- Added `question-page.tsx`, inspector styles and a bounded `readQuestion` helper using the existing read lifecycle. Pending, failed and superseded requests cannot show the previous question's private details. Navigating resets the answer disclosure. The existing admin shell retains active navigation and the inspector owns its document title and heading focus.
+- Extended the strict post-login destination whitelist for question links, and kept the local auth middleware from intercepting content subroutes, matching the existing content-list behaviour. Questions remain versioned server-side files; this adds no editor, release action, live-game change or new question mechanic.
+- Coverage: API authorisation/cross-origin/guest exclusion, uncached responses, missing questions and draft targets, projections across all eight catalogue mechanics; UI loading/error/retry, response races, disclosure reset, focus, content links and safe return paths; browser inspection and responsive checks.
+
+### Verification
+
+- Final `npm run typecheck` passed in E: and the matching C: verification copy, including the local-middleware adjustment.
+- E: `npm run test:unit -w @26/web -- --maxWorkers=2` passed: 51 files / 169 tests. The initial unrestricted E: run hit 15 worker-start timeouts and an existing phase-animation timing failure under load; checks were retained and the complete suite passed with bounded concurrency.
+- Final C: `npm run test:unit` passed 51 files / 169 tests; `npm run test -w @26/api -- test/admin-rooms-auth.spec.ts` passed 10 tests, including all catalogue mechanics. All changed source files matched E: by hash. The copy was fully refreshed after discovering its unchanged read-error helper lagged behind the committed source.
+- Targeted ESLint passed with zero errors; the existing routes-module fast-refresh warning remains. Targeted Prettier checks and `git diff --check` passed.
+- Final `npx playwright test --config playwright.dev.config.ts apps/web/e2e/admin-question-details.spec.ts apps/web/e2e/admin-entry.spec.ts --workers=1` passed all 6 cases. Covers sign-in return, direct reload/title, deliberately closed answers, keyboard entry from the list, all 17 birthday questions, missing-question JSON and visible error, anonymous denial, selected-pack return, six viewport sizes and 200% CSS zoom. Early runs caught assertions made before focus/list updates, reuse of a consumed mock response and the stale verification helper; no checks were removed or weakened.
+- Chrome confirmed direct-link sign-in returns to the requested question, renders its actual options/settings, and returns to the selected birthday pack. Browser screenshots cover 320, 390, 768, 1280, 1440 and 1920px, reduced motion and 200% CSS zoom. The birthday catalogue remains draft, with no running-order or release changes.
+- Existing local Better Auth schema-startup and Motion reduced-motion diagnostics still appear in development; the explicit local auth adapter and functional assertions pass. Deployed authentication and production routes were not tested. Media inspection shows supplied/missing metadata, not playback or image previews.
+
+### Scope and next work
+
+No deployment, push or commit was performed for this request. Normal development: `npm run dev`, then Admin → Question packs → a question title. Editing questions and supplying the outstanding content/mechanics remain separate work. Next stage: the user's next requested change; do not automatically release the birthday pack or begin another redesign stage.

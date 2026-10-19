@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Link, useSearchParams } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "../ui/primitives";
 import { EntryNotice } from "../ui/entry-frame";
@@ -7,7 +7,8 @@ import { useSection } from "./use-section";
 
 export function ContentPage() {
   const content = useSection(readContent);
-  const [version, setVersion] = useState("");
+  const [params, setParams] = useSearchParams();
+  const version = params.get("pack") ?? "";
   const pack =
     content.data?.packs.find((pack) => pack.version === version) ??
     content.data?.packs.find((pack) => pack.id === "birthday") ??
@@ -43,7 +44,7 @@ export function ContentPage() {
               key={item.version}
               variant="secondary"
               aria-pressed={pack?.version === item.version}
-              onClick={() => setVersion(item.version)}
+              onClick={() => setParams({ pack: item.version })}
             >
               {item.id === "birthday" ? "Birthday" : "Illustrative demo"}
               <small>
@@ -83,7 +84,16 @@ export function ContentPage() {
                   <li key={question.id}>
                     <div className="admin-question-number">{question.order ?? "—"}</div>
                     <div>
-                      <h3>{question.title}</h3>
+                      <h3>
+                        <Link
+                          className="admin-question-link"
+                          to={`/admin/content/${encodeURIComponent(pack.version)}/${encodeURIComponent(question.id)}`}
+                          aria-label={`View ${question.title}`}
+                        >
+                          {question.title}
+                          <span aria-hidden="true"> →</span>
+                        </Link>
+                      </h3>
                       <p>{question.prompt}</p>
                       <p className="admin-meta">
                         {question.mechanic} · {question.presentation} ·{" "}

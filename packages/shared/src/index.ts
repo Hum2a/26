@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { statCardSchema } from "./stats.ts";
-export { adminContentSchema, adminMediaSchema } from "./admin.ts";
-export type { AdminContent, AdminMedia } from "./admin.ts";
+export {
+  adminContentSchema,
+  adminMediaSchema,
+  adminQuestionDetailSchema,
+} from "./admin.ts";
+export type { AdminContent, AdminMedia, AdminQuestionDetail } from "./admin.ts";
 
 export { clientApiKeyHeader, clientApiKeyQueryParam } from "./client-api-key.ts";
 export { minimumComparisonGroup, statCardSchema } from "./stats.ts";

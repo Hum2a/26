@@ -5,6 +5,8 @@ import * as shared from "@26/shared";
 import { administratorForRequest } from "../src/auth/routes";
 import { registerAdminRoomRoutes } from "../src/room/admin-routes";
 import { registerAdminContentRoutes, adminContent } from "../src/room/admin-content";
+import { questionPacks } from "../src/questions/registry";
+import { adminQuestion } from "../src/room/admin-question";
 const app = new Hono<{ Bindings: Env }>();
 registerAdminRoomRoutes(app);
 registerAdminContentRoutes(app);
@@ -196,4 +198,94 @@ it("rejects a cross-origin read and mutation before issuing room access", async 
       ).status,
     ).toBe(403);
   expect(listRooms).not.toHaveBeenCalled();
+});
+
+it("authenticates individual question details, keeps them uncached, and rejects cross-origin/guest reads", async () => {
+  const path =
+    "https://example.com/api/admin/content/birthday-draft/questions/favourite-pokemon";
+  const response = await app.request(path, {}, bindings);
+  expect(response.status).toBe(200);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  const body = shared.adminQuestionDetailSchema.parse(await response.json());
+  expect(body.question.options.map((option) => option.label)).toContain("Mudkip");
+  expect(body.question.answer).toEqual({ status: "recorded", lines: ["Mudkip"] });
+  expect(body.question.settings).toContainEqual({ label: "Points", value: "100" });
+  expect(body.question).not.toHaveProperty("correctOption");
+  expect(body.question).not.toHaveProperty("truth");
+  expect(
+    (
+      await app.request(
+        path,
+        { headers: { origin: "https://other.example" } },
+        bindings,
+      )
+    ).status,
+  ).toBe(403);
+  vi.mocked(administratorForRequest).mockResolvedValue(
+    Response.json({ error: "unauthenticated" }, { status: 401 }),
+  );
+  for (const cookie of [
+    "",
+    "26_guest=ABCDEFGH.guest.secret",
+    "26_room_stage=projector.secret",
+  ]) {
+    vi.mocked(administratorForRequest).mockResolvedValueOnce(
+      Response.json({ error: "unauthenticated" }, { status: 401 }),
+    );
+    const denied = await app.request(path, { headers: { cookie } }, bindings);
+    expect(denied.status).toBe(401);
+    expect(await denied.text()).not.toContain("Mudkip");
+  }
+});
+it("handles missing question/pack and drafts without guessing an answer", async () => {
+  for (const path of [
+    "unknown-pack/questions/favourite-pokemon",
+    "birthday-draft/questions/unknown-question",
+  ]) {
+    const response = await app.request(
+      `https://example.com/api/admin/content/${path}`,
+      {},
+      bindings,
+    );
+    expect(response.status).toBe(404);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+  }
+  const response = await app.request(
+    "https://example.com/api/admin/content/birthday-draft/questions/inflation-freddo",
+    {},
+    bindings,
+  );
+  const body = shared.adminQuestionDetailSchema.parse(await response.json());
+  expect(body.question.status).toBe("draft");
+  expect(body.question.answer.status).toBe("missing");
+  expect(body.question.missing.length).toBeGreaterThan(0);
+  expect(body.question.settings).toContainEqual({ label: "Minimum", value: "Not set" });
+});
+it("projects every catalogue mechanic without exposing raw authoring objects or media paths", () => {
+  const mechanics = new Set<string>();
+  for (const pack of questionPacks) {
+    for (const question of pack.catalogue) {
+      mechanics.add(question.kind);
+      const detail = adminQuestion(pack, question);
+      expect(detail, `${pack.version}/${question.id}`).not.toBeNull();
+      expect(detail!.question.id).toBe(question.id);
+      expect(detail!.question.answer.lines.length).toBeGreaterThan(0);
+      expect(detail!.question).not.toHaveProperty("truth");
+      expect(detail!.question).not.toHaveProperty("correctOption");
+      for (const media of detail!.question.media) {
+        expect(media).not.toHaveProperty("asset");
+        expect(media).not.toHaveProperty("url");
+      }
+    }
+  }
+  expect([...mechanics].sort()).toEqual([
+    "choice",
+    "duel",
+    "finale",
+    "guess",
+    "rank",
+    "slider",
+    "typed",
+    "vote",
+  ]);
 });

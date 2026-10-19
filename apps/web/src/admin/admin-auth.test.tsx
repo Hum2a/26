@@ -171,6 +171,9 @@ describe("admin entry", () => {
     "/admin/%2e%2e/join",
     "/admin/rooms?token=secret",
     "/admin\\evil",
+    "/admin/content/birthday-draft/question?token=secret",
+    "/admin/content/birthday-draft/../settings",
+    "/admin/content/birthday-draft/question/extra",
   ])("rejects unsafe return path %s", (path) => {
     expect(safeAdminReturnTo(path)).toBe("/admin");
   });
@@ -178,5 +181,11 @@ describe("admin entry", () => {
     expect(safeAdminReturnTo("/admin/rooms/ABCDEFGH/live")).toBe(
       "/admin/rooms/ABCDEFGH/live",
     );
+  });
+  it("allows a question deep link after signing in", () => {
+    const path = "/admin/content/birthday-draft/favourite-pokemon";
+    expect(safeAdminReturnTo(path)).toBe(path);
+    rememberAdminReturn(path);
+    expect(localStorage.getItem("26-admin-return")).toBe(path);
   });
 });

@@ -116,6 +116,7 @@ function attachLocalAuth(server: ViteDevServer | PreviewServer, apiEntry: string
     const handled =
       !path.startsWith("/api/admin/rooms") &&
       path !== "/api/admin/content" &&
+      !path.startsWith("/api/admin/content/") &&
       localAuthPrefixes.some(
         (prefix) => path === prefix || path.startsWith(`${prefix}/`),
       );

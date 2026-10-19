@@ -15,6 +15,8 @@ export function AdminShell({
   const reduced = useReducedMotion();
   const roomPath = location.pathname.match(/^\/admin\/rooms\/([A-Z0-9]+)(?:\/|$)/)?.[1];
   useEffect(() => {
+    // The question inspector owns its title, including loading and error states.
+    if (location.pathname.startsWith("/admin/content/")) return;
     const title = roomPath
       ? location.pathname.endsWith("/live")
         ? "Live controls"

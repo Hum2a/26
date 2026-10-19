@@ -7,6 +7,7 @@ import { PlayersPage } from "./admin/players-page";
 import { MediaPage } from "./admin/media-page";
 import { HealthPage } from "./admin/health-page";
 import { ContentPage } from "./admin/content-page";
+import { QuestionPage } from "./admin/question-page";
 import { AdminResultsPage } from "./admin/results-page";
 import { AdminRoomRoute } from "./admin/room-provider";
 import { RoomsPage, RoomOverview } from "./admin/rooms-page";
@@ -40,6 +41,7 @@ export const appRoutes: RouteObject[] = [
       { path: "rooms", element: <RoomsPage /> },
       { path: "settings", element: <AdminSettingsPage /> },
       { path: "content", element: <ContentPage /> },
+      { path: "content/:version/:questionId", element: <QuestionPage /> },
       {
         path: "rooms/:gameId",
         element: <AdminRoomRoute />,

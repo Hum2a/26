@@ -697,3 +697,110 @@
   border-inline-start: 3px solid var(--highlight);
   padding: 1rem;
 }
+
+.admin-question-link {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  transition: color 0.18s ease;
+}
+.admin-question-link:hover {
+  color: var(--highlight);
+}
+.admin-question-link:focus-visible {
+  outline: 2px solid var(--highlight);
+  outline-offset: 4px;
+}
+.admin-question-page h1:focus {
+  outline: none;
+}
+.admin-question-inspector,
+.admin-question-body {
+  display: grid;
+  gap: 2rem;
+  min-width: 0;
+}
+.admin-question-wording {
+  display: grid;
+  gap: 1rem;
+  border-block: 1px solid var(--line);
+  padding-block: 2rem;
+}
+.admin-question-wording h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3vw, 3rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.admin-question-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 0.45fr);
+  gap: clamp(2rem, 4vw, 4rem);
+  align-items: start;
+}
+.admin-question-options {
+  display: grid;
+  gap: 1rem;
+  list-style: decimal;
+  padding-inline-start: 1.5rem;
+  font-size: 1.2rem;
+}
+.admin-question-options li {
+  padding-inline-start: 0.5rem;
+  overflow-wrap: anywhere;
+}
+.admin-question-gaps {
+  display: grid;
+  gap: 1rem;
+}
+.admin-question-gaps strong {
+  color: var(--highlight);
+}
+.admin-question-body h2,
+.admin-question-settings h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.admin-question-body h3,
+.admin-question-settings h3 {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+.admin-question-body p,
+.admin-question-body li,
+.admin-question-settings {
+  overflow-wrap: anywhere;
+}
+.admin-question-settings {
+  border-inline-start: 1px solid var(--line);
+  padding-inline-start: 1.5rem;
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+}
+.admin-question-settings dl {
+  display: grid;
+  gap: 1rem;
+}
+.admin-question-settings dt {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.admin-question-settings dd {
+  margin-top: 0.25rem;
+}
+@container workspace (max-width:1000px) {
+  .admin-question-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .admin-question-settings {
+    border-inline-start: 0;
+    border-top: 1px solid var(--line);
+    padding: 1.5rem 0 0;
+  }
+}
