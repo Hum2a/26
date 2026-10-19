@@ -301,7 +301,14 @@ function suppliedIssues(
       ),
     );
   }
-  issues.push(...windowIssue(question.id, "collection", question.collectMs));
+  issues.push(
+    ...windowIssue(
+      question.id,
+      "collection",
+      question.collectMs,
+      question.kind === "wordle" ? 180_000 : contentLimits.collectMaxMs,
+    ),
+  );
   if (
     !Number.isInteger(question.points) ||
     question.points < contentLimits.pointsMin ||
@@ -319,6 +326,12 @@ function suppliedIssues(
 }
 
 function knownAnswerIssues(question: AuthoredQuestion): ContentIssue[] {
+  if (question.kind === "wordle") {
+    const answer = isKnown(question.answer) ? question.answer.known : null;
+    return answer === null || /^[A-Z]{5}$/.test(answer)
+      ? []
+      : [issue("error", "wordle", `${question.id} needs five uppercase letters.`)];
+  }
   if (question.kind === "typed") {
     return typedIssues(
       question.id,
@@ -461,7 +474,14 @@ function validatePlayableQuestions(
         ),
       );
     }
-    issues.push(...windowIssue(question.id, "collection", question.collectMs));
+    issues.push(
+      ...windowIssue(
+        question.id,
+        "collection",
+        question.collectMs,
+        question.kind === "wordle" ? 180_000 : contentLimits.collectMaxMs,
+      ),
+    );
     if (
       !Number.isInteger(question.points) ||
       question.points < contentLimits.pointsMin ||
@@ -601,6 +621,12 @@ function checkPlayable(question: Question): ContentIssue[] {
     }
     return [];
   }
+  if (question.kind === "wordle") {
+    const answer = question.answer;
+    return answer === null || /^[A-Z]{5}$/.test(answer)
+      ? []
+      : [issue("error", "wordle", `${question.id} needs five uppercase letters.`)];
+  }
   if (question.kind === "typed") {
     if (question.accepted.every((answer) => !answer.trim())) {
       return [issue("error", "typed", `${question.id} has no accepted answer.`)];
@@ -633,13 +659,20 @@ function checkPlayable(question: Question): ContentIssue[] {
   return [];
 }
 
-function windowIssue(id: string, label: string, ms: number): ContentIssue[] {
-  if (
-    !Number.isInteger(ms) ||
-    ms < contentLimits.collectMinMs ||
-    ms > contentLimits.collectMaxMs
-  ) {
-    return [issue("error", "duration", `${id} ${label} must be 15 to 45 seconds.`)];
+function windowIssue(
+  id: string,
+  label: string,
+  ms: number,
+  maximum: number = contentLimits.collectMaxMs,
+): ContentIssue[] {
+  if (!Number.isInteger(ms) || ms < contentLimits.collectMinMs || ms > maximum) {
+    return [
+      issue(
+        "error",
+        "duration",
+        `${id} ${label} must be 15 to ${maximum / 1000} seconds.`,
+      ),
+    ];
   }
   return [];
 }

@@ -491,27 +491,25 @@ describe("October birthday question additions", () => {
       expect(publicQuestionCore(playable!, 1, 2)).not.toHaveProperty("notes");
     },
   );
-  it.each([
-    commonPassword,
-    completeAWordle,
-    inflationFreddo,
-    inflationPetrol,
-    christianityBranches,
-  ])("keeps $id blocked until the real requirements are supplied", (question) => {
-    expect(question.status).toBe("draft");
-    expect(missingRequirements(question).length).toBeGreaterThan(0);
-    expect(toPlayable(question)).toBeUndefined();
-    expect(birthdayPack.order).not.toContain(question.id);
-  });
+  it.each([commonPassword, inflationFreddo, inflationPetrol, christianityBranches])(
+    "keeps $id blocked until the real requirements are supplied",
+    (question) => {
+      expect(question.status).toBe("draft");
+      expect(missingRequirements(question).length).toBeGreaterThan(0);
+      expect(toPlayable(question)).toBeUndefined();
+      expect(birthdayPack.order).not.toContain(question.id);
+    },
+  );
   it("records unsupported mechanics rather than silently substituting typed scoring", () => {
     expect(missingRequirements(commonPassword).map((item) => item.name)).toContain(
       "ranking-mechanic",
     );
-    expect(missingRequirements(completeAWordle).map((item) => item.name)).toContain(
-      "wordle-mechanic",
-    );
+    expect(missingRequirements(completeAWordle)).toEqual([]);
+    expect(completeAWordle.kind).toBe("wordle");
+    expect(completeAWordle.status).toBe("ready");
+    expect(birthdayPack.order).not.toContain(completeAWordle.id);
     expect(commonPassword.accepted).not.toHaveProperty("known");
-    expect(completeAWordle.accepted).not.toHaveProperty("known");
+    expect(completeAWordle.answer).toEqual({ known: "VULGY" });
     expect(christianityBranches.options.map((option) => option.label)).toEqual([
       "unorthodox",
       "jisraeli",
@@ -533,9 +531,7 @@ describe("October birthday question additions", () => {
     expect(missingRequirements(commonPassword).map((item) => item.name)).not.toContain(
       "commonness-definition",
     );
-    expect(completeAWordle.notes).toContain(
-      "Glyph source and MIT licence have been located",
-    );
+    expect(completeAWordle.notes).toContain("Encore Glyph's classic board");
     for (const slider of [inflationFreddo, inflationPetrol]) {
       expect(slider.kind).toBe("slider");
       expect(slider.prompt).toContain("guess the price in 2026");

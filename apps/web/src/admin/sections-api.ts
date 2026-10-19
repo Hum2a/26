@@ -1,4 +1,5 @@
 import {
+  wordlePreviewResultSchema,
   adminContentSchema,
   adminMediaSchema,
   adminQuestionDetailSchema,
@@ -36,4 +37,16 @@ export const readMediaPage = (
   readSection(
     `/api/admin/rooms/${gameId}/media${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
     adminMediaSchema,
+  );
+
+export const rehearseWordle = (
+  version: string,
+  id: string,
+  history: string[],
+  word: string,
+) =>
+  readSection(
+    `/api/admin/content/${encodeURIComponent(version)}/questions/${encodeURIComponent(id)}/preview/wordle`,
+    wordlePreviewResultSchema,
+    { history, word },
   );

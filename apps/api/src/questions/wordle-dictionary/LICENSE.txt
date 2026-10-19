@@ -1,0 +1,17 @@
+Glyph word lists are derived from:
+
+1. Spell Checker Oriented Word Lists (SCOWL) by Kevin Atkinson -
+   http://wordlist.aspell.net/ via the npm package `wordlist-english` (MIT).
+   SCOWL / wordlist license (abbreviated): the lists may be used for any purpose,
+   including commercial, with attribution. See upstream COPYING for full text.
+
+2. Peter Norvig's Google Books word-frequency ranks via the npm package
+   `norvig-frequencies` (MIT). Based on Norvig, "English Letter Frequency Counts:
+   Mayzner Revisited" - http://norvig.com/mayzner.html - using the Google Books
+   n-gram counts. Used here only to order 5-letter answers by commonness.
+
+Encore vendors one 5-letter dictionary. Secrets are that list minus a denylist.
+Generation reads the frozen TypeScript array, not the npm packages, so
+`generate(seed, version)` stays byte-identical.
+
+Do not replace these lists with proprietary or scraped puzzle feeds.

@@ -12,6 +12,8 @@ export const ordinaryDefaults = {
   pollPoints: 0,
   sliderPoints: 100,
   typedPoints: 100,
+  wordlePoints: 100,
+  wordleCollectMs: 120_000,
   typedMaxLength: 60,
   rankPoints: 80,
   rankMode: "complete" as const,

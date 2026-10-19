@@ -8,6 +8,7 @@ type Schema<T> = {
 export async function readSection<T>(
   path: string,
   schema: Schema<T>,
+  postBody?: unknown,
 ): Promise<T | { error: string }> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 12_000);
@@ -15,7 +16,11 @@ export async function readSection<T>(
     const response = await fetch(path, {
       credentials: "same-origin",
       cache: "no-store",
-      headers: clientApiHeaders(),
+      method: postBody === undefined ? "GET" : "POST",
+      headers: clientApiHeaders(
+        postBody === undefined ? {} : { "content-type": "application/json" },
+      ),
+      ...(postBody === undefined ? {} : { body: JSON.stringify(postBody) }),
       signal: controller.signal,
     });
     let body: unknown;
@@ -38,7 +43,8 @@ export async function readSection<T>(
   } catch (error) {
     if (isAbortError(error)) {
       return {
-        error: "We couldn’t load this information. Check your connection and try again.",
+        error:
+          "We couldn’t load this information. Check your connection and try again.",
       };
     }
     return {

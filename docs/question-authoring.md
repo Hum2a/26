@@ -28,6 +28,7 @@ Helpers live in `apps/api/src/questions/authoring.ts`. Defaults live only in `ap
 | Pick one option                         | `choiceQuestion`                                            | `choice` |
 | Vote with no right answer               | `choiceQuestion` with `outcome: { kind: "poll" }`           | `choice` |
 | The room's split decides who scores     | `choiceQuestion` with `outcome: { kind: "threshold", ... }` | `choice` |
+| Solve a five-letter word in six guesses | `wordleQuestion`                                            | `wordle` |
 | Type a short answer                     | `typedQuestion`                                             | `typed`  |
 | Estimate a number                       | `sliderQuestion`                                            | `slider` |
 | Put items in order                      | `rankQuestion`                                              | `rank`   |
@@ -39,6 +40,8 @@ Helpers live in `apps/api/src/questions/authoring.ts`. Defaults live only in `ap
 A threshold outcome names an option, a share, and who scores either way. `{ kind: "threshold", optionId: "blue", above: 0.5, met: "everyone", otherwise: ["red"] }` means: if more than half of the answers are blue, everyone who answered scores; otherwise only red scores. A guest with no answer never scores.
 
 A typed question lists its accepted spellings. The first is shown at the reveal. Matching ignores case, accents, punctuation, hyphens and spacing, and forgives a small typo: none up to 4 letters, one up to 9, two beyond that. Wrong answers stay off the stage.
+
+A Wordle question supplies `answer: { known: "�" }` with exactly five uppercase letters. Defaults are six guesses, two minutes and 100 points for a solve, with no speed bonus. The server validates guesses against Encore Glyph’s frozen word list, always allowing the supplied target. Repeated letters use two-pass marking. Only the guest sees their own board; the stage gets finished-board progress and the target at reveal. A reconnect restores the saved board. In Question packs, its phone rehearsal checks guesses through an authenticated, stateless server endpoint; it never starts a room or awards points.
 
 If the idea needs an interaction that is not in that list, say so and still save a draft. Do not force it into the wrong mechanic, and do not start a new scoring engine.
 

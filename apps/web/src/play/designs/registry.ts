@@ -1,5 +1,6 @@
 import type { CustomPresentationId } from "@26/shared";
 import type { QuestionPresentation } from "../presentation";
+import { Glyph } from "./glyph";
 import { BallotPaper } from "./ballot-paper";
 import { BinUnmasked } from "./bin-unmasked";
 import { DeedPoll } from "./deed-poll";
@@ -13,6 +14,7 @@ import { TrolleyLever } from "./trolley-lever";
 
 /** One design per custom presentation id. A missing id fails the typecheck. */
 export const designs: Record<CustomPresentationId, QuestionPresentation> = {
+  glyph: Glyph,
   "now-playing": NowPlaying,
   scripture: Scripture,
   "number-plate": NumberPlate,

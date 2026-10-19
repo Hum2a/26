@@ -50,6 +50,7 @@ export default defineConfig({
           name: "room",
           include: [
             "test/room.spec.ts",
+            "test/wordle-room.spec.ts",
             "test/admin-rooms.spec.ts",
             "test/phase.spec.ts",
             "test/quiz.spec.ts",
@@ -88,6 +89,7 @@ export default defineConfig({
             "test/schedule.spec.ts",
             "test/quiz-score.spec.ts",
             "test/typed-score.spec.ts",
+            "test/wordle-score.spec.ts",
             "test/rounds-score.spec.ts",
             "test/vote-score.spec.ts",
             "test/duel-score.spec.ts",

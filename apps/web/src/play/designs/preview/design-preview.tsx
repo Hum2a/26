@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { MotionGlobalConfig } from "motion/react";
 import {
   customPresentationIds,
+  emptyWordleBoard,
+  reduceWordle,
   type CustomPresentationId,
   type LobbySnapshot,
   type PlaySnapshot,
@@ -158,6 +160,12 @@ export function DesignPreview() {
           Clear my answer
         </button>
       </div>
+      {question.kind === "wordle" ? (
+        <p>
+          Development sample: any five letters are allowed; the stand-in word is WORDS.
+          Use Question packs for the real word-list rehearsal.
+        </p>
+      ) : null}
       {surface === "phone" ? (
         <div className="design-bench-phone">
           <GuestPlay
@@ -174,7 +182,20 @@ export function DesignPreview() {
             onRank={(placements: TierPlacement[]) =>
               setAnswer({ kind: "rank", placements })
             }
-            onText={(body) => setAnswer({ kind: "text", body: body.trim() })}
+            onText={(body) => {
+              if (question.kind !== "wordle") {
+                setAnswer({ kind: "text", body: body.trim() });
+                return;
+              }
+              // Explicit development adapter with a stand-in word, never the party target.
+              const result = reduceWordle(
+                answer?.kind === "wordle" ? answer : emptyWordleBoard(),
+                body,
+                { answer: "WORDS", isWord: () => true, deadline: 1 },
+                0,
+              );
+              if (result.ok) setAnswer(result.state);
+            }}
             onBallot={() => undefined}
             onDuel={() => undefined}
           />

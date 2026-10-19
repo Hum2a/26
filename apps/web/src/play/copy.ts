@@ -28,6 +28,17 @@ export function guestRoundCopy(snapshot: LobbySnapshot): string {
       ? `${result} You are ${ordinal(standing.place)} with ${standing.points} points.`
       : result;
   }
+  if (snapshot.play?.question.kind === "wordle" && snapshot.phase === "collect") {
+    const board =
+      snapshot.play.selfAnswer?.kind === "wordle"
+        ? snapshot.play.selfAnswer
+        : undefined;
+    return board?.status === "won"
+      ? "You solved it. Watch the stage."
+      : board?.status === "lost"
+        ? "Your board is finished. Watch the stage."
+        : "Find the word in six guesses.";
+  }
   if (snapshot.play?.selfAnswer && snapshot.phase !== "vote") {
     return standing
       ? `Answer accepted. You have ${standing.points} points.`
@@ -179,6 +190,10 @@ function revealResult(
       ? "You were right."
       : "That was not the answer.";
   }
+  if (reveal?.kind === "wordle")
+    return award
+      ? `You solved it. You scored ${award}.`
+      : "The word was not solved in time.";
   if (reveal?.kind === "typed") {
     if (award === undefined || award === null) {
       return "Answer accepted.";

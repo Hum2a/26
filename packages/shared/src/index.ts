@@ -1,4 +1,12 @@
 import { z } from "zod";
+import { wordleBoardSchema } from "./wordle.ts";
+export {
+  wordleBoardSchema,
+  emptyWordleBoard,
+  markWordle,
+  reduceWordle,
+} from "./wordle.ts";
+export type { WordleBoard, WordleMark } from "./wordle.ts";
 import { statCardSchema } from "./stats.ts";
 export {
   adminContentSchema,
@@ -220,6 +228,7 @@ export const contentLimits = {
  * The server accepts only these ids, and the web app must render every one.
  */
 export const customPresentationIds = [
+  "glyph",
   "now-playing",
   "scripture",
   "number-plate",
@@ -293,6 +302,14 @@ const winnerSchema = z
   .strict();
 
 export const publicQuestionSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      ...publicQuestionCore,
+      kind: z.literal("wordle"),
+      wordLength: z.literal(5),
+      maxGuesses: z.literal(6),
+    })
+    .strict(),
   z
     .object({
       ...publicQuestionCore,
@@ -400,10 +417,21 @@ export const adminQuestionPreviewSchema = z
     interactive: z.boolean(),
   })
   .strict();
+export const wordlePreviewInputSchema = z
+  .object({
+    history: z.array(z.string().regex(/^[A-Z]{5}$/)).max(5),
+    word: z.string().max(80),
+  })
+  .strict();
+export const wordlePreviewResultSchema = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true), state: wordleBoardSchema }).strict(),
+  z.object({ ok: z.literal(false), message: z.string() }).strict(),
+]);
 export type AdminQuestionPreview = z.infer<typeof adminQuestionPreviewSchema>;
 
 const selfAnswerSchema = z
   .discriminatedUnion("kind", [
+    wordleBoardSchema,
     z
       .object({
         kind: z.literal("choice"),
@@ -490,6 +518,14 @@ const duelStateSchema = z
 
 const revealSchema = z
   .discriminatedUnion("kind", [
+    z
+      .object({
+        kind: z.literal("wordle"),
+        answer: z.string().regex(/^[A-Z]{5}$/),
+        solvedCount: z.number().int().nonnegative(),
+        responseCount: z.number().int().nonnegative(),
+      })
+      .strict(),
     z
       .object({
         kind: z.literal("choice"),

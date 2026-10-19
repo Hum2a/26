@@ -147,7 +147,10 @@ export function GuestPage() {
           setPending(false);
         }
         setSnapshot(next);
-        if (next.play?.selfAnswer || next.play?.selfBallot) {
+        if (
+          (next.play?.selfAnswer && next.play.selfAnswer.kind !== "wordle") ||
+          next.play?.selfBallot
+        ) {
           setPending(false);
           setRejection(undefined);
         }

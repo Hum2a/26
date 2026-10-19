@@ -5,6 +5,7 @@ import { missingRequirements } from "../questions/definition.ts";
 import { questionPacks } from "../questions/registry.ts";
 import { rejectUnlessRoomCreator } from "./access.ts";
 import { adminQuestion } from "./admin-question.ts";
+import { previewWordle, readWordlePreviewBody } from "./wordle-preview.ts";
 import { questionPreview } from "./question-preview.ts";
 
 /** Explicit read-only authoring projection. Never serialise authored objects. */
@@ -50,6 +51,19 @@ export function adminContent(): AdminContent | null {
 }
 
 export function registerAdminContentRoutes(app: Hono<{ Bindings: Env }>) {
+  app.post(
+    "/api/admin/content/:version/questions/:questionId/preview/wordle",
+    async (c) => {
+      const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
+      if (rejected) return rejected;
+      const pack = questionPacks.find(
+        (pack) => pack.version === c.req.param("version"),
+      );
+      const question = pack?.catalogue.find((q) => q.id === c.req.param("questionId"));
+      if (!question) return authFailure("invalid", 404);
+      return jsonData(previewWordle(question, await readWordlePreviewBody(c.req.raw)));
+    },
+  );
   app.get("/api/admin/content/:version/questions/:questionId/preview", async (c) => {
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
     if (rejected) return rejected;

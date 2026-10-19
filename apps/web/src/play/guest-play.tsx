@@ -8,6 +8,7 @@ import { GuestBallot } from "./guest-ballot";
 import { GuestDuel } from "./guest-duel";
 import { GuestRank } from "./guest-rank";
 import { GuestSlider } from "./guest-slider";
+import { Glyph } from "./designs/glyph";
 import { GuestText } from "./guest-text";
 import { renderPresentation } from "./presentation";
 import { QuestionExperience } from "./question-experience";
@@ -47,15 +48,16 @@ export function GuestPlay({
     snapshot.phase === "collect" &&
     !snapshot.paused &&
     !snapshot.held &&
-    !play.selfAnswer &&
+    (!play.selfAnswer ||
+      (play.selfAnswer.kind === "wordle" && play.selfAnswer.status === "playing")) &&
     !pending;
   const choiceReveal = play.reveal?.kind === "choice" ? play.reveal : undefined;
   const dodge = snapshot.trolls.active.some(
     (effect) =>
       effect.kind === "yield" && effect.role === "target" && effect.status === "active",
   );
-  const custom = renderPresentation(play.question.presentation, {
-    surface: "phone",
+  const presentationProps = {
+    surface: "phone" as const,
     phase: snapshot.phase,
     play,
     controls: {
@@ -68,7 +70,10 @@ export function GuestPlay({
       onRank,
       onText,
     },
-  });
+  };
+  const custom =
+    renderPresentation(play.question.presentation, presentationProps) ??
+    (play.question.kind === "wordle" ? Glyph(presentationProps) : undefined);
   if (custom) {
     return (
       <QuestionExperience snapshot={snapshot} pending={pending}>

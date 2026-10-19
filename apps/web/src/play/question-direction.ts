@@ -11,6 +11,12 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
     return "The results are in";
   if (snapshot.phase === "final" || snapshot.phase === "podium")
     return "Time to celebrate";
+  if (play.question.kind === "wordle" && snapshot.phase === "collect") {
+    const board = play.selfAnswer?.kind === "wordle" ? play.selfAnswer : undefined;
+    if (board?.status === "won") return "Solved — watch the stage";
+    if (board?.status === "lost") return "Board finished — watch the stage";
+    return "Type five letters, then check your word";
+  }
   if (play.duel?.role === "late") return "You’re watching this round";
   if (
     snapshot.phase === "vote" ||
@@ -43,6 +49,8 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
       return "Enter your number, then send";
     case "vote":
       return "Write your line, then send";
+    case "wordle":
+      return "Type five letters, then check your word";
     case "typed":
       return "Type your answer, then send";
   }

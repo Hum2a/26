@@ -20,6 +20,38 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(administratorForRequest).mockResolvedValue({ email: "admin@example.test" });
 });
+
+it("checks admin and origin before Wordle rehearsal; returns feedback without the target", async () => {
+  const path =
+    "https://example.com/api/admin/content/birthday-draft/questions/complete-a-wordle/preview/wordle";
+  const post = (origin = "https://example.com") =>
+    app.request(
+      path,
+      {
+        method: "POST",
+        headers: { origin, "content-type": "application/json" },
+        body: JSON.stringify({ history: [], word: "APPLE" }),
+      },
+      bindings,
+    );
+  const response = await post();
+  expect(response.status).toBe(200);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  const text = await response.text();
+  expect(text).toContain("APPLE");
+  expect(text).not.toContain("VULGY");
+  expect(shared.wordlePreviewResultSchema.parse(JSON.parse(text))).toMatchObject({
+    ok: true,
+    state: { status: "playing" },
+  });
+  expect((await post("https://other.example")).status).toBe(403);
+  vi.mocked(administratorForRequest).mockResolvedValue(
+    Response.json({ error: "unauthenticated" }, { status: 401 }),
+  );
+  const denied = await post();
+  expect(denied.status).toBe(401);
+  expect(await denied.text()).not.toContain("marks");
+});
 it("requires administrator authentication for listing, detail, current and resume", async () => {
   vi.mocked(administratorForRequest).mockResolvedValue(
     Response.json({ error: "unauthenticated" }, { status: 401 }),
@@ -288,6 +320,7 @@ it("projects every catalogue mechanic without exposing raw authoring objects or 
     "slider",
     "typed",
     "vote",
+    "wordle",
   ]);
 });
 it("rehearses authored public fields without leaking answers, notes, truth or future reveals", async () => {

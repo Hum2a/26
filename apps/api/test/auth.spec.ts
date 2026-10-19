@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { clientApiKeyHeader } from "@26/shared";
 import { createEmail } from "../src/auth/create-email.ts";
 import { openDatabase } from "../src/auth/create-database.ts";
 import { ensurePrepared } from "../src/auth/prepare.ts";
@@ -57,6 +58,7 @@ function productionEnv(): Env {
   return {
     ...localEnv("production-must-not-open"),
     APP_ENV: "production",
+    CLIENT_API_KEY: "auth-test-client-key",
     ADMIN_EMAIL: "",
     LOCAL_DATABASE_ID: undefined,
   };
@@ -68,6 +70,8 @@ async function send(
   init: { method?: string; body?: unknown; cookie?: string; origin?: string } = {},
 ): Promise<Response> {
   const headers = new Headers();
+  // Reach the authentication route through the production client-key gate.
+  if (env.CLIENT_API_KEY) headers.set(clientApiKeyHeader, env.CLIENT_API_KEY);
   if (init.origin !== "") {
     headers.set("origin", init.origin ?? origin);
     headers.set("sec-fetch-site", "same-origin");

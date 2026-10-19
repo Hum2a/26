@@ -1,5 +1,6 @@
 import type { LobbySnapshot, PlaySnapshot, RoomPhaseName } from "@26/shared";
 import { Panel } from "../ui/primitives";
+import { Glyph } from "./designs/glyph";
 import { AnswerNames } from "./attributions";
 import { renderPresentation } from "./presentation";
 
@@ -64,6 +65,13 @@ export function StagePlay({ snapshot }: { snapshot: LobbySnapshot }) {
 }
 
 function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolean }) {
+  if (play.question.kind === "wordle")
+    return (
+      <>
+        <Glyph surface="stage" phase="collect" play={play} />
+        {omitBoard ? null : <Standings play={play} />}
+      </>
+    );
   if (play.question.kind === "slider") {
     return <SliderView play={play} omitBoard={omitBoard} />;
   }

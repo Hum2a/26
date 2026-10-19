@@ -89,7 +89,7 @@ Recognise:
 For a new idea:
 
 1. Read the birthday manifest, `authoring.ts`, `defaults.ts`, and any related question.
-2. Choose an existing mechanic when it fits: choice (with a correct, poll, or threshold outcome), typed, slider, rank, vote, guess, duel, or finale.
+2. Choose an existing mechanic when it fits: choice (with a correct, poll, or threshold outcome), typed, wordle, slider, rank, vote, guess, duel, or finale.
 3. Create `apps/api/src/questions/packs/birthday/<id>.ts` with the matching helper. The id and filename are a stable slug, with no running-order number.
 4. Apply defaults from `defaults.ts` for ordinary settings the user did not specify.
 5. Keep the user's wording. Record a material assumption in the question file only when it changes the mechanic.
@@ -97,6 +97,8 @@ For a new idea:
 7. Import the question in `packs/birthday/manifest.ts` `catalogue`. Do not add a draft to `order`. Do not change `startDemo`, the demo pack, a room, or a deployment.
 8. Run `npm run content:check`.
 9. Report the id, mechanic, draft or ready status, and anything still missing.
+
+Wordle uses `wordleQuestion` with a supplied five-letter uppercase target. The default is six guesses, two minutes and 100 points for a solve. Keep the target and dictionary server-side; never substitute ordinary typed matching. Use the real authenticated phone rehearsal to check feedback.
 
 Ask a short question only when the ambiguity changes the meaning or the mechanic. Otherwise save a draft.
 

@@ -118,6 +118,10 @@ export type VoteBody = {
 };
 
 /** A typed answer, matched against accepted spellings at the reveal. */
+export type WordleBody = { kind: "wordle"; wordLength: 5; maxGuesses: 6 };
+export type AuthoredWordle = AuthorFields & WordleBody & { answer: Answer<string> };
+export type WordleQuestion = PlayableFields & WordleBody & { answer: string };
+
 export type TypedBody = {
   kind: "typed";
   maxLength: number;
@@ -196,6 +200,7 @@ export type AuthoredQuestion =
   | AuthoredChoice
   | AuthoredSlider
   | AuthoredRank
+  | AuthoredWordle
   | AuthoredTyped
   | AuthoredVote
   | AuthoredGuess
@@ -248,6 +253,7 @@ export type Question =
   | ChoiceQuestion
   | SliderQuestion
   | RankQuestion
+  | WordleQuestion
   | TypedQuestion
   | VoteQuestion
   | GuessQuestion
@@ -323,6 +329,8 @@ export function missingRequirements(question: AuthoredQuestion): MissingRequirem
       add(question.truth.missing);
     }
   }
+  if (question.kind === "wordle" && !isKnown(question.answer))
+    add(question.answer.missing);
   if (question.kind === "typed") {
     if (!isKnown(question.accepted)) {
       add(question.accepted.missing);

@@ -12,6 +12,7 @@ import {
   type AuthoredRank,
   type AuthoredSlider,
   type AuthoredTyped,
+  type AuthoredWordle,
   type AuthoredVote,
   type ChoiceOutcome,
   type ChoiceQuestion,
@@ -190,6 +191,30 @@ export function typedQuestion(
       kind: "typed",
       maxLength: input.maxLength ?? ordinaryDefaults.typedMaxLength,
       accepted: input.accepted ?? { missing: missingAccepted },
+    },
+    input.status,
+  );
+}
+
+export function wordleQuestion(
+  input: SharedInput & { answer?: Answer<string> },
+): AuthoredWordle {
+  return finish(
+    {
+      ...shared(
+        { ...input, collectMs: input.collectMs ?? ordinaryDefaults.wordleCollectMs },
+        input.points ?? ordinaryDefaults.wordlePoints,
+      ),
+      kind: "wordle",
+      wordLength: 5,
+      maxGuesses: 6,
+      answer: input.answer ?? {
+        missing: {
+          code: "correct-answer",
+          name: "target-word",
+          detail: "The five-letter target has not been supplied.",
+        },
+      },
     },
     input.status,
   );
@@ -390,6 +415,17 @@ export function toPlayable(
       bands: question.bands,
     };
     return playable;
+  }
+  if (question.kind === "wordle") {
+    return isKnown(question.answer)
+      ? {
+          ...core,
+          kind: "wordle",
+          wordLength: 5,
+          maxGuesses: 6,
+          answer: question.answer.known,
+        }
+      : undefined;
   }
   if (question.kind === "typed") {
     if (!isKnown(question.accepted)) {

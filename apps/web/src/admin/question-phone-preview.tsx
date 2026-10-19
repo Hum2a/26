@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { playSnapshotSchema, type LobbySnapshot, type PlaySnapshot } from "@26/shared";
 import { ControllerRoot } from "../controller/ControllerRoot";
@@ -6,7 +7,7 @@ import { PhoneShell } from "../guest/phone-shell";
 import { GuestPlay } from "../play/guest-play";
 import { PhaseTransition } from "../anim/PhaseTransition";
 import { Button } from "../ui/primitives";
-import { readQuestionPreview } from "./sections-api";
+import { readQuestionPreview, rehearseWordle } from "./sections-api";
 import { useSection } from "./use-section";
 import "./phone-preview.css";
 
@@ -46,6 +47,7 @@ export function QuestionPhonePreview() {
   return (
     <PhoneRehearsal
       key={`${version}/${questionId}/${params.get("phase")}/${params.get("take")}`}
+      version={version}
       question={data.question}
       phase={params.get("phase") === "prompt" ? "prompt" : "collect"}
       limitation={data.limitation}
@@ -55,11 +57,13 @@ export function QuestionPhonePreview() {
 }
 
 function PhoneRehearsal({
+  version,
   question,
   phase,
   limitation,
   interactive,
 }: {
+  version: string;
   question: PlaySnapshot["question"];
   phase: "prompt" | "collect";
   limitation: string | null;
@@ -69,6 +73,26 @@ function PhoneRehearsal({
   const [answer, setAnswer] = useState<PlaySnapshot["selfAnswer"]>(null);
   const [ballot, setBallot] = useState<PlaySnapshot["selfBallot"]>(null);
   const [paused, setPaused] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string>();
+  async function sendText(body: string) {
+    if (question.kind !== "wordle") {
+      setAnswer({ kind: "text", body });
+      return;
+    }
+    setPending(true);
+    setError(undefined);
+    const result = await rehearseWordle(
+      version,
+      question.id,
+      answer?.kind === "wordle" ? answer.guesses.map((g) => g.word) : [],
+      body,
+    );
+    setPending(false);
+    if ("error" in result) setError(result.error);
+    else if (!result.ok) setError(result.message);
+    else setAnswer(result.state);
+  }
   const play = playSnapshotSchema.parse({
     question,
     selfAnswer: answer,
@@ -123,20 +147,35 @@ function PhoneRehearsal({
         scrollKey={phase}
       >
         <p className="phone-preview-notice">
-          Private rehearsal · no answers are sent.{limitation ? ` ${limitation}` : ""}
+          Private rehearsal · no live game is connected.
+          {limitation ? ` ${limitation}` : ""}
         </p>
+        <AnimatePresence>
+          {error ? (
+            <motion.p
+              key="rehearsal-error"
+              role="alert"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              {error}
+            </motion.p>
+          ) : null}
+        </AnimatePresence>
         <PhaseTransition phase={phase}>
           <GuestPlay
             snapshot={snapshot}
             selectedId={selectedId}
-            pending={false}
+            pending={pending}
             onSelect={setSelectedId}
             onSubmit={() => {
               if (selectedId) setAnswer({ kind: "choice", optionId: selectedId });
             }}
             onEstimate={(value) => setAnswer({ kind: "slider", value })}
             onRank={(placements) => setAnswer({ kind: "rank", placements })}
-            onText={(body) => setAnswer({ kind: "text", body })}
+            onText={(body) => void sendText(body)}
             onBallot={(candidateId) => setBallot({ candidateId })}
             onDuel={(value) => setAnswer({ kind: "duel", value })}
           />

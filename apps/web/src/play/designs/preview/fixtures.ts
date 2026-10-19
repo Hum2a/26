@@ -22,6 +22,15 @@ const choice = {
 };
 
 export const previewQuestions: Record<CustomPresentationId, PublicQuestion> = {
+  glyph: {
+    ...core,
+    id: "word-lab-preview",
+    presentation: "glyph",
+    kind: "wordle",
+    wordLength: 5,
+    maxGuesses: 6,
+    prompt: "Complete a wordle",
+  },
   "now-playing": {
     ...core,
     ...choice,
@@ -228,6 +237,8 @@ export function previewReveal(
       rankings: [],
     };
   }
+  if (question.kind === "wordle")
+    return { kind: "wordle", answer: "WORDS", solvedCount: 3, responseCount: 7 };
   if (question.kind === "typed") {
     return {
       kind: "typed",

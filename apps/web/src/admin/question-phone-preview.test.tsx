@@ -46,7 +46,7 @@ it("uses the real guest controls and locks a rehearsal answer only after sending
   mount();
   const circle = await screen.findByRole("button", { name: "Test circle" });
   expect(readQuestionPreview).toHaveBeenCalledWith("fixture-pack", "fixture");
-  expect(screen.getByText(/no answers are sent/)).toBeTruthy();
+  expect(screen.getByText(/no live game is connected/)).toBeTruthy();
   expect(screen.getByText("Pick one, then send your answer")).toBeTruthy();
   const send = screen.getByRole("button", { name: "Send answer" }) as HTMLButtonElement;
   expect(send.disabled).toBe(true);

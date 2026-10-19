@@ -32,6 +32,10 @@ export function adminQuestion(
     );
     add("Modifiers", question.modifiers?.join(", ") || "None");
     add("Suppress speed bonus", question.suppressSpeedBonus ? "Yes" : "No");
+  } else if (question.kind === "wordle") {
+    add("Guesses", question.maxGuesses);
+    add("Letters", question.wordLength);
+    add("Scoring", "Full points for solving within the time; no speed bonus");
   } else if (question.kind === "typed")
     add("Maximum length", `${question.maxLength} characters`);
   else if (
@@ -146,6 +150,8 @@ function answerFor(
       ? recorded([label(question.correctOption.known)])
       : missing;
   }
+  if (question.kind === "wordle")
+    return isKnown(question.answer) ? recorded([question.answer.known]) : missing;
   if (question.kind === "typed")
     return isKnown(question.accepted)
       ? recorded([...question.accepted.known])

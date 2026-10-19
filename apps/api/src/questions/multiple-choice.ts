@@ -19,6 +19,7 @@ import {
   type RankQuestion,
   type SliderQuestion,
   type TypedQuestion,
+  type WordleQuestion,
   type VoteQuestion,
 } from "./definition.ts";
 import {
@@ -34,6 +35,13 @@ import {
   typedReveal,
   typedScores,
 } from "./typed.ts";
+import {
+  publicWordleQuestion,
+  readWordleBoard,
+  wordleReveal,
+  wordleScores,
+  wordleProgress,
+} from "./wordle.ts";
 import { attachAudienceFields, publicQuestionCore } from "./project.ts";
 import { questionFor, requirePlayable } from "./registry.ts";
 import {
@@ -298,6 +306,10 @@ export function recordRevealScores(
   }
   if (question.kind === "duel" || question.kind === "finale") {
     scoreDuelQuestion(sql, question, now);
+    return;
+  }
+  if (question.kind === "wordle") {
+    wordleScores(sql, question, now);
     return;
   }
   if (question.kind === "typed") {
@@ -577,12 +589,12 @@ function projectDuel(
   return parsePlay(view, question, audience, scored);
 }
 
-function projectSpecial(
+export function projectSpecial(
   sql: SqlStorage,
   room: RoomClock,
   audience: "guest" | "stage" | "control",
   selfPlayerId: string | undefined,
-  question: SliderQuestion | RankQuestion | TypedQuestion,
+  question: SliderQuestion | RankQuestion | TypedQuestion | WordleQuestion,
   scored: boolean,
 ): PlaySnapshot | null {
   const totals = standings(sql);
@@ -605,16 +617,26 @@ function projectSpecial(
     question.kind === "typed"
       ? readTypedAnswer(sql, selfPlayerId ?? "", question.id)
       : undefined;
+  const board =
+    question.kind === "wordle" && audience === "guest" && selfPlayerId
+      ? readWordleBoard(sql, selfPlayerId, question.id)
+      : undefined;
   const view = {
     question:
-      question.kind === "slider"
-        ? publicSliderQuestion(question, index, room.questionCount)
-        : question.kind === "typed"
-          ? publicTypedQuestion(question, index, room.questionCount)
-          : publicRankQuestion(question, index, room.questionCount),
-    submissionCount: responseCount(sql, question.id),
-    selfAnswer:
-      question.kind === "slider" && estimate !== undefined
+      question.kind === "wordle"
+        ? publicWordleQuestion(question, index, room.questionCount)
+        : question.kind === "slider"
+          ? publicSliderQuestion(question, index, room.questionCount)
+          : question.kind === "typed"
+            ? publicTypedQuestion(question, index, room.questionCount)
+            : publicRankQuestion(question, index, room.questionCount),
+    submissionCount:
+      question.kind === "wordle"
+        ? wordleProgress(sql, question.id).finishedCount
+        : responseCount(sql, question.id),
+    selfAnswer: board
+      ? board
+      : question.kind === "slider" && estimate !== undefined
         ? { kind: "slider" as const, value: estimate }
         : question.kind === "rank" && ranking
           ? { kind: "rank" as const, placements: ranking }
@@ -625,11 +647,13 @@ function projectSpecial(
     ballot: null,
     duel: null,
     reveal:
-      question.kind === "slider"
-        ? sliderReveal(sql, question, scored, showNames && scored)
-        : question.kind === "typed"
-          ? typedReveal(sql, question, scored, showNames && scored)
-          : rankReveal(sql, question, scored, showNames && scored),
+      question.kind === "wordle"
+        ? wordleReveal(sql, question, scored)
+        : question.kind === "slider"
+          ? sliderReveal(sql, question, scored, showNames && scored)
+          : question.kind === "typed"
+            ? typedReveal(sql, question, scored, showNames && scored)
+            : rankReveal(sql, question, scored, showNames && scored),
     selfAward: selfAward(sql, question.id, audience, scored, selfPlayerId),
     selfStanding:
       audience === "guest" && showStanding && selfRow
@@ -643,22 +667,27 @@ function projectSpecial(
             nickname: row.nickname,
             points: row.points,
           })),
-    liveSample: responseNames(
-      sql,
-      question.id,
-      question.attribution,
-      room.phase,
-      liveSampleSize,
-    ),
+    liveSample:
+      question.kind === "wordle"
+        ? null
+        : responseNames(
+            sql,
+            question.id,
+            question.attribution,
+            room.phase,
+            liveSampleSize,
+          ),
     attributions: null,
     ...(audience === "control"
       ? {
           hostResponses:
-            question.kind === "slider"
-              ? sliderHostResponses(sql, question)
-              : question.kind === "typed"
-                ? typedHostResponses(sql, question)
-                : rankHostResponses(sql, question),
+            question.kind === "wordle"
+              ? []
+              : question.kind === "slider"
+                ? sliderHostResponses(sql, question)
+                : question.kind === "typed"
+                  ? typedHostResponses(sql, question)
+                  : rankHostResponses(sql, question),
         }
       : {}),
   };

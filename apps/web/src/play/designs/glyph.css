@@ -1,0 +1,150 @@
+.glyph {
+  gap: clamp(0.3rem, 1.3svh, 0.8rem);
+  align-content: start;
+}
+.glyph .phone-prompt {
+  font-size: clamp(1.5rem, 5.8vw, 2.3rem);
+}
+.glyph-status {
+  min-height: 1.5em;
+  font-weight: 700;
+}
+.glyph-board {
+  display: grid;
+  gap: 0.3rem;
+  width: min(100%, 17rem);
+  margin-inline: auto;
+}
+.glyph-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.3rem;
+}
+.glyph-cell {
+  aspect-ratio: 1.18;
+  display: grid;
+  place-content: center;
+  position: relative;
+  border: 2px solid var(--line);
+  border-radius: 0.35rem;
+  font-size: clamp(1.3rem, 5vw, 1.75rem);
+  font-weight: 900;
+  background: var(--surface);
+  color: var(--surface-foreground);
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease;
+}
+.glyph-cell small {
+  position: absolute;
+  bottom: 0;
+  right: 0.2rem;
+  font-size: 0.65rem;
+}
+.glyph [data-mark="correct"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+}
+.glyph [data-mark="present"] {
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+  border-color: var(--highlight);
+}
+.glyph [data-mark="absent"] {
+  background: var(--surface);
+  color: var(--muted);
+  border-style: dashed;
+}
+.glyph-legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.65rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.glyph-keyboard {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: auto;
+}
+.glyph-key-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.2rem;
+}
+.glyph-key.glyph-key {
+  min-width: 0;
+  width: 9.6%;
+  min-height: 3rem;
+  padding: 0.2rem 0;
+  font-size: clamp(0.8rem, 3.4vw, 1rem);
+  border-radius: 0.3rem;
+  gap: 0;
+  position: relative;
+}
+.glyph-key small {
+  position: absolute;
+  bottom: 0.1rem;
+  right: 0.2rem;
+  font-size: 0.55rem;
+}
+.glyph-actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+.glyph-actions button {
+  padding-inline: 0.5rem;
+}
+.glyph-answer {
+  text-align: center;
+  font-size: 1.3rem;
+}
+.glyph-stage {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: clamp(0.75rem, 2vh, 1.5rem);
+  text-align: center;
+  min-height: 60svh;
+}
+.glyph-stage-word {
+  display: flex;
+  justify-content: center;
+  gap: 1.2vw;
+}
+.glyph-stage-word span {
+  display: grid;
+  place-items: center;
+  width: clamp(3rem, 10vw, 10rem);
+  aspect-ratio: 1;
+  border: 3px solid var(--accent);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  font-size: clamp(2rem, 7vw, 7rem);
+  line-height: 1;
+  font-weight: 900;
+}
+.glyph-stage-instruction {
+  font-size: clamp(1.25rem, 2.8vw, 3rem);
+}
+@media (max-height: 720px) {
+  .glyph-board {
+    width: min(100%, 13rem);
+  }
+  .glyph {
+    gap: 0.25rem;
+  }
+  .glyph-key.glyph-key {
+    min-height: 2.75rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glyph-cell {
+    transition-duration: 0.15s;
+  }
+}

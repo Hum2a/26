@@ -33,6 +33,9 @@ export function questionPreview(
         ...(q.outcome.kind !== "correct" ? { outcome: q.outcome.kind } : {}),
       };
       break;
+    case "wordle":
+      fields = { kind: q.kind, wordLength: q.wordLength, maxGuesses: q.maxGuesses };
+      break;
     case "typed":
       fields = { kind: q.kind, maxLength: q.maxLength };
       break;
