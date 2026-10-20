@@ -1,3 +1,4 @@
+import { enterKart, tickKart, kartScores, projectKart } from "./kart.ts";
 import { playSnapshotSchema, type PlaySnapshot } from "@26/shared";
 import {
   submissionGate,
@@ -79,8 +80,11 @@ import {
   ballotPlayFields,
   freezeGuess,
   freezeVote,
+  nextBallotPhase,
   scoreBallotQuestion,
 } from "./vote.ts";
+
+import { sameAnswerSet } from "../../../../packages/shared/src/party-scoring.ts";
 
 const scoredPhases: readonly RoomPhase[] = ["reveal", "scores", "final", "podium"];
 
@@ -133,6 +137,15 @@ export function pointsFor(
   troll?: { suppressSpeed: boolean; modifiers: readonly string[] },
   settlement: ChoiceSettlement = settleChoice(question, []),
 ): { points: number; detail: string } {
+  if (question.outcome.kind === "multiple") {
+    const correct = Boolean(
+      answer && sameAnswerSet(answer.optionId.split(","), question.outcome.optionIds),
+    );
+    return {
+      points: correct ? question.points : 0,
+      detail: correct ? "correct-set" : answer ? "wrong-set" : "missing",
+    };
+  }
   if (!answer || !choiceWins(settlement, answer.optionId)) {
     return applyScoreModifiers(
       0,
@@ -177,6 +190,7 @@ export function createGameStore(sql: SqlStorage): GameStore {
       applyQuestionClock(createSqlStore(sql));
       const current = createSqlStore(sql).readRoom();
       const question = questionFor(current);
+      if (question?.kind === "kart") enterKart(sql, createSqlStore(sql), question, now);
       if (
         current.questionCount > 0 &&
         question?.kind === "vote" &&
@@ -202,6 +216,12 @@ export function createGameStore(sql: SqlStorage): GameStore {
         recordRevealScores(sql, current, now);
       }
     },
+    nextPhaseOverride(room) {
+      const question = questionFor(room);
+      return question?.kind === "vote"
+        ? nextBallotPhase(sql, question, room)
+        : undefined;
+    },
     nextQuestionIndex(room) {
       if (room.questionCount <= 0) {
         return room.questionIndex + 1;
@@ -209,6 +229,11 @@ export function createGameStore(sql: SqlStorage): GameStore {
       return nextDemoIndex(sql, room);
     },
     onScheduledJob(job, now) {
+      const question = questionFor(store.readRoom());
+      if (job.payload === "kart-tick" && question?.kind === "kart") {
+        tickKart(sql, createGameStore(sql), question, job, now);
+        return;
+      }
       completeScheduledTroll(sql, job, now);
     },
     onBackgroundJob(_job, now) {
@@ -241,6 +266,7 @@ export function acceptChoice(
   if (
     !question ||
     question.kind !== "choice" ||
+    question.outcome.kind === "multiple" ||
     !question.options.some((option) => option.id === optionId)
   ) {
     return { ok: false, reason: "option" };
@@ -290,6 +316,10 @@ export function recordRevealScores(
 ): void {
   const question = questionFor(room);
   if (!question) {
+    return;
+  }
+  if (question.kind === "kart") {
+    kartScores(sql, createSqlStore(sql), question, now);
     return;
   }
   if (question.kind === "slider") {
@@ -421,6 +451,42 @@ export function projectPlay(
     return null;
   }
   const scored = scoredPhases.includes(room.phase);
+  if (question.kind === "kart") {
+    const view = projectKart(
+      sql,
+      question,
+      room,
+      audience === "guest" ? selfPlayerId : undefined,
+    );
+    const selfRow =
+      audience === "guest" && selfPlayerId
+        ? standings(sql).find((d) => d.playerId === selfPlayerId)
+        : undefined;
+    return parsePlay(
+      {
+        ...view,
+        selfStanding:
+          scored && selfRow
+            ? {
+                place: selfRow.place,
+                points: selfRow.points,
+                players: standings(sql).length,
+              }
+            : null,
+        standings:
+          audience !== "guest" && scored
+            ? standings(sql).map(({ place, nickname, points }) => ({
+                place,
+                nickname,
+                points,
+              }))
+            : null,
+      },
+      question,
+      audience,
+      scored,
+    );
+  }
   if (question.kind === "vote" || question.kind === "guess") {
     return projectBallot(sql, room, audience, selfPlayerId, question, scored);
   }
@@ -468,7 +534,11 @@ export function projectPlay(
       suppressSpeedBonus: question.suppressSpeedBonus === true,
     },
     submissionCount: countRow?.total ?? 0,
-    selfAnswer: self ? { kind: "choice" as const, optionId: self.option_id } : null,
+    selfAnswer: self
+      ? question.outcome.kind === "multiple"
+        ? { kind: "multiple" as const, optionIds: self.option_id.split(",") }
+        : { kind: "choice" as const, optionId: self.option_id }
+      : null,
     selfBallot: null,
     ballot: null,
     duel: null,
@@ -489,7 +559,19 @@ export function projectPlay(
     liveSample: liveNames(sql, question, room),
     attributions: publicAttributions(sql, question, room),
     ...(audience === "control"
-      ? { hostAnswers: hostAnswerRows(sql, question.id) }
+      ? question.outcome.kind === "multiple"
+        ? {
+            hostResponses: hostAnswerRows(sql, question.id).map((row) => ({
+              playerId: row.playerId,
+              nickname: row.nickname,
+              summary: row.optionId
+                .split(",")
+                .map((id) => question.options.find((o) => o.id === id)?.label ?? id)
+                .join(", ")
+                .slice(0, 200),
+            })),
+          }
+        : { hostAnswers: hostAnswerRows(sql, question.id) }
       : {}),
   };
   return parsePlay(view, question, audience, scored);
@@ -497,6 +579,13 @@ export function projectPlay(
 
 /** An ordinary question keeps its one-field reveal. Polls and thresholds add the room's split. */
 function choiceReveal(sql: SqlStorage, question: ChoiceQuestion) {
+  if (question.outcome.kind === "multiple")
+    return {
+      kind: "choice" as const,
+      correctOptionId: null,
+      outcome: "multiple" as const,
+      correctOptionIds: [...question.outcome.optionIds],
+    };
   if (question.outcome.kind === "correct") {
     return { kind: "choice" as const, correctOptionId: question.correctOptionId };
   }
@@ -758,7 +847,11 @@ function publicAttributions(
   return question.options.map((option) => ({
     optionId: option.id,
     nicknames: rows
-      .filter((row) => row.option_id === option.id)
+      .filter((row) =>
+        question.outcome.kind === "multiple"
+          ? row.option_id.split(",").includes(option.id)
+          : row.option_id === option.id,
+      )
       .map((row) => row.nickname),
   }));
 }

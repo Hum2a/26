@@ -6,7 +6,7 @@ export const rankDrivingSins = rankQuestion({
   prompt:
     "Rank these UK driving offenses from ‘mildly annoying’ to ‘immediate revocation of human rights’.",
   instructions:
-    "Order the offences from least to most sinful. This draft has no agreed target order yet.",
+    "Order the offences from least to most sinful. Match the room’s consensus to score.",
   items: [
     { id: "middle-lane", label: "Sitting in the middle lane of the M25 at 58 mph" },
     { id: "indicating", label: "Not indicating at a multi-lane roundabout" },
@@ -22,28 +22,11 @@ export const rankDrivingSins = rankQuestion({
     { id: "third", label: "Third" },
     { id: "most", label: "Most sinful" },
   ],
-  truth: {
-    missing: {
-      code: "truth",
-      name: "ranking-target",
-      detail:
-        "Confirm Humza's target order, or define how a room-consensus target is produced and scored. No ranking was supplied.",
-    },
-  },
-  requirements: [
-    {
-      code: "truth",
-      name: "consensus-ranking",
-      detail:
-        "Resolve fixed order matching versus room consensus; consensus aggregation and tie rules are not implemented by fixed-target ranking.",
-    },
-    {
-      code: "items",
-      name: "drag-ordering",
-      detail:
-        "The requested ordered-list drag-and-drop control; existing ranking uses accessible tier assignment rather than this specific interaction.",
-    },
-  ],
+  scoring: "consensus",
+  input: "ordered",
+  truth: { known: [] },
+  explanation:
+    "The room’s order comes from each item’s mean position. Tied mean positions stay tied. Score up to 80 for agreeing with the room’s ordered pairs.",
   notes:
-    "Subjective comic severity, not a statement about legal penalties or loss of rights. Preserves supplied order as an item list only, never as the answer. No target, consensus rule or drag-list behaviour is invented. See docs/content/party-concepts.md.",
+    "Room-consensus interpretation, not a personal Humza ranking. Mean submitted positions create the frozen target at reveal; ties do not invent an order. Existing proportional pair-agreement score. The driving lines are comic opinions, not statements of legal penalties.",
 });

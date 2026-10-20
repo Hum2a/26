@@ -1,3 +1,5 @@
+import { GuestKart } from "../kart/GuestKart";
+import type { KartInput } from "@26/shared";
 import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
 import { QuestionOptionImage } from "./question-option-image";
 import { OptionText } from "../rounds/OptionText";
@@ -7,6 +9,7 @@ import { Button } from "../ui/primitives";
 import { AnswerNames } from "./attributions";
 import { GuestBallot } from "./guest-ballot";
 import { GuestDuel } from "./guest-duel";
+import { GuestMultiple } from "./guest-multiple";
 import { GuestRank } from "./guest-rank";
 import { GuestSlider } from "./guest-slider";
 import { Glyph } from "./designs/glyph";
@@ -27,8 +30,12 @@ export function GuestPlay({
   onDraft,
   onBallot,
   onDuel,
+  onKartInput,
+  connected,
 }: {
   snapshot: LobbySnapshot;
+  onKartInput?: (input: KartInput) => void;
+  connected?: boolean;
   selectedId?: string;
   pending: boolean;
   onSelect: (optionId: string) => void;
@@ -45,6 +52,12 @@ export function GuestPlay({
   if (!play) {
     return null;
   }
+  if (play.question.kind === "kart")
+    return (
+      <QuestionExperience snapshot={snapshot} pending={false}>
+        <GuestKart snapshot={snapshot} connected={connected} onInput={onKartInput} />
+      </QuestionExperience>
+    );
   const open =
     snapshot.phase === "collect" &&
     !snapshot.paused &&
@@ -131,7 +144,11 @@ export function GuestPlay({
             }
             pending={pending}
             onSubmit={onText}
-            label="Your answer"
+            label={
+              play.question.scoring === "commonness"
+                ? "Your made-up password"
+                : "Your answer"
+            }
             action="Send answer"
             maxLength={play.question.maxLength}
           />
@@ -172,7 +189,16 @@ export function GuestPlay({
             onPredict={onBallot}
           />
         ) : null}
-        {play.question.kind === "choice" ? (
+        {play.question.kind === "choice" && play.question.outcome === "multiple" ? (
+          <GuestMultiple
+            key={play.question.id}
+            play={play}
+            open={open}
+            pending={pending}
+            onSubmit={onText}
+          />
+        ) : null}
+        {play.question.kind === "choice" && play.question.outcome !== "multiple" ? (
           <div
             className="question-choice-grid"
             data-count={play.question.options.length}
@@ -215,7 +241,9 @@ export function GuestPlay({
           </div>
         ) : null}
         <AnswerNames play={play} />
-        {play.question.kind === "choice" && (open || pending || play.selfAnswer) ? (
+        {play.question.kind === "choice" &&
+        play.question.outcome !== "multiple" &&
+        (open || pending || play.selfAnswer) ? (
           <SubmitButton
             className={dodge ? "troll-dodge" : ""}
             label="Send answer"

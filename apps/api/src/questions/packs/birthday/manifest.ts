@@ -1,3 +1,16 @@
+import { tribunalReddit } from "./tribunal-reddit.ts";
+import { councilBroadwaterFarm } from "./council-broadwater-farm.ts";
+import { councilRedoubtNewBabylon } from "./council-redoubt-new-babylon.ts";
+import { councilFerrierSector } from "./council-ferrier-sector.ts";
+import { councilThamesmeadSouth } from "./council-thamesmead-south.ts";
+import { councilBlackbirdLeys } from "./council-blackbird-leys.ts";
+import { apologyVideoAuction } from "./apology-video-auction.ts";
+import { nextdoorParanoia } from "./nextdoor-paranoia.ts";
+import { groupChatFigurine } from "./group-chat-figurine.ts";
+import { defendIndefensible } from "./defend-indefensible.ts";
+import { cursedSearchHistory } from "./cursed-search-history.ts";
+import { propertyPriceRoulette } from "./property-price-roulette.ts";
+import { kartSprint } from "./kart-sprint.ts";
 import type { QuestionPack } from "../../definition.ts";
 import { carName } from "./car-name.ts";
 import { favouriteGenre } from "./favourite-genre.ts";
@@ -64,6 +77,20 @@ export const birthdayPack: QuestionPack = {
   illustrative: false,
   order: [],
   catalogue: [
+    tribunalReddit,
+    councilBroadwaterFarm,
+    councilRedoubtNewBabylon,
+    councilFerrierSector,
+    councilThamesmeadSouth,
+    councilBlackbirdLeys,
+    apologyVideoAuction,
+    nextdoorParanoia,
+    groupChatFigurine,
+    defendIndefensible,
+    cursedSearchHistory,
+    propertyPriceRoulette,
+
+    kartSprint,
     favouriteGenre,
     leviticus187,
     carName,

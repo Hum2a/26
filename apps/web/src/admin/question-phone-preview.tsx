@@ -49,7 +49,13 @@ export function QuestionPhonePreview() {
       key={`${version}/${questionId}/${params.get("phase")}/${params.get("take")}`}
       version={version}
       question={data.question}
-      phase={params.get("phase") === "prompt" ? "prompt" : "collect"}
+      phase={
+        params.get("phase") === "prompt"
+          ? "prompt"
+          : params.get("phase") === "vote" && data.question.kind === "vote"
+            ? "vote"
+            : "collect"
+      }
       limitation={data.limitation}
       interactive={data.interactive}
     />
@@ -65,17 +71,22 @@ function PhoneRehearsal({
 }: {
   version: string;
   question: PlaySnapshot["question"];
-  phase: "prompt" | "collect";
+  phase: "prompt" | "collect" | "vote";
   limitation: string | null;
   interactive: boolean;
 }) {
   const [selectedId, setSelectedId] = useState<string>();
   const [answer, setAnswer] = useState<PlaySnapshot["selfAnswer"]>(null);
   const [ballot, setBallot] = useState<PlaySnapshot["selfBallot"]>(null);
+  const [beat, setBeat] = useState(0);
   const [paused, setPaused] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
   async function sendText(body: string) {
+    if (question.kind === "choice" && question.outcome === "multiple") {
+      setAnswer({ kind: "multiple", optionIds: JSON.parse(body) as string[] });
+      return;
+    }
     if (question.kind !== "wordle") {
       setAnswer({ kind: "text", body });
       return;
@@ -99,19 +110,40 @@ function PhoneRehearsal({
     selfBallot: ballot,
     submissionCount: answer || ballot ? 1 : 0,
     ballot:
-      question.kind === "guess"
+      question.kind === "vote" && phase === "vote"
         ? {
-            total: 3,
-            reason: phase === "collect" ? "open" : "closed",
-            cards: [1, 2, 3].map((value) => ({
-              id: `preview-${value}`,
-              label: `Sample guest ${value}`,
-              own: false,
-              selectable: true,
-              author: null,
-            })),
+            total: question.flow === "tournament" ? 2 : 3,
+            reason: "open",
+            epoch: beat,
+            label:
+              question.flow === "awards"
+                ? ["Most Smooth", "Most Brutal", "Instantly Causes a Scene"][beat % 3]
+                : `Stand-in match ${beat + 1}`,
+            instruction:
+              "Stand-in submissions only. This rehearsal does not settle winners or award points.",
+            cards: [1, 2, 3]
+              .slice(0, question.flow === "tournament" ? 2 : 3)
+              .map((value) => ({
+                id: `preview-${beat}-${value}`,
+                label: `Sample line ${value}`,
+                own: false,
+                selectable: true,
+                author: null,
+              })),
           }
-        : null,
+        : question.kind === "guess"
+          ? {
+              total: 3,
+              reason: phase === "collect" ? "open" : "closed",
+              cards: [1, 2, 3].map((value) => ({
+                id: `preview-${value}`,
+                label: `Sample guest ${value}`,
+                own: false,
+                selectable: true,
+                author: null,
+              })),
+            }
+          : null,
     duel:
       question.kind === "duel" || question.kind === "finale"
         ? {
@@ -180,6 +212,17 @@ function PhoneRehearsal({
             onDuel={(value) => setAnswer({ kind: "duel", value })}
           />
         </PhaseTransition>
+        {phase === "vote" && question.kind === "vote" && question.flow ? (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setBeat((value) => value + 1);
+              setBallot(null);
+            }}
+          >
+            Next rehearsal ballot
+          </Button>
+        ) : null}
         <Button variant="secondary" onClick={() => setPaused((value) => !value)}>
           {paused ? "Resume preview" : "Pause preview"}
         </Button>

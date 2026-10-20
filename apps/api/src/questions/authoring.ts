@@ -4,6 +4,7 @@ import {
   missingRequirements,
   type Answer,
   type AttributionMode,
+  type AuthoredKart,
   type AuthoredChoice,
   type AuthoredDuel,
   type AuthoredFinale,
@@ -158,7 +159,9 @@ export function sliderQuestion(
     step?: number;
     unit?: string;
     initial?: number;
-    truth?: Answer<number>;
+    truth?: Answer<number | null>;
+    scoring?: "under" | "consensus";
+    input?: "number";
     bands?: SliderBand[];
   },
 ): AuthoredSlider {
@@ -174,6 +177,8 @@ export function sliderQuestion(
       initial: input.initial ?? Number.NaN,
       truth: input.truth ?? { missing: missingTruth },
       bands: input.bands ?? [{ within: 0, points }],
+      scoring: input.scoring,
+      input: input.input,
     },
     input.status,
   );
@@ -184,6 +189,7 @@ export function typedQuestion(
   input: SharedInput & {
     accepted?: Answer<readonly string[]>;
     maxLength?: number;
+    scoring?: "commonness";
   },
 ): AuthoredTyped {
   return finish(
@@ -191,6 +197,7 @@ export function typedQuestion(
       ...shared(input, input.points ?? ordinaryDefaults.typedPoints),
       kind: "typed",
       maxLength: input.maxLength ?? ordinaryDefaults.typedMaxLength,
+      scoring: input.scoring,
       accepted: input.accepted ?? { missing: missingAccepted },
     },
     input.status,
@@ -224,6 +231,8 @@ export function wordleQuestion(
 export function rankQuestion(
   input: SharedInput & {
     mode?: "complete" | "partial";
+    scoring?: "consensus";
+    input?: "ordered";
     ties?: "forbidden" | "shared";
     items?: { id: string; label: string }[];
     tiers?: { id: string; label: string }[];
@@ -236,6 +245,8 @@ export function rankQuestion(
       kind: "rank",
       mode: input.mode ?? ordinaryDefaults.rankMode,
       ties: input.ties ?? ordinaryDefaults.rankTies,
+      scoring: input.scoring,
+      input: input.input,
       items: input.items ?? [],
       tiers: input.tiers ?? [],
       truth: input.truth ?? { missing: missingOrder },
@@ -247,6 +258,7 @@ export function rankQuestion(
 export function voteQuestion(
   input: SharedInput & {
     voteMs?: number;
+    flow?: { kind: "tournament" } | { kind: "awards"; labels: readonly string[] };
     candidateMode?: "all" | "shortlist";
     selfVote?: "forbidden" | "allowed";
     award?: "authors" | "voters";
@@ -257,6 +269,7 @@ export function voteQuestion(
       ...shared(input, input.points ?? ordinaryDefaults.votePoints),
       kind: "vote",
       voteMs: input.voteMs ?? ordinaryDefaults.voteMs,
+      flow: input.flow,
       candidateMode: input.candidateMode ?? ordinaryDefaults.voteCandidateMode,
       selfVote: input.selfVote ?? ordinaryDefaults.selfVote,
       votes: 1,
@@ -352,6 +365,21 @@ export function finaleQuestion(
   );
 }
 
+export function kartQuestion(input: SharedInput): AuthoredKart {
+  return finish(
+    {
+      ...shared(
+        { ...input, collectMs: 45_000, attribution: "live" },
+        input.points ?? 100,
+      ),
+      kind: "kart",
+      trackId: "party-ring-v1",
+      timeLimitMs: 45_000,
+    },
+    input.status,
+  );
+}
+
 function playableCore(question: AuthoredQuestion, illustrative: boolean) {
   return {
     id: question.id,
@@ -384,6 +412,13 @@ export function toPlayable(
     return undefined;
   }
   const core = playableCore(question, illustrative);
+  if (question.kind === "kart")
+    return {
+      ...core,
+      kind: "kart",
+      trackId: question.trackId,
+      timeLimitMs: question.timeLimitMs,
+    };
   if (question.kind === "choice") {
     if (!isKnown(question.correctOption)) {
       return undefined;
@@ -414,6 +449,8 @@ export function toPlayable(
       initial: question.initial,
       truth: question.truth.known,
       bands: question.bands,
+      scoring: question.scoring,
+      input: question.input,
     };
     return playable;
   }
@@ -436,6 +473,7 @@ export function toPlayable(
       ...core,
       kind: "typed",
       maxLength: question.maxLength,
+      scoring: question.scoring,
       accepted: question.accepted.known,
     };
     return playable;
@@ -448,6 +486,8 @@ export function toPlayable(
       ...core,
       kind: "rank",
       mode: question.mode,
+      scoring: question.scoring,
+      input: question.input,
       ties: question.ties,
       items: question.items,
       tiers: question.tiers,

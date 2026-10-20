@@ -87,6 +87,7 @@ export function setupControls(snapshot: LobbySnapshot = playingFixture) {
     submitDuel: vi.fn(),
     submitTroll: vi.fn(),
     submitDraft: vi.fn(),
+    submitKartInput: vi.fn(),
     submitTrollEscape: vi.fn(),
     submitReaction: vi.fn(),
   });

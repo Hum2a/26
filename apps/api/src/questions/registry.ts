@@ -1,3 +1,4 @@
+import { kartSprint } from "./packs/birthday/kart-sprint.ts";
 import {
   contentUnavailableMessage,
   demoQuestionSetVersion,
@@ -43,6 +44,24 @@ for (const pack of questionPacks) {
     drafts.set(pack.version, pack);
   }
 }
+
+/** Explicit local rehearsal only; never in the admin pack catalogue or a production start path. */
+export const kartRehearsalVersion = "kart-rehearsal-v1";
+const rehearsalKart = toPlayable(kartSprint, true)!;
+released.set(kartRehearsalVersion, {
+  packId: "kart-rehearsal",
+  version: kartRehearsalVersion,
+  illustrative: true,
+  profile: "party",
+  questions: [
+    released.get(demoQuestionSetVersion)!.questions[0]!,
+    {
+      ...rehearsalKart,
+      prompt:
+        "Illustrative rehearsal: one lap, 45 seconds. Your phone drives the kart on the TV.",
+    },
+  ],
+});
 
 export function playableQuestions(pack: QuestionPack): Question[] {
   const byId = new Map(pack.catalogue.map((question) => [question.id, question]));

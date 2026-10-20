@@ -1,0 +1,27 @@
+# Tribunal and chaos concepts
+
+Saved all eight supplied concepts as twelve catalogue entries. They stay out of the birthday running order. Five are ready: the apology tournament and four Council/Dystopia choices. Seven are drafts with explicit facts or mechanics missing. The separate kart sprint adds one ready entry. Together with the earlier fifty completed questions, the birthday catalogue has **56 ready / 7 draft** entries.
+
+| Id                            | State | Mechanic / missing item                                                                                                                                                                                                           |
+| ----------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tribunal-reddit`             | Draft | Choice. Needs the actual Reddit thread, exact title/ending and real top comment. The supplied wedding title is an example, not a sourced post.                                                                                    |
+| `council-broadwater-farm`     | Ready | Choice: real council estate.                                                                                                                                                                                                      |
+| `council-redoubt-new-babylon` | Ready | Choice: invented dystopia from the user's brief, not an attributed fictional franchise.                                                                                                                                           |
+| `council-ferrier-sector`      | Draft | Choice. The council confirms **Ferrier Estate**; that does not authenticate the supplied name **Ferrier Sector**. Keep the wording unresolved.                                                                                    |
+| `council-thamesmead-south`    | Ready | Choice: real housing area, also styled South Thamesmead. No unverified film-location assertion is needed for the answer.                                                                                                          |
+| `council-blackbird-leys`      | Ready | Choice: real Oxford estate.                                                                                                                                                                                                       |
+| `apology-video-auction`       | Ready | Existing blind tournament: 30 seconds to write, 15 seconds per match, no self-votes, 60 points to the winning author. Frozen draw resolves ties/byes; no votes means no prize. The cancellation scenario is explicitly fictional. |
+| `nextdoor-paranoia`           | Draft | Choice. Needs a real post/screenshot and its confirmed mundane explanation. The proposed A-or-B example is not a usable answer key.                                                                                               |
+| `group-chat-figurine`         | Draft | Room majority guess, self-votes allowed. The requested double-points self-vote bonus is not implemented by ordinary majority scoring.                                                                                             |
+| `defend-indefensible`         | Draft | Needs random contestants, a spoken debate beat and spectator voting. All four supplied topics are preserved privately; the mechanic's 45 seconds wins over the 60-Second title.                                                   |
+| `cursed-search-history`       | Draft | Needs server-owned progressive lines, frozen raid randomness, banked-point rules, line timing and durable per-player bail actions. All four supplied example lines are saved.                                                     |
+| `property-price-roulette`     | Draft | Needs dated real listing, image, monthly rent, scale and genuine estate-agent reveal copy. No fictional example is treated as real evidence.                                                                                      |
+
+Unsupported mechanics have disabled, explicitly labelled layout previews. Property has no invented slider range or image. Ordinary ready choices and the apology tournament reuse the real guest renderer and existing voting engine.
+
+Primary references checked 20 October 2026:
+
+- [Haringey Council cabinet report: Broadwater Farm Estate](https://www.minutes.haringey.gov.uk/mgAi.aspx?ID=70587) confirms the exact estate name and council housing context.
+- [Oxford City Council: Blackbird Leys Park](https://www.oxford.gov.uk/directory-record/44/blackbird-leys-park) names the surrounding estate; [Blackbird Leys Parish Council history](https://www.blackbirdleysparishcouncil.gov.uk/copy-of-news) describes its development.
+- [Bexley adopted Thamesmead and Abbey Wood SPD, December 2009](https://www.bexley.gov.uk/sites/default/files/2020-05/Thamesmead-and-Abbey-Wood-SPD-Main-December-2009.pdf) uses “Thamesmead South”. [Peabody's South Thamesmead programme](https://www.thamesmeadnow.org.uk/explore/new-improved-buildings/south-thamesmead/) confirms the current area and estate regeneration.
+- [Royal Greenwich: Kidbrooke regeneration](https://www.royalgreenwich.gov.uk/info/200200/regeneration/204/kidbrooke_regeneration) identifies the demolished **Ferrier Estate**, not “Ferrier Sector”.

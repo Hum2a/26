@@ -67,6 +67,7 @@ type AuthorFields = {
 export type ChoiceOutcome =
   | { kind: "correct" }
   | { kind: "poll" }
+  | { kind: "multiple"; optionIds: readonly string[] }
   | {
       kind: "threshold";
       optionId: string;
@@ -96,12 +97,16 @@ export type SliderBody = {
   unit: string;
   initial: number;
   bands: SliderBand[];
+  scoring?: "under" | "consensus";
+  input?: "number";
 };
 
 export type RankPlacement = { itemId: string; tierId: string };
 
 export type RankBody = {
   kind: "rank";
+  scoring?: "consensus";
+  input?: "ordered";
   mode: "complete" | "partial";
   ties: "forbidden" | "shared";
   items: { id: string; label: string }[];
@@ -110,6 +115,7 @@ export type RankBody = {
 
 export type VoteBody = {
   kind: "vote";
+  flow?: { kind: "tournament" } | { kind: "awards"; labels: readonly string[] };
   voteMs: number;
   candidateMode: "all" | "shortlist";
   selfVote: "forbidden" | "allowed";
@@ -127,6 +133,7 @@ export type WordleQuestion = PlayableFields & WordleBody & { answer: string };
 export type TypedBody = {
   kind: "typed";
   maxLength: number;
+  scoring?: "commonness";
 };
 
 export type GuessBody = {
@@ -170,7 +177,7 @@ export type AuthoredChoice = AuthorFields &
 
 export type AuthoredSlider = AuthorFields &
   SliderBody & {
-    truth: Answer<number>;
+    truth: Answer<number | null>;
   };
 
 export type AuthoredRank = AuthorFields &
@@ -198,7 +205,12 @@ export type AuthoredFinale = AuthorFields &
     contestants: Answer<readonly [string, string]>;
   };
 
+export type KartBody = { kind: "kart"; trackId: "party-ring-v1"; timeLimitMs: 45_000 };
+export type AuthoredKart = AuthorFields & KartBody;
+export type KartQuestion = PlayableFields & KartBody;
+
 export type AuthoredQuestion =
+  | AuthoredKart
   | AuthoredChoice
   | AuthoredSlider
   | AuthoredRank
@@ -223,7 +235,7 @@ export type ChoiceQuestion = PlayableFields &
 
 export type SliderQuestion = PlayableFields &
   SliderBody & {
-    truth: number;
+    truth: number | null;
   };
 
 export type RankQuestion = PlayableFields &
@@ -252,6 +264,7 @@ export type FinaleQuestion = PlayableFields &
 
 /** A question the engine can score. Drafts are not this type. */
 export type Question =
+  | KartQuestion
   | ChoiceQuestion
   | SliderQuestion
   | RankQuestion
@@ -336,7 +349,10 @@ export function missingRequirements(question: AuthoredQuestion): MissingRequirem
   if (question.kind === "typed") {
     if (!isKnown(question.accepted)) {
       add(question.accepted.missing);
-    } else if (question.accepted.known.every((answer) => !answer.trim())) {
+    } else if (
+      question.scoring !== "commonness" &&
+      question.accepted.known.every((answer) => !answer.trim())
+    ) {
       add({
         code: "correct-answer",
         name: "accepted",

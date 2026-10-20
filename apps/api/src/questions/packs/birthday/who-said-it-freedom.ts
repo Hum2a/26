@@ -2,31 +2,25 @@ import { choiceQuestion } from "../../authoring.ts";
 
 export const whoSaidItFreedom = choiceQuestion({
   id: "who-said-it-freedom",
-  title: "Who said it: freedom",
+  title: "Who said it: the ignorant masses",
   presentation: "who-said-it",
-  prompt:
-    "The masses do not want freedom; they want the illusion of safety. They yearn to be ruled by a will stronger than their own.",
+  prompt: "It seems the ignorant masses are doomed to remain as such...",
   instructions: "Who said it? Pick A or B, then send.",
   options: [
-    { id: "a", label: "Masayoshi Shido (Persona 5)" },
-    { id: "b", label: "Ted Kaczynski (The Unabomber Manifesto)" },
+    {
+      id: "a",
+      label: "Masayoshi Shido (Persona 5 Royal)",
+    },
+    {
+      id: "b",
+      label: "Peter Thiel (founder essay)",
+    },
   ],
   correctOption: {
-    missing: {
-      code: "correct-answer",
-      name: "verified-attribution",
-      detail:
-        "A verified source for this exact wording and its speaker; the supplied answer is a proposal only.",
-    },
+    known: "a",
   },
-  requirements: [
-    {
-      code: "truth",
-      name: "quote-source",
-      detail:
-        "A primary source, exact game dialogue reference or clearly authorised parody framing. The supplied quote and attribution are unverified.",
-    },
-  ],
+  explanation:
+    "Shadow Shido, Persona 5 Royal. Apparently the electorate failed his performance review.",
   notes:
-    "Supplied answer: A. Supplied reveal: Persona 5. Unverified proposal: do not present as a genuine quotation or attribute it as fact. Source audit: docs/content/who-said-it-sources.md.",
+    "Verified replacement for an unverified supplied passage. Original game asset e424_002.bmd, MSG_004_0_0, speaker Shadow Shido. First sentence only; game-data mirror, not publisher-hosted. Full source and original-proposal history: docs/content/who-said-it-sources.md.",
 });

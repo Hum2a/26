@@ -24,7 +24,10 @@ export function adminQuestion(
           ? "Not set"
           : String(value),
     });
-  if (question.kind === "choice") {
+  if (question.kind === "kart") {
+    add("Track", question.trackId);
+    add("Race", "One lap, 45-second server cutoff; DNF scores zero. Ties share place.");
+  } else if (question.kind === "choice") {
     add("Outcome", question.outcome.kind);
     add(
       "Speed bonus",
@@ -130,9 +133,15 @@ function answerFor(
     lines: ["No supported answer is recorded yet. See the missing requirements."],
   };
   const recorded = (lines: string[]) => ({ status: "recorded" as const, lines });
+  if (question.kind === "kart")
+    return recorded([
+      "Server-verified lap times. All eight gates in order, one lap, 45 seconds. DNF scores zero; equal times share place.",
+    ]);
   if (question.kind === "choice") {
     const label = (id: string) =>
       question.options.find((option) => option.id === id)?.label ?? id;
+    if (question.outcome.kind === "multiple")
+      return recorded(question.outcome.optionIds.map(label));
     if (question.outcome.kind === "poll")
       return {
         status: "not-applicable",
@@ -152,6 +161,17 @@ function answerFor(
   }
   if (question.kind === "wordle")
     return isKnown(question.answer) ? recorded([question.answer.known]) : missing;
+  if (question.kind === "typed" && question.scoring === "commonness")
+    return recorded([
+      "Match other guests: case and outer spaces ignored; repeated internal spaces collapse. Unique entries score zero. Ties share points; matched groups scale to 100 for the largest group.",
+    ]);
+  if (
+    (question.kind === "slider" || question.kind === "rank") &&
+    question.scoring === "consensus"
+  )
+    return recorded([
+      "The target is the room consensus, settled once from eligible accepted responses at reveal.",
+    ]);
   if (question.kind === "typed")
     return isKnown(question.accepted)
       ? recorded([...question.accepted.known])

@@ -91,6 +91,7 @@ export type GameStore = {
   hasAnswer(playerId: string, phaseGeneration: number): boolean;
   saveAnswer(playerId: string, phaseGeneration: number, at: number): void;
   onEnterPhase?(room: RoomClock, now: number): void;
+  nextPhaseOverride?(room: RoomClock, now: number): RoomPhase | undefined;
   nextQuestionIndex?(room: RoomClock): number | "final";
   onScheduledJob?(job: ScheduledJob, now: number): void;
   onBackgroundJob?(job: ScheduledJob, now: number): void;
@@ -98,6 +99,10 @@ export type GameStore = {
 
 export function isTrollPayload(payload: string): boolean {
   return payload.startsWith("effect:") || payload.startsWith("cue:");
+}
+
+export function isRoundJobPayload(payload: string): boolean {
+  return isTrollPayload(payload) || payload === "kart-tick";
 }
 
 export type RoundPlugin = {
@@ -373,17 +378,29 @@ export function onAlarm(store: GameStore, now: number): void {
   }
 
   for (const job of due) {
-    if (job.jobType !== "gameplay" || !isTrollPayload(job.payload)) {
+    if (job.jobType !== "gameplay" || !isRoundJobPayload(job.payload)) {
       continue;
     }
-    store.onScheduledJob?.(job, now);
+    if (
+      job.payload === "kart-tick" &&
+      (job.phaseGeneration !== room.phaseGeneration ||
+        job.scopeGeneration !== room.scopeGeneration ||
+        job.phase !== room.phase ||
+        room.hold)
+    ) {
+      store.saveJob({ ...job, status: "cancelled", dueAt: null, remainingMs: null });
+      continue;
+    }
     store.saveJob({ ...job, status: "done", dueAt: null, remainingMs: null });
+    store.onScheduledJob?.(job, now);
   }
+
+  if (store.readRoom().phaseGeneration !== room.phaseGeneration) return;
 
   const gameplay = due.find(
     (job) =>
       job.jobType === "gameplay" &&
-      !isTrollPayload(job.payload) &&
+      !isRoundJobPayload(job.payload) &&
       job.phase === room.phase &&
       job.phaseGeneration === room.phaseGeneration &&
       job.scopeGeneration === room.scopeGeneration,
@@ -392,7 +409,7 @@ export function onAlarm(store: GameStore, now: number): void {
   for (const job of due) {
     if (
       job.jobType !== "gameplay" ||
-      isTrollPayload(job.payload) ||
+      isRoundJobPayload(job.payload) ||
       job.jobId === gameplay?.jobId
     ) {
       continue;
@@ -519,6 +536,7 @@ export function publicClock(store: GameStore): {
     .find(
       (item) =>
         item.jobType === "gameplay" &&
+        !isRoundJobPayload(item.payload) &&
         item.status === "pending" &&
         item.phase === room.phase &&
         item.phaseGeneration === room.phaseGeneration,
@@ -538,7 +556,7 @@ function changePhase(
   reason: "deadline" | "advance",
 ): boolean {
   const room = store.readRoom();
-  const following = nextPhase(room);
+  const following = store.nextPhaseOverride?.(room, now) ?? nextPhase(room);
   if (!following || room.phase === "lobby" || room.phase === "podium") {
     return false;
   }
@@ -630,7 +648,7 @@ function scheduleGameplay(store: GameStore, room: RoomClock, now: number): void 
     .some(
       (job) =>
         job.jobType === "gameplay" &&
-        !isTrollPayload(job.payload) &&
+        !isRoundJobPayload(job.payload) &&
         job.phaseGeneration === room.phaseGeneration &&
         job.status === "pending",
     );
@@ -668,7 +686,7 @@ function cancelGameplay(store: GameStore, phaseGeneration: number): void {
     if (
       job.jobType === "gameplay" &&
       job.status === "pending" &&
-      !isTrollPayload(job.payload) &&
+      !isRoundJobPayload(job.payload) &&
       job.phaseGeneration === phaseGeneration
     ) {
       store.saveJob({ ...job, status: "cancelled", dueAt: null, remainingMs: null });

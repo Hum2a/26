@@ -2,31 +2,26 @@ import { choiceQuestion } from "../../authoring.ts";
 
 export const whoSaidItPerformanceReview = choiceQuestion({
   id: "who-said-it-performance-review",
-  title: "Who said it: performance review",
+  title: "Who said it: bend the world",
   presentation: "who-said-it",
   prompt:
-    "Pain is the only teacher. If an employee cries during a performance review, you haven't broken them—you've unlocked their next tier.",
+    "A big secret is that you can bend the world to your will a surprising percentage of the time",
   instructions: "Who said it? Pick A or B, then send.",
   options: [
-    { id: "a", label: "Suguru Kamoshida (Persona 5)" },
-    { id: "b", label: "A London-based FinTech Founder on LinkedIn" },
+    {
+      id: "a",
+      label: "Goro Akechi (Persona 5 Royal)",
+    },
+    {
+      id: "b",
+      label: "Sam Altman (How To Be Successful)",
+    },
   ],
   correctOption: {
-    missing: {
-      code: "correct-answer",
-      name: "verified-attribution",
-      detail:
-        "A verified source for this exact wording and its speaker; the supplied answer is a proposal only.",
-    },
+    known: "b",
   },
-  requirements: [
-    {
-      code: "truth",
-      name: "quote-source",
-      detail:
-        "A primary source, exact game dialogue reference or clearly authorised parody framing. The supplied quote and attribution are unverified.",
-    },
-  ],
+  explanation:
+    "Sam Altman’s How To Be Successful. The world-bending monologue came from a founder’s blog.",
   notes:
-    'Supplied answer: B. Supplied reveal: FinTech "Culture evangelist" post. Unverified proposal: do not present as a genuine quotation or attribute it as fact. Source audit: docs/content/who-said-it-sources.md.',
+    "Verified replacement for an unverified supplied passage. Section 9, “Be willful”. Exact opening clause; excerpt stops before the dash. Original authored blog post. Full source and original-proposal history: docs/content/who-said-it-sources.md.",
 });

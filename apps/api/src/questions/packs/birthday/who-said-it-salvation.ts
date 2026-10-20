@@ -2,31 +2,25 @@ import { choiceQuestion } from "../../authoring.ts";
 
 export const whoSaidItSalvation = choiceQuestion({
   id: "who-said-it-salvation",
-  title: "Who said it: salvation",
+  title: "Who said it: a stepping stone",
   presentation: "who-said-it",
-  prompt:
-    "Why do people cling to life when it only brings pain? True salvation is non-existence.",
+  prompt: "Do not fear. This life is but a stepping stone. Salvation shall be yours...",
   instructions: "Who said it? Pick A or B, then send.",
   options: [
-    { id: "a", label: "Nyx Avatar (Persona 3)" },
-    { id: "b", label: "Varg Vikernes (Burzum / Black metal church burner)" },
+    {
+      id: "a",
+      label: "Takaya (Persona 3 FES)",
+    },
+    {
+      id: "b",
+      label: "A founder writing about career progression",
+    },
   ],
   correctOption: {
-    missing: {
-      code: "correct-answer",
-      name: "verified-attribution",
-      detail:
-        "A verified source for this exact wording and its speaker; the supplied answer is a proposal only.",
-    },
+    known: "a",
   },
-  requirements: [
-    {
-      code: "truth",
-      name: "quote-source",
-      detail:
-        "A primary source, exact game dialogue reference or clearly authorised parody framing. The supplied quote and attribution are unverified.",
-    },
-  ],
+  explanation:
+    "Takaya, Persona 3 FES. This is cult-leader dialogue from the game, not a promotion framework.",
   notes:
-    "Supplied answer: A. Supplied reveal: Persona 3. Unverified proposal: do not present as a genuine quotation or attribute it as fact. Source audit: docs/content/who-said-it-sources.md.",
+    "Verified replacement for an unverified supplied passage. Original game asset E271_001.PM1 @ 0x170, MSG_013, speaker Takaya. Game-data mirror. Full source and original-proposal history: docs/content/who-said-it-sources.md.",
 });

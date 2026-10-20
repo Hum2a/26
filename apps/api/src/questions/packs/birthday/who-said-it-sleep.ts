@@ -2,31 +2,26 @@ import { choiceQuestion } from "../../authoring.ts";
 
 export const whoSaidItSleep = choiceQuestion({
   id: "who-said-it-sleep",
-  title: "Who said it: sleep",
+  title: "Who said it: Day 2",
   presentation: "who-said-it",
   prompt:
-    "Sleep is a biological tax imposed on humanity by weakness. If you are sleeping 8 hours, you are conceding a third of your destiny to competitors.",
+    "Day 2 is stasis. Followed by irrelevance. Followed by excruciating, painful decline. Followed by death.",
   instructions: "Who said it? Pick A or B, then send.",
   options: [
-    { id: "a", label: "Takuto Maruki (Persona 5 Royal)" },
-    { id: "b", label: 'A self-described "Crypto Hedge Fund Patriarch" on X/LinkedIn' },
+    {
+      id: "a",
+      label: "Takuto Maruki (Persona 5 Royal)",
+    },
+    {
+      id: "b",
+      label: "Jeff Bezos (Amazon shareholder letter)",
+    },
   ],
   correctOption: {
-    missing: {
-      code: "correct-answer",
-      name: "verified-attribution",
-      detail:
-        "A verified source for this exact wording and its speaker; the supplied answer is a proposal only.",
-    },
+    known: "b",
   },
-  requirements: [
-    {
-      code: "truth",
-      name: "quote-source",
-      detail:
-        "A primary source, exact game dialogue reference or clearly authorised parody framing. The supplied quote and attribution are unverified.",
-    },
-  ],
+  explanation:
+    "Jeff Bezos, in his 2016 shareholder letter. The final boss was a quarterly business review.",
   notes:
-    "Supplied answer: B. Supplied reveal: Real tech-bro grind post. Unverified proposal: do not present as a genuine quotation or attribute it as fact. Source audit: docs/content/who-said-it-sources.md.",
+    "Verified replacement for an unverified supplied passage. Opening answer to “what does Day 2 look like?”. Original shareholder letter hosted by Amazon; excerpt ends before the next sentence. Full source and original-proposal history: docs/content/who-said-it-sources.md.",
 });

@@ -147,6 +147,20 @@ export function LiveConsole() {
         <p className="admin-connection">Connected to the lobby.</p>
       )}
       <div className="admin-live-actions" aria-label="Live actions">
+        {import.meta.env.DEV && phase === "lobby" ? (
+          <Button
+            variant="secondary"
+            disabled={locked}
+            onClick={() =>
+              void execute(
+                { action: "start-kart-rehearsal" },
+                "Start local kart rehearsal",
+              )
+            }
+          >
+            Start local kart rehearsal
+          </Button>
+        ) : null}
         {phase !== "podium" ? (
           <Button
             disabled={locked}

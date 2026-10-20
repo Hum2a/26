@@ -48,10 +48,23 @@ export function StagePresentation({
           <h1 className="sr-only">26 projector</h1>
           <header className="projector-top">
             <Wordmark />
-            {connected && !lobby && !hidden && clock ? (
+            {connected &&
+            !lobby &&
+            !hidden &&
+            clock &&
+            !(
+              snapshot.play?.question.kind === "kart" && snapshot.phase === "collect"
+            ) ? (
               <StageCountdown
                 {...clock}
-                label={snapshot.paused ? "Paused." : clock.label}
+                label={
+                  snapshot.paused
+                    ? "Paused."
+                    : snapshot.play?.question.kind === "kart" &&
+                        snapshot.phase === "reveal"
+                      ? "The reveal"
+                      : clock.label
+                }
                 compact
               />
             ) : (
@@ -93,7 +106,7 @@ export function StagePresentation({
               <PhaseTransition phase={snapshot.phase} stage>
                 <StagePlay snapshot={snapshot} />
               </PhaseTransition>
-              {collecting && snapshot.play ? (
+              {collecting && snapshot.play && snapshot.play.question.kind !== "kart" ? (
                 <WaitingLine
                   count={snapshot.play.submissionCount}
                   players={snapshot.players.length}

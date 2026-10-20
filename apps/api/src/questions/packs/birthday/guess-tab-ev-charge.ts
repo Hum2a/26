@@ -1,29 +1,24 @@
 import { sliderQuestion } from "../../authoring.ts";
 
-// Numeric-entry/scoring concept only; no reference price or input bounds are invented.
 export const guessTabEvCharge = sliderQuestion({
   id: "guess-tab-ev-charge",
   title: "Guess the Tab: EV full charge",
   prompt:
-    "Cost to charge a 62 kWh battery from 0 to 100% on standard UK domestic peak electricity.",
-  instructions: "Guess the price. Closest without going over wins.",
-  unit: "p",
+    "Charge a 62 kWh battery from empty to full at the Jan–Mar 2026 GB average capped electricity rate. What is the energy cost?",
+  instructions:
+    "Enter a price in pounds. Closest without going over wins. Ties share the win; all over means no winner.",
+  scoring: "under",
+  input: "number",
+  minimum: 0,
+  maximum: 100,
+  step: 0.01,
+  initial: 0,
+  unit: "£",
   truth: {
-    missing: {
-      code: "truth",
-      name: "reference-price",
-      detail:
-        "A dated domestic tariff/unit rate, location and whether 62 kWh is billed energy or battery energy with specified charging losses. Do not include standing charges without agreement.",
-    },
+    known: 17.17,
   },
-  requirements: [
-    {
-      code: "truth",
-      name: "price-is-right-scoring",
-      detail:
-        "Server-authoritative closest-without-going-over ranking, tie handling and the outcome when every guess exceeds the reference. Ordinary exact-value slider scoring is not this mechanic.",
-    },
-  ],
+  explanation:
+    "£17.17. Ofgem’s Jan–Mar 2026 direct-debit average was 27.69p/kWh: 62 × £0.2769 = £17.1678, rounded to the penny. Charging losses and standing charges are excluded.",
   notes:
-    "Guess the Tab concept: all guests submit a numeric guess; closest without going over wins. Needs numeric-entry controls/bounds, real reference facts and the missing room-wide scoring. Slider is an authoring placeholder only, not a working substitute. No live ordering or release. See docs/content/party-concepts.md.",
+    "Frozen reference: Ofgem Jan–Mar 2026 direct-debit GB average including VAT, 27.69p/kWh. Ideal 62 kWh input, no charging losses or standing charge. Defined calculation, not a claim every household pays this rate. See docs/content/party-polish-sources.md.",
 });

@@ -5,16 +5,11 @@ export const christianityBranches = choiceQuestion({
   title: "Branches of Christianity",
   prompt: "Which of these ARE branches of Christianity?",
   instructions: "Select all that apply.",
+  outcome: { kind: "multiple", optionIds: ["muggletonians", "the-jumpers", "ranters"] },
+  explanation:
+    "Muggletonians, the Jumpers and Ranters are the three historical names. All three, and no decoys, earns 100 points.",
   notes:
-    "Confirmed answers: muggletonians, the jumpers, ranters. Humza confirmed changing NOT to ARE and allowing all three selections. Keep this draft until multiple-selection answers and set scoring are supported; never substitute one correct option or a poll.",
-  requirements: [
-    {
-      code: "options",
-      name: "multiple-selection",
-      detail:
-        "a server-authoritative multiple-selection mechanic and answer-set scoring for the three confirmed answers.",
-    },
-  ],
+    "User confirmed ARE and the answer set. Exact-set scoring: all three without any decoy = 100, otherwise 0. Historical labels cover dissenting movements rather than uniform present-day denominations. No speed bonus.",
   options: [
     { id: "unorthodox", label: "unorthodox" },
     { id: "jisraeli", label: "jisraeli" },
@@ -23,12 +18,4 @@ export const christianityBranches = choiceQuestion({
     { id: "the-jumpers", label: "the jumpers" },
     { id: "ranters", label: "ranters" },
   ],
-  correctOption: {
-    missing: {
-      code: "correct-answer",
-      name: "multiple-answer-set",
-      detail:
-        "representation of the confirmed answer set [muggletonians, the-jumpers, ranters]; the single-correct-option field cannot encode it.",
-    },
-  },
 });

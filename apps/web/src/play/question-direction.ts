@@ -36,10 +36,16 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
   if (snapshot.phase !== "collect") return "Watch the stage";
   if (play.duel?.role === "spectator") return "Watch the duel on the stage";
   switch (play.question.kind) {
+    case "kart":
+      return "Hold A to drive — watch your kart on the TV";
     case "choice":
-      return "Pick one, then send your answer";
+      return play.question.outcome === "multiple"
+        ? "Select all that apply, then send"
+        : "Pick one, then send your answer";
     case "slider":
-      return "Slide to your estimate, then send";
+      return play.question.input === "number"
+        ? "Enter your price, then lock it in"
+        : "Slide to your estimate, then send";
     case "rank":
       return "Place the items, then send your ranking";
     case "guess":
@@ -52,6 +58,8 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
     case "wordle":
       return "Type five letters, then check your word";
     case "typed":
-      return "Type your answer, then send";
+      return play.question.scoring === "commonness"
+        ? "Make up a password, then send"
+        : "Type your answer, then send";
   }
 }

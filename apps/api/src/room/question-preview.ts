@@ -27,6 +27,9 @@ export function questionPreview(
   };
   let fields: object;
   switch (q.kind) {
+    case "kart":
+      fields = { kind: q.kind, trackId: q.trackId, timeLimitMs: q.timeLimitMs };
+      break;
     case "choice":
       fields = {
         kind: q.kind,
@@ -45,7 +48,11 @@ export function questionPreview(
       fields = { kind: q.kind, wordLength: q.wordLength, maxGuesses: q.maxGuesses };
       break;
     case "typed":
-      fields = { kind: q.kind, maxLength: q.maxLength };
+      fields = {
+        kind: q.kind,
+        maxLength: q.maxLength,
+        ...(q.scoring ? { scoring: q.scoring } : {}),
+      };
       break;
     case "slider":
       fields = {
@@ -54,6 +61,8 @@ export function questionPreview(
         maximum: q.maximum,
         step: q.step,
         initial: q.initial,
+        ...(q.scoring ? { scoring: q.scoring } : {}),
+        ...(q.input ? { input: q.input } : {}),
         unit: q.unit,
       };
       break;
@@ -61,6 +70,8 @@ export function questionPreview(
       fields = {
         kind: q.kind,
         mode: q.mode,
+        ...(q.scoring ? { scoring: q.scoring } : {}),
+        ...(q.input ? { input: q.input } : {}),
         ties: q.ties,
         items: q.items.map(({ id, label }) => ({ id, label })),
         tiers: q.tiers.map(({ id, label }) => ({ id, label })),
@@ -70,6 +81,7 @@ export function questionPreview(
       fields = {
         kind: q.kind,
         candidateMode: q.candidateMode,
+        ...(q.flow ? { flow: q.flow.kind } : {}),
         selfVote: q.selfVote,
         votes: 1,
         tie: q.tie,
@@ -111,28 +123,36 @@ export function questionPreview(
       break;
   }
   // A known placeholder mechanic is labelled, never presented as the finished game.
-  const unsupported = q.requirements?.some((item) =>
-    [
-      "ranking-mechanic",
-      "wordle-mechanic",
-      "multiple-selection",
-      "price-is-right-scoring",
-      "pairwise-voting",
-      "consensus-ranking",
-      "drag-ordering",
-      "multi-award-voting",
-      "subjective-slider-scoring",
-    ].includes(item.name),
-  );
-  const limitation = unsupported
-    ? "Draft layout only. The requested interaction is not implemented yet; this shows the current placeholder mechanic."
-    : q.requirements?.some((item) => item.name === "quote-source")
-      ? "Draft rehearsal: this quote and its attribution are unverified. These are proposed choices, not confirmed sources."
-      : q.requirements?.some((item) => item.name === "personal-source")
-        ? "Draft rehearsal: these are example options. No genuine Humza response or final decoys have been confirmed."
-        : q.kind === "guess" || q.kind === "duel" || q.kind === "finale"
-          ? "Player names in this preview are stand-ins. No room is connected."
-          : null;
+  const configured: Record<string, boolean> = {
+    "self-vote-bonus": false,
+    "live-debate": false,
+    "push-your-luck": false,
+    "wordle-mechanic": q.kind === "wordle",
+    "ranking-mechanic": q.kind === "typed" && q.scoring === "commonness",
+    "multiple-selection": q.kind === "choice" && q.outcome.kind === "multiple",
+    "price-is-right-scoring": q.kind === "slider" && q.scoring === "under",
+    "pairwise-voting": q.kind === "vote" && q.flow?.kind === "tournament",
+    "consensus-ranking": q.kind === "rank" && q.scoring === "consensus",
+    "drag-ordering": q.kind === "rank" && q.input === "ordered",
+    "multi-award-voting": q.kind === "vote" && q.flow?.kind === "awards",
+    "subjective-slider-scoring": q.kind === "slider" && q.scoring === "consensus",
+  };
+  const unsupported = q.requirements?.some((item) => configured[item.name] === false);
+  const limitation =
+    q.kind === "kart"
+      ? "Controller layout rehearsal only. No race, WebGL simulation, socket or scores run in this preview."
+      : unsupported
+        ? "Draft layout only. The requested interaction is not implemented yet; this shows the current placeholder mechanic."
+        : q.requirements?.some((item) => item.name === "quote-source")
+          ? "Draft rehearsal: this quote and its attribution are unverified. These are proposed choices, not confirmed sources."
+          : q.requirements?.some((item) => item.name === "personal-source")
+            ? "Draft rehearsal: these are example options. No genuine Humza response or final decoys have been confirmed."
+            : q.kind === "vote" ||
+                q.kind === "guess" ||
+                q.kind === "duel" ||
+                q.kind === "finale"
+              ? "Player names and submitted lines in this preview are stand-ins. No room is connected."
+              : null;
   const parsed = adminQuestionPreviewSchema.safeParse({
     question: { ...core, ...fields },
     limitation,

@@ -1,28 +1,24 @@
 import { sliderQuestion } from "../../authoring.ts";
 
-// Numeric-entry/scoring concept only; no reference price or input bounds are invented.
 export const guessTabSohoPint = sliderQuestion({
   id: "guess-tab-soho-pint",
   title: "Guess the Tab: London pint index",
-  prompt: "Price of a standard pint of Camden Hells at a pub in Soho.",
-  instructions: "Guess the price. Closest without going over wins.",
-  unit: "p",
+  prompt:
+    "What does a standard pint of Camden Hells cost at The Roxy, Soho? Menu checked October 2026.",
+  instructions:
+    "Enter a price in pounds. Closest without going over wins. Ties share the win; all over means no winner.",
+  scoring: "under",
+  input: "number",
+  minimum: 0,
+  maximum: 20,
+  step: 0.01,
+  initial: 0,
+  unit: "£",
   truth: {
-    missing: {
-      code: "truth",
-      name: "reference-price",
-      detail:
-        "A named Soho pub, dated menu/till price and standard draught pint; no invented London-wide retail price.",
-    },
+    known: 7.3,
   },
-  requirements: [
-    {
-      code: "truth",
-      name: "price-is-right-scoring",
-      detail:
-        "Server-authoritative closest-without-going-over ranking, tie handling and the outcome when every guess exceeds the reference. Ordinary exact-value slider scoring is not this mechanic.",
-    },
-  ],
+  explanation:
+    "£7.30 for a standard pint on The Roxy’s menu. The cheaper happy-hour deal is a different offer. Your bank balance is not the only thing going flat.",
   notes:
-    "Guess the Tab concept: all guests submit a numeric guess; closest without going over wins. Needs numeric-entry controls/bounds, real reference facts and the missing room-wide scoring. Slider is an authoring placeholder only, not a working substitute. No live ordering or release. See docs/content/party-concepts.md.",
+    "Primary venue menu: https://www.theroxy.co.uk/food-and-drink, checked 20 Oct 2026. Camden Hells Pint £7.30, half £5.10; happy-hour Camden pints £4.80 excluded. Named Soho bar replaces an undefined pub-wide average; freezes this menu reference.",
 });

@@ -2,7 +2,12 @@ import { expect, it } from "vitest";
 import { contentLimits } from "@26/shared";
 import { birthdayPack } from "../src/questions/packs/birthday/manifest.ts";
 import { missingRequirements } from "../src/questions/definition.ts";
-import { toPlayable } from "../src/questions/authoring.ts";
+import {
+  choiceQuestion,
+  typedQuestion,
+  voteQuestion,
+  toPlayable,
+} from "../src/questions/authoring.ts";
 import { pointsFor } from "../src/questions/multiple-choice.ts";
 import { validatePack } from "../src/questions/validate.ts";
 import { questionPreview } from "../src/room/question-preview.ts";
@@ -13,12 +18,11 @@ const ready = [
   "subculture-puddle-stompers",
   "subculture-ranters-muggletonians",
 ];
-const incomplete = [
+const completed = [
   "guess-tab-oyster",
   "guess-tab-car-insurance",
   "guess-tab-soho-pint",
   "guess-tab-ev-charge",
-  "ai-turing-test",
   "heathrow-search-query",
   "rank-driving-sins",
   "dating-exit-excuse",
@@ -31,6 +35,43 @@ const byId = (id: string) => {
   if (!q) throw new Error(`Missing question: ${id}`);
   return q;
 };
+
+it("keeps legacy placeholders disabled until their actual variant is configured", () => {
+  const missing = (name: string) => ({
+    code: "options" as const,
+    name,
+    detail: "The requested variant has not been configured.",
+  });
+  const drafts = [
+    typedQuestion({
+      id: "password-placeholder",
+      title: "Placeholder",
+      prompt: "Enter a made-up word",
+      requirements: [missing("ranking-mechanic")],
+    }),
+    choiceQuestion({
+      id: "multiple-placeholder",
+      title: "Placeholder",
+      prompt: "Choose",
+      options: [
+        { id: "one", label: "One" },
+        { id: "two", label: "Two" },
+      ],
+      requirements: [missing("multiple-selection")],
+    }),
+    voteQuestion({
+      id: "awards-placeholder",
+      title: "Placeholder",
+      prompt: "Write a line",
+      requirements: [missing("multi-award-voting")],
+    }),
+  ];
+  for (const q of drafts) {
+    expect(questionPreview(birthdayPack, q).interactive).toBe(false);
+    expect(questionPreview(birthdayPack, q).limitation).toContain("Draft layout only");
+    expect(toPlayable(q)).toBeUndefined();
+  }
+});
 
 it.each(ready)("%s scores its supplied and sourced Real/Made up answer", (id) => {
   const authored = byId(id);
@@ -52,25 +93,37 @@ it.each(ready)("%s scores its supplied and sourced Real/Made up answer", (id) =>
   expect(questionPreview(birthdayPack, authored).interactive).toBe(true);
 });
 
-it.each(incomplete)("%s retains its real gaps and cannot enter the live game", (id) => {
-  const q = byId(id);
-  expect(q.status).toBe("draft");
-  expect(toPlayable(q)).toBeUndefined();
-  expect(missingRequirements(q).length).toBeGreaterThan(0);
-  const forced = { ...birthdayPack, order: [id] };
-  expect(validatePack(forced).some((i) => i.code === "draft-in-order")).toBe(true);
+it.each(completed)(
+  "%s is playable, has no fabricated gaps and offers the real rehearsal",
+  (id) => {
+    const q = byId(id);
+    expect(q.status).toBe("ready");
+    expect(toPlayable(q)).toBeDefined();
+    expect(missingRequirements(q)).toEqual([]);
+    expect(
+      validatePack({ ...birthdayPack, order: [id] }).filter((i) => i.level === "error"),
+    ).toEqual([]);
+    expect(questionPreview(birthdayPack, q).interactive).toBe(true);
+    expect(questionPreview(birthdayPack, q).question).not.toBeNull();
+  },
+);
+
+it("uses an actual earlier Humza message instead of treating an example as a personal belief", () => {
+  const q = byId("ai-turing-test");
+  expect(q.status).toBe("ready");
+  expect(toPlayable(q)).toBeDefined();
+  expect(q.notes).toContain("earlier message in this planning chat");
+  if (q.kind !== "choice") throw new Error("Choice required");
+  expect(q.correctOption).toEqual({ known: "own-identity" });
+  expect(q.options.find((o) => o.id === "own-identity")?.label).toBe(
+    "Everything can have its own identity.",
+  );
+  expect(q.prompt).not.toContain("2 AM");
   const preview = questionPreview(birthdayPack, q);
-  if (id === "ai-turing-test") {
-    expect(preview.interactive).toBe(true);
-    expect(preview.limitation).toContain("example options");
-    expect(preview.limitation).toContain("No genuine Humza");
-  } else if (id.startsWith("guess-tab-")) {
-    expect(preview.question).toBeNull();
-    expect(preview.limitation).toContain("numeric scale");
-  } else {
-    expect(preview.interactive).toBe(false);
-    expect(preview.limitation).toContain("not implemented");
-  }
+  expect(preview.interactive).toBe(true);
+  expect(preview.limitation).toBeNull();
+  expect(preview.question).not.toHaveProperty("correctOption");
+  expect(preview.question).not.toHaveProperty("correctOptionId");
 });
 
 it("preserves the supplied 30-second scenario, driving list and dial endpoints without invented answers", () => {
@@ -86,7 +139,11 @@ it("preserves the supplied 30-second scenario, driving list and dial endpoints w
     "high-beams",
     "charger",
   ]);
-  expect(rank.truth).toHaveProperty("missing");
+  expect(rank).toMatchObject({
+    scoring: "consensus",
+    input: "ordered",
+    truth: { known: [] },
+  });
   for (const id of [
     "dial-pop-culture",
     "dial-london-geography",
@@ -96,7 +153,7 @@ it("preserves the supplied 30-second scenario, driving list and dial endpoints w
     expect(dial).toMatchObject({ minimum: 0, maximum: 100, step: 1, initial: 50 });
     expect(dial.instructions).toMatch(/^0 = .*100 = /);
     if (dial.kind !== "slider") throw new Error("Slider draft required");
-    expect(dial.truth).toHaveProperty("missing");
+    expect(dial).toMatchObject({ scoring: "consensus", truth: { known: null } });
   }
 });
 
@@ -133,6 +190,27 @@ it("rehearses a catalogue larger than 40 while retaining the 40-question live or
     birthdayPack.catalogue.filter((q) => q.id.startsWith("who-said-it-")).length,
   ).toBe(10);
   expect(validatePack(birthdayPack).filter((i) => i.level === "error")).toEqual([]);
+  expect(
+    birthdayPack.catalogue
+      .filter(
+        (q) =>
+          ![
+            "tribunal-reddit",
+            "council-broadwater-farm",
+            "council-redoubt-new-babylon",
+            "council-ferrier-sector",
+            "council-thamesmead-south",
+            "council-blackbird-leys",
+            "apology-video-auction",
+            "nextdoor-paranoia",
+            "group-chat-figurine",
+            "defend-indefensible",
+            "cursed-search-history",
+            "property-price-roulette",
+          ].includes(q.id),
+      )
+      .every((q) => q.status === "ready" && missingRequirements(q).length === 0),
+  ).toBe(true);
   expect(birthdayPack.order).toEqual([]);
   expect(birthdayPack.release).toBe("draft");
 });

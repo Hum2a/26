@@ -6,6 +6,7 @@ import {
   removedSessionMessage,
   publicVersionNeedsSnapshot,
   type LobbySnapshot,
+  type KartInput,
 } from "@26/shared";
 import {
   noteRtt,
@@ -68,10 +69,11 @@ export function openRoomSocket(options: {
   submitEstimate: (value: number) => string;
   submitRank: (placements: { itemId: string; tierId: string }[]) => string;
   submitText: (body: string) => string;
-  submitBallot: (candidateId: string) => string;
+  submitBallot: (candidateId: string, epoch?: number) => string;
   submitDuel: (value: number) => string;
   submitTroll: (kind: string, targetId: string, mediaId?: string) => string;
   submitDraft: (text: string) => void;
+  submitKartInput: (input: KartInput) => void;
   submitTrollEscape: (effectId: string) => string;
   submitReaction: (targetId: string, reaction: "like" | "dislike") => string;
   close: () => void;
@@ -388,6 +390,18 @@ export function openRoomSocket(options: {
     });
   }
 
+  function submitKartInput(input: KartInput): void {
+    if (socket?.readyState === WebSocket.OPEN && socket.bufferedAmount < 8192)
+      socket.send(
+        JSON.stringify({
+          kind: "command",
+          name: "kart-input",
+          requestId: crypto.randomUUID(),
+          input,
+        }),
+      );
+  }
+
   function submitDraft(text: string): void {
     draftPending = text.slice(0, 80);
     if (draftPending === "") {
@@ -431,12 +445,13 @@ export function openRoomSocket(options: {
     });
   }
 
-  function submitBallot(candidateId: string): string {
+  function submitBallot(candidateId: string, epoch?: number): string {
     return sendCommand({
       kind: "command",
       requestId: crypto.randomUUID(),
       name: "ballot",
       candidateId,
+      ...(epoch === undefined ? {} : { epoch }),
     });
   }
 
@@ -471,6 +486,7 @@ export function openRoomSocket(options: {
     submitDuel,
     submitTroll,
     submitDraft,
+    submitKartInput,
     submitTrollEscape,
     submitReaction,
     close,

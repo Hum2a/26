@@ -1,3 +1,8 @@
+import {
+  kartRehearsalVersion,
+  requirePlayable as requireKartRehearsal,
+} from "../questions/registry.ts";
+import { acceptKartInput } from "../questions/kart.ts";
 import { DurableObject } from "cloudflare:workers";
 import { adminPlayerRows } from "./admin-players.ts";
 import {
@@ -161,6 +166,7 @@ import {
   hostTrollRows,
   trollSnapshot,
 } from "../troll/engine.ts";
+import { acceptMultiple } from "../questions/multiple.ts";
 import { acceptRanking, wrongKindRank } from "../questions/rank.ts";
 import { acceptEstimate, wrongKindEstimate } from "../questions/slider.ts";
 import { acceptWordleGuess } from "../questions/wordle.ts";
@@ -1051,6 +1057,48 @@ export class PartyRoom extends DurableObject<Env> {
     });
   }
 
+  async startKartRehearsal(input: {
+    credentialId: string;
+    secret: string;
+    requestId: string;
+    nowMs: number;
+  }): Promise<PhaseCommandResult> {
+    const allowed = await this.requireControl(
+      input.credentialId,
+      input.secret,
+      input.nowMs,
+    );
+    if (!allowed.ok) return allowed;
+    if (this.env.APP_ENV !== "local")
+      return {
+        ok: false,
+        error: "forbidden",
+        message: "Kart rehearsal is available only in local development.",
+      };
+    return this.phaseCommand(
+      input.requestId,
+      { action: "start-kart-rehearsal" },
+      (sql) => {
+        const pack = requireKartRehearsal(kartRehearsalVersion);
+        sql.exec(
+          "UPDATE room SET question_set_version = ?, scoring_version = ?, opening = 'done'",
+          kartRehearsalVersion,
+          demoScoringVersion,
+        );
+        startRound(
+          createGameStore(sql),
+          input.nowMs,
+          {
+            ...multipleChoicePlugin(),
+            questionCount: pack.questions.length,
+            collectWindows: pack.questions.map((q) => q.collectMs),
+          },
+          crypto.randomUUID(),
+        );
+      },
+    );
+  }
+
   async skipRound(input: {
     credentialId: string;
     secret: string;
@@ -1694,6 +1742,24 @@ export class PartyRoom extends DurableObject<Env> {
       }
       return;
     }
+    if (early?.name === "kart-input") {
+      if (attachment.role !== "guest") return;
+      this.ctx.storage.transactionSync(() => {
+        const sql = this.ctx.storage.sql,
+          store = createSqlStore(sql),
+          q = questionFor(store.readRoom());
+        if (q?.kind === "kart")
+          acceptKartInput(
+            sql,
+            store,
+            attachment.principalId,
+            early.input,
+            q,
+            Date.now(),
+          );
+      });
+      return;
+    }
     const count = this.addCount(attachment.principalId, "messages");
     this.addCount("room", "messages");
     if (count > maxInboundMessages) {
@@ -1745,6 +1811,7 @@ export class PartyRoom extends DurableObject<Env> {
       await this.acceptGuestValue(ws, attachment, command.requestId, {
         name: "ballot",
         candidateId: command.candidateId,
+        ...(command.epoch === undefined ? {} : { epoch: command.epoch }),
       });
       return;
     }
@@ -2385,7 +2452,7 @@ export class PartyRoom extends DurableObject<Env> {
       | { name: "estimate"; value: unknown }
       | { name: "rank"; placements: unknown }
       | { name: "text"; body: unknown }
-      | { name: "ballot"; candidateId: unknown }
+      | { name: "ballot"; candidateId: unknown; epoch?: unknown }
       | { name: "duel"; value: unknown }
       | { name: "troll"; kind: unknown; targetId: unknown; mediaId?: string }
       | { name: "troll-escape"; effectId: unknown },
@@ -3201,7 +3268,7 @@ function acceptRoundCommand(
     | { name: "estimate"; value: unknown }
     | { name: "rank"; placements: unknown }
     | { name: "text"; body: unknown }
-    | { name: "ballot"; candidateId: unknown }
+    | { name: "ballot"; candidateId: unknown; epoch?: unknown }
     | { name: "duel"; value: unknown }
     | { name: "troll"; kind: unknown; targetId: unknown; mediaId?: string }
     | { name: "troll-escape"; effectId: unknown },
@@ -3221,6 +3288,8 @@ function acceptRoundCommand(
     return acceptRanking(sql, store, playerId, command.placements, now, question);
   }
   if (command.name === "text") {
+    if (question?.kind === "choice" && question.outcome.kind === "multiple")
+      return acceptMultiple(sql, store, playerId, command.body, now, question);
     if (question?.kind === "wordle") {
       return acceptWordleGuess(sql, store, playerId, command.body, now, question);
     }
@@ -3258,16 +3327,25 @@ function acceptRoundCommand(
   if (!question || (question.kind !== "vote" && question.kind !== "guess")) {
     return { ok: false, message: wrongKindBallot() };
   }
-  return acceptBallot(sql, store, playerId, command.candidateId, now, question);
+  return acceptBallot(
+    sql,
+    store,
+    playerId,
+    command.candidateId,
+    now,
+    question,
+    command.epoch,
+  );
 }
 
 function readCommand(body: unknown):
+  | { requestId: string; name: "kart-input"; input: unknown }
   | { requestId: string; name: "snapshot" }
   | { requestId: string; name: "answer"; optionId: string }
   | { requestId: string; name: "estimate"; value: unknown }
   | { requestId: string; name: "rank"; placements: unknown }
   | { requestId: string; name: "text"; body: unknown }
-  | { requestId: string; name: "ballot"; candidateId: unknown }
+  | { requestId: string; name: "ballot"; candidateId: unknown; epoch?: unknown }
   | { requestId: string; name: "duel"; value: unknown }
   | { requestId: string; name: "draft"; text: string }
   | {
@@ -3303,6 +3381,8 @@ function readCommand(body: unknown):
   if (typeof record.requestId !== "string" || !validRequestId(record.requestId)) {
     return null;
   }
+  if (record.name === "kart-input")
+    return { requestId: record.requestId, name: "kart-input", input: record.input };
   if (record.name === "snapshot") {
     return { requestId: record.requestId, name: "snapshot" };
   }
@@ -3327,6 +3407,7 @@ function readCommand(body: unknown):
       requestId: record.requestId,
       name: "ballot",
       candidateId: record.candidateId,
+      ...(record.epoch === undefined ? {} : { epoch: record.epoch }),
     };
   }
   if (record.name === "duel") {

@@ -13,6 +13,9 @@ import type { AttributionMode, SliderQuestion } from "./definition.ts";
 import { publicQuestionCore } from "./project.ts";
 import { playableQuestions, questionPacks } from "./registry.ts";
 
+import { estimateAwards } from "../../../../packages/shared/src/party-scoring.ts";
+import { readRoundState, writeRoundState } from "./round-state.ts";
+
 const stepTolerance = 1e-8;
 
 export function assertSliderQuestion(question: SliderQuestion): void {
@@ -21,7 +24,7 @@ export function assertSliderQuestion(question: SliderQuestion): void {
     question.maximum,
     question.step,
     question.initial,
-    question.truth,
+    ...(question.scoring === "consensus" ? [] : [question.truth ?? Number.NaN]),
   ];
   if (numbers.some((value) => !Number.isFinite(value))) {
     throw new Error("A slider needs finite bounds, step, initial value and truth.");
@@ -35,7 +38,11 @@ export function assertSliderQuestion(question: SliderQuestion): void {
   if (!onStep(question, question.maximum) || !onStep(question, question.minimum)) {
     throw new Error("A slider step has to land on both ends of the range.");
   }
-  if (!contains(question, question.initial) || !contains(question, question.truth)) {
+  if (
+    !contains(question, question.initial) ||
+    (question.scoring !== "consensus" &&
+      (question.truth === null || !contains(question, question.truth)))
+  ) {
     throw new Error("A slider initial value and truth have to sit on the scale.");
   }
   for (const band of question.bands) {
@@ -79,6 +86,8 @@ export function pointsForEstimate(
   if (value === undefined) {
     return { points: 0, detail: "missing" };
   }
+  if (question.truth === null || question.scoring)
+    return { points: 0, detail: "requires-room-settlement" };
   const distance = Math.abs(value - question.truth);
   const band = question.bands
     .filter((item) => distance <= item.within + stepTolerance)
@@ -167,11 +176,47 @@ export function sliderScores(
       `SELECT player_id FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
     )
     .toArray();
+  const values = players.map((player) =>
+    readEstimate(sql, player.player_id, question.id),
+  );
+  const submitted = values.filter((v): v is number => v !== undefined);
+  const settled = question.scoring
+    ? estimateAwards({
+        mode: question.scoring,
+        target: question.truth,
+        values: submitted,
+        points: question.points,
+        minimum: question.minimum,
+        maximum: question.maximum,
+      })
+    : null;
+  if (settled && readRoundState(sql, question.id, "estimate") === undefined) {
+    let i = 0;
+    writeRoundState(sql, question.id, "estimate", {
+      target: settled.target,
+      awards: Object.fromEntries(
+        players.map((p, index) => [
+          p.player_id,
+          values[index] === undefined ? 0 : settled.awards[i++],
+        ]),
+      ),
+    });
+  }
+  const frozen = settled
+    ? readRoundState<{ target: number | null; awards: Record<string, number> }>(
+        sql,
+        question.id,
+        "estimate",
+      )!
+    : null;
   for (const player of players) {
-    const scored = pointsForEstimate(
-      question,
-      readEstimate(sql, player.player_id, question.id),
-    );
+    const value = readEstimate(sql, player.player_id, question.id);
+    const scored = frozen
+      ? {
+          points: value === undefined ? 0 : (frozen.awards[player.player_id] ?? 0),
+          detail: question.scoring!,
+        }
+      : pointsForEstimate(question, readEstimate(sql, player.player_id, question.id));
     sql.exec(
       `INSERT OR IGNORE INTO score_ledger (
          question_id, player_id, points, detail, created_at
@@ -198,6 +243,8 @@ export function publicSliderQuestion(
     step: question.step,
     unit: question.unit,
     initial: question.initial,
+    ...(question.scoring ? { scoring: question.scoring } : {}),
+    ...(question.input ? { input: question.input } : {}),
   };
 }
 
@@ -227,7 +274,10 @@ export function sliderReveal(
     .toArray();
   return {
     kind: "slider" as const,
-    truth: question.truth,
+    truth: question.scoring
+      ? (readRoundState<{ target: number | null }>(sql, question.id, "estimate")
+          ?.target ?? null)
+      : question.truth,
     unit: question.unit,
     guesses: rows.flatMap((row) => {
       const parsed = JSON.parse(row.payload) as { value?: unknown };
@@ -330,6 +380,7 @@ export function collectDeadline(
         job.jobType === "gameplay" &&
         job.status === "pending" &&
         job.phase === "collect" &&
+        job.payload !== "kart-tick" &&
         job.phaseGeneration === phaseGeneration,
     )?.dueAt;
   return due === null ? undefined : due;

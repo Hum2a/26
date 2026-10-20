@@ -2,31 +2,26 @@ import { choiceQuestion } from "../../authoring.ts";
 
 export const whoSaidItGriefPipeline = choiceQuestion({
   id: "who-said-it-grief-pipeline",
-  title: "Who said it: grief pipeline",
+  title: "Who said it: extraordinary effort",
   presentation: "who-said-it",
   prompt:
-    "My grandmother passed away at 4:18 AM. By 6:00 AM, I closed an Enterprise contract. Grief is temporary; pipeline momentum is permanent. Here’s what death taught me about sales:",
+    "It's not enough just to do something extraordinary initially. You have to make an extraordinary effort initially.",
   instructions: "Who said it? Pick A or B, then send.",
   options: [
-    { id: "a", label: "Kunikazu Okumura (Persona 5)" },
-    { id: "b", label: "An actual LinkedIn post" },
+    {
+      id: "a",
+      label: "Kunikazu Okumura (Persona 5)",
+    },
+    {
+      id: "b",
+      label: "Paul Graham (Do Things that Don’t Scale)",
+    },
   ],
   correctOption: {
-    missing: {
-      code: "correct-answer",
-      name: "verified-attribution",
-      detail:
-        "A verified source for this exact wording and its speaker; the supplied answer is a proposal only.",
-    },
+    known: "b",
   },
-  requirements: [
-    {
-      code: "truth",
-      name: "quote-source",
-      detail:
-        "A primary source, exact game dialogue reference or clearly authorised parody framing. The supplied quote and attribution are unverified.",
-    },
-  ],
+  explanation:
+    "Paul Graham, Do Things that Don’t Scale. Before recruiting party members, apparently you must recruit users manually.",
   notes:
-    "Supplied answer: B. Supplied reveal: Tragically real r/LinkedInLunatics Hall of Fame post. Unverified proposal: do not present as a genuine quotation or attribute it as fact. Source audit: docs/content/who-said-it-sources.md.",
+    "Verified replacement for an unverified supplied passage. Original founder essay, closing Vector section. Two exact sentences; 2013. Full source and original-proposal history: docs/content/who-said-it-sources.md.",
 });

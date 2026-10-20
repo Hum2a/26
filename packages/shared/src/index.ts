@@ -1,3 +1,5 @@
+import { kartRaceSchema } from "./kart.ts";
+export * from "./kart.ts";
 import { z } from "zod";
 import { wordleBoardSchema } from "./wordle.ts";
 export {
@@ -312,6 +314,14 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
   z
     .object({
       ...publicQuestionCore,
+      kind: z.literal("kart"),
+      trackId: z.literal("party-ring-v1"),
+      timeLimitMs: z.literal(45_000),
+    })
+    .strict(),
+  z
+    .object({
+      ...publicQuestionCore,
       kind: z.literal("wordle"),
       wordLength: z.literal(5),
       maxGuesses: z.literal(6),
@@ -323,7 +333,7 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
       kind: z.literal("choice"),
       options: z.array(publicChoiceSchema).min(2).max(contentLimits.pollOptionMax),
       /** Absent for an ordinary question with one right option. */
-      outcome: z.enum(["poll", "threshold"]).optional(),
+      outcome: z.enum(["poll", "threshold", "multiple"]).optional(),
       speedBonus: z.boolean(),
       modifiers: z.array(z.literal("double")).max(1),
       suppressSpeedBonus: z.boolean(),
@@ -338,6 +348,8 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
       step: z.number().finite().positive(),
       unit: z.string().min(1).max(24),
       initial: z.number().finite(),
+      scoring: z.enum(["under", "consensus"]).optional(),
+      input: z.literal("number").optional(),
     })
     .strict(),
   z
@@ -345,6 +357,7 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
       ...publicQuestionCore,
       kind: z.literal("typed"),
       maxLength: z.number().int().min(1).max(contentLimits.typedMax),
+      scoring: z.literal("commonness").optional(),
     })
     .strict(),
   z
@@ -352,6 +365,8 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
       ...publicQuestionCore,
       kind: z.literal("rank"),
       mode: z.enum(["complete", "partial"]),
+      scoring: z.literal("consensus").optional(),
+      input: z.literal("ordered").optional(),
       ties: z.enum(["forbidden", "shared"]),
       items: z.array(publicChoiceSchema).min(2).max(8),
       tiers: z.array(publicChoiceSchema).min(2).max(8),
@@ -362,6 +377,7 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
       ...publicQuestionCore,
       kind: z.literal("vote"),
       candidateMode: z.enum(["all", "shortlist"]),
+      flow: z.enum(["tournament", "awards"]).optional(),
       selfVote: z.enum(["forbidden", "allowed"]),
       votes: z.literal(1),
       tie: z.literal("shared"),
@@ -439,6 +455,12 @@ export type AdminQuestionPreview = z.infer<typeof adminQuestionPreviewSchema>;
 const selfAnswerSchema = z
   .discriminatedUnion("kind", [
     wordleBoardSchema,
+    z
+      .object({
+        kind: z.literal("multiple"),
+        optionIds: z.array(publicOptionIdSchema).min(1).max(6),
+      })
+      .strict(),
     z
       .object({
         kind: z.literal("choice"),
@@ -538,7 +560,8 @@ const revealSchema = z
         kind: z.literal("choice"),
         /** Null for a poll or a threshold outcome. */
         correctOptionId: publicOptionIdSchema.nullable(),
-        outcome: z.enum(["poll", "threshold"]).optional(),
+        correctOptionIds: z.array(publicOptionIdSchema).max(6).optional(),
+        outcome: z.enum(["poll", "threshold", "multiple"]).optional(),
         tally: z
           .array(
             z
@@ -565,12 +588,25 @@ const revealSchema = z
         correctCount: z.number().int().nonnegative(),
         responseCount: z.number().int().nonnegative(),
         correctNames: z.array(z.string().min(1).max(24)).max(80).nullable(),
+        groups: z
+          .array(
+            z
+              .object({
+                body: z.string().min(1).max(80),
+                count: z.number().int().positive(),
+                rank: z.number().int().positive(),
+                points: z.number().int().nonnegative(),
+              })
+              .strict(),
+          )
+          .max(80)
+          .optional(),
       })
       .strict(),
     z
       .object({
         kind: z.literal("slider"),
-        truth: z.number().finite(),
+        truth: z.number().finite().nullable(),
         unit: z.string().min(1).max(24),
         guesses: z
           .array(
@@ -598,7 +634,7 @@ const revealSchema = z
               })
               .strict(),
           )
-          .min(1)
+          .min(0)
           .max(8),
         rankings: z
           .array(
@@ -617,6 +653,18 @@ const revealSchema = z
       .object({
         kind: z.literal("vote"),
         totalBallots: z.number().int().nonnegative(),
+        awards: z
+          .array(
+            z
+              .object({
+                label: z.string().min(1).max(80),
+                winners: z.array(winnerSchema).max(8),
+                winnerCount: z.number().int().nonnegative(),
+              })
+              .strict(),
+          )
+          .max(3)
+          .optional(),
         featured: z.boolean(),
         winnerCount: z.number().int().nonnegative(),
         winners: z.array(winnerSchema).max(8),
@@ -656,6 +704,7 @@ const revealSchema = z
 export const playSnapshotSchema = z
   .object({
     question: publicQuestionSchema,
+    kart: kartRaceSchema.optional(),
     submissionCount: z.number().int().nonnegative(),
     selfAnswer: selfAnswerSchema,
     selfBallot: z
@@ -667,6 +716,9 @@ export const playSnapshotSchema = z
     ballot: z
       .object({
         total: z.number().int().nonnegative().max(80),
+        epoch: z.number().int().nonnegative().optional(),
+        label: z.string().max(120).optional(),
+        instruction: z.string().max(200).optional(),
         reason: z.enum(["open", "late", "empty", "closed"]),
         cards: z.array(ballotCardSchema).max(80),
       })

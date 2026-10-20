@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("Who said it drafts have honest, usable A/B phone rehearsals", async ({
+test("Who said it sourced rounds have usable private A/B phone rehearsals", async ({
   page,
 }) => {
   test.setTimeout(180_000);
@@ -29,7 +29,7 @@ test("Who said it drafts have honest, usable A/B phone rehearsals", async ({
     await expect(page.getByRole("heading", { name: "Who said it?" })).toBeVisible();
     await expect(
       page.getByText(/quote and its attribution are unverified/),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(page.locator("button.who-said-it-option")).toHaveCount(2);
     const payload = await page.request.get(
       `/api/admin/content/birthday-draft/questions/who-said-it-${slug}/preview`,

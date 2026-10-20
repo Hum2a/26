@@ -327,6 +327,7 @@ it("projects every catalogue mechanic without exposing raw authoring objects or 
     "duel",
     "finale",
     "guess",
+    "kart",
     "rank",
     "slider",
     "typed",
@@ -370,9 +371,10 @@ it("requires administrator access to previews and reports incomplete/placeholder
     {},
     bindings,
   );
-  expect(
-    ((await unsupported.json()) as shared.AdminQuestionPreview).limitation,
-  ).toContain("not implemented");
+  const multi = shared.adminQuestionPreviewSchema.parse(await unsupported.json());
+  expect(multi.interactive).toBe(true);
+  expect(multi.question).toMatchObject({ kind: "choice", outcome: "multiple" });
+  expect(multi.question).not.toHaveProperty("correctOptionIds");
   const incomplete = await app.request(
     `${base}/inflation-freddo/preview`,
     {},

@@ -33,6 +33,14 @@ import {
 import { publicQuestionCore } from "./project.ts";
 import { playableQuestions, questionFor, questionPacks } from "./registry.ts";
 
+import {
+  createPartyVoteFlow,
+  flowCandidateIds,
+  settlePartyVoteFlow,
+  type PartyVoteFlow,
+} from "../../../../packages/shared/src/party-scoring.ts";
+import { readRoundState, writeRoundState } from "./round-state.ts";
+
 export const stageCardCap = 8;
 
 export function cardsForAudience<T>(
@@ -96,6 +104,13 @@ export function applyQuestionClock(store: GameStore): void {
 
 export function assertVoteQuestion(question: VoteQuestion): void {
   assertCollectWindow(question.voteMs);
+  if (
+    question.flow?.kind === "awards" &&
+    (question.flow.labels.length !== 3 ||
+      new Set(question.flow.labels).size !== 3 ||
+      question.flow.labels.some((label) => !label.trim() || label.length > 80))
+  )
+    throw new Error("Award voting needs three distinct named categories.");
   if (question.votes !== 1) {
     throw new Error("This question accepts one vote.");
   }
@@ -314,6 +329,7 @@ export function acceptBallot(
   value: unknown,
   now: number,
   question: VoteQuestion | GuessQuestion,
+  epoch?: unknown,
 ): { ok: true } | { ok: false; message: string } {
   const room = store.readRoom();
   const openPhase = question.kind === "vote" ? "vote" : "collect";
@@ -337,11 +353,21 @@ export function acceptBallot(
   if (!elector) {
     return { ok: false, message: ballotLateJoinMessage };
   }
+  const flow =
+    question.kind === "vote" && question.flow
+      ? readRoundState<PartyVoteFlow>(sql, question.id, "vote-flow")
+      : undefined;
+  if (flow && (epoch !== flow.step || !flowCandidateIds(flow).includes(value)))
+    return {
+      ok: false,
+      message: "That ballot has closed. Vote on the current match or award.",
+    };
+  const ballotKey = flow ? flowBallotKey(question.id, flow.step) : question.id;
   const existing = sql
     .exec(
       `SELECT candidate_id FROM vote_ballot WHERE player_id = ? AND question_id = ?`,
       playerId,
-      question.id,
+      ballotKey,
     )
     .toArray()[0];
   if (existing) {
@@ -366,7 +392,7 @@ export function acceptBallot(
        player_id, question_id, candidate_id, received_at, deadline_at, device_context_id
      ) VALUES (?, ?, ?, ?, ?, (SELECT device_context_id FROM player WHERE player_id = ?))`,
     playerId,
-    question.id,
+    ballotKey,
     value,
     now,
     deadline,
@@ -457,6 +483,22 @@ export function featureCandidate(sql: SqlStorage, candidateId: string): void {
 
 export function freezeVote(sql: SqlStorage, question: VoteQuestion, now: number): void {
   if (frozen(sql, question.id)) {
+    if (question.flow) {
+      const generation = sql
+        .exec<{ phase_generation: number }>("SELECT phase_generation FROM room")
+        .toArray()[0]!.phase_generation;
+      const entered = readRoundState<number>(sql, question.id, "vote-generation");
+      const flow = readRoundState<PartyVoteFlow>(sql, question.id, "vote-flow");
+      if (flow && entered !== generation) {
+        writeRoundState(
+          sql,
+          question.id,
+          "vote-flow",
+          settleCurrentFlow(sql, question, flow),
+        );
+        writeRoundState(sql, question.id, "vote-generation", generation);
+      }
+    }
     return;
   }
   const seed = crypto.randomUUID();
@@ -497,6 +539,33 @@ export function freezeVote(sql: SqlStorage, question: VoteQuestion, now: number)
     );
   });
   freezeElectors(sql, question.id, seed, null, now);
+  if (question.flow) {
+    const ids = shuffleIds(
+      readCandidates(sql, question.id)
+        .filter((c) => c.eligible === 1 && c.included === 1)
+        .map((c) => c.candidate_id),
+      seed,
+      "bracket",
+    );
+    writeRoundState(
+      sql,
+      question.id,
+      "vote-flow",
+      createPartyVoteFlow(
+        question.flow.kind,
+        ids,
+        question.flow.kind === "awards" ? [...question.flow.labels] : [],
+      ),
+    );
+    writeRoundState(
+      sql,
+      question.id,
+      "vote-generation",
+      sql
+        .exec<{ phase_generation: number }>("SELECT phase_generation FROM room")
+        .toArray()[0]!.phase_generation,
+    );
+  }
 }
 
 export function freezeGuess(
@@ -568,6 +637,10 @@ export function scoreBallotQuestion(
   question: VoteQuestion | GuessQuestion,
   now: number,
 ): void {
+  if (question.kind === "vote" && question.flow) {
+    scoreFlow(sql, question, now);
+    return;
+  }
   const candidates = readCandidates(sql, question.id);
   const ballots = readBallots(sql, question.id);
   const truthId = readTruth(sql, question.id);
@@ -624,8 +697,19 @@ export function ballotPlayFields(
   scored: boolean,
 ) {
   const candidates = readCandidates(sql, question.id);
-  const included = candidates.filter((candidate) => candidate.included === 1);
-  const ballots = readBallots(sql, question.id);
+  const flow =
+    question.kind === "vote" && question.flow
+      ? readRoundState<PartyVoteFlow>(sql, question.id, "vote-flow")
+      : undefined;
+  const ids = flow ? flowCandidateIds(flow) : undefined;
+  const included = candidates.filter(
+    (candidate) =>
+      candidate.included === 1 && (!ids || ids.includes(candidate.candidate_id)),
+  );
+  const ballots = readBallots(
+    sql,
+    flow ? flowBallotKey(question.id, flow.step) : question.id,
+  );
   const counts = new Map<string, number>();
   for (const ballot of ballots) {
     const target = candidates.find((item) => item.candidate_id === ballot.candidate_id);
@@ -639,7 +723,10 @@ export function ballotPlayFields(
     }
     counts.set(ballot.candidate_id, (counts.get(ballot.candidate_id) ?? 0) + 1);
   }
-  const order = cardOrder(sql, question.id, selfPlayerId, included);
+  const order =
+    flow?.kind === "tournament"
+      ? (ids ?? []).flatMap((id) => included.filter((c) => c.candidate_id === id))
+      : cardOrder(sql, question.id, selfPlayerId, included);
   const showAuthor = publicAuthor(question.attribution, room.phase, scored);
   const elector = selfPlayerId
     ? sql
@@ -739,6 +826,7 @@ export function ballotPlayFields(
           ...publicQuestionCore(question, index, room.questionCount),
           kind: "vote" as const,
           candidateMode: question.candidateMode,
+          ...(question.flow ? { flow: question.flow.kind } : {}),
           selfVote: question.selfVote,
           votes: 1 as const,
           tie: "shared" as const,
@@ -765,34 +853,51 @@ export function ballotPlayFields(
     selfAnswer: text ? { kind: "text" as const, body: text.body } : null,
     selfBallot: ownBallot ? { candidateId: ownBallot.candidate_id } : null,
     ballot: {
+      ...(flow
+        ? {
+            epoch: flow.step,
+            label:
+              flow.kind === "awards"
+                ? (flow.labels[flow.step] ?? "Results")
+                : `Head-to-head · match ${flow.step + 1}`,
+            instruction:
+              flow.kind === "awards"
+                ? "Vote for this award. No self-votes. Ties share the category win."
+                : "Pick the worse search. No self-votes. Ties use the frozen random draw.",
+          }
+        : {}),
       total: included.length,
       reason,
       cards,
     },
-    reveal: scored
-      ? question.kind === "vote"
-        ? {
-            kind: "vote" as const,
-            totalBallots: ballots.length,
-            featured: featured.length > 0,
-            winnerCount: winners.length,
-            winners: winnerCards,
-            cards: revealCards,
-          }
-        : {
-            kind: "guess" as const,
-            totalBallots: ballots.length,
-            featured: featured.length > 0,
-            winnerCount: winners.length,
-            winners: winnerCards,
-            truthLabel:
-              question.scoring === "named"
-                ? (candidates.find((candidate) => candidate.candidate_id === truthId)
-                    ?.label ?? null)
-                : null,
-            cards: revealCards,
-          }
-      : null,
+    reveal:
+      scored && question.kind === "vote" && flow
+        ? flowReveal(sql, question, flow, showAuthor)
+        : scored
+          ? question.kind === "vote"
+            ? {
+                kind: "vote" as const,
+                totalBallots: ballots.length,
+                featured: featured.length > 0,
+                winnerCount: winners.length,
+                winners: winnerCards,
+                cards: revealCards,
+              }
+            : {
+                kind: "guess" as const,
+                totalBallots: ballots.length,
+                featured: featured.length > 0,
+                winnerCount: winners.length,
+                winners: winnerCards,
+                truthLabel:
+                  question.scoring === "named"
+                    ? (candidates.find(
+                        (candidate) => candidate.candidate_id === truthId,
+                      )?.label ?? null)
+                    : null,
+                cards: revealCards,
+              }
+          : null,
     liveSample: ballotNames(sql, question, room.phase),
     ...(audience === "control"
       ? { hostResponses: hostRows(sql, question, candidates, ballots, counts) }
@@ -1255,4 +1360,107 @@ for (const pack of questionPacks) {
       assertGuessQuestion(question);
     }
   }
+}
+
+function flowBallotKey(id: string, step: number): string {
+  return `${id}:ballot:${step}`;
+}
+
+function settleCurrentFlow(
+  sql: SqlStorage,
+  question: VoteQuestion,
+  flow: PartyVoteFlow,
+): PartyVoteFlow {
+  const eligible = readCandidates(sql, question.id)
+    .filter((c) => c.eligible === 1 && c.included === 1 && !isRevoked(sql, c.owner_id))
+    .map((c) => c.candidate_id);
+  return settlePartyVoteFlow(
+    flow,
+    readBallots(sql, flowBallotKey(question.id, flow.step)).map((b) => b.candidate_id),
+    eligible,
+  );
+}
+
+export function nextBallotPhase(
+  sql: SqlStorage,
+  question: VoteQuestion,
+  room: RoomClock,
+): "vote" | undefined {
+  if (room.phase !== "vote" || !question.flow) return undefined;
+  const flow = readRoundState<PartyVoteFlow>(sql, question.id, "vote-flow");
+  return flow && !settleCurrentFlow(sql, question, flow).finished ? "vote" : undefined;
+}
+
+function scoreFlow(sql: SqlStorage, question: VoteQuestion, now: number): void {
+  const previous = readRoundState<PartyVoteFlow>(sql, question.id, "vote-flow");
+  if (!previous) return;
+  const flow = settleCurrentFlow(sql, question, previous);
+  writeRoundState(sql, question.id, "vote-flow", flow);
+  const candidates = readCandidates(sql, question.id);
+  const awards = flow.kind === "awards" ? flow.results : [{ winners: flow.winners }];
+  const perAward = Math.floor(
+    question.points / (flow.kind === "awards" ? flow.labels.length : 1),
+  );
+  for (const player of activePlayers(sql)) {
+    const wins = awards.filter((result) =>
+      result.winners.some((id) =>
+        candidates.some(
+          (c) => c.candidate_id === id && c.owner_id === player.player_id,
+        ),
+      ),
+    ).length;
+    sql.exec(
+      "INSERT OR IGNORE INTO score_ledger (question_id, player_id, points, detail, created_at) VALUES (?, ?, ?, ?, ?)",
+      question.id,
+      player.player_id,
+      wins * perAward,
+      `${flow.kind}:wins-${wins}`,
+      now,
+    );
+  }
+}
+
+function flowReveal(
+  sql: SqlStorage,
+  question: VoteQuestion,
+  flow: PartyVoteFlow,
+  showAuthor: boolean,
+) {
+  const candidates = readCandidates(sql, question.id);
+  const winnerCard = (id: string) => {
+    const c = candidates.find((c) => c.candidate_id === id);
+    return c ? [{ id, label: c.label }] : [];
+  };
+  const winners = flow.winners.slice(0, stageCardCap).flatMap(winnerCard);
+  return {
+    kind: "vote" as const,
+    totalBallots: flow.results.reduce((sum, r) => sum + r.votes, 0),
+    featured: false,
+    winnerCount: flow.winners.length,
+    winners,
+    ...(flow.kind === "awards"
+      ? {
+          awards: flow.results.map((result) => ({
+            label: result.label,
+            winnerCount: result.winners.length,
+            winners: result.winners.slice(0, stageCardCap).flatMap(winnerCard),
+          })),
+        }
+      : {}),
+    cards: flow.winners.slice(0, stageCardCap).flatMap((id) => {
+      const c = candidates.find((c) => c.candidate_id === id);
+      return c
+        ? [
+            {
+              id,
+              label: c.label,
+              votes: flow.results.reduce((sum, r) => sum + (r.counts[id] ?? 0), 0),
+              winning: true,
+              author: showAuthor ? nicknameOf(sql, c.owner_id) : null,
+              voters: null,
+            },
+          ]
+        : [];
+    }),
+  };
 }

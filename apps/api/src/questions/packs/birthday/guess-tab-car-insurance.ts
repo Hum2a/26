@@ -1,28 +1,24 @@
 import { sliderQuestion } from "../../authoring.ts";
 
-// Numeric-entry/scoring concept only; no reference price or input bounds are invented.
 export const guessTabCarInsurance = sliderQuestion({
   id: "guess-tab-car-insurance",
   title: "Guess the Tab: first car insurance",
-  prompt: "Average annual insurance quote for a 25-year-old on their first UK policy.",
-  instructions: "Guess the price. Closest without going over wins.",
-  unit: "p",
+  prompt:
+    "Newly qualified and aged 25+: what was the median annual car insurance price paid through Go.Compare in June 2026?",
+  instructions:
+    "Enter a price in pounds. Closest without going over wins. Ties share the win; all over means no winner.",
+  scoring: "under",
+  input: "number",
+  minimum: 0,
+  maximum: 5000,
+  step: 0.01,
+  initial: 0,
+  unit: "£",
   truth: {
-    missing: {
-      code: "truth",
-      name: "reference-price",
-      detail:
-        "A defined source/date, vehicle, location, excess, cover level and new-policy cohort. Do not substitute a generic national driver average.",
-    },
+    known: 1002,
   },
-  requirements: [
-    {
-      code: "truth",
-      name: "price-is-right-scoring",
-      detail:
-        "Server-authoritative closest-without-going-over ranking, tie handling and the outcome when every guess exceeds the reference. Ordinary exact-value slider scoring is not this mechanic.",
-    },
-  ],
+  explanation:
+    "£1,002. That is Go.Compare’s median annual premium for newly qualified drivers aged 25+, across cover types. It is a measured cohort, not a quote guaranteed to any one driver.",
   notes:
-    "Guess the Tab concept: all guests submit a numeric guess; closest without going over wins. Needs numeric-entry controls/bounds, real reference facts and the missing room-wide scoring. Slider is an authoring placeholder only, not a working substitute. No live ordering or release. See docs/content/party-concepts.md.",
+    "Material clarification: a precise first-policy average for exactly age 25 was not available. Prompt now names Go.Compare’s actual 25+ newly qualified cohort: full UK licence held <1 year, annual payment, all cover types, sales 1–30 June 2026. Primary /car-insurance/ table and footnote 7, checked 20 Oct 2026.",
 });

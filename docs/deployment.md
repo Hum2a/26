@@ -15,7 +15,7 @@ Pinned content for the current build:
 | ---------------------- | ------------------------------------------------------------------------------------------------- |
 | Compatibility date     | `2026-09-22`                                                                                      |
 | Wrangler migration tag | `v1`, classes `PartyRoom` and `RoomCodeRegistry`                                                  |
-| Room SQLite schema     | `schema_meta` version 13, applied inside the room                                                 |
+| Room SQLite schema     | `schema_meta` version 14, applied inside the room                                                 |
 | Archive schema         | version 2                                                                                         |
 | Question set           | `demo-2026-09-22`                                                                                 |
 | Scoring version        | `unreleased`                                                                                      |

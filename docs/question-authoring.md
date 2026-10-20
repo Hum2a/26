@@ -29,6 +29,7 @@ Helpers live in `apps/api/src/questions/authoring.ts`. Defaults live only in `ap
 | Vote with no right answer               | `choiceQuestion` with `outcome: { kind: "poll" }`           | `choice` |
 | The room's split decides who scores     | `choiceQuestion` with `outcome: { kind: "threshold", ... }` | `choice` |
 | Solve a five-letter word in six guesses | `wordleQuestion`                                            | `wordle` |
+| Drive a one-lap sprint                  | `kartQuestion`                                              | `kart`   |
 | Type a short answer                     | `typedQuestion`                                             | `typed`  |
 | Estimate a number                       | `sliderQuestion`                                            | `slider` |
 | Put items in order                      | `rankQuestion`                                              | `rank`   |
@@ -97,6 +98,22 @@ Windows must be a whole number of milliseconds from 15 to 45 seconds. Points are
 
 The catalogue may hold more than 40 entries; that limit applies to the live running order. An unordered question's isolated phone rehearsal shows `1 / 1`. A question in a running order keeps its position and that order's total.
 
+## Completed party variants
+
+Use the existing helper/mechanic rather than a note that asks for a different interaction:
+
+- Choice exact set: `outcome: { kind: "multiple", optionIds: [...] }`. No separate `correctOption` is needed. Phones select several, then send one set; all correct and no decoys scores the question's points.
+- Typed crowd match: `scoring: "commonness", accepted: { known: [] }`. There is deliberately no fixed password answer. Normalised room-frequency scoring freezes at reveal.
+- Price bid: slider helper with `scoring: "under", input: "number"`, an actual supplied/sourced truth and explicit bounds/step. Phones enter decimal pounds. Tied highest underbids share the win; all over means no winner.
+- Subjective dial: slider helper with `scoring: "consensus", truth: { known: null }`. The room median is derived from accepted eligible responses; no dummy personal answer is stored.
+- Ordered consensus: rank helper with `scoring: "consensus", input: "ordered", truth: { known: [] }`, complete mode, no ties in submissions and one tier per item. The target's equal mean positions remain tied. The phone offers drag handles and move buttons.
+- Three awards: vote helper with `flow: { kind: "awards", labels: [...] }`, exactly three named categories. Question points are the total available across categories; the dating round uses 180, or 60 per award. Each tied category winner receives that category's points.
+- Blind bracket: vote helper with `flow: { kind: "tournament" }`. The server freezes the random seed, pairing/byes, electorate and entries. Tied matches follow the frozen draw, no self-votes, no votes throughout means no prize.
+
+All variants use existing intents, storage, scoring ledger and scheduler. Multi-step ballots carry an epoch so retries from earlier matches/categories cannot vote in later ones. Settlements persist once and do not change on reconnect or repeated score execution. New factual quotations require an exact source and speaker; use brief verified excerpts, and record any replacement of earlier unverified wording in private notes and the source audit. A genuine personal take can come from an actual earlier supplied message, with a prompt that names its real context.
+
+Phone rehearsal now has a voting view for vote rounds, with clearly labelled stand-in submissions and a next-ballot control. This does not simulate winners or scores.
+
 ## Versions
 
 Editing the birthday catalogue does not change a room. `startDemo` still pins `demo-2026-09-22`.
@@ -129,3 +146,11 @@ Say `Now customise the design of this question.` The question file keeps its id 
 A phone design receives the phone's `open`, `pending`, `selectedId`, and the select, send, rank, and text handlers. The stage keeps the standard scoreboard for scores, final, and podium. Colours come from the theme variables. A colour that is the content itself, such as the red and blue pill, is a named entry in `contentColours` in `themes.ts`.
 
 `standard` keeps the existing phone and stage components. The client receives only the public presentation id, the prompt, and the fields that role and phase already allow.
+
+## Kart sprint
+
+`kartQuestion` uses the supported `party-ring-v1` circuit, a fixed 45-second collection window, live participant numbers/names and 100 ordinary points. It reuses intro → prompt → collect (race) → reveal → scores. The server freezes participants at intro and owns physics, ordered checkpoints, timing and scores. Phones send only normalised controls on the existing authenticated WebSocket. No client lap time or checkpoint hash awards a result.
+
+The Question packs phone preview is an isolated controller layout rehearsal, labelled with no running race. For a real multi-device rehearsal, use a fresh local lobby and Admin → Live controls → Start local kart rehearsal. That explicit development start is rejected in staging/production. Full contracts, engine provenance, scoring, rendering limits and the quiz/race/podium sequence are in [kart-minigame.md](kart-minigame.md). `kart-sprint` remains out of the birthday running order until a separate release is requested.
+
+The Tribunal/chaos ideas are recorded in [content/tribunal-and-chaos.md](content/tribunal-and-chaos.md). A real Reddit/community/listing round needs its genuine source and answer. Self-vote multipliers, live spoken debates and push-your-luck raids remain explicit unsupported drafts; ordinary polls or text ballots must not be presented as those finished mechanics.

@@ -10,6 +10,12 @@ import { publicQuestionCore } from "./project.ts";
 import { collectDeadline, gateMessage } from "./slider.ts";
 import { matchTyped } from "./typed-match.ts";
 
+import {
+  commonnessResults,
+  passwordKey,
+} from "../../../../packages/shared/src/party-scoring.ts";
+import { readRoundState, writeRoundState } from "./round-state.ts";
+
 /** Typed answers use `round_response` with kind `typed`. The match is decided at the reveal. */
 export function checkTypedAnswer(
   question: TypedQuestion,
@@ -104,6 +110,35 @@ export function typedScores(
   question: TypedQuestion,
   now: number,
 ): void {
+  if (question.scoring === "commonness") {
+    const rows = typedRows(sql, question.id);
+    let result = readRoundState<ReturnType<typeof commonnessResults>>(
+      sql,
+      question.id,
+      "commonness",
+    );
+    if (!result) {
+      result = commonnessResults(rows, question.points);
+      writeRoundState(sql, question.id, "commonness", result);
+    }
+    const active = sql
+      .exec<{ player_id: string }>(
+        "SELECT player_id FROM player WHERE revoked_at IS NULL",
+      )
+      .toArray();
+    for (const player of active) {
+      const row = result.find((r) => r.playerId === player.player_id);
+      sql.exec(
+        "INSERT OR IGNORE INTO score_ledger (question_id, player_id, points, detail, created_at) VALUES (?, ?, ?, ?, ?)",
+        question.id,
+        player.player_id,
+        row?.points ?? 0,
+        row ? `commonness-rank-${row.rank}:matches-${row.count}` : "missing",
+        now,
+      );
+    }
+    return;
+  }
   const players = sql
     .exec<{ player_id: string }>(
       `SELECT player_id FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
@@ -136,6 +171,7 @@ export function publicTypedQuestion(
     ...publicQuestionCore(question, index, total),
     kind: "typed" as const,
     maxLength: question.maxLength,
+    ...(question.scoring ? { scoring: question.scoring } : {}),
   };
 }
 
@@ -150,6 +186,37 @@ export function typedReveal(
     return null;
   }
   const rows = typedRows(sql, question.id);
+  if (question.scoring === "commonness") {
+    const result =
+      readRoundState<ReturnType<typeof commonnessResults>>(
+        sql,
+        question.id,
+        "commonness",
+      ) ?? [];
+    const groups = [
+      ...new Map(
+        result.map((row) => [
+          passwordKey(row.body),
+          {
+            body: passwordKey(row.body),
+            count: row.count,
+            rank: row.rank,
+            points: row.points,
+          },
+        ]),
+      ).values(),
+    ].sort((a, b) => a.rank - b.rank);
+    return {
+      kind: "typed" as const,
+      answer: groups.some((g) => g.count > 1)
+        ? "Great minds share terrible passwords"
+        : "No matches this time",
+      correctCount: result.filter((r) => r.count > 1).length,
+      responseCount: result.length,
+      correctNames: null,
+      groups,
+    };
+  }
   const correct = rows.filter((row) => matchTyped(row.body, question.accepted).correct);
   return {
     kind: "typed" as const,
@@ -164,7 +231,10 @@ export function typedHostResponses(sql: SqlStorage, question: TypedQuestion) {
   return typedRows(sql, question.id).map((row) => ({
     playerId: row.playerId,
     nickname: row.nickname,
-    summary: `${matchTyped(row.body, question.accepted).correct ? "Right" : "Wrong"}: ${row.body}`,
+    summary:
+      question.scoring === "commonness"
+        ? `Submitted: ${row.body}`
+        : `${matchTyped(row.body, question.accepted).correct ? "Right" : "Wrong"}: ${row.body}`,
   }));
 }
 

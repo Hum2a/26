@@ -7,14 +7,12 @@ export const heathrowSearchQuery = voteQuestion({
     "Write the worst possible search query to find on someone’s phone right before going through UK border control.",
   instructions:
     "Write a fictional search query. The room will compare submissions head-to-head.",
-  requirements: [
-    {
-      code: "options",
-      name: "pairwise-voting",
-      detail:
-        "Blind 1v1 submission pairing, stage presentation, voting eligibility, bracket progression, ties/byes and final winner scoring. The current all-submissions ballot does not implement this.",
-    },
-  ],
+  collectMs: 30_000,
+  voteMs: 15_000,
+  attribution: "after",
+  flow: { kind: "tournament" },
+  explanation:
+    "The worst search wins the bracket and 60 points. No self-votes. Odd entries get a bye; tied matches use the random draw fixed before voting. No votes in the entire bracket means no prize.",
   notes:
-    "Jackbox-style blind writing, then TV displays submissions in 1v1 match-ups and guests vote for the query most likely to trigger secondary screening. Fictional comedy premise, not a claim about actual border screening rules. Ordinary vote is a placeholder; do not silently switch to one all-room ballot. See docs/content/party-concepts.md.",
+    "Fictional comedy, not actual border-screening rules. All accepted eligible lines enter a seeded knockout: one blind 1v1 on stage and phones per 15-second ballot. Winner author gets 60. Frozen seed/order handles ties and byes; no anonymous mutable state. Large rooms mean more matches; host can advance each beat.",
 });

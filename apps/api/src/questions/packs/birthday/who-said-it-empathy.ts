@@ -2,34 +2,26 @@ import { choiceQuestion } from "../../authoring.ts";
 
 export const whoSaidItEmpathy = choiceQuestion({
   id: "who-said-it-empathy",
-  title: "Who said it: empathy",
+  title: "Who said it: alchemy",
   presentation: "who-said-it",
   prompt:
-    "Empathy is a luxury invented by the mediocre to slow down the extraordinary.",
+    "We believe Artificial Intelligence is our alchemy, our Philosopher’s Stone – we are literally making sand think.",
   instructions: "Who said it? Pick A or B, then send.",
   options: [
-    { id: "a", label: "Madarame (Persona 5)" },
+    {
+      id: "a",
+      label: "Yaldabaoth (Persona 5)",
+    },
     {
       id: "b",
-      label: 'A real viral LinkedIn post by a 22-year-old "B2B SaaS Growth Hacker"',
+      label: "Marc Andreessen (The Techno-Optimist Manifesto)",
     },
   ],
   correctOption: {
-    missing: {
-      code: "correct-answer",
-      name: "verified-attribution",
-      detail:
-        "A verified source for this exact wording and its speaker; the supplied answer is a proposal only.",
-    },
+    known: "b",
   },
-  requirements: [
-    {
-      code: "truth",
-      name: "quote-source",
-      detail:
-        "A primary source, exact game dialogue reference or clearly authorised parody framing. The supplied quote and attribution are unverified.",
-    },
-  ],
+  explanation:
+    "Marc Andreessen, in his 2023 Techno-Optimist Manifesto. This one came from venture capital, not a final boss.",
   notes:
-    'Supplied answer: B. Supplied reveal: A genuine LinkedIn lunatic explaining why firing his cousin was "a masterclass in emotional ROI". Unverified proposal: do not present as a genuine quotation or attribute it as fact. Source audit: docs/content/who-said-it-sources.md.',
+    "Verified replacement for an unverified supplied passage. Intelligence section, 16 October 2023. Original essay on author’s firm site. Full source and original-proposal history: docs/content/who-said-it-sources.md.",
 });

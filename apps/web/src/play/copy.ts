@@ -13,6 +13,24 @@ export function guestRoundCopy(snapshot: LobbySnapshot): string {
       ? `The quiz has ended. You finished ${ordinal(standing.place)} with ${standing.points} points.`
       : "The quiz has ended.";
   }
+  if (snapshot.play?.question.kind === "kart") {
+    const play = snapshot.play,
+      race = play.kart,
+      driver = race?.participants.find((d) => d.playerId === race.selfPlayerId);
+    if (snapshot.phase === "reveal" || snapshot.phase === "scores")
+      return driver?.status === "FINISHED"
+        ? `Lap finished in ${(driver.lapTimeMs! / 1000).toFixed(2)} seconds. You scored ${play.selfAward ?? 0}.`
+        : driver?.status === "DNF"
+          ? "Time’s up. DNF — 0 points this race."
+          : "You watched this race. Join the next round.";
+    if (snapshot.phase !== "collect")
+      return "Get ready. Your phone drives your numbered kart on the TV.";
+    return driver?.status === "FINISHED"
+      ? "Lap finished — watch the stage."
+      : driver
+        ? "Hold A to accelerate. Steer on your phone; watch your kart on the TV."
+        : "You’re watching this race. Join the next round.";
+  }
   if (snapshot.phase === "reveal" || snapshot.phase === "scores") {
     const answer = snapshot.play?.selfAnswer;
     const reveal = snapshot.play?.reveal;

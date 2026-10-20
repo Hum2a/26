@@ -8,14 +8,13 @@ export const datingExitExcuse = voteQuestion({
   instructions:
     "You have 30 seconds to write an exit line. The room awards Most Smooth, Most Brutal and Instantly Causes a Scene.",
   collectMs: 30_000,
-  requirements: [
-    {
-      code: "options",
-      name: "multi-award-voting",
-      detail:
-        "Three independent award ballots over the same submitted lines, category-specific winners, eligibility/ties and points. A single generic vote cannot award all three categories.",
-    },
-  ],
+  points: 180,
+  flow: {
+    kind: "awards",
+    labels: ["Most Smooth", "Most Brutal", "Instantly Causes a Scene"],
+  },
+  explanation:
+    "One line, three awards. Each category is worth 60 points to its winning author or tied authors. The same line can win more than one award; no self-votes.",
   notes:
-    "Submit one opening/exit line, then vote in the three user-named categories: Most Smooth; Most Brutal; Instantly Causes a Scene. Keep the requested 30-second writing window. Current one-ballot vote is only an authoring placeholder. No new categories, extra submission rounds or points schedule invented. See docs/content/party-concepts.md.",
+    "Thirty seconds to write one line, then three server-timed ballots over the same frozen entries. 20 seconds per category; 60 points per category, up to 180 total. Ties share the category win, no ballots means no award. Each ballot has a durable epoch so old retries cannot vote in a later category.",
 });

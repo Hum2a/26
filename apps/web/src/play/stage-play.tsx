@@ -1,3 +1,6 @@
+import { lazy, Suspense } from "react";
+const KartGameWrapper = lazy(() => import("../kart/KartGameWrapper"));
+import { motion } from "motion/react";
 import type { LobbySnapshot, PlaySnapshot, RoomPhaseName } from "@26/shared";
 import { QuestionOptionImage } from "./question-option-image";
 import { Panel } from "../ui/primitives";
@@ -35,6 +38,15 @@ export function StagePlay({ snapshot }: { snapshot: LobbySnapshot }) {
   if (!play) {
     return null;
   }
+  if (
+    play.question.kind === "kart" &&
+    !["scores", "final", "podium"].includes(snapshot.phase)
+  )
+    return (
+      <Suspense fallback={<p>Preparing the race…</p>}>
+        <KartGameWrapper race={play.kart} paused={snapshot.paused || snapshot.held} />
+      </Suspense>
+    );
   const leadBoard =
     snapshot.phase === "scores" ||
     snapshot.phase === "final" ||
@@ -66,6 +78,12 @@ export function StagePlay({ snapshot }: { snapshot: LobbySnapshot }) {
 }
 
 function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolean }) {
+  if (play.question.kind === "kart")
+    return omitBoard ? null : (
+      <Suspense fallback={<p>Preparing the race…</p>}>
+        <KartGameWrapper race={play.kart} />
+      </Suspense>
+    );
   if (play.question.kind === "wordle")
     return (
       <>
@@ -83,7 +101,16 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
     return <TypedView play={play} omitBoard={omitBoard} />;
   }
   if (play.question.kind === "vote" || play.question.kind === "guess") {
-    return <BallotView play={play} omitBoard={omitBoard} />;
+    return (
+      <motion.div
+        key={`${play.question.id}-${play.ballot?.epoch ?? "single"}-${Boolean(play.reveal)}`}
+        initial={{ opacity: 0.5 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.24, ease: "easeOut" }}
+      >
+        <BallotView play={play} omitBoard={omitBoard} />
+      </motion.div>
+    );
   }
   if (play.question.kind === "duel" || play.question.kind === "finale") {
     return <DuelView play={play} omitBoard={omitBoard} />;
@@ -139,6 +166,8 @@ export function outcomeLine(
   options: readonly { id: string; label: string }[],
 ): string {
   const label = (id: string) => options.find((option) => option.id === id)?.label ?? id;
+  if (reveal.outcome === "multiple")
+    return `The answers are ${(reveal.correctOptionIds ?? []).map(label).join(", ")}.`;
   if (reveal.outcome === "poll") {
     const tally = reveal.tally ?? [];
     const top = Math.max(0, ...tally.map((row) => row.count));
@@ -172,8 +201,27 @@ function TypedView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolean
           ? "1 answer in."
           : `${play.submissionCount} answers in.`}
       </p>
-      {reveal ? <p className="stage-answer">The answer is {reveal.answer}.</p> : null}
       {reveal ? (
+        <p className="stage-answer">
+          {play.question.scoring === "commonness"
+            ? reveal.answer
+            : `The answer is ${reveal.answer}.`}
+        </p>
+      ) : null}
+      {reveal?.groups ? (
+        <ul className="grid gap-3">
+          {reveal.groups
+            .filter((group) => group.count > 1)
+            .slice(0, 5)
+            .map((group) => (
+              <li key={group.body} className="stage-option">
+                #{group.rank} · {group.body} · {group.count} matches · {group.points}{" "}
+                points
+              </li>
+            ))}
+        </ul>
+      ) : null}
+      {reveal && !reveal.groups ? (
         <p>
           {reveal.correctCount} of {reveal.responseCount} got it.
         </p>
@@ -201,16 +249,21 @@ function SliderView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolea
       </p>
       {reveal ? (
         <p className="stage-answer">
-          The answer is {reveal.truth} {reveal.unit}.
+          {reveal.truth === null
+            ? "No estimates this round."
+            : `${play.question.scoring === "consensus" ? "The room’s middle ground" : "The answer"} is ${estimateLabel(reveal.truth, reveal.unit)}.`}
         </p>
       ) : null}
       {reveal ? (
         <ul className="grid gap-2">
-          {reveal.guesses.map((guess) => (
+          {(play.question.kind === "slider" && play.question.scoring
+            ? [...reveal.guesses].sort((a, b) => b.points - a.points).slice(0, 5)
+            : reveal.guesses
+          ).map((guess) => (
             <li key={`${guess.nickname ?? "guest"}-${guess.value}`}>
               {guess.nickname
-                ? `${guess.nickname} guessed ${guess.value} ${reveal.unit} and scored ${guess.points}.`
-                : `A guess of ${guess.value} ${reveal.unit} scored ${guess.points}.`}
+                ? `${guess.nickname} guessed ${estimateLabel(guess.value, reveal.unit)} and scored ${guess.points}.`
+                : `A guess of ${estimateLabel(guess.value, reveal.unit)} scored ${guess.points}.`}
             </li>
           ))}
         </ul>
@@ -242,12 +295,16 @@ function RankView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolean 
       </p>
       {reveal ? (
         <p className="stage-answer">
-          The order is {orderLabels(play.question, reveal.order)}.
+          {play.question.scoring === "consensus" ? "The room’s order" : "The order"} is{" "}
+          {orderLabels(play.question, reveal.order)}.
         </p>
       ) : null}
       {reveal ? (
         <ul className="grid gap-2">
-          {reveal.rankings.map((ranking) => (
+          {(play.question.kind === "rank" && play.question.scoring === "consensus"
+            ? [...reveal.rankings].sort((a, b) => b.points - a.points).slice(0, 5)
+            : reveal.rankings
+          ).map((ranking) => (
             <li
               key={
                 ranking.nickname ??
@@ -304,6 +361,41 @@ function BallotView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolea
     play.reveal?.kind === "vote" || play.reveal?.kind === "guess"
       ? play.reveal
       : undefined;
+  if (play.question.kind === "vote" && play.question.flow && reveal?.kind === "vote")
+    return (
+      <div className="grid gap-6">
+        <p className="stage-prompt">{play.question.prompt}</p>
+        {reveal.awards ? (
+          reveal.awards.map((award) => (
+            <section key={award.label} className="grid gap-2">
+              <h2 className="stage-answer">{award.label}</h2>
+              <p className="stage-option">
+                {award.winners.length
+                  ? award.winners
+                      .slice(0, 2)
+                      .map((w) => w.label)
+                      .join(" · ")
+                  : "No votes — no award"}
+                {award.winnerCount > Math.min(2, award.winners.length)
+                  ? ` · and ${award.winnerCount - Math.min(2, award.winners.length)} more tied winners`
+                  : ""}
+              </p>
+            </section>
+          ))
+        ) : (
+          <>
+            <h2 className="stage-answer">
+              {reveal.winners.length ? "The bracket winner" : "No votes — no winner"}
+            </h2>
+            <p className="stage-option">
+              {reveal.winners.map((w) => w.label).join(" · ")}
+            </p>
+          </>
+        )}
+        <p>{reveal.totalBallots} votes across the round.</p>
+        {omitBoard ? null : <Standings play={play} />}
+      </div>
+    );
   const total = play.ballot?.total ?? 0;
   const listingVotes =
     play.question.kind === "guess" ||
@@ -320,11 +412,17 @@ function BallotView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolea
   return (
     <div className="grid gap-4">
       <p className="stage-prompt">{play.question.prompt}</p>
-      <p>
-        {total === 1
-          ? "1 choice is on the ballot."
-          : `${total} choices are on the ballot.`}
-      </p>
+      {play.ballot?.label ? <p className="stage-answer">{play.ballot.label}</p> : null}
+      {play.ballot?.instruction ? <p>{play.ballot.instruction}</p> : null}
+      {listingVotes ? (
+        <p>
+          {total === 1
+            ? "1 choice is on the ballot."
+            : `${total} choices are on the ballot.`}
+        </p>
+      ) : play.question.instructions ? (
+        <p className="stage-answer">{play.question.instructions}</p>
+      ) : null}
       {total > (play.ballot?.cards.length ?? 0) ? (
         <p>The phones have the full list. This screen keeps a short one.</p>
       ) : null}
@@ -461,4 +559,12 @@ function Standings({ play }: { play: PlaySnapshot }) {
       ))}
     </ol>
   );
+}
+
+function estimateLabel(value: number, unit: string): string {
+  return unit === "£"
+    ? new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(
+        value,
+      )
+    : `${value} ${unit}`;
 }

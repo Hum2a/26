@@ -79,6 +79,7 @@ const registryStatements = [
 ];
 
 const scheduleStatements = [
+  `CREATE TABLE IF NOT EXISTS round_state (question_id TEXT NOT NULL, state_key TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY (question_id, state_key))`,
   `CREATE TABLE IF NOT EXISTS schedule_job (
     job_id TEXT PRIMARY KEY,
     job_type TEXT NOT NULL,
@@ -378,14 +379,14 @@ export function ensurePartySchema(sql: SqlStorage): void {
   addColumn(sql, "player", "client_class", "TEXT NOT NULL DEFAULT 'guest'");
   addColumn(sql, "player", "joined_at", "TEXT");
   if (!existing) {
-    sql.exec("INSERT INTO schema_meta (id, version) VALUES (1, 13)");
+    sql.exec("INSERT INTO schema_meta (id, version) VALUES (1, 14)");
     return;
   }
-  if (existing.version >= 1 && existing.version <= 12) {
-    sql.exec("UPDATE schema_meta SET version = 13 WHERE id = 1");
+  if (existing.version >= 1 && existing.version <= 13) {
+    sql.exec("UPDATE schema_meta SET version = 14 WHERE id = 1");
     return;
   }
-  if (existing.version !== 13) {
+  if (existing.version !== 14) {
     throw new Error(`Unsupported room schema version ${existing.version}.`);
   }
 }

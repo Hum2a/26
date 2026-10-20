@@ -3,37 +3,22 @@ import { choiceQuestion } from "../../authoring.ts";
 export const aiTuringTest = choiceQuestion({
   id: "ai-turing-test",
   title: "The AI Turing Test: Humza edition",
-  prompt:
-    "Which of these takes did the birthday boy actually argue passionately for 45 minutes at 2 AM?",
-  instructions:
-    "Pick the genuine Humza response, then send. These draft options are examples only.",
+  prompt: "Which design take did Humza actually write while planning this game?",
+  instructions: "One real Humza take. Two generated decoys. Pick one, then send.",
   options: [
     {
-      id: "scooters",
-      label: "Electric scooters should require a full UK driving test.",
+      id: "same-layout",
+      label: "A consistent game needs every question to use the same layout.",
     },
-    { id: "anime", label: "Subbed anime is inherently classist." },
+    { id: "own-identity", label: "Everything can have its own identity." },
     {
-      id: "prius",
-      label: "The Toyota Prius is objectively the peak of automotive design.",
+      id: "stage-only",
+      label: "Players should read questions only on the stage, never on their phones.",
     },
   ],
-  correctOption: {
-    missing: {
-      code: "correct-answer",
-      name: "genuine-response",
-      detail:
-        "One confirmed genuine Humza response and its correct option id; none of the supplied examples is identified as genuine.",
-    },
-  },
-  requirements: [
-    {
-      code: "truth",
-      name: "personal-source",
-      detail:
-        "Actual supplied opinion/message samples and two approved/generated decoys. Do not invent Humza's opinions or claim these examples are his messages.",
-    },
-  ],
+  correctOption: { known: "own-identity" },
+  explanation:
+    "The real take: everything can have its own identity. Humza wrote it when asking for clearer, full-screen questions. The other two are generated decoys. The birthday boy passed his own design review.",
   notes:
-    "One genuine take among two generated decoys. User supplied three illustrative options but did not identify a true one or provide actual message samples. Reuse choice scoring once confirmed; no external AI service or personal-history fabrication is needed. Draft only. See docs/content/party-concepts.md.",
+    "Primary source: the user's earlier message in this planning chat: ‘We dont need completely matching fields, everything can have its own identity’. Option uses the exact closing clause, capitalised with a full stop. Two decoys generated during this pass. Prompt names the real context; no invented 2 AM/45-minute argument or personal belief. Replaces the unconfirmed example options.",
 });

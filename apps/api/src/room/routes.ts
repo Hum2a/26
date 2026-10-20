@@ -56,7 +56,12 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       return roomFailure(409, created.error, created.message);
     }
     const headers = new Headers();
-    await releasePreviousAdmin(c.req.raw, c.env, new Date().toISOString(), created.result);
+    await releasePreviousAdmin(
+      c.req.raw,
+      c.env,
+      new Date().toISOString(),
+      created.result,
+    );
     headers.append("set-cookie", selectedRoomCookie(created.result.gameId));
     headers.append(
       "set-cookie",
@@ -271,6 +276,7 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     const action = field(body, "action");
     const commands = [
       "start",
+      "start-kart-rehearsal",
       "pause",
       "resume",
       "advance",
@@ -320,23 +326,25 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     };
     const target = room(c.env, gameId.data);
     const result =
-      command === "start"
-        ? await target.startDemo(input)
-        : command === "pause"
-          ? await target.pauseRound(input)
-          : command === "resume"
-            ? await target.resumeRound(input)
-            : command === "advance"
-              ? await target.advanceRound(input)
-              : command === "skip"
-                ? await target.skipRound(input)
-                : command === "finish"
-                  ? await target.finishRound(input)
-                  : await target.hostAction({
-                      ...input,
-                      action: command,
-                      ...details.fields,
-                    });
+      command === "start-kart-rehearsal"
+        ? await target.startKartRehearsal(input)
+        : command === "start"
+          ? await target.startDemo(input)
+          : command === "pause"
+            ? await target.pauseRound(input)
+            : command === "resume"
+              ? await target.resumeRound(input)
+              : command === "advance"
+                ? await target.advanceRound(input)
+                : command === "skip"
+                  ? await target.skipRound(input)
+                  : command === "finish"
+                    ? await target.finishRound(input)
+                    : await target.hostAction({
+                        ...input,
+                        action: command,
+                        ...details.fields,
+                      });
     if (!result.ok) {
       const status = result.error === "invalid" ? 400 : 401;
       return roomFailure(status, result.error, result.message);

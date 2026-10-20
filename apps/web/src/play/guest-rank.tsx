@@ -1,3 +1,4 @@
+import { GuestOrdered } from "./guest-ordered";
 import { useState } from "react";
 import type { PlaySnapshot } from "@26/shared";
 import { SubmitButton } from "../rounds/SubmitButton";
@@ -21,6 +22,17 @@ export function GuestRank({
   }
   const accepted =
     play.selfAnswer?.kind === "rank" ? play.selfAnswer.placements : undefined;
+  if (question.input === "ordered")
+    return (
+      <GuestOrdered
+        key={`${question.id}-${accepted ? "sent" : "open"}`}
+        question={question}
+        accepted={accepted}
+        open={open}
+        pending={pending}
+        onSubmit={onSubmit}
+      />
+    );
   return (
     <RankControl
       key={`${question.id}-${accepted ? "sent" : "open"}`}

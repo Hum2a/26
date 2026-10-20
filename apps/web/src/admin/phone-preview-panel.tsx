@@ -37,6 +37,7 @@ export function PhonePreviewPanel({
           {[
             ["prompt", "Get ready"],
             ["collect", "Answering"],
+            ["vote", "Voting (vote rounds)"],
           ].map(([id, label]) => (
             <Button
               key={id}

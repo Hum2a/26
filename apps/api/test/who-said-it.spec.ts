@@ -1,4 +1,5 @@
 import { expect, it } from "vitest";
+import { pointsFor } from "../src/questions/multiple-choice.ts";
 import { publicQuestionSchema } from "@26/shared";
 import { birthdayPack } from "../src/questions/packs/birthday/manifest.ts";
 import { missingRequirements } from "../src/questions/definition.ts";
@@ -21,21 +22,32 @@ const slugs = [
 const proposals = ["B", "A", "B", "A", "B", "A", "B", "B", "A", "B"];
 
 it.each(slugs)(
-  "preserves the proposed %s round as a sourced-answer draft with an honest rehearsal",
+  "plays the sourced replacement %s round without leaking its answer in rehearsal",
   (slug) => {
     const q = birthdayPack.catalogue.find((q) => q.id === `who-said-it-${slug}`);
     if (q?.kind !== "choice") throw new Error("Choice draft required");
-    expect(q.status).toBe("draft");
+    expect(q.status).toBe("ready");
     expect(q.presentation).toBe("who-said-it");
     expect(q.options.map((o) => o.id)).toEqual(["a", "b"]);
-    expect(q.notes).toContain(`Supplied answer: ${proposals[slugs.indexOf(slug)]}.`);
-    expect(q.correctOption).toHaveProperty("missing");
-    expect(missingRequirements(q).some((r) => r.name === "quote-source")).toBe(true);
-    expect(toPlayable(q)).toBeUndefined();
+    expect(q.notes).toContain("Verified replacement");
+    expect(q.correctOption).toEqual({
+      known: proposals[slugs.indexOf(slug)]!.toLowerCase(),
+    });
+
+    expect(missingRequirements(q)).toEqual([]);
+    const playable = toPlayable(q);
+    if (playable?.kind !== "choice") throw new Error("Ready choice");
+    expect(
+      pointsFor(playable, {
+        optionId: proposals[slugs.indexOf(slug)]!.toLowerCase(),
+        receivedAt: 1000,
+        deadlineAt: 21000,
+      }).points,
+    ).toBe(100);
     expect(birthdayPack.order).not.toContain(q.id);
     const preview = questionPreview(birthdayPack, q);
     expect(preview.interactive).toBe(true);
-    expect(preview.limitation).toContain("unverified");
+    expect(preview.limitation).toBeNull();
     expect(publicQuestionSchema.safeParse(preview.question).success).toBe(true);
     expect(preview.question?.prompt).toBe(q.prompt);
     for (const field of [
@@ -50,15 +62,18 @@ it.each(slugs)(
   },
 );
 
-it("preserves long quotes and user wording without enlarging shared prompt limits", () => {
+it("uses sourced excerpts while retaining stable ids, question count and release isolation", () => {
   expect(
     birthdayPack.catalogue.find((q) => q.id === "who-said-it-crying-ceo")?.prompt,
-  ).toBe(
-    "I laid off 15% of our staff this morning. Sitting at my desk crying made me realize: leadership isn't about numbers, it's about feeling the pain of others and still executing.",
-  );
+  ).toContain("freedom and democracy");
   expect(
     birthdayPack.catalogue.find((q) => q.id === "who-said-it-grief-pipeline")?.prompt,
-  ).toContain("Grief is temporary; pipeline momentum is permanent.");
+  ).toContain("extraordinary effort");
+  expect(
+    JSON.stringify(
+      birthdayPack.catalogue.filter((q) => q.id.startsWith("who-said-it-")),
+    ),
+  ).not.toContain("I laid off 15%");
   expect(
     birthdayPack.catalogue.filter((q) => q.id.startsWith("who-said-it-")),
   ).toHaveLength(10);

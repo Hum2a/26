@@ -2,34 +2,25 @@ import { choiceQuestion } from "../../authoring.ts";
 
 export const whoSaidItCryingCeo = choiceQuestion({
   id: "who-said-it-crying-ceo",
-  title: "Who said it: crying ceo",
+  title: "Who said it: freedom and democracy",
   presentation: "who-said-it",
-  prompt:
-    "I laid off 15% of our staff this morning. Sitting at my desk crying made me realize: leadership isn't about numbers, it's about feeling the pain of others and still executing.",
+  prompt: "I no longer believe that freedom and democracy are compatible.",
   instructions: "Who said it? Pick A or B, then send.",
   options: [
-    { id: "a", label: "Tohru Adachi (Persona 4)" },
+    {
+      id: "a",
+      label: "Masayoshi Shido (Persona 5 Royal)",
+    },
     {
       id: "b",
-      label: "A hyper-viral LinkedIn CEO post (with an accompanying crying selfie)",
+      label: "Peter Thiel (The Education of a Libertarian)",
     },
   ],
   correctOption: {
-    missing: {
-      code: "correct-answer",
-      name: "verified-attribution",
-      detail:
-        "A verified source for this exact wording and its speaker; the supplied answer is a proposal only.",
-    },
+    known: "b",
   },
-  requirements: [
-    {
-      code: "truth",
-      name: "quote-source",
-      detail:
-        "A primary source, exact game dialogue reference or clearly authorised parody framing. The supplied quote and attribution are unverified.",
-    },
-  ],
+  explanation:
+    "Peter Thiel, in his 2009 Cato Unbound essay. A real author, a real essay, and a sentence with final-boss energy.",
   notes:
-    'Supplied answer: B. Supplied reveal: Braden Wallake, the infamous "Crying CEO" on LinkedIn. Unverified proposal: do not present as a genuine quotation or attribute it as fact. Source audit: docs/content/who-said-it-sources.md.',
+    "Verified replacement for an unverified supplied passage. Original signed essay, 13 April 2009. Exact sentence excerpt begins after “Most importantly,”. Full source and original-proposal history: docs/content/who-said-it-sources.md.",
 });

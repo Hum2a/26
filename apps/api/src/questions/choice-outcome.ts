@@ -28,6 +28,13 @@ export function settleChoice(
       met: null,
     };
   }
+  if (outcome.kind === "multiple")
+    return {
+      outcome: "multiple",
+      everyone: false,
+      optionIds: [...outcome.optionIds],
+      met: null,
+    };
   if (outcome.kind === "poll") {
     return { outcome: "poll", everyone: false, optionIds: [], met: null };
   }

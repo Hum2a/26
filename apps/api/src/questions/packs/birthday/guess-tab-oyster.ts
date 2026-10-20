@@ -1,28 +1,24 @@
 import { sliderQuestion } from "../../authoring.ts";
 
-// Numeric-entry/scoring concept only; no reference price or input bounds are invented.
 export const guessTabOyster = sliderQuestion({
   id: "guess-tab-oyster",
   title: "Guess the Tab: TfL Oyster fare",
-  prompt: "Peak tube fare from Sutton station to Oxford Circus via Zone 1.",
-  instructions: "Guess the price. Closest without going over wins.",
-  unit: "p",
+  prompt:
+    "Adult peak PAYG single: Sutton → Oxford Circus via Zone 1. TfL default route, October 2026.",
+  instructions:
+    "Enter a price in pounds. Closest without going over wins. Ties share the win; all over means no winner.",
+  scoring: "under",
+  input: "number",
+  minimum: 0,
+  maximum: 30,
+  step: 0.01,
+  initial: 0,
+  unit: "£",
   truth: {
-    missing: {
-      code: "truth",
-      name: "reference-price",
-      detail:
-        "A dated adult Oyster/contactless peak single fare for a specified National Rail/Tube route and payment basis. Sutton station is not itself a Tube station.",
-    },
+    known: 8.8,
   },
-  requirements: [
-    {
-      code: "truth",
-      name: "price-is-right-scoring",
-      detail:
-        "Server-authoritative closest-without-going-over ranking, tie handling and the outcome when every guess exceeds the reference. Ordinary exact-value slider scoring is not this mechanic.",
-    },
-  ],
+  explanation:
+    "TfL lists £8.80 for the adult peak default route. A different interchange route can cost less; this question uses the named default, not every possible route.",
   notes:
-    "Guess the Tab concept: all guests submit a numeric guess; closest without going over wins. Needs numeric-entry controls/bounds, real reference facts and the missing room-wide scoring. Slider is an authoring placeholder only, not a working substitute. No live ordering or release. See docs/content/party-concepts.md.",
+    "TfL API /StopPoint/910GSUTTON/FareTo/940GZZLUOXC checked 20 Oct 2026. Adult default-route PAYG peak £8.80; current dates 5 Jul 2026–5 Jul 2027. Alternative-route peak £7.70 is a different fare. Corrected Tube-only shorthand: Sutton is National Rail.",
 });

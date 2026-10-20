@@ -1,3 +1,5 @@
+import { motion } from "motion/react";
+import { useDesignMotion } from "./designs/kit";
 import { useState } from "react";
 import type { PlaySnapshot } from "@26/shared";
 import { OptionText } from "../rounds/OptionText";
@@ -17,26 +19,38 @@ export function GuestBallot({
   search: boolean;
   onSubmit: (candidateId: string) => void;
 }) {
+  const motionKit = useDesignMotion();
   const cards = play.ballot?.cards ?? [];
   const accepted = play.selfBallot?.candidateId;
   return (
-    <BallotCards
-      key={play.question.id}
-      cards={cards}
-      accepted={accepted}
-      blocked={blocked || play.ballot?.reason !== "open" || accepted !== undefined}
-      pending={pending}
-      reason={play.ballot?.reason ?? "closed"}
-      candidateMode={
-        play.question.kind === "vote" ? play.question.candidateMode : "all"
-      }
-      search={search}
-      onSubmit={onSubmit}
-    />
+    <motion.div
+      key={`${play.question.id}-${play.ballot?.epoch ?? "single"}`}
+      initial={{ opacity: 0.5, y: motionKit.move(8) }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={motionKit.soft}
+    >
+      <BallotCards
+        key={`${play.question.id}-${play.ballot?.epoch ?? "single"}`}
+        instruction={play.ballot?.instruction}
+        label={play.ballot?.label}
+        cards={cards}
+        accepted={accepted}
+        blocked={blocked || play.ballot?.reason !== "open" || accepted !== undefined}
+        pending={pending}
+        reason={play.ballot?.reason ?? "closed"}
+        candidateMode={
+          play.question.kind === "vote" ? play.question.candidateMode : "all"
+        }
+        search={search}
+        onSubmit={onSubmit}
+      />
+    </motion.div>
   );
 }
 
 function BallotCards({
+  instruction,
+  label,
   cards,
   accepted,
   blocked,
@@ -46,6 +60,8 @@ function BallotCards({
   search,
   onSubmit,
 }: {
+  instruction?: string;
+  label?: string;
   cards: NonNullable<PlaySnapshot["ballot"]>["cards"];
   accepted: string | undefined;
   blocked: boolean;
@@ -64,6 +80,11 @@ function BallotCards({
   const chosen = accepted ?? selected;
   return (
     <div className="grid gap-3">
+      {label ? (
+        <h2 className="text-xl font-bold" aria-live="polite">
+          {label}
+        </h2>
+      ) : null}
       {reason === "late" ? <p>You joined too late to vote in this round.</p> : null}
       {reason === "empty" ? (
         <p>
@@ -80,7 +101,10 @@ function BallotCards({
           onChange={(event) => setQuery(event.target.value)}
         />
       ) : (
-        <p>One vote. You cannot choose your own line. A tie shares the win.</p>
+        <p>
+          {instruction ??
+            "One vote. You cannot choose your own line. A tie shares the win."}
+        </p>
       )}
       <div className="grid gap-2" data-ballot="">
         {visible.map((card) => {

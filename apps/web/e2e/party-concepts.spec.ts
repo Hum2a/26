@@ -39,21 +39,26 @@ test("a large birthday catalogue retains ready rehearsals and labels concept pla
     await expect(page.getByRole("button", { name: "Locked in ✓" })).toBeDisabled();
   }
   await page.goto("/admin/phone-preview/birthday-draft/ai-turing-test");
-  await expect(page.getByText(/No genuine Humza response/)).toBeVisible();
+  await expect(page.getByText(/No genuine Humza response/)).toHaveCount(0);
+  await expect(
+    page.getByRole("button", {
+      name: "Everything can have its own identity.",
+      exact: true,
+    }),
+  ).toBeEnabled();
   await page.goto("/admin/phone-preview/birthday-draft/dial-pop-culture");
+  await expect(page.getByRole("slider", { name: "Estimate" })).toBeEnabled();
+  await page.goto(
+    "/admin/phone-preview/birthday-draft/heathrow-search-query?phase=vote",
+  );
   await expect(
-    page.getByText(/requested interaction is not implemented/),
-  ).toBeVisible();
-  await expect(page.getByRole("slider", { name: "Estimate" })).toBeDisabled();
-  await page.goto("/admin/phone-preview/birthday-draft/heathrow-search-query");
+    page.getByRole("button", { name: "Sample line 1", exact: true }),
+  ).toBeEnabled();
   await expect(
-    page.getByText(/requested interaction is not implemented/),
-  ).toBeVisible();
+    page.getByRole("button", { name: "Sample line 2", exact: true }),
+  ).toBeEnabled();
   await page.goto("/admin/phone-preview/birthday-draft/guess-tab-oyster");
-  await expect(
-    page.getByRole("heading", { name: "Preview unavailable" }),
-  ).toBeVisible();
-  await expect(page.getByText(/numeric scale/)).toBeVisible();
+  await expect(page.getByLabel("Your price (£)")).toBeEnabled();
   await page.goto("/admin/phone-preview/birthday-draft/favourite-pokemon");
   await expect(page.getByRole("button", { name: "Mudkip", exact: true })).toBeVisible();
 });

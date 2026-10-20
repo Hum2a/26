@@ -91,12 +91,12 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
   await page.getByLabel("Preview a question").selectOption("favourite-genre");
   await expect(phone.locator(".design-phone")).toBeVisible();
   await page.getByLabel("Preview a question").selectOption("christianity-branches");
-  await expect(
-    phone.getByText(/requested interaction is not implemented/),
-  ).toBeVisible();
+  await expect(phone.getByText(/requested interaction is not implemented/)).toHaveCount(
+    0,
+  );
   await expect(
     phone.getByRole("button", { name: "muggletonians", exact: true }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await page.getByLabel("Preview a question").selectOption("inflation-freddo");
   await expect(phone.getByRole("slider", { name: "Estimate" })).toBeVisible();
   await expect(phone.getByText(/typically 20p in 2012/)).toBeVisible();

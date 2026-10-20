@@ -345,7 +345,9 @@ export function GuestPage() {
     if (!beginSend()) {
       return;
     }
-    pendingRequest.current = socketRef.current?.submitBallot(candidateId) ?? null;
+    pendingRequest.current =
+      socketRef.current?.submitBallot(candidateId, snapshot?.play?.ballot?.epoch) ??
+      null;
   }
 
   const playing = snapshot !== undefined && snapshot.phase !== "lobby";
@@ -462,6 +464,8 @@ export function GuestPage() {
             <PhaseTransition phase={snapshot?.phase ?? "lobby"}>
               {snapshot ? (
                 <GuestPlay
+                  connected={connection === "open"}
+                  onKartInput={(input) => socketRef.current?.submitKartInput(input)}
                   snapshot={snapshot}
                   selectedId={selectedId}
                   pending={pending}

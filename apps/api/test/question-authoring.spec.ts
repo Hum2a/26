@@ -492,24 +492,26 @@ describe("October birthday question additions", () => {
     },
   );
   it.each([commonPassword, christianityBranches])(
-    "keeps $id blocked until the real requirements are supplied",
+    "plays $id with its real mechanic while leaving the running order alone",
     (question) => {
-      expect(question.status).toBe("draft");
-      expect(missingRequirements(question).length).toBeGreaterThan(0);
-      expect(toPlayable(question)).toBeUndefined();
+      expect(question.status).toBe("ready");
+      expect(missingRequirements(question)).toEqual([]);
+      expect(toPlayable(question)).toBeDefined();
       expect(birthdayPack.order).not.toContain(question.id);
     },
   );
-  it("records unsupported mechanics rather than silently substituting typed scoring", () => {
-    expect(missingRequirements(commonPassword).map((item) => item.name)).toContain(
-      "ranking-mechanic",
+  it("uses room commonness and the supplied exact answer set without inventing a fixed password", () => {
+    expect(commonPassword.scoring).toBe("commonness");
+    expect(commonPassword.accepted).toEqual({ known: [] });
+    expect(christianityBranches.outcome).toEqual({
+      kind: "multiple",
+      optionIds: ["muggletonians", "the-jumpers", "ranters"],
+    });
+    expect(christianityBranches.correctOption).toEqual({ known: null });
+    expect(christianityBranches.prompt).toBe(
+      "Which of these ARE branches of Christianity?",
     );
-    expect(missingRequirements(completeAWordle)).toEqual([]);
-    expect(completeAWordle.kind).toBe("wordle");
-    expect(completeAWordle.status).toBe("ready");
-    expect(birthdayPack.order).not.toContain(completeAWordle.id);
-    expect(commonPassword.accepted).not.toHaveProperty("known");
-    expect(completeAWordle.answer).toEqual({ known: "VULGY" });
+    expect(christianityBranches.instructions).toBe("Select all that apply.");
     expect(christianityBranches.options.map((option) => option.label)).toEqual([
       "unorthodox",
       "jisraeli",
@@ -518,19 +520,8 @@ describe("October birthday question additions", () => {
       "the jumpers",
       "ranters",
     ]);
-    expect(christianityBranches.correctOption).not.toHaveProperty("known");
-    expect(christianityBranches.prompt).toBe(
-      "Which of these ARE branches of Christianity?",
-    );
-    expect(christianityBranches.instructions).toBe("Select all that apply.");
-    expect(christianityBranches.notes).toContain("muggletonians, the jumpers, ranters");
-    expect(
-      missingRequirements(christianityBranches).map((item) => item.name),
-    ).toContain("multiple-selection");
-    expect(commonPassword.notes).toContain("matching other guests");
-    expect(missingRequirements(commonPassword).map((item) => item.name)).not.toContain(
-      "commonness-definition",
-    );
+    expect(completeAWordle.kind).toBe("wordle");
+    expect(completeAWordle.answer).toEqual({ known: "VULGY" });
     expect(completeAWordle.notes).toContain("Encore Glyph's classic board");
     for (const slider of [inflationFreddo, inflationPetrol]) {
       expect(slider.kind).toBe("slider");

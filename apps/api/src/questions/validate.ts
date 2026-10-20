@@ -167,6 +167,20 @@ function validateAuthored(
           ),
         );
   }
+  if (
+    question.kind === "kart" &&
+    (question.trackId !== "party-ring-v1" ||
+      question.timeLimitMs !== 45_000 ||
+      question.collectMs !== 45_000 ||
+      question.attribution !== "live")
+  )
+    issues.push(
+      issue(
+        "error",
+        "kart",
+        `${question.id} needs the supported track, 45-second window and live participant names.`,
+      ),
+    );
   issues.push(...suppliedIssues(question, profile));
   if (question.status !== "ready") {
     issues.push(...knownAnswerIssues(question));
@@ -401,6 +415,19 @@ function outcomeIssues(question: {
       : [issue("error", "score", `${question.id} is a poll, so its points must be 0.`)];
   }
   const ids = new Set(question.options.map((option) => option.id));
+  if (outcome.kind === "multiple")
+    return outcome.optionIds.length > 0 &&
+      outcome.optionIds.length <= 6 &&
+      new Set(outcome.optionIds).size === outcome.optionIds.length &&
+      outcome.optionIds.every((id) => ids.has(id))
+      ? []
+      : [
+          issue(
+            "error",
+            "choice",
+            `${question.id} needs a unique non-empty answer set from its options.`,
+          ),
+        ];
   const named = [
     outcome.optionId,
     ...(outcome.met === "everyone" ? [] : outcome.met),
@@ -558,6 +585,18 @@ function illustrativeCoverage(questions: readonly Question[]): ContentIssue[] {
 }
 
 function checkPlayable(question: Question): ContentIssue[] {
+  if (question.kind === "kart")
+    return question.trackId === "party-ring-v1" &&
+      question.timeLimitMs === 45_000 &&
+      question.collectMs === 45_000
+      ? []
+      : [
+          issue(
+            "error",
+            "kart",
+            `${question.id} has an unsupported race configuration.`,
+          ),
+        ];
   if (question.kind === "choice") {
     const ids = new Set(question.options.map((option) => option.id));
     if (
@@ -612,7 +651,28 @@ function checkPlayable(question: Question): ContentIssue[] {
     ) {
       return [issue("error", "slider", `${question.id} scale is not usable.`)];
     }
-    if (question.truth < question.minimum || question.truth > question.maximum) {
+    if (question.scoring === "consensus" && question.truth !== null)
+      return [
+        issue(
+          "error",
+          "slider",
+          `${question.id} consensus must not carry a fixed personal target.`,
+        ),
+      ];
+    if (question.input === "number" && question.scoring !== "under")
+      return [
+        issue(
+          "error",
+          "slider",
+          `${question.id} numeric price entry needs its closest-under rule.`,
+        ),
+      ];
+    if (
+      question.scoring !== "consensus" &&
+      (question.truth === null ||
+        question.truth < question.minimum ||
+        question.truth > question.maximum)
+    ) {
       return [issue("error", "slider", `${question.id} truth sits outside the scale.`)];
     }
     return [];
@@ -620,6 +680,46 @@ function checkPlayable(question: Question): ContentIssue[] {
   if (question.kind === "rank") {
     const items = new Set(question.items.map((item) => item.id));
     const tiers = new Set(question.tiers.map((tier) => tier.id));
+    if (
+      items.size !== question.items.length ||
+      tiers.size !== question.tiers.length ||
+      items.size < 2 ||
+      items.size > 8 ||
+      tiers.size < 2 ||
+      tiers.size > 8 ||
+      [...question.items, ...question.tiers].some(
+        (item) =>
+          !contentLimits.optionId.test(item.id) ||
+          !item.label.trim() ||
+          item.label.length > contentLimits.labelMax,
+      )
+    )
+      return [
+        issue("error", "rank", `${question.id} needs distinct valid items and tiers.`),
+      ];
+    if (
+      question.input === "ordered" &&
+      (question.mode !== "complete" ||
+        question.ties !== "forbidden" ||
+        items.size !== tiers.size)
+    )
+      return [
+        issue(
+          "error",
+          "rank",
+          `${question.id} ordered input needs one distinct position per item.`,
+        ),
+      ];
+    if (question.scoring === "consensus")
+      return question.truth.length
+        ? [
+            issue(
+              "error",
+              "rank",
+              `${question.id} consensus must not carry a fixed personal target.`,
+            ),
+          ]
+        : [];
     const placed = question.truth.flatMap((group) => group.itemIds);
     if (question.mode === "complete" && placed.length !== items.size) {
       return [issue("error", "rank", `${question.id} does not place every item once.`)];
@@ -642,7 +742,10 @@ function checkPlayable(question: Question): ContentIssue[] {
       : [issue("error", "wordle", `${question.id} needs five uppercase letters.`)];
   }
   if (question.kind === "typed") {
-    if (question.accepted.every((answer) => !answer.trim())) {
+    if (
+      question.scoring !== "commonness" &&
+      question.accepted.every((answer) => !answer.trim())
+    ) {
       return [issue("error", "typed", `${question.id} has no accepted answer.`)];
     }
     return typedIssues(question.id, question.maxLength, question.accepted);

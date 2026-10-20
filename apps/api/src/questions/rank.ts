@@ -16,6 +16,9 @@ import type { RankPlacement, RankQuestion } from "./definition.ts";
 import { publicQuestionCore } from "./project.ts";
 import { playableQuestions, questionPacks } from "./registry.ts";
 
+import { consensusRanking } from "../../../../packages/shared/src/party-scoring.ts";
+import { readRoundState, writeRoundState } from "./round-state.ts";
+
 export function assertRankQuestion(question: RankQuestion): void {
   const itemIds = new Set(question.items.map((item) => item.id));
   const tierIds = question.tiers.map((tier) => tier.id);
@@ -48,7 +51,7 @@ export function assertRankQuestion(question: RankQuestion): void {
       seen.add(itemId);
     }
   }
-  if (seen.size !== itemIds.size) {
+  if (question.scoring !== "consensus" && seen.size !== itemIds.size) {
     throw new Error("The ranking truth must list each item once.");
   }
 }
@@ -250,9 +253,23 @@ export function rankScores(sql: SqlStorage, question: RankQuestion, now: number)
       `SELECT player_id FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
     )
     .toArray();
+  let target = question.truth;
+  if (question.scoring === "consensus") {
+    target =
+      readRoundState<RankQuestion["truth"]>(sql, question.id, "ranking") ??
+      consensusRanking(
+        question.items.map((i) => i.id),
+        question.tiers.map((t) => t.id),
+        players.flatMap((p) => {
+          const row = readRanking(sql, p.player_id, question);
+          return row ? [row] : [];
+        }),
+      );
+    writeRoundState(sql, question.id, "ranking", target);
+  }
   for (const player of players) {
     const scored = pointsForRanking(
-      question,
+      { ...question, truth: target },
       readRanking(sql, player.player_id, question),
     );
     sql.exec(
@@ -277,6 +294,8 @@ export function publicRankQuestion(
     ...publicQuestionCore(question, index, total),
     kind: "rank" as const,
     mode: question.mode,
+    ...(question.scoring ? { scoring: question.scoring } : {}),
+    ...(question.input ? { input: question.input } : {}),
     ties: question.ties,
     items: question.items.map((item) => ({ id: item.id, label: item.label })),
     tiers: question.tiers.map((tier) => ({ id: tier.id, label: tier.label })),
@@ -309,7 +328,10 @@ export function rankReveal(
     .toArray();
   return {
     kind: "rank" as const,
-    order: question.truth.map((group) => ({
+    order: (question.scoring === "consensus"
+      ? (readRoundState<RankQuestion["truth"]>(sql, question.id, "ranking") ?? [])
+      : question.truth
+    ).map((group) => ({
       tierId: group.tierId,
       label:
         question.tiers.find((tier) => tier.id === group.tierId)?.label ?? group.tierId,
