@@ -7,6 +7,8 @@ import { registerAdminRoomRoutes } from "../src/room/admin-routes";
 import { registerAdminContentRoutes, adminContent } from "../src/room/admin-content";
 import { questionPacks } from "../src/questions/registry";
 import { adminQuestion } from "../src/room/admin-question";
+import { sliderQuestion } from "../src/questions/authoring.ts";
+import { birthdayPack } from "../src/questions/packs/birthday/manifest.ts";
 import { questionPreview } from "../src/room/question-preview";
 const app = new Hono<{ Bindings: Env }>();
 registerAdminRoomRoutes(app);
@@ -289,10 +291,19 @@ it("handles missing question/pack and drafts without guessing an answer", async 
     bindings,
   );
   const body = shared.adminQuestionDetailSchema.parse(await response.json());
-  expect(body.question.status).toBe("draft");
-  expect(body.question.answer.status).toBe("missing");
-  expect(body.question.missing.length).toBeGreaterThan(0);
-  expect(body.question.settings).toContainEqual({ label: "Minimum", value: "Not set" });
+  expect(body.question.status).toBe("ready");
+  expect(body.question.answer).toEqual({ status: "recorded", lines: ["35 p"] });
+  expect(body.question.missing).toEqual([]);
+  expect(body.question.settings).toContainEqual({ label: "Minimum", value: "5" });
+  const draft = adminQuestion(
+    birthdayPack,
+    sliderQuestion({ id: "missing-scale", title: "Missing scale", prompt: "Estimate" }),
+  );
+  expect(draft?.question.answer.status).toBe("missing");
+  expect(draft?.question.settings).toContainEqual({
+    label: "Minimum",
+    value: "Not set",
+  });
 });
 it("projects every catalogue mechanic without exposing raw authoring objects or media paths", () => {
   const mechanics = new Set<string>();
@@ -367,7 +378,12 @@ it("requires administrator access to previews and reports incomplete/placeholder
     {},
     bindings,
   );
-  const draft = shared.adminQuestionPreviewSchema.parse(await incomplete.json());
+  const ready = shared.adminQuestionPreviewSchema.parse(await incomplete.json());
+  expect(ready.question).toMatchObject({ kind: "slider", minimum: 5, maximum: 100 });
+  const draft = questionPreview(
+    birthdayPack,
+    sliderQuestion({ id: "missing-scale", title: "Missing scale", prompt: "Estimate" }),
+  );
   expect(draft.question).toBeNull();
   expect(draft.limitation).toContain("scale");
   expect((await app.request(`${base}/unknown/preview`, {}, bindings)).status).toBe(404);

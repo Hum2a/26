@@ -1,4 +1,5 @@
 import type { LobbySnapshot, PlaySnapshot, RoomPhaseName } from "@26/shared";
+import { QuestionOptionImage } from "./question-option-image";
 import { Panel } from "../ui/primitives";
 import { Glyph } from "./designs/glyph";
 import { AnswerNames } from "./attributions";
@@ -113,6 +114,7 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
           const votes = count(option.id);
           return (
             <li key={option.id} className="stage-option">
+              {option.image ? <QuestionOptionImage src={option.image} /> : null}
               {option.label}
               {votes === undefined
                 ? ""

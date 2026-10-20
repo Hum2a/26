@@ -11,10 +11,12 @@ import { RedBluePill } from "./red-blue-pill";
 import { RedactedFile } from "./redacted-file";
 import { Scripture } from "./scripture";
 import { TrolleyLever } from "./trolley-lever";
+import { WhoSaidIt } from "./who-said-it";
 
 /** One design per custom presentation id. A missing id fails the typecheck. */
 export const designs: Record<CustomPresentationId, QuestionPresentation> = {
   glyph: Glyph,
+  "who-said-it": WhoSaidIt,
   "now-playing": NowPlaying,
   scripture: Scripture,
   "number-plate": NumberPlate,

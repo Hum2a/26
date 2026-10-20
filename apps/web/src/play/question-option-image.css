@@ -1,0 +1,29 @@
+.option-button:has(.question-option-image),
+.stage-option:has(.question-option-image) {
+  position: relative;
+}
+.question-option-image {
+  position: absolute;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+.option-button .question-option-image {
+  inset: 2.8rem 0.5rem;
+  width: calc(100% - 1rem);
+  height: max(0px, calc(100% - 5.6rem));
+}
+.option-button:has(.question-option-image) .option-text,
+.option-button:has(.question-option-image) .question-choice-mark {
+  position: relative;
+  z-index: 1;
+}
+.stage-option .question-option-image {
+  inset-block: 0.5rem;
+  inset-inline-end: 1rem;
+  width: clamp(3rem, 8vw, 9rem);
+  height: calc(100% - 1rem);
+}
+.stage-option:has(.question-option-image) {
+  padding-inline-end: clamp(5rem, 11vw, 12rem);
+}

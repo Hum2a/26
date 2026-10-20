@@ -457,6 +457,7 @@ export function projectPlay(
       options: question.options.map((option) => ({
         id: option.id,
         label: option.label,
+        ...(option.image ? { image: option.image } : {}),
       })),
       kind: "choice" as const,
       ...(question.outcome.kind === "correct"

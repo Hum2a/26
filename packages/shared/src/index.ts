@@ -229,6 +229,7 @@ export const contentLimits = {
  */
 export const customPresentationIds = [
   "glyph",
+  "who-said-it",
   "now-playing",
   "scripture",
   "number-plate",
@@ -245,10 +246,16 @@ export type CustomPresentationId = (typeof customPresentationIds)[number];
 
 const publicOptionIdSchema = z.string().regex(contentLimits.optionId);
 
+/** Curated local PNGs only; no remote requests, traversal or executable URLs. */
+export const questionOptionImageSchema = z
+  .string()
+  .regex(/^\/assets\/questions\/[a-z0-9/-]+\.png$/);
+
 export const publicChoiceSchema = z
   .object({
     id: publicOptionIdSchema,
     label: z.string().min(1).max(contentLimits.labelMax),
+    image: questionOptionImageSchema.optional(),
   })
   .strict();
 

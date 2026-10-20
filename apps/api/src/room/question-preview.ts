@@ -10,10 +10,14 @@ export function questionPreview(
   pack: QuestionPack,
   q: AuthoredQuestion,
 ): AdminQuestionPreview {
+  const orderedIndex = pack.order.indexOf(q.id);
+  // An unordered catalogue entry is one isolated rehearsal, not a live running order.
+  // The catalogue may exceed the 40-question live limit without breaking its previews.
+  const ordered = orderedIndex >= 0;
   const core = {
     id: q.id,
-    index: Math.max(1, pack.order.indexOf(q.id) + 1),
-    total: Math.max(1, pack.order.length || pack.catalogue.length),
+    index: ordered ? orderedIndex + 1 : 1,
+    total: ordered ? pack.order.length : 1,
     prompt: q.prompt,
     points: q.points,
     illustrative: pack.illustrative,
@@ -26,7 +30,11 @@ export function questionPreview(
     case "choice":
       fields = {
         kind: q.kind,
-        options: q.options.map(({ id, label }) => ({ id, label })),
+        options: q.options.map(({ id, label, image }) => ({
+          id,
+          label,
+          ...(image ? { image } : {}),
+        })),
         speedBonus: Boolean(q.speedBonus),
         modifiers: q.modifiers ?? [],
         suppressSpeedBonus: Boolean(q.suppressSpeedBonus),
@@ -104,13 +112,27 @@ export function questionPreview(
   }
   // A known placeholder mechanic is labelled, never presented as the finished game.
   const unsupported = q.requirements?.some((item) =>
-    ["ranking-mechanic", "wordle-mechanic", "multiple-selection"].includes(item.name),
+    [
+      "ranking-mechanic",
+      "wordle-mechanic",
+      "multiple-selection",
+      "price-is-right-scoring",
+      "pairwise-voting",
+      "consensus-ranking",
+      "drag-ordering",
+      "multi-award-voting",
+      "subjective-slider-scoring",
+    ].includes(item.name),
   );
   const limitation = unsupported
     ? "Draft layout only. The requested interaction is not implemented yet; this shows the current placeholder mechanic."
-    : q.kind === "guess" || q.kind === "duel" || q.kind === "finale"
-      ? "Player names in this preview are stand-ins. No room is connected."
-      : null;
+    : q.requirements?.some((item) => item.name === "quote-source")
+      ? "Draft rehearsal: this quote and its attribution are unverified. These are proposed choices, not confirmed sources."
+      : q.requirements?.some((item) => item.name === "personal-source")
+        ? "Draft rehearsal: these are example options. No genuine Humza response or final decoys have been confirmed."
+        : q.kind === "guess" || q.kind === "duel" || q.kind === "finale"
+          ? "Player names in this preview are stand-ins. No room is connected."
+          : null;
   const parsed = adminQuestionPreviewSchema.safeParse({
     question: { ...core, ...fields },
     limitation,

@@ -1,0 +1,85 @@
+.who-said-it {
+  gap: 0.9rem;
+  align-content: start;
+}
+.who-said-it-quote {
+  margin: 0;
+  border-inline-start: 4px solid var(--highlight);
+  padding-inline-start: 1rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 5.5vw, 1.7rem);
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+.who-said-it-options {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+.who-said-it-option {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 4.75rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 0.85rem;
+  background: var(--surface);
+  color: var(--surface-foreground);
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: start;
+  overflow-wrap: anywhere;
+  transition:
+    background-color 180ms var(--ease-party),
+    border-color 180ms var(--ease-party),
+    color 180ms var(--ease-party);
+}
+.who-said-it-option[data-chosen],
+.who-said-it-option[data-correct] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+}
+.who-said-it-letter {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-control);
+}
+.who-said-it-result {
+  grid-column: 2;
+}
+.who-said-it-verdict {
+  margin: 0;
+  font-weight: 700;
+}
+.who-said-it-stage .who-said-it-title {
+  margin: 0;
+  font-size: max(48px, 3vw);
+  color: var(--muted);
+}
+.who-said-it-stage .who-said-it-quote {
+  font-size: max(48px, 3vw);
+  line-height: 1.12;
+}
+.who-said-it-stage .who-said-it-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+.who-said-it-stage .who-said-it-option {
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  font-size: max(40px, 2.4vw);
+  padding: 1rem;
+}
+.who-said-it-stage .who-said-it-letter {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+.who-said-it-stage .who-said-it-verdict {
+  font-size: max(40px, 2.4vw);
+}

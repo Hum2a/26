@@ -75,10 +75,12 @@ export type ChoiceOutcome =
       otherwise: "everyone" | readonly string[];
     };
 
+export type QuestionOption = { id: string; label: string; image?: string };
+
 export type ChoiceBody = {
   kind: "choice";
   outcome: ChoiceOutcome;
-  options: { id: string; label: string }[];
+  options: QuestionOption[];
   speedBonus: { maxPoints: number } | null;
   modifiers?: readonly "double"[];
   suppressSpeedBonus?: boolean;

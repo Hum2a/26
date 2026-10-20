@@ -1,4 +1,5 @@
 import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
+import { QuestionOptionImage } from "./question-option-image";
 import { OptionText } from "../rounds/OptionText";
 import { SubmitButton } from "../rounds/SubmitButton";
 import { roundSubmitState } from "../rounds/submit-state";
@@ -205,6 +206,7 @@ export function GuestPlay({
                     <span className="question-choice-mark" aria-hidden="true">
                       {String.fromCharCode(65 + index)}
                     </span>
+                    {option.image ? <QuestionOptionImage src={option.image} /> : null}
                     <OptionText text={`${option.label}${note}`} />
                   </Button>
                 </motion.div>

@@ -22,6 +22,7 @@ import {
   type MediaRef,
   type MissingRequirement,
   type Question,
+  type QuestionOption,
   type QuestionStatus,
   type RankQuestion,
   type SliderBand,
@@ -117,7 +118,7 @@ const missingContestants: MissingRequirement = {
  */
 export function choiceQuestion(
   input: SharedInput & {
-    options?: { id: string; label: string }[];
+    options?: QuestionOption[];
     outcome?: ChoiceOutcome;
     correctOption?: Answer<string>;
     speedBonus?: { maxPoints: number } | null;

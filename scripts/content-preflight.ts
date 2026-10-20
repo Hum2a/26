@@ -20,7 +20,18 @@ for (const item of validateRuntimeEffects()) {
 }
 
 for (const pack of questionPacks) {
-  const assets = pack.profile === "illustrative" ? missingSting : [];
+  const optionImages = pack.catalogue.flatMap((question) =>
+    question.kind === "choice"
+      ? question.options.flatMap((option) => (option.image ? [option.image] : []))
+      : [],
+  );
+  const missingImages = optionImages.filter(
+    (image) => !existsSync(path.join(root, "apps/web/public", image)),
+  );
+  const assets = [
+    ...(pack.profile === "illustrative" ? missingSting : []),
+    ...missingImages,
+  ];
   const issues = validatePack(pack, assets);
   for (const item of issues) {
     if (item.level === "incomplete") {

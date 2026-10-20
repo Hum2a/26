@@ -1,4 +1,4 @@
-import { contentLimits } from "@26/shared";
+import { contentLimits, questionOptionImageSchema } from "@26/shared";
 import { implementedTrollKinds } from "../troll/catalogue.ts";
 import { toPlayable } from "./authoring.ts";
 import {
@@ -153,6 +153,20 @@ function validateAuthored(
   profile: PackProfile,
 ): ContentIssue[] {
   const issues: ContentIssue[] = [];
+  if (question.kind === "choice") {
+    for (const option of question.options)
+      if (
+        option.image !== undefined &&
+        !questionOptionImageSchema.safeParse(option.image).success
+      )
+        issues.push(
+          issue(
+            "error",
+            "asset",
+            `${question.id} has an invalid option image for ${option.id}. Use a local question PNG.`,
+          ),
+        );
+  }
   issues.push(...suppliedIssues(question, profile));
   if (question.status !== "ready") {
     issues.push(...knownAnswerIssues(question));

@@ -491,7 +491,7 @@ describe("October birthday question additions", () => {
       expect(publicQuestionCore(playable!, 1, 2)).not.toHaveProperty("notes");
     },
   );
-  it.each([commonPassword, inflationFreddo, inflationPetrol, christianityBranches])(
+  it.each([commonPassword, christianityBranches])(
     "keeps $id blocked until the real requirements are supplied",
     (question) => {
       expect(question.status).toBe("draft");
@@ -535,16 +535,10 @@ describe("October birthday question additions", () => {
     for (const slider of [inflationFreddo, inflationPetrol]) {
       expect(slider.kind).toBe("slider");
       expect(slider.prompt).toContain("guess the price in 2026");
-      expect(slider.notes).toContain("show the 2012 price");
-      expect(slider.truth).not.toHaveProperty("known");
-      expect(missingRequirements(slider).map((item) => item.name)).toEqual(
-        expect.arrayContaining([
-          "comparison",
-          "reference-price",
-          "scale",
-          "target-price",
-        ]),
-      );
+      expect(slider.notes).toContain("Show the 2012 price");
+      expect(slider.truth).toHaveProperty("known");
+      expect(slider.status).toBe("ready");
+      expect(missingRequirements(slider)).toEqual([]);
     }
   });
   it("registers all seven entries without releasing or replacing the running game", () => {

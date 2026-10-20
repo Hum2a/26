@@ -98,9 +98,8 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
     phone.getByRole("button", { name: "muggletonians", exact: true }),
   ).toBeDisabled();
   await page.getByLabel("Preview a question").selectOption("inflation-freddo");
-  await expect(
-    phone.getByRole("heading", { name: "Preview unavailable" }),
-  ).toBeVisible();
+  await expect(phone.getByRole("slider", { name: "Estimate" })).toBeVisible();
+  await expect(phone.getByText(/typically 20p in 2012/)).toBeVisible();
   expect(sockets).toEqual([]);
   const anonymous = await browser.newContext();
   const denied = await anonymous.request.get(

@@ -15,34 +15,23 @@ import {
 import "./trolley-lever.css";
 
 type View = NonNullable<ReturnType<typeof choiceView>>;
-type Branch = "five" | "one";
+type Branch = "straight" | "diverted";
 
-/** Pulling the lever sends the tram to the branch with one person. */
+/** The option ids carry the lever action; the public copy names its consequences. */
 function branchFor(view: View, optionId: string): Branch {
   if (optionId === "derail") {
-    return "one";
+    return "diverted";
   }
   if (optionId === "leave") {
-    return "five";
+    return "straight";
   }
-  return view.question.options[0]?.id === optionId ? "one" : "five";
+  return view.question.options[0]?.id === optionId ? "diverted" : "straight";
 }
 
 const tracks: Record<Branch, string> = {
-  five: "M380 190 C 480 190, 540 92, 800 92",
-  one: "M380 190 C 480 190, 540 288, 800 288",
+  straight: "M380 190 C 480 190, 540 92, 800 92",
+  diverted: "M380 190 C 480 190, 540 288, 800 288",
 };
-
-const fivePeople = [600, 640, 680, 720, 760];
-
-function Person({ x, y, scale = 1 }: { x: number; y: number; scale?: number }) {
-  return (
-    <g className="trolley-person" transform={`translate(${x} ${y}) scale(${scale})`}>
-      <circle cx="0" cy="-30" r="8" />
-      <path d="M0 -22 L0 0 M-10 -14 L10 -14 M0 0 L-8 14 M0 0 L8 14" />
-    </g>
-  );
-}
 
 function Scene({
   points,
@@ -58,16 +47,16 @@ function Scene({
   labels?: Record<Branch, string>;
 }) {
   const motionSet = useDesignMotion();
-  const angle = points === "five" ? -14 : points === "one" ? 14 : 0;
+  const angle = points === "straight" ? -14 : points === "diverted" ? 14 : 0;
   return (
     <svg
       className="trolley-scene"
       viewBox="0 0 800 380"
       role="img"
-      aria-label="A tram heading for a junction. Five people on one branch, one on the other."
+      aria-label="A trolley approaching a junction. Leave keeps it on the upper track; pull diverts it to the lower track."
     >
       <path className="trolley-sleepers" d="M0 190 L380 190" />
-      {(["five", "one"] as const).map((branch) => (
+      {(["straight", "diverted"] as const).map((branch) => (
         <g key={branch}>
           <path className="trolley-sleepers" d={tracks[branch]} />
           <motion.path
@@ -90,20 +79,12 @@ function Scene({
         animate={{ rotate: angle }}
         transition={motionSet.spring}
       />
-      {fivePeople.map((x) => (
-        <Person key={x} x={x} y={80} />
-      ))}
-      <Person x={700} y={276} />
-      {labels ? (
-        <>
-          <text className="trolley-label" x="790" y="40" textAnchor="end">
-            {labels.five}
-          </text>
-          <text className="trolley-label" x="790" y="362" textAnchor="end">
-            {labels.one}
-          </text>
-        </>
-      ) : null}
+      <text className="trolley-label" x="790" y="40" textAnchor="end">
+        {labels?.straight ?? "Leave it"}
+      </text>
+      <text className="trolley-label" x="790" y="362" textAnchor="end">
+        {labels?.diverted ?? "Pull the lever"}
+      </text>
       <motion.g
         className="trolley-tram"
         initial={{ x: 0 }}
@@ -162,13 +143,12 @@ function TrolleyPhone({
   const branch = view.chosen ? branchFor(view, view.chosen) : undefined;
   return (
     <section className="design-phone trolley" aria-label="Your question">
-      <QuestionTag play={play}>The lever</QuestionTag>
       <h1 className="phone-prompt">{play.question.prompt}</h1>
       <Scene points={branch} lit={branch} tramX={0} idle={false} />
       <div className="trolley-controls">
         {view.question.options.map((option, index) => {
           const chosen = view.chosen === option.id;
-          const pull = branchFor(view, option.id) === "one";
+          const pull = branchFor(view, option.id) === "diverted";
           return (
             <motion.button
               key={option.id}
@@ -209,23 +189,24 @@ function TrolleyStage({
   play,
   view,
 }: Extract<PresentationProps, { surface: "stage" }> & { view: View }) {
-  const totals: Record<Branch, number> = { five: 0, one: 0 };
+  const motionSet = useDesignMotion();
+  const totals: Record<Branch, number> = { straight: 0, diverted: 0 };
   for (const option of view.question.options) {
     totals[branchFor(view, option.id)] += view.count(option.id);
   }
   const majority: Branch | undefined = view.reveal
-    ? totals.one > totals.five
-      ? "one"
-      : totals.five > totals.one
-        ? "five"
+    ? totals.diverted > totals.straight
+      ? "diverted"
+      : totals.straight > totals.diverted
+        ? "straight"
         : undefined
     : undefined;
   const percent = (votes: number) =>
     view.total > 0 ? `${Math.round((votes / view.total) * 100)}%` : "0%";
   const labels = view.reveal
     ? {
-        five: `${totals.five} left it · ${percent(totals.five)}`,
-        one: `${totals.one} pulled the lever · ${percent(totals.one)}`,
+        straight: `${totals.straight} left it · ${percent(totals.straight)}`,
+        diverted: `${totals.diverted} pulled the lever · ${percent(totals.diverted)}`,
       }
     : undefined;
   return (
@@ -239,11 +220,24 @@ function TrolleyStage({
         idle={!view.reveal}
         labels={labels}
       />
+      <div className="trolley-stage-options" aria-label="Lever choices">
+        {view.question.options.map((option) => (
+          <motion.p
+            key={option.id}
+            className="design-stage-line"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={motionSet.soft}
+          >
+            {option.label}
+          </motion.p>
+        ))}
+      </div>
       <p className="design-stage-line">
         {view.reveal ? (
-          majority === "one" ? (
+          majority === "diverted" ? (
             "The room pulled the lever."
-          ) : majority === "five" ? (
+          ) : majority === "straight" ? (
             "The room left the lever alone."
           ) : (
             "The room is split down the middle."

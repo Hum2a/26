@@ -1,0 +1,26 @@
+# Who said it: source audit
+
+Checked 20 October 2026. The ten quotes, option labels and proposed answers were supplied by the user. They are preserved as proposals, **not certified quotations**. The introductory “True equality…” line was an illustrative example, not an eleventh requested round.
+
+Exact-phrase searches did not locate a reliable source establishing any of the ten precise wordings and attributions. That does not prove they were never said; it means the game must not claim they are authentic yet. Similar themes, fan fiction, memes and paraphrases are not sufficient evidence for a scored “who said it” answer. A game's exact edition/localisation and a dialogue reference or timestamp are needed for its lines; social posts need the original author/post and a check against satire/reposts.
+
+Each question is a `choice` draft with a `quote-source` requirement and a missing `verified-attribution` answer. The proposed answer/reveal is retained in private notes. It is not installed as a known answer, poll outcome or public preview key. The preview allows layout/selection/submission rehearsal but clearly says that quote and attribution are unverified. No scores or live room are involved. Source resolution or explicitly authorised parody framing is still required before readiness.
+
+| Supplied round | Stable id                        | Proposed answer | What is missing                                                                                                                                    |
+| -------------- | -------------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1              | `who-said-it-empathy`            | B               | Original LinkedIn post, identifiable author and exact text; cousin/“emotional ROI” story is unverified.                                            |
+| 2              | `who-said-it-freedom`            | A               | Exact Shido dialogue reference, edition/localisation and timestamp.                                                                                |
+| 3              | `who-said-it-sleep`              | B               | Original post and identifiable author; the “Crypto Hedge Fund Patriarch” label alone is not a source.                                              |
+| 4              | `who-said-it-salvation`          | A               | Exact Nyx Avatar dialogue reference, edition/localisation and timestamp.                                                                           |
+| 5              | `who-said-it-crying-ceo`         | B               | Exact wording and 15% figure do not match the corroborated crying-CEO reporting; do not attribute this supplied passage to Braden Wallake as fact. |
+| 6              | `who-said-it-nihilism`           | A               | Exact Adachi dialogue reference, edition/localisation and timestamp.                                                                               |
+| 7              | `who-said-it-technology`         | B               | Exact passage/paragraph in a reliable edition of the claimed manifesto. Thematic similarity is insufficient.                                       |
+| 8              | `who-said-it-performance-review` | B               | Original LinkedIn post and identifiable author; the generic founder description is not a source.                                                   |
+| 9              | `who-said-it-absolute-force`     | A               | Exact Akechi boss-fight dialogue reference, edition/localisation and timestamp.                                                                    |
+| 10             | `who-said-it-grief-pipeline`     | B               | Original post and author; a claim about a Reddit “hall of fame” does not verify authenticity.                                                      |
+
+The crying-CEO incident itself is documented. [The Washington Post's contemporary report](https://www.washingtonpost.com/business/2022/08/11/crying-ceo-linkedin-layoffs-recession/) concerns two employees. That does not authenticate the supplied passage or percentage. The [identified original LinkedIn post](https://www.linkedin.com/posts/bradenwallake_this-will-be-the-most-vulnerable-thing-ill-activity-6962886723617910784-_L4w) could not be retrieved by the browsing tool during this audit. No replacement quotation was copied or silently substituted.
+
+The custom `who-said-it` presentation uses the existing public prompt for the quote (all ten fit the existing 200-character bound), existing two-choice intents, phone dock and authoritative scoring. No parallel swipe submission path, score store or quote schema was introduced. The two choices are tappable A/B controls, followed by Send choice. Defaults are 20 seconds and 100 points once a question has a verified answer and becomes ready. The development design bench uses explicitly fictional stand-in wording and speakers, with a labelled stand-in reveal.
+
+No question is in `order`; the birthday pack is unreleased. Do not promote these drafts simply because the proposed answer letters were supplied. The authoring uncertainty is factual attribution, not an unsupported interaction.

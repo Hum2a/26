@@ -37,11 +37,15 @@ Helpers live in `apps/api/src/questions/authoring.ts`. Defaults live only in `ap
 | One-against-one number                  | `duelQuestion`                                              | `duel`   |
 | Two contestants, everyone else predicts | `finaleQuestion`                                            | `finale` |
 
+A choice option may include `image: "/assets/questions/<question-id>/<option-id>.png"`. Use a real PNG in `apps/web/public/assets/questions/`. Phone cards and stage options contain the illustration inside their existing dimensions; the visible label stays the accessible button name. Content preflight checks that every referenced option image exists.
+
+For a quotation A/B round, use a choice with `presentation: "who-said-it"` and put the quote in its public `prompt`. Keep the ordinary 200-character prompt limit; do not silently shorten a quotation. A factual “who said it” needs an exact source and verified attribution. Keep unsourced lines as drafts with a `quote-source` requirement and a missing `verified-attribution` answer; preserve a supplied answer only in private notes until verified. Their phone rehearsal labels the quote and attribution unverified. Explicitly authorised parody needs clear fictional framing, without attributing invented statements to real people. The design bench uses invented stand-ins, never a real answer key.
+
 A threshold outcome names an option, a share, and who scores either way. `{ kind: "threshold", optionId: "blue", above: 0.5, met: "everyone", otherwise: ["red"] }` means: if more than half of the answers are blue, everyone who answered scores; otherwise only red scores. A guest with no answer never scores.
 
 A typed question lists its accepted spellings. The first is shown at the reveal. Matching ignores case, accents, punctuation, hyphens and spacing, and forgives a small typo: none up to 4 letters, one up to 9, two beyond that. Wrong answers stay off the stage.
 
-A Wordle question supplies `answer: { known: "�" }` with exactly five uppercase letters. Defaults are six guesses, two minutes and 100 points for a solve, with no speed bonus. The server validates guesses against Encore Glyph’s frozen word list, always allowing the supplied target. Repeated letters use two-pass marking. Only the guest sees their own board; the stage gets finished-board progress and the target at reveal. A reconnect restores the saved board. In Question packs, its phone rehearsal checks guesses through an authenticated, stateless server endpoint; it never starts a room or awards points.
+A Wordle question supplies `answer: { known: "ABCDE" }` with exactly five uppercase letters. Defaults are six guesses, two minutes and 100 points for a solve, with no speed bonus. The server validates guesses against Encore Glyph’s frozen word list, always allowing the supplied target. Repeated letters use two-pass marking. Only the guest sees their own board; the stage gets finished-board progress and the target at reveal. A reconnect restores the saved board. In Question packs, its phone rehearsal checks guesses through an authenticated, stateless server endpoint; it never starts a room or awards points.
 
 If the idea needs an interaction that is not in that list, say so and still save a draft. Do not force it into the wrong mechanic, and do not start a new scoring engine.
 
@@ -90,6 +94,8 @@ When an ordinary setting is omitted, the helper uses `apps/api/src/questions/def
 - Finale: 70 points for the contestants, 30 for a correct prediction, 20 seconds to predict.
 
 Windows must be a whole number of milliseconds from 15 to 45 seconds. Points are a whole number from 0 to 1000. A question id is 1 to 40 characters, lowercase letters, digits, and hyphens. A prompt is 1 to 200 characters. Option ids are 1 to 16 characters in the same slug form. Labels are 1 to 80 characters. A pack order holds at most 40 questions.
+
+The catalogue may hold more than 40 entries; that limit applies to the live running order. An unordered question's isolated phone rehearsal shows `1 / 1`. A question in a running order keeps its position and that order's total.
 
 ## Versions
 

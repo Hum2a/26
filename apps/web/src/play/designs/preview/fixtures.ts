@@ -22,6 +22,21 @@ const choice = {
 };
 
 export const previewQuestions: Record<CustomPresentationId, PublicQuestion> = {
+  "who-said-it": {
+    ...core,
+    ...choice,
+    id: "who-said-it-preview",
+    presentation: "who-said-it",
+    prompt:
+      "A meeting without a spreadsheet is merely a gathering of unmeasured potential. Your calendar is the final frontier of ambition, and every empty cell is a missed opportunity.",
+    options: [
+      {
+        id: "a",
+        label: "An imaginary space-opera villain at the annual budget summit",
+      },
+      { id: "b", label: "A fictional productivity coach posting a quarterly update" },
+    ],
+  },
   glyph: {
     ...core,
     id: "word-lab-preview",
@@ -147,10 +162,10 @@ export const previewQuestions: Record<CustomPresentationId, PublicQuestion> = {
     points: 0,
     outcome: "poll",
     prompt:
-      "A train is heading for 5 people. You can derail it to kill only 1. Do you?",
+      "A runaway trolley is heading for 1,000 imaginary planets. Pull the lever and it hits one imaginary moon instead. What do you do?",
     options: [
-      { id: "derail", label: "Yes, derail it" },
-      { id: "leave", label: "No, leave it" },
+      { id: "derail", label: "Pull: save 1,000 imaginary planets; lose the moon" },
+      { id: "leave", label: "Leave: save the moon; lose 1,000 imaginary planets" },
     ],
   },
   "bin-unmasked": {

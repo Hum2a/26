@@ -1,5 +1,13 @@
 /* Trolley lever: a junction drawn in SVG from the theme's own colours. */
 
+.trolley .trolley-scene {
+  max-height: 12dvh;
+}
+
+.design-phone.trolley {
+  gap: 0.65rem;
+}
+
 .trolley-scene {
   display: block;
   width: 100%;
@@ -34,17 +42,6 @@
 .trolley-points {
   stroke: var(--accent);
   stroke-width: 12;
-  stroke-linecap: round;
-}
-
-.trolley-person circle {
-  fill: var(--foreground);
-}
-
-.trolley-person path {
-  fill: none;
-  stroke: var(--foreground);
-  stroke-width: 4;
   stroke-linecap: round;
 }
 
@@ -112,8 +109,23 @@
 }
 
 .trolley-stage .trolley-scene {
-  max-height: 46vh;
+  max-height: 26vh;
   margin: 0 auto;
   width: auto;
   max-width: 100%;
+}
+
+.trolley-stage {
+  gap: 1.25rem;
+}
+
+.trolley-stage-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.75rem;
+}
+
+.trolley-stage-options > p {
+  padding-inline-start: 1rem;
+  border-inline-start: 4px solid var(--line);
 }
