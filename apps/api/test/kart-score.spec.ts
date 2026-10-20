@@ -2,6 +2,8 @@ import { expect, it } from "vitest";
 import {
   createKartRace,
   reduceKart,
+  reduceKartTimeline,
+  type KartTimedInput,
   kartStandings,
   projectKartRace,
   kartInputSchema,
@@ -133,4 +135,112 @@ it("keeps a consistent turn radius through intermittent throttle and a pause-sha
     race = reduceKart(race, { type: "tick", elapsedMs: t + 100 });
   }
   expect(race.drivers[0]!.status).toBe("FINISHED");
+});
+
+it("projects drift charge and boosts only a deliberate throttle-held release, never stale controls or braking", () => {
+  let charged = start();
+  for (let t = 0; t < 2500; t += 100) {
+    charged = input(charged, "a", t + 1, {
+      ...kartNeutral,
+      gas: true,
+      steer: 0.2,
+      drift: true,
+    });
+    charged = reduceKart(charged, { type: "tick", elapsedMs: t + 100 });
+  }
+  expect(projectKartRace(charged, "a", 100).participants[0]).toMatchObject({
+    driftCharge: 1,
+    drifting: true,
+    boostRemainingMs: 0,
+    wrongWay: false,
+  });
+  const released = reduceKart(input(charged, "a", 3000), {
+    type: "tick",
+    elapsedMs: 2600,
+  });
+  expect(
+    projectKartRace(released, "a", 100).participants[0]!.boostRemainingMs,
+  ).toBeGreaterThan(0);
+  const stale = reduceKart(charged, { type: "tick", elapsedMs: 3000 });
+  expect(projectKartRace(stale, "a", 100).participants[0]).toMatchObject({
+    driftCharge: 0,
+    boostRemainingMs: 0,
+    drifting: false,
+  });
+  const braking = reduceKart(
+    input(charged, "a", 3000, { ...kartNeutral, brake: true }),
+    { type: "tick", elapsedMs: 2600 },
+  );
+  expect(projectKartRace(braking, "a", 100).participants[0]!.boostRemainingMs).toBe(0);
+  const final = projectKartRace(reduceKart(released, { type: "end" }), "a", 100);
+  expect(final.participants[0]).toMatchObject({
+    driftCharge: 0,
+    boostRemainingMs: 0,
+    drifting: false,
+  });
+});
+
+it("reports wrong-way velocity for both forward and reverse driving without revealing private physics", () => {
+  const race = start(),
+    driver = race.drivers[0]!;
+  driver.speed = 7;
+  driver.heading = -Math.PI / 2;
+  expect(projectKartRace(race, "a", 100).participants[0]!.wrongWay).toBe(true);
+  driver.speed = -2;
+  expect(projectKartRace(race, "a", 100).participants[0]!.wrongWay).toBe(false);
+  driver.heading = Math.PI / 2;
+  expect(projectKartRace(race, "a", 100).participants[0]!.wrongWay).toBe(true);
+  driver.speed = 0;
+  expect(projectKartRace(race, "a", 100).participants[0]!.wrongWay).toBe(false);
+});
+
+it("replays independent ghost-kart timelines deterministically at full-room size", () => {
+  const players = Array.from({ length: 80 }, (_, i) => ({
+    playerId: `p${i}`,
+    name: `Driver ${i}`,
+  }));
+  let room = createKartRace("load", players);
+  let solo = createKartRace("load", [players[0]!]);
+  for (let tick = 0; tick < 50; tick++) {
+    const events: KartTimedInput[] = players.flatMap((p, i) =>
+      [0, 100].map((offset) => ({
+        playerId: p.playerId,
+        elapsed: tick * 200 + offset + (i % 10),
+        input: {
+          raceId: "load",
+          sequence: tick * 2 + offset / 100 + 1,
+          ...kartNeutral,
+          gas: true,
+          steer: 0.24,
+        },
+      })),
+    );
+    // Out-of-order transport queues must give the same race as sorted queues.
+    room = reduceKartTimeline(room, [...events].reverse(), (tick + 1) * 200);
+    solo = reduceKartTimeline(
+      solo,
+      events.filter((e) => e.playerId === "p0"),
+      (tick + 1) * 200,
+    );
+  }
+  expect(room.drivers[0]).toEqual(solo.drivers[0]);
+  expect(
+    room.drivers.every((d) => Number.isFinite(d.x) && Number.isFinite(d.speed)),
+  ).toBe(true);
+  expect(room.elapsedMs).toBe(10_000);
+  const before = JSON.stringify(room);
+  const newer = reduceKartTimeline(
+    room,
+    [
+      {
+        playerId: "p0",
+        elapsed: 0,
+        input: { raceId: "load", sequence: 999999, ...kartNeutral, brake: true },
+      },
+    ],
+    10_200,
+  );
+  expect(newer.drivers[0]!.sequence).toBe(room.drivers[0]!.sequence); // No retroactive/stale throttle.
+  expect(JSON.stringify(room)).toBe(before); // Original persisted state remains immutable.
+  expect(reduceKartTimeline(room, [], NaN)).toBe(room);
 });

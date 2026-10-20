@@ -54,7 +54,7 @@ describe("PhaseTransition", () => {
       expect(document.querySelector("[data-phase='lobby']")).toBeNull(),
     );
     expect(document.querySelector("[data-phase='prompt']")).toBeTruthy();
-    expect(mounts).toBe(2);
+    await waitFor(() => expect(mounts).toBe(2));
 
     vi.stubGlobal("matchMedia", matchMedia(true));
     render(

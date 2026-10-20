@@ -50,8 +50,6 @@ export function createAuth(
     throw new Error("Authentication is not configured for this environment.");
   }
 
-  // Assigned before any request can invoke a delivery callback. No per-request code cache.
-  let issueCode: (email: string) => Promise<string>;
   const options = {
     appName: "26",
     baseURL: input.origin,
@@ -122,8 +120,9 @@ export function createAuth(
 
   const auth = betterAuth(options);
   // Supported server-only API in pinned Better Auth 1.7.5. It stores only the OTP hash.
-  issueCode = (email) =>
-    auth.api.createVerificationOTP({ body: { email, type: "sign-in" } });
+  async function issueCode(email: string): Promise<string> {
+    return auth.api.createVerificationOTP({ body: { email, type: "sign-in" } });
+  }
   return auth;
 }
 

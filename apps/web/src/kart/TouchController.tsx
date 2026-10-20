@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { kartNeutral, type KartControls } from "@26/shared";
+import { SteeringPad } from "./SteeringPad";
 import "./kart.css";
 
 /** Pointer capture keeps multiple thumbs independent; cancellation never leaves the throttle held. */
@@ -10,6 +11,8 @@ export function TouchController({
   disabled?: boolean;
   onChange: (value: KartControls) => void;
 }) {
+  const [pad, setPad] = useState(false);
+  const [swapped, setSwapped] = useState(false);
   const [controls, setControls] = useState<KartControls>({ ...kartNeutral });
   const current = useRef<KartControls>({ ...kartNeutral });
   const callback = useRef(onChange);
@@ -89,64 +92,102 @@ export function TouchController({
     if (![...pointers.current.values()].includes(control)) emit({ [control]: false });
   }
   return (
-    <div className="kart-controller" aria-label="Kart touch controls">
-      <div className="kart-steering">
-        <label htmlFor="kart-steering">Steer left / right</label>
-        <input
-          id="kart-steering"
-          aria-label="Steering"
-          type="range"
-          min={-1}
-          max={1}
-          step={0.01}
-          value={controls.steer}
-          disabled={disabled}
-          onChange={(event) => emit({ steer: Number(event.target.value) })}
-          onPointerUp={() => emit({ steer: 0 })}
-          onPointerCancel={() => emit({ steer: 0 })}
-          onBlur={() => emit({ steer: 0 })}
-        />
-        <span aria-hidden="true">
-          ← &nbsp; {Math.round(controls.steer * 100)} &nbsp; →
-        </span>
+    <div className="kart-controller-shell">
+      <div className="kart-control-options">
+        <button
+          type="button"
+          aria-pressed={pad}
+          onClick={() => {
+            pointers.current.clear();
+            emit(kartNeutral);
+            setPad(!pad);
+          }}
+        >
+          {pad ? "Use steering slider" : "Use thumb pad"}
+        </button>
+        <button
+          type="button"
+          aria-pressed={swapped}
+          onClick={() => {
+            pointers.current.clear();
+            emit(kartNeutral);
+            setSwapped(!swapped);
+          }}
+        >
+          Swap sides
+        </button>
       </div>
-      <div className="kart-pedals">
-        {(
-          [
-            ["gas", "A", "Accelerate"],
-            ["brake", "B", "Brake / reverse"],
-            ["drift", "R", "Drift / hop"],
-          ] as const
-        ).map(([control, key, label]) => (
-          <button
-            key={control}
-            type="button"
-            className={`kart-pedal kart-pedal-${control}`}
-            aria-label={label}
-            aria-pressed={controls[control]}
-            disabled={disabled}
-            onPointerDown={(event) => press(event, control)}
-            onPointerUp={release}
-            onPointerCancel={release}
-            onLostPointerCapture={release}
-            onKeyDown={(event) => {
-              if (event.key === " " || event.key === "Enter") {
-                event.preventDefault();
-                emit({ [control]: true });
-              }
-            }}
-            onKeyUp={(event) => {
-              if (event.key === " " || event.key === "Enter") {
-                event.preventDefault();
-                emit({ [control]: false });
-              }
-            }}
-            onBlur={() => emit({ [control]: false })}
-          >
-            <strong>{key}</strong>
-            <span>{label}</span>
-          </button>
-        ))}
+      <div
+        className="kart-controller"
+        data-swapped={swapped}
+        aria-label="Kart touch controls"
+      >
+        <div className="kart-steering">
+          <label htmlFor="kart-steering">Steer left / right</label>
+          {pad ? (
+            <SteeringPad
+              value={controls.steer}
+              disabled={disabled}
+              onChange={(steer) => emit({ steer })}
+            />
+          ) : (
+            <input
+              id="kart-steering"
+              aria-label="Steering"
+              type="range"
+              min={-1}
+              max={1}
+              step={0.01}
+              value={controls.steer}
+              disabled={disabled}
+              onChange={(event) => emit({ steer: Number(event.target.value) })}
+              onPointerUp={() => emit({ steer: 0 })}
+              onPointerCancel={() => emit({ steer: 0 })}
+              onBlur={() => emit({ steer: 0 })}
+            />
+          )}
+          <span aria-hidden="true">
+            ← &nbsp; {Math.round(controls.steer * 100)} &nbsp; →
+          </span>
+        </div>
+        <div className="kart-pedals">
+          {(
+            [
+              ["gas", "A", "Accelerate"],
+              ["brake", "B", "Brake / reverse"],
+              ["drift", "R", "Drift / boost"],
+            ] as const
+          ).map(([control, key, label]) => (
+            <button
+              key={control}
+              type="button"
+              className={`kart-pedal kart-pedal-${control}`}
+              aria-label={label}
+              aria-pressed={controls[control]}
+              disabled={disabled}
+              onPointerDown={(event) => press(event, control)}
+              onPointerUp={release}
+              onPointerCancel={release}
+              onLostPointerCapture={release}
+              onKeyDown={(event) => {
+                if (event.key === " " || event.key === "Enter") {
+                  event.preventDefault();
+                  emit({ [control]: true });
+                }
+              }}
+              onKeyUp={(event) => {
+                if (event.key === " " || event.key === "Enter") {
+                  event.preventDefault();
+                  emit({ [control]: false });
+                }
+              }}
+              onBlur={() => emit({ [control]: false })}
+            >
+              <strong>{key}</strong>
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

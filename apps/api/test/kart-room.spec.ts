@@ -8,8 +8,9 @@ import { acceptKartInput, readKart } from "../src/questions/kart.ts";
 import { questionFor } from "../src/questions/registry.ts";
 import { kartNeutral } from "@26/shared";
 
-async function setup() {
-  const now = Date.now(),
+async function setup(names = ["Amina", "Bilal"]) {
+  // Keep automatic wall-clock alarms in the future; tests explicitly drive the injected clock.
+  const now = Date.now() + 60_000,
     created = await env.ROOM_CODE_REGISTRY.getByName("codes").createLobby({
       requestId: crypto.randomUUID(),
       digest: await payloadDigest({ action: "create" }),
@@ -19,7 +20,7 @@ async function setup() {
   const room = created.result,
     stub = env.PARTY_ROOM.getByName(room.gameId);
   const players = [];
-  for (const nickname of ["Amina", "Bilal"]) {
+  for (const nickname of names) {
     const p = await stub.joinPlayer({
       nickname,
       requestId: crypto.randomUUID(),
@@ -206,4 +207,64 @@ it("persists lap winners once, ignores client times, and continues to scores and
       ).ok,
     ).toBe(true);
   expect((await stub.snapshotFor("stage")).phase).toBe("podium");
+});
+
+it("persists full-room control queues before a tick and replays them after eviction without cross-driver leakage", async () => {
+  const { stub, players, now } = await setup(
+    Array.from({ length: 80 }, (_, i) => `Driver ${i + 1}`),
+  );
+  const raceId = (await stub.snapshotFor("stage")).play!.kart!.raceId;
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql,
+      store = createSqlStore(sql),
+      q = questionFor(store.readRoom());
+    if (q?.kind !== "kart") throw new Error("Kart required");
+    for (let offset = 0; offset <= 100; offset += 100)
+      for (const [i, playerId] of players.entries()) {
+        expect(
+          acceptKartInput(
+            sql,
+            store,
+            playerId,
+            {
+              raceId,
+              sequence: offset / 100 + 1,
+              ...kartNeutral,
+              gas: i % 2 === 0,
+              steer: 0.24,
+            },
+            q,
+            now + offset,
+          ),
+        ).toBe(true);
+      }
+    expect(readKart(sql, q.id)!.elapsedMs).toBe(0); // Inputs are queued, not optimistically simulated.
+  });
+  await evictDurableObject(stub);
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql,
+      store = createSqlStore(sql),
+      q = questionFor(store.readRoom());
+    if (q?.kind !== "kart") throw new Error("Kart required");
+    onAlarm(createGameStore(sql), now + 200);
+    const saved = readKart(sql, q.id)!;
+    expect(saved.drivers).toHaveLength(80);
+    expect(saved.elapsedMs).toBe(200);
+    for (const [i, driver] of saved.drivers.entries()) {
+      expect(driver.sequence).toBe(2);
+      expect(driver.speed > 0).toBe(i % 2 === 0);
+    }
+    // Throttle expires at 500ms; exponential coasting needs time to settle.
+    onAlarm(createGameStore(sql), now + 3000);
+    expect(readKart(sql, q.id)!.drivers.every((d) => Math.abs(d.speed) < 0.1)).toBe(
+      true,
+    );
+    expect(readKart(sql, q.id)!.drivers.every((d) => d.inputUntil === 500)).toBe(true);
+  });
+  const guest = (await stub.snapshotFor("guest", players[79])).play!.kart!;
+  expect(guest.participants).toHaveLength(1);
+  expect(guest.participants[0]!.playerId).toBe(players[79]);
+  expect(guest.inputCursor).toBe(2);
+  expect(guest.leaderboard).toHaveLength(9); // Top eight plus this phone's own place.
+  expect(JSON.stringify(guest)).not.toContain("inputUntil");
 });

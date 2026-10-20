@@ -210,7 +210,7 @@
   .kart-phone > p {
     grid-column: 1;
   }
-  .kart-controller {
+  .kart-controller-shell {
     grid-column: 2;
     grid-row: 1/6;
   }
@@ -238,4 +238,196 @@ body:has(.kart-phone) {
 }
 .kart-controller {
   -webkit-touch-callout: none;
+}
+
+.kart-map-gate {
+  fill: var(--background);
+  stroke: var(--foreground);
+  stroke-width: 0.7;
+  transition: fill 0.18s ease;
+}
+.kart-map-gate-passed {
+  fill: var(--highlight);
+}
+.kart-telemetry {
+  display: grid;
+  gap: 0.45rem;
+}
+.kart-driving-state {
+  font-size: 0.95rem;
+  font-weight: 800;
+  min-height: 1.5em;
+}
+.kart-drift-meter {
+  height: 0.65rem;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.kart-drift-meter > span {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--highlight);
+}
+.kart-telemetry-labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.kart-finish-card {
+  padding: 1.2rem;
+  display: grid;
+  gap: 0.6rem;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+}
+.kart-finish-card > strong {
+  font-size: 1.5rem;
+}
+.kart-control-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.kart-control-options button {
+  min-height: 44px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font-size: 0.7rem;
+  background: var(--surface);
+  color: var(--foreground);
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+.kart-control-options button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.kart-control-options button:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+.kart-controller[data-swapped="true"] {
+  grid-template-columns: 1.4fr 1fr;
+}
+.kart-controller[data-swapped="true"] .kart-steering {
+  grid-column: 2;
+  grid-row: 1;
+}
+.kart-controller[data-swapped="true"] .kart-pedals {
+  grid-column: 1;
+  grid-row: 1;
+}
+.kart-thumb-pad {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  max-height: 160px;
+  min-height: 100px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  touch-action: none;
+}
+.kart-thumb-pad:focus-within {
+  outline: 3px solid var(--highlight);
+  outline-offset: 4px;
+}
+.kart-thumb-pad[data-disabled="true"] {
+  opacity: 0.45;
+}
+.kart-thumb-track {
+  position: absolute;
+  inset: 40% 10%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+}
+.kart-thumb-track > span {
+  width: 1px;
+  height: 1.7rem;
+  background: var(--line);
+}
+.kart-thumb-knob {
+  position: absolute;
+  left: calc(50% + var(--steer) * 36%);
+  top: 50%;
+  width: 38%;
+  aspect-ratio: 1;
+  border: 2px solid var(--foreground);
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: left 0.06s ease-out;
+}
+.kart-thumb-pad input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .kart-phone .kart-telemetry {
+    grid-column: 1;
+  }
+  .kart-controller-shell {
+    align-self: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kart-thumb-knob {
+    transition-duration: 0.1s;
+  }
+}
+
+.kart-canvas-root,
+.kart-canvas-mount {
+  width: 100%;
+  height: 100%;
+}
+.kart-canvas-mount {
+  display: grid;
+  place-content: center;
+}
+.kart-canvas-mount:has(canvas) {
+  display: block;
+}
+.kart-canvas-recovery {
+  position: absolute;
+  inset: 20% 10%;
+  padding: 1rem;
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: var(--radius-panel);
+  display: grid;
+  place-content: center;
+  gap: 1rem;
+}
+.kart-canvas-recovery button,
+.kart-canvas-mount > button {
+  min-height: 44px;
+  border: 1px solid var(--accent);
+  padding: 0.7rem;
+  border-radius: var(--radius-control);
+  transition: background 0.16s ease;
+}
+
+.kart-phone:not(:has(.kart-finish-card)) {
+  gap: 0.65rem;
+}
+.kart-phone:not(:has(.kart-finish-card)) .kart-phone-hud svg {
+  max-height: 96px;
 }

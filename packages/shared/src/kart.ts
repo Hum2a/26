@@ -31,6 +31,11 @@ export const kartDriverSchema = z
     speed: z.number().finite(),
     progress: z.number().min(0).max(1),
     checkpoint: z.number().int().min(0).max(8),
+    // Defaults accept older stored/public snapshots during a rolling update.
+    driftCharge: z.number().min(0).max(1).default(0),
+    boostRemainingMs: z.number().int().min(0).max(1200).default(0),
+    drifting: z.boolean().default(false),
+    wrongWay: z.boolean().default(false),
     status: z.enum(["RACING", "FINISHED", "DNF"]),
     lapTimeMs: z.number().int().nonnegative().nullable(),
   })
@@ -69,7 +74,10 @@ export type KartCompletion = {
   status: "FINISHED" | "DNF";
 };
 
-type Driver = KartDriver & {
+type Driver = Omit<
+  KartDriver,
+  "driftCharge" | "boostRemainingMs" | "drifting" | "wrongWay"
+> & {
   sequence: number;
   input: KartControls;
   inputUntil: number;
@@ -119,7 +127,105 @@ export function createKartRace(
   };
 }
 
-/** Pure server reducer: a phone supplies controls, never position, time, checkpoints or points. */
+function copyRace(race: KartRace): KartRace {
+  return {
+    ...race,
+    drivers: race.drivers.map((d) => ({ ...d, input: { ...d.input } })),
+  };
+}
+function applyInput(
+  driver: Driver,
+  raceId: string,
+  input: KartInput,
+  elapsed: number,
+): boolean {
+  if (
+    driver.status !== "RACING" ||
+    input.raceId !== raceId ||
+    input.sequence <= driver.sequence
+  )
+    return false;
+  driver.sequence = input.sequence;
+  driver.input = {
+    steer: input.steer,
+    gas: input.gas,
+    brake: input.brake,
+    drift: input.drift,
+  };
+  driver.inputUntil = elapsed + 400;
+  return true;
+}
+function advanceDriver(driver: Driver, from: number, target: number): void {
+  for (let t = from; t < target && driver.status === "RACING"; t += 50) {
+    const ms = Math.min(50, target - t);
+    stepDriver(driver, t + ms, ms);
+  }
+}
+function settleRace(race: KartRace, force = false): KartRace {
+  if (
+    force ||
+    race.elapsedMs >= kartLimitMs ||
+    race.drivers.every((d) => d.status !== "RACING")
+  ) {
+    race.ended = true;
+    for (const d of race.drivers) {
+      if (d.status === "RACING") {
+        d.status = "DNF";
+        d.speed = 0;
+      }
+      d.driftMs = d.boostMs = 0;
+      d.wasDrifting = false;
+    }
+  }
+  return race;
+}
+
+export type KartTimedInput = { playerId: string; elapsed: number; input: KartInput };
+
+/** Replays persisted server-stamped input independently for each ghost kart.
+ * One clone per tick; another driver's 10Hz inputs do not subdivide everyone's physics.
+ * There is deliberately no browser timestamp or lap result in this interface.
+ */
+export function reduceKartTimeline(
+  race: KartRace,
+  events: readonly KartTimedInput[],
+  elapsedMs: number,
+): KartRace {
+  if (race.ended || !Number.isFinite(elapsedMs)) return race;
+  const target = Math.min(kartLimitMs, Math.max(race.elapsedMs, Math.floor(elapsedMs)));
+  const next = copyRace(race);
+  const byPlayer = new Map<string, KartTimedInput[]>();
+  for (const event of events) {
+    if (
+      !Number.isFinite(event.elapsed) ||
+      event.elapsed < race.elapsedMs ||
+      event.elapsed > target
+    )
+      continue;
+    const pending = byPlayer.get(event.playerId) ?? [];
+    pending.push(event);
+    byPlayer.set(event.playerId, pending);
+  }
+  for (const driver of next.drivers) {
+    let cursor = race.elapsedMs;
+    const pending = byPlayer.get(driver.playerId) ?? [];
+    pending.sort(
+      (a, b) => a.elapsed - b.elapsed || a.input.sequence - b.input.sequence,
+    );
+    for (const event of pending) {
+      if (event.input.raceId !== race.raceId || event.input.sequence <= driver.sequence)
+        continue;
+      advanceDriver(driver, cursor, event.elapsed);
+      cursor = event.elapsed;
+      applyInput(driver, race.raceId, event.input, event.elapsed);
+    }
+    advanceDriver(driver, cursor, target);
+  }
+  next.elapsedMs = target;
+  return settleRace(next);
+}
+
+/** Pure server reducer: phones supply controls, never positions, times or points. */
 export function reduceKart(
   race: KartRace,
   event:
@@ -128,51 +234,13 @@ export function reduceKart(
     | { type: "end" },
 ): KartRace {
   if (race.ended) return race;
-  const next: KartRace = {
-    ...race,
-    drivers: race.drivers.map((d) => ({ ...d, input: { ...d.input } })),
-  };
-  if (event.type === "input") {
-    const d = next.drivers.find((d) => d.playerId === event.playerId);
-    if (
-      !d ||
-      d.status !== "RACING" ||
-      event.value.raceId !== race.raceId ||
-      event.value.sequence <= d.sequence
-    )
-      return race;
-    d.sequence = event.value.sequence;
-    d.input = {
-      steer: event.value.steer,
-      gas: event.value.gas,
-      brake: event.value.brake,
-      drift: event.value.drift,
-    };
-    d.inputUntil = race.elapsedMs + 400;
-    return next;
-  }
-  const target =
-    event.type === "end"
-      ? race.elapsedMs
-      : Math.min(kartLimitMs, Math.max(race.elapsedMs, Math.floor(event.elapsedMs)));
-  for (let t = race.elapsedMs; t < target; t += 50) {
-    const ms = Math.min(50, target - t);
-    for (const d of next.drivers) if (d.status === "RACING") stepDriver(d, t + ms, ms);
-  }
-  next.elapsedMs = target;
-  if (
-    event.type === "end" ||
-    target >= kartLimitMs ||
-    next.drivers.every((d) => d.status !== "RACING")
-  ) {
-    next.ended = true;
-    for (const d of next.drivers)
-      if (d.status === "RACING") {
-        d.status = "DNF";
-        d.speed = 0;
-      }
-  }
-  return next;
+  if (event.type === "tick") return reduceKartTimeline(race, [], event.elapsedMs);
+  const next = copyRace(race);
+  if (event.type === "end") return settleRace(next, true);
+  const driver = next.drivers.find((d) => d.playerId === event.playerId);
+  return driver && applyInput(driver, race.raceId, event.value, race.elapsedMs)
+    ? next
+    : race;
 }
 
 const tau = 2 * Math.PI;
@@ -184,9 +252,19 @@ const damp = (a: number, b: number, rate: number, dt: number) =>
  */
 function stepDriver(d: Driver, elapsed: number, ms: number): void {
   const dt = ms / 1000;
-  const input = elapsed <= d.inputUntil ? d.input : kartNeutral;
+  const fresh = elapsed <= d.inputUntil;
+  const input = fresh ? d.input : kartNeutral;
   const drifting = input.drift && Math.abs(input.steer) > 0.15 && d.speed > 5;
-  if (d.wasDrifting && !drifting && d.driftMs >= 700)
+  // A stale/disconnected controller or braking must never cash in a drift.
+  if (
+    d.wasDrifting &&
+    !drifting &&
+    fresh &&
+    !input.drift &&
+    input.gas &&
+    !input.brake &&
+    d.driftMs >= 700
+  )
     d.boostMs = Math.min(1200, d.driftMs / 2);
   d.driftMs = drifting ? d.driftMs + ms : 0;
   d.wasDrifting = drifting;
@@ -285,6 +363,9 @@ export function projectKartRace(
         checkpoint,
         status,
         lapTimeMs,
+        driftMs,
+        boostMs,
+        wasDrifting,
       }) => ({
         playerId,
         name,
@@ -297,6 +378,16 @@ export function projectKartRace(
         checkpoint,
         status,
         lapTimeMs,
+        driftCharge: status === "RACING" ? Math.min(1, driftMs / 700) : 0,
+        boostRemainingMs: status === "RACING" ? Math.floor(boostMs) : 0,
+        drifting: status === "RACING" && wasDrifting,
+        wrongWay:
+          status === "RACING" &&
+          Math.abs(speed) > 0.5 &&
+          ((-z * Math.cos(heading) + x * Math.sin(heading)) /
+            Math.max(1, Math.hypot(x, z))) *
+            Math.sign(speed) <
+            -0.25,
       }),
     ),
     leaderboard: kartStandings(race, race.ended ? points : 0),

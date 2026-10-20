@@ -4,6 +4,7 @@ import {
   kartTickMs,
   createKartRace,
   reduceKart,
+  reduceKartTimeline,
   projectKartRace,
   kartStandings,
   type KartRace,
@@ -86,7 +87,6 @@ function catchUp(
   const race = readKart(sql, q.id);
   if (!race) return undefined;
   const target = elapsed(sql, store, now);
-  let next = race;
   const events = sql
     .exec<{ payload: string }>(
       "SELECT payload FROM round_state WHERE question_id = ? AND state_key LIKE 'kart-input:%'",
@@ -96,17 +96,7 @@ function catchUp(
     .flatMap((row) => (JSON.parse(row.payload) as InputQueue).pending)
     .filter((e) => e.elapsed <= target)
     .sort((a, b) => a.elapsed - b.elapsed || a.input.sequence - b.input.sequence);
-  for (const event of events) {
-    const driver = next.drivers.find((d) => d.playerId === event.playerId);
-    if (!driver || event.input.sequence <= driver.sequence) continue;
-    next = reduceKart(next, { type: "tick", elapsedMs: event.elapsed });
-    next = reduceKart(next, {
-      type: "input",
-      playerId: event.playerId,
-      value: event.input,
-    });
-  }
-  next = reduceKart(next, { type: "tick", elapsedMs: target });
+  const next = reduceKartTimeline(race, events, target);
   write(sql, q.id, next);
   return next;
 }

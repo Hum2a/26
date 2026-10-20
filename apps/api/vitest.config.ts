@@ -28,7 +28,7 @@ export default defineConfig({
         ],
         test: {
           name: "worker",
-          include: ["test/health.spec.ts"],
+          include: ["test/health.spec.ts", "test/email-worker.spec.ts"],
         },
       },
       {

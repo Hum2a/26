@@ -49,7 +49,7 @@ test("a quiz transitions to the synchronised TV race, two phone controllers and 
   });
   await admin.goto("/admin");
   await admin.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
-  await admin.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await admin.getByRole("button", { name: "Email me a code and link" }).click();
   await admin
     .getByRole("link", { name: "Open the sign-in confirmation" })
     .first()
@@ -116,6 +116,22 @@ test("a quiz transitions to the synchronised TV race, two phone controllers and 
     ).toBe(false);
   }
   await driver.setViewportSize({ width: 390, height: 844 });
+  await driver.getByRole("button", { name: "Use thumb pad" }).click();
+  const thumb = driver.locator(".kart-thumb-pad"),
+    padBox = (await thumb.boundingBox())!;
+  await driver.mouse.move(padBox.x + padBox.width * 0.62, padBox.y + padBox.height / 2);
+  await driver.mouse.down();
+  await expect
+    .poll(() => Number((inputs.at(-1) as { steer?: number })?.steer))
+    .toBeGreaterThan(0.2);
+  await driver.mouse.up();
+  await expect(driver.getByLabel("Steering")).toHaveValue("0");
+  await driver.getByRole("button", { name: "Use steering slider" }).click();
+  await stage.screenshot({ path: ".codex/previews/kart/circuit.png", fullPage: true });
+  await driver.screenshot({
+    path: ".codex/previews/kart/controller.png",
+    fullPage: true,
+  });
   async function steerAndDrive() {
     await driver.bringToFront();
     const steering = driver.getByLabel("Steering");
@@ -167,7 +183,8 @@ test("a quiz transitions to the synchronised TV race, two phone controllers and 
     throw error;
   }
   await driver.mouse.up();
-  await expect(driver.getByRole("button", { name: "Accelerate" })).toBeDisabled();
+  await expect(driver.getByRole("heading", { name: "Lap complete" })).toBeVisible();
+  await expect(driver.getByRole("button", { name: "Accelerate" })).toHaveCount(0);
   await expect.poll(() => latest?.play?.kart?.ended, { timeout: 45_000 }).toBe(true);
   await expect(stage.getByRole("heading", { name: "Chequered flag" })).toBeVisible();
   expect(latest?.play?.kart?.leaderboard.find((d) => d.name === "Bilal")).toMatchObject(
@@ -182,6 +199,27 @@ test("a quiz transitions to the synchronised TV race, two phone controllers and 
     "opacity",
     "1",
   );
+  // A lost GPU context must leave the authoritative result and a working recovery action.
+  const canvas = stage.locator("canvas[aria-label='Live kart circuit']");
+  await canvas.evaluate((element) => {
+    const gl = (element as HTMLCanvasElement).getContext("webgl2");
+    if (!gl) throw new Error("Expected the real WebGL2 stage renderer");
+    const extension = gl.getExtension("WEBGL_lose_context");
+    if (!extension)
+      throw new Error("Expected context-loss extension for this browser test");
+    extension.loseContext();
+  });
+  await expect(stage.getByRole("button", { name: "Retry circuit" })).toBeVisible();
+  await expect(stage.getByRole("heading", { name: "Chequered flag" })).toBeVisible();
+  await stage.getByRole("button", { name: "Retry circuit" }).click();
+  await expect(canvas).toBeVisible();
+  await expect
+    .poll(() =>
+      canvas.evaluate((element) =>
+        (element as HTMLCanvasElement).getContext("webgl2")?.isContextLost(),
+      ),
+    )
+    .toBe(false);
   await stage.screenshot({ path: ".codex/previews/kart/stage.png", fullPage: true });
   await driver.screenshot({ path: ".codex/previews/kart/phone.png", fullPage: true });
   await driver.reload();
