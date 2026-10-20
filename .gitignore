@@ -28,3 +28,6 @@ secrets.json
 .github/instructions/
 .github/copilot-instructions.md
 node_modules/
+
+# Generated standalone kart bundle; rebuilt before web dev/build.
+apps/web/public/kart-engine/

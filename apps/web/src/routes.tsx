@@ -32,6 +32,10 @@ export const appRoutes: RouteObject[] = [
   { path: "/", element: <HomeEntry /> },
   { path: "/join", element: <GuestPage /> },
   { path: "/play", element: <GuestPage /> },
+  {
+    path: "/kart",
+    lazy: async () => ({ Component: (await import("./kart/solo-page")).SoloKartPage }),
+  },
   { path: "/j/:code", element: <GuestPage /> },
   { path: "/host", element: <StagePage /> },
   { path: "/screen", element: <StagePage /> },

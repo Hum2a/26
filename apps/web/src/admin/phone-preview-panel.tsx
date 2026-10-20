@@ -31,6 +31,15 @@ export function PhonePreviewPanel({
         screens. Phone answers stay in the phone rehearsal; no live game is connected.
         Reveal answers, countdowns and scores are not simulated.
       </p>
+      {questionId === "kart-sprint" ? (
+        <p>
+          Want to try the actual 3D circuit?{" "}
+          <a className="entry-text-link" href="/kart" target="_blank" rel="noreferrer">
+            Play standalone kart ↗
+          </a>{" "}
+          Solo practice has no room connection or party points.
+        </p>
+      ) : null}
       <div className="admin-preview-controls">
         <div role="group" aria-label="Preview phase">
           {[

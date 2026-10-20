@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --port 4173 --strictPort",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "predev": "npm run build -w @26/kart-solo",
+    "prebuild": "npm run build -w @26/kart-solo"
   },
   "dependencies": {
     "@26/shared": "0.0.0",
