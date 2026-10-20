@@ -46,19 +46,33 @@ for (const pack of questionPacks) {
 }
 
 /** Explicit local rehearsal only; never in the admin pack catalogue or a production start path. */
-export const kartRehearsalVersion = "kart-rehearsal-v1";
+export const kartRehearsalVersion = "kart-rehearsal-v2";
 const rehearsalKart = toPlayable(kartSprint, true)!;
-released.set(kartRehearsalVersion, {
+released.set("kart-rehearsal-v1", {
   packId: "kart-rehearsal",
-  version: kartRehearsalVersion,
+  version: "kart-rehearsal-v1",
   illustrative: true,
   profile: "party",
   questions: [
     released.get(demoQuestionSetVersion)!.questions[0]!,
     {
       ...rehearsalKart,
+      instructions:
+        "Your phone is the controller. Hold A to accelerate, steer around the clockwise circuit, B to brake and R to drift. Watch your numbered kart on the TV.",
       prompt:
         "Illustrative rehearsal: one lap, 45 seconds. Your phone drives the kart on the TV.",
+    },
+  ],
+});
+released.set(kartRehearsalVersion, {
+  ...released.get("kart-rehearsal-v1")!,
+  version: kartRehearsalVersion,
+  questions: [
+    released.get(demoQuestionSetVersion)!.questions[0]!,
+    {
+      ...rehearsalKart,
+      prompt:
+        "Illustrative rehearsal: one lap, 45 seconds. Race on your phone; follow the field on the big screen.",
     },
   ],
 });

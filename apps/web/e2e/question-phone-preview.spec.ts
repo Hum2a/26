@@ -55,6 +55,14 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
   );
   await page.getByLabel("Search questions").fill("");
   await page.locator('[data-question-id="favourite-pokemon"]').click();
+  const stage = page.frameLocator('iframe[title="Big-screen preview"]');
+  await expect(stage.getByRole("heading", { name: "Answers are open" })).toBeVisible();
+  await expect(stage.getByText("Mudkip", { exact: true })).toBeVisible();
+  expect(
+    await stage
+      .locator("body")
+      .evaluate(() => ({ width: innerWidth, height: innerHeight })),
+  ).toEqual({ width: 1920, height: 1080 });
   const phone = page.frameLocator('iframe[title="Interactive phone preview"]');
   await expect(phone.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(phone.getByText("Pick one, then send your answer")).toBeVisible();
@@ -70,8 +78,10 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
   await expect(phone.locator(".question-choice-grid button").first()).toBeDisabled();
   await page.getByRole("button", { name: "Get ready", exact: true }).click();
   await expect(phone.getByText("Get ready — listen to the question")).toBeVisible();
+  await expect(stage.getByRole("heading", { name: "Read the question" })).toBeVisible();
   await expect(phone.locator(".question-choice-grid button").first()).toBeDisabled();
   await page.getByRole("button", { name: "Answering", exact: true }).click();
+  await expect(stage.getByRole("heading", { name: "Answers are open" })).toBeVisible();
 
   for (const width of [320, 390, 430]) {
     await page.getByLabel("Phone width").selectOption(String(width));
@@ -103,6 +113,13 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
     ).toBe(true);
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect
+    .poll(() =>
+      page
+        .locator('iframe[title="Interactive phone preview"]')
+        .evaluate((frame) => frame.clientWidth),
+    )
+    .toBeGreaterThanOrEqual(320);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
     path: ".codex/previews/question-experience/admin-preview.png",
@@ -120,6 +137,8 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
   await page.locator('[data-question-id="inflation-freddo"]').click();
   await expect(phone.getByRole("slider", { name: "Estimate" })).toBeVisible();
   await expect(phone.getByText(/typically 20p in 2012/)).toBeVisible();
+  await expect(stage.locator(".stage-prompt")).toContainText(/Freddo/i);
+  expect(await stage.getByRole("button").count()).toBe(0);
   expect(sockets).toEqual([]);
   const anonymous = await browser.newContext();
   const denied = await anonymous.request.get(

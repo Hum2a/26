@@ -1,23 +1,19 @@
-import { lazy, Suspense, useEffect, useRef } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { useEffect, useRef } from "react";
 import type { KartCompletion, KartRaceView } from "@26/shared";
+import { KartMap } from "./KartMap";
+import { KartLeaderboard } from "./KartLeaderboard";
 import "./kart.css";
-
-const KartCanvas = lazy(() => import("./KartCanvas"));
 
 /** Only public, authenticated room snapshots enter the renderer. There is no upstream menu or external service. */
 export default function KartGameWrapper({
   race,
   paused = false,
-  mobile = false,
   onRaceComplete,
 }: {
   race: KartRaceView | undefined;
   paused?: boolean;
-  mobile?: boolean;
   onRaceComplete?: (result: KartCompletion) => void;
 }) {
-  const reduced = useReducedMotion();
   const delivered = useRef(new Set<string>());
   useEffect(() => {
     for (const d of race?.participants ?? [])
@@ -36,8 +32,8 @@ export default function KartGameWrapper({
   if (!race)
     return (
       <p>
-        Get ready. Your phone is the controller; the race appears here when the host
-        starts the round.
+        Get ready. Race on your phone; the live map and scoreboard appear here when the
+        host starts the round.
       </p>
     );
   return (
@@ -61,53 +57,15 @@ export default function KartGameWrapper({
         ) : null}
       </div>
       <div className="kart-stage-layout">
-        <div className="kart-viewport">
-          <Suspense fallback={<p>Preparing the circuit…</p>}>
-            <KartCanvas
-              race={race}
-              mobile={mobile}
-              reducedMotion={Boolean(reduced) || paused}
-            />
-          </Suspense>
+        <div className="kart-viewport kart-spectator-viewport">
+          <KartMap race={race} />
+          <div className="kart-map-summary">
+            <strong>{race.participants.length}</strong>
+            <span>drivers · one lap</span>
+          </div>
           {paused ? <p className="kart-paused">PAUSED</p> : null}
         </div>
-        <aside className="kart-leaderboard" aria-label="Race leaderboard">
-          <h3>{race.ended ? "Sprint podium" : "Live race order"}</h3>
-          {!race.ended ? (
-            <p>
-              {race.participants.filter((d) => d.status === "FINISHED").length} /{" "}
-              {race.participants.length} laps finished
-            </p>
-          ) : null}
-          <ol>
-            {race.leaderboard.slice(0, 8).map((row) => (
-              <motion.li
-                layout={!reduced}
-                key={row.playerId}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-              >
-                <span>{row.place}</span>
-                <strong>{row.name}</strong>
-                <span>
-                  {row.finished
-                    ? `${(row.timeMs! / 1000).toFixed(2)}s`
-                    : race.ended
-                      ? "DNF"
-                      : "Racing"}
-                  {race.ended ? ` · +${row.points}` : ""}
-                </span>
-              </motion.li>
-            ))}
-          </ol>
-          {race.leaderboard.length > 8 ? (
-            <p>Top 8 of {race.leaderboard.length} drivers</p>
-          ) : null}
-          <p>
-            {race.ended
-              ? "DNF scores zero. Equal times share a place."
-              : "Hold A · steer on your phone · R to drift. Ghost karts: everyone gets a clear lap."}
-          </p>
-        </aside>
+        <KartLeaderboard key={race.raceId} race={race} paused={paused} />
       </div>
     </section>
   );

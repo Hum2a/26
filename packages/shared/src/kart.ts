@@ -50,6 +50,8 @@ export const kartRaceSchema = z
     ended: z.boolean(),
     selfPlayerId: z.string().nullable(),
     inputCursor: z.number().int().nonnegative().nullable(),
+    // Frozen race size; phone leaderboards intentionally contain only a shortlist.
+    participantCount: z.number().int().min(0).max(80).optional(),
     participants: z.array(kartDriverSchema).max(80),
     leaderboard: z
       .array(
@@ -344,6 +346,7 @@ export function projectKartRace(
     elapsedMs: race.elapsedMs,
     ended: race.ended,
     selfPlayerId,
+    participantCount: race.drivers.length,
     inputCursor: selfPlayerId
       ? Math.max(
           0,

@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { createKartRace, projectKartRace } from "@26/shared";
 import { createCircuit } from "./circuit";
-import { smoothKartPose } from "./presentation";
+import { kartCameraPose, smoothKartPose } from "./presentation";
 
 afterEach(() => vi.restoreAllMocks());
 it("smooths at the same rate across frame rates, uses the short angle and disables travel for reduced motion", () => {
@@ -24,6 +24,51 @@ it("smooths at the same rate across frame rates, uses the short angle and disabl
   expect(wrap.heading).toBeLessThan(Math.PI + 0.1);
   expect(smoothKartPose(start, target, 0.01, true)).toEqual(target);
   expect(smoothKartPose(start, target, 0, false)).toEqual(start);
+});
+
+it("frames the player's kart from behind and removes turning camera motion in reduced motion", () => {
+  expect(
+    kartCameraPose({ x: 42, z: 0, heading: Math.PI / 2 }, false).position[2],
+  ).toBeCloseTo(-9);
+  const right = kartCameraPose({ x: 42, z: 10, heading: 0 }, false);
+  expect(right.position).toEqual([33, 6, 10]);
+  expect(right.target).toEqual([47, 0.8, 10]);
+  expect(kartCameraPose({ x: 42, z: 10, heading: 0 }, true)).toEqual(
+    kartCameraPose({ x: 42, z: 10, heading: Math.PI }, true),
+  );
+});
+
+it("bounds a phone scene to its own kart even with a 50-driver snapshot", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((key) => [
+      key,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const race = projectKartRace(
+    createKartRace(
+      "fifty",
+      Array.from({ length: 50 }, (_, i) => ({
+        playerId: `p${i}`,
+        name: `Driver ${i}`,
+      })),
+    ),
+    "p49",
+    100,
+  );
+  const circuit = createCircuit(palette, true, "p49");
+  circuit.update(race, 1 / 30, false);
+  expect(circuit.pose("p49")).toMatchObject({ x: race.participants[49]!.x });
+  expect(circuit.pose("p0")).toBeUndefined();
+  const instances = circuit.scene.children.filter(
+    (node) => node instanceof THREE.InstancedMesh,
+  );
+  expect(instances.filter((node) => node.count === 4)).toHaveLength(1);
+  expect(circuit.scene.children.some((node) => node instanceof THREE.Sprite)).toBe(
+    false,
+  );
+  circuit.dispose();
 });
 
 it("renders 80 ghost karts with bounded shared geometry, no shadow maps and disposes all resources", () => {

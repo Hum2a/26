@@ -6,10 +6,14 @@ type Palette = Record<
   "ground" | "road" | "accent" | "highlight" | "ink" | "muted",
   THREE.Color
 >;
-const capacity = 80;
 
 /** Original low-poly venue. Shared/instanced meshes keep a full room inexpensive. */
-export function createCircuit(palette: Palette, mobile: boolean) {
+export function createCircuit(
+  palette: Palette,
+  mobile: boolean,
+  focusPlayerId?: string,
+) {
+  const capacity = focusPlayerId ? 1 : 80;
   const { ground, road, accent, highlight, ink, muted } = palette;
   const scene = new THREE.Scene();
   scene.background = ground;
@@ -217,7 +221,11 @@ export function createCircuit(palette: Palette, mobile: boolean) {
   }
   function update(race: KartRaceView, dt: number, reduced: boolean) {
     let flames = 0;
-    const drivers = race.participants.slice(0, capacity);
+    const drivers = (
+      focusPlayerId
+        ? race.participants.filter((driver) => driver.playerId === focusPlayerId)
+        : race.participants
+    ).slice(0, capacity);
     for (let i = 0; i < drivers.length; i++) {
       const driver = drivers[i]!,
         pose = smoothKartPose(
@@ -250,7 +258,9 @@ export function createCircuit(palette: Palette, mobile: boolean) {
       if (driver.boostRemainingMs > 0 && !reduced) {
         place(boost, flames++, x - c * 2, 0.6, z - s * 2, -heading, 1, 0.8, 1);
       }
-      const sprite = labels.get(driver.playerId) ?? label(driver);
+      const sprite = focusPlayerId
+        ? undefined
+        : (labels.get(driver.playerId) ?? label(driver));
       if (sprite) sprite.position.set(x, 3.8, z);
     }
     for (const value of [bodies, noses, seats, helmets]) {
@@ -268,6 +278,7 @@ export function createCircuit(palette: Palette, mobile: boolean) {
   return {
     scene,
     update,
+    pose: (playerId: string) => poses.get(playerId),
     dispose() {
       geometries.forEach((g) => g.dispose());
       materials.forEach((m) => m.dispose());

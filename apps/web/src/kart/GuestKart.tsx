@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "motion/react";
 import type { LobbySnapshot, KartInput } from "@26/shared";
+import { KartDriverView } from "./KartDriverView";
 import { TouchController } from "./TouchController";
 import { useKartSocket } from "./useKartSocket";
 
@@ -28,56 +29,29 @@ export function GuestKart({
       : race?.ended || complete
         ? "Race complete — watch the stage"
         : snapshot.phase !== "collect" && !rehearsal
-          ? "Find your numbered kart on the TV. Wait for the race to start."
+          ? "Your driving view opens here. Wait for the race to start."
           : race && !self
             ? "You’re watching this race. Join the next round."
-            : "Hold A and steer clockwise. Hold R, then release for a boost.";
+            : "Drive on this screen. Hold A and steer clockwise.";
   return (
     <section className="kart-phone" aria-label="Sprint controller">
-      <p className="kart-eyebrow">ONE LAP · 45 SECONDS</p>
-      <h1 className="phone-prompt">
-        {complete
-          ? self.status === "FINISHED"
-            ? "Lap complete"
-            : "Time’s up"
-          : self
-            ? `Kart ${self.number}`
-            : "Start your engines"}
-      </h1>
+      <header className="kart-phone-heading">
+        <p className="kart-eyebrow">ONE LAP · 45 SECONDS</p>
+        <h1 className="phone-prompt">
+          {complete
+            ? self.status === "FINISHED"
+              ? "Lap complete"
+              : "Time’s up"
+            : self
+              ? `Kart ${self.number}`
+              : "Start your engines"}
+        </h1>
+      </header>
       <p role="status">
         {rehearsal ? "Controller rehearsal — no race is running." : instruction}
       </p>
       {self ? (
         <div className="kart-phone-hud">
-          <svg
-            viewBox="-56 -56 112 112"
-            aria-label={`Your track position: ${Math.round(self.progress * 100)} per cent`}
-            role="img"
-          >
-            <circle r="42" className="kart-map-road" />
-            {Array.from({ length: 8 }, (_, i) => {
-              const a = ((i + 1) * Math.PI) / 4;
-              return (
-                <circle
-                  key={i}
-                  cx={Math.cos(a) * 42}
-                  cy={Math.sin(a) * 42}
-                  r="2.5"
-                  className={
-                    self.checkpoint > i
-                      ? "kart-map-gate kart-map-gate-passed"
-                      : "kart-map-gate"
-                  }
-                />
-              );
-            })}
-            <path d="M34 0H50" className="kart-map-line" />
-            <g
-              transform={`translate(${self.x} ${self.z}) rotate(${(self.heading * 180) / Math.PI})`}
-            >
-              <path d="M4 0L-3 -3L-3 3Z" className="kart-map-driver" />
-            </g>
-          </svg>
           <div>
             <strong>
               {self.status === "FINISHED"
@@ -94,10 +68,13 @@ export function GuestKart({
             <p>
               {complete
                 ? "Your result is saved by the server."
-                : `Position ${place ?? "—"} · find #${self.number} on the TV`}
+                : `Position ${place ?? "—"}${race?.participantCount === undefined ? "" : ` of ${race.participantCount}`}`}
             </p>
           </div>
         </div>
+      ) : null}
+      {race && self && !complete ? (
+        <KartDriverView race={race} reducedMotion={Boolean(reduced) || !open} />
       ) : null}
       {self && !complete ? (
         <div className="kart-telemetry" aria-label="Driving feedback">

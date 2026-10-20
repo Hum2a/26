@@ -1,6 +1,27 @@
 import type { KartDriver } from "@26/shared";
 
 export type KartPose = Pick<KartDriver, "x" | "z" | "heading">;
+
+/** Camera framing only. Uses a rendered server pose, never predicts a finish or movement. */
+export function kartCameraPose(
+  pose: KartPose,
+  reduced: boolean,
+): {
+  position: readonly [number, number, number];
+  target: readonly [number, number, number];
+} {
+  const c = Math.cos(pose.heading),
+    s = Math.sin(pose.heading);
+  return reduced
+    ? {
+        position: [pose.x, 24, pose.z + 0.01] as const,
+        target: [pose.x, 0, pose.z] as const,
+      }
+    : {
+        position: [pose.x - c * 9, 6, pose.z - s * 9] as const,
+        target: [pose.x + c * 5, 0.8, pose.z + s * 5] as const,
+      };
+}
 /** Visual smoothing only: no prediction, physics, checkpoint or timer authority. */
 export function smoothKartPose(
   from: KartPose,

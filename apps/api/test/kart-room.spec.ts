@@ -262,6 +262,7 @@ it("persists full-room control queues before a tick and replays them after evict
     expect(readKart(sql, q.id)!.drivers.every((d) => d.inputUntil === 500)).toBe(true);
   });
   const guest = (await stub.snapshotFor("guest", players[79])).play!.kart!;
+  expect(guest.participantCount).toBe(80);
   expect(guest.participants).toHaveLength(1);
   expect(guest.participants[0]!.playerId).toBe(players[79]);
   expect(guest.inputCursor).toBe(2);

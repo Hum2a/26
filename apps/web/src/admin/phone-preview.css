@@ -1,9 +1,63 @@
 .admin-phone-preview {
+  container-type: inline-size;
+  container-name: screen-comparison;
   display: grid;
   gap: 1rem;
   border-block: 1px solid var(--line);
   padding-block: 2rem;
   min-width: 0;
+}
+.admin-screen-comparison {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+.admin-screen-pane {
+  min-width: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+.admin-screen-pane > header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+.admin-screen-pane h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.admin-stage-preview-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+  outline: 2px solid var(--line);
+  background: var(--background);
+  box-shadow: 0 1rem 3rem color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+.admin-stage-preview-frame iframe {
+  position: absolute;
+  inset: 0 auto auto 0;
+  display: block;
+  width: 1920px;
+  height: 1080px;
+  max-width: none;
+  border: 0;
+  transform-origin: top left;
+}
+.stage-rehearsal-notice {
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+@container screen-comparison (min-width: 640px) {
+  .admin-screen-comparison {
+    grid-template-columns: minmax(0, 1fr) minmax(324px, 0.8fr);
+  }
 }
 .admin-phone-preview > header {
   display: flex;

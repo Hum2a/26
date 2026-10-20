@@ -5,7 +5,7 @@ export const kartSprint = kartQuestion({
   title: "The 26 Grand Prix: one-lap sprint",
   prompt: "One lap. 45 seconds. Who can actually drive?",
   instructions:
-    "Your phone is the controller. Hold A to accelerate, steer around the clockwise circuit, B to brake and R to drift. Watch your numbered kart on the TV.",
+    "Race on your phone. Hold A to accelerate, steer clockwise, B to brake and R to drift. The big screen shows the live map and race order.",
   explanation:
     "Fastest completed lap wins. Finishers share place on equal server times; DNF scores zero. Ghost karts mean nobody can blame traffic.",
   notes:

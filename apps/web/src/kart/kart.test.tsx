@@ -14,7 +14,23 @@ import { GuestKart } from "./GuestKart";
 import { steerFromPointer } from "./steering";
 import type { LobbySnapshot } from "@26/shared";
 import KartGameWrapper from "./KartGameWrapper";
-vi.mock("./KartCanvas", () => ({ default: () => <div>Stand-in WebGL renderer</div> }));
+vi.mock("./KartCanvas", () => ({
+  default: ({
+    followPlayerId,
+    mobile,
+  }: {
+    followPlayerId?: string;
+    mobile: boolean;
+  }) => (
+    <div
+      data-testid="driving-renderer"
+      data-player={followPlayerId}
+      data-mobile={String(mobile)}
+    >
+      Stand-in WebGL renderer
+    </div>
+  ),
+}));
 
 afterEach(() => {
   vi.useRealTimers();
@@ -206,4 +222,62 @@ it("shows server-confirmed drift and wrong-way feedback, and replaces pedals wit
   expect(screen.getByText("28.00s")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Accelerate" })).toBeNull();
   expect(screen.getByText("Watch the stage for the results.")).toBeTruthy();
+});
+
+it("gives the phone its own driving view and a map option without changing input authority", async () => {
+  const race = projectKartRace(
+    createKartRace("phone", [
+      { playerId: "mine", name: "Amina" },
+      { playerId: "other", name: "Bilal" },
+    ]),
+    "mine",
+    100,
+  );
+  const snapshot = {
+    phase: "collect",
+    paused: false,
+    held: false,
+    play: { kart: race, selfAward: null },
+  } as unknown as LobbySnapshot;
+  const view = render(<GuestKart snapshot={snapshot} onInput={vi.fn()} />);
+  const renderer = await screen.findByTestId("driving-renderer");
+  expect(renderer.getAttribute("data-player")).toBe("mine");
+  expect(renderer.getAttribute("data-mobile")).toBe("true");
+  expect(screen.getByText("Position 1 of 2")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Use lightweight map" }));
+  expect(screen.queryByTestId("driving-renderer")).toBeNull();
+  const map = screen.getByRole("img", { name: "Your live track position" });
+  expect(map.querySelectorAll("[data-map-player]")).toHaveLength(1);
+  expect(map.querySelector('[data-map-player="other"]')).toBeNull();
+  expect(
+    (screen.getByRole("button", { name: "Accelerate" }) as HTMLButtonElement).disabled,
+  ).toBe(false);
+  view.rerender(<GuestKart snapshot={{ ...snapshot, paused: true }} />);
+  expect(
+    (screen.getByRole("button", { name: "Accelerate" }) as HTMLButtonElement).disabled,
+  ).toBe(true);
+  expect(screen.getByRole("img", { name: "Your live track position" })).toBeTruthy();
+});
+
+it("does not mistake an older shortlisted leaderboard for the race size", () => {
+  const race = projectKartRace(
+    createKartRace("legacy", [{ playerId: "mine", name: "Amina" }]),
+    "mine",
+    100,
+  );
+  delete race.participantCount;
+  render(
+    <GuestKart
+      snapshot={
+        {
+          phase: "collect",
+          paused: false,
+          held: false,
+          play: { kart: race, selfAward: null },
+        } as unknown as LobbySnapshot
+      }
+    />,
+  );
+  expect(screen.getByText("Position 1")).toBeTruthy();
+  expect(screen.queryByText(/Position 1 of/)).toBeNull();
 });

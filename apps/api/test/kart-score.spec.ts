@@ -13,6 +13,7 @@ import {
 import { birthdayPack } from "../src/questions/packs/birthday/manifest.ts";
 import { questionPreview } from "../src/room/question-preview.ts";
 import { toPlayable } from "../src/questions/authoring.ts";
+import { kartRehearsalVersion, questionFor } from "../src/questions/registry.ts";
 import { validatePack } from "../src/questions/validate.ts";
 
 const start = () =>
@@ -243,4 +244,19 @@ it("replays independent ghost-kart timelines deterministically at full-room size
   expect(newer.drivers[0]!.sequence).toBe(room.drivers[0]!.sequence); // No retroactive/stale throttle.
   expect(JSON.stringify(room)).toBe(before); // Original persisted state remains immutable.
   expect(reduceKartTimeline(room, [], NaN)).toBe(room);
+});
+
+it("updates new phone-driving rehearsals without rewriting the stored v1 content", () => {
+  expect(kartRehearsalVersion).toBe("kart-rehearsal-v2");
+  expect(
+    questionFor({ questionSetVersion: "kart-rehearsal-v1", questionIndex: 1 })
+      ?.instructions,
+  ).toContain("Watch your numbered kart on the TV");
+  expect(
+    questionFor({ questionSetVersion: kartRehearsalVersion, questionIndex: 1 })
+      ?.instructions,
+  ).toContain("Race on your phone");
+  expect(
+    questionFor({ questionSetVersion: kartRehearsalVersion, questionIndex: 1 })?.prompt,
+  ).toContain("follow the field on the big screen");
 });

@@ -9,6 +9,7 @@ import { HealthPage } from "./admin/health-page";
 import { ContentPage } from "./admin/content-page";
 import { QuestionPage } from "./admin/question-page";
 import { QuestionPhonePreview } from "./admin/question-phone-preview";
+import { QuestionStagePreview } from "./admin/question-stage-preview";
 import { AdminResultsPage } from "./admin/results-page";
 import { AdminRoomRoute } from "./admin/room-provider";
 import { RoomsPage, RoomOverview } from "./admin/rooms-page";
@@ -37,6 +38,10 @@ export const appRoutes: RouteObject[] = [
   {
     path: "/admin/phone-preview/:version/:questionId",
     element: <QuestionPhonePreview />,
+  },
+  {
+    path: "/admin/stage-preview/:version/:questionId",
+    element: <QuestionStagePreview />,
   },
   {
     path: "/admin",

@@ -2,16 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import type { KartRaceView } from "@26/shared";
 import { createCircuit } from "./circuit";
+import { kartCameraPose } from "./presentation";
 
-/** The stage interpolates public poses. Phones never need to load Three.js. */
+/** Interpolates public poses only. Phone rendering is bounded to its own kart. */
 export default function KartCanvas({
   race,
   mobile,
   reducedMotion,
+  followPlayerId,
 }: {
   race: KartRaceView;
   mobile: boolean;
   reducedMotion: boolean;
+  followPlayerId?: string;
 }) {
   const mount = useRef<HTMLDivElement>(null);
   const live = useRef(race),
@@ -50,7 +53,11 @@ export default function KartCanvas({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1 : 1.5));
     renderer.shadowMap.enabled = false;
     root.append(renderer.domElement);
-    renderer.domElement.setAttribute("aria-label", "Live kart circuit");
+    renderer.domElement.setAttribute(
+      "aria-label",
+      followPlayerId ? "Your driving view" : "Live kart circuit",
+    );
+    if (followPlayerId) renderer.domElement.dataset.playerId = followPlayerId;
     const colour = (role: string) => {
       const probe = document.createElement("span");
       probe.style.color = `var(--${role})`;
@@ -69,8 +76,11 @@ export default function KartCanvas({
         muted: colour("muted"),
       },
       mobile,
+      followPlayerId,
     );
-    const camera = new THREE.OrthographicCamera(-64, 64, 64, -64, 0.1, 500);
+    const camera = followPlayerId
+      ? new THREE.PerspectiveCamera(65, 1, 0.1, 200)
+      : new THREE.OrthographicCamera(-64, 64, 64, -64, 0.1, 500);
     camera.position.set(0, 112, 72);
     camera.lookAt(0, 0, -3);
     let dirty = true,
@@ -81,20 +91,30 @@ export default function KartCanvas({
         height = Math.max(1, root.clientHeight),
         aspect = width / height;
       renderer.setSize(width, height, false);
-      camera.left = -63 * Math.max(1, aspect);
-      camera.right = -camera.left;
-      camera.top = 63 * Math.max(1, 1 / aspect);
-      camera.bottom = -camera.top;
+      if (camera instanceof THREE.PerspectiveCamera) camera.aspect = aspect;
+      else {
+        camera.left = -63 * Math.max(1, aspect);
+        camera.right = -camera.left;
+        camera.top = 63 * Math.max(1, 1 / aspect);
+        camera.bottom = -camera.top;
+      }
       camera.updateProjectionMatrix();
       dirty = true;
     });
     resize.observe(root);
     const frame = (now: number) => {
       if (document.hidden) return;
+      if (mobile && lastFrame && now - lastFrame < 1000 / 30 - 1) return;
       const delta = lastFrame ? (now - lastFrame) / 1000 : 1 / 60;
       lastFrame = now;
       if (reduced.current && lastSnapshot === live.current && !dirty) return;
       circuit.update(live.current, delta, reduced.current);
+      const pose = followPlayerId ? circuit.pose(followPlayerId) : undefined;
+      if (pose) {
+        const framing = kartCameraPose(pose, reduced.current);
+        camera.position.set(...framing.position);
+        camera.lookAt(...framing.target);
+      }
       renderer.render(circuit.scene, camera);
       lastSnapshot = live.current;
       dirty = false;
@@ -134,7 +154,7 @@ export default function KartCanvas({
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [mobile, race.raceId, revision]);
+  }, [mobile, followPlayerId, race.raceId, revision]);
   return (
     <div className="kart-canvas-root">
       <div ref={mount} className="kart-canvas-mount" />

@@ -29,3 +29,23 @@ it("describes server-accepted race results without claiming a missing quiz answe
   expect(guestRoundCopy(snapshot)).toContain("DNF — 0 points");
   expect(guestRoundCopy({ ...snapshot, paused: true })).toBe("The game is paused.");
 });
+
+it("directs drivers to their own screen rather than finding a kart on the TV", () => {
+  const snapshot = {
+    phase: "collect",
+    paused: false,
+    held: false,
+    play: {
+      question: { kind: "kart" },
+      kart: projectKartRace(
+        createKartRace("copy", [{ playerId: "me", name: "Driver" }]),
+        "me",
+        100,
+      ),
+    },
+  } as unknown as LobbySnapshot;
+  expect(guestRoundCopy(snapshot)).toContain("Race on your phone");
+  expect(guestRoundCopy({ ...snapshot, phase: "prompt" })).toContain(
+    "driving view opens on this phone",
+  );
+});

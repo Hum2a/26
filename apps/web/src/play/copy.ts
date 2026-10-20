@@ -24,11 +24,11 @@ export function guestRoundCopy(snapshot: LobbySnapshot): string {
           ? "Time’s up. DNF — 0 points this race."
           : "You watched this race. Join the next round.";
     if (snapshot.phase !== "collect")
-      return "Get ready. Your phone drives your numbered kart on the TV.";
+      return "Get ready. Your driving view opens on this phone.";
     return driver?.status === "FINISHED"
       ? "Lap finished — watch the stage."
       : driver
-        ? "Hold A to accelerate. Steer on your phone; watch your kart on the TV."
+        ? "Hold A to accelerate. Race on your phone; the stage follows everyone."
         : "You’re watching this race. Join the next round.";
   }
   if (snapshot.phase === "reveal" || snapshot.phase === "scores") {
