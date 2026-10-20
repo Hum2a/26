@@ -40,8 +40,21 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
     .first()
     .click();
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByLabel("Preview a question")).toBeVisible();
-  await page.getByLabel("Preview a question").selectOption("favourite-pokemon");
+  await expect(page.getByLabel("Search questions")).toBeVisible();
+  await page.getByLabel("Search questions").fill("pokemon");
+  await page.locator('[data-question-id="favourite-pokemon"]').click();
+  await expect(
+    page.getByRole("button", { name: "Next →", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("link", { name: /^View / }).click();
+  await page.getByRole("link", { name: /Back to question packs/ }).click();
+  await expect(page.getByLabel("Search questions")).toHaveValue("pokemon");
+  await expect(page.locator('[data-question-id="favourite-pokemon"]')).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
+  await page.getByLabel("Search questions").fill("");
+  await page.locator('[data-question-id="favourite-pokemon"]').click();
   const phone = page.frameLocator('iframe[title="Interactive phone preview"]');
   await expect(phone.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(phone.getByText("Pick one, then send your answer")).toBeVisible();
@@ -83,21 +96,28 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
       .locator('iframe[title="Interactive phone preview"]')
       .screenshot({ path: `.codex/previews/question-experience/phone-${width}.png` });
   }
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    ).toBe(true);
+  }
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
     path: ".codex/previews/question-experience/admin-preview.png",
     fullPage: true,
   });
-  await page.getByLabel("Preview a question").selectOption("favourite-genre");
+  await page.locator('[data-question-id="favourite-genre"]').click();
   await expect(phone.locator(".design-phone")).toBeVisible();
-  await page.getByLabel("Preview a question").selectOption("christianity-branches");
+  await page.locator('[data-question-id="christianity-branches"]').click();
   await expect(phone.getByText(/requested interaction is not implemented/)).toHaveCount(
     0,
   );
   await expect(
     phone.getByRole("button", { name: "muggletonians", exact: true }),
   ).toBeEnabled();
-  await page.getByLabel("Preview a question").selectOption("inflation-freddo");
+  await page.locator('[data-question-id="inflation-freddo"]').click();
   await expect(phone.getByRole("slider", { name: "Estimate" })).toBeVisible();
   await expect(phone.getByText(/typically 20p in 2012/)).toBeVisible();
   expect(sockets).toEqual([]);

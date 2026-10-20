@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from "react-router";
-import { useState } from "react";
+
 import { AnimatePresence, motion } from "motion/react";
-import { Button } from "../ui/primitives";
+import { Button, TextField } from "../ui/primitives";
 import { EntryNotice } from "../ui/entry-frame";
 import { readContent } from "./sections-api";
 import { useSection } from "./use-section";
@@ -11,15 +11,49 @@ export function ContentPage() {
   const content = useSection(readContent);
   const [params, setParams] = useSearchParams();
   const version = params.get("pack") ?? "";
-  const [previewId, setPreviewId] = useState("");
+  const query = params.get("q") ?? "";
+  const status = params.get("status") ?? "all";
   const pack =
     content.data?.packs.find((pack) => pack.version === version) ??
     content.data?.packs.find((pack) => pack.id === "birthday") ??
     content.data?.packs[0];
+  const matches =
+    pack?.questions.filter(
+      (question) =>
+        (status === "all" || question.status === status) &&
+        `${question.title} ${question.prompt} ${question.id} ${question.mechanic}`
+          .toLocaleLowerCase("en-GB")
+          .includes(query.trim().toLocaleLowerCase("en-GB")),
+    ) ?? [];
+  const mechanics = [...new Set(matches.map((question) => question.mechanic))];
+  const questions = mechanics.flatMap((mechanic) =>
+    matches.filter((question) => question.mechanic === mechanic),
+  );
   const preview =
-    pack?.questions.find((question) => question.id === previewId) ?? pack?.questions[0];
+    questions.find((question) => question.id === params.get("question")) ??
+    questions[0];
+  const position = questions.findIndex((question) => question.id === preview?.id);
+  const detailParams = new URLSearchParams(params);
+  if (pack && preview) {
+    detailParams.set("pack", pack.version);
+    detailParams.set("question", preview.id);
+  }
+  function selectQuestion(id: string) {
+    const next = new URLSearchParams(params);
+    next.set("pack", pack!.version);
+    next.set("question", id);
+    setParams(next);
+  }
+  function filter(name: string, value: string) {
+    const next = new URLSearchParams(params);
+    next.set("pack", pack!.version);
+    next.delete("question");
+    if (value && value !== "all") next.set(name, value);
+    else next.delete(name);
+    setParams(next, { replace: true });
+  }
   return (
-    <section className="admin-section">
+    <section className="admin-section admin-question-browser-page">
       <header className="admin-page-heading">
         <div>
           <p className="entry-eyebrow">Prepare the night</p>
@@ -84,72 +118,143 @@ export function ContentPage() {
                     : "Released version. Existing rooms keep the version they started with."}
                 </p>
               </header>
-              {preview ? (
-                <>
-                  <label className="admin-preview-select">
-                    Preview a question
-                    <select
-                      value={preview.id}
-                      onChange={(event) => setPreviewId(event.target.value)}
-                    >
-                      {pack.questions.map((question) => (
-                        <option key={question.id} value={question.id}>
-                          {question.title}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <PhonePreviewPanel
-                    key={`${pack.version}/${preview.id}`}
-                    version={pack.version}
-                    questionId={preview.id}
+              <div className="admin-question-browser">
+                <aside
+                  className="admin-question-catalogue"
+                  aria-label="Browse questions"
+                >
+                  <TextField
+                    label="Search questions"
+                    hint="Search titles, wording, IDs or game types."
+                    type="search"
+                    value={query}
+                    onChange={(event) => filter("q", event.target.value)}
                   />
-                </>
-              ) : null}
-              <ol className="admin-question-list">
-                {pack.questions.map((question) => (
-                  <li key={question.id}>
-                    <div className="admin-question-number">{question.order ?? "—"}</div>
-                    <div>
-                      <h3>
-                        <Link
-                          className="admin-question-link"
-                          to={`/admin/content/${encodeURIComponent(pack.version)}/${encodeURIComponent(question.id)}`}
-                          aria-label={`View ${question.title}`}
-                        >
-                          {question.title}
-                          <span aria-hidden="true"> →</span>
-                        </Link>
-                      </h3>
-                      <p>{question.prompt}</p>
-                      <button
-                        type="button"
-                        className="entry-text-link"
-                        onClick={() => {
-                          setPreviewId(question.id);
-                          document.getElementById("phone-preview")?.scrollIntoView({
-                            behavior: window.matchMedia(
-                              "(prefers-reduced-motion: reduce)",
-                            ).matches
-                              ? "instant"
-                              : "smooth",
-                            block: "start",
-                          });
-                        }}
+                  <div
+                    className="admin-question-filters"
+                    role="group"
+                    aria-label="Question readiness"
+                  >
+                    {(
+                      [
+                        ["all", "All"],
+                        ["ready", "Ready"],
+                        ["draft", "Drafts"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <Button
+                        key={value}
+                        variant="secondary"
+                        aria-pressed={status === value}
+                        onClick={() => filter("status", value)}
                       >
-                        Preview on phone ↑
-                      </button>
-                      <p className="admin-meta">
-                        {question.mechanic} · {question.presentation} ·{" "}
-                        {question.status} ·{" "}
-                        {question.order === null
-                          ? "Not in running order"
-                          : `Question ${question.order}`}
+                        {label} (
+                        {value === "all"
+                          ? pack.questions.length
+                          : pack.questions.filter((q) => q.status === value).length}
+                        )
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="admin-meta" role="status">
+                    {questions.length} of {pack.questions.length} questions shown
+                  </p>
+                  <nav
+                    className="admin-question-catalogue-list"
+                    aria-label="Questions in this pack"
+                  >
+                    {mechanics.map((mechanic) => (
+                      <section key={mechanic}>
+                        <h3>
+                          {mechanic}{" "}
+                          <span>
+                            ({questions.filter((q) => q.mechanic === mechanic).length})
+                          </span>
+                        </h3>
+                        <ul>
+                          {questions
+                            .filter((q) => q.mechanic === mechanic)
+                            .map((question) => (
+                              <li key={question.id}>
+                                <button
+                                  type="button"
+                                  aria-current={
+                                    preview?.id === question.id ? "true" : undefined
+                                  }
+                                  data-question-id={question.id}
+                                  aria-label={`Preview ${question.title}`}
+                                  onClick={() => selectQuestion(question.id)}
+                                >
+                                  <strong>{question.title}</strong>
+                                  <span>
+                                    {question.status} ·{" "}
+                                    {question.order === null
+                                      ? "Not in running order"
+                                      : `Question ${question.order}`}
+                                  </span>
+                                </button>
+                              </li>
+                            ))}
+                        </ul>
+                      </section>
+                    ))}
+                  </nav>
+                  {!questions.length ? (
+                    <p>No questions match. Try another search or readiness filter.</p>
+                  ) : null}
+                </aside>
+                {preview ? (
+                  <section
+                    className="admin-question-selected"
+                    aria-label="Selected question"
+                  >
+                    <nav
+                      className="admin-question-stepper"
+                      aria-label="Step through questions"
+                    >
+                      <Button
+                        variant="secondary"
+                        disabled={position <= 0}
+                        onClick={() => selectQuestion(questions[position - 1]!.id)}
+                      >
+                        ← Previous
+                      </Button>
+                      <span>
+                        {position + 1} / {questions.length}
+                      </span>
+                      <Button
+                        variant="secondary"
+                        disabled={position >= questions.length - 1}
+                        onClick={() => selectQuestion(questions[position + 1]!.id)}
+                      >
+                        Next →
+                      </Button>
+                    </nav>
+                    <motion.div
+                      key={preview.id}
+                      initial={{ opacity: 0.7 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                    >
+                      <p className="entry-eyebrow">
+                        {preview.mechanic} · {preview.status}
                       </p>
-                      {question.missing.length ? (
-                        <ul aria-label={`Missing for ${question.title}`}>
-                          {question.missing.map((item, index) => (
-                            <li key={index}>
+                      <h3 className="admin-question-selected-title">{preview.title}</h3>
+                      <p className="admin-question-selected-prompt">{preview.prompt}</p>
+                      <Link
+                        className="admin-question-link"
+                        to={`/admin/content/${encodeURIComponent(pack.version)}/${encodeURIComponent(preview.id)}?${detailParams.toString()}`}
+                        aria-label={`View ${preview.title}`}
+                      >
+                        View full question details →
+                      </Link>
+                      {preview.missing.length ? (
+                        <ul
+                          className="admin-question-browser-gaps"
+                          aria-label={`Missing for ${preview.title}`}
+                        >
+                          {preview.missing.map((item, i) => (
+                            <li key={i}>
                               {item.name}: {item.detail}
                             </li>
                           ))}
@@ -159,10 +264,15 @@ export function ContentPage() {
                           No missing authoring requirements recorded.
                         </p>
                       )}
-                    </div>
-                  </li>
-                ))}
-              </ol>
+                    </motion.div>
+                    <PhonePreviewPanel
+                      key={`${pack.version}/${preview.id}`}
+                      version={pack.version}
+                      questionId={preview.id}
+                    />
+                  </section>
+                ) : null}
+              </div>
             </motion.section>
           ) : null}
         </AnimatePresence>

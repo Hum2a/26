@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { motion } from "motion/react";
 import { Button, Disclosure } from "../ui/primitives";
 import { EntryNotice } from "../ui/entry-frame";
@@ -9,6 +9,11 @@ import { PhonePreviewPanel } from "./phone-preview-panel";
 
 export function QuestionPage() {
   const { version = "", questionId = "" } = useParams();
+  const [browserParams] = useSearchParams();
+  const backParams = new URLSearchParams(browserParams);
+  backParams.set("pack", version);
+  // Preserve browse context only when the question was opened from the catalogue.
+  if (browserParams.has("question")) backParams.set("question", questionId);
   const reader = useCallback(
     () => readQuestion(version, questionId),
     [version, questionId],
@@ -34,10 +39,7 @@ export function QuestionPage() {
   }, [question]);
   return (
     <section className="admin-section admin-question-page">
-      <Link
-        className="entry-text-link"
-        to={`/admin/content?pack=${encodeURIComponent(version)}`}
-      >
+      <Link className="entry-text-link" to={`/admin/content?${backParams.toString()}`}>
         ← Back to question packs
       </Link>
       <header className="admin-page-heading">

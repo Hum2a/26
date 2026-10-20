@@ -85,7 +85,7 @@ test("individual questions support private inspection, direct links and responsi
   const links = await page.getByRole("link", { name: /^View / }).evaluateAll((nodes) =>
     nodes.map((node) => ({
       href: node.getAttribute("href")!,
-      title: node.textContent!.replace(/\s*→\s*$/, "").trim(),
+      title: node.getAttribute("aria-label")!.replace(/^View /, ""),
     })),
   );
   expect(links.length).toBeGreaterThan(0);

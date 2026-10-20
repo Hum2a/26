@@ -33,13 +33,13 @@ const detail: AdminQuestionDetail = {
   },
 };
 beforeEach(() => vi.resetAllMocks());
-function mount() {
+function mount(path = "/admin/content/fixture-pack/first") {
   const router = createMemoryRouter(
     [
       { path: "/admin/content/:version/:questionId", element: <QuestionPage /> },
       { path: "/admin/content", element: <h1>Pack list</h1> },
     ],
-    { initialEntries: ["/admin/content/fixture-pack/first"] },
+    { initialEntries: [path] },
   );
   render(<RouterProvider router={router} />);
   return router;
@@ -123,4 +123,19 @@ it("ignores an old question response and resets private disclosure on navigation
   await act(() => router.navigate("/admin/content/fixture-pack/first"));
   await screen.findByRole("heading", { name: "Question details" });
   expect(screen.queryByText("Second private note")).toBeNull();
+});
+
+it("returns to the same browser selection and filters after inspecting a question", async () => {
+  vi.mocked(readQuestion).mockResolvedValue(detail);
+  mount(
+    "/admin/content/fixture-pack/first?pack=fixture-pack&question=first&q=shape&status=ready",
+  );
+  await screen.findByRole("heading", { level: 1, name: "First question" });
+  const href = screen
+    .getByRole("link", { name: /Back to question packs/ })
+    .getAttribute("href")!;
+  const params = new URL(href, "https://fixture.example").searchParams;
+  expect(params.get("question")).toBe("first");
+  expect(params.get("q")).toBe("shape");
+  expect(params.get("status")).toBe("ready");
 });
