@@ -12,6 +12,7 @@ vi.mock("./admin-api", () => ({
   requestMagicLink: vi.fn(),
   fetchLocalInbox: vi.fn(),
   confirmMagicLink: vi.fn(),
+  confirmEmailCode: vi.fn(),
   signOutAdmin: vi.fn(),
   confirmPath: vi.fn(),
 }));
@@ -19,6 +20,7 @@ import {
   fetchAdminSession,
   requestMagicLink,
   confirmMagicLink,
+  confirmEmailCode,
   signOutAdmin,
 } from "./admin-api";
 
@@ -54,7 +56,7 @@ describe("admin entry", () => {
     expect(
       (
         screen.getByRole("button", {
-          name: "Email me a sign-in link",
+          name: "Email me a code and link",
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(false);
@@ -107,13 +109,39 @@ describe("admin entry", () => {
     const input = await screen.findByLabelText("Administrator email");
     await waitFor(() => expect((input as HTMLInputElement).disabled).toBe(false));
     fireEvent.change(input, { target: { value: "admin@example.test" } });
-    fireEvent.click(screen.getByRole("button", { name: "Email me a sign-in link" }));
+    fireEvent.click(screen.getByRole("button", { name: "Email me a code and link" }));
     expect(await screen.findByText("Please try again later.")).toBeTruthy();
     expect((input as HTMLInputElement).value).toBe("admin@example.test");
-    fireEvent.click(screen.getByRole("button", { name: "Email me a sign-in link" }));
+    fireEvent.click(screen.getByRole("button", { name: "Email me a code and link" }));
     expect(
       await screen.findByText(/If this is the administrator address/),
     ).toBeTruthy();
+  });
+
+  it("accepts a pasted code, keeps a rejected code editable and returns to the requested page", async () => {
+    vi.mocked(requestMagicLink).mockResolvedValue({
+      accepted: true,
+      delivery: "email",
+    });
+    vi.mocked(confirmEmailCode)
+      .mockResolvedValueOnce({ error: "Incorrect code. Try again." })
+      .mockResolvedValueOnce({ signedIn: true, email: "admin@example.test" });
+    mount("/admin/login?returnTo=%2Fadmin%2Frooms");
+    fireEvent.change(await screen.findByLabelText("Administrator email"), {
+      target: { value: "admin@example.test" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Email me a code and link" }));
+    const code = await screen.findByLabelText("Six-digit sign-in code");
+    expect(code.getAttribute("autocomplete")).toBe("one-time-code");
+    fireEvent.change(code, { target: { value: "123 456" } });
+    expect((code as HTMLInputElement).value).toBe("123456");
+    fireEvent.click(screen.getByRole("button", { name: "Sign in with code" }));
+    expect(await screen.findByText("Incorrect code. Try again.")).toBeTruthy();
+    expect((code as HTMLInputElement).disabled).toBe(false);
+    fireEvent.change(code, { target: { value: "654321" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in with code" }));
+    expect(await screen.findByText("Rooms destination")).toBeTruthy();
+    expect(confirmEmailCode).toHaveBeenLastCalledWith("admin@example.test", "654321");
   });
 
   it("protects admin and redirects to login", async () => {

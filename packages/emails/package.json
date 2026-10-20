@@ -1,0 +1,21 @@
+{
+  "name": "@26/emails",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.tsx",
+      "default": "./src/index.tsx"
+    }
+  },
+  "dependencies": {
+    "react-email": "6.11.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
+  }
+}

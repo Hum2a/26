@@ -59,7 +59,7 @@ test("admin can request a local sign-in link and confirm it", async ({ page }) =
   ).toHaveCount(0);
 
   await page.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
-  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await page.getByRole("button", { name: "Email me a code and link" }).click();
   await expect(page.getByRole("status")).toContainText(
     "If this is the administrator address, a sign-in email has been requested.",
   );
@@ -92,7 +92,7 @@ test("admin can request a local sign-in link and confirm it", async ({ page }) =
 test("an administrator can open a lobby and a guest can join it", async ({ page }) => {
   await page.goto("/admin");
   await page.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
-  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await page.getByRole("button", { name: "Email me a code and link" }).click();
   await page
     .getByRole("link", { name: "Open the sign-in confirmation" })
     .first()

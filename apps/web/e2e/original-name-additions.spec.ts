@@ -7,7 +7,7 @@ test("both original-name questions rehearse privately in the existing case-file 
   await page.goto("/admin/phone-preview/birthday-draft/real-name-vin-diesel");
   await page.getByRole("link", { name: "Admin sign in →" }).click();
   await page.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
-  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await page.getByRole("button", { name: "Email me a code and link" }).click();
   await page
     .getByRole("link", { name: "Open the sign-in confirmation" })
     .first()

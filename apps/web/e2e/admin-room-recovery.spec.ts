@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 async function signIn(page: Page) {
   await page.goto("/admin");
   await page.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
-  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await page.getByRole("button", { name: "Email me a code and link" }).click();
   await page
     .getByRole("link", { name: "Open the sign-in confirmation" })
     .first()

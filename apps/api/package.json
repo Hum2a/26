@@ -16,7 +16,8 @@
     "hono": "4.13.8",
     "jpeg-js": "0.4.4",
     "kysely": "0.29.6",
-    "resend": "6.28.1"
+    "resend": "6.28.1",
+    "@26/emails": "0.0.0"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.2.3",

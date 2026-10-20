@@ -15,7 +15,7 @@ test("individual questions support private inspection, direct links and responsi
     path: ".codex/previews/admin-redesign/question-sign-in.png",
   });
   await page.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
-  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await page.getByRole("button", { name: "Email me a code and link" }).click();
   await page
     .getByRole("link", { name: "Open the sign-in confirmation" })
     .first()

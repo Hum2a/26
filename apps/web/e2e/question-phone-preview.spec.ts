@@ -7,7 +7,7 @@ test("a full-size phone preview supports signing in on another device", async ({
   await page.goto("/admin/phone-preview/birthday-draft/favourite-pokemon");
   await page.getByRole("link", { name: "Admin sign in →" }).click();
   await page.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
-  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await page.getByRole("button", { name: "Email me a code and link" }).click();
   await page
     .getByRole("link", { name: "Open the sign-in confirmation" })
     .first()
@@ -34,7 +34,7 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
   await expect(email.or(retry)).toBeVisible({ timeout: 20_000 });
   if (await retry.isVisible()) await retry.click();
   await email.fill("humzab1711@hotmail.com");
-  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await page.getByRole("button", { name: "Email me a code and link" }).click();
   await page
     .getByRole("link", { name: "Open the sign-in confirmation" })
     .first()

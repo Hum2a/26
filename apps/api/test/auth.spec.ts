@@ -126,6 +126,160 @@ describe("administrator auth", () => {
     expect(body.messages[0]?.text).not.toContain("/magic-link/verify");
   });
 
+  it("sends one designed email containing a code and link, signs in with the code and rejects replay", async () => {
+    const env = localEnv("email-code");
+    await send(env, "/api/admin/magic-link", {
+      method: "POST",
+      body: { email: adminEmail },
+    });
+    const inbox = (await (await send(env, "/api/dev/inbox")).json()) as {
+      messages: { text: string; html: string }[];
+    };
+    expect(inbox.messages).toHaveLength(1);
+    const message = inbox.messages[0]!,
+      code = message.text.match(/Your sign-in code: (\d{6})/)![1]!;
+    expect(message.html).toContain("Your backstage pass.");
+    expect(message.html).toContain(code);
+    expect(message.text).toContain("/admin/confirm?token=");
+    const database = await openDatabase(env);
+    const records = await database.executor.query("select value from verification");
+    expect(records.length).toBeGreaterThanOrEqual(2);
+    expect(records.every((row) => !String(row.value).startsWith(code + ":"))).toBe(
+      true,
+    );
+    const wrong = code === "000000" ? "111111" : "000000";
+    expect(
+      (
+        await send(env, "/api/admin/email-code/verify", {
+          method: "POST",
+          body: { email: adminEmail, code: wrong },
+        })
+      ).status,
+    ).toBe(400);
+    const confirmed = await send(env, "/api/admin/email-code/verify", {
+      method: "POST",
+      body: { email: adminEmail, code },
+    });
+    expect(confirmed.status).toBe(200);
+    expect(await confirmed.json()).toMatchObject({ signedIn: true, email: adminEmail });
+    const cookie = confirmed.headers
+      .getSetCookie()
+      .map((value) => value.split(";")[0])
+      .join("; ");
+    expect(cookie).toContain("session_token");
+    expect(
+      await (await send(env, "/api/admin/session", { cookie })).json(),
+    ).toMatchObject({ signedIn: true });
+    expect(
+      (
+        await send(env, "/api/admin/email-code/verify", {
+          method: "POST",
+          body: { email: adminEmail, code },
+        })
+      ).status,
+    ).toBe(400);
+  });
+
+  it("bounds code attempts, expires codes, rejects other emails and cross-site verification", async () => {
+    const env = localEnv("email-code-guard");
+    async function issue() {
+      await send(env, "/api/admin/magic-link", {
+        method: "POST",
+        body: { email: adminEmail },
+      });
+      const inbox = (await (await send(env, "/api/dev/inbox")).json()) as {
+        messages: { text: string }[];
+      };
+      return inbox.messages[0]!.text.match(/Your sign-in code: (\d{6})/)![1]!;
+    }
+    const code = await issue(),
+      wrong = code === "000000" ? "111111" : "000000";
+    for (let i = 0; i < 5; i++)
+      expect(
+        (
+          await send(env, "/api/admin/email-code/verify", {
+            method: "POST",
+            body: { email: adminEmail, code: wrong },
+          })
+        ).status,
+      ).toBe(400);
+    expect(
+      (
+        await send(env, "/api/admin/email-code/verify", {
+          method: "POST",
+          body: { email: adminEmail, code },
+        })
+      ).status,
+    ).toBe(400);
+    const fresh = await issue();
+    expect(
+      (
+        await send(env, "/api/admin/email-code/verify", {
+          method: "POST",
+          origin: "https://other.test",
+          body: { email: adminEmail, code: fresh },
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await send(env, "/api/admin/email-code/verify", {
+          method: "POST",
+          body: { email: "guest@example.com", code: fresh },
+        })
+      ).status,
+    ).toBe(400);
+    const database = await openDatabase(env);
+    await database.executor.query('update verification set "expiresAt" = $1', [
+      "2000-01-01T00:00:00.000Z",
+    ]);
+    expect(
+      (
+        await send(env, "/api/admin/email-code/verify", {
+          method: "POST",
+          body: { email: adminEmail, code: fresh },
+        })
+      ).status,
+    ).toBe(400);
+    expect(await (await send(env, "/api/admin/session")).json()).toEqual({
+      signedIn: false,
+    });
+  });
+
+  it("makes a resent code usable without adding accounts or a parallel auth store", async () => {
+    const env = localEnv("email-code-resend");
+    for (let i = 0; i < 2; i++)
+      expect(
+        (
+          await send(env, "/api/admin/magic-link", {
+            method: "POST",
+            body: { email: adminEmail },
+          })
+        ).status,
+      ).toBe(200);
+    const inbox = (await (await send(env, "/api/dev/inbox")).json()) as {
+      messages: { text: string }[];
+    };
+    expect(inbox.messages).toHaveLength(2);
+    const code = inbox.messages[0]!.text.match(/Your sign-in code: (\d{6})/)![1]!;
+    const previous = inbox.messages[1]!.text.match(/Your sign-in code: (\d{6})/)![1]!;
+    // A random six-digit generator can repeat a value; otherwise the old value must fail.
+    if (previous !== code)
+      expect(
+        (
+          await send(env, "/api/admin/email-code/verify", {
+            method: "POST",
+            body: { email: adminEmail, code: previous },
+          })
+        ).status,
+      ).toBe(400);
+    const confirmed = await send(env, "/api/admin/email-code/verify", {
+      method: "POST",
+      body: { email: adminEmail, code },
+    });
+    expect(confirmed.status).toBe(200);
+  });
+
   it("does not consume a magic link when the confirm page is only opened", async () => {
     const env = localEnv("scanner");
     await send(env, "/api/admin/magic-link", {

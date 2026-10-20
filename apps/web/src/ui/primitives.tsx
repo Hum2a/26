@@ -47,6 +47,7 @@ export function Button({
 }
 
 type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
+  ref?: Ref<HTMLInputElement>;
   label: string;
   hint: string;
 };

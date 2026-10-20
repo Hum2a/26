@@ -1,3 +1,4 @@
+import { renderPartyEmail } from "@26/emails";
 import { Resend } from "resend";
 import { presentBinding, type AuthBindings } from "./bindings.ts";
 import type { AppDatabase } from "./create-database.ts";
@@ -33,6 +34,7 @@ export type InboxMessage = {
   recipient: string;
   subject: string;
   text: string;
+  html: string;
 };
 
 /**
@@ -85,6 +87,7 @@ function createResendSender(apiKey: string, from: string | undefined): EmailSend
       if (!from) {
         throw new Error("Email delivery is not configured.");
       }
+      const html = await renderPartyEmail(message);
       try {
         const result = await resend.emails.send(
           {
@@ -92,6 +95,7 @@ function createResendSender(apiKey: string, from: string | undefined): EmailSend
             to: message.to,
             subject: message.subject,
             text: message.text,
+            html,
           },
           message.idempotencyKey
             ? { idempotencyKey: message.idempotencyKey }
@@ -153,10 +157,16 @@ export async function listLocalInbox(database: AppDatabase): Promise<InboxMessag
      order by created_at desc
      limit 20`,
   );
-  return rows.map((row) => ({
-    id: String(row.id),
-    recipient: String(row.recipient),
-    subject: String(row.subject),
-    text: String(row.body),
-  }));
+  return Promise.all(
+    rows.map(async (row) => ({
+      id: String(row.id),
+      recipient: String(row.recipient),
+      subject: String(row.subject),
+      text: String(row.body),
+      html: await renderPartyEmail({
+        subject: String(row.subject),
+        text: String(row.body),
+      }),
+    })),
+  );
 }

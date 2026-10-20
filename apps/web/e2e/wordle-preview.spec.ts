@@ -34,7 +34,7 @@ test("birthday Wordle checks guesses privately in the real phone rehearsal", asy
   await page.goto("/admin/phone-preview/birthday-draft/complete-a-wordle");
   await page.getByRole("link", { name: "Admin sign in →" }).click();
   await page.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
-  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await page.getByRole("button", { name: "Email me a code and link" }).click();
   await page
     .getByRole("link", { name: "Open the sign-in confirmation" })
     .first()

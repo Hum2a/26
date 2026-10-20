@@ -129,6 +129,7 @@ export const authFailureSchema = z.object({
 export type AuthFailure = z.infer<typeof authFailureSchema>;
 
 export const devInboxMessageSchema = z.object({
+  html: z.string().optional(),
   id: z.string().min(1),
   recipient: z.email(),
   subject: z.string().min(1),

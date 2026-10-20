@@ -69,6 +69,23 @@ export async function confirmMagicLink(token: string): Promise<AdminSession | Fa
     : { error: "We couldn’t confirm sign-in. Try again." };
 }
 
+export async function confirmEmailCode(
+  email: string,
+  code: string,
+): Promise<AdminSession | Failure> {
+  const result = await authRequest("/api/admin/email-code/verify", { email, code });
+  if ("error" in result) return result;
+  if (!result.ok)
+    return {
+      error:
+        "That code is incorrect or has expired. Try again, or request a new email.",
+    };
+  const parsed = adminSessionSchema.safeParse(result.body);
+  return parsed.success && parsed.data.signedIn
+    ? parsed.data
+    : { error: "We couldn’t confirm sign-in. Try again." };
+}
+
 export async function signOutAdmin(): Promise<Failure | undefined> {
   const result = await authRequest("/api/admin/sign-out", {});
   if ("error" in result) return result;

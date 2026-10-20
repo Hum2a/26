@@ -47,7 +47,8 @@
     "deploy:both": "node --experimental-strip-types scripts/release.ts deploy --env both",
     "deploy:staging:full": "node --experimental-strip-types scripts/release.ts full --env staging",
     "deploy:prod:full": "node --experimental-strip-types scripts/release.ts full --env production",
-    "deploy:both:full": "node --experimental-strip-types scripts/release.ts full --env both"
+    "deploy:both:full": "node --experimental-strip-types scripts/release.ts full --env both",
+    "email:preview": "node scripts/email-preview.mjs"
   },
   "allowScripts": {
     "esbuild@0.28.1": true,

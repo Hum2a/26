@@ -133,6 +133,45 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>): void {
     );
   });
 
+  app.post("/api/admin/email-code/verify", async (c) => {
+    const rejected = rejectCrossSite(c.req.raw);
+    if (rejected) return rejected;
+    const ready = await readyAuth(c.env, c.req.url);
+    if (ready instanceof Response) return ready;
+    const body = await readJson(c.req.raw);
+    if (
+      !body ||
+      typeof body !== "object" ||
+      !("email" in body) ||
+      !("code" in body) ||
+      typeof body.email !== "string" ||
+      typeof body.code !== "string" ||
+      body.email.trim().toLowerCase() !== ready.adminEmail ||
+      !/^\d{6}$/.test(body.code.trim())
+    ) {
+      return authFailure("invalid", 400);
+    }
+    const headers = new Headers(c.req.raw.headers);
+    headers.set("origin", ready.origin);
+    headers.set("content-type", "application/json");
+    const response = await ready.auth.handler(
+      new Request(new URL("/api/auth/sign-in/email-otp", ready.origin), {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ email: ready.adminEmail, otp: body.code.trim() }),
+      }),
+    );
+    if (!response.ok)
+      return authFailure("invalid", response.status === 429 ? 429 : 400);
+    const email = await readVerifiedEmail(response, ready.adminEmail);
+    if (!email) return authFailure("invalid", 400);
+    return jsonData(
+      adminSessionSchema.parse({ signedIn: true, email }),
+      200,
+      copyCookies(response),
+    );
+  });
+
   app.post("/api/admin/sign-out", async (c) => {
     const rejected = rejectCrossSite(c.req.raw);
     if (rejected) {
