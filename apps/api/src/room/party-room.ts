@@ -2,8 +2,9 @@ import {
   kartRehearsalVersion,
   requirePlayable as requireKartRehearsal,
 } from "../questions/registry.ts";
-import { acceptKartInput } from "../questions/kart.ts";
+import { acceptKartInputs, kartFrames, type KartArrival } from "../questions/kart.ts";
 import { DurableObject } from "cloudflare:workers";
+import { createRealtimeMeter } from "./realtime-meter.ts";
 import { adminPlayerRows } from "./admin-players.ts";
 import {
   guestSessionSchema,
@@ -13,7 +14,15 @@ import {
   removedSessionMessage,
   nicknameSchema,
   type GuestSession,
+  type KartFrame,
   type LobbySnapshot,
+  type RateBucket,
+  type RateLimit,
+  commandRateLimit,
+  draftRateLimit,
+  takeToken,
+  telemetryRateLimit,
+  timeRateLimit,
 } from "@26/shared";
 import {
   readCredentialCookie,
@@ -36,7 +45,6 @@ import { createSqliteRoomCredentialDirectory, insertCredential } from "./directo
 import {
   digestMismatchMessage,
   mediaMissingMessage,
-  maxInboundMessages,
   maxPayloadBytes,
   maxPlayers,
   maxTransfers,
@@ -142,7 +150,7 @@ import {
   restrictResultsEmail,
   type EmailSender,
 } from "../auth/create-email.ts";
-import { openDatabase } from "../auth/create-database.ts";
+import { createDatabase, type AppDatabase } from "../auth/create-database.ts";
 import {
   confirmVerification,
   personalFromGrant,
@@ -194,7 +202,23 @@ type SocketAttachment = {
   role: SocketRole;
   principalId: string;
   deliverySeq: number;
+  /** The screen said it can apply patches. Older builds get full snapshots. */
+  patches?: true;
 };
+
+type BroadcastScope = "all" | "facilitators" | "stage";
+type SentView = { id: string; fields: Map<string, string> };
+
+function viewKey(attachment: { role: string; principalId: string }): string {
+  return `${attachment.role}:${attachment.principalId}`;
+}
+type SnapshotPartsCache = Map<string, ReturnType<PartyRoom["snapshotParts"]>>;
+/** Changes inside this window share one fan-out. Short enough not to be seen. */
+const broadcastWindowMs = 30;
+/** Eighty phones at 10Hz between two 200ms ticks is 160. This bounds a stalled tick. */
+const maxKartArrivals = 2_000;
+/** Three buckets for each of 80 phones plus stage and control, with room to spare. */
+const maxRateBuckets = 400;
 
 type CredentialSecrets = {
   credentialId: string;
@@ -290,6 +314,17 @@ export class PartyRoom extends DurableObject<Env> {
 
   private liveDrafts = new Map<string, { text: string; shownAt: number }>();
   private draftFlush: ReturnType<typeof setTimeout> | undefined;
+  private readonly meter = createRealtimeMeter();
+  private database: Promise<AppDatabase> | undefined;
+  private kartArrivals: KartArrival[] = [];
+  private rateBuckets = new Map<string, RateBucket>();
+  /** The last view each socket holds, and per screen for resume. Memory only. */
+  private views = new WeakMap<WebSocket, SentView>();
+  private lastViews = new Map<string, SentView>();
+  private readonly viewEpoch = randomToken(6);
+  private viewCount = 0;
+  private dirty = new Set<BroadcastScope>();
+  private broadcastFlush: ReturnType<typeof setTimeout> | undefined;
 
   async ensureLobby(input: {
     gameId: string;
@@ -694,8 +729,33 @@ export class PartyRoom extends DurableObject<Env> {
 
   override async alarm(): Promise<void> {
     const now = Date.now();
+    let raceTickOnly = false;
+    const arrivals = this.kartArrivals;
+    this.kartArrivals = [];
     await commitAndArm(this.ctx.storage, (sql) => {
-      onAlarm(createGameStore(sql), now);
+      const roundStore = createSqlStore(sql);
+      const kart = questionFor(roundStore.readRoom());
+      if (kart?.kind === "kart") acceptKartInputs(sql, roundStore, arrivals, kart);
+      const store = createGameStore(sql);
+      const before = store.readRoom();
+      const due = sql
+        .exec<{ payload: string }>(
+          `SELECT payload FROM schedule_job
+           WHERE status = 'pending' AND due_at IS NOT NULL AND due_at <= ?`,
+          now,
+        )
+        .toArray();
+      onAlarm(store, now);
+      const after = store.readRoom();
+      // A tick that only moved the race goes out as a kart frame, not a full snapshot.
+      raceTickOnly =
+        due.length > 0 &&
+        due.every((job) => job.payload === "kart-tick") &&
+        after.phase === "collect" &&
+        after.phaseGeneration === before.phaseGeneration &&
+        after.questionIndex === before.questionIndex &&
+        !after.paused &&
+        !after.hold;
     });
     await settleArchive({
       storage: this.ctx.storage,
@@ -703,7 +763,9 @@ export class PartyRoom extends DurableObject<Env> {
       now,
       ...(this.archiveWriterOverride ? { writer: this.archiveWriterOverride } : {}),
     });
-    this.broadcast();
+    if (!raceTickOnly || !this.broadcastKart()) {
+      this.broadcast(true);
+    }
   }
 
   /** Tests inject a writer. Production uses the Worker database binding. */
@@ -1293,6 +1355,7 @@ export class PartyRoom extends DurableObject<Env> {
         control: this.ctx.getWebSockets("control").length,
       },
       delivery,
+      realtime: this.meter.summary(Date.now()),
     });
     return { ok: true, report };
   }
@@ -1676,7 +1739,9 @@ export class PartyRoom extends DurableObject<Env> {
     if (!room) {
       return roomResponse(404, "not_found", roomMissingMessage);
     }
-    const role = new URL(request.url).searchParams.get("role");
+    const query = new URL(request.url).searchParams;
+    const role = query.get("role");
+    const since = query.get("since");
     const identity = await this.identify(request, room.game_id, role, new Date());
     if (!identity.ok) {
       return roomResponse(identity.status, identity.error, identity.message);
@@ -1685,7 +1750,11 @@ export class PartyRoom extends DurableObject<Env> {
     const client = pair[0];
     const server = pair[1];
     this.ctx.acceptWebSocket(server, [identity.attachment.role]);
-    server.serializeAttachment(identity.attachment);
+    server.serializeAttachment(
+      query.get("patches") === "1"
+        ? { ...identity.attachment, patches: true }
+        : identity.attachment,
+    );
     if (identity.attachment.role === "guest") {
       this.closeOlder(server, identity.attachment, newerTabMessage);
     } else if (identity.attachment.role === "presentation") {
@@ -1696,6 +1765,15 @@ export class PartyRoom extends DurableObject<Env> {
         noteGuestSocket(this.ctx.storage.sql, identity.attachment.principalId);
       });
     }
+    // Resume: a screen that still holds the last view this room sent it gets
+    // only what changed since, instead of the whole room again.
+    const resumed =
+      since && query.get("patches") === "1"
+        ? this.lastViews.get(viewKey(identity.attachment))
+        : undefined;
+    if (resumed && resumed.id === since) {
+      this.views.set(server, resumed);
+    }
     await this.refreshPresence();
     this.sendSnapshot(server);
     return new Response(null, { status: 101, webSocket: client });
@@ -1705,6 +1783,7 @@ export class PartyRoom extends DurableObject<Env> {
     const text =
       typeof message === "string" ? message : new TextDecoder().decode(message);
     const bytes = typeof message === "string" ? text.length : message.byteLength;
+    this.meter.add("in", bytes, Date.now());
     if (bytes > maxPayloadBytes) {
       this.send(ws, {
         kind: "ack",
@@ -1720,6 +1799,24 @@ export class PartyRoom extends DurableObject<Env> {
       return;
     }
     if (text === "ping") {
+      return;
+    }
+    if (text.startsWith("time:")) {
+      // Clock sample for the screen's countdown. The reply goes straight out:
+      // it needs no delivery number and no snapshot.
+      const sentAt = Number(text.slice(5));
+      if (
+        Number.isFinite(sentAt) &&
+        this.allow(`time:${attachment.principalId}`, timeRateLimit)
+      ) {
+        const reply = JSON.stringify({ kind: "time", sentAt, serverNow: Date.now() });
+        this.meter.add("out:time", reply.length, Date.now());
+        try {
+          ws.send(reply);
+        } catch {
+          // The screen already left.
+        }
+      }
       return;
     }
     let parsed: unknown;
@@ -1744,42 +1841,38 @@ export class PartyRoom extends DurableObject<Env> {
     }
     if (early?.name === "kart-input") {
       if (attachment.role !== "guest") return;
-      this.ctx.storage.transactionSync(() => {
-        const sql = this.ctx.storage.sql,
-          store = createSqlStore(sql),
-          q = questionFor(store.readRoom());
-        if (q?.kind === "kart")
-          acceptKartInput(
-            sql,
-            store,
-            attachment.principalId,
-            early.input,
-            q,
-            Date.now(),
-          );
+      // Controls carry no acknowledgement. They are stored, with their arrival
+      // time, in one transaction at the start of the next tick.
+      if (this.kartArrivals.length >= maxKartArrivals) this.kartArrivals.shift();
+      this.kartArrivals.push({
+        playerId: attachment.principalId,
+        raw: early.input,
+        at: Date.now(),
       });
       return;
     }
-    const count = this.addCount(attachment.principalId, "messages");
-    this.addCount("room", "messages");
-    if (count > maxInboundMessages) {
+    const command = early;
+    if (command?.name === "draft") {
+      // A dropped draft only delays the stage preview. It has no reply.
+      if (
+        attachment.role === "guest" &&
+        this.allow(`draft:${attachment.principalId}`, draftRateLimit)
+      ) {
+        this.noteLiveDraft(attachment.principalId, command.text);
+      }
+      return;
+    }
+    if (!this.allow(`command:${attachment.principalId}`, commandRateLimit)) {
       this.send(ws, {
         kind: "ack",
         scope: "private",
-        requestId: "",
+        requestId: command?.requestId ?? "",
         accepted: false,
         error: messageLimitMessage,
       });
       return;
     }
-    const command = early;
     if (!command) {
-      return;
-    }
-    if (command.name === "draft") {
-      if (attachment.role === "guest") {
-        this.noteLiveDraft(attachment.principalId, command.text);
-      }
       return;
     }
     if (command.name === "answer") {
@@ -1926,10 +2019,11 @@ export class PartyRoom extends DurableObject<Env> {
           uploadAttempts: unknown;
           uploadFailures: unknown;
           uploadDurationMs: unknown;
+          scriptErrors?: unknown;
+          lastScriptError?: unknown;
         },
   ): void {
-    const seen = this.addCount(playerId, "telemetry");
-    if (seen > 60) {
+    if (!this.allow(`telemetry:${playerId}`, telemetryRateLimit)) {
       this.send(ws, {
         kind: "ack",
         scope: "private",
@@ -2117,6 +2211,7 @@ export class PartyRoom extends DurableObject<Env> {
     if (!this.readRoom()) {
       return;
     }
+    let changed = false;
     await commitAndArm(this.ctx.storage, (sql) => {
       const store = createSqlStore(sql);
       const room = store.readRoom();
@@ -2125,9 +2220,15 @@ export class PartyRoom extends DurableObject<Env> {
       if (room.controllerPresent === controller && room.stagePresent === stage) {
         return;
       }
+      changed = true;
       notePresence(store, { controller, stage }, Date.now());
     });
-    this.broadcast();
+    // A phone coming or going changes only the host's connection counts.
+    if (changed) {
+      this.broadcast();
+    } else {
+      this.broadcastFacilitators();
+    }
   }
 
   private socketOpen(role: SocketRole, closing?: WebSocket): boolean {
@@ -2280,7 +2381,13 @@ export class PartyRoom extends DurableObject<Env> {
         RESEND_FROM: this.env.RESEND_FROM,
         EMAIL_TEST_RECIPIENT: this.env.EMAIL_TEST_RECIPIENT,
       };
-      const database = await openDatabase(bindings);
+      // One pool per room object. A module-wide pool would be reused by another
+      // room in the same isolate, and Workers forbid I/O across objects.
+      this.database ??= createDatabase(bindings).catch((error: unknown) => {
+        this.database = undefined;
+        throw error;
+      });
+      const database = await this.database;
       return {
         store: postgresDelivery(database.executor.query),
         sender: restrictResultsEmail(bindings, createEmail(bindings, database)),
@@ -2770,32 +2877,54 @@ export class PartyRoom extends DurableObject<Env> {
     });
   }
 
-  private buildSnapshot(
-    audience: "guest" | "stage" | "control",
-    selfPlayerId?: string,
-  ): LobbySnapshot {
+  /**
+   * The parts of a snapshot that are the same for every screen of one audience.
+   * A broadcast builds these once and reuses them for each socket.
+   */
+  private snapshotParts(audience: "guest" | "stage" | "control") {
+    this.meter.add("build:public", 0, Date.now());
     const room = this.readRoom();
     if (!room) {
       throw new Error(roomMissingMessage);
     }
-    const players = this.ctx.storage.sql
+    const sql = this.ctx.storage.sql;
+    const players = sql
       .exec<{ player_id: string; nickname: string }>(
         `SELECT player_id, nickname FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
       )
       .toArray()
       .map((row) => ({
         playerId: row.player_id,
-        nickname: displayNickname(this.ctx.storage.sql, row.player_id, row.nickname),
+        nickname: displayNickname(sql, row.player_id, row.nickname),
       }));
-    const store = createSqlStore(this.ctx.storage.sql);
-    const clock = publicClock(store);
-    const stored = store.readRoom();
-    const presentation = this.ctx.storage.sql
+    const store = createSqlStore(sql);
+    const presentation = sql
       .exec<{ opening: string | null; stage_hidden: number; reveal_nonce: number }>(
         `SELECT opening, stage_hidden, reveal_nonce FROM room`,
       )
       .toArray()[0];
-    const stageHidden = presentation?.stage_hidden === 1;
+    return {
+      room,
+      players,
+      store,
+      clock: publicClock(store),
+      stored: store.readRoom(),
+      presentation,
+      stageHidden: presentation?.stage_hidden === 1,
+      stats: readStatsSource(sql),
+      cloud: cloudRows(sql),
+      namesReveal: presentation?.opening === "showing" ? revealNames(sql) : null,
+      media: listUploads(sql, audience),
+    };
+  }
+
+  private buildSnapshot(
+    audience: "guest" | "stage" | "control",
+    selfPlayerId?: string,
+    parts: ReturnType<PartyRoom["snapshotParts"]> = this.snapshotParts(audience),
+  ): LobbySnapshot {
+    const { room, players, store, clock, stored, presentation, stageHidden, stats } =
+      parts;
     let play = projectPlay(
       this.ctx.storage.sql,
       stored,
@@ -2812,7 +2941,6 @@ export class PartyRoom extends DurableObject<Env> {
       play = { ...play, selfAward: null, selfStanding: null };
     }
     const trolls = trollSnapshot(this.ctx.storage.sql, store, audience, selfPlayerId);
-    const stats = readStatsSource(this.ctx.storage.sql);
     const highlights =
       audience === "control"
         ? presentStats(stats, "preview").highlights
@@ -2838,16 +2966,15 @@ export class PartyRoom extends DurableObject<Env> {
       players,
       ...(selfPlayerId ? { selfPlayerId } : {}),
       play,
-      cloud: cloudRows(this.ctx.storage.sql),
+      cloud: parts.cloud,
       ...(selfPlayerId
         ? { selfReactions: voterReactions(this.ctx.storage.sql, selfPlayerId) }
         : {}),
-      namesReveal:
-        presentation?.opening === "showing" ? revealNames(this.ctx.storage.sql) : null,
+      namesReveal: parts.namesReveal,
       stageHidden,
       finishAfterRound: stored.finishAfterRound,
       revealNonce: presentation?.reveal_nonce ?? 0,
-      media: listUploads(this.ctx.storage.sql, audience),
+      media: parts.media,
       ...this.publicDraft(audience),
       trolls,
       ...(audience === "control"
@@ -2897,25 +3024,108 @@ export class PartyRoom extends DurableObject<Env> {
     };
   }
 
-  private broadcast(): void {
-    for (const socket of this.ctx.getWebSockets()) {
-      this.sendSnapshot(socket);
-    }
+  /**
+   * Every screen needs a new snapshot. Changes in one short window share a
+   * single fan-out, so a burst of joins or answers does not rebuild the room
+   * once per change. A phase deadline flushes at once.
+   */
+  private broadcast(urgent = false): void {
+    this.markDirty("all", urgent);
   }
 
   /** Live counts go to the stage and the host. The sending phone already has its snapshot. */
   private broadcastFacilitators(): void {
-    for (const role of ["presentation", "control"] as const) {
-      for (const socket of this.ctx.getWebSockets(role)) {
-        this.sendSnapshot(socket);
-      }
+    this.markDirty("facilitators");
+  }
+
+  private markDirty(scope: BroadcastScope, urgent = false): void {
+    this.dirty.add(scope);
+    if (urgent) {
+      this.flushBroadcasts();
+      return;
+    }
+    this.broadcastFlush ??= setTimeout(() => this.flushBroadcasts(), broadcastWindowMs);
+  }
+
+  private flushBroadcasts(): void {
+    if (this.broadcastFlush !== undefined) {
+      clearTimeout(this.broadcastFlush);
+      this.broadcastFlush = undefined;
+    }
+    const scopes = this.dirty;
+    this.dirty = new Set();
+    if (scopes.size === 0) {
+      return;
+    }
+    const roles: SocketRole[] | undefined = scopes.has("all")
+      ? undefined
+      : scopes.has("facilitators")
+        ? ["presentation", "control"]
+        : ["presentation"];
+    this.meter.add(
+      scopes.has("all")
+        ? "broadcast:all"
+        : scopes.has("facilitators")
+          ? "broadcast:facilitators"
+          : "broadcast:stage",
+      0,
+      Date.now(),
+    );
+    const shared: SnapshotPartsCache = new Map();
+    const sockets = roles
+      ? roles.flatMap((role) => this.ctx.getWebSockets(role))
+      : this.ctx.getWebSockets();
+    for (const socket of sockets) {
+      this.sendSnapshot(socket, shared);
     }
   }
 
-  private broadcastStage(): void {
-    for (const socket of this.ctx.getWebSockets("presentation")) {
-      this.sendSnapshot(socket);
+  /** Race ticks: the projection is built once, and each phone gets its own short view. */
+  private broadcastKart(): boolean {
+    const sql = this.ctx.storage.sql;
+    const room = createSqlStore(sql).readRoom();
+    const question = questionFor(room);
+    const hidden =
+      sql.exec<{ stage_hidden: number }>(`SELECT stage_hidden FROM room`).toArray()[0]
+        ?.stage_hidden === 1;
+    if (question?.kind !== "kart" || hidden) {
+      return false;
     }
+    const frames = kartFrames(sql, question);
+    if (!frames) {
+      return false;
+    }
+    const stateVersion = this.readRoom()?.state_version ?? 0;
+    const serverNow = Date.now();
+    this.meter.add("broadcast:kart", 0, serverNow);
+    for (const socket of this.ctx.getWebSockets()) {
+      const attachment = this.attachment(socket);
+      if (!attachment) {
+        continue;
+      }
+      if (attachment.role !== "guest" && !this.facilitatorAllowed(socket, attachment)) {
+        continue;
+      }
+      this.send(socket, {
+        kind: "kart",
+        scope: "public",
+        stateVersion,
+        serverNow,
+        submissionCount: frames.submissionCount,
+        kart:
+          attachment.role === "guest"
+            ? frames.forPhone(attachment.principalId)
+            : frames.full,
+      });
+      // The screen merged this frame into its view, so the next patch must resend these.
+      const view = this.views.get(socket);
+      for (const key of ["play", "serverNow", "stateVersion"]) view?.fields.delete(key);
+    }
+    return true;
+  }
+
+  private broadcastStage(): void {
+    this.markDirty("stage");
   }
 
   private publicDraft(audience: "guest" | "stage" | "control"): {
@@ -3004,44 +3214,119 @@ export class PartyRoom extends DurableObject<Env> {
     }, delayMs);
   }
 
-  private sendSnapshot(ws: WebSocket): void {
+  private sendSnapshot(ws: WebSocket, shared?: SnapshotPartsCache): void {
     const attachment = this.attachment(ws);
     if (!attachment) {
       return;
     }
-    if (attachment.role !== "guest") {
-      const credential = this.ctx.storage.sql
-        .exec<{ expires_at: string; revoked_at: string | null }>(
-          "SELECT expires_at, revoked_at FROM credential WHERE id = ?",
-          attachment.principalId,
-        )
-        .toArray()[0];
-      if (
-        !credential ||
-        credential.revoked_at ||
-        Date.parse(credential.expires_at) <= Date.now()
-      ) {
-        const message = "Room access expired or changed. Reopen the room from admin.";
-        this.send(ws, { kind: "replaced", scope: "private", message });
-        ws.close(4000, message);
-        return;
-      }
+    if (attachment.role !== "guest" && !this.facilitatorAllowed(ws, attachment)) {
+      return;
     }
-    const snapshot = this.buildSnapshot(
+    const audience =
       attachment.role === "guest"
         ? "guest"
         : attachment.role === "control"
           ? "control"
-          : "stage",
+          : "stage";
+    let parts = shared?.get(audience);
+    if (!parts) {
+      parts = this.snapshotParts(audience);
+      shared?.set(audience, parts);
+    }
+    const snapshot = this.buildSnapshot(
+      audience,
       attachment.role === "guest" ? attachment.principalId : undefined,
+      parts,
     );
-    this.send(ws, { kind: "snapshot", scope: "public", snapshot });
+    this.sendView(ws, attachment, snapshot);
+  }
+
+  /**
+   * Sends the snapshot as a patch against the last view this socket holds when
+   * that is clearly smaller, otherwise in full. Views live in memory only: after
+   * a restart every screen gets a full snapshot, which is always correct.
+   */
+  private sendView(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    snapshot: LobbySnapshot,
+  ) {
+    const fields = new Map(
+      Object.entries(snapshot).map(([key, value]) => [key, JSON.stringify(value)]),
+    );
+    if (!attachment.patches) {
+      this.send(ws, { kind: "snapshot", scope: "public", snapshot });
+      return;
+    }
+    const previous = this.views.get(ws);
+    this.viewCount += 1;
+    const view = { id: `${this.viewEpoch}.${this.viewCount}`, fields };
+    this.views.set(ws, view);
+    this.lastViews.set(viewKey(attachment), view);
+    if (previous) {
+      const set: Record<string, unknown> = {};
+      const unset: string[] = [];
+      let patchBytes = 0;
+      let fullBytes = 0;
+      for (const [key, json] of fields) {
+        fullBytes += key.length + json.length;
+        if (previous.fields.get(key) !== json) {
+          set[key] = snapshot[key as keyof LobbySnapshot];
+          patchBytes += key.length + json.length;
+        }
+      }
+      for (const key of previous.fields.keys()) {
+        if (!fields.has(key)) unset.push(key);
+      }
+      if (patchBytes < fullBytes * 0.8) {
+        this.send(ws, {
+          kind: "patch",
+          scope: "public",
+          base: previous.id,
+          view: view.id,
+          set,
+          unset,
+        });
+        return;
+      }
+    }
+    this.send(ws, { kind: "snapshot", scope: "public", snapshot, view: view.id });
+  }
+
+  /** Stage and control sockets stop receiving room data once their credential lapses. */
+  private facilitatorAllowed(ws: WebSocket, attachment: SocketAttachment): boolean {
+    const credential = this.ctx.storage.sql
+      .exec<{ expires_at: string; revoked_at: string | null }>(
+        "SELECT expires_at, revoked_at FROM credential WHERE id = ?",
+        attachment.principalId,
+      )
+      .toArray()[0];
+    if (
+      credential &&
+      !credential.revoked_at &&
+      Date.parse(credential.expires_at) > Date.now()
+    ) {
+      return true;
+    }
+    const message = "Room access expired or changed. Reopen the room from admin.";
+    this.send(ws, { kind: "replaced", scope: "private", message });
+    ws.close(4000, message);
+    return false;
   }
 
   private send(
     ws: WebSocket,
     message:
-      | { kind: "snapshot"; scope: "public"; snapshot: LobbySnapshot }
+      | { kind: "snapshot"; scope: "public"; snapshot: LobbySnapshot; view?: string }
+      | {
+          kind: "patch";
+          scope: "public";
+          base: string;
+          view: string;
+          set: Record<string, unknown>;
+          unset: string[];
+        }
+      | ({ kind: "kart" } & Omit<KartFrame, "kind">)
       | {
           kind: "ack";
           scope: "private";
@@ -3072,8 +3357,10 @@ export class PartyRoom extends DurableObject<Env> {
               deliverySeq: next.deliverySeq,
             }
           : { ...message, deliverySeq: next.deliverySeq };
+    const text = JSON.stringify(payload);
+    this.meter.add(`out:${message.kind}`, text.length, Date.now());
     try {
-      ws.send(JSON.stringify(payload));
+      ws.send(text);
     } catch {
       // The peer already left. The durable record stays.
     }
@@ -3130,6 +3417,7 @@ export class PartyRoom extends DurableObject<Env> {
       role: record.role,
       principalId: record.principalId,
       deliverySeq: record.deliverySeq,
+      ...(record.patches === true ? { patches: true } : {}),
     };
   }
 
@@ -3186,12 +3474,17 @@ export class PartyRoom extends DurableObject<Env> {
     return next;
   }
 
-  private addCount(scope: string, name: string): number {
-    let next = 0;
-    this.ctx.storage.transactionSync(() => {
-      next = this.writeCount(scope, name);
-    });
-    return next;
+  /** In-memory rate limit. A rejected sender costs no storage write. */
+  private allow(key: string, limit: RateLimit): boolean {
+    const now = Date.now();
+    const result = takeToken(this.rateBuckets.get(key), limit, now);
+    this.rateBuckets.set(key, result.bucket);
+    if (this.rateBuckets.size > maxRateBuckets) {
+      for (const [stale, bucket] of this.rateBuckets) {
+        if (now - bucket.at > 60_000) this.rateBuckets.delete(stale);
+      }
+    }
+    return result.allowed;
   }
 
   private writeAudit(
@@ -3366,6 +3659,8 @@ function readCommand(body: unknown):
       uploadAttempts: unknown;
       uploadFailures: unknown;
       uploadDurationMs: unknown;
+      scriptErrors?: unknown;
+      lastScriptError?: unknown;
     }
   | null {
   if (!body || typeof body !== "object") {
@@ -3456,6 +3751,8 @@ function readCommand(body: unknown):
       uploadAttempts: record.uploadAttempts,
       uploadFailures: record.uploadFailures,
       uploadDurationMs: record.uploadDurationMs,
+      scriptErrors: record.scriptErrors,
+      lastScriptError: record.lastScriptError,
     };
   }
   if (

@@ -26,6 +26,7 @@ beforeEach(() => {
     submitKartInput: vi.fn(),
     submitTrollEscape: vi.fn(),
     submitReaction: vi.fn(),
+    reconnectNow: vi.fn(),
   });
 });
 function Probe() {

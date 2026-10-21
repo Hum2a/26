@@ -4,6 +4,8 @@ type Delta = {
   uploadAttempts: number;
   uploadFailures: number;
   uploadDurationMs: number;
+  scriptErrors: number;
+  lastScriptError?: string;
 };
 
 const empty = (): Delta => ({
@@ -12,7 +14,14 @@ const empty = (): Delta => ({
   uploadAttempts: 0,
   uploadFailures: 0,
   uploadDurationMs: 0,
+  scriptErrors: 0,
 });
+
+/** An uncaught error on this phone, reported to the host with the next summary. */
+export function noteScriptError(message: string): void {
+  pending.scriptErrors = Math.min(50, pending.scriptErrors + 1);
+  pending.lastScriptError = message.slice(0, 160);
+}
 
 let pending = empty();
 
@@ -49,7 +58,8 @@ export function takeConnectionDelta(): Delta | null {
     next.rttMs.length === 0 &&
     next.submissionRetries === 0 &&
     next.uploadAttempts === 0 &&
-    next.uploadFailures === 0;
+    next.uploadFailures === 0 &&
+    next.scriptErrors === 0;
   if (quiet) {
     return null;
   }

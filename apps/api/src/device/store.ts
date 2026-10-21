@@ -156,9 +156,26 @@ export function mergeConnectionSummary(
     uploadAttempts: unknown;
     uploadFailures: unknown;
     uploadDurationMs: unknown;
+    scriptErrors?: unknown;
+    lastScriptError?: unknown;
   },
 ): void {
   ensureConnectionRow(sql, playerId);
+  const errors = boundedDelta(input.scriptErrors);
+  if (errors > 0) {
+    sql.exec(
+      `UPDATE connection_summary
+       SET script_errors = MIN(?, script_errors + ?),
+           last_script_error = COALESCE(?, last_script_error),
+           last_script_error_at = ?
+       WHERE player_id = ?`,
+      retryCap,
+      errors,
+      scriptErrorText(input.lastScriptError),
+      new Date().toISOString(),
+      playerId,
+    );
+  }
   const row = sql
     .exec<{
       rtt_count: number;
@@ -204,6 +221,50 @@ export function mergeConnectionSummary(
     row.upload_duration_count + (boundedDuration(input.uploadDurationMs) > 0 ? 1 : 0),
     playerId,
   );
+}
+
+/** A short error line for the host. Addresses and long tokens are removed. */
+function scriptErrorText(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const cleaned = value
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted]")
+    .replace(/[A-Za-z0-9_-]{24,}/g, "[redacted]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+/** Phones that reported a script error, newest first, for room health. */
+export function recentScriptErrors(sql: SqlStorage): {
+  total: number;
+  recent: { nickname: string; message: string; count: number }[];
+} {
+  const total =
+    sql
+      .exec<{ total: number | null }>(
+        `SELECT SUM(script_errors) AS total FROM connection_summary`,
+      )
+      .toArray()[0]?.total ?? 0;
+  const recent = sql
+    .exec<{ nickname: string; message: string | null; count: number }>(
+      `SELECT player.nickname AS nickname, connection_summary.last_script_error AS message,
+              connection_summary.script_errors AS count
+       FROM connection_summary
+       JOIN player ON player.player_id = connection_summary.player_id
+       WHERE connection_summary.script_errors > 0
+       ORDER BY connection_summary.last_script_error_at DESC
+       LIMIT 5`,
+    )
+    .toArray()
+    .map((row) => ({
+      nickname: row.nickname,
+      message: row.message ?? "An error with no message.",
+      count: row.count,
+    }));
+  return { total, recent };
 }
 
 export function clearCurrentContext(sql: SqlStorage, playerId: string): void {

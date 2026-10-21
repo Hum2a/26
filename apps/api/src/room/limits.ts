@@ -1,5 +1,4 @@
 export const maxPlayers = 80;
-export const maxInboundMessages = 100;
 export const maxTransfers = 40;
 export const maxNameReactions = 10;
 export const liveSampleSize = 8;
@@ -19,7 +18,8 @@ export const roomMissingMessage = "This room does not exist.";
 export const transferExpiredMessage = "That transfer code has expired.";
 export const transferUsedMessage = "That transfer code has already been used.";
 export const transferInvalidMessage = "That transfer code was not accepted.";
-export const messageLimitMessage = "This connection has sent too many messages.";
+export const messageLimitMessage =
+  "Too many taps at once. Wait a moment and try again.";
 export const transferLimitMessage = "This room has issued too many transfers.";
 export const playerMissingMessage = "That player is not in this room.";
 export const roundStartMessage = "A round can only start from the lobby.";

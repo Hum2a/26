@@ -44,7 +44,28 @@ If the phone only lost Wi-Fi, ask them to reload the same tab. The guest cookie 
 
 ## Wi-Fi disruption
 
-Keep the same room. Guests reload. Humza reloads `/admin` and signs in again if the control cookie has expired. Baseer reloads `/host` if the stage socket drops. A dropped socket does not delete scores. Do not start a spare room and ask people to rejoin unless the original room cannot be opened at all.
+Keep the same room. Phones and the stage reconnect on their own: they retry with spread-out waits, retry at once when the phone wakes or its signal returns, and replace a socket that stops answering. A short drop costs only what changed, not the whole room.
+
+What guests see: nothing for 1.5 seconds, then "Reconnecting…", then a Wi-Fi or signal hint at 10 seconds, then a Try again now button at 30 seconds. The stage hides the question straight away and adds "Check this screen’s network" after 15 seconds.
+
+Ask a guest to reload only if Try again now does not bring them back. Humza reloads `/admin` and signs in again if the control cookie has expired. Baseer reloads `/host` if the stage stays on "Reconnecting to the room." A dropped socket does not delete scores. Do not start a spare room and ask people to rejoin unless the original room cannot be opened at all.
+
+### The projector lost its connection
+
+1. Look at Room health. If Stage shows 0, the projector browser is offline.
+2. Press `P` to pause if a question is collecting. The room does not pause by itself when the stage drops, so a flicker does not stop the game.
+3. Check the projector laptop's network. The stage reconnects without a reload once the network is back.
+4. Resume with `P`.
+
+### One phone sending too much
+
+The room limits each phone to short bursts of taps. A phone over the limit is told "Too many taps at once. Wait a moment and try again." and recovers within seconds. There is no lifetime cap, so a guest cannot be locked out for the rest of the game. Nothing is needed from Humza.
+
+### Room health during play
+
+- **Socket traffic** shows updates per second over the last 10 seconds. During a kart race, "Kart frames sent" should be about 5 per screen per second and "Full room updates sent" should be near zero.
+- **Phone errors** lists phones that reported a script error, with a short message and the build id. A rising count on one phone usually means that phone should reload.
+- The build id is printed under Phone errors. A `+` means the build had uncommitted changes.
 
 ## Archive, email, and the score summary
 
@@ -77,6 +98,12 @@ Run this against a local or staging room before guests arrive. Use one nickname 
 
 `apps/api/test/operations.spec.ts` runs that drill in the local Durable Object harness: one answer, an eviction, the same cookie, and the answer count stays at one.
 
+## Load and reconnect rehearsal
+
+1. Run `npm run load:realtime`. It joins 8, 30 and 80 simulated phones, sends an answer burst, then drives a live kart race at 10 controls a second per phone. Each size prints a `LOAD-REALTIME` line. `LOAD_SIZES`, `LOAD_KART_MS` and `LOAD_INPUT_HZ` change the run. The figures are from local workerd, which shares one process with the simulated phones, so treat them as a floor.
+2. In development, run `window.__26.dropSockets()` in a phone or stage tab's console. The tab should reconnect without a reload and keep its answer. The helper does not exist in a production build.
+3. On the venue Wi-Fi, join ten real phones, switch the access point off for 20 seconds and back on. Every phone should return without a reload. Note anything else here.
+
 ## Still needed before the party
 
 From Humza, before the demo pack is replaced:
@@ -100,3 +127,4 @@ These checks cannot be completed from the development machine:
 - Staging admin login, a full mixed game, recovery, export, and results on the deployed URL.
 - A results email to the configured test recipient. No test recipient is configured, and no message has been sent.
 - A 75-guest pass on staging. The existing figure is from the local emulator only.
+- `npm run load:realtime` against staging conditions, and the venue Wi-Fi drill above.

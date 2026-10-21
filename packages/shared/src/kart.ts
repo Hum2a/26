@@ -70,6 +70,16 @@ export const kartRaceSchema = z
   })
   .strict();
 export type KartRaceView = z.infer<typeof kartRaceSchema>;
+/** A race tick sent instead of a full snapshot. The client merges it into its last snapshot. */
+export const kartFrameSchema = z.object({
+  kind: z.literal("kart"),
+  scope: z.literal("public"),
+  stateVersion: z.number().int().nonnegative(),
+  serverNow: z.number().int(),
+  submissionCount: z.number().int().nonnegative(),
+  kart: kartRaceSchema,
+});
+export type KartFrame = z.infer<typeof kartFrameSchema>;
 export type KartCompletion = {
   playerId: string;
   lapTimeMs: number | null;
@@ -334,6 +344,11 @@ export function kartStandings(race: KartRace, points: number) {
   });
 }
 
+function round(value: number, places: number): number {
+  const scale = 10 ** places;
+  return Math.round(value * scale) / scale;
+}
+
 export function projectKartRace(
   race: KartRace,
   selfPlayerId: string | null,
@@ -373,10 +388,12 @@ export function projectKartRace(
         playerId,
         name,
         number,
-        x,
-        z,
-        heading,
-        speed,
+        // Millimetre and milliradian precision is far below what a screen shows,
+        // and keeps an 80-kart frame small.
+        x: round(x, 3),
+        z: round(z, 3),
+        heading: round(heading, 3),
+        speed: round(speed, 3),
         progress,
         checkpoint,
         status,

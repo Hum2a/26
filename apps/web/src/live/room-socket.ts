@@ -1,11 +1,13 @@
 import { withClientApiKey } from "../api/client-key.ts";
 import {
+  kartFrameSchema,
   lobbySnapshotSchema,
   movedSessionMessage,
   newerTabMessage,
   removedSessionMessage,
   publicVersionNeedsSnapshot,
   type LobbySnapshot,
+  type KartFrame,
   type KartInput,
 } from "@26/shared";
 import {
@@ -14,8 +16,98 @@ import {
   takeConnectionDelta,
 } from "../device/connection-log";
 import { readDeviceReport } from "../device/source";
+import { noteServerTime } from "./server-clock";
 
 export type RoomSocketRole = "guest" | "stage" | "control";
+
+const heartbeatMs = 20_000;
+/** Round trips taken on connect, so the clock is right before the first question. */
+const timeProbesOnOpen = 5;
+/** A ping with no pong by the next heartbeat means the socket is dead. */
+const staleAfterMs = 15_000;
+/** After waking, a socket that cannot answer within this is replaced. */
+const wakeProbeMs = 4_000;
+
+/**
+ * Full jitter: a random wait up to the capped exponential. When the venue
+ * Wi-Fi drops, eighty phones spread their retries instead of arriving together.
+ */
+export function reconnectDelay(attempt: number, random = Math.random): number {
+  return Math.floor(random() * Math.min(8_000, 250 * 2 ** attempt)) + 100;
+}
+
+/**
+ * A race tick replaces only the race, its finish count and the clock in the
+ * last full snapshot. "missing" means the phone needs a full snapshot first.
+ */
+export function mergeKartFrame(
+  snapshot: LobbySnapshot | undefined,
+  frame: KartFrame,
+): LobbySnapshot | "missing" | "stale" {
+  const play = snapshot?.play;
+  if (!snapshot || !play?.kart || play.kart.raceId !== frame.kart.raceId) {
+    return "missing";
+  }
+  if (frame.stateVersion < snapshot.stateVersion) {
+    return "stale";
+  }
+  return {
+    ...snapshot,
+    serverNow: frame.serverNow,
+    stateVersion: frame.stateVersion,
+    play: { ...play, kart: frame.kart, submissionCount: frame.submissionCount },
+  };
+}
+
+/**
+ * Applies the fields that changed since the view this screen holds. The result
+ * is validated as a whole snapshot; anything off returns undefined and the
+ * screen asks for a full snapshot instead.
+ */
+export function applySnapshotPatch(
+  snapshot: LobbySnapshot | undefined,
+  view: string | undefined,
+  patch: Record<string, unknown>,
+): LobbySnapshot | undefined {
+  if (
+    !snapshot ||
+    !view ||
+    patch.base !== view ||
+    typeof patch.view !== "string" ||
+    !patch.set ||
+    typeof patch.set !== "object" ||
+    !Array.isArray(patch.unset)
+  ) {
+    return undefined;
+  }
+  const next: Record<string, unknown> = { ...snapshot, ...(patch.set as object) };
+  for (const key of patch.unset) {
+    if (typeof key === "string") delete next[key];
+  }
+  const parsed = lobbySnapshotSchema.safeParse(next);
+  return parsed.success ? parsed.data : undefined;
+}
+
+/**
+ * Development only: `window.__26.dropSockets()` closes every room socket in
+ * this tab, so a rehearsal can check the reconnect path.
+ */
+function registerDebugDrop(drop: () => void): (() => void) | undefined {
+  if (!import.meta.env.DEV || typeof window === "undefined") {
+    return undefined;
+  }
+  const host = window as unknown as {
+    __26?: { drops: Set<() => void>; dropSockets: () => void };
+  };
+  host.__26 ??= {
+    drops: new Set(),
+    dropSockets() {
+      for (const each of host.__26?.drops ?? []) each();
+    },
+  };
+  host.__26.drops.add(drop);
+  return () => host.__26?.drops.delete(drop);
+}
 
 type CommandBody =
   | { kind: "command"; requestId: string; name: "snapshot" }
@@ -76,6 +168,7 @@ export function openRoomSocket(options: {
   submitKartInput: (input: KartInput) => void;
   submitTrollEscape: (effectId: string) => string;
   submitReaction: (targetId: string, reaction: "like" | "dislike") => string;
+  reconnectNow: () => void;
   close: () => void;
 } {
   let socket: WebSocket | undefined;
@@ -83,6 +176,9 @@ export function openRoomSocket(options: {
   let attempt = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let lastStateVersion = 0;
+  let lastSnapshot: LobbySnapshot | undefined;
+  let lastView: string | undefined;
+  let snapshotRequested = false;
   const tracked = new Map<string, TrackedCommand>();
   let draftTimer: ReturnType<typeof setTimeout> | undefined;
   let draftPending = "";
@@ -90,6 +186,8 @@ export function openRoomSocket(options: {
   let summaryTimer: ReturnType<typeof setInterval> | undefined;
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
   let pingSentAt = 0;
+  let wakeCheck: ReturnType<typeof setTimeout> | undefined;
+  let timeProbes: ReturnType<typeof setTimeout>[] = [];
   let lastPhase = "";
 
   function clearTimer() {
@@ -112,6 +210,8 @@ export function openRoomSocket(options: {
       clearTimeout(resizeTimer);
       resizeTimer = undefined;
     }
+    timeProbes.forEach((probeTimer) => clearTimeout(probeTimer));
+    timeProbes = [];
     pingSentAt = 0;
     if (typeof window !== "undefined") {
       window.removeEventListener("resize", onResize);
@@ -121,17 +221,80 @@ export function openRoomSocket(options: {
 
   function startHeartbeat() {
     clearHeartbeat();
-    pingTimer = setInterval(() => {
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        pingSentAt = Date.now();
-        socket.send("ping");
-      }
-    }, 20_000);
+    pingTimer = setInterval(probe, heartbeatMs);
+    if (options.role !== "guest") {
+      return;
+    }
     summaryTimer = setInterval(() => sendConnection(), 60_000);
     if (typeof window !== "undefined") {
       window.addEventListener("resize", onResize);
       window.addEventListener("orientationchange", onResize);
     }
+  }
+
+  /**
+   * A sleeping phone or a dropped access point can leave a socket that still
+   * says OPEN but delivers nothing. An unanswered ping closes it so the
+   * reconnect path runs.
+   */
+  function probe() {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    if (pingSentAt > 0 && Date.now() - pingSentAt >= staleAfterMs) {
+      socket.close(4001, "No reply from the room.");
+      return;
+    }
+    if (pingSentAt === 0) {
+      pingSentAt = Date.now();
+      socket.send("ping");
+    }
+    sendTimeProbe();
+  }
+
+  function sendTimeProbe() {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(`time:${Date.now()}`);
+    }
+  }
+
+  /** Back from sleep, a locked screen or no signal: try at once, not after the backoff. */
+  function onWake() {
+    if (stopped || (typeof document !== "undefined" && document.hidden)) {
+      return;
+    }
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      const current = socket;
+      pingSentAt = Date.now();
+      current.send("ping");
+      clearTimeout(wakeCheck);
+      wakeCheck = setTimeout(() => {
+        if (socket === current && pingSentAt > 0) {
+          current.close(4001, "No reply from the room.");
+        }
+      }, wakeProbeMs);
+      return;
+    }
+    if (socket && socket.readyState === WebSocket.CONNECTING) {
+      return;
+    }
+    reconnectNow();
+  }
+
+  function reconnectNow() {
+    if (stopped) {
+      return;
+    }
+    clearTimer();
+    attempt = 0;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      return;
+    }
+    if (socket) {
+      detach(socket);
+      socket.close();
+    }
+    connect();
   }
 
   function onResize() {
@@ -189,9 +352,10 @@ export function openRoomSocket(options: {
     }
     options.onConnection("connecting");
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    const resume = lastView ? `&since=${encodeURIComponent(lastView)}` : "";
     const current = new WebSocket(
       withClientApiKey(
-        `${protocol}//${location.host}/ws/${options.gameId}?role=${options.role}`,
+        `${protocol}//${location.host}/ws/${options.gameId}?role=${options.role}&patches=1${resume}`,
       ),
     );
     socket = current;
@@ -218,9 +382,12 @@ export function openRoomSocket(options: {
     }
     noteSubmissionRetries(resent);
     attempt = 0;
+    startHeartbeat();
+    for (let index = 0; index < timeProbesOnOpen; index += 1) {
+      timeProbes.push(setTimeout(sendTimeProbe, index * 250));
+    }
     if (options.role === "guest") {
       sendDevice("initial");
-      startHeartbeat();
     }
   }
 
@@ -242,6 +409,14 @@ export function openRoomSocket(options: {
       return;
     }
     const record = body as Record<string, unknown>;
+    if (
+      record.kind === "time" &&
+      typeof record.sentAt === "number" &&
+      typeof record.serverNow === "number"
+    ) {
+      noteServerTime(record.sentAt, record.serverNow, Date.now());
+      return;
+    }
     if (record.kind === "replaced" && typeof record.message === "string") {
       stop(record.message);
       return;
@@ -272,6 +447,24 @@ export function openRoomSocket(options: {
       }
       return;
     }
+    if (record.kind === "kart" && record.scope === "public") {
+      applyKartFrame(record);
+      return;
+    }
+    if (record.kind === "patch" && record.scope === "public") {
+      const patched = applySnapshotPatch(lastSnapshot, lastView, record);
+      if (!patched) {
+        // The base is not what this screen holds. Start again from a full view.
+        lastView = undefined;
+        if (!snapshotRequested) {
+          snapshotRequested = true;
+          requestSnapshot();
+        }
+        return;
+      }
+      acceptSnapshot(patched, record.view);
+      return;
+    }
     if (record.kind !== "snapshot" || record.scope !== "public") {
       return;
     }
@@ -279,17 +472,38 @@ export function openRoomSocket(options: {
     if (!snapshot.success) {
       return;
     }
-    const previous = lastStateVersion;
-    lastStateVersion = snapshot.data.stateVersion;
-    if (options.role === "guest" && snapshot.data.phase !== lastPhase) {
-      lastPhase = snapshot.data.phase;
+    acceptSnapshot(snapshot.data, record.view);
+  }
+
+  function acceptSnapshot(snapshot: LobbySnapshot, view: unknown) {
+    lastView = typeof view === "string" ? view : undefined;
+    lastSnapshot = snapshot;
+    snapshotRequested = false;
+    lastStateVersion = snapshot.stateVersion;
+    if (options.role === "guest" && snapshot.phase !== lastPhase) {
+      lastPhase = snapshot.phase;
       sendDevice("phase");
       sendConnection();
     }
-    options.onSnapshot(snapshot.data);
-    if (publicVersionNeedsSnapshot(previous, snapshot.data.stateVersion)) {
+    options.onSnapshot(snapshot);
+  }
+
+  function applyKartFrame(record: Record<string, unknown>) {
+    const frame = kartFrameSchema.safeParse(record);
+    const merged = frame.success ? mergeKartFrame(lastSnapshot, frame.data) : "missing";
+    if (merged === "missing") {
+      if (!snapshotRequested) {
+        snapshotRequested = true;
+        requestSnapshot();
+      }
       return;
     }
+    if (merged === "stale") {
+      return;
+    }
+    lastStateVersion = merged.stateVersion;
+    lastSnapshot = merged;
+    options.onSnapshot(merged);
   }
 
   function onClose(event: CloseEvent) {
@@ -307,10 +521,8 @@ export function openRoomSocket(options: {
     }
     options.onConnection("closed");
     if (!stopped) {
-      const delay =
-        Math.min(8000, 200 * 2 ** attempt) + Math.floor(Math.random() * 200);
+      timer = setTimeout(connect, reconnectDelay(attempt));
       attempt += 1;
-      timer = setTimeout(connect, delay);
     }
   }
 
@@ -318,6 +530,7 @@ export function openRoomSocket(options: {
     stopped = true;
     clearTimer();
     clearHeartbeat();
+    removeWakeListeners();
     options.onReplaced(message);
     options.onConnection("closed");
     if (socket) {
@@ -468,6 +681,8 @@ export function openRoomSocket(options: {
   function close() {
     stopped = true;
     clearTimer();
+    clearHeartbeat();
+    removeWakeListeners();
     if (socket) {
       detach(socket);
       socket.close();
@@ -475,8 +690,28 @@ export function openRoomSocket(options: {
     }
   }
 
+  function removeWakeListeners() {
+    clearTimeout(wakeCheck);
+    unregisterDebug?.();
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.removeEventListener("online", onWake);
+    window.removeEventListener("pageshow", onWake);
+    document.removeEventListener("visibilitychange", onWake);
+  }
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("online", onWake);
+    window.addEventListener("pageshow", onWake);
+    document.addEventListener("visibilitychange", onWake);
+  }
+  const unregisterDebug = registerDebugDrop(() =>
+    socket?.close(4002, "Dropped for a rehearsal."),
+  );
   connect();
   return {
+    reconnectNow,
     requestSnapshot,
     submitAnswer,
     submitEstimate,

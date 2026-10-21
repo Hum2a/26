@@ -90,6 +90,7 @@ export function setupControls(snapshot: LobbySnapshot = playingFixture) {
     submitKartInput: vi.fn(),
     submitTrollEscape: vi.fn(),
     submitReaction: vi.fn(),
+    reconnectNow: vi.fn(),
   });
   // jsdom does not implement native dialog methods; reflect browser open/close semantics.
   HTMLDialogElement.prototype.showModal = function () {

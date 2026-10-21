@@ -9,6 +9,7 @@ import {
   kartStandings,
   type KartRace,
   type KartInput,
+  type KartRaceView,
 } from "@26/shared";
 import {
   advance,
@@ -59,16 +60,21 @@ export function enterKart(
   if (room.phase === "collect") scheduleTick(store, now, 0);
 }
 
-function elapsed(sql: SqlStorage, store: GameStore, now: number): number {
+type CollectDue = { due_at: number | null; remaining_ms: number | null } | undefined;
+
+function collectDue(sql: SqlStorage, store: GameStore): CollectDue {
   const room = store.readRoom();
-  const job = sql
+  return sql
     .exec<{ due_at: number | null; remaining_ms: number | null }>(
       "SELECT due_at, remaining_ms FROM schedule_job WHERE payload = 'collect' AND status = 'pending' AND phase_generation = ? AND scope_generation = ? LIMIT 1",
       room.phaseGeneration,
       room.scopeGeneration,
     )
     .toArray()[0];
-  const remaining = room.paused
+}
+
+function elapsedAt(job: CollectDue, paused: boolean, now: number): number {
+  const remaining = paused
     ? job?.remaining_ms
     : job?.due_at == null
       ? undefined
@@ -76,6 +82,10 @@ function elapsed(sql: SqlStorage, store: GameStore, now: number): number {
   return remaining == null
     ? 0
     : Math.floor(Math.max(0, Math.min(kartLimitMs, kartLimitMs - remaining)));
+}
+
+function elapsed(sql: SqlStorage, store: GameStore, now: number): number {
+  return elapsedAt(collectDue(sql, store), store.readRoom().paused, now);
 }
 
 function catchUp(
@@ -115,47 +125,79 @@ export function acceptKartInput(
   q: KartQuestion,
   now: number,
 ): boolean {
-  const parsed = kartInputSchema.safeParse(raw),
-    room = store.readRoom();
-  if (!parsed.success || room.phase !== "collect" || room.paused || room.hold)
-    return false;
+  return acceptKartInputs(sql, store, [{ playerId, raw, at: now }], q)[0] === true;
+}
+
+export type KartArrival = { playerId: string; raw: unknown; at: number };
+
+/**
+ * Validates and stores controls in arrival order, each stamped with its own
+ * arrival time. The room calls this once per tick for everything that arrived
+ * since the last tick, so queues are durable before the tick reads them.
+ * Room, session and player reads happen once per batch, not once per control.
+ */
+export function acceptKartInputs(
+  sql: SqlStorage,
+  store: GameStore,
+  arrivals: readonly KartArrival[],
+  q: KartQuestion,
+): boolean[] {
+  const room = store.readRoom();
+  if (arrivals.length === 0) return [];
+  if (room.phase !== "collect" || room.paused || room.hold)
+    return arrivals.map(() => false);
   const session = readRoundState<{ raceId: string; players: string[] }>(
     sql,
     q.id,
     "kart-session",
   );
-  if (
-    !session ||
-    session.raceId !== parsed.data.raceId ||
-    !session.players.includes(playerId)
-  )
-    return false;
-  const player = sql
-    .exec<{ revoked_at: string | null }>(
-      "SELECT revoked_at FROM player WHERE player_id = ?",
-      playerId,
+  if (!session) return arrivals.map(() => false);
+  const active = new Set(
+    sql
+      .exec<{ player_id: string }>(
+        "SELECT player_id FROM player WHERE revoked_at IS NULL",
+      )
+      .toArray()
+      .map((row) => row.player_id),
+  );
+  const drivers = new Set(session.players);
+  const due = collectDue(sql, store);
+  const queues = new Map<string, InputQueue | undefined>();
+  const changed = new Set<string>();
+  const results = arrivals.map(({ playerId, raw, at: now }) => {
+    const parsed = kartInputSchema.safeParse(raw);
+    if (
+      !parsed.success ||
+      session.raceId !== parsed.data.raceId ||
+      !drivers.has(playerId) ||
+      !active.has(playerId)
     )
-    .toArray()[0];
-  if (!player || player.revoked_at !== null) return false;
-  const stateKey = `kart-input:${playerId}`;
-  const previous = readRoundState<InputQueue>(sql, q.id, stateKey);
-  if (
-    previous &&
-    (now - previous.at < 80 || parsed.data.sequence <= previous.lastSequence)
-  )
-    return false;
-  const at = elapsed(sql, store, now);
-  if (at >= kartLimitMs) return false;
-  const pending = [
-    ...(previous?.pending ?? []),
-    { playerId, elapsed: at, input: parsed.data },
-  ].slice(-4);
-  writeRoundState(sql, q.id, stateKey, {
-    at: now,
-    lastSequence: parsed.data.sequence,
-    pending,
-  } satisfies InputQueue);
-  return true;
+      return false;
+    const stateKey = `kart-input:${playerId}`;
+    if (!queues.has(playerId))
+      queues.set(playerId, readRoundState<InputQueue>(sql, q.id, stateKey));
+    const previous = queues.get(playerId);
+    if (
+      previous &&
+      (now - previous.at < 80 || parsed.data.sequence <= previous.lastSequence)
+    )
+      return false;
+    const at = elapsedAt(due, room.paused, now);
+    if (at >= kartLimitMs) return false;
+    queues.set(playerId, {
+      at: now,
+      lastSequence: parsed.data.sequence,
+      pending: [
+        ...(previous?.pending ?? []),
+        { playerId, elapsed: at, input: parsed.data },
+      ].slice(-4),
+    });
+    changed.add(playerId);
+    return true;
+  });
+  for (const playerId of changed)
+    writeRoundState(sql, q.id, `kart-input:${playerId}`, queues.get(playerId));
+  return results;
 }
 
 function scheduleTick(store: GameStore, now: number, step: number): void {
@@ -183,6 +225,12 @@ export function tickKart(
   job: ScheduledJob,
   now: number,
 ): void {
+  // A finished tick has no further use. Keeping 225 rows a race would make every
+  // later alarm read them all.
+  sql.exec(
+    "DELETE FROM schedule_job WHERE job_id = ? AND payload = 'kart-tick'",
+    job.jobId,
+  );
   const room = store.readRoom();
   if (
     room.phase !== "collect" ||
@@ -246,18 +294,11 @@ export function projectKart(
   const queue = selfPlayerId
     ? readRoundState<InputQueue>(sql, q.id, `kart-input:${selfPlayerId}`)
     : undefined;
-  const publicRace = race
-    ? projectKartRace(race, selfPlayerId ?? null, q.points)
-    : undefined;
-  if (publicRace && selfPlayerId) {
-    publicRace.participants = publicRace.participants.filter(
-      (d) => d.playerId === selfPlayerId,
-    );
-    publicRace.leaderboard = publicRace.leaderboard.filter(
-      (d, i) => i < 8 || d.playerId === selfPlayerId,
-    );
-    if (queue) publicRace.inputCursor = queue.lastSequence;
-  }
+  const fullRace = race ? projectKartRace(race, null, q.points) : undefined;
+  const publicRace =
+    fullRace && selfPlayerId
+      ? phoneRaceView(race!, fullRace, selfPlayerId, queue?.lastSequence)
+      : fullRace;
   const selfPoints =
     scored && selfPlayerId
       ? (sql
@@ -287,5 +328,53 @@ export function projectKart(
     standings: null,
     liveSample: null,
     attributions: null,
+  };
+}
+
+/** A phone sees its own kart and the top eight plus its own place. */
+function phoneRaceView(
+  race: KartRace,
+  full: KartRaceView,
+  selfPlayerId: string,
+  lastSequence: number | undefined,
+): KartRaceView {
+  return {
+    ...full,
+    selfPlayerId,
+    inputCursor:
+      lastSequence ??
+      Math.max(0, race.drivers.find((d) => d.playerId === selfPlayerId)?.sequence ?? 0),
+    participants: full.participants.filter((d) => d.playerId === selfPlayerId),
+    leaderboard: full.leaderboard.filter(
+      (d, i) => i < 8 || d.playerId === selfPlayerId,
+    ),
+  };
+}
+
+/**
+ * One race projection per tick for every screen. The room sends these frames
+ * instead of a full snapshot when a tick changes nothing but the race.
+ */
+export function kartFrames(sql: SqlStorage, q: KartQuestion) {
+  const race = readKart(sql, q.id);
+  if (!race) return undefined;
+  const full = projectKartRace(race, null, q.points);
+  const cursors = new Map<string, number>();
+  for (const row of sql
+    .exec<{ state_key: string; payload: string }>(
+      "SELECT state_key, payload FROM round_state WHERE question_id = ? AND state_key LIKE 'kart-input:%'",
+      q.id,
+    )
+    .toArray()) {
+    cursors.set(
+      row.state_key.slice("kart-input:".length),
+      (JSON.parse(row.payload) as InputQueue).lastSequence,
+    );
+  }
+  return {
+    full,
+    submissionCount: race.drivers.filter((d) => d.status !== "RACING").length,
+    forPhone: (playerId: string) =>
+      phoneRaceView(race, full, playerId, cursors.get(playerId)),
   };
 }

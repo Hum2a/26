@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ReconnectBanner } from "./ReconnectBanner";
 
@@ -37,5 +37,26 @@ describe("ReconnectBanner", () => {
     expect(screen.queryByText("Reconnecting…")).toBeNull();
     expect(screen.getByText("Back in ✓")).toBeTruthy();
     expect((screen.getByLabelText("Answer") as HTMLInputElement).disabled).toBe(false);
+  });
+
+  it("tells the guest to check the signal at 10s and offers a manual retry at 30s", () => {
+    const retry = vi.fn();
+    render(
+      <ReconnectBanner disconnected snapshotId={0} onRetry={retry}>
+        <input aria-label="Answer" />
+      </ReconnectBanner>,
+    );
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+    expect(screen.getByText(/Check this phone’s Wi-Fi or signal/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Try again now" })).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(20_000);
+    });
+    const button = screen.getByRole("button", { name: "Try again now" });
+    expect((button as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(button);
+    expect(retry).toHaveBeenCalledOnce();
   });
 });

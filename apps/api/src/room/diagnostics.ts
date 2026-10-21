@@ -1,5 +1,6 @@
 import { roomDiagnosticsSchema, type RoomDiagnostics } from "@26/shared";
 import { questionFor } from "../questions/registry.ts";
+import { recentScriptErrors } from "../device/store.ts";
 
 export function readRoomDiagnostics(
   sql: SqlStorage,
@@ -7,6 +8,7 @@ export function readRoomDiagnostics(
     alarmAt: number | null;
     connections: { guests: number; stage: number; control: number };
     delivery: RoomDiagnostics["delivery"];
+    realtime?: RoomDiagnostics["realtime"];
   },
 ): RoomDiagnostics {
   const room = sql
@@ -151,6 +153,8 @@ export function readRoomDiagnostics(
         }
       : null,
     delivery: input.delivery,
+    ...(input.realtime ? { realtime: input.realtime } : {}),
+    scriptErrors: recentScriptErrors(sql),
   });
 }
 

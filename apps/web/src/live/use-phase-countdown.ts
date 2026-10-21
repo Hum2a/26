@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { formatPhaseClock, remainingUntil, type LobbySnapshot } from "@26/shared";
+import { serverOffset } from "./server-clock";
 
 export function usePhaseCountdown(
   snapshot: LobbySnapshot | undefined,
@@ -47,7 +48,11 @@ export function usePhaseCountdown(
   if (deadlineAt === null) {
     return null;
   }
-  const remainingMs = remainingUntil(deadlineAt, serverNow, observedAt, now);
+  const offset = serverOffset(now);
+  const remainingMs =
+    offset === undefined
+      ? remainingUntil(deadlineAt, serverNow, observedAt, now)
+      : deadlineAt - (now + offset);
   return {
     label: "Time left",
     value: formatPhaseClock(remainingMs),

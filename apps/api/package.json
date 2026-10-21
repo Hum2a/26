@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
+    "load:realtime": "vitest run --config vitest.load.config.ts",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {

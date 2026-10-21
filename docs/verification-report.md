@@ -91,6 +91,34 @@ The email and archive tests use injected adapters. They do not call Resend or Ne
 
 `.github/workflows/check.yml` runs those commands on Ubuntu with one Playwright worker. GitHub Actions was not executed for this report.
 
+## Realtime fan-out, 21 October 2026
+
+`npm run load:realtime` joins simulated phones, sends one answer each, then drives a live kart race for 6 seconds with every phone sending 10 controls a second. A stage and a control screen are connected throughout. This is local workerd in one process with the simulated phones, not production.
+
+| Guests | Measure                                  | Before    | After    |
+| ------ | ---------------------------------------- | --------- | -------- |
+| 8      | Answer ack p95                           | 581 ms    | 98 ms    |
+| 8      | Stage race updates per second (target 5) | 2.8       | 4.6      |
+| 8      | Worst gap between stage race updates     | 841 ms    | 226 ms   |
+| 8      | Phone traffic during the race            | 14.5 KB/s | 7.4 KB/s |
+| 30     | Answer ack p95                           | 541 ms    | 264 ms   |
+| 30     | Stage race updates per second            | 0.8       | 4.7      |
+| 30     | Worst gap between stage race updates     | 11.3 s    | 232 ms   |
+| 80     | Answer ack p95                           | 3,113 ms  | 785 ms   |
+| 80     | Stage race updates per second            | 0.7       | 4.0      |
+| 80     | Worst gap between stage race updates     | 31.8 s    | 317 ms   |
+| 80     | Full snapshots to phones during the race | 320       | 0        |
+
+The "before" figures are the unchanged room with the harness added. Phones idle (`LOAD_INPUT_HZ=0`) showed the remaining cost at 80 guests was one transaction per control message, which is why controls are now written once per tick. The full plan, the reasons for each change and what was left out are in `docs/jackbox-realtime-plan.md`.
+
+Test results for this change on the development machine:
+
+- `npm run test:unit`: 70 files, 276 tests passed.
+- `npm run typecheck` passed. `npm run build` passed, with 513 build files checked for secrets and content preflight passing.
+- API suite with `operations.spec.ts` and `results-room.spec.ts` excluded: 310 of 313 tests passed. Two of the three failures were re-run on their own: `auth.spec.ts` passed 13 of 13 (the full-run failure was PGlite starting under load) and the patch test was fixed and passed 3 runs of 3. `archive-room.spec.ts` "reports preparing and ready" fails the same way on unmodified HEAD.
+- `operations.spec.ts` and `results-room.spec.ts` fail on this machine with and without these changes, because `apps/api/.dev.vars` sets `DATABASE_URL` and the room tests then open a Neon pool. The first failure aborts the rest of the run, so they were excluded to get a full count.
+- `npm run lint` reports two errors, both in files these changes do not touch: `apps/api/src/index.ts` and `apps/web/src/admin/rooms-page.tsx`.
+
 ## Still to check at the venue
 
 - A physical phone, a real rotation, and the venue Wi-Fi.

@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import type { ServerResponse } from "node:http";
 import path from "node:path";
@@ -15,6 +16,9 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { DEFAULT_THEME_ID, themeDocumentHead } from "./src/theme/themes.ts";
+
+// Same value as `clientApiKeyHeader` in packages/shared/src/client-api-key.ts.
+const clientApiKeyHeader = "x-26-client-key";
 
 const localAuthPrefixes = ["/api/auth", "/api/admin", "/api/dev", "/api/stage"];
 const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
@@ -68,6 +72,21 @@ function resolveClientApiKeyForBuild(): string {
   );
 }
 
+/** The short commit id, with "+" when the tree has uncommitted changes. */
+function resolveBuildId(): string {
+  try {
+    const commit = execSync("git rev-parse --short HEAD", { cwd: repoRoot })
+      .toString()
+      .trim();
+    const dirty =
+      execSync("git status --porcelain", { cwd: repoRoot }).toString().trim().length >
+      0;
+    return dirty ? `${commit}+` : commit;
+  } catch {
+    return "unknown";
+  }
+}
+
 // PGlite's initdb cannot run inside the Worker runtime. Local dev and preview
 // answer administrator routes from this Node process, which can open the
 // development database. The Worker still owns every other route.
@@ -77,11 +96,50 @@ function localAuthInNode(): Plugin {
     name: "local-auth-in-node",
     configureServer(server) {
       attachLocalAuth(server, apiEntry);
+      warmLocalAuth(server, apiEntry);
     },
     configurePreviewServer(server) {
       attachLocalAuth(server, apiEntry);
+      warmLocalAuth(server, apiEntry);
     },
   };
+}
+
+/**
+ * The first administrator request loads the API, starts PGlite and runs the
+ * auth migrations. That can take longer than the browser waits, so a page
+ * opened straight after `npm run dev` said sign-in was unreachable. Do that
+ * work as soon as the server listens instead.
+ */
+function warmLocalAuth(server: ViteDevServer | PreviewServer, apiEntry: string) {
+  server.httpServer?.once("listening", () => {
+    const began = Date.now();
+    void loadLocalApp(apiEntry)
+      .then((app) =>
+        app.fetch(
+          new Request("http://localhost/api/admin/session", {
+            headers: clientApiHeadersForNode(),
+          }),
+          localAuthEnv(),
+        ),
+      )
+      .then(() => {
+        console.info(`Local sign-in ready in ${Date.now() - began}ms.`);
+      })
+      .catch((error: unknown) => {
+        // The first real request retries the same work and reports any failure.
+        localApp = undefined;
+        console.error(
+          "Local sign-in warm-up failed.",
+          error instanceof Error ? `${error.name}: ${error.message}` : "Error",
+        );
+      });
+  });
+}
+
+function clientApiHeadersForNode(): Record<string, string> {
+  const key = readDevVar("CLIENT_API_KEY");
+  return key ? { [clientApiKeyHeader]: key } : {};
 }
 
 type LocalApp = { fetch: (request: Request, env: unknown) => Promise<Response> };
@@ -256,6 +314,7 @@ export default defineConfig({
     "import.meta.env.VITE_CLIENT_API_KEY": JSON.stringify(
       resolveClientApiKeyForBuild(),
     ),
+    "import.meta.env.VITE_BUILD_ID": JSON.stringify(resolveBuildId()),
   },
   plugins: [
     partyThemes(),

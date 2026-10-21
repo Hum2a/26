@@ -1,5 +1,6 @@
 import { kartRaceSchema } from "./kart.ts";
 export * from "./kart.ts";
+export * from "./rate-limit.ts";
 import { z } from "zod";
 import { wordleBoardSchema } from "./wordle.ts";
 export {
@@ -1157,6 +1158,44 @@ export const roomDiagnosticsSchema = z
         testRecipient: z.boolean(),
       })
       .strict(),
+    // In-memory socket traffic since this room object last started.
+    realtime: z
+      .object({
+        windowMs: z.number().int().positive(),
+        series: z
+          .array(
+            z
+              .object({
+                name: z.string().min(1).max(40),
+                total: z.number().int().nonnegative(),
+                totalBytes: z.number().int().nonnegative(),
+                windowCount: z.number().int().nonnegative(),
+                windowBytes: z.number().int().nonnegative(),
+              })
+              .strict(),
+          )
+          .max(16),
+      })
+      .strict()
+      .optional(),
+    // Uncaught errors that phones reported, with a short redacted message.
+    scriptErrors: z
+      .object({
+        total: z.number().int().nonnegative(),
+        recent: z
+          .array(
+            z
+              .object({
+                nickname: z.string().min(1).max(24),
+                message: z.string().min(1).max(120),
+                count: z.number().int().nonnegative(),
+              })
+              .strict(),
+          )
+          .max(5),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 

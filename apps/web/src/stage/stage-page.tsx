@@ -12,6 +12,7 @@ import { useStageShow } from "./use-stage-show";
 import { StageSound } from "./stage-sound";
 import { stageShow } from "./audio";
 import { StagePresentation } from "./stage-presentation";
+import { usePreloadQuestion } from "../play/preload";
 import "./projector.css";
 
 export function StagePage() {
@@ -30,6 +31,7 @@ export function StagePage() {
   const presentButton = useRef<HTMLButtonElement>(null);
   const wasPresenting = useRef(false);
   const show = useStageShow();
+  usePreloadQuestion(snapshot);
   useEffect(() => {
     if (!presenting && wasPresenting.current) presentButton.current?.focus();
     wasPresenting.current = presenting;

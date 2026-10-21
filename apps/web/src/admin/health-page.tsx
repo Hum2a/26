@@ -139,6 +139,42 @@ export function HealthPage() {
             ) : null}
           </section>
           <section className="admin-task-section">
+            <h2>Phone errors</h2>
+            {data.scriptErrors && data.scriptErrors.total > 0 ? (
+              <>
+                <p>{data.scriptErrors.total} reported this game.</p>
+                <ul>
+                  {data.scriptErrors.recent.map((item, index) => (
+                    <li key={index}>
+                      {item.nickname} · {item.count} · {item.message}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p>No phone has reported an error.</p>
+            )}
+            <p>This admin screen is build {import.meta.env.VITE_BUILD_ID ?? "dev"}.</p>
+          </section>
+          {data.realtime ? (
+            <section className="admin-task-section">
+              <h2>Socket traffic</h2>
+              <p>
+                Per second over the last {Math.round(data.realtime.windowMs / 1000)}{" "}
+                seconds. Counts reset when the room object restarts.
+              </p>
+              <ul>
+                {data.realtime.series.map((item) => (
+                  <li key={item.name}>
+                    {trafficLabel(item.name)} ·{" "}
+                    {perSecond(item.windowCount, data.realtime!.windowMs)}/s ·{" "}
+                    {kilobytesPerSecond(item.windowBytes, data.realtime!.windowMs)} KB/s
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          <section className="admin-task-section">
             <h2>Archive export</h2>
             {data.archive ? (
               <>
@@ -230,4 +266,31 @@ export function HealthPage() {
       </ConfirmDialog>
     </section>
   );
+}
+
+const trafficLabels: Record<string, string> = {
+  in: "Messages from screens",
+  "out:snapshot": "Full room updates sent",
+  "out:kart": "Kart frames sent",
+  "out:patch": "Small updates sent",
+  "out:ack": "Replies sent",
+  "out:replaced": "Sessions replaced",
+  "out:welcome": "Resumed connections",
+  "out:time": "Clock checks",
+  "broadcast:all": "Updates to every screen",
+  "broadcast:facilitators": "Updates to stage and control",
+  "broadcast:stage": "Updates to the stage",
+  "build:public": "Shared room views built",
+};
+
+function trafficLabel(name: string): string {
+  return trafficLabels[name] ?? name;
+}
+
+function perSecond(count: number, windowMs: number): string {
+  return (count / (windowMs / 1000)).toFixed(1);
+}
+
+function kilobytesPerSecond(bytes: number, windowMs: number): string {
+  return (bytes / 1024 / (windowMs / 1000)).toFixed(1);
 }

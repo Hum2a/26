@@ -32,6 +32,8 @@ import { NicknameField } from "../join/Nickname";
 import { rememberNickname } from "../join/nickname-storage";
 import { roomCodeFromQuery } from "../join/room-code";
 import { ReconnectBanner } from "../net/ReconnectBanner";
+import { deadlinePassed } from "../live/server-clock";
+import { usePreloadQuestion } from "../play/preload";
 import { PhoneShell } from "./phone-shell";
 import { EntryFrame, EntryHeading, EntryNotice } from "../ui/entry-frame";
 
@@ -63,6 +65,7 @@ export function GuestPage() {
   const reactionRequest = useRef<string | null>(null);
   const hapticBaseline = useRef<HapticView | null>(null);
   useWakeLock(session !== undefined);
+  usePreloadQuestion(snapshot);
 
   useEffect(() => {
     function onHide() {
@@ -281,8 +284,13 @@ export function GuestPage() {
       socketRef.current?.submitReaction(targetId, reaction) ?? null;
   }
 
-  function beginSend(): boolean {
+  function beginSend(answer = false): boolean {
     if (pending || inFlight.current) {
+      return false;
+    }
+    // The room still decides. This only saves a send the room would refuse.
+    if (answer && deadlinePassed(snapshot)) {
+      setRejection("Time’s up. That one did not make it in.");
       return false;
     }
     inFlight.current = true;
@@ -292,28 +300,28 @@ export function GuestPage() {
   }
 
   function onSubmit() {
-    if (!selectedId || !beginSend()) {
+    if (!selectedId || !beginSend(true)) {
       return;
     }
     pendingRequest.current = socketRef.current?.submitAnswer(selectedId) ?? null;
   }
 
   function onEstimate(value: number) {
-    if (!beginSend()) {
+    if (!beginSend(true)) {
       return;
     }
     pendingRequest.current = socketRef.current?.submitEstimate(value) ?? null;
   }
 
   function onRank(placements: { itemId: string; tierId: string }[]) {
-    if (!beginSend()) {
+    if (!beginSend(true)) {
       return;
     }
     pendingRequest.current = socketRef.current?.submitRank(placements) ?? null;
   }
 
   function onText(body: string) {
-    if (!beginSend()) {
+    if (!beginSend(true)) {
       return;
     }
     pendingRequest.current = socketRef.current?.submitText(body) ?? null;
@@ -335,14 +343,14 @@ export function GuestPage() {
   }
 
   function onDuel(value: number) {
-    if (!beginSend()) {
+    if (!beginSend(true)) {
       return;
     }
     pendingRequest.current = socketRef.current?.submitDuel(value) ?? null;
   }
 
   function onBallot(candidateId: string) {
-    if (!beginSend()) {
+    if (!beginSend(true)) {
       return;
     }
     pendingRequest.current =
@@ -444,7 +452,11 @@ export function GuestPage() {
           </h1>
         )}
         <StatusMessage>{status}</StatusMessage>
-        <ReconnectBanner disconnected={reconnecting} snapshotId={snapshotPulse}>
+        <ReconnectBanner
+          disconnected={reconnecting}
+          snapshotId={snapshotPulse}
+          onRetry={() => socketRef.current?.reconnectNow()}
+        >
           <div className="grid gap-4">
             {snapshot?.phase === "lobby" ? (
               <div className="grid gap-4">

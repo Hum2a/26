@@ -9,7 +9,8 @@ import {
 } from "@26/shared";
 import { clientApiHeaders } from "../api/client-key.ts";
 
-type Failure = { error: string };
+/** `transient` means the server was not reached; trying again may succeed. */
+type Failure = { error: string; transient?: true };
 
 // Bound every auth request, including response decoding, so the UI can recover.
 async function authRequest(
@@ -31,7 +32,10 @@ async function authRequest(
     });
     return { ok: response.ok, body: await response.json() };
   } catch {
-    return { error: "We couldn’t reach sign-in. Check your connection and try again." };
+    return {
+      error: "We couldn’t reach sign-in. Check your connection and try again.",
+      transient: true,
+    };
   } finally {
     window.clearTimeout(timeout);
   }

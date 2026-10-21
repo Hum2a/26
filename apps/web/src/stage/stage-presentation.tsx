@@ -13,6 +13,32 @@ import { SafeArea } from "./SafeArea";
 import { StageFullscreen } from "./fullscreen";
 import { StageCountdown } from "./Countdown";
 import { WaitingLine } from "./WaitingLine";
+import { AnimatePresence, motion } from "motion/react";
+
+/** Long enough that a Wi-Fi blip passes unremarked; short enough to act on. */
+const stageOfflineHintMs = 15_000;
+
+/** Mounted only while the stage is offline, so each outage starts its own wait. */
+function OfflineHint() {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShown(true), stageOfflineHintMs);
+    return () => window.clearTimeout(timer);
+  }, []);
+  return (
+    <AnimatePresence>
+      {shown ? (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          Still trying. Check this screen’s network.
+        </motion.p>
+      ) : null}
+    </AnimatePresence>
+  );
+}
 
 export function StagePresentation({
   snapshot,
@@ -75,6 +101,7 @@ export function StagePresentation({
             <div className="projector-wait" role="status">
               <h2>Reconnecting to the room.</h2>
               <p>The question will return when connected.</p>
+              <OfflineHint />
             </div>
           ) : hidden ? (
             <div className="projector-wait" role="status">
