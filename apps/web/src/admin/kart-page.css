@@ -1,0 +1,24 @@
+.admin-kart-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.admin-kart-pane {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
+}
+.admin-kart-pane h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.admin-kart-drive-frame {
+  display: block;
+  width: 100%;
+  height: 76svh;
+  min-height: 480px;
+  max-height: 850px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--background);
+}

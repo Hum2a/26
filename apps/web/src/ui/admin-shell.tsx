@@ -35,7 +35,9 @@ export function AdminShell({
           ? "Rooms"
           : location.pathname.endsWith("/content")
             ? "Question packs"
-            : "Admin overview";
+            : location.pathname.endsWith("/kart")
+              ? "Kart"
+              : "Admin overview";
     document.title = `${title} · 26`;
   }, [location.pathname, roomPath]);
   return (
@@ -59,6 +61,7 @@ export function AdminShell({
               Rooms
             </NavLink>
             <NavLink to="/admin/content">Question packs</NavLink>
+            <NavLink to="/admin/kart">Kart</NavLink>
             {roomPath ? (
               <div className="admin-room-nav">
                 <p>Selected room</p>

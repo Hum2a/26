@@ -7,6 +7,7 @@ import { PlayersPage } from "./admin/players-page";
 import { MediaPage } from "./admin/media-page";
 import { HealthPage } from "./admin/health-page";
 import { ContentPage } from "./admin/content-page";
+import { AdminKartPage } from "./admin/kart-page";
 import { QuestionPage } from "./admin/question-page";
 import { QuestionPhonePreview } from "./admin/question-phone-preview";
 import { QuestionStagePreview } from "./admin/question-stage-preview";
@@ -55,6 +56,7 @@ export const appRoutes: RouteObject[] = [
       { path: "rooms", element: <RoomsPage /> },
       { path: "settings", element: <AdminSettingsPage /> },
       { path: "content", element: <ContentPage /> },
+      { path: "kart", element: <AdminKartPage /> },
       { path: "content/:version/:questionId", element: <QuestionPage /> },
       {
         path: "rooms/:gameId",

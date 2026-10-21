@@ -1,5 +1,7 @@
 # One-lap kart sprint
 
+Open **Admin → Kart** (`/admin/kart`) for direct access. **Drive** embeds solo practice, with **Open kart full screen** for a separate tab. **Phone & stage** opens the existing layout comparison without searching question packs. **Multiplayer** links to rooms and explains the current connected-race rehearsal. Solo driving and layout previews do not start a room race.
+
 Each phone has its own playable 3D chase view, touch controls and local driver HUD. The TV is a whole-room spectator map and live scoreboard for 50-plus players, with five leaders pinned and five more drivers cycling every four seconds. All public kart positions appear on the map; only the top three get number labels to keep the map readable. A phone can switch to a lightweight personal map without changing controls or race authority. The sprint ends after one lap per driver or at the server's 45-second deadline. Finished times rank ahead of DNFs; equal times share a place. DNF scores zero. Finisher points are `round(question.points × (participants − place + 1) / participants)`.
 
 ## Try the real multiplayer rehearsal
