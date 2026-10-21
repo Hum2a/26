@@ -25,3 +25,6 @@ apps/kart-solo/public/draco
 apps/api/src/questions/wordle-dictionary/validity-words.ts
 docs/loc-report.md
 scripts/env-files.d.ts
+
+apps/kart-solo/src/track/colliders.json
+artifacts/

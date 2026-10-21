@@ -116,3 +116,10 @@ it("renders 80 ghost karts with bounded shared geometry, no shadow maps and disp
   for (const dispose of [...disposal, ...instanceDisposal])
     expect(dispose).toHaveBeenCalledOnce();
 });
+
+it("snaps recovered server poses instead of travelling across the circuit", () => {
+  const target = { x: 42, z: 0, heading: 0 };
+  expect(smoothKartPose({ x: -42, z: 0, heading: 1 }, target, 0.02, false)).toEqual(
+    target,
+  );
+});

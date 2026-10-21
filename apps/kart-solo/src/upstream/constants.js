@@ -25,7 +25,7 @@ export const drifts = {
   },
   level1: {
     name: "blue",
-    threshold: 1,
+    threshold: 0.7,
     color: "#00ffff",
     nbParticles: 15,
     level: 1,

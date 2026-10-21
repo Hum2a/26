@@ -47,15 +47,26 @@ test("solo kart loads the real circuit and drives, drifts, pauses and resets wit
   await page.keyboard.down("ArrowUp");
   await expect.poll(distance, { timeout: 30_000 }).toBeGreaterThan(15);
   await expect.poll(speed, { timeout: 30_000 }).toBeGreaterThan(80);
-  await page.keyboard.down("ArrowRight");
   await page.keyboard.down("Space");
+  // Hold a gentle quarter-lock drift on the actual road, rather than driving a tight circle into the new barriers.
+  const steering = game.getByLabel("Steering", { exact: true });
+  const steeringBox = (await steering.boundingBox())!;
+  await page.mouse.move(
+    steeringBox.x + steeringBox.width * 0.62,
+    steeringBox.y + steeringBox.height / 2,
+  );
+  await page.mouse.down();
   await expect(game.getByText("Release drift to boost")).toBeVisible({
     timeout: 20_000,
   });
   await page.keyboard.up("Space");
-  await page.keyboard.up("ArrowRight");
-  await page.keyboard.up("ArrowUp");
   await expect(game.getByText("Boost!", { exact: true })).toBeVisible();
+  await page.keyboard.up("ArrowUp");
+  await page.mouse.up();
+  await steering.evaluate((input) => (input as HTMLElement).blur());
+  await game.getByRole("button", { name: "Back to track", exact: true }).click();
+  await expect(game.getByText("Back on track — controls released")).toBeVisible();
+  await expect.poll(speed).toBe(0);
   await game.getByRole("button", { name: "Pause", exact: true }).click();
   const parked = await distance();
   await page.waitForTimeout(700); // Prove simulation stops while the solo game is paused.

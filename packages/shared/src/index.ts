@@ -1,5 +1,6 @@
 import { kartRaceSchema } from "./kart.ts";
 export * from "./kart.ts";
+export * from "./kart-driving.ts";
 export * from "./rate-limit.ts";
 import { z } from "zod";
 import { wordleBoardSchema } from "./wordle.ts";

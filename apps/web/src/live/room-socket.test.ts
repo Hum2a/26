@@ -186,6 +186,25 @@ describe("openRoomSocket liveness", () => {
     });
   }
 
+  it("replays a recovery with its original request id after reconnecting", () => {
+    const client = open("guest");
+    const first = FakeSocket.instances[0]!;
+    first.open();
+    const requestId = client.submitKartRecovery!("race-recovery");
+    const command = first.sent.find((value) => value.includes('"kart-recover"'))!;
+    expect(JSON.parse(command)).toMatchObject({
+      name: "kart-recover",
+      raceId: "race-recovery",
+      requestId,
+    });
+    first.close(1006, "");
+    window.dispatchEvent(new Event("online"));
+    const next = FakeSocket.instances.at(-1)!;
+    next.open();
+    expect(next.sent).toContain(command);
+    client.close();
+  });
+
   it("closes a stage socket that stops answering pings, then reconnects", () => {
     const client = open("stage");
     FakeSocket.instances[0]!.open();

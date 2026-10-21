@@ -64,7 +64,7 @@ export function Track(props) {
       />
       <mesh
         ref={trackRef}
-        name="ground"
+        name="ground road"
         receiveShadow
         geometry={nodes.Object_24.geometry}
         material={materials.material_18}

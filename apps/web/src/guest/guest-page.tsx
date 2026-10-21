@@ -63,6 +63,10 @@ export function GuestPage() {
   const pendingRequest = useRef<string | null>(null);
   const inFlight = useRef(false);
   const reactionRequest = useRef<string | null>(null);
+  const kartRecoveryRequest = useRef<string | null>(null);
+  const [kartRecoveryPending, setKartRecoveryPending] = useState(false);
+  const [kartRecoveryNotice, setKartRecoveryNotice] = useState("");
+  const recoveryRace = useRef<string | undefined>(undefined);
   const hapticBaseline = useRef<HapticView | null>(null);
   useWakeLock(session !== undefined);
   usePreloadQuestion(snapshot);
@@ -132,6 +136,12 @@ export function GuestPage() {
       gameId,
       role: "guest",
       onSnapshot(next) {
+        if (recoveryRace.current !== next.play?.kart?.raceId) {
+          recoveryRace.current = next.play?.kart?.raceId;
+          kartRecoveryRequest.current = null;
+          setKartRecoveryPending(false);
+          setKartRecoveryNotice("");
+        }
         const view: HapticView = {
           phase: next.phase,
           effects: next.trolls.active.map((effect) => ({
@@ -168,6 +178,16 @@ export function GuestPage() {
         );
       },
       onAck(ack) {
+        if (ack.requestId === kartRecoveryRequest.current) {
+          kartRecoveryRequest.current = null;
+          setKartRecoveryPending(false);
+          setKartRecoveryNotice(
+            ack.accepted
+              ? "Back on track — controls released"
+              : (ack.error ?? "Recovery was not accepted."),
+          );
+          return;
+        }
         if (ack.requestId === reactionRequest.current) {
           reactionRequest.current = null;
           if (!ack.accepted) {
@@ -188,6 +208,7 @@ export function GuestPage() {
         setRejection(undefined);
       },
       onReplaced(message) {
+        setKartRecoveryPending(false);
         hapticBaseline.current = null;
         setSnapshot(undefined);
         setNotice(message);
@@ -478,6 +499,16 @@ export function GuestPage() {
                 <GuestPlay
                   connected={connection === "open"}
                   onKartInput={(input) => socketRef.current?.submitKartInput(input)}
+                  onKartRecover={(raceId) => {
+                    const requestId = socketRef.current?.submitKartRecovery?.(raceId);
+                    if (requestId) {
+                      kartRecoveryRequest.current = requestId;
+                      setKartRecoveryPending(true);
+                      setKartRecoveryNotice("");
+                    }
+                  }}
+                  kartRecoveryPending={kartRecoveryPending}
+                  kartRecoveryNotice={kartRecoveryNotice}
                   snapshot={snapshot}
                   selectedId={selectedId}
                   pending={pending}

@@ -1,322 +1,208 @@
 // Adapted from mario-kart-js 0f7a430. See UPSTREAM.md and THIRD_PARTY_NOTICES.md.
+// Rendering is upstream-derived; movement/contact use the shared pure model.
 import { Kart } from "./models/Kart";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
-import { Vector3 } from "three";
-import { damp } from "three/src/math/MathUtils.js";
-import { kartSettings } from "./constants";
+import { Raycaster, Vector3 } from "three";
+import {
+  clearOfWalls,
+  createDrivingBody,
+  stepDriving,
+  soloDriving,
+  kartNeutral,
+} from "@26/shared";
+import { readGamepad } from "../gamepad";
+import { nearbySoloWalls } from "../track/collision-world";
 import { useGameStore } from "./store";
-import gsap from "gsap";
 
 export const PlayerController = () => {
-  const rbRef = useRef(null);
-  const playerRef = useRef(null);
-  const cameraGroupRef = useRef(null);
-  const cameraLookAtRef = useRef(null);
-  const kartRef = useRef(null);
-  const jumpIsHeld = useRef(false);
-  const driftDirections = {
-    none: 0,
-    left: 1.4,
-    right: -1.4,
-  };
-  const jumpOffset = useRef(0);
-  const driftDirection = useRef(driftDirections.none);
-  const driftPower = useRef(0);
-  const turbo = useRef(0);
-  const isJumping = useRef(false);
-  const backWheelOffset = useRef({
-    left: 0,
-    right: 0,
-  });
-  const gamepadRef = useRef(null);
-  const inputTurn = useRef(0);
-
-  const speedRef = useRef(0);
-  const rotationSpeedRef = useRef(0);
-  const smoothedDirectionRef = useRef(new Vector3(0, 0, -1));
-
-  const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
-  const setIsBoosting = useGameStore((state) => state.setIsBoosting);
-  const setSpeed = useGameStore((state) => state.setSpeed);
-  const setGamepad = useGameStore((state) => state.setGamepad);
-
-  const isTimeTrial = false;
-
-  const getGamepad = () => {
-    if (navigator.getGamepads) {
-      const gamepads = navigator.getGamepads();
-      if (gamepads.length > 0) {
-        gamepadRef.current = gamepads[0];
-        setGamepad(gamepadRef.current);
-      }
-    }
-  };
-
+  const playerRef = useRef(null),
+    kartRef = useRef(null);
+  const cameraGroupRef = useRef(null),
+    cameraLookAtRef = useRef(null);
+  const gamepadArmed = useRef(true);
+  const hop = useRef(0),
+    heldDrift = useRef(false);
+  const body = useRef(createDrivingBody(0, 0, -Math.PI / 2));
+  const previous = useRef(body.current);
+  const safe = useRef({ x: 0, z: 0, heading: -Math.PI / 2 });
+  const elapsed = useRef(0),
+    accumulator = useRef(0),
+    lastRecovery = useRef(-2000),
+    recovery = useRef(useGameStore.getState().soloRecover);
+  const speedRef = useRef(0),
+    driftDirection = useRef(0),
+    driftPower = useRef(0);
+  const jumpOffset = useRef(0),
+    backWheelOffset = useRef({ left: 0, right: 0 }),
+    inputTurn = useRef(0);
+  const ray = useRef(new Raycaster()),
+    meshes = useRef([]);
+  const { scene } = useThree();
+  const target = useRef(new Vector3()),
+    look = useRef(new Vector3());
   useEffect(
     () => () => {
-      gsap.killTweensOf(jumpOffset);
-      gsap.killTweensOf(backWheelOffset.current);
+      meshes.current = [];
     },
     [],
   );
 
-  const jumpAnim = () => {
-    gsap.to(jumpOffset, {
-      current: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 0.3,
-      duration: 0.125,
-      ease: "power2.out",
-      yoyo: true,
-      repeat: 1,
-      onComplete: () => {
-        isJumping.current = false;
-      },
-    });
-  };
-
-  function updateSpeed(forward, backward, delta) {
-    // Apply time trial speed factor if in time trial mode
-    const isTimeTrialMode = false;
-    const speedFactor = isTimeTrialMode
-      ? kartSettings.timeTrialSpeedFactor || 1.5
-      : 1.0;
-
-    // Adjust max speed for time trial mode
-    const baseMaxSpeed = kartSettings.speed.max;
-    const maxSpeed = baseMaxSpeed * speedFactor + (turbo.current > 0 ? 40 : 0);
-
-    maxSpeed > baseMaxSpeed ? setIsBoosting(true) : setIsBoosting(false);
-
-    const gamepadButtons = {
-      forward: false,
-      backward: false,
-    };
-
-    if (gamepadRef.current) {
-      gamepadButtons.forward = gamepadRef.current.buttons[0]?.pressed;
-      gamepadButtons.backward = gamepadRef.current.buttons[1]?.pressed;
-    }
-    const forwardAccel = Number(forward || gamepadButtons.forward);
-
-    // Make the damping more responsive in time trial mode
-    const dampingFactor = isTimeTrialMode ? 2.5 : 1.5;
-
-    speedRef.current = damp(
-      speedRef.current,
-      maxSpeed * forwardAccel +
-        kartSettings.speed.min * Number(backward || gamepadButtons.backward),
-      dampingFactor,
-      delta,
-    );
-    setSpeed(speedRef.current);
-    if (speedRef.current < 20) {
-      driftDirection.current = driftDirections.none;
-      driftPower.current = 0;
-    }
-    turbo.current -= delta;
+  function surfaceAt(x, z) {
+    if (!meshes.current.length)
+      scene.getObjectByName("solo-track")?.traverse((object) => {
+        if (object.isMesh && ["ground road", "ground dirt"].includes(object.name))
+          meshes.current.push(object);
+      });
+    ray.current.set(new Vector3(x, 3, z), new Vector3(0, -1, 0));
+    ray.current.far = 8;
+    ray.current.firstHitOnly = true;
+    const hits = ray.current.intersectObjects(meshes.current, false);
+    if (hits.some((hit) => hit.object.name === "ground road")) return "road";
+    return hits.length ? "dirt" : "unsupported";
   }
 
-  function rotatePlayer(left, right, player, joystickX, delta) {
-    // Apply time trial mode handling adjustments
-    const isTimeTrialMode = false;
-    const handlingFactor = isTimeTrialMode ? 1.5 : 1.0;
-
-    const gamepadJoystick = {
-      x: 0,
-    };
-
-    if (gamepadRef.current) {
-      gamepadJoystick.x = gamepadRef.current.axes[0];
-    }
-
-    // Make turning more responsive in time trial mode
-    const turnSensitivity = isTimeTrialMode ? 0.15 : 0.1;
-
-    inputTurn.current =
-      (-gamepadJoystick.x -
-        joystickX +
-        (Number(left) - Number(right)) +
-        driftDirection.current) *
-      turnSensitivity;
-
-    // Faster rotation response in time trial mode
-    const rotationDampFactor = isTimeTrialMode ? 6 : 4;
-
-    rotationSpeedRef.current = damp(
-      rotationSpeedRef.current,
-      inputTurn.current,
-      rotationDampFactor,
-      delta,
-    );
-
-    const targetRotation =
-      player.rotation.y +
-      ((rotationSpeedRef.current * (speedRef.current > 40 ? 40 : speedRef.current)) /
-        kartSettings.speed.max) *
-        handlingFactor;
-
-    // More responsive rotation damping in time trial mode
-    const finalDampFactor = isTimeTrialMode ? 12 : 8;
-    player.rotation.y = damp(player.rotation.y, targetRotation, finalDampFactor, delta);
-  }
-
-  function jumpPlayer(spaceKey, left, right, joystickX) {
-    if (spaceKey && !jumpIsHeld.current && !isJumping.current) {
-      // rb.applyImpulse({ x: 0, y: 45, z: 0 }, true);
-
-      jumpAnim();
-      isJumping.current = true;
-      jumpIsHeld.current = true;
-      driftDirection.current =
-        left || joystickX < 0
-          ? driftDirections.left
-          : right || joystickX > 0
-            ? driftDirections.right
-            : driftDirections.none;
-    }
-
-    if (!spaceKey) {
-      jumpIsHeld.current = false;
-      if (turbo.current <= 0) {
-        turbo.current = useGameStore.getState().boostPower
-          ? useGameStore.getState().boostPower
-          : 0;
-      }
-      driftDirection.current = driftDirections.none;
-      driftPower.current = 0;
-    }
-  }
-
-  function driftPlayer(delta) {
-    if (driftDirection.current !== driftDirections.none) {
-      driftPower.current += delta;
-    }
-  }
-
-  function updatePlayer(player, speed, camera, kart, delta) {
-    // Apply time trial specific adjustments
-    const isTimeTrialMode = false;
-    const movementFactor = isTimeTrialMode ? 1.5 : 1.0;
-
-    const desiredDirection = new Vector3(
-      -Math.sin(player.rotation.y),
-      0,
-      -Math.cos(player.rotation.y),
-    );
-
-    // More responsive direction change in time trial mode
-    const directionLerpFactor = isTimeTrialMode ? 18 : 12;
-    smoothedDirectionRef.current.lerp(
-      desiredDirection,
-      Math.min(1, directionLerpFactor * delta),
-    );
-    const dir = smoothedDirectionRef.current;
-
-    const angle = Math.atan2(
-      desiredDirection.x * dir.z - desiredDirection.z * dir.x,
-      desiredDirection.x * dir.x + desiredDirection.z * dir.z,
-    );
-
-    // More responsive kart rotation in time trial mode
-    const kartRotationDampFactor = isTimeTrialMode ? 9 : 6;
-    kart.rotation.y = damp(
-      kart.rotation.y,
-      angle * 1.3 + driftDirection.current * 0.1,
-      kartRotationDampFactor,
-      delta,
-    );
-
-    // Camera responsiveness in time trial mode
-    const cameraLerpFactor = isTimeTrialMode ? 12 : 8;
-    camera.lookAt(cameraLookAtRef.current.getWorldPosition(new Vector3()));
-    camera.position.lerp(
-      cameraGroupRef.current.getWorldPosition(new Vector3()),
-      Math.min(1, cameraLerpFactor * delta),
-    );
-
-    // const body = useGameStore.getState().body;
-    // if(body){
-    //   cameraGroupRef.current.position.y = lerp(cameraGroupRef.current.position.y, body.position.y + 2, 8 * delta);
-    //   cameraLookAtRef.current.position.y = body.position.y;
-    // }
-    const direction = smoothedDirectionRef.current;
-
-    // Apply time trial movement factor to player position updates
-    player.position.x += direction.x * speed * delta * movementFactor;
-    player.position.z += direction.z * speed * delta * movementFactor;
-
-    setPlayerPosition(player.position);
-  }
-
-  useFrame((state, delta) => {
-    if (useGameStore.getState().soloPaused || !useGameStore.getState().soloStarted)
+  useFrame(({ camera }, delta) => {
+    const store = useGameStore.getState();
+    if (
+      store.soloPaused ||
+      !store.soloStarted ||
+      !playerRef.current ||
+      !kartRef.current
+    ) {
+      gamepadArmed.current = false;
+      accumulator.current = 0;
+      body.current = { ...body.current, driftMs: 0, wasDrifting: false };
       return;
-    if (!playerRef.current && !rbRef.current) return;
-    const player = playerRef.current;
-    const cameraGroup = cameraGroupRef.current;
-    const kart = kartRef.current;
-    const camera = state.camera;
-
-    if (!player || !cameraGroup || !kart) return;
-
-    // Get time trial status from the game manager
-    const isTimeTrial = false;
-
-    // Use a smaller delta cap for time trial mode to ensure fast responses
-    // This ensures physics updates are more consistent and responsive
-    const maxDelta = isTimeTrial ? 0.05 : 0.1;
-    const cappedDelta = Math.min(delta, maxDelta);
-
-    const controls = useGameStore.getState().soloControls;
-    const joystick = { x: controls.steer };
-    const jumpButtonPressed = controls.drift;
-
-    const { gas: forward, brake: backward } = controls;
-    const left = false,
-      right = false,
-      jump = false;
-
-    const gamepadButtons = {
-      jump: false,
-      x: 0,
-    };
-
-    if (gamepadRef.current) {
-      gamepadButtons.jump =
-        gamepadRef.current.buttons[5]?.pressed ||
-        gamepadRef.current.buttons[7]?.pressed;
-      gamepadButtons.x = gamepadRef.current.axes[0];
     }
-    updateSpeed(forward, backward, cappedDelta);
-    rotatePlayer(left, right, player, joystick.x, cappedDelta);
-    updatePlayer(player, speedRef.current, camera, kart, cappedDelta);
-    const isJumpPressed = jumpButtonPressed || jump || gamepadButtons.jump;
-    jumpPlayer(isJumpPressed, left, right, joystick.x || gamepadButtons.x);
-    driftPlayer(cappedDelta);
-    getGamepad();
+    if (recovery.current !== store.soloRecover) {
+      gamepadArmed.current = false;
+      recovery.current = store.soloRecover;
+      if (elapsed.current - lastRecovery.current >= 2000) {
+        body.current = createDrivingBody(
+          safe.current.x,
+          safe.current.z,
+          safe.current.heading,
+        );
+        previous.current = body.current;
+        accumulator.current = 0;
+        lastRecovery.current = elapsed.current;
+        playerRef.current.position.set(body.current.x, 0, body.current.z);
+        playerRef.current.rotation.y = -body.current.heading - Math.PI / 2;
+        playerRef.current.updateMatrixWorld(true);
+        camera.position.copy(cameraGroupRef.current.getWorldPosition(target.current));
+        useGameStore.setState({
+          soloRecoveryMessage: "Back on track — controls released",
+        });
+      }
+      useGameStore.setState({
+        soloRecovered: recovery.current,
+        soloControls: { ...kartNeutral },
+      });
+    }
+    accumulator.current += Math.min(0.1, Math.max(0, delta)) * 1000;
+    const pad = readGamepad();
+    if (!pad.gas && !pad.brake && !pad.drift && !pad.steer) gamepadArmed.current = true;
+    let surface = surfaceAt(body.current.x, body.current.z);
+    while (accumulator.current >= 20) {
+      const controls = useGameStore.getState().soloControls;
+      const input = gamepadArmed.current
+        ? {
+            ...controls,
+            steer: controls.steer || pad.steer,
+            gas: controls.gas || pad.gas,
+            brake: controls.brake || pad.brake,
+            drift: controls.drift || pad.drift,
+          }
+        : controls;
+      const effective = surface === "unsupported" ? kartNeutral : input;
+      previous.current = body.current;
+      body.current = stepDriving(
+        body.current,
+        effective,
+        20,
+        soloDriving,
+        nearbySoloWalls(
+          body.current.x,
+          body.current.z,
+          soloDriving.radius + soloDriving.boostSpeed * 0.02,
+        ),
+        surface !== "road",
+      );
+      elapsed.current += 20;
+      accumulator.current -= 20;
+      surface = surfaceAt(body.current.x, body.current.z);
+      if (
+        surface === "road" &&
+        !body.current.contact &&
+        clearOfWalls(
+          body.current.x,
+          body.current.z,
+          nearbySoloWalls(body.current.x, body.current.z, 4),
+          soloDriving.radius + 3,
+        )
+      )
+        safe.current = {
+          x: body.current.x,
+          z: body.current.z,
+          heading: body.current.heading,
+        };
+    }
+    const d = body.current,
+      player = playerRef.current;
+    const alpha = accumulator.current / 20,
+      old = previous.current;
+    player.position.set(
+      old.x + (d.x - old.x) * alpha,
+      0,
+      old.z + (d.z - old.z) * alpha,
+    );
+    const turn = Math.atan2(
+      Math.sin(d.heading - old.heading),
+      Math.cos(d.heading - old.heading),
+    );
+    player.rotation.y = -(old.heading + turn * alpha) - Math.PI / 2;
+    speedRef.current = d.vx * Math.cos(d.heading) + d.vz * Math.sin(d.heading);
+    inputTurn.current = -d.turn * 0.1;
+    driftDirection.current = d.wasDrifting
+      ? Math.sign(store.soloControls.steer) * -1.4
+      : 0;
+    driftPower.current = d.driftMs / 1000;
+    if (store.soloControls.drift && !heldDrift.current) hop.current = 250;
+    heldDrift.current = store.soloControls.drift;
+    hop.current = Math.max(0, hop.current - delta * 1000);
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    jumpOffset.current = reduced ? 0 : Math.sin((hop.current / 250) * Math.PI) * 0.5;
+    kartRef.current.rotation.y = reduced ? 0 : driftDirection.current * 0.1;
+    player.updateMatrixWorld(true);
+    camera.position.lerp(
+      cameraGroupRef.current.getWorldPosition(target.current),
+      1 - Math.exp(-8 * Math.min(delta, 0.1)),
+    );
+    camera.lookAt(cameraLookAtRef.current.getWorldPosition(look.current));
+    useGameStore.setState({
+      playerPosition: new Vector3(d.x, 0, d.z),
+      speed: speedRef.current,
+      isBoosting: d.boostMs > 0,
+      soloSurface: surface,
+      soloContact: d.contact,
+      soloRecoveryReady: elapsed.current - lastRecovery.current >= 2000,
+    });
   });
-
   return (
-    <>
-      <group></group>
-      <group ref={playerRef}>
-        <group ref={cameraGroupRef} position={[0, 2, 5]}></group>
-
-        <group ref={kartRef}>
-          <Kart
-            speed={speedRef}
-            driftDirection={driftDirection}
-            driftPower={driftPower}
-            jumpOffset={jumpOffset}
-            backWheelOffset={backWheelOffset}
-            inputTurn={inputTurn}
-          />
-
-          <group ref={cameraLookAtRef} position={[0, -2, -9]}></group>
-        </group>
+    <group ref={playerRef}>
+      <group ref={cameraGroupRef} position={[0, 2, 5]} />
+      <group ref={kartRef}>
+        <Kart
+          speed={speedRef}
+          driftDirection={driftDirection}
+          driftPower={driftPower}
+          jumpOffset={jumpOffset}
+          backWheelOffset={backWheelOffset}
+          inputTurn={inputTurn}
+        />
+        <group ref={cameraLookAtRef} position={[0, -0.5, -9]} />
       </group>
-
-      {/* <OrbitControls/> */}
-    </>
+    </group>
   );
 };

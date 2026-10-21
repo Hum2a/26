@@ -276,3 +276,48 @@ it("updates new phone-driving rehearsals without rewriting the stored v1 content
     questionFor({ questionSetVersion: kartRehearsalVersion, questionIndex: 1 })?.prompt,
   ).toContain("follow the field on the big screen");
 });
+
+it("recovers only its driver without progress or clock gains and requires fresh controls", () => {
+  let race = input(start());
+  race = reduceKart(race, { type: "tick", elapsedMs: 200 });
+  const before = structuredClone(race);
+  const recovered = reduceKart(race, { type: "recover", playerId: "a" });
+  expect(recovered.elapsedMs).toBe(before.elapsedMs);
+  expect(recovered.drivers[0]!.progress).toBeLessThanOrEqual(
+    before.drivers[0]!.progress,
+  );
+  expect(recovered.drivers[0]!.input).toEqual(kartNeutral);
+  expect(recovered.drivers[0]!.speed).toBe(0);
+  expect(recovered.drivers[1]).toEqual(before.drivers[1]);
+  expect(reduceKart(recovered, { type: "recover", playerId: "a" })).toBe(recovered);
+  expect(race).toEqual(before);
+});
+it("keeps stored unversioned races on their existing simulation", () => {
+  const race = start();
+  delete race.physicsVersion;
+  const next = reduceKart(input(race), { type: "tick", elapsedMs: 200 });
+  expect(next.physicsVersion).toBeUndefined();
+  expect(next.drivers[0]!.physics).toBeUndefined();
+  expect(next.drivers[0]!.speed).toBeGreaterThan(0);
+});
+
+it("reports wrong-way movement from resolved velocity while the chassis is sliding", () => {
+  const race = start(),
+    d = race.drivers[0]!;
+  d.heading = 0;
+  d.speed = 0;
+  d.physics = {
+    x: d.x,
+    z: d.z,
+    heading: 0,
+    vx: 0,
+    vz: -5,
+    turn: 0,
+    driftMs: 0,
+    boostMs: 0,
+    wasDrifting: false,
+    contact: false,
+    offRoad: false,
+  };
+  expect(projectKartRace(race, "a", 100).participants[0]!.wrongWay).toBe(true);
+});

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { ringBounds } from "@26/shared";
 import type { KartRaceView } from "@26/shared";
 import { smoothKartPose, type KartPose } from "./presentation";
 
@@ -85,7 +86,7 @@ export function createCircuit(
   // Raised circuit plinth and inner lawn are distinct silhouettes, without shadow maps.
   mesh(geo(new THREE.CylinderGeometry(53, 54, 2, segments)), dark, 0, -1.4, 0);
   const roadMesh = mesh(
-    geo(new THREE.RingGeometry(34, 50, segments)),
+    geo(new THREE.RingGeometry(ringBounds.inner, ringBounds.outer, segments)),
     surface,
     0,
     0.02,

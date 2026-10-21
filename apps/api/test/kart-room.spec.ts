@@ -4,7 +4,12 @@ import { payloadDigest } from "../src/room/digest.ts";
 import { createSqlStore } from "../src/room/sql-store.ts";
 import { createGameStore } from "../src/questions/multiple-choice.ts";
 import { onAlarm, pause, resume, publicClock } from "../src/room/lifecycle.ts";
-import { acceptKartInput, readKart, KartInputBuffer } from "../src/questions/kart.ts";
+import {
+  acceptKartInput,
+  readKart,
+  KartInputBuffer,
+  recoverKart,
+} from "../src/questions/kart.ts";
 import { questionFor } from "../src/questions/registry.ts";
 import { kartNeutral } from "@26/shared";
 
@@ -350,4 +355,29 @@ it("persists full-room control queues before a tick and replays them after evict
   expect(guest.inputCursor).toBe(2);
   expect(guest.leaderboard).toHaveLength(9); // Top eight plus this phone's own place.
   expect(JSON.stringify(guest)).not.toContain("inputUntil");
+});
+
+it("persists recovery across eviction and rejects stale races and spectator identities", async () => {
+  const { stub, players, now } = await setup();
+  const raceId = (await stub.snapshotFor("stage")).play!.kart!.raceId;
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql,
+      store = createSqlStore(sql),
+      q = questionFor(store.readRoom());
+    if (q?.kind !== "kart") throw new Error("Kart required");
+    expect(recoverKart(sql, store, q, "spectator", raceId, now).ok).toBe(false);
+    expect(recoverKart(sql, store, q, players[0]!, "old", now).ok).toBe(false);
+    expect(recoverKart(sql, store, q, players[0]!, raceId, now).ok).toBe(true);
+    expect(recoverKart(sql, store, q, players[0]!, raceId, now + 100).ok).toBe(false);
+  });
+  await evictDurableObject(stub);
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql,
+      q = questionFor(createSqlStore(sql).readRoom());
+    if (q?.kind !== "kart") throw new Error("Kart required");
+    const driver = readKart(sql, q.id)!.drivers[0]!;
+    expect(driver.lastRecoveryAt).toBe(0);
+    expect(driver.input).toEqual(kartNeutral);
+    expect(driver.progress).toBe(0);
+  });
 });

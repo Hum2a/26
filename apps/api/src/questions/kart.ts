@@ -160,6 +160,54 @@ export class KartInputBuffer {
     this.drivers.clear();
     return arrivals;
   }
+  discard(playerId: string): void {
+    this.drivers.delete(playerId);
+  }
+}
+
+export function recoverKart(
+  sql: SqlStorage,
+  store: GameStore,
+  q: KartQuestion,
+  playerId: string,
+  raceId: string,
+  now: number,
+): { ok: true } | { ok: false; message: string } {
+  const room = store.readRoom();
+  if (room.phase !== "collect" || room.paused || room.hold)
+    return {
+      ok: false,
+      message: "Recovery is available only while the race is running.",
+    };
+  const saved = readKart(sql, q.id);
+  if (
+    !saved ||
+    saved.raceId !== raceId ||
+    saved.ended ||
+    !saved.drivers.some((d) => d.playerId === playerId && d.status === "RACING") ||
+    !sql
+      .exec("SELECT 1 FROM player WHERE player_id = ? AND revoked_at IS NULL", playerId)
+      .toArray().length
+  )
+    return { ok: false, message: "This phone cannot recover in that race." };
+  const race = catchUp(sql, store, q, now)!;
+  const next = reduceKart(race, { type: "recover", playerId });
+  if (next === race)
+    return {
+      ok: false,
+      message:
+        "Wait two race seconds before recovering again, or watch the stage if you have finished.",
+    };
+  const queue = readRoundState<InputQueue>(sql, q.id, `kart-input:${playerId}`);
+  if (queue)
+    writeRoundState(sql, q.id, `kart-input:${playerId}`, {
+      ...queue,
+      at: now,
+      pending: [],
+    });
+  write(sql, q.id, next);
+  sql.exec("UPDATE room SET state_version = state_version + 1");
+  return { ok: true };
 }
 
 /** Freeze at the pause boundary and prevent old throttle/drift resuming later. */

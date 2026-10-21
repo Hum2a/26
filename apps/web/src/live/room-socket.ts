@@ -116,6 +116,7 @@ function registerDebugDrop(drop: () => void): (() => void) | undefined {
 }
 
 type CommandBody =
+  | { kind: "command"; requestId: string; name: "kart-recover"; raceId: string }
   | { kind: "command"; requestId: string; name: "snapshot" }
   | { kind: "command"; requestId: string; name: "answer"; optionId: string }
   | { kind: "command"; requestId: string; name: "estimate"; value: number }
@@ -172,6 +173,7 @@ export function openRoomSocket(options: {
   submitTroll: (kind: string, targetId: string, mediaId?: string) => string;
   submitDraft: (text: string) => void;
   submitKartInput: (input: KartInput) => void;
+  submitKartRecovery?: (raceId: string) => string;
   submitTrollEscape: (effectId: string) => string;
   submitReaction: (targetId: string, reaction: "like" | "dislike") => string;
   reconnectNow: () => void;
@@ -715,6 +717,13 @@ export function openRoomSocket(options: {
     submitTroll,
     submitDraft,
     submitKartInput,
+    submitKartRecovery: (raceId: string) =>
+      sendCommand({
+        kind: "command",
+        requestId: crypto.randomUUID(),
+        name: "kart-recover",
+        raceId,
+      }),
     submitTrollEscape,
     submitReaction,
     close,

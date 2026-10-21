@@ -46,7 +46,8 @@ export function TouchController({
         return;
       if (
         event.target instanceof HTMLElement &&
-        /BUTTON|INPUT|TEXTAREA|SELECT/.test(event.target.tagName)
+        /BUTTON|INPUT|TEXTAREA|SELECT/.test(event.target.tagName) &&
+        (event.type === "keydown" || !keys.has(event.key))
       )
         return;
       event.preventDefault();

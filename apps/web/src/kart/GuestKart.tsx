@@ -3,15 +3,22 @@ import type { LobbySnapshot, KartInput } from "@26/shared";
 import { KartDriverView } from "./KartDriverView";
 import { TouchController } from "./TouchController";
 import { useKartSocket } from "./useKartSocket";
+import { Button } from "../ui/primitives";
 
 export function GuestKart({
   snapshot,
   connected = true,
   onInput,
+  onRecover,
+  recoveryPending = false,
+  recoveryNotice = "",
 }: {
   snapshot: LobbySnapshot;
   connected?: boolean;
   onInput?: (input: KartInput) => void;
+  onRecover?: (raceId: string) => void;
+  recoveryPending?: boolean;
+  recoveryNotice?: string;
 }) {
   const reduced = useReducedMotion();
   const race = snapshot.play?.kart;
@@ -20,7 +27,7 @@ export function GuestKart({
   const complete = self && self.status !== "RACING";
   const open =
     snapshot.phase === "collect" && !snapshot.paused && !snapshot.held && connected;
-  const change = useKartSocket(race, open, onInput);
+  const change = useKartSocket(race, open && !recoveryPending, onInput);
   const rehearsal = !onInput && !race;
   const instruction = !connected
     ? "Connection lost — controls released"
@@ -121,7 +128,9 @@ export function GuestKart({
       {!complete ? (
         <TouchController
           disabled={
-            !open || (!rehearsal && (!self || self.status !== "RACING" || race?.ended))
+            !open ||
+            recoveryPending ||
+            (!rehearsal && (!self || self.status !== "RACING" || race?.ended))
           }
           onChange={change}
         />
@@ -141,6 +150,24 @@ export function GuestKart({
           <p>Watch the stage for the results.</p>
         </motion.div>
       )}
+      {!complete ? (
+        <div className="kart-recovery">
+          {race && self && onRecover ? (
+            <Button
+              variant="secondary"
+              disabled={!open || recoveryPending || race.ended}
+              onClick={() => onRecover(race.raceId)}
+            >
+              {recoveryPending ? "Returning…" : "Back to track"}
+            </Button>
+          ) : null}
+          <p role="status">
+            {recoveryPending
+              ? "Returning to the track — controls released"
+              : recoveryNotice}
+          </p>
+        </div>
+      ) : null}
       {!complete ? (
         <p className="kart-help">
           A: accelerate · B: brake / reverse · R: drift / boost

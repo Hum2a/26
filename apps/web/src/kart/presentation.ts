@@ -29,7 +29,9 @@ export function smoothKartPose(
   deltaSeconds: number,
   reduced: boolean,
 ): KartPose {
-  if (reduced) return { x: to.x, z: to.z, heading: to.heading };
+  if (!reduced && deltaSeconds <= 0) return { ...from };
+  if (reduced || Math.hypot(to.x - from.x, to.z - from.z) > 8)
+    return { x: to.x, z: to.z, heading: to.heading };
   const alpha = 1 - Math.exp(-14 * Math.max(0, Math.min(0.1, deltaSeconds)));
   const angle = Math.atan2(
     Math.sin(to.heading - from.heading),

@@ -11,6 +11,13 @@ export function pause() {
 export function resume() {
   useGameStore.setState({ soloPaused: false, soloControls: { ...kartNeutral } });
 }
+export function recover() {
+  useGameStore.setState((state: { soloRecover: number }) => ({
+    soloRecover: state.soloRecover + 1,
+    soloControls: { ...kartNeutral },
+    soloRecoveryMessage: "Returning to the track…",
+  }));
+}
 export function reset() {
   useGameStore.setState((state: { soloReset: number }) => ({
     soloReset: state.soloReset + 1,
@@ -20,5 +27,10 @@ export function reset() {
     driftLevel: null,
     playerPosition: null,
     soloControls: { ...kartNeutral },
+    soloRecovered: useGameStore.getState().soloRecover,
+    soloRecoveryReady: true,
+    soloRecoveryMessage: "",
+    soloSurface: "road",
+    soloContact: false,
   }));
 }

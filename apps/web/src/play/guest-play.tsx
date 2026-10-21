@@ -31,10 +31,16 @@ export function GuestPlay({
   onBallot,
   onDuel,
   onKartInput,
+  onKartRecover,
+  kartRecoveryPending,
+  kartRecoveryNotice,
   connected,
 }: {
   snapshot: LobbySnapshot;
   onKartInput?: (input: KartInput) => void;
+  onKartRecover?: (raceId: string) => void;
+  kartRecoveryPending?: boolean;
+  kartRecoveryNotice?: string;
   connected?: boolean;
   selectedId?: string;
   pending: boolean;
@@ -55,7 +61,14 @@ export function GuestPlay({
   if (play.question.kind === "kart")
     return (
       <QuestionExperience snapshot={snapshot} pending={false}>
-        <GuestKart snapshot={snapshot} connected={connected} onInput={onKartInput} />
+        <GuestKart
+          snapshot={snapshot}
+          connected={connected}
+          onInput={onKartInput}
+          onRecover={onKartRecover}
+          recoveryPending={kartRecoveryPending}
+          recoveryNotice={kartRecoveryNotice}
+        />
       </QuestionExperience>
     );
   const open =

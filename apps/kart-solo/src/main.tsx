@@ -11,7 +11,7 @@ import {
 import { PlayerController } from "./upstream/PlayerController.jsx";
 import { Track } from "./upstream/models/Mario-circuit-test.jsx";
 import { useGameStore } from "./upstream/store.js";
-import { drive, pause, resume, reset } from "./session";
+import { drive, pause, resume, reset, recover } from "./session";
 import "./solo.css";
 
 const themeStyle = document.createElement("style");
@@ -50,6 +50,8 @@ function Telemetry() {
   );
   const boost = useGameStore((state) => state.isBoosting);
   const drift = useGameStore((state) => state.driftLevel?.level ?? 0);
+  const surface = useGameStore((state) => state.soloSurface);
+  const contact = useGameStore((state) => state.soloContact);
   return (
     <div className="solo-telemetry">
       <output aria-label="Speed">
@@ -60,7 +62,17 @@ function Telemetry() {
         {distance} m from grid
       </output>
       <span>
-        {boost ? "Boost!" : drift ? "Release drift to boost" : "Hold A to drive"}
+        {surface === "unsupported"
+          ? "Off track — use Back to track"
+          : contact
+            ? "Barrier contact — steer away"
+            : surface === "dirt"
+              ? "Off-road — reduced grip and speed"
+              : boost
+                ? "Boost!"
+                : drift
+                  ? "Release drift to boost"
+                  : "Hold A to drive"}
       </span>
     </div>
   );
@@ -104,6 +116,11 @@ function SoloGame() {
   const [lost, setLost] = useState(false);
   const paused = useGameStore((state) => state.soloPaused);
   const ready = useGameStore((state) => state.soloStarted);
+  const recoveryPending = useGameStore(
+    (state) => state.soloRecover !== state.soloRecovered,
+  );
+  const recoveryReady = useGameStore((state) => state.soloRecoveryReady);
+  const recoveryMessage = useGameStore((state) => state.soloRecoveryMessage);
   useEffect(() => {
     const hidden = () => {
       if (document.hidden) pause();
@@ -203,6 +220,12 @@ function SoloGame() {
               {paused ? "Resume" : "Pause"}
             </button>
             <button
+              onClick={recover}
+              disabled={paused || recoveryPending || !recoveryReady}
+            >
+              {recoveryPending ? "Returning…" : "Back to track"}
+            </button>
+            <button
               onClick={() => {
                 reset();
                 continueDriving();
@@ -223,8 +246,11 @@ function SoloGame() {
             </div>
           ) : null}
           <aside className="solo-controls" aria-label="Driving controls">
-            <TouchController disabled={paused} onChange={drive} />
-            <p>Arrows: drive · Space: drift · Reset if you get stuck</p>
+            <TouchController disabled={paused || recoveryPending} onChange={drive} />
+            <p role="status">
+              {recoveryMessage ||
+                "Arrows: drive · Space: drift · Back to track if you get stuck"}
+            </p>
           </aside>
         </>
       ) : null}

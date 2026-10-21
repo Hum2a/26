@@ -10,6 +10,7 @@
     "packages/*"
   ],
   "scripts": {
+    "kart:colliders": "node scripts/kart-colliders.mjs",
     "dev": "npm run dev -w @26/web",
     "dev:kill": "node scripts/kill-dev-servers.mjs",
     "git:clear-lock": "node --experimental-strip-types scripts/git-clear-lock.ts",

@@ -281,3 +281,50 @@ it("does not mistake an older shortlisted leaderboard for the race size", () => 
   expect(screen.getByText("Position 1")).toBeTruthy();
   expect(screen.queryByText(/Position 1 of/)).toBeNull();
 });
+
+it("offers recovery to the driver and releases controls while awaiting the server", () => {
+  const race = projectKartRace(
+    createKartRace("recovery", [{ playerId: "mine", name: "Amina" }]),
+    "mine",
+    100,
+  );
+  const snapshot = {
+    phase: "collect",
+    paused: false,
+    held: false,
+    play: { kart: race },
+  } as unknown as LobbySnapshot;
+  const recover = vi.fn();
+  const view = render(
+    <GuestKart snapshot={snapshot} onInput={vi.fn()} onRecover={recover} />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Back to track" }));
+  expect(recover).toHaveBeenCalledWith("recovery");
+  view.rerender(
+    <GuestKart
+      snapshot={snapshot}
+      onInput={vi.fn()}
+      onRecover={recover}
+      recoveryPending
+    />,
+  );
+  expect(
+    (screen.getByRole("button", { name: "Returning…" }) as HTMLButtonElement).disabled,
+  ).toBe(true);
+  expect(
+    (screen.getByRole("button", { name: "Accelerate" }) as HTMLButtonElement).disabled,
+  ).toBe(true);
+});
+
+it("releases keyboard controls when focus moves to the steering input", () => {
+  const change = vi.fn();
+  render(<TouchController onChange={change} />);
+  fireEvent.keyDown(window, { key: "ArrowUp" });
+  fireEvent.keyDown(window, { key: " " });
+  const slider = screen.getByLabelText("Steering");
+  slider.focus();
+  fireEvent.keyUp(slider, { key: " " });
+  expect(change).toHaveBeenLastCalledWith({ ...kartNeutral, gas: true });
+  fireEvent.keyUp(slider, { key: "ArrowUp" });
+  expect(change).toHaveBeenLastCalledWith(kartNeutral);
+});

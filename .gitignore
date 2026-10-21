@@ -31,3 +31,6 @@ node_modules/
 
 # Generated standalone kart bundle; rebuilt before web dev/build.
 apps/web/public/kart-engine/
+
+# Regenerable collision audit output.
+artifacts/kart/

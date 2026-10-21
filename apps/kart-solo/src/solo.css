@@ -321,3 +321,22 @@ a:focus-visible {
     background: var(--background);
   }
 }
+
+@media (max-width: 430px) {
+  .solo-toolbar {
+    gap: 0.35rem;
+  }
+  .solo-toolbar a {
+    flex-shrink: 0;
+    padding-inline: 0.6rem;
+  }
+  .solo-toolbar nav {
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .solo-toolbar nav button {
+    font-size: 0.7rem;
+    padding-inline: 0.5rem;
+  }
+}
