@@ -49,8 +49,17 @@ export function databaseKey(env: AuthBindings & object): string {
   return "pglite-file";
 }
 
+/**
+ * PGlite is cached: it is the local database itself and must survive between
+ * requests. A Neon pool is never shared. Workers forbid one request or room
+ * using I/O that another opened, so a shared pool's next query hangs until
+ * Cloudflare cancels the request (error 1101). Each caller gets its own.
+ */
 export function openDatabase(env: AuthBindings & object): Promise<AppDatabase> {
   const key = databaseKey(env);
+  if (key.startsWith("neon:")) {
+    return createDatabase(env);
+  }
   const existing = openDatabases.get(key);
   if (existing) {
     return existing;

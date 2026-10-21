@@ -120,6 +120,7 @@ export default defineConfig({
             "test/new-party-concepts.spec.ts",
             "test/client-api-key.spec.ts",
             "test/rate-limit.spec.ts",
+            "test/database-sharing.spec.ts",
           ],
           environment: "node",
           hookTimeout: 60_000,
