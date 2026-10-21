@@ -1,33 +1,86 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router";
+import type { AdminTrolls } from "@26/shared";
 import { Button } from "../ui/primitives";
 import { EntryNotice } from "../ui/entry-frame";
-import { NetanyahuFlood } from "../troll/guest-troll";
+import { isScreenTroll, ScreenTroll } from "../troll/screen-trolls";
+import { CommandFeedback } from "./command-feedback";
+import { useAdminRoom } from "./room-provider";
 import { readTrolls } from "./sections-api";
 import { useSection } from "./use-section";
 
-/** Phone previews for trolls with a bespoke overlay. */
-const previews: Record<string, (label: string) => React.ReactNode> = {
-  netanyahu: (label) => <NetanyahuFlood label={label} />,
-};
+type Troll = AdminTrolls["trolls"][number];
 
+/** Global catalogue. Switches live on each room's Trolls page. */
 export function TrollsPage() {
-  const report = useSection(readTrolls);
-  const [preview, setPreview] = useState<{ kind: string; label: string } | null>(
-    null,
+  return (
+    <TrollCatalogue
+      eyebrow="Catalogue"
+      intro={
+        <>
+          Every troll guests can send. Each guest gets one, unlocked from the third
+          question. Open a room and choose <strong>Trolls</strong> to switch them on
+          or off for that room.{" "}
+          <Link className="entry-text-link" to="/admin/rooms">
+            Choose a room
+          </Link>
+        </>
+      }
+    />
   );
-  useEffect(() => {
-    if (!preview) {
-      return;
-    }
-    const timer = window.setTimeout(() => setPreview(null), 4_000);
-    return () => window.clearTimeout(timer);
-  }, [preview]);
+}
+
+/** Per-room switches. Every troll starts on. */
+export function RoomTrollsPage() {
+  const { snapshot, execute, busy, connection } = useAdminRoom();
+  const disabled = snapshot.trolls.disabled ?? [];
+  const locked = busy || connection !== "open";
+  function flip(troll: Troll, on: boolean) {
+    void execute(
+      { action: on ? "troll-on" : "troll-off", trollKind: troll.kind },
+      `${on ? "Switch on" : "Switch off"} ${troll.label}`,
+      "trolls",
+    );
+  }
+  return (
+    <TrollCatalogue
+      eyebrow="This room"
+      intro="Switch trolls on or off for this room. Switched-off trolls disappear from guests' phones straight away. Trolls already running finish normally."
+      feedback={<CommandFeedback scope="trolls" />}
+      switches={{
+        isOn: (kind) => !disabled.some((item) => item === kind),
+        locked,
+        flip,
+      }}
+    />
+  );
+}
+
+function TrollCatalogue({
+  eyebrow,
+  intro,
+  feedback,
+  switches,
+}: {
+  eyebrow: string;
+  intro: React.ReactNode;
+  feedback?: React.ReactNode;
+  switches?: {
+    isOn: (kind: string) => boolean;
+    locked: boolean;
+    flip: (troll: Troll, on: boolean) => void;
+  };
+}) {
+  const report = useSection(readTrolls);
+  const [preview, setPreview] = useState<Troll | null>(null);
+  const endPreview = useCallback(() => setPreview(null), []);
   const trolls = report.data?.trolls ?? [];
+  const onCount = switches ? trolls.filter((troll) => switches.isOn(troll.kind)).length : 0;
   return (
     <section className="admin-section">
       <header className="admin-page-heading">
         <div>
-          <p className="entry-eyebrow">Catalogue</p>
+          <p className="entry-eyebrow">{eyebrow}</p>
           <h1>Trolls</h1>
         </div>
         <Button
@@ -38,55 +91,112 @@ export function TrollsPage() {
           Refresh
         </Button>
       </header>
-      <p>
-        Every troll guests can send. Each guest gets one, unlocked from the third
-        question.
-      </p>
+      <p>{intro}</p>
+      {feedback}
       <EntryNotice message={report.error} />
       {report.loading && !report.data ? <p role="status">Loading trolls…</p> : null}
-      <div className="grid gap-3">
-        {trolls.map((troll) => (
-          <article
-            key={troll.kind}
-            className="grid gap-2 rounded-3xl border border-line bg-surface p-4"
+      {switches && trolls.length ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <p role="status">
+            {onCount} of {trolls.length} switched on.
+          </p>
+          <Button
+            variant="secondary"
+            disabled={switches.locked || onCount === trolls.length}
+            onClick={() =>
+              trolls
+                .filter((troll) => !switches.isOn(troll.kind))
+                .forEach((troll) => switches.flip(troll, true))
+            }
           >
-            <header className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="text-xl font-bold">{troll.label}</h2>
-              <code>{troll.kind}</code>
-            </header>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-              <dt>Asset</dt>
-              <dd>{troll.assetLabel}</dd>
-              <dt>Type</dt>
-              <dd>{troll.slot === "transient" ? "Transient" : "Persistent"}</dd>
-              <dt>Lasts</dt>
-              <dd>
-                {troll.durationMs === null
-                  ? "Until the question ends"
-                  : `${troll.durationMs / 1_000} seconds`}
-              </dd>
-              <dt>Escape</dt>
-              <dd>{troll.escape ?? "None"}</dd>
-              <dt>Phases</dt>
-              <dd>{troll.phases.join(", ")}</dd>
-              <dt>Announced</dt>
-              <dd>{troll.announce === "now" ? "Immediately" : `At ${troll.announce}`}</dd>
-              <dt>Blocks sending</dt>
-              <dd>{troll.disruptsSubmission ? "Yes" : "No"}</dd>
-            </dl>
-            {previews[troll.kind] ? (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setPreview({ kind: troll.kind, label: troll.assetLabel })}
-              >
-                Preview on this screen
-              </Button>
-            ) : null}
-          </article>
-        ))}
+            Switch all on
+          </Button>
+        </div>
+      ) : null}
+      <div className="grid gap-3">
+        {trolls.map((troll) => {
+          const on = switches?.isOn(troll.kind);
+          return (
+            <article
+              key={troll.kind}
+              className="grid gap-2 rounded-3xl border border-line bg-surface p-4"
+              data-off={on === false || undefined}
+              style={on === false ? { opacity: 0.6 } : undefined}
+            >
+              <header className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-xl font-bold">{troll.label}</h2>
+                  <code>{troll.kind}</code>
+                </div>
+                {switches ? (
+                  <label className="flex items-center gap-2 font-bold">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      className="size-6"
+                      checked={on}
+                      disabled={switches.locked}
+                      onChange={(event) => switches.flip(troll, event.target.checked)}
+                    />
+                    {on ? "On" : "Off"}
+                  </label>
+                ) : null}
+              </header>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+                <dt>Shows</dt>
+                <dd>{troll.assetLabel}</dd>
+                <dt>Lasts</dt>
+                <dd>
+                  {troll.durationMs === null
+                    ? "Until the question ends"
+                    : `${troll.durationMs / 1_000} seconds`}
+                </dd>
+                <dt>Escape</dt>
+                <dd>{troll.escape ?? "None"}</dd>
+                <dt>Phases</dt>
+                <dd>{troll.phases.join(", ")}</dd>
+              </dl>
+              {isScreenTroll(troll.kind) ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setPreview(troll)}
+                >
+                  Preview on this screen
+                </Button>
+              ) : null}
+            </article>
+          );
+        })}
       </div>
-      {preview ? previews[preview.kind]?.(preview.label) : null}
+      {preview && isScreenTroll(preview.kind) ? (
+        <PreviewRun troll={preview} kind={preview.kind} onDone={endPreview} />
+      ) : null}
     </section>
+  );
+}
+
+function PreviewRun({
+  troll,
+  kind,
+  onDone,
+}: {
+  troll: Troll;
+  kind: Parameters<typeof ScreenTroll>[0]["kind"];
+  onDone: () => void;
+}) {
+  // Previews run for the real duration, capped so a long one is not a trap.
+  const ms = Math.min(troll.durationMs ?? 5_000, 8_000);
+  useEffect(() => {
+    const timer = window.setTimeout(onDone, ms);
+    return () => window.clearTimeout(timer);
+  }, [onDone, ms]);
+  return (
+    <ScreenTroll
+      kind={kind}
+      label={troll.assetLabel}
+      escape={troll.escape}
+      onEscape={onDone}
+    />
   );
 }

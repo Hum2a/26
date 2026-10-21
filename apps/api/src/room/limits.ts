@@ -78,6 +78,7 @@ export const demoScoringVersion = "demo-rounds-v4";
 export const trollLockedMessage = "Trolls unlock on the second question.";
 export const trollSpentMessage = "You have used your troll.";
 export const trollKindMessage = "That troll is not in this game.";
+export const trollSwitchedOffMessage = "The host has switched that troll off.";
 export const trollPhaseMessage = "That troll cannot start in this phase.";
 export const trollSelfMessage = "Choose another player.";
 export const trollTargetMessage = "That player is not in this room.";

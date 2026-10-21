@@ -3,7 +3,7 @@ const key = "26-admin-return";
 /** Only known admin destinations; never tokens, queries, escapes or external URLs. */
 export function safeAdminReturnTo(value: string | null): string {
   if (!value) return "/admin";
-  return /^\/admin(?:\/(?:content(?:\/[a-z0-9-]{1,40}\/[a-z0-9-]{1,40})?|phone-preview\/[a-z0-9-]{1,40}\/[a-z0-9-]{1,40}|kart|trolls|settings|rooms(?:\/[A-Za-z0-9-]+(?:\/(?:live|players|media|results|health))?)?))?$/.test(
+  return /^\/admin(?:\/(?:content(?:\/[a-z0-9-]{1,40}\/[a-z0-9-]{1,40})?|phone-preview\/[a-z0-9-]{1,40}\/[a-z0-9-]{1,40}|kart|trolls|settings|rooms(?:\/[A-Za-z0-9-]+(?:\/(?:live|players|media|results|health|trolls))?)?))?$/.test(
     value,
   )
     ? value

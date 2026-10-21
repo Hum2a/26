@@ -248,6 +248,10 @@ const scheduleStatements = [
     player_id TEXT PRIMARY KEY,
     state TEXT NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS troll_switch (
+    kind TEXT PRIMARY KEY,
+    enabled INTEGER NOT NULL
+  )`,
   `CREATE TABLE IF NOT EXISTS troll_effect (
     effect_id TEXT PRIMARY KEY,
     actor_id TEXT NOT NULL,

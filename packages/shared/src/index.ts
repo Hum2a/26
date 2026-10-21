@@ -806,6 +806,37 @@ export const playSnapshotSchema = z
 
 export type PlaySnapshot = z.infer<typeof playSnapshotSchema>;
 
+/** Every troll the server can run. The API catalogue holds their rules. */
+export const trollKinds = [
+  "invasion",
+  "netanyahu",
+  "call",
+  "crack",
+  "yield",
+  "swap",
+  "hide-score",
+  "double",
+  "typing",
+  "voice",
+  "theme",
+  "sponsor",
+  "australia",
+  "mirror",
+  "jelly",
+  "comic-sans",
+  "lights-out",
+  "bubble-wrap",
+  "fake-crash",
+  "forced-update",
+  "captcha",
+  "notification-storm",
+  "confetti",
+  "dvd",
+] as const;
+
+export const trollKindSchema = z.enum(trollKinds);
+export type TrollKindName = (typeof trollKinds)[number];
+
 /** Public lobby view. Verifiers, transfer codes, and admin details are absent. */
 export const lobbySnapshotSchema = z
   .object({
@@ -915,20 +946,7 @@ export const lobbySnapshotSchema = z
           .array(
             z
               .object({
-                kind: z.enum([
-                  "invasion",
-                  "netanyahu",
-                  "call",
-                  "crack",
-                  "yield",
-                  "swap",
-                  "hide-score",
-                  "double",
-                  "typing",
-                  "voice",
-                  "theme",
-                  "sponsor",
-                ]),
+                kind: trollKindSchema,
                 label: z.string().min(1).max(40),
                 enabled: z.boolean(),
               })
@@ -939,20 +957,7 @@ export const lobbySnapshotSchema = z
             z
               .object({
                 effectId: z.uuid(),
-                kind: z.enum([
-                  "invasion",
-                  "netanyahu",
-                  "call",
-                  "crack",
-                  "yield",
-                  "swap",
-                  "hide-score",
-                  "double",
-                  "typing",
-                  "voice",
-                  "theme",
-                  "sponsor",
-                ]),
+                kind: trollKindSchema,
                 role: z.enum(["actor", "target"]),
                 status: z.enum(["queued", "active"]),
                 expiresAt: z.number().int().nullable(),
@@ -963,6 +968,8 @@ export const lobbySnapshotSchema = z
               .strict(),
           )
           .max(4),
+        /** Control only: kinds switched off for this room. */
+        disabled: z.array(trollKindSchema).optional(),
         announcement: z
           .object({
             cueId: z.uuid(),

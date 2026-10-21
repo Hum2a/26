@@ -107,6 +107,8 @@ export type PlayAction =
   | "feature"
   | "cancel-effect"
   | "dismiss-cue"
+  | "troll-on"
+  | "troll-off"
   | "hide-media"
   | "retry-archive"
   | "release-stuck-media"
@@ -124,6 +126,7 @@ export type PlayIntent = {
   candidateId?: string;
   effectId?: string;
   mediaId?: string;
+  trollKind?: string;
 };
 export async function playRoom(
   input: PlayIntent,

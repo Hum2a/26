@@ -17,6 +17,7 @@ import {
   trollSlotMessage,
   trollAttributionMessage,
   trollSpentMessage,
+  trollSwitchedOffMessage,
   trollTargetMessage,
   trollVoiceMessage,
 } from "../room/limits.ts";
@@ -66,6 +67,9 @@ export function acceptTroll(
   }
   if (!isTrollKind(kind)) {
     return { ok: false, message: trollKindMessage };
+  }
+  if (disabledTrollKinds(sql).includes(kind)) {
+    return { ok: false, message: trollSwitchedOffMessage };
   }
   const definition = trollDefinitions[kind];
   if (!definition.phases.includes(room.phase)) {
@@ -361,6 +365,7 @@ export function trollSnapshot(
 ): {
   token: "locked" | "ready" | "spent";
   offers: { kind: TrollKind; label: string; enabled: boolean }[];
+  disabled?: TrollKind[];
   active: {
     effectId: string;
     kind: TrollKind;
@@ -389,9 +394,12 @@ export function trollSnapshot(
       : tokenState(sql, selfPlayerId) === "spent"
         ? "spent"
         : "ready";
+  const disabled = disabledTrollKinds(sql);
   const offers =
     audience === "guest" && selfPlayerId && !locked
-      ? Object.values(trollDefinitions).map((definition) => ({
+      ? Object.values(trollDefinitions)
+          .filter((definition) => !disabled.includes(definition.kind))
+          .map((definition) => ({
           kind: definition.kind,
           label: definition.label,
           enabled:
@@ -436,6 +444,7 @@ export function trollSnapshot(
     token,
     offers,
     active,
+    ...(audience === "control" ? { disabled } : {}),
     announcement:
       audience === "guest" || !playing
         ? null
@@ -455,6 +464,24 @@ export function trollSnapshot(
             ...(playing.audio_asset ? { audioAsset: playing.audio_asset } : {}),
           },
   };
+}
+
+/** Every troll starts on. The host switches kinds off per room. */
+export function disabledTrollKinds(sql: SqlStorage): TrollKind[] {
+  return sql
+    .exec<{ kind: string }>(`SELECT kind FROM troll_switch WHERE enabled = 0`)
+    .toArray()
+    .map((row) => row.kind)
+    .filter(isTrollKind);
+}
+
+export function setTrollSwitch(sql: SqlStorage, kind: TrollKind, enabled: boolean) {
+  sql.exec(
+    `INSERT INTO troll_switch (kind, enabled) VALUES (?, ?)
+     ON CONFLICT (kind) DO UPDATE SET enabled = excluded.enabled`,
+    kind,
+    enabled ? 1 : 0,
+  );
 }
 
 export function hostTrollRows(sql: SqlStorage): {

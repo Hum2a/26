@@ -38,7 +38,7 @@ import {
   sameOriginRejection,
 } from "../credentials/cookies.ts";
 import { rejectUnlessClientApiKey } from "../security/client-api-key.ts";
-import type { RoomCredentialRole } from "@26/shared";
+import type { RoomCredentialRole, TrollKindName } from "@26/shared";
 import {
   createCredentialSecret,
   credentialLifetimeMs,
@@ -1225,6 +1225,7 @@ export class PartyRoom extends DurableObject<Env> {
     candidateId?: string;
     effectId?: string;
     mediaId?: string;
+    trollKind?: TrollKindName;
   }): Promise<PhaseCommandResult> {
     const allowed = await this.requireControl(
       input.credentialId,
@@ -1258,6 +1259,9 @@ export class PartyRoom extends DurableObject<Env> {
     }
     if (input.mediaId) {
       payload.mediaId = input.mediaId;
+    }
+    if (input.trollKind) {
+      payload.trollKind = input.trollKind;
     }
     let transfer: HostActionInput["transfer"];
     if (input.action === "recover") {
@@ -1303,6 +1307,7 @@ export class PartyRoom extends DurableObject<Env> {
           candidateId: input.candidateId,
           effectId: input.effectId,
           mediaId: input.mediaId,
+          trollKind: input.trollKind,
           now: new Date(input.nowMs).toISOString(),
           nowMs: input.nowMs,
           transfer,

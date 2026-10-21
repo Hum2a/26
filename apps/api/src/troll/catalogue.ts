@@ -1,19 +1,7 @@
+import { trollKinds } from "@26/shared";
 import type { RoomPhase } from "../room/lifecycle.ts";
 
-export const implementedTrollKinds = [
-  "invasion",
-  "netanyahu",
-  "call",
-  "crack",
-  "yield",
-  "swap",
-  "hide-score",
-  "double",
-  "typing",
-  "voice",
-  "theme",
-  "sponsor",
-] as const;
+export const implementedTrollKinds = trollKinds;
 
 /** Short demo sting. Replace the file at `apps/web/public/assets/demo-sting.wav`. */
 export const demoStingAsset = "/assets/demo-sting.wav";
@@ -184,7 +172,66 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     disruptsSubmission: false,
     ...immediate,
   },
+  australia: screenTroll("australia", "Australia mode", "Upside-down phone", 10_000),
+  mirror: screenTroll("mirror", "Mirror world", "Mirrored phone", 12_000),
+  jelly: screenTroll("jelly", "Jelly phone", "Wobbling phone", 8_000),
+  "comic-sans": screenTroll("comic-sans", "Comic Sans", "Comic Sans everything", 20_000),
+  "lights-out": screenTroll("lights-out", "Lights out", "Torchlight only", 10_000),
+  "bubble-wrap": screenTroll(
+    "bubble-wrap",
+    "Bubble wrap",
+    "Pop to escape",
+    20_000,
+    "Pop them all",
+  ),
+  "fake-crash": screenTroll("fake-crash", "Fake crash", "Blue screen", 6_000),
+  "forced-update": screenTroll(
+    "forced-update",
+    "Forced update",
+    "Installing update",
+    8_000,
+  ),
+  captcha: screenTroll(
+    "captcha",
+    "Prove you're human",
+    "Runaway captcha",
+    15_000,
+    "I'm not a robot",
+  ),
+  "notification-storm": screenTroll(
+    "notification-storm",
+    "Notification storm",
+    "Fake notifications",
+    7_000,
+  ),
+  confetti: screenTroll("confetti", "Confetti cannon", "Birthday confetti", 4_000),
+  dvd: screenTroll("dvd", "DVD logo", "Catch the logo", 15_000, "Catch it"),
 };
+
+/**
+ * A phone-only gag. The phone draws it and the target can keep playing
+ * underneath unless the overlay covers the screen. `escape` is the in-overlay
+ * challenge that clears it early.
+ */
+function screenTroll(
+  kind: TrollKind,
+  label: string,
+  assetLabel: string,
+  durationMs: number,
+  escape: string | null = null,
+): TrollDefinition {
+  return {
+    kind,
+    label,
+    assetLabel,
+    slot: "transient",
+    durationMs,
+    phases: ["prompt", "collect", "vote", "predict", "reveal"],
+    escape,
+    disruptsSubmission: false,
+    ...immediate,
+  };
+}
 
 export function isTrollKind(value: unknown): value is TrollKind {
   return implementedTrollKinds.some((kind) => kind === value);

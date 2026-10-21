@@ -1,7 +1,8 @@
 import { noteArchiveCorrection, requeueFailedArchive } from "../archive/schedule.ts";
 import { hideUpload, releaseStuckUploads } from "../media/records.ts";
 import { recordRevealScores } from "../questions/multiple-choice.ts";
-import { cancelTroll, dismissCue } from "../troll/engine.ts";
+import type { TrollKindName } from "@26/shared";
+import { cancelTroll, dismissCue, setTrollSwitch } from "../troll/engine.ts";
 import { excludeAuthor, featureCandidate, includeAuthor } from "../questions/vote.ts";
 import {
   hideClosedMessage,
@@ -12,6 +13,7 @@ import {
   playerMissingMessage,
   revealClosedMessage,
   transferLimitMessage,
+  trollKindMessage,
 } from "./limits.ts";
 import {
   insertAdjustment,
@@ -34,6 +36,7 @@ export type HostActionInput = {
   candidateId?: string;
   effectId?: string;
   mediaId?: string;
+  trollKind?: TrollKindName;
   now: string;
   nowMs: number;
   transfer?: { code: string; codeHash: string; expiresAt: string };
@@ -152,6 +155,14 @@ export function applyHostAction(
       throw new Error(playerMissingMessage);
     }
     cancelTroll(sql, input.effectId, input.nowMs);
+    return {};
+  }
+  if (input.action === "troll-on" || input.action === "troll-off") {
+    if (!input.trollKind) {
+      throw new Error(trollKindMessage);
+    }
+    setTrollSwitch(sql, input.trollKind, input.action === "troll-on");
+    touch(sql);
     return {};
   }
   if (input.action === "dismiss-cue") {

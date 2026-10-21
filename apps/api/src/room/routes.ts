@@ -12,6 +12,8 @@ import {
   roomClientErrorSchema,
   transferCodeSchema,
   transferIssuedSchema,
+  trollKindSchema,
+  type TrollKindName,
 } from "@26/shared";
 import type { Hono } from "hono";
 import { z } from "zod";
@@ -296,6 +298,8 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "feature",
       "cancel-effect",
       "dismiss-cue",
+      "troll-on",
+      "troll-off",
       "hide-media",
       "retry-archive",
       "release-stuck-media",
@@ -659,6 +663,7 @@ function readHostDetails(
         candidateId?: string;
         effectId?: string;
         mediaId?: string;
+        trollKind?: TrollKindName;
       };
     }
   | { ok: false; message: string } {
@@ -684,6 +689,7 @@ function readHostDetails(
     candidateId?: string;
     effectId?: string;
     mediaId?: string;
+    trollKind?: TrollKindName;
   } = {};
   if (playerId.success) {
     fields.playerId = playerId.data;
@@ -718,6 +724,13 @@ function readHostDetails(
       return { ok: false, message: "Choose a photo or voice clip that was kept." };
     }
     fields.mediaId = mediaId.data;
+  }
+  if (action === "troll-on" || action === "troll-off") {
+    const trollKind = trollKindSchema.safeParse(field(body, "trollKind"));
+    if (!trollKind.success) {
+      return { ok: false, message: "Choose a troll from the catalogue." };
+    }
+    fields.trollKind = trollKind.data;
   }
   if (action === "cancel-effect") {
     const effectId = z.uuid().safeParse(field(body, "effectId"));

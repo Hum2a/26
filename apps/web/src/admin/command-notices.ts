@@ -8,6 +8,12 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "pause") {
     return "The quiz is paused.";
   }
+  if (action === "troll-on") {
+    return "That troll is switched on for this room.";
+  }
+  if (action === "troll-off") {
+    return "That troll is switched off for this room.";
+  }
   if (action === "resume") {
     return "The quiz has resumed.";
   }
