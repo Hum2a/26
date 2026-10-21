@@ -177,6 +177,7 @@ export function readArchiveDocument(
        JOIN player ON player.player_id = media_upload.player_id
        WHERE media_upload.status = 'accepted'
          AND media_upload.media_id IS NOT NULL
+         AND media_upload.purpose = 'round'
          AND player.client_class = 'guest'`,
     )
     .toArray()

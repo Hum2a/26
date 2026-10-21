@@ -9,8 +9,11 @@ import {
   mediaOwnerMessage,
   mediaQuotaMessage,
   mediaRoomQuotaMessage,
+  faceQuotaMessage,
   mediaUrlMs,
+  playerFaceSlots,
   playerMediaSlots,
+  roomFaceSlots,
   roomMediaSlots,
   temporaryPhotoBytes,
   voiceMaxBytes,
@@ -18,6 +21,12 @@ import {
 import { acceptedKey, temporaryKey } from "./keys.ts";
 
 export type MediaKind = "photo" | "voice";
+/**
+ * `round` media belongs to the running question. A `face` is a kart driver's
+ * photo: allowed from the lobby, kept across questions, and never part of the
+ * question media, stats, trolls or the results gallery.
+ */
+export type MediaPurpose = "round" | "face";
 
 export type MediaFailure = {
   ok: false;
@@ -55,6 +64,7 @@ type UploadRow = {
   content_type: string | null;
   hidden: number;
   failure: string | null;
+  purpose: string;
 };
 
 export type ReservedUpload = {
@@ -68,14 +78,21 @@ export type ReservedUpload = {
 
 export function reserveUpload(
   sql: SqlStorage,
-  input: { playerId: string; requestId: string; kind: MediaKind; nowMs: number },
+  input: {
+    playerId: string;
+    requestId: string;
+    kind: MediaKind;
+    purpose?: MediaPurpose;
+    nowMs: number;
+  },
 ): ReservedUpload | MediaFailure {
+  const purpose = input.purpose ?? "round";
   const room = readRoom(sql);
   if (
     !room ||
-    room.question_count < 1 ||
-    room.phase === "lobby" ||
-    room.phase === "podium"
+    (purpose === "face" && input.kind !== "photo") ||
+    room.phase === "podium" ||
+    (purpose === "round" && (room.question_count < 1 || room.phase === "lobby"))
   ) {
     return fail("invalid", mediaClosedMessage);
   }
@@ -87,7 +104,7 @@ export function reserveUpload(
     )
     .toArray()[0];
   if (existing) {
-    if (existing.kind !== input.kind) {
+    if (existing.kind !== input.kind || existing.purpose !== purpose) {
       return fail("conflict", "That request was already saved with different details.");
     }
     return reserved(existing);
@@ -99,29 +116,33 @@ export function reserveUpload(
     mediaUrlMs,
     input.nowMs,
   );
+  // Faces have their own small allowance, so retaking a face never uses up a
+  // guest's question photos and voice clips.
   const playerCount = count(
     sql,
     `SELECT COUNT(*) AS n FROM media_upload
-     WHERE player_id = ? AND status NOT IN ('rejected', 'cancelled', 'expired')`,
+     WHERE player_id = ? AND purpose = ? AND status NOT IN ('rejected', 'cancelled', 'expired')`,
     input.playerId,
+    purpose,
   );
-  if (playerCount >= playerMediaSlots) {
-    return fail("full", mediaQuotaMessage);
+  if (playerCount >= (purpose === "face" ? playerFaceSlots : playerMediaSlots)) {
+    return fail("full", purpose === "face" ? faceQuotaMessage : mediaQuotaMessage);
   }
   const roomCount = count(
     sql,
     `SELECT COUNT(*) AS n FROM media_upload
-     WHERE status NOT IN ('rejected', 'cancelled', 'expired')`,
+     WHERE purpose = ? AND status NOT IN ('rejected', 'cancelled', 'expired')`,
+    purpose,
   );
-  if (roomCount >= roomMediaSlots) {
+  if (roomCount >= (purpose === "face" ? roomFaceSlots : roomMediaSlots)) {
     return fail("full", mediaRoomQuotaMessage);
   }
   const uploadId = crypto.randomUUID();
   const tempKey = temporaryKey(room.game_id, uploadId);
   sql.exec(
     `INSERT INTO media_upload (
-      upload_id, request_id, player_id, kind, question_index, temp_key, status, attempts, created_at, hidden
-    ) VALUES (?, ?, ?, ?, ?, ?, 'open', 0, ?, 0)`,
+      upload_id, request_id, player_id, kind, question_index, temp_key, status, attempts, created_at, hidden, purpose
+    ) VALUES (?, ?, ?, ?, ?, ?, 'open', 0, ?, 0, ?)`,
     uploadId,
     input.requestId,
     input.playerId,
@@ -129,6 +150,7 @@ export function reserveUpload(
     room.question_index,
     tempKey,
     input.nowMs,
+    purpose,
   );
   const row = mustRow(sql, uploadId);
   return reserved(row);
@@ -272,12 +294,14 @@ export function commitUpload(
     return fail("conflict", mediaBusyMessage);
   }
   const room = readRoom(sql);
-  if (
-    !room ||
-    room.question_index !== row.question_index ||
-    room.phase === "podium" ||
-    room.phase === "lobby"
-  ) {
+  const late =
+    row.purpose === "face"
+      ? !room || room.phase === "podium"
+      : !room ||
+        room.question_index !== row.question_index ||
+        room.phase === "podium" ||
+        room.phase === "lobby";
+  if (late) {
     sql.exec(
       `UPDATE media_upload SET status = 'cancelled', failure = ? WHERE upload_id = ?`,
       mediaLateMessage,
@@ -352,7 +376,7 @@ export function listUploads(
       `SELECT m.media_id, m.kind, p.nickname, m.hidden
        FROM media_upload m
        JOIN player p ON p.player_id = m.player_id
-       WHERE m.status = 'accepted' AND m.media_id IS NOT NULL
+       WHERE m.status = 'accepted' AND m.media_id IS NOT NULL AND m.purpose = 'round'
        ORDER BY m.created_at ASC
        LIMIT 20`,
     )
@@ -422,7 +446,7 @@ export function temporaryWrite(
   };
 }
 
-const columns = `upload_id, request_id, player_id, kind, question_index, temp_key, final_key, media_id, status, source_etag, lease_until, attempts, created_at, byte_length, width, height, duration_ms, content_type, hidden, failure`;
+const columns = `upload_id, request_id, player_id, kind, question_index, temp_key, final_key, media_id, status, source_etag, lease_until, attempts, created_at, byte_length, width, height, duration_ms, content_type, hidden, failure, purpose`;
 
 function reserved(row: UploadRow): ReservedUpload {
   return {
@@ -491,12 +515,8 @@ function readRoom(
     .toArray()[0];
 }
 
-function count(sql: SqlStorage, query: string, arg?: string): number {
-  const row = (
-    arg === undefined
-      ? sql.exec<{ n: number }>(query)
-      : sql.exec<{ n: number }>(query, arg)
-  ).toArray()[0];
+function count(sql: SqlStorage, query: string, ...args: string[]): number {
+  const row = sql.exec<{ n: number }>(query, ...args).toArray()[0];
   return row?.n ?? 0;
 }
 

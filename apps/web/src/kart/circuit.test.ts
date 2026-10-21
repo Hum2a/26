@@ -102,13 +102,28 @@ it("renders 80 ghost karts with bounded shared geometry, no shadow maps and disp
     if (object instanceof THREE.InstancedMesh) instances.push(object);
   });
   expect(instances.some((mesh) => mesh.count === 320)).toBe(true);
-  expect(instances.filter((mesh) => mesh.count === 80).length).toBe(4);
-  expect(geometries.size).toBeLessThan(24);
+  // Body, nose and seat, plus each driver's torso, head, both arms, steering
+  // wheel and plain face (plate and two eyes, as no driver here has a photo).
+  expect(instances.filter((mesh) => mesh.count === 80).length).toBe(11);
+  // Driver styles add shared shapes, never one per driver.
+  expect(geometries.size).toBeLessThan(40);
   expect(materials.size).toBeLessThan(10);
-  // Hundreds of props and karts use fewer than 50 non-label draw objects.
-  expect(
-    circuit.scene.children.filter((o) => o instanceof THREE.Mesh).length,
-  ).toBeLessThan(50);
+  // Hundreds of props, karts and drivers use fewer than 70 non-label draw objects,
+  // and the same number for one driver as for eighty.
+  const drawObjects = circuit.scene.children.filter(
+    (o) => o instanceof THREE.Mesh,
+  ).length;
+  expect(drawObjects).toBeLessThan(70);
+  const solo = createCircuit(palette, false);
+  solo.update(
+    projectKartRace(createKartRace("solo", drivers.slice(0, 1)), null, 100),
+    1 / 60,
+    false,
+  );
+  expect(solo.scene.children.filter((o) => o instanceof THREE.Mesh).length).toBe(
+    drawObjects,
+  );
+  solo.dispose();
   const disposal = [...geometries].map((g) => vi.spyOn(g, "dispose"));
   const instanceDisposal = instances.map((i) => vi.spyOn(i, "dispose"));
   circuit.dispose();

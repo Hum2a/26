@@ -1,0 +1,175 @@
+.driver-badge {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.driver-badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.kart-leaderboard .driver-badge {
+  margin-right: 0.15em;
+  vertical-align: middle;
+  border-width: 1px;
+}
+
+.driver-emblem {
+  width: 100%;
+  height: 100%;
+}
+
+.driver-emblem-face {
+  fill: var(--background);
+  stroke: var(--foreground);
+  stroke-width: 1.5;
+}
+
+.driver-emblem-ink {
+  fill: var(--foreground);
+}
+
+.driver-emblem-line,
+.driver-emblem-band {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.driver-emblem-band {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+.driver-emblem-accent {
+  fill: var(--accent);
+}
+
+.driver-emblem-highlight {
+  fill: var(--highlight);
+}
+
+.driver-emblem-visor {
+  fill: var(--foreground);
+  opacity: 0.75;
+}
+
+.driver-picker {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+}
+
+.driver-picker-head {
+  display: flex;
+  gap: 0.875rem;
+  align-items: center;
+}
+
+.driver-picker-head h2,
+.driver-picker-face h3 {
+  margin: 0;
+  font-weight: 800;
+}
+
+.driver-picker-head p,
+.driver-picker-face p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+.driver-picker-styles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.driver-style {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  min-height: 7.5rem;
+  padding: 0.625rem 0.375rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.driver-style[data-selected="true"] {
+  border-color: var(--accent);
+}
+
+.driver-style:has(input:focus-visible) {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+
+.driver-style input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.driver-style-art {
+  display: block;
+  width: 3rem;
+  height: 3rem;
+}
+
+.driver-style-name {
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.driver-style-note {
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  color: var(--muted);
+}
+
+.driver-picker-face {
+  display: grid;
+  gap: 0.625rem;
+}
+
+.driver-picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.driver-picker-camera {
+  overflow: hidden;
+}
+
+@media (max-width: 359px) {
+  .driver-picker-styles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .driver-style {
+    transition-duration: 1ms;
+  }
+}

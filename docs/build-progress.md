@@ -3259,3 +3259,13 @@ Following the user's explicit deployment request, committed the reviewed kart im
 Staging version: 3894a13f-1887-478a-9e28-009ee0e66e11. Production version: d682b023-4efa-46ab-8b30-0a394a39d0c2. Post-deployment HTTP checks passed on both domains: /api/health returned 200 with ok true and the correct environment; /admin/kart and /kart-engine/index.html returned 200; the referenced index-Dx2Pcf1P.js engine bundle returned 200 and included Back to track and barrier-contact feedback. These checks confirm the new engine is served; they do not establish live multiplayer movement. The prior 286 UI tests, 25 focused physics/room tests, typecheck, lint and solo browser result remain recorded above; no repeat broad testing was required for this deployment-only follow-up.
 
 Try https://26.humza.website/admin/kart (Drive) or https://26.humza.website/kart. Existing unversioned races retain their original simulation; new ring races use arcade-v2. The two-phone browser movement failure remains unresolved/unverified. Exact next stage: review deployed solo handling and diagnose that connected multiplayer rehearsal. No automatic next stage was started.
+
+## 21 October 2026 — kart drivers with guest photo faces
+
+Implemented drivers in the karts, chosen in the lobby, with an optional guest photo on the driver's face. Details and decisions are in `docs/kart-minigame.md` under "Drivers and guest faces".
+
+Files/interfaces: `packages/shared/src/kart-driver.ts` (roster, `driverChoiceSchema`, `lobbyDriverSchema`); `apps/api/src/room/drivers.ts`; `driver` socket command in `PartyRoom`; media `purpose` column with face rules in `media/records.ts`; exclusions in stats, trolls, the archive gallery and stage media; admin media face marker. Web: `DriverPicker`, `DriverBadge`, `driver-face.ts`, `drivers-context.ts`, `KartDriversProvider`, `driver-rig.ts`, `media/face-upload.ts`, `media/photo-prepare.ts`; circuit, canvas, map and leaderboard wiring.
+
+Checks: `test/drivers-room.spec.ts` (3), `driver-rig.test.ts` (9), `driver-picker.test.tsx` (4), and the updated `circuit.test.ts` budget, which now also asserts the same draw-object count for one driver as for eighty. Full web unit suite 74 files / 306 tests passed before the final refactor; the related 17 files / 104 tests passed after it. The relevant API specs passed (10 files / 56 tests). Typecheck passed; lint has no errors. A headless Chromium render of all six styles, with and without a face, and of the look-back and finish poses, was reviewed. Not checked: a live room in the browser, physical phones and the projector.
+
+This work shares files with the kart power-ups work in progress in the same checkout. Nothing is committed.

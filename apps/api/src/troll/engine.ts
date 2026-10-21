@@ -513,7 +513,7 @@ function ownedVoice(
   }
   const row = sql
     .exec<{ player_id: string; kind: string; status: string; hidden: number }>(
-      `SELECT player_id, kind, status, hidden FROM media_upload WHERE media_id = ?`,
+      `SELECT player_id, kind, status, hidden FROM media_upload WHERE media_id = ? AND purpose = 'round'`,
       mediaId,
     )
     .toArray()[0];

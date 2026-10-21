@@ -4,6 +4,7 @@ import { noteUpload } from "../device/connection-log";
 import { CaptureFlow } from "../photo/CaptureFlow";
 import { finalise, putWithProgress, requestSlot } from "./media-transfer";
 import { recordWav } from "./wav";
+import { compactJpeg, isHeic } from "./photo-prepare";
 
 export function GuestMedia({ gameId }: { gameId: string }) {
   const [voiceStatus, setVoiceStatus] = useState("Record up to 3 seconds.");
@@ -110,39 +111,4 @@ async function uploadBlob(
   });
   setStatus(ok ? accepted : final.error);
   return ok;
-}
-
-async function compactJpeg(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const edge = Math.max(bitmap.width, bitmap.height);
-  const scale = edge > 1280 ? 1280 / edge : 1;
-  const width = Math.max(1, Math.round(bitmap.width * scale));
-  const height = Math.max(1, Math.round(bitmap.height * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d");
-  if (!context) {
-    bitmap.close();
-    throw new Error("This phone cannot prepare that photo.");
-  }
-  context.drawImage(bitmap, 0, 0, width, height);
-  bitmap.close();
-  const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob((next) => resolve(next), "image/jpeg", 0.8);
-  });
-  if (!blob) {
-    throw new Error("This phone cannot prepare that photo.");
-  }
-  return blob;
-}
-
-function isHeic(file: File): boolean {
-  const name = file.name.toLowerCase();
-  return (
-    file.type === "image/heic" ||
-    file.type === "image/heif" ||
-    name.endsWith(".heic") ||
-    name.endsWith(".heif")
-  );
 }

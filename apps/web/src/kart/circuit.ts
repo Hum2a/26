@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { ringBounds } from "@26/shared";
 import type { KartRaceView } from "@26/shared";
 import { smoothKartPose, type KartPose } from "./presentation";
+import { createDriverRig } from "./driver-rig";
 
 type Palette = Record<
   "ground" | "road" | "accent" | "highlight" | "ink" | "muted",
@@ -190,6 +191,16 @@ export function createCircuit(
     value.count = 0;
     value.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   }
+  // Each kart's driver. The old helmet sphere stays unused: its geometry is shared below.
+  const rig = createDriverRig({
+    scene,
+    capacity,
+    geo,
+    batch,
+    material: bodyMat,
+    textures,
+    palette: { ink, ground, accent, highlight },
+  });
   const poses = new Map<string, KartPose>();
   const labels = new Map<string, THREE.Sprite>();
   function label(driver: KartRaceView["participants"][number]) {
@@ -227,6 +238,7 @@ export function createCircuit(
         ? race.participants.filter((driver) => driver.playerId === focusPlayerId)
         : race.participants
     ).slice(0, capacity);
+    rig.begin(dt);
     for (let i = 0; i < drivers.length; i++) {
       const driver = drivers[i]!,
         pose = smoothKartPose(
@@ -241,9 +253,19 @@ export function createCircuit(
         s = Math.sin(heading);
       place(bodies, i, x, 0.6, z, -heading);
       place(noses, i, x + c * 1.25, 0.5, z + s * 1.25, -heading);
-      place(seats, i, x - c * 0.3, 1, z - s * 0.3, -heading);
-      place(helmets, i, x - c * 0.3, 1.65, z - s * 0.3, -heading);
+      // The seat is now a backrest behind the driver.
+      place(seats, i, x - c * 0.78, 1.05, z - s * 0.78, -heading, 0.5, 1, 1.1);
       bodies.setColorAt(i, driver.number % 2 ? accent : highlight);
+      rig.place(
+        driver.playerId,
+        driver.number - 1,
+        pose,
+        { status: driver.status, drifting: driver.drifting, elapsedMs: race.elapsedMs },
+        driver.number % 2 ? accent : highlight,
+        driver.number % 2 ? highlight : accent,
+        dt,
+        reduced,
+      );
       for (let j = 0; j < 4; j++) {
         const localX = j < 2 ? -0.75 : 0.75,
           localZ = j % 2 ? -0.78 : 0.78;
@@ -264,10 +286,11 @@ export function createCircuit(
         : (labels.get(driver.playerId) ?? label(driver));
       if (sprite) sprite.position.set(x, 3.8, z);
     }
-    for (const value of [bodies, noses, seats, helmets]) {
+    for (const value of [bodies, noses, seats]) {
       value.count = drivers.length;
       value.instanceMatrix.needsUpdate = true;
     }
+    rig.end(new Set(drivers.map((driver) => driver.playerId)));
     wheels.count = drivers.length * 4;
     wheels.instanceMatrix.needsUpdate = true;
     boost.count = flames;
@@ -280,7 +303,10 @@ export function createCircuit(
     scene,
     update,
     pose: (playerId: string) => poses.get(playerId),
+    setDrivers: rig.setDrivers,
+    driverCounts: rig.counts,
     dispose() {
+      rig.dispose();
       geometries.forEach((g) => g.dispose());
       materials.forEach((m) => m.dispose());
       textures.forEach((t) => t.dispose());

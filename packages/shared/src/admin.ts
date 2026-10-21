@@ -78,6 +78,7 @@ export const adminMediaSchema = z
             kind: z.enum(["photo", "voice"]),
             nickname: z.string(),
             hidden: z.boolean(),
+            purpose: z.literal("face").optional(),
           })
           .strict(),
       )

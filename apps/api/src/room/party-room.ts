@@ -132,7 +132,9 @@ import {
   reserveUpload,
   stageUpload,
   temporaryWrite,
+  type MediaPurpose,
 } from "../media/records.ts";
+import { readDrivers, saveDriver } from "./drivers.ts";
 import { draftGapMs } from "../troll/catalogue.ts";
 import {
   acceptDeviceReport,
@@ -1452,6 +1454,7 @@ export class PartyRoom extends DurableObject<Env> {
     secret: string;
     requestId: string;
     kind: "photo" | "voice";
+    purpose?: MediaPurpose;
     nowMs: number;
   }) {
     const guest = await this.requireMediaGuest(
@@ -1467,6 +1470,7 @@ export class PartyRoom extends DurableObject<Env> {
         playerId: input.playerId,
         requestId: input.requestId,
         kind: input.kind,
+        ...(input.purpose ? { purpose: input.purpose } : {}),
         nowMs: input.nowMs,
       }),
     );
@@ -1960,6 +1964,13 @@ export class PartyRoom extends DurableObject<Env> {
         command.targetId,
         command.reaction,
       );
+      return;
+    }
+    if (command.name === "driver") {
+      await this.acceptDriver(ws, attachment, command.requestId, {
+        style: command.style,
+        faceMediaId: command.faceMediaId,
+      });
       return;
     }
     const digest = await payloadDigest({ name: command.name });
@@ -2856,6 +2867,60 @@ export class PartyRoom extends DurableObject<Env> {
     });
   }
 
+  /** A guest chooses their kart driver. Saved before the acknowledgement; retries reuse the receipt. */
+  private async acceptDriver(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    requestId: string,
+    choice: { style: unknown; faceMediaId: unknown },
+  ): Promise<void> {
+    const reply = (accepted: boolean, error?: string) =>
+      this.send(ws, { kind: "ack", scope: "private", requestId, accepted, error });
+    if (attachment.role !== "guest") {
+      reply(false, answerRoleMessage);
+      return;
+    }
+    const digest = await payloadDigest({ name: "driver", ...choice });
+    let accepted = false;
+    let error: string | undefined;
+    let mismatch = false;
+    await commitAndArm(this.ctx.storage, (sql) => {
+      const prior = this.readReceipt(attachment.principalId, requestId);
+      if (prior) {
+        mismatch = prior.digest !== digest;
+        const stored = JSON.parse(prior.resultJson) as {
+          accepted?: boolean;
+          error?: string;
+        };
+        accepted = stored.accepted === true;
+        error = stored.error;
+        return;
+      }
+      const room = createSqlStore(sql).readRoom();
+      const result = saveDriver(sql, {
+        playerId: attachment.principalId,
+        choice,
+        phase: room.phase,
+      });
+      accepted = result.ok;
+      error = result.ok ? undefined : result.message;
+      this.writeReceipt(attachment.principalId, requestId, digest, {
+        accepted,
+        error,
+        name: "driver",
+      });
+    });
+    if (mismatch) {
+      reply(false, digestMismatchMessage);
+      return;
+    }
+    this.sendSnapshot(ws);
+    if (accepted) {
+      this.broadcast();
+    }
+    reply(accepted, error);
+  }
+
   private async acceptReaction(
     ws: WebSocket,
     attachment: SocketAttachment,
@@ -2966,15 +3031,20 @@ export class PartyRoom extends DurableObject<Env> {
       throw new Error(roomMissingMessage);
     }
     const sql = this.ctx.storage.sql;
+    const drivers = readDrivers(sql);
     const players = sql
       .exec<{ player_id: string; nickname: string }>(
         `SELECT player_id, nickname FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
       )
       .toArray()
-      .map((row) => ({
-        playerId: row.player_id,
-        nickname: displayNickname(sql, row.player_id, row.nickname),
-      }));
+      .map((row) => {
+        const driver = drivers.get(row.player_id);
+        return {
+          playerId: row.player_id,
+          nickname: displayNickname(sql, row.player_id, row.nickname),
+          ...(driver ? { driver } : {}),
+        };
+      });
     const store = createSqlStore(sql);
     const presentation = sql
       .exec<{ opening: string | null; stage_hidden: number; reveal_nonce: number }>(
@@ -3729,6 +3799,7 @@ function readCommand(body: unknown):
     }
   | { requestId: string; name: "troll-escape"; effectId: unknown }
   | { requestId: string; name: "react"; targetId: string; reaction: "like" | "dislike" }
+  | { requestId: string; name: "driver"; style: unknown; faceMediaId: unknown }
   | { requestId: string; name: "device"; reason: string; report: unknown }
   | {
       requestId: string;
@@ -3852,6 +3923,14 @@ function readCommand(body: unknown):
       name: "react",
       targetId: record.targetId,
       reaction: record.reaction,
+    };
+  }
+  if (record.name === "driver") {
+    return {
+      requestId: record.requestId,
+      name: "driver",
+      style: record.style,
+      faceMediaId: record.faceMediaId,
     };
   }
   return null;

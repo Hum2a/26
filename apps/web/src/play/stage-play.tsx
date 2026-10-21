@@ -7,6 +7,7 @@ import { Panel } from "../ui/primitives";
 import { Glyph } from "./designs/glyph";
 import { AnswerNames } from "./attributions";
 import { renderPresentation } from "./presentation";
+import { KartDriversProvider } from "../kart/KartDriversProvider";
 
 function stagePhaseTitle(phase: RoomPhaseName): string {
   switch (phase) {
@@ -43,9 +44,11 @@ export function StagePlay({ snapshot }: { snapshot: LobbySnapshot }) {
     !["scores", "final", "podium"].includes(snapshot.phase)
   )
     return (
-      <Suspense fallback={<p>Preparing the race…</p>}>
-        <KartGameWrapper race={play.kart} paused={snapshot.paused || snapshot.held} />
-      </Suspense>
+      <KartDriversProvider snapshot={snapshot}>
+        <Suspense fallback={<p>Preparing the race…</p>}>
+          <KartGameWrapper race={play.kart} paused={snapshot.paused || snapshot.held} />
+        </Suspense>
+      </KartDriversProvider>
     );
   const leadBoard =
     snapshot.phase === "scores" ||

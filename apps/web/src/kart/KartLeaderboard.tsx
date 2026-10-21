@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { KartRaceView } from "@26/shared";
+import { DriverBadge } from "./DriverBadge";
+import { useKartDrivers } from "./drivers-context";
 
 /** Display pagination only. Race order, times and points always come from the server. */
 export function KartLeaderboard({
@@ -11,6 +13,7 @@ export function KartLeaderboard({
   paused: boolean;
 }) {
   const reduced = useReducedMotion();
+  const drivers = useKartDrivers();
   const [page, setPage] = useState(0);
   const pages = Math.ceil(Math.max(0, race.leaderboard.length - 5) / 5);
   const current = pages ? page % pages : 0;
@@ -36,6 +39,12 @@ export function KartLeaderboard({
       >
         <span className="kart-board-place">{entry.place}</span>
         <strong>
+          <DriverBadge
+            gameId={drivers.gameId}
+            driver={drivers.byPlayer.get(entry.playerId)}
+            nickname={entry.name}
+            size="1.35em"
+          />{" "}
           <small>#{driver?.number ?? "—"}</small> {entry.name}
         </strong>
         <span className="kart-board-result">

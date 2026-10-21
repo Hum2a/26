@@ -1,5 +1,7 @@
 import { kartRaceSchema } from "./kart.ts";
+import { lobbyDriverSchema } from "./kart-driver.ts";
 export * from "./kart.ts";
+export * from "./kart-driver.ts";
 export * from "./kart-driving.ts";
 export * from "./rate-limit.ts";
 import { z } from "zod";
@@ -198,6 +200,8 @@ export const lobbyPlayerSchema = z
   .object({
     playerId: z.uuid(),
     nickname: z.string().min(1).max(24),
+    // Optional so a phone on an older build still reads newer snapshots.
+    driver: lobbyDriverSchema.optional(),
   })
   .strict();
 

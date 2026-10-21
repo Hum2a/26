@@ -1,5 +1,39 @@
+import { useId } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import type { KartRaceView } from "@26/shared";
+import { driverFaceUrl } from "./driver-face";
+import { useKartDrivers } from "./drivers-context";
+
+/** A leader's face inside their marker ring. Drivers without a photo keep the plain dot. */
+function MapFace({
+  playerId,
+  face,
+  gameId,
+}: {
+  playerId: string;
+  face: string | undefined;
+  gameId: string;
+}) {
+  const clip = `${useId()}-face`;
+  if (!face || !gameId) return null;
+  return (
+    <>
+      <clipPath id={clip}>
+        <circle r="3.1" />
+      </clipPath>
+      <image
+        href={driverFaceUrl(gameId, face)}
+        x={-3.1}
+        y={-3.1}
+        width={6.2}
+        height={6.2}
+        clipPath={`url(#${clip})`}
+        preserveAspectRatio="xMidYMid slice"
+        data-map-face={playerId}
+      />
+    </>
+  );
+}
 
 /** SVG broadcast map: every public pose, only the leading three numbered to avoid 50 overlapping labels. */
 export function KartMap({
@@ -10,6 +44,7 @@ export function KartMap({
   personal?: boolean;
 }) {
   const reduced = useReducedMotion();
+  const faces = useKartDrivers();
   const drivers = personal
     ? race.participants.filter((driver) => driver.playerId === race.selfPlayerId)
     : race.participants;
@@ -77,6 +112,11 @@ export function KartMap({
           {personal || leaders.has(driver.playerId) ? (
             <>
               <circle r="3.5" className="kart-map-leader-ring" />
+              <MapFace
+                playerId={driver.playerId}
+                face={faces.byPlayer.get(driver.playerId)?.faceMediaId}
+                gameId={faces.gameId}
+              />
               <text
                 y={-5 - (leaders.get(driver.playerId) ?? 0) * 5}
                 className="kart-map-number"

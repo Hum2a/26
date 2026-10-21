@@ -44,7 +44,11 @@ export function registerMediaRoutes(app: Hono<{ Bindings: Env }>): void {
     const body = await readJson(c.req.raw);
     const requestId = readRequestId(body);
     const kind = z.enum(["photo", "voice"]).safeParse(field(body, "kind"));
-    if (!requestId || !kind.success) {
+    const purpose = z
+      .enum(["round", "face"])
+      .optional()
+      .safeParse(field(body, "purpose"));
+    if (!requestId || !kind.success || !purpose.success) {
       return roomFailure(400, "invalid", "That request was not accepted.");
     }
     const target = room(c.env, gameId.data);
@@ -53,6 +57,7 @@ export function registerMediaRoutes(app: Hono<{ Bindings: Env }>): void {
       secret: guest.secret,
       requestId,
       kind: kind.data,
+      ...(purpose.data ? { purpose: purpose.data } : {}),
       nowMs: Date.now(),
     });
     if (!reserved.ok) {

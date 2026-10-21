@@ -72,6 +72,7 @@ export default defineConfig({
             "test/operations.spec.ts",
             "test/rate-limit-room.spec.ts",
             "test/patch-room.spec.ts",
+            "test/drivers-room.spec.ts",
             "test/script-errors-room.spec.ts",
           ],
           hookTimeout: 60_000,

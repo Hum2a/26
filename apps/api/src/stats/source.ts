@@ -174,7 +174,7 @@ export function readStatsSource(sql: SqlStorage): StatsSource {
     .toArray();
   const media = sql
     .exec<{ player_id: string; kind: string }>(
-      `SELECT player_id, kind FROM media_upload WHERE status = 'accepted'`,
+      `SELECT player_id, kind FROM media_upload WHERE status = 'accepted' AND purpose = 'round'`,
     )
     .toArray();
   return {

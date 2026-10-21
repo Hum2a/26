@@ -5,12 +5,17 @@ import { noteUpload } from "../device/connection-log";
 export async function requestSlot(
   gameId: string,
   kind: "photo" | "voice",
+  purpose: "round" | "face" = "round",
 ): Promise<{ uploadId: string; uploadUrl: string } | { error: string }> {
   const response = await fetch(`/api/rooms/${gameId}/media/slots`, {
     method: "POST",
     credentials: "same-origin",
     headers: clientApiHeaders({ "content-type": "application/json" }),
-    body: JSON.stringify({ requestId: crypto.randomUUID(), kind }),
+    body: JSON.stringify({
+      requestId: crypto.randomUUID(),
+      kind,
+      ...(purpose === "face" ? { purpose } : {}),
+    }),
   });
   const body: unknown = await response.json().catch(() => undefined);
   const parsed = mediaSlotSchema.safeParse(body);

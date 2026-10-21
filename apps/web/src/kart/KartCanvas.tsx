@@ -3,6 +3,8 @@ import * as THREE from "three";
 import type { KartRaceView } from "@26/shared";
 import { createCircuit } from "./circuit";
 import { kartCameraPose } from "./presentation";
+import { driverFaceUrl } from "./driver-face";
+import { useKartDrivers, type KartDrivers } from "./drivers-context";
 
 /** Interpolates public poses only. Phone rendering is bounded to its own kart. */
 export default function KartCanvas({
@@ -19,12 +21,15 @@ export default function KartCanvas({
   const mount = useRef<HTMLDivElement>(null);
   const live = useRef(race),
     reduced = useRef(reducedMotion);
+  const drivers = useKartDrivers();
+  const liveDrivers = useRef(drivers);
   const [revision, setRevision] = useState(0);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     live.current = race;
     reduced.current = reducedMotion;
-  }, [race, reducedMotion]);
+    liveDrivers.current = drivers;
+  }, [race, reducedMotion, drivers]);
   useEffect(() => {
     const root = mount.current;
     if (!root) return;
@@ -85,7 +90,8 @@ export default function KartCanvas({
     camera.lookAt(0, 0, -3);
     let dirty = true,
       lastFrame = 0,
-      lastSnapshot: KartRaceView | undefined;
+      lastSnapshot: KartRaceView | undefined,
+      lastDrivers: KartDrivers | undefined;
     const resize = new ResizeObserver(() => {
       const width = Math.max(1, root.clientWidth),
         height = Math.max(1, root.clientHeight),
@@ -107,6 +113,12 @@ export default function KartCanvas({
       if (mobile && lastFrame && now - lastFrame < 1000 / 30 - 1) return;
       const delta = lastFrame ? (now - lastFrame) / 1000 : 1 / 60;
       lastFrame = now;
+      if (lastDrivers !== liveDrivers.current) {
+        const { gameId, byPlayer } = liveDrivers.current;
+        circuit.setDrivers(byPlayer, (mediaId) => driverFaceUrl(gameId, mediaId));
+        lastDrivers = liveDrivers.current;
+        dirty = true;
+      }
       if (reduced.current && lastSnapshot === live.current && !dirty) return;
       circuit.update(live.current, delta, reduced.current);
       const pose = followPlayerId ? circuit.pose(followPlayerId) : undefined;

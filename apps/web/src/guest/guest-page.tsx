@@ -34,6 +34,8 @@ import { roomCodeFromQuery } from "../join/room-code";
 import { ReconnectBanner } from "../net/ReconnectBanner";
 import { deadlinePassed } from "../live/server-clock";
 import { usePreloadQuestion } from "../play/preload";
+import { DriverPicker } from "../kart/DriverPicker";
+import type { DriverStyle } from "@26/shared";
 import { PhoneShell } from "./phone-shell";
 import { EntryFrame, EntryHeading, EntryNotice } from "../ui/entry-frame";
 
@@ -63,6 +65,8 @@ export function GuestPage() {
   const pendingRequest = useRef<string | null>(null);
   const inFlight = useRef(false);
   const reactionRequest = useRef<string | null>(null);
+  const driverRequest = useRef<string | null>(null);
+  const [driverPending, setDriverPending] = useState(false);
   const kartRecoveryRequest = useRef<string | null>(null);
   const [kartRecoveryPending, setKartRecoveryPending] = useState(false);
   const [kartRecoveryNotice, setKartRecoveryNotice] = useState("");
@@ -195,6 +199,14 @@ export function GuestPage() {
           }
           return;
         }
+        if (ack.requestId === driverRequest.current) {
+          driverRequest.current = null;
+          setDriverPending(false);
+          if (!ack.accepted) {
+            setNotice(ack.error ?? "That driver was not saved.");
+          }
+          return;
+        }
         if (ack.requestId !== pendingRequest.current) {
           return;
         }
@@ -303,6 +315,12 @@ export function GuestPage() {
   function onReact(targetId: string, reaction: "like" | "dislike") {
     reactionRequest.current =
       socketRef.current?.submitReaction(targetId, reaction) ?? null;
+  }
+
+  function onDriver(style: DriverStyle, faceMediaId: string | null) {
+    const requestId = socketRef.current?.submitDriver(style, faceMediaId) ?? null;
+    driverRequest.current = requestId;
+    setDriverPending(requestId !== null);
   }
 
   function beginSend(answer = false): boolean {
@@ -491,6 +509,17 @@ export function GuestPage() {
                   reactions={snapshot.selfReactions}
                   onReact={onReact}
                   minRem={0.875}
+                />
+                <DriverPicker
+                  gameId={snapshot.gameId}
+                  nickname={nickname ?? session.nickname}
+                  driver={
+                    snapshot.players.find(
+                      (player) => player.playerId === session.playerId,
+                    )?.driver
+                  }
+                  pending={driverPending}
+                  onChoose={onDriver}
                 />
               </div>
             ) : null}

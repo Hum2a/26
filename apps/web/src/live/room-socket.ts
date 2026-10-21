@@ -8,6 +8,7 @@ import {
   type LobbySnapshot,
   type KartFrame,
   type KartInput,
+  type DriverStyle,
 } from "@26/shared";
 import {
   noteRtt,
@@ -144,6 +145,13 @@ type CommandBody =
       name: "react";
       targetId: string;
       reaction: "like" | "dislike";
+    }
+  | {
+      kind: "command";
+      requestId: string;
+      name: "driver";
+      style: DriverStyle;
+      faceMediaId: string | null;
     };
 
 type TrackedCommand = {
@@ -176,6 +184,7 @@ export function openRoomSocket(options: {
   submitKartRecovery?: (raceId: string) => string;
   submitTrollEscape: (effectId: string) => string;
   submitReaction: (targetId: string, reaction: "like" | "dislike") => string;
+  submitDriver: (style: DriverStyle, faceMediaId: string | null) => string;
   reconnectNow: () => void;
   close: () => void;
 } {
@@ -663,6 +672,16 @@ export function openRoomSocket(options: {
     });
   }
 
+  function submitDriver(style: DriverStyle, faceMediaId: string | null): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      name: "driver",
+      style,
+      faceMediaId,
+    });
+  }
+
   function submitReaction(targetId: string, reaction: "like" | "dislike"): string {
     return sendCommand({
       kind: "command",
@@ -726,6 +745,7 @@ export function openRoomSocket(options: {
       }),
     submitTrollEscape,
     submitReaction,
+    submitDriver,
     close,
   };
 }

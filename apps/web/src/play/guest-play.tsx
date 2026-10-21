@@ -1,4 +1,5 @@
 import { GuestKart } from "../kart/GuestKart";
+import { KartDriversProvider } from "../kart/KartDriversProvider";
 import type { KartInput } from "@26/shared";
 import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
 import { QuestionOptionImage } from "./question-option-image";
@@ -61,14 +62,16 @@ export function GuestPlay({
   if (play.question.kind === "kart")
     return (
       <QuestionExperience snapshot={snapshot} pending={false}>
-        <GuestKart
-          snapshot={snapshot}
-          connected={connected}
-          onInput={onKartInput}
-          onRecover={onKartRecover}
-          recoveryPending={kartRecoveryPending}
-          recoveryNotice={kartRecoveryNotice}
-        />
+        <KartDriversProvider snapshot={snapshot}>
+          <GuestKart
+            snapshot={snapshot}
+            connected={connected}
+            onInput={onKartInput}
+            onRecover={onKartRecover}
+            recoveryPending={kartRecoveryPending}
+            recoveryNotice={kartRecoveryNotice}
+          />
+        </KartDriversProvider>
       </QuestionExperience>
     );
   const open =

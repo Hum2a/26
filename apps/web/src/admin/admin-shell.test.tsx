@@ -27,6 +27,7 @@ beforeEach(() => {
     submitTrollEscape: vi.fn(),
     submitReaction: vi.fn(),
     reconnectNow: vi.fn(),
+    submitDriver: vi.fn(),
   });
 });
 function Probe() {

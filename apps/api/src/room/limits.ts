@@ -96,6 +96,13 @@ export const voiceMaxBytes = 400_000;
 export const voiceMaxMs = 3_000;
 export const playerMediaSlots = 8;
 export const roomMediaSlots = 80;
+/** Driver face photos, counted apart from question media. Retakes are expected. */
+export const playerFaceSlots = 5;
+export const roomFaceSlots = 400;
+export const faceQuotaMessage = "You have used your driver photo retakes.";
+export const driverStyleMessage = "That driver is not in this game.";
+export const driverFaceMessage = "That photo is not your driver photo.";
+export const driverClosedMessage = "Drivers can be changed before the podium.";
 export const mediaClosedMessage = "Media uploads open once a question is running.";
 export const mediaQuotaMessage = "You have used your media uploads for this game.";
 export const mediaRoomQuotaMessage = "This room has reached its media limit.";

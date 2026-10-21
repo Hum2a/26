@@ -378,6 +378,9 @@ export function ensurePartySchema(sql: SqlStorage): void {
   addColumn(sql, "troll_effect", "device_context_id", "TEXT");
   addColumn(sql, "player", "client_class", "TEXT NOT NULL DEFAULT 'guest'");
   addColumn(sql, "player", "joined_at", "TEXT");
+  addColumn(sql, "media_upload", "purpose", "TEXT NOT NULL DEFAULT 'round'");
+  addColumn(sql, "player", "driver_style", "TEXT");
+  addColumn(sql, "player", "driver_face_media_id", "TEXT");
   addColumn(sql, "connection_summary", "script_errors", "INTEGER NOT NULL DEFAULT 0");
   addColumn(sql, "connection_summary", "last_script_error", "TEXT");
   addColumn(sql, "connection_summary", "last_script_error_at", "TEXT");
