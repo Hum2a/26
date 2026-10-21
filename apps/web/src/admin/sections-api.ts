@@ -2,6 +2,8 @@ import {
   wordlePreviewResultSchema,
   adminContentSchema,
   adminMediaSchema,
+  adminTrollsSchema,
+  type AdminTrolls,
   adminQuestionDetailSchema,
   adminQuestionPreviewSchema,
   type AdminQuestionPreview,
@@ -14,6 +16,8 @@ export { readSection } from "../api/read-data";
 import { readSection } from "../api/read-data";
 export const readContent = (): Promise<AdminContent | { error: string }> =>
   readSection("/api/admin/content", adminContentSchema);
+export const readTrolls = (): Promise<AdminTrolls | { error: string }> =>
+  readSection("/api/admin/trolls", adminTrollsSchema);
 export const readQuestion = (
   version: string,
   id: string,

@@ -3,6 +3,7 @@ import { AdminConfirmPage } from "./admin/admin-confirm-page";
 import { AdminLoginPage } from "./admin/admin-login-page";
 import { AdminPage, AdminSettingsPage } from "./admin/admin-page";
 import { LiveConsole } from "./admin/live-console";
+import { TrollsPage } from "./admin/trolls-page";
 import { PlayersPage } from "./admin/players-page";
 import { MediaPage } from "./admin/media-page";
 import { HealthPage } from "./admin/health-page";
@@ -57,6 +58,7 @@ export const appRoutes: RouteObject[] = [
       { path: "settings", element: <AdminSettingsPage /> },
       { path: "content", element: <ContentPage /> },
       { path: "kart", element: <AdminKartPage /> },
+      { path: "trolls", element: <TrollsPage /> },
       { path: "content/:version/:questionId", element: <QuestionPage /> },
       {
         path: "rooms/:gameId",

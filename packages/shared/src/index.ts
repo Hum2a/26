@@ -18,8 +18,14 @@ export {
   adminContentSchema,
   adminMediaSchema,
   adminQuestionDetailSchema,
+  adminTrollsSchema,
 } from "./admin.ts";
-export type { AdminContent, AdminMedia, AdminQuestionDetail } from "./admin.ts";
+export type {
+  AdminContent,
+  AdminMedia,
+  AdminQuestionDetail,
+  AdminTrolls,
+} from "./admin.ts";
 
 export { clientApiKeyHeader, clientApiKeyQueryParam } from "./client-api-key.ts";
 export { minimumComparisonGroup, statCardSchema } from "./stats.ts";
@@ -911,6 +917,7 @@ export const lobbySnapshotSchema = z
               .object({
                 kind: z.enum([
                   "invasion",
+                  "netanyahu",
                   "call",
                   "crack",
                   "yield",
@@ -926,8 +933,7 @@ export const lobbySnapshotSchema = z
                 enabled: z.boolean(),
               })
               .strict(),
-          )
-          .max(12),
+          ),
         active: z
           .array(
             z
@@ -935,6 +941,7 @@ export const lobbySnapshotSchema = z
                 effectId: z.uuid(),
                 kind: z.enum([
                   "invasion",
+                  "netanyahu",
                   "call",
                   "crack",
                   "yield",

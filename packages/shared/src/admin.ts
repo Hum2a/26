@@ -34,6 +34,28 @@ export const adminContentSchema = z
   .strict();
 export type AdminContent = z.infer<typeof adminContentSchema>;
 
+export const adminTrollsSchema = z
+  .object({
+    trolls: z.array(
+      z
+        .object({
+          kind: z.string().min(1),
+          label: z.string().min(1),
+          assetLabel: z.string().min(1),
+          slot: z.enum(["transient", "persistent"]),
+          durationMs: z.number().int().nullable(),
+          phases: z.array(z.string()),
+          escape: z.string().nullable(),
+          disruptsSubmission: z.boolean(),
+          announce: z.enum(["now", "reveal", "scores"]),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
+export type AdminTrolls = z.infer<typeof adminTrollsSchema>;
+
 /** Fetched only from the authenticated, uncached question-inspection route. */
 export const adminQuestionDetailSchema = z
   .object({

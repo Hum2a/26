@@ -62,6 +62,7 @@ export function AdminShell({
             </NavLink>
             <NavLink to="/admin/content">Question packs</NavLink>
             <NavLink to="/admin/kart">Kart</NavLink>
+            <NavLink to="/admin/trolls">Trolls</NavLink>
             {roomPath ? (
               <div className="admin-room-nav">
                 <p>Selected room</p>

@@ -95,6 +95,9 @@ function TrollOverlay({
       </div>
     );
   }
+  if (effect.kind === "netanyahu") {
+    return <NetanyahuFlood label={effect.assetLabel} />;
+  }
   const blocking =
     effect.kind === "invasion" || effect.kind === "call" || effect.kind === "crack";
   return (
@@ -126,6 +129,39 @@ function TrollOverlay({
       ) : (
         <p>This clears on its own.</p>
       )}
+    </div>
+  );
+}
+
+/** Replace the image at `apps/web/public/assets/netanyahu.png`. */
+const netanyahuAsset = "/assets/netanyahu.png";
+const netanyahuCopies = Array.from({ length: 36 }, (_, index) => ({
+  left: (index * 37) % 100,
+  top: (index * 61) % 100,
+  size: 22 + ((index * 13) % 30),
+  spin: ((index * 47) % 90) - 45,
+  delay: (index % 12) * 0.12,
+}));
+
+export function NetanyahuFlood({ label }: { label: string }) {
+  return (
+    <div className="troll-flood" role="alert" aria-label={label}>
+      {netanyahuCopies.map((copy, index) => (
+        <img
+          key={index}
+          src={netanyahuAsset}
+          alt=""
+          className="troll-flood-face"
+          style={{
+            left: `${copy.left}%`,
+            top: `${copy.top}%`,
+            width: `${copy.size}vmin`,
+            rotate: `${copy.spin}deg`,
+            animationDelay: `${copy.delay}s`,
+          }}
+        />
+      ))}
+      <p className="troll-flood-caption">{label}</p>
     </div>
   );
 }

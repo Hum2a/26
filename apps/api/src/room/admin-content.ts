@@ -1,4 +1,5 @@
-import { adminContentSchema, type AdminContent } from "@26/shared";
+import { adminContentSchema, adminTrollsSchema, type AdminContent } from "@26/shared";
+import { implementedTrollKinds, trollDefinitions } from "../troll/catalogue.ts";
 import type { Hono } from "hono";
 import { authFailure, jsonData } from "../auth/http.ts";
 import { missingRequirements } from "../questions/definition.ts";
@@ -98,6 +99,20 @@ export function registerAdminContentRoutes(app: Hono<{ Bindings: Env }>) {
       );
     const detail = adminQuestion(pack, question);
     return detail ? jsonData(detail) : authFailure("invalid", 500);
+  });
+  app.get("/api/admin/trolls", async (c) => {
+    const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
+    if (rejected) {
+      return rejected;
+    }
+    return jsonData(
+      adminTrollsSchema.parse({
+        trolls: implementedTrollKinds.map((kind) => {
+          const { survivesQuestions: _, cueMs: __, ...rest } = trollDefinitions[kind];
+          return { ...rest, phases: [...rest.phases] };
+        }),
+      }),
+    );
   });
   app.get("/api/admin/content", async (c) => {
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);

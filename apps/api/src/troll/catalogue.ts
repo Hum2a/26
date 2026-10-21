@@ -2,6 +2,7 @@ import type { RoomPhase } from "../room/lifecycle.ts";
 
 export const implementedTrollKinds = [
   "invasion",
+  "netanyahu",
   "call",
   "crack",
   "yield",
@@ -55,6 +56,17 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     durationMs: 8_000,
     phases: ["prompt", "collect", "vote", "predict", "reveal"],
     escape: "Dismiss",
+    disruptsSubmission: false,
+    ...immediate,
+  },
+  netanyahu: {
+    kind: "netanyahu",
+    label: "Benjamin Netanyahu",
+    assetLabel: "Benjamin Netanyahu",
+    slot: "transient",
+    durationMs: 4_000,
+    phases: ["prompt", "collect", "vote", "predict", "reveal"],
+    escape: null,
     disruptsSubmission: false,
     ...immediate,
   },
