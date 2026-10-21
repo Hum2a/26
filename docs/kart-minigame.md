@@ -29,7 +29,7 @@ This project already has authenticated native WebSockets, retries, role credenti
 | `START_MINIGAME`          | The existing public snapshot changes to `play.question.kind = "kart"`. `play.kart` includes `raceId`, `trackId`, `timeLimitMs`, frozen `participants`, and `elapsedMs`. The race is interactive only in the unpaused, unheld `collect` phase.  |
 | Phone input               | `{ kind: "command", name: "kart-input", requestId, input: { raceId, sequence, steer, gas, brake, drift } }`. The authenticated socket supplies identity; a payload cannot select a player or room.                                             |
 | `SUBMIT_LAP`              | Deliberately replaced by server checkpoint/physics completion. No client time, frame total or checkpoint hash can award a lap. A hash of client-controlled data does not authenticate a finish.                                                |
-| `LIVE_LEADERBOARD_UPDATE` | Each saved tick broadcasts the existing snapshot with `play.kart.leaderboard`: player id, name, time, finished flag, place and eventual points. Reconnect gets the same full state.                                                            |
+| `LIVE_LEADERBOARD_UPDATE` | Each saved tick broadcasts a compact `kart` frame, merged into `play.kart`, with leaderboard player id, name, time, finished flag, place and eventual points. Full snapshots and patches recover the current state on reconnect.               |
 | `MINIGAME_ENDED`          | Server snapshot has `kart.ended=true`, final statuses and leaderboard; existing phase progression enters reveal → scores → next question or final/podium. The host sends an ordinary Advance intent, never an arbitrary winner or score bonus. |
 
 Phones receive their own kart plus the leading eight results and their own place; the TV receives the full race. The guest-only input cursor lets a replacement phone continue the saved sequence without relying on its device clock.
@@ -37,6 +37,14 @@ Phones receive their own kart plus the leading eight results and their own place
 Inputs are shape-checked, range-checked, race-scoped, sequence-checked, throttled to at most one accepted input per 80ms, and persisted in a small per-driver queue before being applied. The session freezes participants at intro; late arrivals watch this race. Controls expire after 400ms of simulated active time. The stage is read-only. There is no client position or lap-time authority. The input channel is untracked and receives no success toast/receipt per thumb movement; replay protection is the saved sequence. Results use the existing score ledger's unique question/player key.
 
 ## State and timing
+
+### Multiplayer input boundaries
+
+The existing room socket remains the only connection. Before buffering controls, the room checks that collection is open, the race id matches and the authenticated player belongs to its frozen roster. Inputs then pass the shared strict schema. Each driver has at most four transient arrivals, with increasing sequences and at least 80ms between arrivals; malformed or noisy controls cannot displace another driver's queue. These arrivals have no success acknowledgement and can be lost on eviction. The next saved tick commits validated input queues before applying them.
+
+Host phase commands flush pending arrivals inside their existing transaction before changing the phase. Pause catches the saved simulation up to the pause boundary, releases throttle/steering/drift through the pure reducer and clears pending input histories while retaining each driver's sequence cursor. Resume requires fresh controls; pausing cannot cash in an old drift. Disconnect still uses the existing 400ms active-time expiry as a server fallback.
+
+Race ticks use compact `kart` frames between full snapshots and patches. The client rejects older room versions, backwards race time, frames for paused/non-collecting views and attempts to reopen an ended race. Reconnect restores the same authenticated driver and its saved cursor; control packets are never added to the ordinary retry queue. The imported `/kart` circuit remains separate solo practice until the next integration stage.
 
 ```text
 quiz scores → kart intro (freeze roster) → prompt → collect (race)

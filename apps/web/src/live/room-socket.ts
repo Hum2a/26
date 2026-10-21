@@ -44,10 +44,17 @@ export function mergeKartFrame(
   frame: KartFrame,
 ): LobbySnapshot | "missing" | "stale" {
   const play = snapshot?.play;
+  if (snapshot && frame.stateVersion < snapshot.stateVersion) return "stale";
   if (!snapshot || !play?.kart || play.kart.raceId !== frame.kart.raceId) {
     return "missing";
   }
-  if (frame.stateVersion < snapshot.stateVersion) {
+  if (
+    snapshot.phase !== "collect" ||
+    snapshot.paused ||
+    snapshot.held ||
+    (play.kart.ended && !frame.kart.ended) ||
+    frame.kart.elapsedMs < play.kart.elapsedMs
+  ) {
     return "stale";
   }
   return {

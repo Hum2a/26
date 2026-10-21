@@ -21,6 +21,22 @@ const start = () =>
     { playerId: "a", name: "Amina" },
     { playerId: "b", name: "Bilal" },
   ]);
+
+it("releases controls without changing progress, input cursors or awarding a drift boost", () => {
+  const race = start();
+  race.drivers[0]!.input = { ...kartNeutral, gas: true, drift: true };
+  race.drivers[0]!.sequence = 12;
+  race.drivers[0]!.driftMs = 900;
+  race.drivers[0]!.wasDrifting = true;
+  const released = reduceKart(race, { type: "release" });
+  expect(released.drivers[0]!.input).toEqual(kartNeutral);
+  expect(released.drivers[0]!.sequence).toBe(12);
+  expect(released.drivers[0]!.driftMs).toBe(0);
+  expect(released.drivers[0]!.wasDrifting).toBe(false);
+  expect(released.drivers[0]!.boostMs).toBe(0);
+  expect(released.drivers[0]!.progress).toBe(race.drivers[0]!.progress);
+  expect(race.drivers[0]!.input.gas).toBe(true);
+});
 function input(
   race: KartRace,
   id = "a",

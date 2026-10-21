@@ -4,7 +4,7 @@ import { payloadDigest } from "../src/room/digest.ts";
 import { createSqlStore } from "../src/room/sql-store.ts";
 import { createGameStore } from "../src/questions/multiple-choice.ts";
 import { onAlarm, pause, resume, publicClock } from "../src/room/lifecycle.ts";
-import { acceptKartInput, readKart } from "../src/questions/kart.ts";
+import { acceptKartInput, readKart, KartInputBuffer } from "../src/questions/kart.ts";
 import { questionFor } from "../src/questions/registry.ts";
 import { kartNeutral } from "@26/shared";
 
@@ -66,6 +66,88 @@ async function setup(names = ["Amina", "Bilal"]) {
     ).toBe(true);
   return { stub, players, now: now + 7, credential };
 }
+
+it("bounds each driver's transient controls without letting invalid or noisy inputs evict a peer", () => {
+  const buffer = new KartInputBuffer();
+  const input = { raceId: "race", sequence: 1, ...kartNeutral };
+  buffer.push("quiet", input, 0);
+  buffer.push("noisy", input, 0);
+  for (let n = 1; n <= 1000; n++) {
+    buffer.push("noisy", { ...input, sequence: n + 1 }, n * 100);
+    buffer.push("quiet", { ...input, sequence: n + 1, steer: 9 }, n * 100);
+  }
+  buffer.push("noisy", input, 100_100);
+  const arrivals = buffer.drain();
+  expect(arrivals.filter((entry) => entry.playerId === "quiet")).toEqual([
+    { playerId: "quiet", raw: input, at: 0 },
+  ]);
+  expect(arrivals.filter((entry) => entry.playerId === "noisy")).toHaveLength(4);
+  expect((arrivals.at(-1)!.raw as typeof input).sequence).toBe(1001);
+  expect(buffer.drain()).toEqual([]);
+});
+
+it("releases persisted throttle and drift at pause while retaining the reconnect cursor", async () => {
+  const { stub, players, now, credential } = await setup();
+  const raceId = (await stub.snapshotFor("stage")).play!.kart!.raceId;
+  await runInDurableObject(stub, (_instance, state) => {
+    const store = createSqlStore(state.storage.sql);
+    const q = questionFor(store.readRoom());
+    if (q?.kind !== "kart") throw new Error("Kart required");
+    expect(
+      acceptKartInput(
+        state.storage.sql,
+        store,
+        players[0]!,
+        { ...kartNeutral, raceId, sequence: 7, gas: true, drift: true },
+        q,
+        now,
+      ),
+    ).toBe(true);
+  });
+  expect(
+    (
+      await stub.pauseRound({
+        ...credential,
+        requestId: crypto.randomUUID(),
+        nowMs: now + 100,
+      })
+    ).ok,
+  ).toBe(true);
+  await evictDurableObject(stub);
+  const paused = (await stub.snapshotFor("guest", players[0])).play!.kart!;
+  expect(paused.elapsedMs).toBe(100);
+  expect(paused.inputCursor).toBe(7);
+  expect(
+    (
+      await stub.resumeRound({
+        ...credential,
+        requestId: crypto.randomUUID(),
+        nowMs: now + 10_000,
+      })
+    ).ok,
+  ).toBe(true);
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    const q = questionFor(createSqlStore(sql).readRoom());
+    if (q?.kind !== "kart") throw new Error("Kart required");
+    onAlarm(createGameStore(sql), now + 10_100);
+    const driver = readKart(sql, q.id)!.drivers[0]!;
+    expect(driver.input).toEqual(kartNeutral);
+    expect(driver.wasDrifting).toBe(false);
+    expect(driver.boostMs).toBe(0);
+    expect(driver.sequence).toBe(7);
+    expect(
+      acceptKartInput(
+        sql,
+        createSqlStore(sql),
+        players[0]!,
+        { ...kartNeutral, raceId, sequence: 8, gas: true },
+        q,
+        now + 10_100,
+      ),
+    ).toBe(true);
+  });
+});
 
 it("accepts authenticated-driver controls, rejects stale/forged/late inputs and survives eviction", async () => {
   const { stub, players, now } = await setup();

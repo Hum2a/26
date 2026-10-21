@@ -60,6 +60,22 @@ describe("mergeKartFrame", () => {
   it("ignores a frame older than the snapshot it would replace", () => {
     expect(mergeKartFrame(raceSnapshot("race-1", 9), frame("race-1", 5))).toBe("stale");
   });
+
+  it("cannot rewind elapsed time, restart a finished race or disturb a newer phase", () => {
+    const base = raceSnapshot("race-1");
+    base.play!.kart!.elapsedMs = 800;
+    expect(mergeKartFrame(base, frame("race-1", 4))).toBe("stale");
+    base.play!.kart!.elapsedMs = 600;
+    base.play!.kart!.ended = true;
+    expect(mergeKartFrame(base, frame("race-1", 5))).toBe("stale");
+    expect(mergeKartFrame({ ...base, phase: "reveal" }, frame("race-1", 5))).toBe(
+      "stale",
+    );
+    expect(mergeKartFrame(raceSnapshot("race-2", 9), frame("race-1", 5))).toBe("stale");
+    expect(
+      mergeKartFrame({ ...raceSnapshot("race-1"), paused: true }, frame("race-1", 5)),
+    ).toBe("stale");
+  });
 });
 
 describe("applySnapshotPatch", () => {

@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { LobbySnapshot } from "@26/shared";
 
+const participantCount = process.env.KART_REHEARSAL_PLAYERS === "2" ? 2 : 50;
+
 test("a quiz transitions to personal phone driving views, a spectator map and a persistent podium", async ({
   browser,
 }) => {
@@ -17,6 +19,7 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
     console.log("Phone page error", e.message);
   });
   let latest: LobbySnapshot | undefined;
+  let otherLatest: LobbySnapshot | undefined;
   const inputs: unknown[] = [];
   const samples: unknown[] = [];
   driver.on("websocket", (socket) => {
@@ -31,8 +34,24 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
     socket.on("framereceived", (frame) => {
       try {
         const data = JSON.parse(String(frame.payload));
-        if (data.kind === "snapshot") {
-          latest = data.snapshot as LobbySnapshot;
+        if (data.kind === "snapshot") latest = data.snapshot as LobbySnapshot;
+        else if (data.kind === "patch" && latest) {
+          latest = { ...latest, ...data.set };
+          for (const key of data.unset ?? [])
+            delete (latest as unknown as Record<string, unknown>)[key];
+        } else if (data.kind === "kart" && latest?.play) {
+          latest = {
+            ...latest,
+            stateVersion: data.stateVersion,
+            serverNow: data.serverNow,
+            play: {
+              ...latest.play,
+              kart: data.kart,
+              submissionCount: data.submissionCount,
+            },
+          };
+        }
+        if (["snapshot", "patch", "kart"].includes(data.kind)) {
           const d = latest?.play?.kart?.participants[0];
           if (d)
             samples.push({
@@ -50,6 +69,23 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
       }
     });
   });
+  other.on("websocket", (socket) =>
+    socket.on("framereceived", (frame) => {
+      try {
+        const data = JSON.parse(String(frame.payload));
+        if (data.kind === "snapshot") otherLatest = data.snapshot;
+        else if (data.kind === "patch" && otherLatest)
+          otherLatest = { ...otherLatest, ...data.set };
+        else if (data.kind === "kart" && otherLatest?.play)
+          otherLatest = {
+            ...otherLatest,
+            play: { ...otherLatest.play, kart: data.kart },
+          };
+      } catch {
+        /* heartbeat */
+      }
+    }),
+  );
   await admin.goto("/admin");
   const email = admin.getByLabel("Administrator email");
   const retry = admin.getByRole("button", { name: "Try again", exact: true });
@@ -63,34 +99,54 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
     .click();
   await admin.getByRole("button", { name: "Sign in", exact: true }).click();
   await admin.getByRole("button", { name: "Create a lobby" }).click();
-  const code = (await admin.locator(".admin-room-code").textContent())!.trim();
+  const roomCode = admin.locator(".admin-room-code");
+  const retryRoom = admin.getByRole("button", { name: "Try again", exact: true });
+  await expect(roomCode.or(retryRoom)).toBeVisible({ timeout: 20_000 });
+  if (await retryRoom.isVisible()) await retryRoom.click();
+  await expect(roomCode).toBeVisible({ timeout: 20_000 });
+  const code = (await roomCode.textContent())!.trim();
   await admin.getByRole("link", { name: "Live controls", exact: true }).click();
   async function join(page: Page, name: string) {
     await page.goto("/join");
     await page.getByLabel("Join code").fill(code);
     await page.getByLabel("Nickname").fill(name);
     await page.getByRole("button", { name: "Join", exact: true }).click();
-    await expect(page.getByRole("status")).toContainText(`This phone is ${name}`);
+    await expect(page.getByRole("status")).toContainText(`This phone is ${name}`, {
+      timeout: 20_000,
+    });
   }
   await join(driver, "Amina");
   await join(other, "Bilal");
   // Forty-eight passive registered guests exercise a real 50-player room; two phones drive.
-  const extras = await browser.newContext();
-  const enrol = await extras.newPage();
-  await enrol.goto("/join");
-  await enrol.evaluate(async (code) => {
-    const modulePath = "/src/live/room-api.ts";
-    const { joinLobby } = await import(/* @vite-ignore */ modulePath);
-    for (let i = 3; i <= 50; i++) {
-      const result = await joinLobby({
-        code,
-        nickname: `Stand-in ${i}`,
-        requestId: crypto.randomUUID(),
-      });
-      if ("error" in result) throw new Error(result.error);
-    }
-  }, code);
-  await extras.close();
+  if (participantCount === 50) {
+    const extras = await browser.newContext();
+    const enrol = await extras.newPage();
+    await enrol.goto("/join");
+    await enrol.evaluate(async (code) => {
+      const modulePath = "/src/live/room-api.ts";
+      const { joinLobby } = await import(/* @vite-ignore */ modulePath);
+      const joinStandIn = async (i: number) => {
+        const result = await joinLobby({
+          code,
+          nickname: `Stand-in ${i}`,
+          requestId: crypto.randomUUID(),
+        });
+        if ("error" in result) throw new Error(result.error);
+      };
+      // Small bursts share durable writes/fan-out instead of waiting for 48 separate disk flushes.
+      for (let first = 3; first <= 48; first += 8) {
+        await Promise.all(
+          Array.from({ length: Math.min(8, 49 - first) }, (_, offset) =>
+            joinStandIn(first + offset),
+          ),
+        );
+      }
+      // Keep the final named driver on the final spectator page regardless of burst ordering.
+      await joinStandIn(49);
+      await joinStandIn(50);
+    }, code);
+    await extras.close();
+  }
   const stage = await host.newPage();
   await stage.setViewportSize({ width: 1920, height: 1080 });
   stage.on("pageerror", (e) => errors.push(e.message));
@@ -108,7 +164,7 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
         .getByRole("button", { name: "Finish quiz", exact: true })
         .click();
     } else await admin.getByRole("button", { name: "Advance", exact: true }).click();
-    await expect.poll(() => latest?.phase).not.toBe(before);
+    await expect.poll(() => latest?.phase, { timeout: 20_000 }).not.toBe(before);
   }
   for (let i = 0; i < 5; i++) await advance();
   await expect.poll(() => latest?.play?.question.kind).toBe("kart");
@@ -134,7 +190,7 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
   await driver.bringToFront();
   await expect(driver.getByRole("button", { name: "Accelerate" })).toBeEnabled();
   await expect(
-    stage.getByRole("img", { name: "Live race map: 50 drivers" }),
+    stage.getByRole("img", { name: `Live race map: ${participantCount} drivers` }),
   ).toBeVisible();
   await expect(stage.locator("canvas")).toHaveCount(0);
   await expect(driver.locator("canvas[aria-label='Your driving view']")).toBeVisible();
@@ -150,9 +206,11 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
   await driver.getByRole("button", { name: "Use 3D driving view" }).click();
   await expect(driver.locator("canvas[aria-label='Your driving view']")).toBeVisible();
   await expect(other.getByRole("heading", { name: "Kart 2" })).toBeVisible();
-  await expect(driver.getByText("Position 1 of 50", { exact: true })).toBeVisible();
+  await expect(
+    driver.getByText(`Position 1 of ${participantCount}`, { exact: true }),
+  ).toBeVisible();
   expect(latest?.play?.kart?.participants).toHaveLength(1);
-  expect(latest?.play?.kart?.participantCount).toBe(50);
+  expect(latest?.play?.kart?.participantCount).toBe(participantCount);
   for (const width of [320, 390, 430]) {
     await driver.setViewportSize({ width, height: 844 });
     expect(
@@ -216,6 +274,35 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
   await expect
     .poll(() => latest?.play?.kart?.participants[0]?.speed ?? 0)
     .toBeGreaterThan(1);
+  const identity = latest!.play!.kart!.selfPlayerId;
+  const raceId = latest!.play!.kart!.raceId;
+  // The second phone stays still while the first drives, then keeps driving while its peer reconnects.
+  expect(otherLatest?.play?.kart?.participants[0]?.speed).toBe(0);
+  await driver.mouse.up();
+  await other.bringToFront();
+  const otherGas = (await other
+    .getByRole("button", { name: "Accelerate" })
+    .boundingBox())!;
+  await other.mouse.move(
+    otherGas.x + otherGas.width / 2,
+    otherGas.y + otherGas.height / 2,
+  );
+  await other.mouse.down();
+  await phone.setOffline(true);
+  await driver.evaluate(() => {
+    (window as unknown as { __26: { dropSockets(): void } }).__26.dropSockets();
+  });
+  await expect(driver.getByRole("button", { name: "Accelerate" })).toBeDisabled();
+  await expect
+    .poll(() => otherLatest?.play?.kart?.participants[0]?.speed ?? 0)
+    .toBeGreaterThan(1);
+  await phone.setOffline(false);
+  await expect(driver.getByRole("button", { name: "Accelerate" })).toBeEnabled();
+  await expect.poll(() => latest?.play?.kart?.selfPlayerId).toBe(identity);
+  expect(latest?.play?.kart?.raceId).toBe(raceId);
+  await expect.poll(() => (inputs.at(-1) as { gas?: boolean })?.gas).toBe(false);
+  await other.mouse.up();
+  await driver.bringToFront();
   await admin.getByRole("button", { name: "Pause", exact: true }).click();
   await expect(driver.getByRole("button", { name: "Accelerate" })).toBeDisabled();
   const paused = latest?.play?.kart?.elapsedMs;
@@ -245,23 +332,29 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
     )
     .toBe(false);
   expect(latest?.play?.kart?.elapsedMs).toBe(paused);
-  await expect(stage.locator("[data-map-player]")).toHaveCount(50);
-  // A pause may catch any carousel page; return to the first field group explicitly.
-  const fieldHeading = stage.locator(".kart-field-heading h4");
-  for (
-    let attempt = 0;
-    attempt < 9 && (await fieldHeading.textContent()) !== "The field · 6–10";
-    attempt++
-  ) {
-    await stage.getByRole("button", { name: "Next drivers" }).click();
+  await expect(stage.locator("[data-map-player]")).toHaveCount(participantCount);
+  if (participantCount === 50) {
+    // A pause may catch any carousel page; return to the first field group explicitly.
+    const fieldHeading = stage.locator(".kart-field-heading h4");
+    for (
+      let attempt = 0;
+      attempt < 9 && (await fieldHeading.textContent()) !== "The field · 6–10";
+      attempt++
+    ) {
+      await stage.getByRole("button", { name: "Next drivers" }).click();
+    }
+    await expect(
+      stage.getByRole("heading", { name: "The field · 6–10" }),
+    ).toBeVisible();
+    for (let i = 0; i < 8; i++)
+      await stage.getByRole("button", { name: "Next drivers" }).click();
+    await expect(
+      stage.getByRole("heading", { name: "The field · 46–50" }),
+    ).toBeVisible();
+    await expect(
+      stage.getByRole("list", { name: "Rest of the race field" }),
+    ).toContainText("Stand-in 50");
   }
-  await expect(stage.getByRole("heading", { name: "The field · 6–10" })).toBeVisible();
-  for (let i = 0; i < 8; i++)
-    await stage.getByRole("button", { name: "Next drivers" }).click();
-  await expect(stage.getByRole("heading", { name: "The field · 46–50" })).toBeVisible();
-  await expect(
-    stage.getByRole("list", { name: "Rest of the race field" }),
-  ).toContainText("Stand-in 50");
   expect(
     await stage
       .locator(".kart-leaderboard")

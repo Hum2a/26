@@ -130,6 +130,61 @@ export function acceptKartInput(
 
 export type KartArrival = { playerId: string; raw: unknown; at: number };
 
+/** Transient, unacknowledged controls: one driver cannot evict another's inputs. */
+export class KartInputBuffer {
+  private drivers = new Map<string, KartArrival[]>();
+
+  push(playerId: string, raw: unknown, at: number): void {
+    const parsed = kartInputSchema.safeParse(raw);
+    if (!parsed.success || !Number.isFinite(at)) return;
+    const queue = this.drivers.get(playerId) ?? [];
+    const previous = queue.at(-1);
+    if (previous) {
+      const input = previous.raw as KartInput;
+      if (
+        parsed.data.raceId !== input.raceId ||
+        parsed.data.sequence <= input.sequence ||
+        at - previous.at < 80
+      )
+        return;
+    }
+    if (!this.drivers.has(playerId) && this.drivers.size >= 80) return;
+    this.drivers.set(
+      playerId,
+      [...queue, { playerId, raw: parsed.data, at }].slice(-4),
+    );
+  }
+
+  drain(): KartArrival[] {
+    const arrivals = [...this.drivers.values()].flat();
+    this.drivers.clear();
+    return arrivals;
+  }
+}
+
+/** Freeze at the pause boundary and prevent old throttle/drift resuming later. */
+export function releaseKartInputs(
+  sql: SqlStorage,
+  store: GameStore,
+  q: KartQuestion,
+  now: number,
+): void {
+  const room = store.readRoom();
+  if (room.phase !== "collect" || room.paused || room.hold) return;
+  const race = catchUp(sql, store, q, now);
+  if (!race) return;
+  write(sql, q.id, reduceKart(race, { type: "release" }));
+  for (const row of sql
+    .exec<{ state_key: string; payload: string }>(
+      "SELECT state_key, payload FROM round_state WHERE question_id = ? AND state_key LIKE 'kart-input:%'",
+      q.id,
+    )
+    .toArray()) {
+    const queue = JSON.parse(row.payload) as InputQueue;
+    writeRoundState(sql, q.id, row.state_key, { ...queue, pending: [] });
+  }
+}
+
 /**
  * Validates and stores controls in arrival order, each stamped with its own
  * arrival time. The room calls this once per tick for everything that arrived

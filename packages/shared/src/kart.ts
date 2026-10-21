@@ -243,12 +243,22 @@ export function reduceKart(
   event:
     | { type: "input"; playerId: string; value: KartInput }
     | { type: "tick"; elapsedMs: number }
+    | { type: "release" }
     | { type: "end" },
 ): KartRace {
   if (race.ended) return race;
   if (event.type === "tick") return reduceKartTimeline(race, [], event.elapsedMs);
   const next = copyRace(race);
   if (event.type === "end") return settleRace(next, true);
+  if (event.type === "release") {
+    for (const driver of next.drivers) {
+      driver.input = { ...kartNeutral };
+      driver.inputUntil = race.elapsedMs;
+      driver.driftMs = 0;
+      driver.wasDrifting = false;
+    }
+    return next;
+  }
   const driver = next.drivers.find((d) => d.playerId === event.playerId);
   return driver && applyInput(driver, race.raceId, event.value, race.elapsedMs)
     ? next

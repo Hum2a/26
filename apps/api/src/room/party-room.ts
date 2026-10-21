@@ -2,7 +2,13 @@ import {
   kartRehearsalVersion,
   requirePlayable as requireKartRehearsal,
 } from "../questions/registry.ts";
-import { acceptKartInputs, kartFrames, type KartArrival } from "../questions/kart.ts";
+import {
+  acceptKartInputs,
+  kartFrames,
+  KartInputBuffer,
+  releaseKartInputs,
+} from "../questions/kart.ts";
+import { readRoundState } from "../questions/round-state.ts";
 import { DurableObject } from "cloudflare:workers";
 import { createRealtimeMeter } from "./realtime-meter.ts";
 import { adminPlayerRows } from "./admin-players.ts";
@@ -215,8 +221,6 @@ function viewKey(attachment: { role: string; principalId: string }): string {
 type SnapshotPartsCache = Map<string, ReturnType<PartyRoom["snapshotParts"]>>;
 /** Changes inside this window share one fan-out. Short enough not to be seen. */
 const broadcastWindowMs = 30;
-/** Eighty phones at 10Hz between two 200ms ticks is 160. This bounds a stalled tick. */
-const maxKartArrivals = 2_000;
 /** Three buckets for each of 80 phones plus stage and control, with room to spare. */
 const maxRateBuckets = 400;
 
@@ -316,7 +320,7 @@ export class PartyRoom extends DurableObject<Env> {
   private draftFlush: ReturnType<typeof setTimeout> | undefined;
   private readonly meter = createRealtimeMeter();
   private database: Promise<AppDatabase> | undefined;
-  private kartArrivals: KartArrival[] = [];
+  private kartArrivals = new KartInputBuffer();
   private rateBuckets = new Map<string, RateBucket>();
   /** The last view each socket holds, and per screen for resume. Memory only. */
   private views = new WeakMap<WebSocket, SentView>();
@@ -730,12 +734,8 @@ export class PartyRoom extends DurableObject<Env> {
   override async alarm(): Promise<void> {
     const now = Date.now();
     let raceTickOnly = false;
-    const arrivals = this.kartArrivals;
-    this.kartArrivals = [];
     await commitAndArm(this.ctx.storage, (sql) => {
-      const roundStore = createSqlStore(sql);
-      const kart = questionFor(roundStore.readRoom());
-      if (kart?.kind === "kart") acceptKartInputs(sql, roundStore, arrivals, kart);
+      this.flushKartInputs(sql);
       const store = createGameStore(sql);
       const before = store.readRoom();
       const due = sql
@@ -1048,7 +1048,11 @@ export class PartyRoom extends DurableObject<Env> {
       return allowed;
     }
     return this.phaseCommand(input.requestId, { action: "pause" }, (sql) => {
-      pause(createSqlStore(sql), input.nowMs);
+      const store = createSqlStore(sql);
+      const question = questionFor(store.readRoom());
+      if (question?.kind === "kart")
+        releaseKartInputs(sql, store, question, input.nowMs);
+      pause(store, input.nowMs);
     });
   }
 
@@ -1843,12 +1847,24 @@ export class PartyRoom extends DurableObject<Env> {
       if (attachment.role !== "guest") return;
       // Controls carry no acknowledgement. They are stored, with their arrival
       // time, in one transaction at the start of the next tick.
-      if (this.kartArrivals.length >= maxKartArrivals) this.kartArrivals.shift();
-      this.kartArrivals.push({
-        playerId: attachment.principalId,
-        raw: early.input,
-        at: Date.now(),
-      });
+      const sql = this.ctx.storage.sql;
+      const room = createSqlStore(sql).readRoom();
+      if (room.phase !== "collect" || room.paused || room.hold) return;
+      const question = questionFor(room);
+      if (question?.kind !== "kart") return;
+      const session = readRoundState<{ raceId: string; players: string[] }>(
+        sql,
+        question.id,
+        "kart-session",
+      );
+      if (!session?.players.includes(attachment.principalId)) return;
+      if (
+        !early.input ||
+        typeof early.input !== "object" ||
+        (early.input as { raceId?: unknown }).raceId !== session.raceId
+      )
+        return;
+      this.kartArrivals.push(attachment.principalId, early.input, Date.now());
       return;
     }
     const command = early;
@@ -2087,6 +2103,7 @@ export class PartyRoom extends DurableObject<Env> {
           result = this.replay<PhaseCommandResult>(again, digest);
           return;
         }
+        this.flushKartInputs(sql);
         apply(sql);
         const clock = publicClock(createSqlStore(sql));
         result = {
@@ -2105,6 +2122,14 @@ export class PartyRoom extends DurableObject<Env> {
     }
     this.broadcast();
     return result;
+  }
+
+  private flushKartInputs(sql: SqlStorage): void {
+    const arrivals = this.kartArrivals.drain();
+    if (!arrivals.length) return;
+    const store = createSqlStore(sql);
+    const question = questionFor(store.readRoom());
+    if (question?.kind === "kart") acceptKartInputs(sql, store, arrivals, question);
   }
 
   private async requireControl(
