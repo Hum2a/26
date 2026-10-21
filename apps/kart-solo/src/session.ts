@@ -1,4 +1,4 @@
-import { kartNeutral, type KartControls } from "@26/shared";
+import { createKartPowers, kartNeutral, type KartControls } from "@26/shared";
 import { useGameStore } from "./upstream/store.js";
 
 // This is upstream's ephemeral solo store. No room connection or score submission exists.
@@ -18,9 +18,18 @@ export function recover() {
     soloRecoveryMessage: "Returning to the track…",
   }));
 }
+export function useItem() {
+  useGameStore.setState((state: { soloItemUse: number }) => ({
+    soloItemUse: state.soloItemUse + 1,
+  }));
+}
 export function reset() {
   useGameStore.setState((state: { soloReset: number }) => ({
     soloReset: state.soloReset + 1,
+    soloPowers: createKartPowers(),
+    soloOils: [],
+    soloElapsed: 0,
+    soloPowerMessage: "",
     speed: 0,
     boostPower: 0,
     isBoosting: false,

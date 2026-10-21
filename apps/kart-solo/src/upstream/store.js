@@ -1,7 +1,13 @@
+import { createKartPowers } from "@26/shared";
 // Adapted from mario-kart-js 0f7a430. See UPSTREAM.md and THIRD_PARTY_NOTICES.md.
 import { create } from "zustand";
 
 export const useGameStore = create((set) => ({
+  soloPowers: createKartPowers(),
+  soloOils: [],
+  soloElapsed: 0,
+  soloItemUse: 0,
+  soloPowerMessage: "",
   soloControls: { steer: 0, gas: false, brake: false, drift: false },
   soloPaused: true,
   soloStarted: false,

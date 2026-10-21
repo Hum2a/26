@@ -1,5 +1,6 @@
 // Adapted from mario-kart-js 0f7a430. See UPSTREAM.md and THIRD_PARTY_NOTICES.md.
 // Rendering is upstream-derived; movement/contact use the shared pure model.
+import { DriftEffects } from "../DriftEffects";
 import { Kart } from "./models/Kart";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
@@ -10,6 +11,12 @@ import {
   stepDriving,
   soloDriving,
   kartNeutral,
+  createKartPowers,
+  stepKartPowers,
+  useKartPower,
+  powerDrivingBody,
+  soloItemBoxes,
+  kartItemNames,
 } from "@26/shared";
 import { readGamepad } from "../gamepad";
 import { nearbySoloWalls } from "../track/collision-world";
@@ -24,6 +31,9 @@ export const PlayerController = () => {
   const hop = useRef(0),
     heldDrift = useRef(false);
   const body = useRef(createDrivingBody(0, 0, -Math.PI / 2));
+  const powers = useRef(createKartPowers()),
+    oils = useRef([]),
+    usedItem = useRef(useGameStore.getState().soloItemUse);
   const previous = useRef(body.current);
   const safe = useRef({ x: 0, z: 0, heading: -Math.PI / 2 });
   const elapsed = useRef(0),
@@ -76,6 +86,12 @@ export const PlayerController = () => {
       return;
     }
     if (recovery.current !== store.soloRecover) {
+      powers.current = {
+        ...powers.current,
+        turboUntil: 0,
+        shieldUntil: 0,
+        slowedUntil: 0,
+      };
       gamepadArmed.current = false;
       recovery.current = store.soloRecover;
       if (elapsed.current - lastRecovery.current >= 2000) {
@@ -100,6 +116,15 @@ export const PlayerController = () => {
         soloControls: { ...kartNeutral },
       });
     }
+    if (usedItem.current !== store.soloItemUse) {
+      usedItem.current = store.soloItemUse;
+      const used = useKartPower(powers.current, "solo", body.current, elapsed.current);
+      if (used) {
+        powers.current = used.powers;
+        if (used.oil) oils.current = [...oils.current, used.oil].slice(-64);
+        useGameStore.setState({ soloPowerMessage: "Power-up used" });
+      }
+    }
     accumulator.current += Math.min(0.1, Math.max(0, delta)) * 1000;
     const pad = readGamepad();
     if (!pad.gas && !pad.brake && !pad.drift && !pad.steer) gamepadArmed.current = true;
@@ -117,6 +142,7 @@ export const PlayerController = () => {
         : controls;
       const effective = surface === "unsupported" ? kartNeutral : input;
       previous.current = body.current;
+      body.current = powerDrivingBody(body.current, powers.current, elapsed.current);
       body.current = stepDriving(
         body.current,
         effective,
@@ -127,8 +153,34 @@ export const PlayerController = () => {
           body.current.z,
           soloDriving.radius + soloDriving.boostSpeed * 0.02,
         ),
-        surface !== "road",
+        surface !== "road" || powers.current.slowedUntil > elapsed.current,
       );
+      const effect = stepKartPowers(
+        powers.current,
+        "solo",
+        previous.current,
+        body.current,
+        surface === "road" ? soloItemBoxes : [],
+        oils.current,
+        elapsed.current + 20,
+        "solo",
+      );
+      if (effect.powers.collections > powers.current.collections)
+        useGameStore.setState({
+          soloPowerMessage: "Collected " + kartItemNames[effect.powers.item],
+        });
+      powers.current = effect.powers;
+      if (effect.hit) {
+        body.current = {
+          ...body.current,
+          vx: body.current.vx * 0.35,
+          vz: body.current.vz * 0.35,
+          driftMs: 0,
+          boostMs: 0,
+          wasDrifting: false,
+        };
+      }
+      oils.current = oils.current.filter((o) => o.expiresAt > elapsed.current + 20);
       elapsed.current += 20;
       accumulator.current -= 20;
       surface = surfaceAt(body.current.x, body.current.z);
@@ -182,6 +234,9 @@ export const PlayerController = () => {
     camera.lookAt(cameraLookAtRef.current.getWorldPosition(look.current));
     useGameStore.setState({
       playerPosition: new Vector3(d.x, 0, d.z),
+      soloPowers: powers.current,
+      soloOils: oils.current,
+      soloElapsed: elapsed.current,
       speed: speedRef.current,
       isBoosting: d.boostMs > 0,
       soloSurface: surface,
@@ -192,6 +247,7 @@ export const PlayerController = () => {
   return (
     <group ref={playerRef}>
       <group ref={cameraGroupRef} position={[0, 2, 5]} />
+      <DriftEffects body={body} />
       <group ref={kartRef}>
         <Kart
           speed={speedRef}

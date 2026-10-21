@@ -165,6 +165,40 @@ export class KartInputBuffer {
   }
 }
 
+export function useKartItem(
+  sql: SqlStorage,
+  store: GameStore,
+  q: KartQuestion,
+  playerId: string,
+  raceId: string,
+  now: number,
+): { ok: true } | { ok: false; message: string } {
+  const room = store.readRoom(),
+    saved = readKart(sql, q.id);
+  if (
+    room.phase !== "collect" ||
+    room.paused ||
+    room.hold ||
+    !saved ||
+    saved.raceId !== raceId ||
+    saved.ended ||
+    !saved.drivers.some((d) => d.playerId === playerId && d.status === "RACING") ||
+    !sql
+      .exec("SELECT 1 FROM player WHERE player_id = ? AND revoked_at IS NULL", playerId)
+      .toArray().length
+  )
+    return {
+      ok: false,
+      message: "Items are available only to a racing phone in the current race.",
+    };
+  const race = catchUp(sql, store, q, now)!;
+  const next = reduceKart(race, { type: "use-power", playerId });
+  if (next === race) return { ok: false, message: "Drive through an item box first." };
+  write(sql, q.id, next);
+  sql.exec("UPDATE room SET state_version = state_version + 1");
+  return { ok: true };
+}
+
 export function recoverKart(
   sql: SqlStorage,
   store: GameStore,
@@ -444,6 +478,23 @@ function phoneRaceView(
   return {
     ...full,
     selfPlayerId,
+    ...(full.powers
+      ? {
+          powers: {
+            ...full.powers,
+            selfItem:
+              race.drivers.find((d) => d.playerId === selfPlayerId)?.power?.item ??
+              null,
+            boxes: full.powers.boxes.map((b) => ({
+              ...b,
+              available:
+                (race.drivers.find((d) => d.playerId === selfPlayerId)?.power
+                  ?.cooldowns[b.id] ?? 0) <= race.elapsedMs,
+            })),
+            effects: full.powers.effects.filter((e) => e.playerId === selfPlayerId),
+          },
+        }
+      : {}),
     inputCursor:
       lastSequence ??
       Math.max(0, race.drivers.find((d) => d.playerId === selfPlayerId)?.sequence ?? 0),

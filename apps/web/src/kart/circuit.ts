@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { ringBounds } from "@26/shared";
 import type { KartRaceView } from "@26/shared";
+import { driftSparks, driftStrength } from "./drift-effects";
 import { smoothKartPose, type KartPose } from "./presentation";
 import { createDriverRig } from "./driver-rig";
 
@@ -116,9 +117,21 @@ export function createCircuit(
     place(dash, i, Math.cos(a) * 42, 0.08, Math.sin(a) * 42, -a + Math.PI / 2);
   }
   const checkGeo = geo(new THREE.BoxGeometry(2, 0.08, 1));
+  const finishA = batch(checkGeo, text, 8),
+    finishB = batch(checkGeo, dark, 8);
+  let finishIndexA = 0,
+    finishIndexB = 0;
   for (let x = 0; x < 8; x++)
-    for (let z = 0; z < 2; z++)
-      mesh(checkGeo, (x + z) % 2 ? text : dark, 35 + x * 2, 0.11, z - 0.5);
+    for (let z = 0; z < 2; z++) {
+      const white = (x + z) % 2;
+      place(
+        white ? finishA : finishB,
+        white ? finishIndexA++ : finishIndexB++,
+        35 + x * 2,
+        0.11,
+        z - 0.5,
+      );
+    }
   const poleGeo = geo(new THREE.CylinderGeometry(0.3, 0.3, 6, 6));
   for (const x of [32.5, 51.5]) mesh(poleGeo, second, x, 3, 0);
   mesh(geo(new THREE.BoxGeometry(19.5, 1.5, 0.8)), bright, 42, 6, 0);
@@ -182,12 +195,7 @@ export function createCircuit(
     dark,
     capacity * 4,
   );
-  const boost = batch(
-    geo(new THREE.ConeGeometry(0.45, 1.5, 5).rotateZ(Math.PI / 2)),
-    second,
-    capacity,
-  );
-  for (const value of [bodies, noses, seats, helmets, wheels, boost]) {
+  for (const value of [bodies, noses, seats, helmets, wheels]) {
     value.count = 0;
     value.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   }
@@ -201,6 +209,42 @@ export function createCircuit(
     textures,
     palette: { ink, ground, accent, highlight },
   });
+  const sparkMaterial = new THREE.MeshBasicMaterial({
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  materials.add(sparkMaterial);
+  const sparks = batch(
+    geo(new THREE.OctahedronGeometry(0.16)),
+    sparkMaterial,
+    capacity * 8,
+  );
+  sparks.name = "kart-drift-sparks";
+  sparks.count = 0;
+  sparks.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  const itemBoxes = batch(seats.geometry, bright, 24),
+    oilSlicks = batch(helmets.geometry, dark, 64);
+  const shieldMaterial = new THREE.MeshBasicMaterial({
+    color: highlight,
+    transparent: true,
+    opacity: 0.35,
+    wireframe: true,
+    depthWrite: false,
+  });
+  materials.add(shieldMaterial);
+  const shields = batch(helmets.geometry, shieldMaterial, capacity);
+  itemBoxes.name = "kart-item-boxes";
+  oilSlicks.name = "kart-oil-slicks";
+  shields.name = "kart-shields";
+  for (const m of [itemBoxes, oilSlicks, shields]) {
+    m.count = 0;
+    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  }
+  const emission = new Map<string, number>();
+  let effectTime = 0,
+    effectRaceId: string | undefined;
   const poses = new Map<string, KartPose>();
   const labels = new Map<string, THREE.Sprite>();
   function label(driver: KartRaceView["participants"][number]) {
@@ -232,7 +276,14 @@ export function createCircuit(
     return sprite;
   }
   function update(race: KartRaceView, dt: number, reduced: boolean) {
-    let flames = 0;
+    if (effectRaceId !== race.raceId) {
+      emission.clear();
+      effectTime = 0;
+      effectRaceId = race.raceId;
+    }
+    let sparkCount = 0,
+      shieldCount = 0;
+    effectTime += Math.max(0, Math.min(0.1, dt));
     const drivers = (
       focusPlayerId
         ? race.participants.filter((driver) => driver.playerId === focusPlayerId)
@@ -278,8 +329,38 @@ export function createCircuit(
           -heading,
         );
       }
-      if (driver.boostRemainingMs > 0 && !reduced) {
-        place(boost, flames++, x - c * 2, 0.6, z - s * 2, -heading, 1, 0.8, 1);
+      if (
+        race.powers?.effects.some(
+          (e) => e.playerId === driver.playerId && e.shieldMs > 0,
+        )
+      )
+        place(shields, shieldCount++, x, 0.9, z, 0, 3.5, 3, 3.5);
+      const active =
+        driver.status === "RACING" && (driver.drifting || driver.boostRemainingMs > 0);
+      const strength = driftStrength(emission.get(driver.playerId) ?? 0, active, dt);
+      emission.set(driver.playerId, strength);
+      if (strength > 0.01) {
+        const charged = driver.boostRemainingMs > 0 || driver.driftCharge >= 1;
+        for (const spark of driftSparks(
+          effectTime + i * 0.17,
+          strength,
+          driver.driftCharge,
+          driver.boostRemainingMs > 0,
+          reduced,
+        )) {
+          place(
+            sparks,
+            sparkCount,
+            x - c * spark.z - s * spark.x,
+            0.22 + spark.y,
+            z - s * spark.z + c * spark.x,
+            -heading,
+            spark.scale * 2.5,
+            spark.scale * 0.6,
+            spark.scale * 0.6,
+          );
+          sparks.setColorAt(sparkCount++, charged ? highlight : accent);
+        }
       }
       const sprite = focusPlayerId
         ? undefined
@@ -293,8 +374,31 @@ export function createCircuit(
     rig.end(new Set(drivers.map((driver) => driver.playerId)));
     wheels.count = drivers.length * 4;
     wheels.instanceMatrix.needsUpdate = true;
-    boost.count = flames;
-    boost.instanceMatrix.needsUpdate = true;
+    let boxCount = 0;
+    for (const box of race.powers?.boxes ?? [])
+      if (box.available)
+        place(
+          itemBoxes,
+          boxCount++,
+          box.x,
+          1.1 + (reduced ? 0 : Math.sin(effectTime * 2) * 0.12),
+          box.z,
+          reduced ? Math.PI / 4 : effectTime,
+          1.7,
+          1.3,
+          1.7,
+        );
+    let oilCount = 0;
+    for (const oil of race.powers?.oils ?? [])
+      place(oilSlicks, oilCount++, oil.x, 0.09, oil.z, 0, 3.5, 0.05, 3.5);
+    itemBoxes.count = boxCount;
+    oilSlicks.count = oilCount;
+    shields.count = shieldCount;
+    for (const m of [itemBoxes, oilSlicks, shields])
+      m.instanceMatrix.needsUpdate = true;
+    sparks.count = sparkCount;
+    sparks.instanceMatrix.needsUpdate = true;
+    if (sparks.instanceColor) sparks.instanceColor.needsUpdate = true;
     if (bodies.instanceColor) bodies.instanceColor.needsUpdate = true;
     // Marks and static props are created once. A theme change remounts the whole palette.
   }
@@ -311,6 +415,7 @@ export function createCircuit(
       materials.forEach((m) => m.dispose());
       textures.forEach((t) => t.dispose());
       instances.forEach((i) => i.dispose());
+      emission.clear();
       poses.clear();
       labels.clear();
       scene.clear();

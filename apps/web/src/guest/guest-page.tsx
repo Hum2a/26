@@ -70,6 +70,9 @@ export function GuestPage() {
   const kartRecoveryRequest = useRef<string | null>(null);
   const [kartRecoveryPending, setKartRecoveryPending] = useState(false);
   const [kartRecoveryNotice, setKartRecoveryNotice] = useState("");
+  const kartItemRequest = useRef<string | null>(null);
+  const [kartItemPending, setKartItemPending] = useState(false);
+  const [kartItemNotice, setKartItemNotice] = useState("");
   const recoveryRace = useRef<string | undefined>(undefined);
   const hapticBaseline = useRef<HapticView | null>(null);
   useWakeLock(session !== undefined);
@@ -143,6 +146,9 @@ export function GuestPage() {
         if (recoveryRace.current !== next.play?.kart?.raceId) {
           recoveryRace.current = next.play?.kart?.raceId;
           kartRecoveryRequest.current = null;
+          kartItemRequest.current = null;
+          setKartItemPending(false);
+          setKartItemNotice("");
           setKartRecoveryPending(false);
           setKartRecoveryNotice("");
         }
@@ -182,6 +188,14 @@ export function GuestPage() {
         );
       },
       onAck(ack) {
+        if (ack.requestId === kartItemRequest.current) {
+          kartItemRequest.current = null;
+          setKartItemPending(false);
+          setKartItemNotice(
+            ack.accepted ? "Power-up used" : (ack.error ?? "Item was not accepted."),
+          );
+          return;
+        }
         if (ack.requestId === kartRecoveryRequest.current) {
           kartRecoveryRequest.current = null;
           setKartRecoveryPending(false);
@@ -220,6 +234,8 @@ export function GuestPage() {
         setRejection(undefined);
       },
       onReplaced(message) {
+        kartItemRequest.current = null;
+        setKartItemPending(false);
         setKartRecoveryPending(false);
         hapticBaseline.current = null;
         setSnapshot(undefined);
@@ -536,6 +552,16 @@ export function GuestPage() {
                       setKartRecoveryNotice("");
                     }
                   }}
+                  onKartUseItem={(raceId) => {
+                    const id = socketRef.current?.submitKartItem?.(raceId);
+                    if (id) {
+                      kartItemRequest.current = id;
+                      setKartItemPending(true);
+                      setKartItemNotice("");
+                    }
+                  }}
+                  kartItemPending={kartItemPending}
+                  kartItemNotice={kartItemNotice}
                   kartRecoveryPending={kartRecoveryPending}
                   kartRecoveryNotice={kartRecoveryNotice}
                   snapshot={snapshot}

@@ -1,3 +1,13 @@
+import {
+  createKartPowers,
+  stepKartPowers,
+  useKartPower,
+  powerDrivingBody,
+  ringItemBoxes,
+  kartPowerViewSchema,
+  type KartPowers,
+  type OilSlick,
+} from "./kart-powers.ts";
 import { z } from "zod";
 import {
   clearOfWalls,
@@ -61,6 +71,7 @@ export const kartRaceSchema = z
     inputCursor: z.number().int().nonnegative().nullable(),
     // Frozen race size; phone leaderboards intentionally contain only a shortlist.
     participantCount: z.number().int().min(0).max(80).optional(),
+    powers: kartPowerViewSchema.optional(),
     participants: z.array(kartDriverSchema).max(80),
     leaderboard: z
       .array(
@@ -108,6 +119,7 @@ type Driver = Omit<
   driftMs: number;
   boostMs: number;
   wasDrifting: boolean;
+  power?: KartPowers;
   physics?: DrivingBody;
   lastSafe?: {
     x: number;
@@ -125,6 +137,8 @@ export type KartRace = {
   elapsedMs: number;
   ended: boolean;
   drivers: Driver[];
+  powerUpVersion?: 1;
+  oils?: OilSlick[];
   physicsVersion?: "arcade-v2";
 };
 
@@ -135,11 +149,14 @@ export function createKartRace(
   return {
     raceId,
     physicsVersion: "arcade-v2",
+    powerUpVersion: 1,
+    oils: [],
     elapsedMs: 0,
     ended: false,
     drivers: players.map((p, i) => ({
       ...p,
       number: i + 1,
+      power: createKartPowers(),
       x: 42 + ((i % 5) - 2) * 1.5,
       z: 0,
       heading: Math.PI / 2,
@@ -164,8 +181,14 @@ export function createKartRace(
 function copyRace(race: KartRace): KartRace {
   return {
     ...race,
+    oils: race.oils?.map((o) => ({ ...o })),
     drivers: race.drivers.map((d) => ({
       ...d,
+      power: d.power && {
+        ...d.power,
+        cooldowns: { ...d.power.cooldowns },
+        hits: [...d.power.hits],
+      },
       input: { ...d.input },
       physics: d.physics && { ...d.physics },
       lastSafe: d.lastSafe && { ...d.lastSafe },
@@ -199,11 +222,12 @@ function advanceDriver(
   from: number,
   target: number,
   version?: "arcade-v2",
+  oils?: readonly OilSlick[],
 ): void {
   const step = version ? 20 : 50;
   for (let t = from; t < target && driver.status === "RACING"; t += step) {
     const ms = Math.min(step, target - t);
-    stepDriver(driver, t + ms, ms, version);
+    stepDriver(driver, t + ms, ms, version, oils);
   }
 }
 function settleRace(race: KartRace, force = false): KartRace {
@@ -260,13 +284,26 @@ export function reduceKartTimeline(
     for (const event of pending) {
       if (event.input.raceId !== race.raceId || event.input.sequence <= driver.sequence)
         continue;
-      advanceDriver(driver, cursor, event.elapsed, race.physicsVersion);
+      advanceDriver(
+        driver,
+        cursor,
+        event.elapsed,
+        race.physicsVersion,
+        race.powerUpVersion ? (race.oils ?? []) : undefined,
+      );
       cursor = event.elapsed;
       applyInput(driver, race.raceId, event.input, event.elapsed);
     }
-    advanceDriver(driver, cursor, target, race.physicsVersion);
+    advanceDriver(
+      driver,
+      cursor,
+      target,
+      race.physicsVersion,
+      race.powerUpVersion ? (race.oils ?? []) : undefined,
+    );
   }
   next.elapsedMs = target;
+  if (next.oils) next.oils = next.oils.filter((o) => o.expiresAt > target);
   return settleRace(next);
 }
 
@@ -278,6 +315,7 @@ export function reduceKart(
     | { type: "tick"; elapsedMs: number }
     | { type: "release" }
     | { type: "recover"; playerId: string }
+    | { type: "use-power"; playerId: string }
     | { type: "end" },
 ): KartRace {
   if (race.ended) return race;
@@ -296,6 +334,19 @@ export function reduceKart(
     return next;
   }
   const driver = next.drivers.find((d) => d.playerId === event.playerId);
+  if (event.type === "use-power") {
+    if (!race.powerUpVersion || !driver || driver.status !== "RACING") return race;
+    const used = useKartPower(
+      driver.power ?? createKartPowers(),
+      driver.playerId,
+      driver,
+      race.elapsedMs,
+    );
+    if (!used) return race;
+    driver.power = used.powers;
+    if (used.oil) next.oils = [...(next.oils ?? []), used.oil].slice(-64);
+    return next;
+  }
   if (event.type === "recover") {
     if (
       !driver ||
@@ -312,6 +363,8 @@ export function reduceKart(
       checkpoint: 0,
       progress: 0,
     };
+    if (driver.power)
+      driver.power = { ...driver.power, turboUntil: 0, shieldUntil: 0, slowedUntil: 0 };
     Object.assign(driver, safe, {
       speed: 0,
       turn: 0,
@@ -343,12 +396,17 @@ function stepDriver(
   elapsed: number,
   ms: number,
   version?: "arcade-v2",
+  oils?: readonly OilSlick[],
 ): void {
   const dt = ms / 1000;
   const fresh = elapsed <= d.inputUntil;
   const input = fresh ? d.input : kartNeutral;
   if (version === "arcade-v2") {
-    const body = d.physics ?? createDrivingBody(d.x, d.z, d.heading);
+    let body = d.physics ?? createDrivingBody(d.x, d.z, d.heading);
+    if (oils) {
+      d.power ??= createKartPowers();
+      body = powerDrivingBody(body, d.power, elapsed);
+    }
     const next = stepDriving(
       body,
       input,
@@ -359,9 +417,29 @@ function stepDriver(
         body.z,
         ringDriving.radius + ringDriving.boostSpeed * 0.02,
       ),
-      false,
+      Boolean(d.power && d.power.slowedUntil > elapsed),
       fresh,
     );
+    if (oils && d.power) {
+      const effect = stepKartPowers(
+        d.power,
+        d.playerId,
+        body,
+        next,
+        ringItemBoxes,
+        oils,
+        elapsed,
+        d.playerId,
+      );
+      d.power = effect.powers;
+      if (effect.hit) {
+        next.vx *= 0.35;
+        next.vz *= 0.35;
+        next.boostMs = 0;
+        next.driftMs = 0;
+        next.wasDrifting = false;
+      }
+    }
     d.physics = next;
     d.x = next.x;
     d.z = next.z;
@@ -489,6 +567,28 @@ export function projectKartRace(
           race.drivers.find((d) => d.playerId === selfPlayerId)?.sequence ?? 0,
         )
       : null,
+    ...(race.powerUpVersion
+      ? {
+          powers: {
+            selfItem:
+              race.drivers.find((d) => d.playerId === selfPlayerId)?.power?.item ??
+              null,
+            boxes: ringItemBoxes.map((box) => ({
+              ...box,
+              available:
+                (race.drivers.find((d) => d.playerId === selfPlayerId)?.power
+                  ?.cooldowns[box.id] ?? 0) <= race.elapsedMs,
+            })),
+            oils: race.oils ?? [],
+            effects: race.drivers.map((d) => ({
+              playerId: d.playerId,
+              shieldMs: Math.max(0, (d.power?.shieldUntil ?? 0) - race.elapsedMs),
+              slowedMs: Math.max(0, (d.power?.slowedUntil ?? 0) - race.elapsedMs),
+              turboMs: Math.max(0, (d.power?.turboUntil ?? 0) - race.elapsedMs),
+            })),
+          },
+        }
+      : {}),
     participants: race.drivers.map(
       ({
         playerId,

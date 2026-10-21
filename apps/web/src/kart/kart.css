@@ -772,3 +772,15 @@ body:has(.kart-phone) {
   text-decoration: none;
   font-size: 0.7rem;
 }
+
+.kart-power-control {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.kart-power-control p {
+  margin: 0;
+  font-size: 0.75rem;
+  flex: 1 1 10rem;
+}

@@ -33,6 +33,9 @@ export function GuestPlay({
   onDuel,
   onKartInput,
   onKartRecover,
+  onKartUseItem,
+  kartItemPending,
+  kartItemNotice,
   kartRecoveryPending,
   kartRecoveryNotice,
   connected,
@@ -40,6 +43,9 @@ export function GuestPlay({
   snapshot: LobbySnapshot;
   onKartInput?: (input: KartInput) => void;
   onKartRecover?: (raceId: string) => void;
+  onKartUseItem?: (raceId: string) => void;
+  kartItemPending?: boolean;
+  kartItemNotice?: string;
   kartRecoveryPending?: boolean;
   kartRecoveryNotice?: string;
   connected?: boolean;
@@ -67,6 +73,9 @@ export function GuestPlay({
             snapshot={snapshot}
             connected={connected}
             onInput={onKartInput}
+            onUseItem={onKartUseItem}
+            itemPending={kartItemPending}
+            itemNotice={kartItemNotice}
             onRecover={onKartRecover}
             recoveryPending={kartRecoveryPending}
             recoveryNotice={kartRecoveryNotice}

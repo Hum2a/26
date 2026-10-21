@@ -118,6 +118,7 @@ export default defineConfig({
             "test/party-scoring.spec.ts",
             "test/kart-score.spec.ts",
             "test/kart-driving.spec.ts",
+            "test/kart-powers.spec.ts",
             "test/kart-guard.spec.ts",
             "test/new-party-concepts.spec.ts",
             "test/client-api-key.spec.ts",

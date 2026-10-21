@@ -1,3 +1,4 @@
+import { writeRoundState } from "../src/questions/round-state.ts";
 import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
 import { payloadDigest } from "../src/room/digest.ts";
@@ -9,6 +10,7 @@ import {
   readKart,
   KartInputBuffer,
   recoverKart,
+  useKartItem,
 } from "../src/questions/kart.ts";
 import { questionFor } from "../src/questions/registry.ts";
 import { kartNeutral } from "@26/shared";
@@ -380,4 +382,31 @@ it("persists recovery across eviction and rejects stale races and spectator iden
     expect(driver.input).toEqual(kartNeutral);
     expect(driver.progress).toBe(0);
   });
+});
+
+it("persists spent items and oil through eviction, keeps inventories private and rejects replay", async () => {
+  const { stub, players, now } = await setup();
+  const raceId = (await stub.snapshotFor("stage")).play!.kart!.raceId;
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql,
+      store = createSqlStore(sql),
+      q = questionFor(store.readRoom());
+    if (q?.kind !== "kart") throw new Error("Kart required");
+    const race = readKart(sql, q.id)!;
+    race.drivers[0]!.power!.item = "oil";
+    race.drivers[1]!.power!.item = "shield";
+    writeRoundState(sql, q.id, "kart-race", race);
+    expect(useKartItem(sql, store, q, "spectator", raceId, now).ok).toBe(false);
+    expect(useKartItem(sql, store, q, players[0]!, "old-race", now).ok).toBe(false);
+    expect(useKartItem(sql, store, q, players[0]!, raceId, now).ok).toBe(true);
+    expect(useKartItem(sql, store, q, players[0]!, raceId, now).ok).toBe(false);
+  });
+  await evictDurableObject(stub);
+  const stage = (await stub.snapshotFor("stage")).play!.kart!;
+  expect(stage.powers!.selfItem).toBeNull();
+  expect(stage.powers!.oils).toHaveLength(1);
+  const other = (await stub.snapshotFor("guest", players[1])).play!.kart!;
+  expect(other.powers!.selfItem).toBe("shield");
+  expect(other.powers!.effects).toHaveLength(1);
+  expect(JSON.stringify(stage)).not.toContain('"item":"shield"');
 });

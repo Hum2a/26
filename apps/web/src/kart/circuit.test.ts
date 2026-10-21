@@ -138,3 +138,71 @@ it("snaps recovered server poses instead of travelling across the circuit", () =
     target,
   );
 });
+
+it("animates drift sparks from server feedback, reduces motion and clears new races", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((key) => [
+      key,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const circuit = createCircuit(palette, true, "a");
+  const race = projectKartRace(
+    createKartRace("sparks", [{ playerId: "a", name: "Amina" }]),
+    "a",
+    100,
+  );
+  race.participants[0]!.drifting = true;
+  race.participants[0]!.driftCharge = 1;
+  circuit.update(race, 0.1, false);
+  const sparks = circuit.scene.getObjectByName(
+    "kart-drift-sparks",
+  ) as THREE.InstancedMesh;
+  expect(sparks.count).toBe(8);
+  const before = new THREE.Matrix4();
+  sparks.getMatrixAt(0, before);
+  circuit.update(race, 0.1, false);
+  const after = new THREE.Matrix4();
+  sparks.getMatrixAt(0, after);
+  expect(after.equals(before)).toBe(false);
+  circuit.update(race, 0.1, true);
+  expect(sparks.count).toBe(2);
+  race.raceId = "next";
+  race.participants[0]!.drifting = false;
+  circuit.update(race, 0.1, false);
+  expect(sparks.count).toBe(0);
+  circuit.dispose();
+});
+
+it("renders available boxes, deployed oil and shields with the existing resource budget", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((k) => [
+      k,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const circuit = createCircuit(palette, true, "a"),
+    race = projectKartRace(
+      createKartRace("items", [{ playerId: "a", name: "Amina" }]),
+      "a",
+      100,
+    );
+  race.powers!.boxes[0]!.available = false;
+  race.powers!.oils = [
+    { id: "oil", owner: "a", x: 42, z: 3, createdAt: 0, expiresAt: 8000 },
+  ];
+  race.powers!.effects[0]!.shieldMs = 5000;
+  circuit.update(race, 0.1, false);
+  expect(
+    (circuit.scene.getObjectByName("kart-item-boxes") as THREE.InstancedMesh).count,
+  ).toBe(17);
+  expect(
+    (circuit.scene.getObjectByName("kart-oil-slicks") as THREE.InstancedMesh).count,
+  ).toBe(1);
+  expect(
+    (circuit.scene.getObjectByName("kart-shields") as THREE.InstancedMesh).count,
+  ).toBe(1);
+  circuit.dispose();
+});

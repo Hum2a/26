@@ -8,6 +8,7 @@ import {
   KartInputBuffer,
   releaseKartInputs,
   recoverKart,
+  useKartItem,
 } from "../questions/kart.ts";
 import { readRoundState } from "../questions/round-state.ts";
 import { DurableObject } from "cloudflare:workers";
@@ -1896,8 +1897,14 @@ export class PartyRoom extends DurableObject<Env> {
     if (!command) {
       return;
     }
-    if (command.name === "kart-recover") {
-      await this.acceptKartRecovery(ws, attachment, command.requestId, command.raceId);
+    if (command.name === "kart-recover" || command.name === "kart-use-item") {
+      await this.acceptKartAction(
+        ws,
+        attachment,
+        command.requestId,
+        command.raceId,
+        command.name,
+      );
       return;
     }
     if (command.name === "answer") {
@@ -2140,11 +2147,12 @@ export class PartyRoom extends DurableObject<Env> {
     return result;
   }
 
-  private async acceptKartRecovery(
+  private async acceptKartAction(
     ws: WebSocket,
     attachment: SocketAttachment,
     requestId: string,
     raceId: string,
+    action: "kart-recover" | "kart-use-item" = "kart-recover",
   ): Promise<void> {
     if (attachment.role !== "guest") {
       this.send(ws, {
@@ -2152,11 +2160,11 @@ export class PartyRoom extends DurableObject<Env> {
         scope: "private",
         requestId,
         accepted: false,
-        error: "Only a racing phone can recover its kart.",
+        error: "Only a racing phone can use kart actions.",
       });
       return;
     }
-    const digest = await payloadDigest({ name: "kart-recover", raceId });
+    const digest = await payloadDigest({ name: action, raceId });
     let result: { accepted: boolean; error?: string } = { accepted: false };
     await commitAndArm(this.ctx.storage, (sql) => {
       const prior = this.readReceipt(attachment.principalId, requestId);
@@ -2175,12 +2183,20 @@ export class PartyRoom extends DurableObject<Env> {
         q = questionFor(store.readRoom());
       const recovered =
         q?.kind === "kart"
-          ? recoverKart(sql, store, q, attachment.principalId, raceId, Date.now())
+          ? (action === "kart-recover" ? recoverKart : useKartItem)(
+              sql,
+              store,
+              q,
+              attachment.principalId,
+              raceId,
+              Date.now(),
+            )
           : { ok: false as const, message: "No kart race is running." };
       result = recovered.ok
         ? { accepted: true }
         : { accepted: false, error: recovered.message };
-      if (recovered.ok) this.kartArrivals.discard(attachment.principalId);
+      if (recovered.ok && action === "kart-recover")
+        this.kartArrivals.discard(attachment.principalId);
       this.writeReceipt(attachment.principalId, requestId, digest, result);
     });
     this.sendSnapshot(ws);
@@ -3780,7 +3796,7 @@ function acceptRoundCommand(
 }
 
 function readCommand(body: unknown):
-  | { requestId: string; name: "kart-recover"; raceId: string }
+  | { requestId: string; name: "kart-recover" | "kart-use-item"; raceId: string }
   | { requestId: string; name: "kart-input"; input: unknown }
   | { requestId: string; name: "snapshot" }
   | { requestId: string; name: "answer"; optionId: string }
@@ -3829,12 +3845,12 @@ function readCommand(body: unknown):
   if (record.name === "kart-input")
     return { requestId: record.requestId, name: "kart-input", input: record.input };
   if (
-    record.name === "kart-recover" &&
+    (record.name === "kart-recover" || record.name === "kart-use-item") &&
     typeof record.raceId === "string" &&
     record.raceId.length > 0 &&
     record.raceId.length <= 120
   )
-    return { requestId: record.requestId, name: "kart-recover", raceId: record.raceId };
+    return { requestId: record.requestId, name: record.name, raceId: record.raceId };
   if (record.name === "snapshot") {
     return { requestId: record.requestId, name: "snapshot" };
   }

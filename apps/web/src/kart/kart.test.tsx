@@ -328,3 +328,36 @@ it("releases keyboard controls when focus moves to the steering input", () => {
   fireEvent.keyUp(slider, { key: "ArrowUp" });
   expect(change).toHaveBeenLastCalledWith(kartNeutral);
 });
+
+it("shows the held power-up and waits for server acknowledgement without releasing the pedals", () => {
+  const race = projectKartRace(
+    createKartRace("items", [{ playerId: "mine", name: "Amina" }]),
+    "mine",
+    100,
+  );
+  race.powers!.selfItem = "shield";
+  const snapshot = {
+    phase: "collect",
+    paused: false,
+    held: false,
+    play: { kart: race },
+  } as unknown as LobbySnapshot;
+  const use = vi.fn(),
+    view = render(<GuestKart snapshot={snapshot} onInput={vi.fn()} onUseItem={use} />);
+  fireEvent.click(screen.getByRole("button", { name: "Use Bubble shield" }));
+  expect(use).toHaveBeenCalledWith("items");
+  view.rerender(
+    <GuestKart snapshot={snapshot} onInput={vi.fn()} onUseItem={use} itemPending />,
+  );
+  expect(
+    (screen.getByRole("button", { name: "Using…" }) as HTMLButtonElement).disabled,
+  ).toBe(true);
+  expect(
+    (screen.getByRole("button", { name: "Accelerate" }) as HTMLButtonElement).disabled,
+  ).toBe(false);
+  view.rerender(<GuestKart snapshot={{ ...snapshot, paused: true }} onUseItem={use} />);
+  expect(
+    (screen.getByRole("button", { name: "Use Bubble shield" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+});

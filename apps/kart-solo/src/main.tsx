@@ -8,10 +8,12 @@ import {
   themes,
   DEFAULT_THEME_ID,
 } from "../../web/src/theme/themes";
+import { TrackItems } from "./TrackItems";
+import { PowerUpControl } from "../../web/src/kart/PowerUpControl";
 import { PlayerController } from "./upstream/PlayerController.jsx";
 import { Track } from "./upstream/models/Mario-circuit-test.jsx";
 import { useGameStore } from "./upstream/store.js";
-import { drive, pause, resume, reset, recover } from "./session";
+import { drive, pause, resume, reset, recover, useItem } from "./session";
 import "./solo.css";
 
 const themeStyle = document.createElement("style");
@@ -38,6 +40,7 @@ function Circuit() {
         <Track name="solo-track" />
       </Bvh>
       <PlayerController key={revision} />
+      <TrackItems />
       <Ready key={`camera-${revision}`} />
     </>
   );
@@ -109,6 +112,33 @@ class GameBoundary extends Component<{ children: ReactNode }, { failed: boolean 
   render() {
     return this.state.failed ? <Recovery /> : this.props.children;
   }
+}
+
+function SoloPowerInventory() {
+  const item = useGameStore((s) => s.soloPowers.item),
+    shield = useGameStore((s) => s.soloPowers.shieldUntil > s.soloElapsed),
+    slowed = useGameStore((s) => s.soloPowers.slowedUntil > s.soloElapsed);
+  const disabled = useGameStore(
+      (s) => s.soloPaused || s.soloRecover !== s.soloRecovered,
+    ),
+    notice = useGameStore((s) => s.soloPowerMessage);
+  return (
+    <aside className="solo-power">
+      <PowerUpControl
+        item={item}
+        disabled={disabled}
+        notice={notice}
+        effect={
+          shield
+            ? "Shield active — blocks one slick"
+            : slowed
+              ? "Oil hit — slowing down"
+              : ""
+        }
+        onUse={useItem}
+      />
+    </aside>
+  );
 }
 
 function SoloGame() {
@@ -239,6 +269,7 @@ function SoloGame() {
       {ready && !lost ? (
         <>
           <Telemetry />
+          <SoloPowerInventory />
           {paused ? (
             <div className="solo-message solo-paused" role="status">
               <h2>Taking a pit stop.</h2>

@@ -340,3 +340,26 @@ a:focus-visible {
     padding-inline: 0.5rem;
   }
 }
+
+.solo-power {
+  position: absolute;
+  top: 5rem;
+  left: 0.6rem;
+  max-width: min(22rem, calc(100% - 1.2rem));
+  padding: 0.6rem;
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--foreground);
+}
+.solo-power .kart-power-control {
+  gap: 0.4rem;
+}
+@media (max-height: 500px) {
+  .solo-power {
+    top: 4rem;
+    max-width: 16rem;
+  }
+  .solo-power p {
+    font-size: 0.65rem;
+  }
+}

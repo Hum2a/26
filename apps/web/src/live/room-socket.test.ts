@@ -205,6 +205,25 @@ describe("openRoomSocket liveness", () => {
     client.close();
   });
 
+  it("replays item use with the original request id after reconnecting", () => {
+    const client = open("guest"),
+      first = FakeSocket.instances[0]!;
+    first.open();
+    const requestId = client.submitKartItem!("items"),
+      command = first.sent.find((s) => s.includes('"kart-use-item"'))!;
+    expect(JSON.parse(command)).toMatchObject({
+      name: "kart-use-item",
+      raceId: "items",
+      requestId,
+    });
+    first.close(1006, "");
+    window.dispatchEvent(new Event("online"));
+    const next = FakeSocket.instances.at(-1)!;
+    next.open();
+    expect(next.sent).toContain(command);
+    client.close();
+  });
+
   it("closes a stage socket that stops answering pings, then reconnects", () => {
     const client = open("stage");
     FakeSocket.instances[0]!.open();

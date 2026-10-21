@@ -3,6 +3,7 @@ import type { LobbySnapshot, KartInput } from "@26/shared";
 import { KartDriverView } from "./KartDriverView";
 import { TouchController } from "./TouchController";
 import { useKartSocket } from "./useKartSocket";
+import { PowerUpControl } from "./PowerUpControl";
 import { Button } from "../ui/primitives";
 
 export function GuestKart({
@@ -10,6 +11,9 @@ export function GuestKart({
   connected = true,
   onInput,
   onRecover,
+  onUseItem,
+  itemPending,
+  itemNotice,
   recoveryPending = false,
   recoveryNotice = "",
 }: {
@@ -17,6 +21,9 @@ export function GuestKart({
   connected?: boolean;
   onInput?: (input: KartInput) => void;
   onRecover?: (raceId: string) => void;
+  onUseItem?: (raceId: string) => void;
+  itemPending?: boolean;
+  itemNotice?: string;
   recoveryPending?: boolean;
   recoveryNotice?: string;
 }) {
@@ -150,6 +157,22 @@ export function GuestKart({
           <p>Watch the stage for the results.</p>
         </motion.div>
       )}
+      {race?.powers && self && !complete && onUseItem ? (
+        <PowerUpControl
+          item={race.powers.selfItem}
+          pending={itemPending}
+          disabled={!open || recoveryPending}
+          notice={itemNotice}
+          effect={
+            race.powers.effects.find((e) => e.playerId === self.playerId)?.shieldMs
+              ? "Shield active — blocks one slick"
+              : race.powers.effects.find((e) => e.playerId === self.playerId)?.slowedMs
+                ? "Oil hit — slowing down"
+                : ""
+          }
+          onUse={() => onUseItem(race.raceId)}
+        />
+      ) : null}
       {!complete ? (
         <div className="kart-recovery">
           {race && self && onRecover ? (

@@ -85,6 +85,40 @@ export function KartMap({
           </g>
         );
       })}
+      {race.powers?.boxes
+        .filter((b) => b.available)
+        .map((b) => (
+          <g key={b.id} aria-label="Item box">
+            <rect
+              x={b.x - 1.3}
+              y={b.z - 1.3}
+              width={2.6}
+              height={2.6}
+              fill="var(--accent)"
+            />
+            <text
+              x={b.x}
+              y={b.z + 0.8}
+              textAnchor="middle"
+              fontSize="2.4"
+              fill="var(--accent-foreground)"
+            >
+              ?
+            </text>
+          </g>
+        ))}
+      {race.powers?.oils.map((o) => (
+        <circle
+          key={o.id}
+          cx={o.x}
+          cy={o.z}
+          r={1.6}
+          fill="var(--background)"
+          stroke="var(--highlight)"
+          strokeWidth={0.25}
+          aria-label="Oil slick"
+        />
+      ))}
       <path d="M34 0H50" className="kart-map-finish" />
       <text y="-2" className="kart-map-wordmark">
         26
@@ -104,6 +138,17 @@ export function KartMap({
           transition={{ duration: reduced ? 0 : 0.18, ease: "linear" }}
         >
           <title>{`#${driver.number} ${driver.name} · ${driver.status === "FINISHED" ? "Finished" : driver.status === "DNF" ? "DNF" : `${Math.round(driver.progress * 100)}%`}`}</title>
+          {race.powers?.effects.some(
+            (e) => e.playerId === driver.playerId && e.shieldMs > 0,
+          ) ? (
+            <circle
+              r={personal ? 4.5 : 2.8}
+              fill="none"
+              stroke="var(--highlight)"
+              strokeWidth={0.7}
+              aria-label="Shield active"
+            />
+          ) : null}
           <circle
             r={personal ? 2.8 : 1.5}
             className="kart-map-dot"
