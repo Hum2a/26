@@ -69,9 +69,12 @@ describe("routes that must not return the SPA shell", () => {
   });
 
   it("returns JSON for a nested WebSocket path", async () => {
-    const response = await server.fetch(withClientApiQuery("http://example.com/ws/room"), {
-      headers: withClientApiKeyHeaders(),
-    });
+    const response = await server.fetch(
+      withClientApiQuery("http://example.com/ws/room"),
+      {
+        headers: withClientApiKeyHeaders(),
+      },
+    );
     const text = await response.text();
 
     expect(response.headers.get("content-type")).toContain("application/json");

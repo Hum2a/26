@@ -20,7 +20,6 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
   const navigate = useNavigate();
   useEffect(() => {
     let live = true;
-    setLoading(true);
     void Promise.all([listRooms(), readCurrentRoom()]).then(([page, selected]) => {
       if (!live) return;
       if ("error" in page) setNotice(page.error);
@@ -93,7 +92,10 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
         <Button
           variant="secondary"
           disabled={loading || busy}
-          onClick={() => setReload((value) => value + 1)}
+          onClick={() => {
+            setLoading(true);
+            setReload((value) => value + 1);
+          }}
         >
           Refresh rooms
         </Button>

@@ -22,7 +22,14 @@ export const skinGrounds = [
   "tape",
 ] as const;
 
-export const skinShapes = ["round", "sharp", "chunky", "soft", "ticket", "cut"] as const;
+export const skinShapes = [
+  "round",
+  "sharp",
+  "chunky",
+  "soft",
+  "ticket",
+  "cut",
+] as const;
 
 export const skinMarks = [
   "numeral",
@@ -82,16 +89,10 @@ type SkinBase = {
 };
 
 export type ThemeSkin = SkinBase &
-  (
-    | { motif: "none" }
-    | { motif: Exclude<SkinMotif, "none">; icon: MotifIcon }
-  );
+  ({ motif: "none" } | { motif: Exclude<SkinMotif, "none">; icon: MotifIcon });
 
 type SkinInput = SkinBase &
-  (
-    | { motif?: "none" }
-    | { motif: Exclude<SkinMotif, "none">; icon: MotifIcon }
-  );
+  ({ motif?: "none" } | { motif: Exclude<SkinMotif, "none">; icon: MotifIcon });
 
 export const plainSkin: ThemeSkin = {
   id: "plain",
@@ -248,7 +249,13 @@ const skinned = {
       "ember-room",
       "mixtape-26",
     ],
-    { id: "club", ground: "stripes", shape: "round", mark: "shades", finish: "extravagant" },
+    {
+      id: "club",
+      ground: "stripes",
+      shape: "round",
+      mark: "shades",
+      finish: "extravagant",
+    },
   ),
   ...family(["rick-astley-never-gonna-log-you-out"], {
     id: "club",
@@ -288,7 +295,13 @@ const skinned = {
       "humza-according-to-everyone",
       "21-november",
     ],
-    { id: "show", ground: "stripes", shape: "round", mark: "star", finish: "extravagant" },
+    {
+      id: "show",
+      ground: "stripes",
+      shape: "round",
+      mark: "star",
+      finish: "extravagant",
+    },
   ),
   ...family(["baseer-live", "baseer-has-the-mic"], {
     id: "mic",
@@ -352,7 +365,13 @@ const skinned = {
       "queens-centre-court",
       "goodwood-all-access",
     ],
-    { id: "floodlight", ground: "floodlight", shape: "cut", mark: "beam", finish: "realistic" },
+    {
+      id: "floodlight",
+      ground: "floodlight",
+      shape: "cut",
+      mark: "beam",
+      finish: "realistic",
+    },
   ),
   ...family(
     [

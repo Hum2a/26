@@ -1,7 +1,10 @@
 import { SELF } from "cloudflare:test";
 import { withClientApiKeyHeaders, withClientApiQuery } from "./client-api-key.ts";
 
-export function apiFetch(input: string | Request, init: RequestInit = {}): Promise<Response> {
+export function apiFetch(
+  input: string | Request,
+  init: RequestInit = {},
+): Promise<Response> {
   if (typeof input === "string") {
     const headers =
       init.headers instanceof Headers

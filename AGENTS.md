@@ -13,6 +13,7 @@ Every later prompt starts by reading this file.
 # Project: 26.humza.website (birthday quiz)
 
 ## Stack
+
 - npm workspaces + Turborepo (npm only, never pnpm/yarn)
 - apps/web: React 19 + Vite. Routes: /play (phones), /screen (projector), /host (control panel)
 - apps/worker: Hono on Cloudflare Workers + one Durable Object class `Room` (WebSocket Hibernation API, SQLite storage, alarms)
@@ -23,18 +24,21 @@ Every later prompt starts by reading this file.
 - Tests: Vitest (unit + component via Testing Library + jsdom), @cloudflare/vitest-pool-workers (DO/Worker), Playwright (e2e), Node bot harness (load)
 
 ## Architecture rules
+
 - The server is authoritative. Clients send intents and render state. They never compute scores, timers or phase changes.
 - All game logic is a pure reducer in packages/shared: `reduce(state, event, now) -> { state, effects }`. The DO is a thin shell that feeds events in and executes effects (broadcast, set alarm, persist). This is what makes everything unit-testable.
 - Time is always injected (`now: number`), never `Date.now()` inside logic.
 - Browser APIs (wakeLock, vibrate, getUserMedia, Audio) are wrapped in small adapters so tests can mock them.
 
 ## Testing rules (non-negotiable)
+
 - Every feature has at least one test file, named in the phase prompt. Write the tests first or alongside the code, never after "it works".
 - Never skip, `.only`, or delete a failing test to get green. Fix the code or ask.
 - Pure logic → plain Vitest. DO behaviour → vitest-pool-workers. UI → Testing Library. Cross-device flows → Playwright.
 - A phase is done only when `npm run test:unit` and `npm run typecheck` pass.
 
 ## Scripts
+
 - Naming: `<domain>:<action>` (e.g. `test:unit`, `questions:check`, `email:preview`, `dev:jump`)
 
 - This is a separate birthday project. Never change LifeSmart, use its production resources or copy its pupil-specific rules into this project.
@@ -202,7 +206,9 @@ Use Motion springs or shared duration/easing tokens. Prefer enter/exit and layou
 
 ```tsx
 // ❌ BAD — appears and vanishes instantly
-{open ? <Panel /> : null}
+{
+  open ? <Panel /> : null;
+}
 
 // ✅ GOOD — eased presence, still uses the shared panel
 <AnimatePresence>
@@ -215,7 +221,7 @@ Use Motion springs or shared duration/easing tokens. Prefer enter/exit and layou
       <Panel />
     </motion.div>
   ) : null}
-</AnimatePresence>
+</AnimatePresence>;
 ```
 
 ## Reduced motion and stage safety
@@ -286,7 +292,7 @@ Render with the offline Iconify component so a missing icon does not call the ne
 import { Icon } from "@iconify/react/dist/offline";
 import car from "@iconify-icons/lucide/car";
 
-<Icon icon={car} />
+<Icon icon={car} />;
 ```
 
 From the repo root, the pinned installs are:
@@ -301,12 +307,12 @@ npm install @iconify-icons/mdi@2.0.0 -w @26/web
 
 The import path is `@iconify-icons/{prefix}/{icon-name}`.
 
-| Category | Pack | Look for |
-| --- | --- | --- |
-| 26 basic, Personal to 26, Quiz and chaos, Dark and atmospheric, Light and nostalgic, Personal to the night, Everyday, School, Work, Musicians, Cars | [Lucide](https://icon-sets.iconify.design/lucide/) | circle, user, circle-help, moon, sun, star, coffee, graduation-cap, briefcase, music, car |
-| Cars, Work, Musicians, Games, and any named company, bank, platform, or artist | [Simple Icons](https://icon-sets.iconify.design/simple-icons/) | nissan, toyota, and the brand slug |
-| Games, and a pictogram that is not a publisher logo | [Game Icons](https://icon-sets.iconify.design/game-icons/) | dice, swords, cards |
-| A shape Lucide does not have | [Material Design Icons](https://icon-sets.iconify.design/mdi/) | the closest generic glyph |
+| Category                                                                                                                                            | Pack                                                           | Look for                                                                                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 26 basic, Personal to 26, Quiz and chaos, Dark and atmospheric, Light and nostalgic, Personal to the night, Everyday, School, Work, Musicians, Cars | [Lucide](https://icon-sets.iconify.design/lucide/)             | circle, user, circle-help, moon, sun, star, coffee, graduation-cap, briefcase, music, car |
+| Cars, Work, Musicians, Games, and any named company, bank, platform, or artist                                                                      | [Simple Icons](https://icon-sets.iconify.design/simple-icons/) | nissan, toyota, and the brand slug                                                        |
+| Games, and a pictogram that is not a publisher logo                                                                                                 | [Game Icons](https://icon-sets.iconify.design/game-icons/)     | dice, swords, cards                                                                       |
+| A shape Lucide does not have                                                                                                                        | [Material Design Icons](https://icon-sets.iconify.design/mdi/) | the closest generic glyph                                                                 |
 
 Persona, Anime, and Crossovers use Lucide for the tab. Use Simple Icons only when that studio, series, or platform has a slug. Game Icons does not include franchise characters.
 

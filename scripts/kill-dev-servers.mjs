@@ -2,7 +2,14 @@
 import { execFileSync } from "node:child_process";
 import { platform } from "node:os";
 
-const DEV_PROCESS_NAMES = new Set(["node", "node.exe", "workerd", "workerd.exe", "esbuild", "esbuild.exe"]);
+const DEV_PROCESS_NAMES = new Set([
+  "node",
+  "node.exe",
+  "workerd",
+  "workerd.exe",
+  "esbuild",
+  "esbuild.exe",
+]);
 const DEV_COMMAND_PATTERNS = [
   /\bvite\b/i,
   /\bwrangler\b/i,
@@ -44,10 +51,14 @@ function killTargets(targets) {
   }
 
   for (const target of targets) {
-    const label = target.port ? `${target.name} (pid ${target.pid}, port ${target.port})` : `${target.name} (pid ${target.pid})`;
+    const label = target.port
+      ? `${target.name} (pid ${target.pid}, port ${target.port})`
+      : `${target.name} (pid ${target.pid})`;
     try {
       if (platform() === "win32") {
-        execFileSync("taskkill", ["/PID", String(target.pid), "/T", "/F"], { stdio: "pipe" });
+        execFileSync("taskkill", ["/PID", String(target.pid), "/T", "/F"], {
+          stdio: "pipe",
+        });
       } else {
         execFileSync("kill", ["-TERM", String(target.pid)], { stdio: "pipe" });
       }
@@ -127,7 +138,9 @@ function getWindowsListeningPorts() {
 }
 
 function findUnixTargets() {
-  const output = execFileSync("ps", ["-axo", "pid=,comm=,command="], { encoding: "utf8" });
+  const output = execFileSync("ps", ["-axo", "pid=,comm=,command="], {
+    encoding: "utf8",
+  });
   const listeningPorts = getUnixListeningPorts();
   const targets = [];
 

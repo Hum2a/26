@@ -95,7 +95,9 @@ export async function clearGitLockFiles(root: string): Promise<ClearGitLockResul
 }
 
 function isNotFound(error: unknown): boolean {
-  return Boolean(error && typeof error === "object" && "code" in error && error.code === "ENOENT");
+  return Boolean(
+    error && typeof error === "object" && "code" in error && error.code === "ENOENT",
+  );
 }
 
 function displayPath(filePath: string, root: string): string {
@@ -115,7 +117,9 @@ async function main(): Promise<number> {
     console.log(`Removed ${displayPath(lockPath, root)}`);
   }
   for (const failure of result.failed) {
-    console.error(`Could not remove ${displayPath(failure.path, root)}: ${failure.message}`);
+    console.error(
+      `Could not remove ${displayPath(failure.path, root)}: ${failure.message}`,
+    );
   }
 
   if (result.failed.length > 0) {
@@ -134,7 +138,8 @@ async function main(): Promise<number> {
 }
 
 const invokedDirectly =
-  Boolean(process.argv[1]) && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
+  Boolean(process.argv[1]) &&
+  import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 
 if (invokedDirectly) {
   process.exit(await main());

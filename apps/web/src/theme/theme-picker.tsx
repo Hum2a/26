@@ -83,7 +83,9 @@ function categoryGlyph(id: string) {
         </>
       );
     case "the-night":
-      return <path d="M8 2.2 9.2 5.5l3.5.3-2.7 2.2.8 3.4L8 9.7l-2.8 1.7.8-3.4-2.7-2.2 3.5-.3z" />;
+      return (
+        <path d="M8 2.2 9.2 5.5l3.5.3-2.7 2.2.8 3.4L8 9.7l-2.8 1.7.8-3.4-2.7-2.2 3.5-.3z" />
+      );
     case "persona":
       return (
         <>
@@ -102,7 +104,9 @@ function categoryGlyph(id: string) {
         </>
       );
     case "anime":
-      return <path d="M8 1.8 9.1 5.4l3.6.4L10 8.2l.9 3.5L8 9.8l-2.9 1.9.9-3.5-2.7-2.4 3.6-.4z" />;
+      return (
+        <path d="M8 1.8 9.1 5.4l3.6.4L10 8.2l.9 3.5L8 9.8l-2.9 1.9.9-3.5-2.7-2.4 3.6-.4z" />
+      );
     case "everyday":
       return (
         <>
@@ -356,7 +360,8 @@ export function ThemePicker() {
                       }
                       event.preventDefault();
                       const next =
-                        (index + step + themeCategories.length) % themeCategories.length;
+                        (index + step + themeCategories.length) %
+                        themeCategories.length;
                       scrollToCategory(next, reduceMotion ? "auto" : "smooth");
                       requestAnimationFrame(() => {
                         document

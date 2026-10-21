@@ -52,7 +52,9 @@ Use Motion springs or shared duration/easing tokens. Prefer enter/exit and layou
 
 ```tsx
 // ❌ BAD — appears and vanishes instantly
-{open ? <Panel /> : null}
+{
+  open ? <Panel /> : null;
+}
 
 // ✅ GOOD — eased presence, still uses the shared panel
 <AnimatePresence>
@@ -65,7 +67,7 @@ Use Motion springs or shared duration/easing tokens. Prefer enter/exit and layou
       <Panel />
     </motion.div>
   ) : null}
-</AnimatePresence>
+</AnimatePresence>;
 ```
 
 ## Reduced motion and stage safety

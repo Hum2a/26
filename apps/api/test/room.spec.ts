@@ -2,11 +2,7 @@ import { env, runInDurableObject } from "cloudflare:test";
 import { apiFetch } from "./api-fetch.ts";
 import { withClientApiKeyHeaders, withClientApiQuery } from "./client-api-key.ts";
 import { describe, expect, it } from "vitest";
-import {
-  movedSessionMessage,
-  newerTabMessage,
-  publicVersionNeedsSnapshot,
-} from "@26/shared";
+import { movedSessionMessage, newerTabMessage } from "@26/shared";
 import { payloadDigest } from "../src/room/digest.ts";
 import type { GuestJoinResult } from "../src/room/party-room.ts";
 
@@ -14,12 +10,6 @@ import type { GuestJoinResult } from "../src/room/party-room.ts";
 const now = new Date(Date.now() - 60_000).toISOString();
 
 describe("durable lobby", () => {
-  it("treats a public version gap as a snapshot request, not a private loss", () => {
-    expect(publicVersionNeedsSnapshot(1, 2)).toBe(false);
-    expect(publicVersionNeedsSnapshot(1, 4)).toBe(true);
-    expect(publicVersionNeedsSnapshot(0, 3)).toBe(false);
-  });
-
   it("rejects a repeated join code and a repeated game id", async () => {
     const registry = env.ROOM_CODE_REGISTRY.getByName("codes");
     const first = await registry.claim({
@@ -427,12 +417,15 @@ describe("durable lobby", () => {
   });
 
   it("answers an unknown socket with JSON", async () => {
-    const response = await apiFetch(withClientApiQuery("http://example.com/ws/ABCDEFGHJKLM"), {
-      headers: {
-        Upgrade: "websocket",
-        Origin: "http://example.com",
+    const response = await apiFetch(
+      withClientApiQuery("http://example.com/ws/ABCDEFGHJKLM"),
+      {
+        headers: {
+          Upgrade: "websocket",
+          Origin: "http://example.com",
+        },
       },
-    });
+    );
     expect(response.status).toBe(404);
     expect(response.headers.get("content-type")).toContain("application/json");
     expect(await response.text()).not.toContain("<html");
@@ -478,14 +471,17 @@ function guestCookie(joined: Extract<GuestJoinResult, { ok: true }>): string {
 }
 
 function socketRequest(gameId: string, cookie: string, role: string): Request {
-  return new Request(withClientApiQuery(`http://example.com/ws/${gameId}?role=${role}`), {
-    headers: withClientApiKeyHeaders({
-      Upgrade: "websocket",
-      Connection: "Upgrade",
-      Origin: "http://example.com",
-      Cookie: cookie,
-    }),
-  });
+  return new Request(
+    withClientApiQuery(`http://example.com/ws/${gameId}?role=${role}`),
+    {
+      headers: withClientApiKeyHeaders({
+        Upgrade: "websocket",
+        Connection: "Upgrade",
+        Origin: "http://example.com",
+        Cookie: cookie,
+      }),
+    },
+  );
 }
 
 async function connect(

@@ -67,7 +67,7 @@ Render with the offline Iconify component so a missing icon does not call the ne
 import { Icon } from "@iconify/react/dist/offline";
 import car from "@iconify-icons/lucide/car";
 
-<Icon icon={car} />
+<Icon icon={car} />;
 ```
 
 From the repo root, the pinned installs are:
@@ -82,12 +82,12 @@ npm install @iconify-icons/mdi@2.0.0 -w @26/web
 
 The import path is `@iconify-icons/{prefix}/{icon-name}`.
 
-| Category | Pack | Look for |
-| --- | --- | --- |
-| 26 basic, Personal to 26, Quiz and chaos, Dark and atmospheric, Light and nostalgic, Personal to the night, Everyday, School, Work, Musicians, Cars | [Lucide](https://icon-sets.iconify.design/lucide/) | circle, user, circle-help, moon, sun, star, coffee, graduation-cap, briefcase, music, car |
-| Cars, Work, Musicians, Games, and any named company, bank, platform, or artist | [Simple Icons](https://icon-sets.iconify.design/simple-icons/) | nissan, toyota, and the brand slug |
-| Games, and a pictogram that is not a publisher logo | [Game Icons](https://icon-sets.iconify.design/game-icons/) | dice, swords, cards |
-| A shape Lucide does not have | [Material Design Icons](https://icon-sets.iconify.design/mdi/) | the closest generic glyph |
+| Category                                                                                                                                            | Pack                                                           | Look for                                                                                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 26 basic, Personal to 26, Quiz and chaos, Dark and atmospheric, Light and nostalgic, Personal to the night, Everyday, School, Work, Musicians, Cars | [Lucide](https://icon-sets.iconify.design/lucide/)             | circle, user, circle-help, moon, sun, star, coffee, graduation-cap, briefcase, music, car |
+| Cars, Work, Musicians, Games, and any named company, bank, platform, or artist                                                                      | [Simple Icons](https://icon-sets.iconify.design/simple-icons/) | nissan, toyota, and the brand slug                                                        |
+| Games, and a pictogram that is not a publisher logo                                                                                                 | [Game Icons](https://icon-sets.iconify.design/game-icons/)     | dice, swords, cards                                                                       |
+| A shape Lucide does not have                                                                                                                        | [Material Design Icons](https://icon-sets.iconify.design/mdi/) | the closest generic glyph                                                                 |
 
 Persona, Anime, and Crossovers use Lucide for the tab. Use Simple Icons only when that studio, series, or platform has a slug. Game Icons does not include franchise characters.
 

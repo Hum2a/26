@@ -49,7 +49,11 @@ const emptyCounts = (): LineCounts => ({
   total: 0,
 });
 
-function addCounts(target: LineCounts, next: Omit<LineCounts, "files">, files = 1): void {
+function addCounts(
+  target: LineCounts,
+  next: Omit<LineCounts, "files">,
+  files = 1,
+): void {
   target.files += files;
   target.code += next.code;
   target.comment += next.comment;
@@ -223,9 +227,7 @@ async function collectStats(): Promise<FileStat[]> {
       const resolved = path.resolve(scanRoot);
       const extension = path.extname(resolved);
       files =
-        extension && !excludedFiles.has(resolved)
-          ? [resolved]
-          : await walk(resolved);
+        extension && !excludedFiles.has(resolved) ? [resolved] : await walk(resolved);
     } catch {
       continue;
     }
@@ -252,10 +254,15 @@ async function collectStats(): Promise<FileStat[]> {
     }
   }
 
-  return stats.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+  return stats.sort((left, right) =>
+    left.relativePath.localeCompare(right.relativePath),
+  );
 }
 
-function summariseByArea(stats: FileStat[], kind: "source" | "docs"): Map<string, LineCounts> {
+function summariseByArea(
+  stats: FileStat[],
+  kind: "source" | "docs",
+): Map<string, LineCounts> {
   const areas = new Map<string, LineCounts>();
   for (const stat of stats.filter((entry) => entry.kind === kind)) {
     const current = areas.get(stat.area) ?? emptyCounts();
@@ -265,7 +272,10 @@ function summariseByArea(stats: FileStat[], kind: "source" | "docs"): Map<string
   return areas;
 }
 
-function summariseByExtension(stats: FileStat[], kind: "source" | "docs"): Map<string, LineCounts> {
+function summariseByExtension(
+  stats: FileStat[],
+  kind: "source" | "docs",
+): Map<string, LineCounts> {
   const extensions = new Map<string, LineCounts>();
   for (const stat of stats.filter((entry) => entry.kind === kind)) {
     const current = extensions.get(stat.extension) ?? emptyCounts();
@@ -319,7 +329,9 @@ function renderTable(rows: Array<{ label: string; counts: LineCounts }>): string
   return lines.join("\n");
 }
 
-function renderMarkdownTable(rows: Array<{ label: string; counts: LineCounts }>): string {
+function renderMarkdownTable(
+  rows: Array<{ label: string; counts: LineCounts }>,
+): string {
   const lines = [
     "| Area | Files | Code | Comment | Blank | Total |",
     "| --- | ---: | ---: | ---: | ---: | ---: |",
@@ -332,9 +344,13 @@ function renderMarkdownTable(rows: Array<{ label: string; counts: LineCounts }>)
   return lines.join("\n");
 }
 
-function areaRows(areas: Map<string, LineCounts>): Array<{ label: string; counts: LineCounts }> {
+function areaRows(
+  areas: Map<string, LineCounts>,
+): Array<{ label: string; counts: LineCounts }> {
   return [...areas.entries()]
-    .sort((left, right) => right[1].code - left[1].code || left[0].localeCompare(right[0]))
+    .sort(
+      (left, right) => right[1].code - left[1].code || left[0].localeCompare(right[0]),
+    )
     .map(([label, counts]) => ({ label, counts }));
 }
 

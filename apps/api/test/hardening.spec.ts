@@ -252,47 +252,59 @@ describe("failure and access hardening", () => {
     const other = await createRoom();
     const amina = await join(room(created.gameId), "Amina");
     const foreign = await room(created.gameId).fetch(
-      new Request(withClientApiQuery(`http://example.com/ws/${created.gameId}?role=guest`), {
-        headers: {
-          Upgrade: "websocket",
-          Origin: "https://evil.example",
-          Cookie: guestCookie(amina),
+      new Request(
+        withClientApiQuery(`http://example.com/ws/${created.gameId}?role=guest`),
+        {
+          headers: {
+            Upgrade: "websocket",
+            Origin: "https://evil.example",
+            Cookie: guestCookie(amina),
+          },
         },
-      }),
+      ),
     );
     expect(foreign.status).toBe(403);
 
     const crossSite = await room(created.gameId).fetch(
-      new Request(withClientApiQuery(`http://example.com/ws/${created.gameId}?role=guest`), {
-        headers: {
-          Upgrade: "websocket",
-          Origin: "http://example.com",
-          "sec-fetch-site": "cross-site",
-          Cookie: guestCookie(amina),
+      new Request(
+        withClientApiQuery(`http://example.com/ws/${created.gameId}?role=guest`),
+        {
+          headers: {
+            Upgrade: "websocket",
+            Origin: "http://example.com",
+            "sec-fetch-site": "cross-site",
+            Cookie: guestCookie(amina),
+          },
         },
-      }),
+      ),
     );
     expect(crossSite.status).toBe(403);
 
     const escalated = await room(created.gameId).fetch(
-      new Request(withClientApiQuery(`http://example.com/ws/${created.gameId}?role=control`), {
-        headers: {
-          Upgrade: "websocket",
-          Origin: "http://example.com",
-          Cookie: guestCookie(amina),
+      new Request(
+        withClientApiQuery(`http://example.com/ws/${created.gameId}?role=control`),
+        {
+          headers: {
+            Upgrade: "websocket",
+            Origin: "http://example.com",
+            Cookie: guestCookie(amina),
+          },
         },
-      }),
+      ),
     );
     expect(escalated.status).toBe(401);
 
     const stage = await room(created.gameId).fetch(
-      new Request(withClientApiQuery(`http://example.com/ws/${created.gameId}?role=stage`), {
-        headers: {
-          Upgrade: "websocket",
-          Origin: "http://example.com",
-          Cookie: `26_room_presentation=${created.presentation.credentialId}.${created.presentation.secret}`,
+      new Request(
+        withClientApiQuery(`http://example.com/ws/${created.gameId}?role=stage`),
+        {
+          headers: {
+            Upgrade: "websocket",
+            Origin: "http://example.com",
+            Cookie: `26_room_presentation=${created.presentation.credentialId}.${created.presentation.secret}`,
+          },
         },
-      }),
+      ),
     );
     expect(stage.status).toBe(101);
     const stageSocket = stage.webSocket;
@@ -469,14 +481,17 @@ function guestCookie(joined: { gameId: string; playerId: string; secret: string 
 }
 
 function socketRequest(gameId: string, cookie: string, role: string): Request {
-  return new Request(withClientApiQuery(`http://example.com/ws/${gameId}?role=${role}`), {
-    headers: {
-      Upgrade: "websocket",
-      Connection: "Upgrade",
-      Origin: "http://example.com",
-      Cookie: cookie,
+  return new Request(
+    withClientApiQuery(`http://example.com/ws/${gameId}?role=${role}`),
+    {
+      headers: {
+        Upgrade: "websocket",
+        Connection: "Upgrade",
+        Origin: "http://example.com",
+        Cookie: cookie,
+      },
     },
-  });
+  );
 }
 
 async function connect(

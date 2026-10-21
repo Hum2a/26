@@ -5,7 +5,6 @@ import {
   movedSessionMessage,
   newerTabMessage,
   removedSessionMessage,
-  publicVersionNeedsSnapshot,
   type LobbySnapshot,
   type KartFrame,
   type KartInput,
@@ -175,7 +174,6 @@ export function openRoomSocket(options: {
   let stopped = false;
   let attempt = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let lastStateVersion = 0;
   let lastSnapshot: LobbySnapshot | undefined;
   let lastView: string | undefined;
   let snapshotRequested = false;
@@ -437,16 +435,6 @@ export function openRoomSocket(options: {
       });
       return;
     }
-    if (
-      record.kind === "version" &&
-      record.scope === "public" &&
-      typeof record.stateVersion === "number"
-    ) {
-      if (publicVersionNeedsSnapshot(lastStateVersion, record.stateVersion)) {
-        requestSnapshot();
-      }
-      return;
-    }
     if (record.kind === "kart" && record.scope === "public") {
       applyKartFrame(record);
       return;
@@ -479,7 +467,6 @@ export function openRoomSocket(options: {
     lastView = typeof view === "string" ? view : undefined;
     lastSnapshot = snapshot;
     snapshotRequested = false;
-    lastStateVersion = snapshot.stateVersion;
     if (options.role === "guest" && snapshot.phase !== lastPhase) {
       lastPhase = snapshot.phase;
       sendDevice("phase");
@@ -501,7 +488,6 @@ export function openRoomSocket(options: {
     if (merged === "stale") {
       return;
     }
-    lastStateVersion = merged.stateVersion;
     lastSnapshot = merged;
     options.onSnapshot(merged);
   }

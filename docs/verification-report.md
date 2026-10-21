@@ -116,8 +116,9 @@ Test results for this change on the development machine:
 - `npm run test:unit`: 70 files, 276 tests passed.
 - `npm run typecheck` passed. `npm run build` passed, with 513 build files checked for secrets and content preflight passing.
 - API suite with `operations.spec.ts` and `results-room.spec.ts` excluded: 310 of 313 tests passed. Two of the three failures were re-run on their own: `auth.spec.ts` passed 13 of 13 (the full-run failure was PGlite starting under load) and the patch test was fixed and passed 3 runs of 3. `archive-room.spec.ts` "reports preparing and ready" fails the same way on unmodified HEAD.
-- `operations.spec.ts` and `results-room.spec.ts` fail on this machine with and without these changes, because `apps/api/.dev.vars` sets `DATABASE_URL` and the room tests then open a Neon pool. The first failure aborts the rest of the run, so they were excluded to get a full count.
-- `npm run lint` reports two errors, both in files these changes do not touch: `apps/api/src/index.ts` and `apps/web/src/admin/rooms-page.tsx`.
+- `operations.spec.ts` and `results-room.spec.ts` assumed a `.dev.vars` without `DATABASE_URL` and `EMAIL_TEST_RECIPIENT`. On this machine both are set. After the shared-pool fix they no longer hang. They still fail on those two assumptions: three tests between them, which expect the local outbox and no test recipient.
+- After the cleanup commit, `npm run lint` reports no errors. Twelve React Fast Refresh warnings remain, all from before this work.
+- GitHub Actions has not run since at least `43cbce4`: GitHub refused to start the job because of the account's billing or spending limit.
 
 ## Still to check at the venue
 

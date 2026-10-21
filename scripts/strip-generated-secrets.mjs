@@ -4,7 +4,9 @@ import path from "node:path";
 const roots = [path.resolve("apps/web/dist"), path.resolve("apps/api/dist")];
 
 function isGeneratedSecret(name) {
-  return name === ".dev.vars" || name.startsWith(".dev.vars.") || name.startsWith(".env");
+  return (
+    name === ".dev.vars" || name.startsWith(".dev.vars.") || name.startsWith(".env")
+  );
 }
 
 async function strip(directory) {
@@ -41,5 +43,7 @@ for (const root of roots) {
 if (removed.length === 0) {
   console.log("No generated secret files to strip from dist.");
 } else {
-  console.log(`Removed ${removed.length} generated secret file${removed.length === 1 ? "" : "s"} from dist.`);
+  console.log(
+    `Removed ${removed.length} generated secret file${removed.length === 1 ? "" : "s"} from dist.`,
+  );
 }

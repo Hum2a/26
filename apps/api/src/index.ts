@@ -30,7 +30,7 @@ function jsonNotFound(message: string): Response {
   return Response.json(body, { status: 404 });
 }
 
-app.onError((error, _c) => {
+app.onError((error) => {
   logAuthFailure(error);
   return authFailure("invalid", 500);
 });

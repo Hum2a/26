@@ -3,7 +3,11 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-import { clearGitLockFiles, findGitLockFiles, resolveGitDir } from "./git-clear-lock.ts";
+import {
+  clearGitLockFiles,
+  findGitLockFiles,
+  resolveGitDir,
+} from "./git-clear-lock.ts";
 
 test("clears leftover git lock files and leaves other git files alone", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "git-clear-lock-"));

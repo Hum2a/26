@@ -1250,14 +1250,6 @@ export const movedSessionMessage = "This session was moved to another device.";
 export const removedSessionMessage = "This phone was removed from the game.";
 
 /**
- * A public room version can skip while this connection was asleep.
- * That gap asks for a fresh snapshot. It is not a missing private acknowledgement.
- */
-export function publicVersionNeedsSnapshot(previous: number, next: number): boolean {
-  return previous > 0 && next > previous + 1;
-}
-
-/**
  * Entertainment audio is not exactly-once across a crash.
  * A cue already on screen at load, already played, muted, or expired is dropped.
  * A locked browser waits until the stage unlocks sound, then plays the cue once.

@@ -269,12 +269,15 @@ async function makeDue(stub: ReturnType<typeof room>): Promise<void> {
 }
 
 function socketRequest(gameId: string, cookie: string, role: string): Request {
-  return new Request(withClientApiQuery(`http://example.com/ws/${gameId}?role=${role}`), {
-    headers: {
-      Upgrade: "websocket",
-      Connection: "Upgrade",
-      Origin: "http://example.com",
-      Cookie: cookie,
+  return new Request(
+    withClientApiQuery(`http://example.com/ws/${gameId}?role=${role}`),
+    {
+      headers: {
+        Upgrade: "websocket",
+        Connection: "Upgrade",
+        Origin: "http://example.com",
+        Cookie: cookie,
+      },
     },
-  });
+  );
 }

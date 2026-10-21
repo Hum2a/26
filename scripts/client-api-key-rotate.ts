@@ -22,7 +22,9 @@ for (const environment of readTargetEnvironments()) {
   console.log(`  Worker: ${path.relative(root, devVarsPath(environment))}`);
   console.log(`  Web: ${path.relative(root, envPath(environment))}`);
   if (environment !== "local") {
-    console.log(`  Deploy: npx wrangler secret put CLIENT_API_KEY --env ${environment}`);
+    console.log(
+      `  Deploy: npx wrangler secret put CLIENT_API_KEY --env ${environment}`,
+    );
   }
   console.log("  Restart dev or rebuild after rotation.");
   console.log("");
