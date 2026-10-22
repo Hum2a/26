@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { featurePath, roomFeatures } from "./features";
+import { adminFeatures, featurePath, roomFeatures } from "./features";
 import type { AdminRoomList, LobbySnapshot } from "@26/shared";
 import { Button, Dialog, LinkButton } from "../ui/primitives";
 import { JoinMark } from "../lobby/join-mark";
@@ -151,6 +151,7 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
           </ul>
         </>
       ) : null}
+      {overview ? <EverythingGrid roomId={current?.gameId ?? null} /> : null}
       {overview ? (
         <LinkButton variant="secondary" to="/admin/rooms">
           Browse all rooms
@@ -160,6 +161,54 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
           Load older rooms
         </Button>
       ) : null}
+    </section>
+  );
+}
+
+/**
+ * Every admin feature from the registry, on the home page. Room features open
+ * in this browser's selected room; without one, they say to open a room first.
+ */
+function EverythingGrid({ roomId }: { roomId: string | null }) {
+  const listed = adminFeatures.filter(
+    (feature) => feature.id !== "home" && feature.id !== "rooms" && feature.id !== "overview",
+  );
+  return (
+    <section aria-label="Everything you can manage" className="grid gap-3">
+      <h2>Everything you can manage</h2>
+      <p>
+        {roomId
+          ? "Room tools open in your selected room."
+          : "Room tools need a room: create a lobby or open one above."}
+      </p>
+      <ul className="admin-feature-grid">
+        {listed.map((feature) => {
+          const available = feature.scope === "global" || roomId !== null;
+          const body = (
+            <>
+              <strong>{feature.label}</strong>
+              <span className="admin-feature-status">
+                {feature.scope === "global" ? "Any time" : roomId ? "This room" : "Open a room to use this"}
+              </span>
+              <span>{feature.summary}</span>
+              <span className="admin-feature-rehearse">Try it: {feature.rehearsal}</span>
+            </>
+          );
+          return (
+            <li key={feature.id}>
+              {available ? (
+                <Link to={featurePath(feature, roomId ?? undefined)} className="admin-feature-card">
+                  {body}
+                </Link>
+              ) : (
+                <div className="admin-feature-card" aria-disabled="true" data-disabled="">
+                  {body}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }

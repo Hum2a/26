@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from "react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { readCurrentRoom } from "../admin/rooms-api";
 import { EntryFrame } from "./entry-frame";
 import {
   adminFeatures,
@@ -21,6 +22,7 @@ export function AdminShell({
   const location = useLocation();
   const reduced = useReducedMotion();
   const roomPath = location.pathname.match(/^\/admin\/rooms\/([A-Z0-9]+)(?:\/|$)/)?.[1];
+  const selectedRoom = useSelectedRoom(roomPath);
   useEffect(() => {
     // The question inspector owns its title, including loading and error states.
     if (location.pathname.startsWith("/admin/content/")) return;
@@ -53,20 +55,33 @@ export function AdminShell({
                   {feature.label}
                 </NavLink>
               ))}
-            {roomPath ? (
-              <div className="admin-room-nav">
-                <p>Selected room</p>
-                {roomFeatures.map((feature) => (
+            {/*
+              Room pages are always listed, so they can be found from anywhere.
+              They link to the room in the address, or this browser's selected room.
+            */}
+            <div className="admin-room-nav">
+              <p>{selectedRoom ? `Room ${selectedRoom.label}` : "Room pages"}</p>
+              {selectedRoom ? (
+                roomFeatures.map((feature) => (
                   <NavLink
                     key={feature.id}
                     end={feature.path === ""}
-                    to={featurePath(feature, roomPath)}
+                    to={featurePath(feature, selectedRoom.gameId)}
                   >
                     {feature.label}
                   </NavLink>
-                ))}
-              </div>
-            ) : null}
+                ))
+              ) : (
+                <>
+                  {roomFeatures.map((feature) => (
+                    <span key={feature.id} className="admin-nav-disabled" aria-disabled="true">
+                      {feature.label}
+                    </span>
+                  ))}
+                  <NavLink to="/admin/rooms">Open a room first →</NavLink>
+                </>
+              )}
+            </div>
             <NavLink to="/admin/settings">Account & appearance</NavLink>
           </nav>
           <div className="admin-account">{account}</div>
@@ -87,6 +102,36 @@ export function AdminShell({
       </div>
     </EntryFrame>
   );
+}
+
+/**
+ * The room the sidebar's room pages point at: the one in the address, or the
+ * room this browser last selected. Checked once when outside a room.
+ */
+export function useSelectedRoom(
+  roomPath: string | undefined,
+): { gameId: string; label: string } | null {
+  const [selected, setSelected] = useState<{ gameId: string; label: string } | null>(null);
+  useEffect(() => {
+    if (roomPath) {
+      return;
+    }
+    let live = true;
+    readCurrentRoom()
+      .then((room) => {
+        if (live && room && !("error" in room)) {
+          setSelected({ gameId: room.gameId, label: room.joinCode });
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [roomPath]);
+  if (roomPath) {
+    return { gameId: roomPath, label: selected?.gameId === roomPath ? selected.label : roomPath };
+  }
+  return selected;
 }
 
 /** The feature whose page is open, for the document title. */

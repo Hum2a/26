@@ -152,6 +152,17 @@
   border-color: var(--accent);
   translate: 0 -2px;
 }
+.admin-feature-card[data-disabled] {
+  opacity: 0.6;
+}
+.admin-feature-card[data-disabled]:hover {
+  border-color: var(--line);
+  translate: none;
+}
+.admin-nav-disabled {
+  color: var(--muted);
+  opacity: 0.7;
+}
 .admin-feature-status {
   font-weight: 700;
   color: var(--accent);
