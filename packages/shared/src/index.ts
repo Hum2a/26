@@ -13,7 +13,7 @@ export {
   reduceWordle,
 } from "./wordle.ts";
 export type { WordleBoard, WordleMark } from "./wordle.ts";
-import { statCardSchema } from "./stats.ts";
+import { funFactCardSchema, statCardSchema } from "./stats.ts";
 export {
   adminContentSchema,
   adminMediaSchema,
@@ -28,8 +28,26 @@ export type {
 } from "./admin.ts";
 
 export { clientApiKeyHeader, clientApiKeyQueryParam } from "./client-api-key.ts";
-export { minimumComparisonGroup, statCardSchema } from "./stats.ts";
-export type { StatCard } from "./stats.ts";
+export { funFactCap, funFactCardSchema, minimumComparisonGroup, statCardSchema } from "./stats.ts";
+export {
+  cleanWallCaption,
+  nextWall,
+  wallQuestionPhases,
+  wallRushQueue,
+  wallRushShowMs,
+  wallCaptionMax,
+  wallFrameSchema,
+  wallFrames,
+  wallPostStatuses,
+} from "./wall.ts";
+export type {
+  WallEvent,
+  WallFrame,
+  WallPostStatus,
+  WallQueueState,
+  WallStep,
+} from "./wall.ts";
+export type { FunFactCard, StatCard } from "./stats.ts";
 export { resultsStatusSchema } from "./archive.ts";
 export type { ResultsStatus } from "./archive.ts";
 export {
@@ -192,6 +210,7 @@ export const roomPhaseSchema = z.enum([
   "reveal",
   "scores",
   "final",
+  "facts",
   "podium",
 ]);
 
@@ -1020,6 +1039,25 @@ export const lobbySnapshotSchema = z
       .optional(),
     highlights: z.array(statCardSchema).max(8).optional(),
     recap: z.array(statCardSchema).max(6).optional(),
+    /** The sentence currently on the projector. Guests may also learn whether it includes them. */
+    funFact: z
+      .object({
+        index: z.number().int().nonnegative(),
+        total: z.number().int().positive().max(10),
+        card: funFactCardSchema,
+        appliesToYou: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    /** Host preview of the whole list. It is not sent to the projector. */
+    funFactList: z
+      .object({
+        index: z.number().int().nonnegative(),
+        total: z.number().int().positive().max(10),
+        cards: z.array(funFactCardSchema).max(10),
+      })
+      .strict()
+      .optional(),
     archive: z
       .object({
         status: z.enum(["pending", "failed", "completed"]),

@@ -14,11 +14,41 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "troll-off") {
     return "That troll is switched off for this room.";
   }
+  if (action === "wall-approve") {
+    return "Approved. It joins the photo wall queue.";
+  }
+  if (action === "wall-decline") {
+    return "Declined. The guest will see it was not shown.";
+  }
+  if (action === "wall-pull") {
+    return "Pulled from the photo wall and hidden everywhere.";
+  }
+  if (action === "wall-skip") {
+    return "Skipped to the next photo.";
+  }
+  if (action === "wall-next") {
+    return "The next photo is on the wall.";
+  }
+  if (action === "wall-settings") {
+    return "Photo wall settings saved.";
+  }
+  if (action === "wall-mute") {
+    return "That guest can no longer send photos. Their waiting photos were declined.";
+  }
+  if (action === "wall-unmute") {
+    return "That guest can send photos again.";
+  }
   if (action === "resume") {
     return "The quiz has resumed.";
   }
   if (action === "skip") {
     return "The question was skipped.";
+  }
+  if (action === "advance" && phase === "facts") {
+    return "The next fact is on the stage.";
+  }
+  if (action === "advance" && phase === "podium") {
+    return "The podium is up.";
   }
   if (action === "finish") {
     return phase === "podium"

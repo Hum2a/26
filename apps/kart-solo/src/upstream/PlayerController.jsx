@@ -1,6 +1,7 @@
 // Adapted from mario-kart-js 0f7a430. See UPSTREAM.md and THIRD_PARTY_NOTICES.md.
 // Rendering is upstream-derived; movement/contact use the shared pure model.
 import { DriftEffects } from "../DriftEffects";
+import { driftPose } from "../../../web/src/kart/drift-effects";
 import { Kart } from "./models/Kart";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
@@ -217,15 +218,33 @@ export const PlayerController = () => {
     speedRef.current = d.vx * Math.cos(d.heading) + d.vz * Math.sin(d.heading);
     inputTurn.current = -d.turn * 0.1;
     driftDirection.current = d.wasDrifting
-      ? Math.sign(store.soloControls.steer) * -1.4
+      ? -(d.driftSide || Math.sign(d.turn)) * 0.6
       : 0;
     driftPower.current = d.driftMs / 1000;
-    if (store.soloControls.drift && !heldDrift.current) hop.current = 250;
-    heldDrift.current = store.soloControls.drift;
+    if (d.wasDrifting && !heldDrift.current) hop.current = 250;
+    heldDrift.current = d.wasDrifting;
     hop.current = Math.max(0, hop.current - delta * 1000);
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     jumpOffset.current = reduced ? 0 : Math.sin((hop.current / 250) * Math.PI) * 0.5;
-    kartRef.current.rotation.y = reduced ? 0 : driftDirection.current * 0.1;
+    const easing = 1 - Math.exp(-10 * Math.min(delta, 0.1));
+    const pose = driftPose(d.heading, d.vx, d.vz, d.wasDrifting, d.driftSide || 0);
+    kartRef.current.rotation.y +=
+      ((reduced ? 0 : -pose) - kartRef.current.rotation.y) * easing;
+    kartRef.current.rotation.z +=
+      ((reduced ? 0 : driftDirection.current * 0.035) - kartRef.current.rotation.z) *
+      easing;
+    cameraGroupRef.current.position.x +=
+      ((reduced ? 0 : driftDirection.current * 0.7) -
+        cameraGroupRef.current.position.x) *
+      easing;
+    cameraGroupRef.current.position.z +=
+      ((d.boostMs > 0 && !reduced ? 6 : 5) - cameraGroupRef.current.position.z) *
+      easing;
+    if (camera.isPerspectiveCamera) {
+      const fov = reduced ? 65 : d.boostMs > 0 ? 73 : 65;
+      camera.fov += (fov - camera.fov) * easing;
+      camera.updateProjectionMatrix();
+    }
     player.updateMatrixWorld(true);
     camera.position.lerp(
       cameraGroupRef.current.getWorldPosition(target.current),

@@ -5,6 +5,7 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
   const play = snapshot.play;
   if (snapshot.paused) return "Paused — hang tight";
   if (snapshot.held) return "Waiting for the host";
+  if (snapshot.phase === "facts") return "Watch the stage";
   if (pending) return "Sending your answer…";
   if (!play) return "Watch the stage";
   if (snapshot.phase === "reveal" || snapshot.phase === "scores")

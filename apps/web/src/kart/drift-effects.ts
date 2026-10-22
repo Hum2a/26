@@ -1,4 +1,18 @@
 /** Presentation only. Charge and boost come from the existing simulation. */
+export function driftPose(
+  heading: number,
+  vx: number,
+  vz: number,
+  drifting: boolean,
+  side: number,
+) {
+  const slip = Math.atan2(
+    -Math.sin(heading) * vx + Math.cos(heading) * vz,
+    Math.max(1, Math.hypot(vx, vz)),
+  );
+  return drifting ? Math.max(-0.45, Math.min(0.45, slip * 0.8 - side * 0.18)) : 0;
+}
+
 export function driftStrength(previous: number, active: boolean, seconds: number) {
   return (
     (active ? 1 : 0) +

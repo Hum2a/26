@@ -139,6 +139,7 @@ function memoryStore(job: ScheduledJob): GameStore {
       questionCount: 2,
       collectWindows: [],
       finishAfterRound: false,
+      funFactIndex: 0,
       questionSetVersion: "demo-2026-09-22",
     }),
     writeRoom(next) {

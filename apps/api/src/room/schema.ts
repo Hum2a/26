@@ -248,6 +248,39 @@ const scheduleStatements = [
     player_id TEXT PRIMARY KEY,
     state TEXT NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS wall_post (
+    post_id TEXT PRIMARY KEY,
+    media_id TEXT NOT NULL UNIQUE,
+    player_id TEXT NOT NULL,
+    caption TEXT,
+    frame TEXT NOT NULL,
+    keep INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    queued_at INTEGER,
+    shown_at INTEGER,
+    until_at INTEGER,
+    decided_by TEXT,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS wall_post_player
+    ON wall_post (player_id, created_at)`,
+  `CREATE INDEX IF NOT EXISTS wall_post_status
+    ON wall_post (status, queued_at)`,
+  `CREATE TABLE IF NOT EXISTS wall_reaction (
+    post_id TEXT NOT NULL,
+    emoji TEXT NOT NULL,
+    count INTEGER NOT NULL,
+    PRIMARY KEY (post_id, emoji)
+  )`,
+  `CREATE TABLE IF NOT EXISTS wall_setting (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    enabled INTEGER NOT NULL,
+    moderation TEXT NOT NULL,
+    placement TEXT NOT NULL,
+    show_ms INTEGER NOT NULL,
+    captions INTEGER NOT NULL,
+    muted_json TEXT NOT NULL
+  )`,
   `CREATE TABLE IF NOT EXISTS troll_switch (
     kind TEXT PRIMARY KEY,
     enabled INTEGER NOT NULL
@@ -388,15 +421,16 @@ export function ensurePartySchema(sql: SqlStorage): void {
   addColumn(sql, "connection_summary", "script_errors", "INTEGER NOT NULL DEFAULT 0");
   addColumn(sql, "connection_summary", "last_script_error", "TEXT");
   addColumn(sql, "connection_summary", "last_script_error_at", "TEXT");
+  addColumn(sql, "room", "fun_fact_index", "INTEGER NOT NULL DEFAULT 0");
   if (!existing) {
-    sql.exec("INSERT INTO schema_meta (id, version) VALUES (1, 14)");
+    sql.exec("INSERT INTO schema_meta (id, version) VALUES (1, 15)");
     return;
   }
-  if (existing.version >= 1 && existing.version <= 13) {
-    sql.exec("UPDATE schema_meta SET version = 14 WHERE id = 1");
+  if (existing.version >= 1 && existing.version <= 14) {
+    sql.exec("UPDATE schema_meta SET version = 15 WHERE id = 1");
     return;
   }
-  if (existing.version !== 14) {
+  if (existing.version !== 15) {
     throw new Error(`Unsupported room schema version ${existing.version}.`);
   }
 }

@@ -7,6 +7,9 @@ export function guestRoundCopy(snapshot: LobbySnapshot): string {
   if (snapshot.paused) {
     return "The game is paused.";
   }
+  if (snapshot.phase === "facts") {
+    return "Watch the stage.";
+  }
   const standing = snapshot.play?.selfStanding;
   if (snapshot.phase === "podium" || snapshot.phase === "final") {
     return standing

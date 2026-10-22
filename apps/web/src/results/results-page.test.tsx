@@ -9,6 +9,13 @@ const ready = {
     { nickname: "Bilal", position: 2, points: -25 },
   ],
   highlights: [],
+  funFacts: [
+    {
+      id: "fun:scheme:dark",
+      illustrative: false,
+      text: "60% of you use dark mode.",
+    },
+  ],
   gallery: [
     {
       mediaId: "00000000-0000-4000-8000-000000000001",
@@ -28,6 +35,14 @@ const mine = {
   received: 2,
   best: [],
   recap: [],
+  funFacts: [
+    {
+      id: "fun:browser:firefox",
+      illustrative: false,
+      text: "1 person used Firefox.",
+      appliesToYou: true,
+    },
+  ],
 };
 const fetcher = vi.fn();
 beforeEach(() => {
@@ -52,6 +67,9 @@ it("presents a public podium/report and a separately labelled personal result", 
   expect(screen.getByRole("region", { name: "Podium" }).textContent).toContain("250");
   await screen.findByText("Amina, you finished in position 1 with 250 points.");
   expect(screen.getByLabelText("Your private result")).toBeTruthy();
+  expect(screen.getAllByText("1 person used Firefox.").length).toBeGreaterThan(0);
+  expect(screen.getByText("That’s you.")).toBeTruthy();
+  expect(screen.getByText("60% of you use dark mode.")).toBeTruthy();
   expect(screen.queryByRole("navigation", { name: "Admin workspace" })).toBeNull();
   expect(screen.getByAltText("Photo shared by Amina").getAttribute("src")).toContain(
     "/gallery/",

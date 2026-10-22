@@ -262,7 +262,7 @@ export function Kart({
         sparksLeftRef?.current?.setColor(driftLevel.color);
         sparksRightRef?.current?.setColor(driftLevel.color);
       }
-      setDriftLevel(driftLevel);
+      setDriftLevel({ ...driftLevel, charging: driftPower.current > 0 });
 
       setFlamePositions([
         flamePositionLeftRef.current.getWorldPosition(new Vector3()),

@@ -38,21 +38,27 @@ export function LiveConsole() {
       title:
         action === "skip"
           ? "Skip this question?"
-          : phase === "final"
-            ? "Finish the quiz?"
-            : "Finish after this question?",
+          : phase === "facts"
+            ? "Skip to the podium?"
+            : phase === "final"
+              ? "Finish the quiz?"
+              : "Finish after this question?",
       detail:
         action === "skip"
           ? "The server will skip the current question. Guests will move to the next step; this cannot be undone from this screen."
-          : phase === "final"
-            ? "End the quiz and show the podium. Guests will see their final results."
-            : "The current question will finish first. The server will then end the quiz instead of starting another question.",
+          : phase === "facts"
+            ? "The remaining facts are skipped. The podium follows, and the archive starts after that."
+            : phase === "final"
+              ? "End the quiz and show the podium. Guests will see their final results."
+              : "The current question will finish first. The server will then end the quiz instead of starting another question.",
       label:
         action === "skip"
           ? "Skip question"
-          : phase === "final"
-            ? "Finish quiz"
-            : "Finish after this question",
+          : phase === "facts"
+            ? "Skip to the podium"
+            : phase === "final"
+              ? "Finish quiz"
+              : "Finish after this question",
     });
   }
   useEffect(() => {
@@ -74,7 +80,7 @@ export function LiveConsole() {
       )
         return;
       const key = event.key.toLowerCase();
-      if (key === "s" && playing && phase !== "final") {
+      if (key === "s" && playing && phase !== "final" && phase !== "facts") {
         event.preventDefault();
         ask("skip");
       } else if (key === "f" && playing && !snapshot.finishAfterRound) {
@@ -111,6 +117,10 @@ export function LiveConsole() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
+  const onLastFact =
+    phase === "facts" &&
+    snapshot.funFactList != null &&
+    snapshot.funFactList.index + 1 >= snapshot.funFactList.total;
   const primary =
     phase === "lobby"
       ? "start"
@@ -126,7 +136,17 @@ export function LiveConsole() {
         ? "Resume"
         : primary === "finish"
           ? "Finish quiz"
-          : "Advance";
+          : phase === "facts"
+            ? onLastFact
+              ? "Show the podium"
+              : "Next fact"
+            : "Advance";
+  const shownFact =
+    phase === "facts" ? snapshot.funFactList?.cards[snapshot.funFactList.index] : undefined;
+  const upcomingFact =
+    phase === "facts" && snapshot.funFactList
+      ? snapshot.funFactList.cards[snapshot.funFactList.index + 1]
+      : undefined;
   return (
     <section className="admin-section live-console">
       <header className="admin-page-heading">
@@ -211,12 +231,12 @@ export function LiveConsole() {
         ) : null}
         <Disclosure title="More controls">
           <div className="admin-actions">
-            {playing && phase !== "final" ? (
+            {playing && phase !== "final" && phase !== "facts" ? (
               <Button variant="secondary" disabled={locked} onClick={() => ask("skip")}>
                 Skip question
               </Button>
             ) : null}
-            {playing && phase !== "final" && !snapshot.finishAfterRound ? (
+            {playing && phase !== "final" && phase !== "facts" && !snapshot.finishAfterRound ? (
               <Button
                 variant="secondary"
                 disabled={locked}
@@ -269,11 +289,16 @@ export function LiveConsole() {
               ) : null}
             </div>
             <h2>
-              {snapshot.play?.question.prompt ??
+              {shownFact?.text ??
+                snapshot.play?.question.prompt ??
                 (phase === "lobby"
                   ? "Gather the guests."
                   : "The room is between questions.")}
             </h2>
+            {upcomingFact ? <p>Next: {upcomingFact.text}</p> : null}
+            {phase === "facts" && snapshot.funFactList && !upcomingFact ? (
+              <p>Next: the podium.</p>
+            ) : null}
             <p>
               {snapshot.play
                 ? `${snapshot.play.submissionCount} submissions · ${snapshot.players.length} active players`

@@ -3,6 +3,17 @@ import { hideUpload, releaseStuckUploads } from "../media/records.ts";
 import { recordRevealScores } from "../questions/multiple-choice.ts";
 import type { TrollKindName } from "@26/shared";
 import { cancelTroll, dismissCue, setTrollSwitch } from "../troll/engine.ts";
+import {
+  approveWallPost,
+  changeWallSettings,
+  declineWaitingFor,
+  declineWallPost,
+  moveWallOn,
+  muteWallPlayer,
+  pullWallPost,
+  type WallSettingsChange,
+} from "../wall/moderation.ts";
+import { syncWall } from "../wall/queue.ts";
 import { excludeAuthor, featureCandidate, includeAuthor } from "../questions/vote.ts";
 import {
   hideClosedMessage,
@@ -37,6 +48,8 @@ export type HostActionInput = {
   effectId?: string;
   mediaId?: string;
   trollKind?: TrollKindName;
+  postId?: string;
+  wallSettings?: WallSettingsChange;
   now: string;
   nowMs: number;
   transfer?: { code: string; codeHash: string; expiresAt: string };
@@ -105,6 +118,8 @@ export function applyHostAction(
     if (!input.playerId || !markKicked(sql, input.playerId, input.now)) {
       throw new Error(playerMissingMessage);
     }
+    declineWaitingFor(sql, input.playerId);
+    syncWall(sql, "tick", input.nowMs);
     touch(sql);
     return {};
   }
@@ -155,6 +170,30 @@ export function applyHostAction(
       throw new Error(playerMissingMessage);
     }
     cancelTroll(sql, input.effectId, input.nowMs);
+    return {};
+  }
+  if (input.action === "wall-approve") {
+    approveWallPost(sql, input.postId, input.nowMs);
+    return {};
+  }
+  if (input.action === "wall-decline") {
+    declineWallPost(sql, input.postId, input.nowMs);
+    return {};
+  }
+  if (input.action === "wall-pull") {
+    pullWallPost(sql, input.postId, input.nowMs);
+    return {};
+  }
+  if (input.action === "wall-skip" || input.action === "wall-next") {
+    moveWallOn(sql, input.action === "wall-skip" ? "skip" : "next", input.nowMs);
+    return {};
+  }
+  if (input.action === "wall-settings") {
+    changeWallSettings(sql, input.wallSettings, input.nowMs);
+    return {};
+  }
+  if (input.action === "wall-mute" || input.action === "wall-unmute") {
+    muteWallPlayer(sql, input.playerId, input.action === "wall-mute", input.nowMs);
     return {};
   }
   if (input.action === "troll-on" || input.action === "troll-off") {

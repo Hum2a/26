@@ -30,6 +30,7 @@ export function toPublicResults(archive: PublicArchive): PublicResults {
     highlights: archive.highlights
       .filter((card) => card.display === "eligible")
       .slice(0, 8),
+    funFacts: archive.funFacts.slice(0, 10),
     gallery,
     galleryNote,
     retentionNote: publicResultRetention,
@@ -57,5 +58,6 @@ export function toPersonalResults(archive: PersonalArchive): PersonalResults {
     given: archive.effects.given,
     received: archive.effects.received,
     recap: archive.recap.slice(0, 6),
+    funFacts: archive.funFacts.slice(0, 10),
   });
 }

@@ -136,3 +136,57 @@ it("blocks duplicates and retries the exact uncertain intent with the same ID", 
   expect(vi.mocked(playRoom).mock.calls[0]).toEqual(vi.mocked(playRoom).mock.calls[1]);
   expect((pause as HTMLButtonElement).disabled).toBe(false);
 });
+it("steps fun facts and shows the next line only on this screen", async () => {
+  await mountControls(<LiveConsole />);
+  update({
+    ...playingFixture,
+    phase: "facts",
+    funFactList: {
+      index: 0,
+      total: 2,
+      cards: [
+        {
+          id: "fun:browser:firefox",
+          illustrative: false,
+          text: "1 person used Firefox.",
+        },
+        {
+          id: "fun:scheme:dark",
+          illustrative: false,
+          text: "60% of you use dark mode.",
+        },
+      ],
+    },
+  });
+  expect(screen.getByRole("button", { name: "Next fact" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "1 person used Firefox." })).toBeTruthy();
+  expect(screen.getByText("Next: 60% of you use dark mode.")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Next fact" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(expect.objectContaining({ action: "advance" })),
+  );
+  update({
+    ...playingFixture,
+    phase: "facts",
+    funFactList: {
+      index: 1,
+      total: 2,
+      cards: [
+        {
+          id: "fun:browser:firefox",
+          illustrative: false,
+          text: "1 person used Firefox.",
+        },
+        {
+          id: "fun:scheme:dark",
+          illustrative: false,
+          text: "60% of you use dark mode.",
+        },
+      ],
+    },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Show the podium" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(expect.objectContaining({ action: "advance" })),
+  );
+});

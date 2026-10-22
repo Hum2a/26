@@ -1,4 +1,5 @@
 import type { AppDatabase, SqlQuery } from "../auth/create-database.ts";
+import { applyArchiveSchema } from "./schema.ts";
 import type {
   ArchiveDocument,
   ArchiveKind,
@@ -26,13 +27,14 @@ export class ArchiveUnavailable extends Error {
 }
 
 export function postgresArchive(database: AppDatabase): ArchiveWriter {
+  const ready = applyArchiveSchema(database);
   return {
-    write(document) {
-      return database.executor.transaction((query) =>
-        insertPublication(query, document),
-      );
+    async write(document) {
+      await ready;
+      return database.executor.transaction((query) => insertPublication(query, document));
     },
     async purgeDeviceDetails(nowMs) {
+      await ready;
       const rows = await database.executor.query(
         `DELETE FROM archive_device_detail
          WHERE retain_until <= $1
@@ -41,10 +43,12 @@ export function postgresArchive(database: AppDatabase): ArchiveWriter {
       );
       return rows.length;
     },
-    readPublic(gameId) {
+    async readPublic(gameId) {
+      await ready;
       return readPublicArchive(database.executor.query, gameId);
     },
-    readPersonal(gameId, playerId) {
+    async readPersonal(gameId, playerId) {
+      await ready;
       return readPersonalArchive(database.executor.query, gameId, playerId);
     },
   };
@@ -109,6 +113,26 @@ async function insertPublication(
        VALUES ($1, $2, $3, $4)`,
       [document.gameId, document.revision, index, JSON.stringify(card)],
     );
+  }
+  for (const [index, fact] of document.funFacts.entries()) {
+    await query(
+      `INSERT INTO archive_fun_fact (game_id, revision, position, fact_id, card_json)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        document.gameId,
+        document.revision,
+        index,
+        fact.card.id,
+        JSON.stringify(fact.card),
+      ],
+    );
+    for (const playerId of fact.memberIds) {
+      await query(
+        `INSERT INTO archive_fun_fact_member (game_id, revision, fact_id, player_id)
+         VALUES ($1, $2, $3, $4)`,
+        [document.gameId, document.revision, fact.card.id, playerId],
+      );
+    }
   }
   for (const media of document.media) {
     await query(
@@ -215,6 +239,7 @@ async function readPublicArchive(
       points: Number(standing.points),
     })),
     highlights: highlights.map((card) => JSON.parse(String(card.card_json))),
+    funFacts: await readFunFactCards(query, gameId, revision),
     media: media.map((item) => ({
       mediaId: String(item.media_id),
       kind: String(item.kind),
@@ -261,6 +286,7 @@ async function readPersonalArchive(
     scores?: PersonalArchive["scores"];
     effects?: PersonalArchive["effects"];
   };
+  const funFacts = await readPersonalFunFacts(query, gameId, revision, playerId);
   return {
     playerId,
     nickname: String(row.nickname),
@@ -269,7 +295,46 @@ async function readPersonalArchive(
     recap: parsed.recap ?? [],
     scores: parsed.scores ?? [],
     effects: parsed.effects ?? { given: 0, received: 0 },
+    funFacts,
   };
+}
+
+async function readFunFactCards(query: SqlQuery, gameId: string, revision: number) {
+  const rows = await query(
+    `SELECT card_json FROM archive_fun_fact
+     WHERE game_id = $1 AND revision = $2
+     ORDER BY position`,
+    [gameId, revision],
+  );
+  return rows.map((row) => JSON.parse(String(row.card_json)));
+}
+
+async function readPersonalFunFacts(
+  query: SqlQuery,
+  gameId: string,
+  revision: number,
+  playerId: string,
+) {
+  const cards = await query(
+    `SELECT fact_id, card_json FROM archive_fun_fact
+     WHERE game_id = $1 AND revision = $2
+     ORDER BY position`,
+    [gameId, revision],
+  );
+  const membership = await query(
+    `SELECT fact_id FROM archive_fun_fact_member
+     WHERE game_id = $1 AND revision = $2 AND player_id = $3`,
+    [gameId, revision, playerId],
+  );
+  const mine = new Set(membership.map((row) => String(row.fact_id)));
+  return cards.map((row) => ({
+    ...(JSON.parse(String(row.card_json)) as {
+      id: string;
+      illustrative: boolean;
+      text: string;
+    }),
+    appliesToYou: mine.has(String(row.fact_id)),
+  }));
 }
 
 export function publicationCount(query: SqlQuery, gameId: string): Promise<number> {

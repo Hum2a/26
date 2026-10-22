@@ -53,6 +53,7 @@ function Telemetry() {
   );
   const boost = useGameStore((state) => state.isBoosting);
   const drift = useGameStore((state) => state.driftLevel?.level ?? 0);
+  const sliding = useGameStore((state) => state.driftLevel?.charging ?? false);
   const surface = useGameStore((state) => state.soloSurface);
   const contact = useGameStore((state) => state.soloContact);
   return (
@@ -65,18 +66,34 @@ function Telemetry() {
         {distance} m from grid
       </output>
       <span>
-        {surface === "unsupported"
-          ? "Off track — use Back to track"
-          : contact
-            ? "Barrier contact — steer away"
-            : surface === "dirt"
-              ? "Off-road — reduced grip and speed"
-              : boost
-                ? "Boost!"
+        {boost
+          ? "Boost!"
+          : surface === "unsupported"
+            ? "Off track — use Back to track"
+            : contact
+              ? "Barrier contact — steer away"
+              : surface === "dirt"
+                ? "Off-road — reduced grip and speed"
                 : drift
                   ? "Release drift to boost"
-                  : "Hold A to drive"}
+                  : sliding
+                    ? "Drifting — hold to charge"
+                    : "Hold A to drive"}
       </span>
+      {boost && surface !== "road" ? (
+        <span>
+          {surface === "unsupported"
+            ? "Off track — use Back to track"
+            : "Off-road — reduced grip and speed"}
+        </span>
+      ) : null}
+      <output aria-label="Drift charge level">
+        {boost
+          ? "Turbo active"
+          : drift
+            ? `Drift ${drift}/3 · ${["", "Mini", "Super", "Ultra"][drift]} turbo ready`
+            : "Steer + hold drift to charge"}
+      </output>
     </div>
   );
 }

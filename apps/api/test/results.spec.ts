@@ -37,6 +37,7 @@ describe("public results and email delivery", () => {
           },
         ],
         highlights: [],
+        funFacts: [],
         media: [
           {
             mediaId: "22222222-2222-4222-8222-222222222222",

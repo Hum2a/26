@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { statCardSchema } from "./stats.ts";
+import { funFactCardSchema, statCardSchema } from "./stats.ts";
 
 /**
  * Named standings and shared media stay with the archive.
@@ -7,7 +7,7 @@ import { statCardSchema } from "./stats.ts";
  * These periods are the selected defaults, and a later host decision can shorten them.
  */
 export const publicResultRetention =
-  "Named standings, shared photos, and comparison cards stay with this game. Detailed device records are removed 30 days after the room was created. A verification link lasts 1 hour. A personal results link lasts 14 days.";
+  "Named standings, shared photos, comparison cards, and the end-of-night fun facts stay with this game. Detailed device records are removed 30 days after the room was created. A verification link lasts 1 hour. A personal results link lasts 14 days.";
 
 export const emailVerifyTtlMs = 60 * 60 * 1000;
 export const recapLinkTtlMs = 14 * 24 * 60 * 60 * 1000;
@@ -32,6 +32,7 @@ export const publicResultsSchema = z
     state: z.enum(["unknown", "preparing", "ready"]),
     standings: z.array(publicStandingSchema).max(80).optional(),
     highlights: z.array(statCardSchema).max(8).optional(),
+    funFacts: z.array(funFactCardSchema).max(10).optional(),
     gallery: z
       .array(
         z
@@ -71,6 +72,13 @@ export const personalResultsSchema = z
     given: z.number().int().nonnegative(),
     received: z.number().int().nonnegative(),
     recap: z.array(statCardSchema).max(6),
+    funFacts: z
+      .array(
+        funFactCardSchema.extend({
+          appliesToYou: z.boolean(),
+        }),
+      )
+      .max(10),
   })
   .strict();
 

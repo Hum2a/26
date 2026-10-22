@@ -14,6 +14,7 @@ import { Button, TextField } from "../ui/primitives";
 import { readSection } from "../api/read-data";
 import { useSection } from "../api/use-resource";
 import { ResultsReport } from "./results-report";
+import { FunFactReport } from "../play/fun-fact";
 import "./results.css";
 
 export function ResultsPage() {
@@ -149,6 +150,7 @@ function ResultsDetail({ gameId }: { gameId: string }) {
                           <li key={card.id}>{card.results}</li>
                         ))}
                       </ul>
+                      <FunFactReport cards={personal.funFacts} />
                     </>
                   ) : (
                     <p>{personalMessage || "Checking for your personal result…"}</p>

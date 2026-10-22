@@ -181,7 +181,7 @@ export function readStatsSource(sql: SqlStorage): StatsSource {
     gameId: room.game_id,
     sourceRevision: room.state_version,
     illustrative: resolved.status === "playable" && resolved.pack.illustrative,
-    complete: room.phase === "podium" || room.phase === "final",
+    complete: room.phase === "podium" || room.phase === "final" || room.phase === "facts",
     players: players.map((player) => {
       const report = participating.get(player.player_id);
       return {

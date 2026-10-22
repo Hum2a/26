@@ -12,6 +12,7 @@ import {
   type ArchiveWriter,
 } from "../src/archive/store.ts";
 import type { ArchiveDocument } from "../src/archive/document.ts";
+import { toPersonalResults, toPublicResults } from "../src/results/project.ts";
 
 const gameId = "ARCHIVE15";
 const privateRecap = "PRIVATE-RECAP-TOKEN";
@@ -148,6 +149,53 @@ describe("archive database", () => {
     expect(archiveDelayMs(20)).toBe(15 * 60_000);
   });
 
+  it("freezes fun-fact sentences and keeps membership off the public read", async () => {
+    const id = "FUNFACT15";
+    const amina = "11111111-1111-4111-8111-111111111111";
+    const bea = "44444444-4444-4444-8444-444444444444";
+    const document = sample(1, "final", id);
+    document.standings.push({
+      playerId: bea,
+      nickname: "Bea",
+      position: 2,
+      points: 1,
+    });
+    document.players.push({
+      playerId: bea,
+      recap: [],
+      scores: [],
+      effects: { given: 0, received: 0 },
+    });
+    document.funFacts = [
+      {
+        card: {
+          id: "fun:browser:firefox",
+          illustrative: false,
+          text: "1 person used Firefox.",
+        },
+        memberIds: [amina],
+      },
+    ];
+    document.devices[0]!.retainUntil = new Date(0).toISOString();
+    expect(await writer.write(document)).toBe("stored");
+    const published = await writer.readPublic(id);
+    const projected = JSON.stringify(toPublicResults(published!));
+    expect(projected).toContain("1 person used Firefox.");
+    expect(projected).not.toContain(amina);
+    const aminaResults = toPersonalResults((await writer.readPersonal(id, amina))!);
+    expect(aminaResults.funFacts[0]?.appliesToYou).toBe(true);
+    expect(toPersonalResults((await writer.readPersonal(id, bea))!).funFacts[0]?.appliesToYou).toBe(
+      false,
+    );
+    await writer.purgeDeviceDetails(Date.now());
+    expect((await writer.readPublic(id))?.funFacts[0]?.text).toBe("1 person used Firefox.");
+    const version = await database.executor.query(
+      `SELECT version FROM archive_schema WHERE id = 1`,
+    );
+    expect(Number(version[0]?.version)).toBe(3);
+    expect((await writer.readPublic(gameId))?.funFacts).toEqual([]);
+  });
+
   it("keeps database credentials out of the browser and the answer path", () => {
     const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
     const web = readFileSync(
@@ -184,6 +232,7 @@ function sample(
       },
     ],
     highlights: [],
+    funFacts: [],
     media: [
       {
         mediaId: "22222222-2222-4222-8222-222222222222",

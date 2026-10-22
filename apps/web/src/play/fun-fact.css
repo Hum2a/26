@@ -1,0 +1,34 @@
+.fun-fact-stage,
+.fun-fact-phone {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1.25rem;
+  text-align: center;
+  min-width: 0;
+}
+.fun-fact-stage {
+  min-height: 70vh;
+  padding: clamp(1.5rem, 4vw, 4rem);
+}
+.fun-fact-stage h2,
+.fun-fact-phone h2 {
+  font-family: var(--font-display, Georgia, serif);
+  line-height: 1.12;
+  max-width: 18ch;
+  overflow-wrap: anywhere;
+}
+.fun-fact-stage h2 {
+  font-size: clamp(2.75rem, 6vw, 5.5rem);
+}
+.fun-fact-phone h2 {
+  font-size: clamp(1.75rem, 8vw, 2.5rem);
+}
+.fun-fact-count {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.fun-fact-you {
+  font-size: 1.25rem;
+}

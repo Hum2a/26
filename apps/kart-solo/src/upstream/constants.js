@@ -11,14 +11,14 @@ export const kartSettings = {
 export const drifts = {
   level3: {
     name: "purple",
-    threshold: 6,
+    threshold: 2.4,
     color: "#b100ff",
     nbParticles: 25,
     level: 3,
   },
   level2: {
     name: "yellow",
-    threshold: 3,
+    threshold: 1.4,
     color: "#FFA22B",
     nbParticles: 5,
     level: 2,

@@ -6,6 +6,7 @@ import { Button, ConfirmDialog } from "../ui/primitives";
 import { EntryNotice } from "../ui/entry-frame";
 import { downloadScoreSummary } from "../live/room-api";
 import { StandingsList } from "../results/results-report";
+import { FunFactReport } from "../play/fun-fact";
 import { useAdminRoom } from "./room-provider";
 import { useSection } from "./use-section";
 import { readSection } from "./sections-api";
@@ -100,6 +101,13 @@ export function AdminResultsPage() {
               <p>Comparison cards appear when the room has enough accepted answers.</p>
             )}
           </section>
+          <FunFactReport
+            cards={
+              result.data?.state === "ready"
+                ? (result.data.funFacts ?? [])
+                : (snapshot.funFactList?.cards ?? [])
+            }
+          />
         </div>
         <aside className="admin-report-aside">
           <h2>Archive & sharing</h2>
