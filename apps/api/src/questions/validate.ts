@@ -14,19 +14,13 @@ import {
 import { isSupportedPresentation } from "./presentation.ts";
 
 /** Effects named in the plan that this build still rejects. */
-export const unsupportedEffects = [
-  "screen-recording",
-  "battery",
-  "update-prompt",
-  "airdrop",
-  "overheating",
-  "inverted-slider",
-  "reshuffle",
-  "reverse-typing",
-  "autocorrect",
-  "steal",
-  "redirect",
-] as const;
+/**
+ * Troll ideas that are not built and must not be selectable. Every former
+ * candidate is now implemented (see apps/api/src/troll/README.md), so this is
+ * empty. Add a name here to park an idea; the preflight fails if it becomes
+ * selectable before it is removed from this list.
+ */
+export const unsupportedEffects: readonly string[] = [];
 
 export const illustrativeStingAsset = "apps/web/public/assets/demo-sting.wav";
 
