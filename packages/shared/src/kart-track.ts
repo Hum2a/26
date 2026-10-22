@@ -1,4 +1,4 @@
-import geometry from "./kart-circuit.json";
+import geometry from "./kart-circuit.json" with { type: "json" };
 import { indexWalls, type Wall } from "./kart-driving.ts";
 
 export const importedTrackId = "mario-circuit-v1" as const;
