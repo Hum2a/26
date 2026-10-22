@@ -80,7 +80,8 @@ export const adminFeatures: readonly AdminFeature[] = [
     scope: "room",
     path: "",
     summary: "Join code, phase, players and every feature at a glance.",
-    rehearsal: "Open the guest join link and the stage from here.",
+    rehearsal:
+      "Fill an empty room with sample data to preview every page, or open the guest join link and the stage.",
     owns: ["apps/web/src/join", "apps/web/src/lobby", "apps/web/src/guest"],
     status: (snapshot) =>
       `${snapshot.phase}${snapshot.paused ? " · paused" : ""} · ${snapshot.players.length} players`,

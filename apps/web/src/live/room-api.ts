@@ -28,6 +28,31 @@ export async function createLobby(
   return read(response, lobbyCreatedSchema);
 }
 
+/** Fills an empty room with sample guests, photos, trolls and scores. */
+export async function seedSampleRoom(
+  gameId: string,
+): Promise<{ count: number } | { error: string }> {
+  try {
+    const response = await fetch("/api/rooms/sample", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: clientApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ gameId }),
+    });
+    const body: unknown = await response.json().catch(() => undefined);
+    if (response.ok && body && typeof body === "object" && "count" in body) {
+      return { count: Number(body.count) };
+    }
+    const message =
+      body && typeof body === "object" && "message" in body && typeof body.message === "string"
+        ? body.message
+        : "The sample data could not be added. Try again.";
+    return { error: message };
+  } catch {
+    return { error: "The sample data could not be added. Check the connection and try again." };
+  }
+}
+
 export async function joinLobby(input: {
   code: string;
   nickname: string;

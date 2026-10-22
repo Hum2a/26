@@ -16,6 +16,15 @@ import {
   type TrollKindName,
 } from "@26/shared";
 import { parseWallSettingsChange, type WallSettingsChange } from "../wall/moderation.ts";
+import { acceptedKey } from "../media/keys.ts";
+import { sampleWallPostCount, type SampleMedia } from "./sample.ts";
+
+/** Pictures shipped with the app, used as sample wall photos. */
+const samplePictures = [
+  "/assets/questions/favourite-pokemon/mudkip.png",
+  "/assets/questions/favourite-pokemon/tepig.png",
+  "/assets/questions/favourite-pokemon/turtwig.png",
+] as const;
 import type { Hono } from "hono";
 import { z } from "zod";
 import { jsonData } from "../auth/http.ts";
@@ -401,6 +410,70 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       { count: seeded.count },
       { headers: { "cache-control": "no-store" } },
     );
+  });
+
+  /**
+   * Fills an empty room with sample data so the admin pages can be previewed.
+   * Works in every environment, but only on a room with no players.
+   */
+  app.post("/api/rooms/sample", async (c) => {
+    const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
+    if (rejected) {
+      return rejected;
+    }
+    if (sameOriginRejection(c.req.raw)) {
+      return authFailure("forbidden", 403);
+    }
+    const body = await readJson(c.req.raw);
+    const gameId = gameIdSchema.safeParse(field(body, "gameId"));
+    if (!gameId.success) {
+      return roomFailure(400, "invalid", "That request was not accepted.");
+    }
+    const control = readCredentialCookie(c.req.header("cookie"), "control");
+    if (!control) {
+      return roomFailure(401, "unauthenticated", controlMissingMessage);
+    }
+    // Pictures already shipped with the app stand in for guest photos.
+    const pictures = await Promise.all(
+      samplePictures.map(async (path) => {
+        const response = await c.env.ASSETS.fetch(new URL(path, c.req.url));
+        if (!response.ok) {
+          throw new Error(`Missing sample picture ${path}.`);
+        }
+        return {
+          bytes: await response.arrayBuffer(),
+          contentType: response.headers.get("content-type") ?? "image/png",
+        };
+      }),
+    );
+    const media: SampleMedia[] = [];
+    for (let index = 0; index < sampleWallPostCount; index += 1) {
+      const picture = pictures[index % pictures.length]!;
+      const mediaId = crypto.randomUUID();
+      const finalKey = acceptedKey(gameId.data, mediaId);
+      await c.env.MEDIA_BUCKET.put(finalKey, picture.bytes, {
+        httpMetadata: { contentType: picture.contentType },
+      });
+      media.push({
+        mediaId,
+        finalKey,
+        contentType: picture.contentType,
+        byteLength: picture.bytes.byteLength,
+      });
+    }
+    const seeded = await room(c.env, gameId.data).seedSample({
+      credentialId: control.credentialId,
+      secret: control.secret,
+      nowMs: Date.now(),
+      media,
+    });
+    if (!seeded.ok) {
+      // Nothing was stored in the room, so the copied pictures go too.
+      await Promise.all(media.map((item) => c.env.MEDIA_BUCKET.delete(item.finalKey)));
+      const status = seeded.error === "invalid" ? 400 : 401;
+      return roomFailure(status, seeded.error, seeded.message);
+    }
+    return Response.json({ count: seeded.count }, { headers: { "cache-control": "no-store" } });
   });
 
   app.get("/api/rooms/:gameId/diagnostics", async (c) => {

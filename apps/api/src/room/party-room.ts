@@ -156,6 +156,7 @@ import { createWallPost, reactToWall, withdrawWallPost } from "../wall/store.ts"
 import { wallMediaViewable } from "../wall/access.ts";
 import { wallSnapshot } from "../wall/snapshot.ts";
 import { syncWall } from "../wall/queue.ts";
+import { seedSampleRoom, type SampleMedia } from "./sample.ts";
 import type { WallSettingsChange } from "../wall/moderation.ts";
 
 type WallCommand =
@@ -1435,6 +1436,33 @@ export class PartyRoom extends DurableObject<Env> {
       count = seedDemoNames(sql, input.target, new Date(input.nowMs).toISOString());
       sql.exec(`UPDATE room SET state_version = state_version + 1`);
     });
+    this.broadcast();
+    return { ok: true, count };
+  }
+
+  /** Fills an empty room with sample data for previewing the admin pages. */
+  async seedSample(input: {
+    credentialId: string;
+    secret: string;
+    nowMs: number;
+    media: SampleMedia[];
+  }): Promise<{ ok: true; count: number } | Extract<PhaseCommandResult, { ok: false }>> {
+    const allowed = await this.requireControl(input.credentialId, input.secret, input.nowMs);
+    if (!allowed.ok) {
+      return allowed;
+    }
+    let count = 0;
+    try {
+      await commitAndArm(this.ctx.storage, (sql) => {
+        count = seedSampleRoom(sql, input.media, input.nowMs);
+      });
+    } catch (error) {
+      return {
+        ok: false,
+        error: "invalid",
+        message: error instanceof Error ? error.message : roundStartMessage,
+      };
+    }
     this.broadcast();
     return { ok: true, count };
   }

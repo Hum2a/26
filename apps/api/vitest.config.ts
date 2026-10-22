@@ -82,6 +82,7 @@ export default defineConfig({
             "test/wall-load.spec.ts",
             "test/troll-identity.spec.ts",
             "test/troll-theatre.spec.ts",
+            "test/sample-room.spec.ts",
             "test/script-errors-room.spec.ts",
           ],
           hookTimeout: 60_000,

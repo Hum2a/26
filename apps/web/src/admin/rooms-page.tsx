@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { adminFeatures, featurePath, roomFeatures } from "./features";
 import type { AdminRoomList, LobbySnapshot } from "@26/shared";
-import { Button, Dialog, LinkButton } from "../ui/primitives";
+import { Button, ConfirmDialog, Dialog, LinkButton } from "../ui/primitives";
 import { JoinMark } from "../lobby/join-mark";
 import { EntryNotice } from "../ui/entry-frame";
-import { createLobby } from "../live/room-api";
+import { createLobby, seedSampleRoom } from "../live/room-api";
 import { listRooms, readCurrentRoom } from "./rooms-api";
 import { useAdminRoom } from "./room-provider";
 
@@ -213,6 +213,59 @@ function EverythingGrid({ roomId }: { roomId: string | null }) {
   );
 }
 
+/**
+ * Offered only while the room is empty: fills it with sample guests, photos,
+ * trolls and scores, so every admin page can be seen with data in it.
+ */
+function SampleSeed({ gameId }: { gameId: string }) {
+  const [state, setState] = useState<"idle" | "working" | "done">("idle");
+  const [message, setMessage] = useState("");
+  const [confirming, setConfirming] = useState(false);
+  async function seed() {
+    setState("working");
+    const result = await seedSampleRoom(gameId);
+    if ("error" in result) {
+      setState("idle");
+      setMessage(result.error);
+      return;
+    }
+    setState("done");
+    setMessage(`Added ${result.count} sample guests, with photos, trolls and scores.`);
+  }
+  return (
+    <section className="admin-current" aria-label="Sample data">
+      <h2>Preview with sample data</h2>
+      <p>
+        See what every page looks like during a party: 12 sample guests, scores, troll history,
+        connection stats and photo wall posts waiting, queued and shown. Use a spare room: sample
+        guests stay in this room.
+      </p>
+      <div className="admin-actions">
+        <Button disabled={state !== "idle"} onClick={() => setConfirming(true)}>
+          {state === "working" ? "Adding sample data…" : "Fill with sample data"}
+        </Button>
+      </div>
+      <ConfirmDialog
+        open={confirming}
+        title="Fill this room with sample data?"
+        confirmLabel="Fill this room"
+        disabled={state !== "idle"}
+        onClose={() => setConfirming(false)}
+        onConfirm={() => {
+          setConfirming(false);
+          void seed();
+        }}
+      >
+        <p>
+          This adds 12 sample guests to this room. They can't be removed one by one, so only do
+          this in a room you are using to preview.
+        </p>
+      </ConfirmDialog>
+      {message ? <p role="status">{message}</p> : null}
+    </section>
+  );
+}
+
 export function RoomOverview() {
   const { snapshot, connection, notice } = useAdminRoom();
   return (
@@ -295,6 +348,7 @@ export function RoomOverview() {
           Choose another room
         </LinkButton>
       </div>
+      {snapshot.players.length === 0 ? <SampleSeed gameId={snapshot.gameId} /> : null}
       <section aria-label="Everything in this room" className="grid gap-3">
         <h2>Everything in this room</h2>
         <ul className="admin-feature-grid">
