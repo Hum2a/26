@@ -317,7 +317,6 @@ export function reduceKartTimeline(
         race.physicsVersion,
         race.powerUpVersion ? (race.oils ?? []) : undefined,
         race.courseEnabled,
-      race.trackId,
         race.trackId,
       );
       cursor = event.elapsed;
@@ -330,6 +329,7 @@ export function reduceKartTimeline(
       race.physicsVersion,
       race.powerUpVersion ? (race.oils ?? []) : undefined,
       race.courseEnabled,
+      race.trackId,
     );
   }
   next.elapsedMs = target;

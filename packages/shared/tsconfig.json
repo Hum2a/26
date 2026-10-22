@@ -15,5 +15,5 @@
     "allowImportingTsExtensions": true,
     "isolatedModules": true
   },
-  "include": ["src"]
+  "include": ["src", "src/**/*.json"]
 }
