@@ -1,5 +1,6 @@
 import type { PublicResults } from "@26/shared";
 import { MediaPreview } from "../ui/media-preview";
+import { FunFactReport } from "../play/fun-fact";
 type Standings = NonNullable<PublicResults["standings"]>;
 export function StandingsList({ standings }: { standings: Standings }) {
   return standings.length ? (
@@ -46,6 +47,7 @@ export function ResultsReport({
           <h2>Standings</h2>
           <StandingsList standings={standings} />
         </section>
+        <FunFactReport cards={published.funFacts ?? []} />
         <section>
           <h2>Highlights</h2>
           {published.highlights?.length ? (

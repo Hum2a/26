@@ -45,22 +45,27 @@ test("solo kart loads the real circuit and drives, drifts, pauses and resets wit
       .then((value) => Number.parseInt(value!));
   await game.locator("canvas").click({ position: { x: 200, y: 180 } });
   await page.keyboard.down("ArrowUp");
-  await expect.poll(distance, { timeout: 30_000 }).toBeGreaterThan(15);
+  // Start the drift as soon as we reach speed; check distance after release
+  // so browser input latency cannot carry us into turn one first.
   await expect.poll(speed, { timeout: 30_000 }).toBeGreaterThan(80);
   await page.keyboard.down("Space");
-  // Hold a gentle quarter-lock drift on the actual road, rather than driving a tight circle into the new barriers.
+  // Hold a gentle drift on the actual road rather than a tight circle into the barriers.
   const steering = game.getByLabel("Steering", { exact: true });
   const steeringBox = (await steering.boundingBox())!;
   await page.mouse.move(
-    steeringBox.x + steeringBox.width * 0.62,
+    steeringBox.x + steeringBox.width * 0.58,
     steeringBox.y + steeringBox.height / 2,
   );
   await page.mouse.down();
   await expect(game.getByText("Release drift to boost")).toBeVisible({
     timeout: 20_000,
   });
+  // Straightening before releasing used to silently erase the banked turbo.
+  await page.mouse.up();
+  await expect(game.getByLabel("Drift charge level")).toContainText("turbo ready");
   await page.keyboard.up("Space");
   await expect(game.getByText("Boost!", { exact: true })).toBeVisible();
+  await expect.poll(distance).toBeGreaterThan(15);
   await page.keyboard.up("ArrowUp");
   await page.mouse.up();
   await steering.evaluate((input) => (input as HTMLElement).blur());

@@ -9,6 +9,8 @@ import {
   type KartFrame,
   type KartInput,
   type DriverStyle,
+  type WallFrame,
+  type WallReaction,
 } from "@26/shared";
 import {
   noteRtt,
@@ -154,6 +156,23 @@ type CommandBody =
   | {
       kind: "command";
       requestId: string;
+      name: "wall-post";
+      mediaId: string;
+      caption: string;
+      frame: WallFrame;
+      keep: boolean;
+    }
+  | { kind: "command"; requestId: string; name: "wall-withdraw"; postId: string }
+  | {
+      kind: "command";
+      requestId: string;
+      name: "wall-react";
+      postId: string;
+      reaction: WallReaction;
+    }
+  | {
+      kind: "command";
+      requestId: string;
       name: "driver";
       style: DriverStyle;
       faceMediaId: string | null;
@@ -191,6 +210,14 @@ export function openRoomSocket(options: {
   submitTrollEscape: (effectId: string) => string;
   submitReaction: (targetId: string, reaction: "like" | "dislike") => string;
   submitDriver: (style: DriverStyle, faceMediaId: string | null) => string;
+  submitWallPost: (post: {
+    mediaId: string;
+    caption: string;
+    frame: WallFrame;
+    keep: boolean;
+  }) => string;
+  submitWallWithdraw: (postId: string) => string;
+  submitWallReact: (postId: string, reaction: WallReaction) => string;
   reconnectNow: () => void;
   close: () => void;
 } {
@@ -688,6 +715,39 @@ export function openRoomSocket(options: {
     });
   }
 
+  function submitWallPost(post: {
+    mediaId: string;
+    caption: string;
+    frame: WallFrame;
+    keep: boolean;
+  }): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      name: "wall-post",
+      ...post,
+    });
+  }
+
+  function submitWallWithdraw(postId: string): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      name: "wall-withdraw",
+      postId,
+    });
+  }
+
+  function submitWallReact(postId: string, reaction: WallReaction): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      name: "wall-react",
+      postId,
+      reaction,
+    });
+  }
+
   function submitReaction(targetId: string, reaction: "like" | "dislike"): string {
     return sendCommand({
       kind: "command",
@@ -759,6 +819,9 @@ export function openRoomSocket(options: {
     submitTrollEscape,
     submitReaction,
     submitDriver,
+    submitWallPost,
+    submitWallWithdraw,
+    submitWallReact,
     close,
   };
 }

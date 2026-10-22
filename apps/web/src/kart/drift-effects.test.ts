@@ -1,5 +1,10 @@
 import { expect, it } from "vitest";
-import { driftSparks, driftStrength } from "./drift-effects";
+import { driftPose, driftSparks, driftStrength } from "./drift-effects";
+it("poses opposite slides symmetrically and bounds body yaw", () => {
+  expect(driftPose(0, 20, -8, true, 1)).toBeCloseTo(-driftPose(0, 20, 8, true, -1));
+  expect(Math.abs(driftPose(0, 0, 50, true, -1))).toBeLessThanOrEqual(0.45);
+  expect(driftPose(0, 20, -8, false, 1)).toBe(0);
+});
 it("recycles bounded wheel sparks that grow with charge and stretch on boost", () => {
   const low = driftSparks(0.1, 1, 0, false, false),
     charged = driftSparks(0.1, 1, 1, false, false),

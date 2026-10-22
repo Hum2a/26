@@ -8,6 +8,7 @@ import { Glyph } from "./designs/glyph";
 import { AnswerNames } from "./attributions";
 import { renderPresentation } from "./presentation";
 import { KartDriversProvider } from "../kart/KartDriversProvider";
+import { FunFactStage } from "./fun-fact";
 
 function stagePhaseTitle(phase: RoomPhaseName): string {
   switch (phase) {
@@ -23,6 +24,8 @@ function stagePhaseTitle(phase: RoomPhaseName): string {
       return "Standings";
     case "final":
       return "Final scores";
+    case "facts":
+      return "From your phones";
     case "podium":
       return "Podium";
     case "vote":
@@ -35,6 +38,9 @@ function stagePhaseTitle(phase: RoomPhaseName): string {
 }
 
 export function StagePlay({ snapshot }: { snapshot: LobbySnapshot }) {
+  if (snapshot.phase === "facts" && snapshot.funFact) {
+    return <FunFactStage fact={snapshot.funFact} />;
+  }
   const play = snapshot.play;
   if (!play) {
     return null;

@@ -23,6 +23,7 @@ type RoomRecord = {
   question_count: number;
   collect_windows_json: string;
   finish_after: number;
+  fun_fact_index: number;
   question_set_version: string;
 };
 
@@ -80,7 +81,7 @@ function readRoom(sql: SqlStorage): RoomClock {
       `SELECT phase, phase_generation, scope_generation, paused, controller_present,
               stage_present, hold, round_id, phases_json, durations_json, fault,
               question_index, question_count, collect_windows_json, finish_after,
-              question_set_version
+              fun_fact_index, question_set_version
        FROM room`,
     )
     .toArray()[0];
@@ -103,6 +104,7 @@ function readRoom(sql: SqlStorage): RoomClock {
     questionCount: row.question_count,
     collectWindows: windowsOf(row.collect_windows_json),
     finishAfterRound: row.finish_after === 1,
+    funFactIndex: row.fun_fact_index,
     questionSetVersion: row.question_set_version,
   };
 }
@@ -130,6 +132,7 @@ function writeRoom(
        question_count = ?,
        collect_windows_json = ?,
        finish_after = ?,
+       fun_fact_index = ?,
        state_version = state_version + 1
      ${compare ? "WHERE phase_generation = ?" : ""}`,
     room.phase,
@@ -147,6 +150,7 @@ function writeRoom(
     room.questionCount,
     JSON.stringify(room.collectWindows),
     room.finishAfterRound ? 1 : 0,
+    room.funFactIndex,
     ...(compare ? [expectedGeneration] : []),
   );
   return cursor.rowsWritten > 0;

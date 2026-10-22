@@ -17,9 +17,11 @@ import { openRoomSocket } from "../live/room-socket";
 import { PhaseTransition } from "../anim/PhaseTransition";
 import { guestRoundCopy } from "../play/copy";
 import { GuestPlay } from "../play/guest-play";
+import { FunFactPhone } from "../play/fun-fact";
 import { WaitingNext } from "../play/WaitingNext";
 import { GuestMedia } from "../media/guest-media";
 import { GuestTrolls } from "../troll/guest-troll";
+import { GuestWall } from "../wall/guest-wall";
 import { ControllerRoot } from "../controller/ControllerRoot";
 import {
   hapticCues,
@@ -480,9 +482,11 @@ export function GuestPage() {
               plays on the stage.
             </p>
             <p className="mt-3">
-              Device details are used for later statistics. Screen size is measured in
-              CSS pixels, not inches. A network quality of 4g is not a mobile 4G
-              service. An unclear iPhone or iPad stays marked that way.
+              Device details are used for later statistics. The end of the night can
+              include room totals such as dark mode, browser and time zone, without
+              naming who. Screen size is measured in CSS pixels, not inches. A network
+              quality of 4g is not a mobile 4G service. An unclear iPhone or iPad stays
+              marked that way.
             </p>
           </Dialog>
         </div>
@@ -540,7 +544,9 @@ export function GuestPage() {
               </div>
             ) : null}
             <PhaseTransition phase={snapshot?.phase ?? "lobby"}>
-              {snapshot ? (
+              {snapshot?.phase === "facts" && snapshot.funFact ? (
+                <FunFactPhone fact={snapshot.funFact} />
+              ) : snapshot ? (
                 <GuestPlay
                   connected={connection === "open"}
                   onKartInput={(input) => socketRef.current?.submitKartInput(input)}
@@ -600,6 +606,23 @@ export function GuestPage() {
                   </Disclosure>
                 </div>
               </>
+            ) : null}
+            {snapshot?.wall ? (
+              <Disclosure title="📸 Send to the big screen">
+                <GuestWall
+                  wall={snapshot.wall}
+                  gameId={session.gameId}
+                  selfNickname={
+                    snapshot.players.find((player) => player.playerId === session.playerId)
+                      ?.nickname ?? "You"
+                  }
+                  onPost={(post) => socketRef.current?.submitWallPost(post)}
+                  onWithdraw={(postId) => socketRef.current?.submitWallWithdraw(postId)}
+                  onReact={(postId, reaction) =>
+                    socketRef.current?.submitWallReact(postId, reaction)
+                  }
+                />
+              </Disclosure>
             ) : null}
             {snapshot?.recap && snapshot.recap.length > 0 ? (
               <Panel title="Your recap">

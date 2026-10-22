@@ -1,7 +1,7 @@
 import type { AppDatabase } from "../auth/create-database.ts";
 
-/** Archive tables are version 2. A later migration must not rewrite a frozen publication. */
-export const archiveSchemaVersion = 2;
+/** Archive tables are version 3. A later migration must not rewrite a frozen publication. */
+export const archiveSchemaVersion = 3;
 
 /**
  * Public rows and personal rows are different tables.
@@ -90,6 +90,29 @@ export const archiveStatements: readonly string[] = [
    ON CONFLICT (id) DO NOTHING`,
 ];
 
+/** Sentences shown at the end of the night. Membership stays off the public read. */
+export const archiveFunFactStatements: readonly string[] = [
+  `CREATE TABLE IF NOT EXISTS archive_fun_fact (
+    game_id text NOT NULL,
+    revision integer NOT NULL,
+    position integer NOT NULL,
+    fact_id text NOT NULL,
+    card_json text NOT NULL,
+    PRIMARY KEY (game_id, revision, position),
+    FOREIGN KEY (game_id, revision)
+      REFERENCES archive_publication (game_id, revision)
+  )`,
+  `CREATE TABLE IF NOT EXISTS archive_fun_fact_member (
+    game_id text NOT NULL,
+    revision integer NOT NULL,
+    fact_id text NOT NULL,
+    player_id text NOT NULL,
+    PRIMARY KEY (game_id, revision, fact_id, player_id),
+    FOREIGN KEY (game_id, revision)
+      REFERENCES archive_publication (game_id, revision)
+  )`,
+];
+
 /** Delivery records. They do not alter a stored publication. */
 export const archiveDeliveryStatements: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS archive_email_grant (
@@ -141,6 +164,12 @@ export async function applyArchiveSchema(database: AppDatabase): Promise<void> {
       await database.executor.query(statement);
     }
     await database.executor.query(`UPDATE archive_schema SET version = 2 WHERE id = 1`);
+  }
+  if (version === 1 || version === 2) {
+    for (const statement of archiveFunFactStatements) {
+      await database.executor.query(statement);
+    }
+    await database.executor.query(`UPDATE archive_schema SET version = 3 WHERE id = 1`);
     return;
   }
   if (version !== archiveSchemaVersion) {

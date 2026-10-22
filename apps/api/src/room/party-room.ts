@@ -148,8 +148,20 @@ import {
 } from "../device/store.ts";
 import { presentStats } from "../stats/aggregate.ts";
 import { readStatsSource } from "../stats/source.ts";
+import { funFactApplies } from "../stats/fun-facts.ts";
+import { readFunFactSelection } from "../stats/fun-source.ts";
 import { readRoomArchive } from "../archive/schedule.ts";
 import { readRoomDiagnostics } from "./diagnostics.ts";
+import { createWallPost, reactToWall, withdrawWallPost } from "../wall/store.ts";
+import { wallMediaViewable } from "../wall/access.ts";
+import { wallSnapshot } from "../wall/snapshot.ts";
+import { syncWall } from "../wall/queue.ts";
+import type { WallSettingsChange } from "../wall/moderation.ts";
+
+type WallCommand =
+  | { name: "wall-post"; mediaId: unknown; caption: unknown; frame: unknown; keep: unknown }
+  | { name: "wall-withdraw"; postId: unknown }
+  | { name: "wall-react"; postId: unknown; reaction: unknown };
 import { adminMedia } from "./admin-media.ts";
 import { scoreSummaryMarkdown } from "./score-summary.ts";
 import { archiveWriterFor, settleArchive } from "../archive/settle.ts";
@@ -1226,6 +1238,8 @@ export class PartyRoom extends DurableObject<Env> {
     effectId?: string;
     mediaId?: string;
     trollKind?: TrollKindName;
+    postId?: string;
+    wallSettings?: WallSettingsChange;
   }): Promise<PhaseCommandResult> {
     const allowed = await this.requireControl(
       input.credentialId,
@@ -1262,6 +1276,12 @@ export class PartyRoom extends DurableObject<Env> {
     }
     if (input.trollKind) {
       payload.trollKind = input.trollKind;
+    }
+    if (input.postId) {
+      payload.postId = input.postId;
+    }
+    if (input.wallSettings) {
+      payload.wallSettings = JSON.stringify(input.wallSettings);
     }
     let transfer: HostActionInput["transfer"];
     if (input.action === "recover") {
@@ -1308,6 +1328,8 @@ export class PartyRoom extends DurableObject<Env> {
           effectId: input.effectId,
           mediaId: input.mediaId,
           trollKind: input.trollKind,
+          postId: input.postId,
+          wallSettings: input.wallSettings,
           now: new Date(input.nowMs).toISOString(),
           nowMs: input.nowMs,
           transfer,
@@ -1539,7 +1561,7 @@ export class PartyRoom extends DurableObject<Env> {
         .exec<{ nickname: string }>(
           `SELECT p.nickname FROM media_upload m
            JOIN player p ON p.player_id = m.player_id
-           WHERE m.media_id = ?`,
+           WHERE m.media_id = ? AND m.purpose = 'round'`,
           result.mediaId,
         )
         .toArray()[0]?.nickname;
@@ -1627,7 +1649,16 @@ export class PartyRoom extends DurableObject<Env> {
       };
     }
     const row = readServable(this.ctx.storage.sql, input.mediaId);
-    if (!row || row.hidden) {
+    const wallHidden =
+      row?.purpose === "wall" &&
+      !wallMediaViewable(
+        this.ctx.storage.sql,
+        input.mediaId,
+        input.guest
+          ? { role: "guest", playerId: input.guest.playerId }
+          : { role: input.credential?.role === "control" ? "control" : "presentation" },
+      );
+    if (!row || row.hidden || wallHidden) {
       return {
         ok: false as const,
         error: "not_found" as const,
@@ -1965,6 +1996,31 @@ export class PartyRoom extends DurableObject<Env> {
       await this.acceptGuestValue(ws, attachment, command.requestId, {
         name: "troll-escape",
         effectId: command.effectId,
+      });
+      return;
+    }
+    if (command.name === "wall-post") {
+      await this.acceptGuestValue(ws, attachment, command.requestId, {
+        name: "wall-post",
+        mediaId: command.mediaId,
+        caption: command.caption,
+        frame: command.frame,
+        keep: command.keep,
+      });
+      return;
+    }
+    if (command.name === "wall-withdraw") {
+      await this.acceptGuestValue(ws, attachment, command.requestId, {
+        name: "wall-withdraw",
+        postId: command.postId,
+      });
+      return;
+    }
+    if (command.name === "wall-react") {
+      await this.acceptGuestValue(ws, attachment, command.requestId, {
+        name: "wall-react",
+        postId: command.postId,
+        reaction: command.reaction,
       });
       return;
     }
@@ -2672,7 +2728,8 @@ export class PartyRoom extends DurableObject<Env> {
       | { name: "ballot"; candidateId: unknown; epoch?: unknown }
       | { name: "duel"; value: unknown }
       | { name: "troll"; kind: unknown; targetId: unknown; mediaId?: string }
-      | { name: "troll-escape"; effectId: unknown },
+      | { name: "troll-escape"; effectId: unknown }
+      | WallCommand,
   ): Promise<void> {
     if (attachment.role !== "guest") {
       this.send(ws, {
@@ -2766,7 +2823,11 @@ export class PartyRoom extends DurableObject<Env> {
     });
     this.sendSnapshot(ws);
     if (accepted) {
-      if (command.name === "troll" || command.name === "troll-escape") {
+      if (
+        command.name === "troll" ||
+        command.name === "troll-escape" ||
+        command.name.startsWith("wall-")
+      ) {
         this.broadcast();
       } else {
         this.broadcastFacilitators();
@@ -3120,6 +3181,34 @@ export class PartyRoom extends DurableObject<Env> {
       audience === "guest" && selfPlayerId
         ? presentStats(stats, "recap", selfPlayerId).recap
         : undefined;
+    const funFacts = readFunFactSelection(this.ctx.storage.sql);
+    const factIndex =
+      funFacts.cards.length === 0
+        ? 0
+        : Math.min(stored.funFactIndex, funFacts.cards.length - 1);
+    const currentCard = funFacts.cards[factIndex];
+    const currentFact = funFacts.facts[factIndex];
+    const funFact =
+      clock.phase === "facts" && currentCard && currentFact && audience !== "control"
+        ? {
+            index: factIndex,
+            total: funFacts.cards.length,
+            card: currentCard,
+            ...(audience === "guest" && selfPlayerId
+              ? { appliesToYou: funFactApplies(currentFact, selfPlayerId) }
+              : {}),
+          }
+        : undefined;
+    const funFactList =
+      audience === "control" &&
+      funFacts.cards.length > 0 &&
+      (clock.phase === "facts" || clock.phase === "podium")
+        ? {
+            index: clock.phase === "facts" ? factIndex : 0,
+            total: funFacts.cards.length,
+            cards: funFacts.cards,
+          }
+        : undefined;
     return lobbySnapshotSchema.parse({
       gameId: room.game_id,
       joinCode: room.join_code,
@@ -3146,6 +3235,7 @@ export class PartyRoom extends DurableObject<Env> {
       media: parts.media,
       ...this.publicDraft(audience),
       trolls,
+      wall: wallSnapshot(this.ctx.storage.sql, audience, selfPlayerId, Date.now()),
       ...(audience === "control"
         ? {
             connections: {
@@ -3169,6 +3259,8 @@ export class PartyRoom extends DurableObject<Env> {
         : {}),
       ...(highlights && highlights.length > 0 ? { highlights } : {}),
       ...(recap && recap.length > 0 ? { recap } : {}),
+      ...(funFact ? { funFact } : {}),
+      ...(funFactList ? { funFactList } : {}),
       ...(audience === "control" ? this.archiveDiagnostic() : {}),
     });
   }
@@ -3733,7 +3825,8 @@ function acceptRoundCommand(
     | { name: "ballot"; candidateId: unknown; epoch?: unknown }
     | { name: "duel"; value: unknown }
     | { name: "troll"; kind: unknown; targetId: unknown; mediaId?: string }
-    | { name: "troll-escape"; effectId: unknown },
+    | { name: "troll-escape"; effectId: unknown }
+    | WallCommand,
   now: number,
   question: Question | undefined,
 ): { ok: true } | { ok: false; message: string } {
@@ -3777,6 +3870,19 @@ function acceptRoundCommand(
   if (command.name === "troll-escape") {
     return escapeTroll(sql, store, playerId, command.effectId, now);
   }
+  if (command.name === "wall-react") {
+    return reactToWall(sql, playerId, command, now);
+  }
+  if (command.name === "wall-post" || command.name === "wall-withdraw") {
+    const result =
+      command.name === "wall-post"
+        ? createWallPost(sql, playerId, command, now)
+        : withdrawWallPost(sql, playerId, command.postId);
+    if (result.ok) {
+      syncWall(sql, "tick", now);
+    }
+    return result;
+  }
   if (command.name === "duel") {
     if (!question || (question.kind !== "duel" && question.kind !== "finale")) {
       return { ok: false, message: wrongKindDuel() };
@@ -3819,6 +3925,16 @@ function readCommand(body: unknown):
       mediaId?: string;
     }
   | { requestId: string; name: "troll-escape"; effectId: unknown }
+  | {
+      requestId: string;
+      name: "wall-post";
+      mediaId: unknown;
+      caption: unknown;
+      frame: unknown;
+      keep: unknown;
+    }
+  | { requestId: string; name: "wall-withdraw"; postId: unknown }
+  | { requestId: string; name: "wall-react"; postId: unknown; reaction: unknown }
   | { requestId: string; name: "react"; targetId: string; reaction: "like" | "dislike" }
   | { requestId: string; name: "driver"; style: unknown; faceMediaId: unknown }
   | { requestId: string; name: "device"; reason: string; report: unknown }
@@ -3885,6 +4001,27 @@ function readCommand(body: unknown):
   }
   if (record.name === "duel") {
     return { requestId: record.requestId, name: "duel", value: record.value };
+  }
+  if (record.name === "wall-post") {
+    return {
+      requestId: record.requestId,
+      name: "wall-post",
+      mediaId: record.mediaId,
+      caption: record.caption,
+      frame: record.frame,
+      keep: record.keep,
+    };
+  }
+  if (record.name === "wall-withdraw") {
+    return { requestId: record.requestId, name: "wall-withdraw", postId: record.postId };
+  }
+  if (record.name === "wall-react") {
+    return {
+      requestId: record.requestId,
+      name: "wall-react",
+      postId: record.postId,
+      reaction: record.reaction,
+    };
   }
   if (record.name === "troll") {
     const mediaId =

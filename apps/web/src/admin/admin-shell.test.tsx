@@ -28,6 +28,9 @@ beforeEach(() => {
     submitReaction: vi.fn(),
     reconnectNow: vi.fn(),
     submitDriver: vi.fn(),
+    submitWallPost: vi.fn(),
+    submitWallWithdraw: vi.fn(),
+    submitWallReact: vi.fn(),
   });
 });
 function Probe() {

@@ -111,6 +111,25 @@ function ensureMirror(sql: SqlStorage): void {
       PRIMARY KEY (game_id, revision, context_id)
     )`,
   );
+  sql.exec(
+    `CREATE TABLE IF NOT EXISTS dev_archive_fun_fact (
+      game_id TEXT NOT NULL,
+      revision INTEGER NOT NULL,
+      position INTEGER NOT NULL,
+      fact_id TEXT NOT NULL,
+      card_json TEXT NOT NULL,
+      PRIMARY KEY (game_id, revision, position)
+    )`,
+  );
+  sql.exec(
+    `CREATE TABLE IF NOT EXISTS dev_archive_fun_fact_member (
+      game_id TEXT NOT NULL,
+      revision INTEGER NOT NULL,
+      fact_id TEXT NOT NULL,
+      player_id TEXT NOT NULL,
+      PRIMARY KEY (game_id, revision, fact_id, player_id)
+    )`,
+  );
 }
 
 function insertMirror(sql: SqlStorage, document: ArchiveDocument): void {
@@ -173,6 +192,27 @@ function insertMirror(sql: SqlStorage, document: ArchiveDocument): void {
         effects: player.effects,
       }),
     );
+  }
+  for (const [index, fact] of document.funFacts.entries()) {
+    sql.exec(
+      `INSERT INTO dev_archive_fun_fact (game_id, revision, position, fact_id, card_json)
+       VALUES (?, ?, ?, ?, ?)`,
+      document.gameId,
+      document.revision,
+      index,
+      fact.card.id,
+      JSON.stringify(fact.card),
+    );
+    for (const playerId of fact.memberIds) {
+      sql.exec(
+        `INSERT INTO dev_archive_fun_fact_member (game_id, revision, fact_id, player_id)
+         VALUES (?, ?, ?, ?)`,
+        document.gameId,
+        document.revision,
+        fact.card.id,
+        playerId,
+      );
+    }
   }
   for (const device of document.devices) {
     sql.exec(
@@ -245,6 +285,16 @@ function readMirrorPublic(sql: SqlStorage, gameId: string): PublicArchive | null
     highlights: highlights.map(
       (card) => JSON.parse(card.card_json) as PublicArchive["highlights"][number],
     ),
+    funFacts: sql
+      .exec<{ card_json: string }>(
+        `SELECT card_json FROM dev_archive_fun_fact
+         WHERE game_id = ? AND revision = ?
+         ORDER BY position`,
+        gameId,
+        row.revision,
+      )
+      .toArray()
+      .map((card) => JSON.parse(card.card_json) as PublicArchive["funFacts"][number]),
     media: media.map((item) => ({
       mediaId: item.media_id,
       kind: item.kind,
@@ -297,6 +347,27 @@ function readMirrorPersonal(
     scores?: PersonalArchive["scores"];
     effects?: PersonalArchive["effects"];
   };
+  const funFacts = sql
+    .exec<{ fact_id: string; card_json: string }>(
+      `SELECT fact_id, card_json FROM dev_archive_fun_fact
+       WHERE game_id = ? AND revision = ?
+       ORDER BY position`,
+      gameId,
+      publication.revision,
+    )
+    .toArray();
+  const mine = new Set(
+    sql
+      .exec<{ fact_id: string }>(
+        `SELECT fact_id FROM dev_archive_fun_fact_member
+         WHERE game_id = ? AND revision = ? AND player_id = ?`,
+        gameId,
+        publication.revision,
+        playerId,
+      )
+      .toArray()
+      .map((row) => row.fact_id),
+  );
   return {
     playerId,
     nickname: standing.nickname,
@@ -305,5 +376,9 @@ function readMirrorPersonal(
     recap: parsed.recap ?? [],
     scores: parsed.scores ?? [],
     effects: parsed.effects ?? { given: 0, received: 0 },
+    funFacts: funFacts.map((row) => ({
+      ...(JSON.parse(row.card_json) as PersonalArchive["funFacts"][number]),
+      appliesToYou: mine.has(row.fact_id),
+    })),
   };
 }

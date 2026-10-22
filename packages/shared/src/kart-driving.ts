@@ -16,6 +16,8 @@ export type DrivingBody = {
   driftMs: number;
   boostMs: number;
   wasDrifting: boolean;
+  /** Latched on entry; counter-steering widens the slide without losing charge. */
+  driftSide?: number;
   contact: boolean;
   offRoad: boolean;
 };
@@ -26,6 +28,7 @@ export type DrivingProfile = {
   radius: number;
   acceleration: number;
   turnRate: number;
+  driftTurnBase?: number;
 };
 export const ringDriving: DrivingProfile = {
   maxSpeed: 11,
@@ -42,6 +45,7 @@ export const soloDriving: DrivingProfile = {
   radius: 0.85,
   acceleration: 3.6,
   turnRate: 1.35,
+  driftTurnBase: 0.25,
 };
 export const createDrivingBody = (x = 0, z = 0, heading = 0): DrivingBody => ({
   x,
@@ -58,6 +62,10 @@ export const createDrivingBody = (x = 0, z = 0, heading = 0): DrivingBody => ({
 });
 const damp = (a: number, b: number, k: number, dt: number) =>
   b + (a - b) * Math.exp(-k * dt);
+
+export function drivingDriftLevel(chargeMs: number): 0 | 1 | 2 | 3 {
+  return chargeMs >= 2400 ? 3 : chargeMs >= 1400 ? 2 : chargeMs >= 700 ? 1 : 0;
+}
 
 /** First contact with a segment expanded by the kart radius, including round ends. */
 function sweep(
@@ -171,8 +179,9 @@ export function stepDriving(
   const drifting =
     fresh &&
     input.drift &&
-    Math.abs(input.steer) > 0.15 &&
-    forward > profile.maxSpeed * 0.4 &&
+    (body.wasDrifting || Math.abs(input.steer) > 0.15) &&
+    forward > profile.maxSpeed * (body.wasDrifting ? 0.25 : 0.4) &&
+    input.gas &&
     !input.brake &&
     !offRoad;
   if (
@@ -182,11 +191,23 @@ export function stepDriving(
     !input.drift &&
     input.gas &&
     !input.brake &&
+    !offRoad &&
+    !body.contact &&
     body.driftMs >= 700
   )
-    next.boostMs = Math.min(1200, body.driftMs / 2);
+    next.boostMs = Math.max(
+      body.boostMs,
+      [0, 600, 900, 1200][drivingDriftLevel(body.driftMs)]!,
+    );
   next.boostMs = Math.max(0, next.boostMs - ms);
-  next.driftMs = drifting ? body.driftMs + ms : 0;
+  const side = body.wasDrifting
+    ? body.driftSide || Math.sign(body.turn) || Math.sign(input.steer)
+    : Math.sign(input.steer);
+  next.driftSide = drifting ? side : 0;
+  // Holding into a bend charges faster; widening remains useful and keeps the bank.
+  next.driftMs = drifting
+    ? Math.min(2400, body.driftMs + ms * (1 + Math.max(0, input.steer * side) * 0.5))
+    : 0;
   next.wasDrifting = drifting;
   let target = input.brake
     ? forward > 0.4
@@ -198,10 +219,19 @@ export function stepDriving(
         : profile.maxSpeed
       : 0;
   if (offRoad) target *= 0.45;
-  const speed = damp(forward, target, input.brake ? 7 : profile.acceleration, dt);
+  const speed = damp(
+    forward,
+    target,
+    input.brake ? 7 : next.boostMs > 0 ? 12 : profile.acceleration,
+    dt,
+  );
   next.turn = damp(
     body.turn,
-    input.steer * profile.turnRate * (drifting ? 1.35 : 1),
+    (drifting
+      ? side *
+        ((profile.driftTurnBase ?? 0.12) +
+          (profile.driftTurnBase ? 0.9 : 0.75) * input.steer * side)
+      : input.steer) * profile.turnRate,
     10,
     dt,
   );
@@ -212,13 +242,14 @@ export function stepDriving(
   // Remove lateral velocity gradually while drifting, quickly under ordinary grip.
   const lateral =
     (body.vx * -nz + body.vz * nx) *
-    Math.exp(-(drifting ? 3.5 : offRoad ? 7 : 14) * dt);
+    Math.exp(-(drifting ? 2.2 : offRoad ? 7 : 14) * dt);
   next.vx = nx * speed - nz * lateral;
   next.vz = nz * speed + nx * lateral;
   const moved = moveWithWalls(next, dt, walls, profile.radius);
   if (moved.contact) {
     moved.driftMs = 0;
     moved.wasDrifting = false;
+    moved.driftSide = 0;
     moved.boostMs = 0;
   }
   return moved;

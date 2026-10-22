@@ -75,6 +75,7 @@ export function AdminShell({
                 <NavLink to={`/admin/rooms/${roomPath}/results`}>Results</NavLink>
                 <NavLink to={`/admin/rooms/${roomPath}/health`}>Health</NavLink>
                 <NavLink to={`/admin/rooms/${roomPath}/trolls`}>Trolls</NavLink>
+                <NavLink to={`/admin/rooms/${roomPath}/wall`}>Photo wall</NavLink>
               </div>
             ) : null}
             <NavLink to="/admin/settings">Account & appearance</NavLink>

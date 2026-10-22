@@ -18,3 +18,5 @@ See the root `THIRD_PARTY_NOTICES.md` and `public/draco/LICENSE` for attribution
 Original bounded drift sparks and boost trails now render beside the adapted kart, using existing simulation charge and theme colours. These are newly written instanced effects, not the removed upstream particle/VFX system.
 
 Track item boxes, local turbo/shield/oil rules and the item inventory use newly written shared pure logic; they do not import upstream multiplayer or persistence. The solo render loop owns only its practice simulation, and item visuals use existing theme colours.
+
+Drift polish (21 October 2026) adds latched slide steering, shared tiered release turbos, slip-based kart/camera feedback, a bounded world-space spark wake and charge-tier HUD text. These remain original local changes over the pinned upstream renderer. The existing ephemeral solo store remains the sole practice adapter; connected physics stays in the shared authoritative model.

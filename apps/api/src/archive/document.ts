@@ -1,5 +1,6 @@
-import type { StatCard } from "@26/shared";
+import type { FunFactCard, StatCard } from "@26/shared";
 import { aggregateFacts, presentStats, type StatFact } from "../stats/aggregate.ts";
+import { readFunFactSelection } from "../stats/fun-source.ts";
 import { readStatsSource } from "../stats/source.ts";
 
 export type ArchiveKind = "final" | "correction";
@@ -32,6 +33,11 @@ export type ArchiveDeviceDetail = {
   reportJson: string;
 };
 
+export type ArchiveFunFact = {
+  card: FunFactCard;
+  memberIds: string[];
+};
+
 /** One immutable export. Personal rows and device rows are not part of the public read. */
 export type ArchiveDocument = {
   gameId: string;
@@ -41,6 +47,7 @@ export type ArchiveDocument = {
   completedAt: string;
   standings: ArchiveStanding[];
   highlights: StatCard[];
+  funFacts: ArchiveFunFact[];
   media: ArchiveMediaRef[];
   players: ArchivePlayerDetail[];
   facts: StatFact[];
@@ -55,6 +62,7 @@ export type PersonalArchive = {
   recap: StatCard[];
   scores: ArchivePlayerDetail["scores"];
   effects: ArchivePlayerDetail["effects"];
+  funFacts: (FunFactCard & { appliesToYou: boolean })[];
 };
 
 export type PublicArchive = {
@@ -64,6 +72,7 @@ export type PublicArchive = {
   questionSetVersion: string;
   standings: ArchiveStanding[];
   highlights: StatCard[];
+  funFacts: FunFactCard[];
   media: ArchiveMediaRef[];
 };
 
@@ -130,6 +139,7 @@ export function readArchiveDocument(
   });
   const highlights =
     presentStats({ ...source, complete: true }, "stage").highlights ?? [];
+  const funFacts = readFunFactSelection(sql);
   const scores = sql
     .exec<{ question_id: string; player_id: string; points: number; detail: string }>(
       `SELECT question_id, player_id, points, detail FROM score_ledger`,
@@ -177,7 +187,19 @@ export function readArchiveDocument(
        JOIN player ON player.player_id = media_upload.player_id
        WHERE media_upload.status = 'accepted'
          AND media_upload.media_id IS NOT NULL
-         AND media_upload.purpose = 'round'
+         AND (
+           media_upload.purpose = 'round'
+           OR (
+             -- Photo wall: only photos that were shown and the guest chose to keep.
+             media_upload.purpose = 'wall'
+             AND EXISTS (
+               SELECT 1 FROM wall_post
+               WHERE wall_post.media_id = media_upload.media_id
+                 AND wall_post.status = 'shown'
+                 AND wall_post.keep = 1
+             )
+           )
+         )
          AND player.client_class = 'guest'`,
     )
     .toArray()
@@ -212,6 +234,10 @@ export function readArchiveDocument(
     completedAt: new Date(input.now).toISOString(),
     standings,
     highlights,
+    funFacts: funFacts.facts.map((fact, index) => ({
+      card: funFacts.cards[index]!,
+      memberIds: fact.memberIds,
+    })),
     media,
     players,
     facts: aggregateFacts(source).filter((fact) => fact.scope !== "player"),

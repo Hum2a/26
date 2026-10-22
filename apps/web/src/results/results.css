@@ -87,6 +87,22 @@
   text-align: end;
   font-variant-numeric: tabular-nums;
 }
+.results-report-grid:has(.results-facts) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.results-facts {
+  display: grid;
+  gap: 1rem;
+}
+.results-facts ul {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.results-facts li {
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--line);
+}
 .results-highlights {
   display: grid;
   gap: 1rem;

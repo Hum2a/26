@@ -2,6 +2,7 @@ import { enterKart, tickKart, kartScores, projectKart } from "./kart.ts";
 import { playSnapshotSchema, type PlaySnapshot } from "@26/shared";
 import {
   submissionGate,
+  wallAdvancePayload,
   type GameStore,
   type RoomClock,
   type RoomPhase,
@@ -10,6 +11,8 @@ import {
 import { createSqlStore } from "../room/sql-store.ts";
 import { queueFinalExport } from "../archive/schedule.ts";
 import { purgeDetailedTelemetry } from "../device/store.ts";
+import { funFactTotal } from "../stats/fun-source.ts";
+import { syncWall } from "../wall/queue.ts";
 import { demoQuestionSetVersion, liveSampleSize } from "../room/limits.ts";
 import {
   demoAnswerKeyMarker,
@@ -215,12 +218,20 @@ export function createGameStore(sql: SqlStorage): GameStore {
       if (current.phase === "reveal" && current.questionCount > 0) {
         recordRevealScores(sql, current, now);
       }
+      // A break may have started, or a question begun; the wall decides.
+      syncWall(sql, "tick", now);
     },
     nextPhaseOverride(room) {
+      if (room.phase === "final" && funFactTotal(sql) > 0) {
+        return "facts";
+      }
       const question = questionFor(room);
       return question?.kind === "vote"
         ? nextBallotPhase(sql, question, room)
         : undefined;
+    },
+    funFactCount() {
+      return funFactTotal(sql);
     },
     nextQuestionIndex(room) {
       if (room.questionCount <= 0) {
@@ -236,7 +247,11 @@ export function createGameStore(sql: SqlStorage): GameStore {
       }
       completeScheduledTroll(sql, job, now);
     },
-    onBackgroundJob(_job, now) {
+    onBackgroundJob(job, now) {
+      if (job.payload === wallAdvancePayload) {
+        syncWall(sql, "tick", now);
+        return;
+      }
       purgeDetailedTelemetry(sql, now);
     },
   };

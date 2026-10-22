@@ -6,7 +6,7 @@ The public JSON does not include player ids, credential hashes, device reports, 
 
 The gallery name is the person who sent the photo. Photos are described as shared with the room.
 
-Named standings, shared photos, and comparison cards stay with the archive. Detailed device rows still expire 30 days after the room was created. A verification link lasts 1 hour. A personal results link lasts 14 days. Those are the selected defaults.
+Named standings, shared photos, comparison cards, and the end-of-night fun facts stay with the archive. Detailed device rows still expire 30 days after the room was created. A verification link lasts 1 hour. A personal results link lasts 14 days. Those are the selected defaults. The frozen sentences are not recomputed after the device rows go.
 
 ## Email
 

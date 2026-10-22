@@ -12,4 +12,6 @@ Percentage comparisons need at least 5 players or accepted responses in each gro
 
 There is no model call. `factsForWording` is the only record a future wording pass may see. The deterministic cards are already complete.
 
+The end-of-night facts beat is a separate catalogue in `fun-facts.ts`. It uses each guest's latest device report, and it does not change the highlight rules or the group of 5. A sentence may only repeat a numerator, denominator, percent or part count stored on its fact. The room shows one card at a time. The archive freezes those sentences, so they remain after detailed device rows are removed.
+
 Illustrative demo rooms label their cards `Illustrative`. An empty room does not borrow sample numbers.

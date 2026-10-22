@@ -12,6 +12,7 @@ export const roomPhases = [
   "reveal",
   "scores",
   "final",
+  "facts",
   "podium",
 ] as const;
 
@@ -38,6 +39,8 @@ export const archiveExportJobId = "archive-export";
 /** Background wakeup that deletes archived device detail after its retain-until. */
 export const archiveRetainPayload = "archive-retain";
 export const archiveRetainJobId = "archive-retain";
+/** Background wakeup that moves the photo wall on. Job id and payload match. */
+export const wallAdvancePayload = "wall-advance";
 
 export type ScheduledJob = {
   jobId: string;
@@ -76,6 +79,8 @@ export type RoomClock = {
   questionCount: number;
   collectWindows: number[];
   finishAfterRound: boolean;
+  /** Which fun-fact sentence the room is showing. Zero until the facts phase. */
+  funFactIndex: number;
   /** Stored content version. `unreleased` is the lobby before a pack is chosen. */
   questionSetVersion: string;
 };
@@ -92,6 +97,8 @@ export type GameStore = {
   saveAnswer(playerId: string, phaseGeneration: number, at: number): void;
   onEnterPhase?(room: RoomClock, now: number): void;
   nextPhaseOverride?(room: RoomClock, now: number): RoomPhase | undefined;
+  /** How many fun-fact sentences this room can show. Absent on stores that do not play them. */
+  funFactCount?(): number;
   nextQuestionIndex?(room: RoomClock): number | "final";
   onScheduledJob?(job: ScheduledJob, now: number): void;
   onBackgroundJob?(job: ScheduledJob, now: number): void;
@@ -176,8 +183,8 @@ export function assertRoundPhases(phases: readonly RoomPhase[]): void {
 }
 
 export function nextPhase(room: RoomClock): RoomPhase | null {
-  if (room.phase === "podium") {
-    return null;
+  if (room.phase === "podium" || room.phase === "facts") {
+    return room.phase === "facts" ? "podium" : null;
   }
   if (room.phase === "lobby") {
     return room.phases[0] ?? null;
@@ -291,12 +298,27 @@ export function resume(store: GameStore, now: number): void {
 }
 
 export function advance(store: GameStore, now: number): boolean {
+  const room = store.readRoom();
+  if (room.phase === "facts") {
+    const count = store.funFactCount?.() ?? 0;
+    if (count > 0 && room.funFactIndex + 1 < count) {
+      return store.casRoom(room.phaseGeneration, {
+        ...room,
+        funFactIndex: room.funFactIndex + 1,
+      });
+    }
+  }
   return changePhase(store, now, "advance");
 }
 
 export function skipQuestion(store: GameStore, now: number): boolean {
   const room = store.readRoom();
-  if (room.phase === "lobby" || room.phase === "podium" || room.phase === "final") {
+  if (
+    room.phase === "lobby" ||
+    room.phase === "podium" ||
+    room.phase === "final" ||
+    room.phase === "facts"
+  ) {
     return false;
   }
   const nextQuestion =
@@ -315,8 +337,16 @@ export function finishGame(store: GameStore, now: number): boolean {
   if (room.phase === "lobby" || room.phase === "podium") {
     return false;
   }
-  if (room.phase === "final") {
+  if (room.phase === "facts") {
     return moveTo(store, now, "podium", {
+      hold: false,
+      nextQuestion: false,
+      clearPause: true,
+    });
+  }
+  if (room.phase === "final") {
+    const count = store.funFactCount?.() ?? 0;
+    return moveTo(store, now, count > 0 ? "facts" : "podium", {
       hold: false,
       nextQuestion: false,
       clearPause: true,
@@ -364,6 +394,12 @@ export function onAlarm(store: GameStore, now: number): void {
         job.payload === archiveExportPayload ||
         job.payload === archiveRetainPayload
       ) {
+        continue;
+      }
+      if (job.payload === wallAdvancePayload) {
+        // Marked done first: the hook schedules the next wake-up under the same id.
+        store.saveJob({ ...job, status: "done", dueAt: null });
+        store.onBackgroundJob?.(job, now);
         continue;
       }
       if (job.payload === "telemetry-retention") {
@@ -597,6 +633,7 @@ function moveTo(
     hold: options.hold ? "controller" : null,
     paused: options.clearPause ? false : room.paused,
     questionIndex,
+    funFactIndex: phase === "facts" ? 0 : room.funFactIndex,
     durations:
       options.nextQuestion && phase !== "final" && collect !== undefined
         ? { ...room.durations, collect }
@@ -636,7 +673,13 @@ function openPhase(store: GameStore, room: RoomClock, now: number): void {
 }
 
 function scheduleGameplay(store: GameStore, room: RoomClock, now: number): void {
-  if (!room.roundId || room.hold || room.phase === "podium" || room.phase === "lobby") {
+  if (
+    !room.roundId ||
+    room.hold ||
+    room.phase === "podium" ||
+    room.phase === "lobby" ||
+    room.phase === "facts"
+  ) {
     return;
   }
   const duration = room.durations[room.phase];

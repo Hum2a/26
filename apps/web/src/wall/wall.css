@@ -1,0 +1,446 @@
+/*
+ * Photo wall frames and screens. Colours come from the theme variables only
+ * (see apps/web/src/theme/themes.ts); frames change shape, type and texture.
+ */
+
+.wall-frame {
+  --wall-paper: color-mix(in oklab, var(--color-surface) 88%, var(--color-foreground));
+  --wall-ink: var(--color-surface-foreground);
+  display: grid;
+  gap: 0.6em;
+  margin: 0;
+  padding: 0.7em 0.7em 1em;
+  background: var(--wall-paper);
+  color: var(--wall-ink);
+  box-shadow: 0 1.2em 2.4em color-mix(in oklab, var(--color-background) 40%, transparent);
+  font-size: 1rem;
+  max-width: 100%;
+}
+
+.wall-frame--phone {
+  font-size: 0.95rem;
+}
+
+.wall-frame--stage {
+  font-size: clamp(1.4rem, 2.2vw, 2.6rem);
+  max-height: 86vh;
+}
+
+.wall-frame--corner {
+  font-size: 0.9rem;
+}
+
+.wall-frame--thumb {
+  font-size: 0.7rem;
+  box-shadow: none;
+}
+
+.wall-frame-image {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+.wall-frame-image img {
+  display: block;
+  width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+}
+
+.wall-frame--stage .wall-frame-image img {
+  max-height: 64vh;
+}
+
+.wall-frame--corner .wall-frame-image img {
+  max-height: 22vh;
+}
+
+.wall-frame--thumb .wall-frame-image img {
+  max-height: 9rem;
+  object-fit: cover;
+}
+
+.wall-frame-missing {
+  padding: 3em 1em;
+  text-align: center;
+}
+
+.wall-frame figcaption {
+  display: grid;
+  gap: 0.15em;
+  text-align: center;
+}
+
+.wall-frame-caption {
+  font-family: var(--font-display, inherit);
+  font-size: 1.25em;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.wall-frame-name {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.wall-frame-banner {
+  margin: 0;
+  text-align: center;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+/* Polaroid: thick bottom margin, slight tilt. */
+.wall-frame--polaroid {
+  padding-bottom: 1.6em;
+  rotate: -1.5deg;
+}
+
+/* Birthday: accent border with a big 26 badge. */
+.wall-frame--birthday {
+  background: var(--color-accent);
+  color: var(--color-accent-foreground);
+  border-radius: 1.2em;
+}
+
+.wall-frame-badge {
+  position: absolute;
+  top: 0.4em;
+  right: 0.4em;
+  display: grid;
+  place-items: center;
+  width: 2.6em;
+  height: 2.6em;
+  border-radius: 50%;
+  background: var(--color-highlight);
+  color: var(--color-highlight-foreground);
+  font-weight: 900;
+  font-size: 1.2em;
+  rotate: 12deg;
+}
+
+/* Wanted: aged poster, serif shout, sepia photo. */
+.wall-frame--wanted {
+  --wall-paper: color-mix(in oklab, var(--color-highlight) 35%, var(--color-surface));
+  font-family: Georgia, "Times New Roman", serif;
+  border: 0.3em double var(--color-surface-foreground);
+}
+
+.wall-frame--wanted .wall-frame-banner {
+  font-size: 2em;
+}
+
+.wall-frame--wanted .wall-frame-image img {
+  filter: sepia(0.8) contrast(1.1);
+}
+
+/* Tabloid: masthead bar and the caption as a shouting headline. */
+.wall-frame--tabloid .wall-frame-banner {
+  background: var(--color-accent);
+  color: var(--color-accent-foreground);
+  padding: 0.2em;
+}
+
+.wall-frame--tabloid .wall-frame-caption {
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: 1.7em;
+  text-transform: uppercase;
+}
+
+/* Magazine: glossy cover with the name as the cover star. */
+.wall-frame--magazine {
+  background: var(--color-foreground);
+  color: var(--color-background);
+}
+
+.wall-frame--magazine .wall-frame-banner {
+  font-family: var(--font-display, serif);
+  font-size: 1.4em;
+  font-style: italic;
+}
+
+/* Museum: gilt frame and a gallery label. */
+.wall-frame--museum {
+  padding: 1.4em;
+  border: 0.7em solid color-mix(in oklab, var(--color-highlight) 75%, var(--color-foreground));
+  outline: 0.15em solid var(--color-line);
+}
+
+.wall-frame--museum figcaption {
+  font-family: Georgia, serif;
+  font-size: 0.9em;
+  text-align: left;
+}
+
+/* VHS: dark tape look with scanlines and a REC dot. */
+.wall-frame--vhs {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: "Courier New", monospace;
+}
+
+.wall-frame--vhs .wall-frame-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 2px,
+    color-mix(in oklab, var(--color-background) 30%, transparent) 2px 4px
+  );
+  pointer-events: none;
+}
+
+.wall-frame-rec {
+  position: absolute;
+  top: 0.5em;
+  left: 0.6em;
+  color: var(--color-accent);
+  font-weight: 800;
+}
+
+/* ---- Phone composer and tray ---- */
+
+.wall-composer {
+  display: grid;
+  gap: 1rem;
+}
+
+.wall-sources {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.wall-sources label {
+  display: grid;
+  place-items: center;
+  gap: 0.25rem;
+  min-height: 4.5rem;
+  border-radius: 1rem;
+  border: 2px solid var(--color-line);
+  background: var(--color-surface);
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, scale 0.15s ease;
+}
+
+.wall-sources label:active {
+  scale: 0.97;
+}
+
+.wall-sources input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.wall-sources label:focus-within {
+  border-color: var(--color-accent);
+}
+
+.wall-chips {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.wall-chip {
+  flex: none;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 2px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-surface-foreground);
+  font-weight: 700;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.wall-chip[aria-pressed="true"] {
+  background: var(--color-accent);
+  color: var(--color-accent-foreground);
+  border-color: var(--color-accent);
+}
+
+.wall-progress {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-line);
+  overflow: hidden;
+}
+
+.wall-progress span {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+  transition: width 0.2s linear;
+}
+
+.wall-tray {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.wall-tray-item {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.wall-tray-item img {
+  width: 4.5rem;
+  height: 4.5rem;
+  object-fit: cover;
+  border-radius: 0.75rem;
+}
+
+.wall-status {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.wall-status[data-status="showing"] {
+  background: var(--color-accent);
+  color: var(--color-accent-foreground);
+  border-color: var(--color-accent);
+}
+
+.wall-reactions {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+}
+
+.wall-reaction {
+  min-height: 3.5rem;
+  border-radius: 1rem;
+  border: 2px solid var(--color-line);
+  background: var(--color-surface);
+  font-size: 1.8rem;
+  transition: scale 0.12s ease, border-color 0.2s ease;
+}
+
+.wall-reaction:active {
+  scale: 0.9;
+  border-color: var(--color-accent);
+}
+
+/* ---- Projector ---- */
+
+.wall-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 4vh 4vw;
+  background: color-mix(in oklab, var(--color-background) 82%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.wall-stage-meter {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 0.5vh;
+  background: var(--color-accent);
+  transform-origin: left;
+}
+
+.wall-corner {
+  position: fixed;
+  right: 2vw;
+  bottom: 3vh;
+  z-index: 30;
+  width: min(22vw, 22rem);
+  pointer-events: none;
+}
+
+.wall-waiting {
+  position: fixed;
+  right: 2vw;
+  top: 2vh;
+  z-index: 30;
+  padding: 0.4em 0.9em;
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-surface-foreground);
+  font-size: clamp(1rem, 1.6vw, 1.8rem);
+  font-weight: 800;
+}
+
+.wall-floaters {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.wall-floater {
+  position: absolute;
+  bottom: -2em;
+  font-size: clamp(2rem, 4vw, 5rem);
+}
+
+.wall-tally {
+  position: absolute;
+  left: 3vw;
+  bottom: 3vh;
+  display: flex;
+  gap: 1.2em;
+  font-size: clamp(1.4rem, 2.4vw, 3rem);
+  font-weight: 800;
+}
+
+.wall-reel {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 20;
+  height: 16vh;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+.wall-reel-track {
+  display: flex;
+  gap: 1vw;
+  height: 100%;
+  width: max-content;
+}
+
+.wall-reel-photo {
+  height: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 0.4vh solid var(--color-surface);
+  rotate: -1deg;
+}
+
+.wall-reel-photo:nth-child(even) {
+  rotate: 1.5deg;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wall-frame,
+  .wall-sources label,
+  .wall-reaction,
+  .wall-chip,
+  .wall-progress span {
+    transition: none;
+  }
+
+  .wall-frame--polaroid {
+    rotate: none;
+  }
+}

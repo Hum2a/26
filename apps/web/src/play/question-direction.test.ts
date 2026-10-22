@@ -44,6 +44,9 @@ it("distinguishes pending, accepted, paused and waiting states", () => {
   expect(questionDirection(snapshot("choice", { phase: "reveal" }), false)).toBe(
     "The results are in",
   );
+  expect(questionDirection(snapshot("choice", { phase: "facts" }), false)).toBe(
+    "Watch the stage",
+  );
 });
 it("keeps contestants, spectators and late joiners clear about their role", () => {
   expect(

@@ -183,15 +183,17 @@ describe("completed games become an archive", () => {
     );
     expect(await preparing.json()).toEqual({ state: "preparing" });
 
-    await bindWriter(stub, (box) => {
-      box.fail = 0;
+    // "Ready" reads the published results back, so finish with a writer that
+    // can be read: the local mirror, not the counting stub above.
+    await runInDurableObject(stub, async (instance, state) => {
+      (instance as PartyRoom).useArchiveWriter(sqliteMirror(state.storage));
     });
     await pullExport(stub);
     await fireAlarm(stub);
     const ready = await apiFetch(
       `http://example.com/api/rooms/${created.gameId}/results`,
     );
-    expect(await ready.json()).toEqual({ state: "ready" });
+    expect(await ready.json()).toMatchObject({ state: "ready" });
     expect((await stub.snapshotFor("stage")).phase).toBe("podium");
   });
 });
@@ -296,7 +298,7 @@ async function reachPodium(
   if (!finished.ok) {
     throw new Error(finished.message);
   }
-  for (let step = 0; step < 16; step += 1) {
+  for (let step = 0; step < 32; step += 1) {
     const snapshot = await stub.snapshotFor("stage");
     if (snapshot.phase === "podium") {
       return;

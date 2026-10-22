@@ -168,6 +168,13 @@ a:focus-visible {
   font-size: 0.7rem;
   margin-left: 0.3rem;
 }
+.solo-telemetry output[aria-label="Drift charge level"] {
+  font-size: 0.75rem;
+  max-width: 15rem;
+  text-align: right;
+  color: var(--highlight);
+  transition: color 0.18s ease;
+}
 .solo-telemetry > span {
   font-size: 0.75rem;
   background: var(--surface);

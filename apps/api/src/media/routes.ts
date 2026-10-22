@@ -45,7 +45,7 @@ export function registerMediaRoutes(app: Hono<{ Bindings: Env }>): void {
     const requestId = readRequestId(body);
     const kind = z.enum(["photo", "voice"]).safeParse(field(body, "kind"));
     const purpose = z
-      .enum(["round", "face"])
+      .enum(["round", "face", "wall"])
       .optional()
       .safeParse(field(body, "purpose"));
     if (!requestId || !kind.success || !purpose.success) {

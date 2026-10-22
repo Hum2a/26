@@ -15,6 +15,7 @@ import {
   trollKindSchema,
   type TrollKindName,
 } from "@26/shared";
+import { parseWallSettingsChange, type WallSettingsChange } from "../wall/moderation.ts";
 import type { Hono } from "hono";
 import { z } from "zod";
 import { jsonData } from "../auth/http.ts";
@@ -31,6 +32,7 @@ import { authFailure } from "../auth/http.ts";
 import { payloadDigest } from "./digest.ts";
 import {
   adjustmentReasonMessage,
+  wallSettingsMessage,
   controlMissingMessage,
   isLocalApp,
   roomMissingMessage,
@@ -300,6 +302,14 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "dismiss-cue",
       "troll-on",
       "troll-off",
+      "wall-approve",
+      "wall-decline",
+      "wall-pull",
+      "wall-skip",
+      "wall-next",
+      "wall-settings",
+      "wall-mute",
+      "wall-unmute",
       "hide-media",
       "retry-archive",
       "release-stuck-media",
@@ -664,6 +674,8 @@ function readHostDetails(
         effectId?: string;
         mediaId?: string;
         trollKind?: TrollKindName;
+        postId?: string;
+        wallSettings?: WallSettingsChange;
       };
     }
   | { ok: false; message: string } {
@@ -675,6 +687,8 @@ function readHostDetails(
     "adjust",
     "include",
     "exclude",
+    "wall-mute",
+    "wall-unmute",
   ].includes(action);
   const playerId = z.uuid().safeParse(field(body, "playerId"));
   if (needsPlayer && !playerId.success) {
@@ -690,6 +704,8 @@ function readHostDetails(
     effectId?: string;
     mediaId?: string;
     trollKind?: TrollKindName;
+    postId?: string;
+    wallSettings?: WallSettingsChange;
   } = {};
   if (playerId.success) {
     fields.playerId = playerId.data;
@@ -724,6 +740,20 @@ function readHostDetails(
       return { ok: false, message: "Choose a photo or voice clip that was kept." };
     }
     fields.mediaId = mediaId.data;
+  }
+  if (action === "wall-approve" || action === "wall-decline" || action === "wall-pull") {
+    const postId = z.uuid().safeParse(field(body, "postId"));
+    if (!postId.success) {
+      return { ok: false, message: "Choose a photo on the wall." };
+    }
+    fields.postId = postId.data;
+  }
+  if (action === "wall-settings") {
+    const change = parseWallSettingsChange(field(body, "wallSettings"));
+    if (!change) {
+      return { ok: false, message: wallSettingsMessage };
+    }
+    fields.wallSettings = change;
   }
   if (action === "troll-on" || action === "troll-off") {
     const trollKind = trollKindSchema.safeParse(field(body, "trollKind"));

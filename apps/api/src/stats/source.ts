@@ -181,7 +181,7 @@ export function readStatsSource(sql: SqlStorage): StatsSource {
     gameId: room.game_id,
     sourceRevision: room.state_version,
     illustrative: resolved.status === "playable" && resolved.pack.illustrative,
-    complete: room.phase === "podium" || room.phase === "final",
+    complete: room.phase === "podium" || room.phase === "final" || room.phase === "facts",
     players: players.map((player) => {
       const report = participating.get(player.player_id);
       return {
@@ -217,6 +217,21 @@ export function readStatsSource(sql: SqlStorage): StatsSource {
         ? [{ playerId: row.player_id, kind: row.kind }]
         : [],
     ),
+    wallPhotos: sql
+      .exec<{ post_id: string; player_id: string; reactions: number }>(
+        `SELECT wall_post.post_id, wall_post.player_id,
+                COALESCE((SELECT SUM(count) FROM wall_reaction
+                          WHERE wall_reaction.post_id = wall_post.post_id), 0) AS reactions
+         FROM wall_post
+         JOIN media_upload ON media_upload.media_id = wall_post.media_id
+         WHERE wall_post.status = 'shown' AND media_upload.hidden = 0`,
+      )
+      .toArray()
+      .map((row) => ({
+        postId: row.post_id,
+        playerId: row.player_id,
+        reactions: row.reactions,
+      })),
   };
 }
 

@@ -291,7 +291,7 @@ async function reachPodium(
   if (!finished.ok) {
     throw new Error(finished.message);
   }
-  for (let step = 0; step < 16; step += 1) {
+  for (let step = 0; step < 32; step += 1) {
     const snapshot = await stub.snapshotFor("stage");
     if (snapshot.phase === "podium") {
       return;

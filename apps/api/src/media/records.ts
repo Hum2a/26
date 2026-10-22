@@ -15,18 +15,25 @@ import {
   playerMediaSlots,
   roomFaceSlots,
   roomMediaSlots,
+  roomWallSlots,
+  playerWallSlots,
   temporaryPhotoBytes,
   voiceMaxBytes,
+  wallQuotaMessage,
+  wallRoomQuotaMessage,
 } from "../room/limits.ts";
+import { wallSendBlock } from "../wall/store.ts";
 import { acceptedKey, temporaryKey } from "./keys.ts";
 
 export type MediaKind = "photo" | "voice";
 /**
  * `round` media belongs to the running question. A `face` is a kart driver's
  * photo: allowed from the lobby, kept across questions, and never part of the
- * question media, stats, trolls or the results gallery.
+ * question media, stats, trolls or the results gallery. A wall photo is for the
+ * photo wall: allowed all night, shown only after the host approves it, and
+ * never part of question media, stats or trolls. See pps/api/src/wall.
  */
-export type MediaPurpose = "round" | "face";
+export type MediaPurpose = "round" | "face" | "wall";
 
 export type MediaFailure = {
   ok: false;
@@ -90,8 +97,8 @@ export function reserveUpload(
   const room = readRoom(sql);
   if (
     !room ||
-    (purpose === "face" && input.kind !== "photo") ||
-    room.phase === "podium" ||
+    ((purpose === "face" || purpose === "wall") && input.kind !== "photo") ||
+    (purpose !== "wall" && room.phase === "podium") ||
     (purpose === "round" && (room.question_count < 1 || room.phase === "lobby"))
   ) {
     return fail("invalid", mediaClosedMessage);
@@ -125,8 +132,19 @@ export function reserveUpload(
     input.playerId,
     purpose,
   );
-  if (playerCount >= (purpose === "face" ? playerFaceSlots : playerMediaSlots)) {
-    return fail("full", purpose === "face" ? faceQuotaMessage : mediaQuotaMessage);
+  if (purpose === "wall") {
+    const blocked = wallSendBlock(sql, input.playerId, input.nowMs);
+    if (blocked) {
+      return fail("full", blocked);
+    }
+  }
+  const playerLimit =
+    purpose === "face" ? playerFaceSlots : purpose === "wall" ? playerWallSlots : playerMediaSlots;
+  if (playerCount >= playerLimit) {
+    return fail(
+      "full",
+      purpose === "face" ? faceQuotaMessage : purpose === "wall" ? wallQuotaMessage : mediaQuotaMessage,
+    );
   }
   const roomCount = count(
     sql,
@@ -134,8 +152,10 @@ export function reserveUpload(
      WHERE purpose = ? AND status NOT IN ('rejected', 'cancelled', 'expired')`,
     purpose,
   );
-  if (roomCount >= (purpose === "face" ? roomFaceSlots : roomMediaSlots)) {
-    return fail("full", mediaRoomQuotaMessage);
+  const roomLimit =
+    purpose === "face" ? roomFaceSlots : purpose === "wall" ? roomWallSlots : roomMediaSlots;
+  if (roomCount >= roomLimit) {
+    return fail("full", purpose === "wall" ? wallRoomQuotaMessage : mediaRoomQuotaMessage);
   }
   const uploadId = crypto.randomUUID();
   const tempKey = temporaryKey(room.game_id, uploadId);
@@ -295,7 +315,9 @@ export function commitUpload(
   }
   const room = readRoom(sql);
   const late =
-    row.purpose === "face"
+    row.purpose === "wall"
+      ? !room
+      : row.purpose === "face"
       ? !room || room.phase === "podium"
       : !room ||
         room.question_index !== row.question_index ||
@@ -394,15 +416,16 @@ export function listUploads(
 export function readServable(
   sql: SqlStorage,
   mediaId: string,
-): { finalKey: string; contentType: string; hidden: boolean } | null {
+): { finalKey: string; contentType: string; hidden: boolean; purpose: string } | null {
   const row = sql
     .exec<{
       final_key: string | null;
       content_type: string | null;
       hidden: number;
       status: string;
+      purpose: string;
     }>(
-      `SELECT final_key, content_type, hidden, status FROM media_upload WHERE media_id = ?`,
+      `SELECT final_key, content_type, hidden, status, purpose FROM media_upload WHERE media_id = ?`,
       mediaId,
     )
     .toArray()[0];
@@ -413,6 +436,7 @@ export function readServable(
     finalKey: row.final_key,
     contentType: row.content_type,
     hidden: row.hidden === 1,
+    purpose: row.purpose,
   };
 }
 

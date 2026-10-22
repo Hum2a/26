@@ -109,6 +109,14 @@ export type PlayAction =
   | "dismiss-cue"
   | "troll-on"
   | "troll-off"
+  | "wall-approve"
+  | "wall-decline"
+  | "wall-pull"
+  | "wall-skip"
+  | "wall-next"
+  | "wall-settings"
+  | "wall-mute"
+  | "wall-unmute"
   | "hide-media"
   | "retry-archive"
   | "release-stuck-media"
@@ -127,6 +135,14 @@ export type PlayIntent = {
   effectId?: string;
   mediaId?: string;
   trollKind?: string;
+  postId?: string;
+  wallSettings?: {
+    enabled?: boolean;
+    moderation?: "approve" | "direct";
+    placement?: "breaks" | "corner";
+    showMs?: number;
+    captions?: boolean;
+  };
 };
 export async function playRoom(
   input: PlayIntent,
