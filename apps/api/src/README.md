@@ -1,5 +1,7 @@
 # API Worker
 
+[Home](../../../README.md) · [Documentation](../../../docs/README.md) · [Event runbook](../../../docs/event-runbook.md)
+
 One Hono Worker serves HTTP routes. The Vite build hands it the static assets.
 
 | File       | Purpose                                                                     |

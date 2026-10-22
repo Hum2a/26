@@ -1,6 +1,21 @@
 # Verification report
 
+[Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
+
 Prompt 18 evidence. These checks ran locally on 23 September 2026. They describe this machine's Cloudflare Vitest emulator. They are not a production performance result. Production was not load-tested, and no email was sent.
+
+<details>
+<summary>On this page</summary>
+
+- [Environment](#environment)
+- [Load sample](#load-sample)
+- [Defects fixed](#defects-fixed)
+- [What the suites cover](#what-the-suites-cover)
+- [Commands and results](#commands-and-results)
+- [Realtime fan-out, 21 October 2026](#realtime-fan-out-21-october-2026)
+- [Still to check at the venue](#still-to-check-at-the-venue)
+
+</details>
 
 ## Environment
 
@@ -109,7 +124,7 @@ The email and archive tests use injected adapters. They do not call Resend or Ne
 | 80     | Worst gap between stage race updates     | 31.8 s    | 317 ms   |
 | 80     | Full snapshots to phones during the race | 320       | 0        |
 
-The "before" figures are the unchanged room with the harness added. Phones idle (`LOAD_INPUT_HZ=0`) showed the remaining cost at 80 guests was one transaction per control message, which is why controls are now written once per tick. The full plan, the reasons for each change and what was left out are in `docs/jackbox-realtime-plan.md`.
+The "before" figures are the unchanged room with the harness added. Phones idle (`LOAD_INPUT_HZ=0`) showed the remaining cost at 80 guests was one transaction per control message, which is why controls are now written once per tick. The full plan, the reasons for each change and what was left out are in [docs/jackbox-realtime-plan.md](jackbox-realtime-plan.md).
 
 Test results for this change on the development machine:
 

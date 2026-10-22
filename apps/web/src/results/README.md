@@ -1,5 +1,7 @@
 # Results
 
+[Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
+
 `/r/:gameId` is a public event report with server-supplied podium/standings, eligible highlights and shared media, followed by a separately labelled private result and optional email request.
 
 `results-report.tsx` renders only the validated public projection. Positions/points are never calculated here; tied positions retain equal podium treatment. Media uses the existing published gallery route. Hidden/unavailable media cannot bypass that route; failed previews can be retried and voice never autoplays.

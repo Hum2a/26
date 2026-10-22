@@ -1,15 +1,33 @@
 # Event runbook
 
+[Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
+
 Baseer presents. Humza operates the administrator screen. Guests play on their own phones. This runbook matches the controls in the current build. The question pack is still the illustrative demo `demo-2026-09-22`. The venue rehearsal, a physical phone, and a projector have not been checked from this environment.
+
+<details>
+<summary>On this page</summary>
+
+- [Before the room opens](#before-the-room-opens)
+- [Joining](#joining)
+- [Controls](#controls)
+- [A missing phone](#a-missing-phone)
+- [Wi-Fi disruption](#wi-fi-disruption)
+- [Archive, email, and the score summary](#archive-email-and-the-score-summary)
+- [Shutdown](#shutdown)
+- [Same-room recovery drill](#same-room-recovery-drill)
+- [Load and reconnect rehearsal](#load-and-reconnect-rehearsal)
+- [Still needed before the party](#still-needed-before-the-party)
+
+</details>
 
 ## Before the room opens
 
-1. Run the local checks in `docs/deployment.md`, or open https://26-staging.humza.website only after that environment has actually been deployed.
+1. Run the local checks in [docs/deployment.md](deployment.md), or open https://26-staging.humza.website only after that environment has actually been deployed.
 2. Sign in at `/admin` with the administrator magic link. Confirm with the Sign in button. Opening the link page does not sign in.
 3. Create the lobby. Leave that admin tab open. It holds the control connection.
 4. Open `/host` on the projector browser and connect it to the same room. The stage cookie is separate from the admin cookie.
 5. On the stage, press Start show once. A refresh asks again. M mutes the stage, and the icon shows that state. Personal diagnostics stay on the admin screen. D shows a small operator count on the stage, and ? lists the stage shortcuts.
-6. Print or save `docs/content/illustrative-answer-key.md` and `docs/content/illustrative-running-order.md` before the night. Those files are the offline question, answer, and presenter script. Refresh them with `npm run content:export` after the real questions replace the demo.
+6. Print or save [docs/content/illustrative-answer-key.md](content/illustrative-answer-key.md) and [docs/content/illustrative-running-order.md](content/illustrative-running-order.md) before the night. Those files are the offline question, answer, and presenter script. Refresh them with `npm run content:export` after the real questions replace the demo.
 7. Press Refresh room health. Expect phase `lobby`, a control connection, and no failed scheduler jobs.
 
 ## Joining

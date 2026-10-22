@@ -1,7 +1,9 @@
 # Build progress
 
+[Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
+
 Project: 26.humza.website  
-Source of stage order: `docs/build-prompts.md`
+Source of stage order: [docs/build-prompts.md](build-prompts.md)
 
 | Stage | Deliverable                                                 | Status   |
 | ----- | ----------------------------------------------------------- | -------- |
@@ -25,11 +27,109 @@ Source of stage order: `docs/build-prompts.md`
 | 18    | Failure testing, security checks and 75-player load testing | Complete |
 | 19    | Staging deployment, operational tools and event runbook     | Complete |
 
+<details>
+<summary>On this page</summary>
+
+- [Stage 01](#stage-01)
+- [Stage 02](#stage-02)
+- [Stage 03](#stage-03)
+- [Stage 04](#stage-04)
+- [Stage 05](#stage-05)
+- [Stage 06](#stage-06)
+- [Stage 07](#stage-07)
+- [Stage 08](#stage-08)
+- [Stage 09](#stage-09)
+- [Stage 10](#stage-10)
+- [Stage 11](#stage-11)
+- [Stage 12](#stage-12)
+- [Stage 13](#stage-13)
+- [Stage 14](#stage-14)
+- [Stage 15](#stage-15)
+- [Stage 16](#stage-16)
+- [Stage 17](#stage-17)
+- [Stage 18](#stage-18)
+- [Stage 19](#stage-19)
+- [Neon auth database](#neon-auth-database)
+- [Client API key protection layer](#client-api-key-protection-layer)
+- [Party theme palettes](#party-theme-palettes)
+- [Question authoring](#question-authoring)
+- [Forty party themes](#forty-party-themes)
+- [Personal night themes](#personal-night-themes)
+- [Theme picker](#theme-picker)
+- [Persona and life themes](#persona-and-life-themes)
+- [Phone controller hygiene](#phone-controller-hygiene)
+- [Join and reconnect](#join-and-reconnect)
+- [Round controls](#round-controls)
+- [Projector stage](#projector-stage)
+- [Stage sound and operator keys](#stage-sound-and-operator-keys)
+- [Phone camera](#phone-camera)
+- [Troll picker](#troll-picker)
+- [Caution tape and phase transitions](#caution-tape-and-phase-transitions)
+- [Theme identity skins](#theme-identity-skins)
+- [Skins for the full catalogue](#skins-for-the-full-catalogue)
+- [Nissan LEAF and Toyota Prius+](#nissan-leaf-and-toyota-prius)
+- [Theme icon packs](#theme-icon-packs)
+- [Theme finishes](#theme-finishes)
+- [Background motifs](#background-motifs)
+- [Phone app shell](#phone-app-shell)
+- [First birthday question drafts](#first-birthday-question-drafts)
+- [Poll, threshold, and typed-answer mechanics](#poll-threshold-and-typed-answer-mechanics)
+- [Birthday answers and long polls](#birthday-answers-and-long-polls)
+- [Custom question designs](#custom-question-designs)
+- [Admin experience and page redesign — planning](#admin-experience-and-page-redesign--planning)
+- [Admin redesign Stage A — front door and access](#admin-redesign-stage-a--front-door-and-access)
+- [Admin redesign Stage B — recoverable workspace](#admin-redesign-stage-b--recoverable-workspace)
+- [Admin redesign Stage C — live desk and player tools](#admin-redesign-stage-c--live-desk-and-player-tools)
+- [Admin redesign Stage D — media, results, content and health](#admin-redesign-stage-d--media-results-content-and-health)
+- [Admin experience Stage E — complete locally (19 October 2026)](#admin-experience-stage-e--complete-locally-19-october-2026)
+- [Birthday question batch — 19 October 2026](#birthday-question-batch--19-october-2026)
+- [Individual question inspection — 19 October 2026](#individual-question-inspection--19-october-2026)
+- [Phone rehearsal and full-screen question foundation — 19 October 2026](#phone-rehearsal-and-full-screen-question-foundation--19-october-2026)
+- [Glyph / birthday Wordle — 19 October 2026](#glyph--birthday-wordle--19-october-2026)
+- [Pokémon pictures and sourced inflation sliders — 20 October 2026](#pokémon-pictures-and-sourced-inflation-sliders--20-october-2026)
+- [Three comic inflation additions — 20 October 2026](#three-comic-inflation-additions--20-october-2026)
+- [Three escalating trolley polls — 20 October 2026](#three-escalating-trolley-polls--20-october-2026)
+- [Two original-name questions — 20 October 2026](#two-original-name-questions--20-october-2026)
+- [Who said it: ten quote drafts and A/B presentation — 20 October 2026](#who-said-it-ten-quote-drafts-and-ab-presentation--20-october-2026)
+- [Party mini-game concepts — 20 October 2026](#party-mini-game-concepts--20-october-2026)
+- [Commit and production deployment — 20 October 2026](#commit-and-production-deployment--20-october-2026)
+- [Draft polish, new concepts and kart sprint — 20 October 2026](#draft-polish-new-concepts-and-kart-sprint--20-october-2026)
+- [Commit and production deployment: draft polish and kart — 20 October 2026](#commit-and-production-deployment-draft-polish-and-kart--20-october-2026)
+- [20 October 2026 — kart enhancement pass paused for email/sign-in work](#20-october-2026--kart-enhancement-pass-paused-for-emailsign-in-work)
+- [20 October 2026 — designed emails and alternate email-code sign-in deployed](#20-october-2026--designed-emails-and-alternate-email-code-sign-in-deployed)
+- [20 October 2026 — bounded kart enhancement pass](#20-october-2026--bounded-kart-enhancement-pass)
+- [20 October 2026 — question catalogue browser](#20-october-2026--question-catalogue-browser)
+- [20 October 2026 — phone and big-screen comparison](#20-october-2026--phone-and-big-screen-comparison)
+- [20 October 2026 — personal kart driving and a 50-player broadcast](#20-october-2026--personal-kart-driving-and-a-50-player-broadcast)
+- [20 October 2026 — playable upstream kart, isolated solo practice](#20-october-2026--playable-upstream-kart-isolated-solo-practice)
+- [21 October 2026 — realtime fan-out, reconnects and sign-in start-up](#21-october-2026--realtime-fan-out-reconnects-and-sign-in-start-up)
+- [21 October 2026 — kart multiplayer hardening, first stage](#21-october-2026--kart-multiplayer-hardening-first-stage)
+- [21 October 2026 — kart hardening pushed and deployed](#21-october-2026--kart-hardening-pushed-and-deployed)
+- [21 October 2026 — dedicated admin Kart page](#21-october-2026--dedicated-admin-kart-page)
+- [21 October 2026 — admin Kart page pushed and deployed](#21-october-2026--admin-kart-page-pushed-and-deployed)
+- [21 October 2026 — arcade driving, solid track scenery and manual recovery](#21-october-2026--arcade-driving-solid-track-scenery-and-manual-recovery)
+- [21 October 2026 — kart handling/collisions deployed](#21-october-2026--kart-handlingcollisions-deployed)
+- [21 October 2026 — animated kart drift effects](#21-october-2026--animated-kart-drift-effects)
+- [21 October 2026 — collectable kart power-ups (local implementation)](#21-october-2026--collectable-kart-power-ups-local-implementation)
+- [21 October 2026 — kart drivers with guest photo faces](#21-october-2026--kart-drivers-with-guest-photo-faces)
+- [21 October 2026 — drift handling and turbo polish](#21-october-2026--drift-handling-and-turbo-polish)
+- [21 October 2026 — photo wall, phase 1 (uploads and posts)](#21-october-2026--photo-wall-phase-1-uploads-and-posts)
+- [21 October 2026 — photo wall, phase 2 (queue and timing)](#21-october-2026--photo-wall-phase-2-queue-and-timing)
+- [21 October 2026 — end-of-night fun facts](#21-october-2026--end-of-night-fun-facts)
+- [22 October 2026 — photo wall, phase 3 (host moderation)](#22-october-2026--photo-wall-phase-3-host-moderation)
+- [22 October 2026 — photo wall, phases 4 to 9](#22-october-2026--photo-wall-phases-4-to-9)
+- [22 October 2026 — admin coverage for every feature](#22-october-2026--admin-coverage-for-every-feature)
+- [22 October 2026 — trolls finished](#22-october-2026--trolls-finished)
+
+- [22 October 2026 — GitHub documentation presentation](#22-october-2026--github-documentation-presentation)
+
+</details>
+
 ## Stage 01
 
 Status: complete.
 
-The working directory contained only the two source documents. It is not the LifeSmart repository. Those files were copied unchanged to `docs/party-game-plan.md` and `docs/build-prompts.md`. SHA-256 prefixes `1209C4834D2A` and `32768B5527B0` match the originals.
+The working directory contained only the two source documents. It is not the LifeSmart repository. Those files were copied unchanged to [docs/party-game-plan.md](party-game-plan.md) and [docs/build-prompts.md](build-prompts.md). SHA-256 prefixes `1209C4834D2A` and `32768B5527B0` match the originals.
 
 ### Files and interfaces
 
@@ -161,7 +261,7 @@ An administrator can create a lobby. A guest joins with a code and a nickname, k
 
 ### Files and interfaces
 
-- `apps/api/src/room/`: `PartyRoom` and `RoomCodeRegistry`, SQLite schema, receipts, the credential directory, transfer codes, and hibernating sockets. `apps/api/src/room/README.md` records the registry, directory, receipt, snapshot, and socket client.
+- `apps/api/src/room/`: `PartyRoom` and `RoomCodeRegistry`, SQLite schema, receipts, the credential directory, transfer codes, and hibernating sockets. [apps/api/src/room/README.md](../apps/api/src/room/README.md) records the registry, directory, receipt, snapshot, and socket client.
 - Wrangler bindings `PARTY_ROOM` and `ROOM_CODE_REGISTRY`, migration tag `v1` with `new_sqlite_classes`, on the top-level config and on the staging and production environments. `apps/api/worker-configuration.d.ts` was regenerated.
 - `apps/web/src/live/room-socket.ts` is the only WebSocket client. `apps/web/src/live/room-api.ts` calls the room HTTP routes.
 - Admin, guest, and stage pages show the lobby. Shared lobby schemas live in `packages/shared`.
@@ -403,7 +503,7 @@ The illustrative demo now has two more round types after the three multiple-choi
 - Ranking positions are listed best to worst, and truth groups use that direction. The public item order is Cake, Candles, Song, Friends. The truth is Friends, Cake, Song, Candles. Ties are forbidden and the response must be complete. Shared ties and partial responses are implemented and covered by tests, not by a second demo question.
 - Ranking points are `floor(question.points * concordant strict pairs / strict truth pairs)`. A guest tie is not concordant and does not subtract further. A truth tie is not a pair. Partial mode keeps every strict truth pair in the denominator. No comparable truth order awards that question's own points for an accepted submission. A missing or fully reversed ranking scores 0. An identical ranking scores full points. One adjacent swap of the four `lineup` items scores 66 of 80. Awards are not normalised onto a global 0–1000 scale.
 - Entering reveal still inserts the ledger with `INSERT OR IGNORE`. Restoring a phase shows the accepted payload and does not change the stored points. Skipping before the reveal writes no ledger row for that question.
-- Content-author notes are in `apps/api/src/questions/README.md`.
+- Content-author notes are in [apps/api/src/questions/README.md](../apps/api/src/questions/README.md).
 
 ### How to run it
 
@@ -468,7 +568,7 @@ Guests now write a line and vote on one room-wide ballot, or guess a player from
 - Each elector gets one shuffled order at the freeze. Reconnecting reads that order. The phone does not sort the cards, and a pending tap is not reordered by a later snapshot.
 - Guess options use real player ids. Nicknames are frozen labels. `truthNickname` stays server-side until a named reveal's `truthLabel`. Majority scoring exists and is not the default. The demo guess is named, so a minority correct guess scores and a larger wrong vote does not.
 - Attribution `never` hides authors and voter names on public cards and the reveal. `after` shows them only once scored. `live` shows them during collection or voting and again once scored. The host snapshot keeps the association in every mode.
-- Content-author notes are in `apps/api/src/questions/README.md`.
+- Content-author notes are in [apps/api/src/questions/README.md](../apps/api/src/questions/README.md).
 
 ### How to run it
 
@@ -524,7 +624,7 @@ Simultaneous 1v1 duels and one spectated finale play through the existing round 
 - The guest command `duel` carries the raw value. A finale ballot is a prediction. The play snapshot requires `duel`, which is null on every other question kind.
 - `predict` sits between prompt and collect. `guest-duel.tsx` is the phone control. The stage reveal lists at most eight pair results.
 - Illustrative questions `clash` and `finale` are appended after the existing eight. The pinned scoring version is `demo-rounds-v3`.
-- The author contract is in `apps/api/src/questions/README.md`.
+- The author contract is in [apps/api/src/questions/README.md](../apps/api/src/questions/README.md).
 
 ### Decisions and defaults
 
@@ -589,7 +689,7 @@ Guests have one troll token for the whole game. It unlocks on the second questio
 - The guest commands are `troll` and `troll-escape`. Host play actions are `cancel-effect` and `dismiss-cue`.
 - Every snapshot includes `trolls`. Control snapshots also include `hostEffects`. A guest snapshot hides the stage announcement and, while hidden score is active, that phone's own points.
 - `apps/web/src/troll/guest-troll.tsx` is the phone picker and the labelled invasion. The stage shows one caption. The admin screen can cancel a running effect and dismiss the caption.
-- The implemented-versus-candidate list is `apps/api/src/troll/README.md`.
+- The implemented-versus-candidate list is [apps/api/src/troll/README.md](../apps/api/src/troll/README.md).
 - Starting the demo pins scoring version `demo-rounds-v4`. The question set version is still `demo-2026-09-22`.
 
 ### Decisions and defaults
@@ -635,7 +735,7 @@ Playwright drove the mixed game in Chromium. Amina's phone viewport was 390 by 8
 - No Durable Object was deployed, and no Cloudflare, Neon, or Resend resources were created.
 - The illustrative set is not the party script. The colour and candles flags are examples for content authors.
 - Demo troll assets are text labels. No image or audio file is attached. The announcement is a caption.
-- Candidate trolls in `apps/api/src/troll/README.md` are not implemented. Asking for one is rejected.
+- Candidate trolls in [apps/api/src/troll/README.md](../apps/api/src/troll/README.md) are not implemented. Asking for one is rejected.
 - Device-context columns exist and nothing writes them. Join codes are not released for reuse.
 - The Worker bundle still contains PGlite, including its `eval` use. Local preview does not execute initdb inside the Worker.
 - Control credentials still expire after 15 minutes.
@@ -664,7 +764,7 @@ A phone can send a photo or a short WAV clip while a question is running. The up
 - Every snapshot includes `media`.
 - `apps/web/src/media/guest-media.tsx` is the phone photo and voice control. The stage renders accepted photos and voice players. The admin screen has a hide button per accepted item.
 - `apps/api/r2-cors.json` and `apps/api/r2-lifecycle.json` are the bucket policies to apply later. They were not applied.
-- The operational notes are `apps/api/src/media/README.md`.
+- The operational notes are [apps/api/src/media/README.md](../apps/api/src/media/README.md).
 
 ### Decisions and defaults
 
@@ -735,7 +835,7 @@ A phone can show one live draft on the stage, send a checked three-second voice 
 - `entertainmentCueDecision` in `@26/shared` returns play, wait, or drop. The stage screen is `apps/web/src/stage/stage-sound.tsx`.
 - The phone records a troll clip in `apps/web/src/media/voice-take.tsx`, then uploads it through the existing media pipeline.
 - The demo sting is `apps/web/public/assets/demo-sting.wav`. The catalogue label is `Demo sting`.
-- The implemented-effects table is in `apps/api/src/troll/README.md`.
+- The implemented-effects table is in [apps/api/src/troll/README.md](../apps/api/src/troll/README.md).
 
 ### Decisions and defaults
 
@@ -795,7 +895,7 @@ A phone can send a bounded browser and screen report after it joins. Accepted an
 ### Files and interfaces
 
 - Room schema version is 11. Versions 1 to 10 upgrade to 11. Fresh rooms open at version 11. New tables are `device_context`, `connection_summary`, and `telemetry_aggregate`. `room.telemetry_retention_days` defaults to 30. Accepted answer, vote, duel, prediction, name-reaction, fixture, and troll rows gained a nullable `device_context_id`. No stored version-10 database was migrated in this run.
-- `@26/shared` exports collector version 1, `normaliseDeviceReport`, `reportedScreenGroup`, `detailedTelemetryPolicy`, and the screen-group cutoff. The notes are `apps/api/src/device/README.md`.
+- `@26/shared` exports collector version 1, `normaliseDeviceReport`, `reportedScreenGroup`, `detailedTelemetryPolicy`, and the screen-group cutoff. The notes are [apps/api/src/device/README.md](../apps/api/src/device/README.md).
 - The room mints `deviceContextId`. The phone cannot choose it. `readGameplayContext` and `configureTelemetryRetention` are Durable Object methods used by tests and later statistics. They are not on the stage snapshot.
 - The guest join panel explains the statistics. The phone collector is `apps/web/src/device/source.ts`. The connection summary on the phone is `apps/web/src/device/connection-log.ts`.
 
@@ -858,7 +958,7 @@ Accepted actions, the score ledger, troll and media rows, and device contexts no
 
 - Room schema version is 12. Versions 1 to 11 upgrade to 12. Fresh rooms open at version 12. `player.client_class` defaults to `guest`. `player.joined_at` is set when a guest joins. Demo-cloud names are inserted as `synthetic`. No stored version-11 database was migrated in this run.
 - `@26/shared` exports `minimumComparisonGroup` (5) and `statCardSchema`. A public snapshot may include `highlights` (at most 8) or `recap` (at most 6). Those keys are omitted when empty, so a stage lobby snapshot keeps its previous keys.
-- Facts are built in `apps/api/src/stats/aggregate.ts` from a `StatsSource`. `apps/api/src/stats/source.ts` reads that source from the room. The notes are `apps/api/src/stats/README.md`.
+- Facts are built in `apps/api/src/stats/aggregate.ts` from a `StatsSource`. `apps/api/src/stats/source.ts` reads that source from the room. The notes are [apps/api/src/stats/README.md](../apps/api/src/stats/README.md).
 - Each fact has an id, a scope, the room's `state_version` as the source revision, a metric, a grouping definition, a numerator, a denominator, an unknown count, display eligibility, labels, and named parts. Cards are a projection of those facts. `factsForWording` returns a copy of the fact fields only.
 - The admin lobby shows a Highlights list. The stage shows "From this room" when the snapshot includes highlights. The guest page shows "Your recap". The results page keeps the archive sentences and says it does not use sample numbers.
 
@@ -1075,8 +1175,8 @@ The guest, stage, scoreboard, duel, podium, and results surfaces use one type sc
 - The stage shell title stays above 48px and smaller than the question. Scoreboard, final, and podium phases lead with the standings. A connected lobby shows the join code at stage size and larger nicknames. The sample `0:30` countdown appears only before a room is connected. After that, a lobby with no deadline says "No round is running."
 - A second tap while a send is in flight is ignored. Leaving during a live question asks the browser to confirm. Lobby and podium do not. A missing photo or cue leaves a sentence and the round continues.
 - A held reveal or scoreboard still explains the result on the phone. Other held phases say the phone is waiting for the host.
-- `apps/api/src/questions/preflight.ts` checks ids, durations, answers, scoring, phase compatibility, attribution and troll compatibility, the implemented round kinds, and required assets. `npm run content:check` runs it. `npm run build` runs it after the secret scan. `npm run content:export` writes `docs/content/illustrative-answer-key.md` and `docs/content/illustrative-running-order.md`, then formats them. Both files say they are illustrative fixtures.
-- `docs/content-guide.md` is the authoring guide. `apps/web/public/assets/demo-sting.wav` is a short placeholder tone, not a party sting.
+- `apps/api/src/questions/preflight.ts` checks ids, durations, answers, scoring, phase compatibility, attribution and troll compatibility, the implemented round kinds, and required assets. `npm run content:check` runs it. `npm run build` runs it after the secret scan. `npm run content:export` writes [docs/content/illustrative-answer-key.md](content/illustrative-answer-key.md) and [docs/content/illustrative-running-order.md](content/illustrative-running-order.md), then formats them. Both files say they are illustrative fixtures.
+- [docs/content-guide.md](content-guide.md) is the authoring guide. `apps/web/public/assets/demo-sting.wav` is a short placeholder tone, not a party sting.
 - `apps/api/test/content-preflight.spec.ts` covers the real pack, a missing choice answer, an unlabelled prompt, and a missing sting.
 
 ### Decisions and defaults
@@ -1090,7 +1190,7 @@ The guest, stage, scoreboard, duel, podium, and results surfaces use one type sc
 
 1. `npm run content:check` and `npm run content:export`.
 2. `npm run dev`, then open `/`, `/host`, and `/admin`.
-3. Replace the questions in `apps/api/src/questions/demo-set.ts` when the real script exists, bump `demoQuestionSetVersion`, and run the two content commands again. The checklist of missing party assets is in `docs/content-guide.md`.
+3. Replace the questions in `apps/api/src/questions/demo-set.ts` when the real script exists, bump `demoQuestionSetVersion`, and run the two content commands again. The checklist of missing party assets is in [docs/content-guide.md](content-guide.md).
 
 ### Commands and results
 
@@ -1116,7 +1216,7 @@ In the IDE browser against `http://localhost:4173`, on the stylesheet `index-BGt
 
 ### Unresolved issues
 
-- Humza has not supplied the party questions, durations, which rounds allow double, shortlist versus the full room, the party sting, face or caption art, or question media. The checklist is in `docs/content-guide.md`. The current questions and `demo-sting.wav` are illustrative.
+- Humza has not supplied the party questions, durations, which rounds allow double, shortlist versus the full room, the party sting, face or caption art, or question media. The checklist is in [docs/content-guide.md](content-guide.md). The current questions and `demo-sting.wav` are illustrative.
 - A physical phone, a real rotation, and a projector or HDMI output were not checked.
 - Remote Neon and Resend remain unset. `apps/api/.dev.vars` is not present. Nothing was deployed.
 - A click on an open answer in the IDE browser missed the collect window. The Playwright quiz still answered through the podium with the host connected.
@@ -1131,7 +1231,7 @@ Prompt 18: Failure testing, security checks, and 75-player load testing. Do not 
 
 Status: complete.
 
-Failure, access, and load checks run in the existing room harness. The printed 75-guest figures are from the local Durable Object emulator. The evidence is in `docs/verification-report.md`.
+Failure, access, and load checks run in the existing room harness. The printed 75-guest figures are from the local Durable Object emulator. The evidence is in [docs/verification-report.md](verification-report.md).
 
 ### Files and interfaces
 
@@ -1184,8 +1284,8 @@ The birthday project has no Cloudflare account id, no `.dev.vars.staging`, no `.
 
 ### Files and interfaces
 
-- `docs/deployment.md` has the per-environment build, migrate, secret, R2, and rollback commands, and the missing external setup.
-- `docs/event-runbook.md` is the presenter and operator runbook, the same-room recovery drill, and the checklist of questions, media, and venue checks that did not happen here.
+- [docs/deployment.md](deployment.md) has the per-environment build, migrate, secret, R2, and rollback commands, and the missing external setup.
+- [docs/event-runbook.md](event-runbook.md) is the presenter and operator runbook, the same-room recovery drill, and the checklist of questions, media, and venue checks that did not happen here.
 - Staging and production in `apps/api/wrangler.jsonc` keep `APP_ENV` and `MEDIA_BUCKET_NAME` as vars. Secret names are `secrets.required`. Each of those environments declares `images.binding` `IMAGES`. The local config does not. Migration tag `v1` stays inherited and additive.
 - `GET /api/rooms/:gameId/diagnostics` and `GET /api/rooms/:gameId/summary` require the control cookie. Diagnostics redact database URLs and email addresses and omit job payloads, device rows, and the test recipient address. A same-origin GET may omit `Origin`. A foreign `Origin` is still rejected.
 - Host actions `release-stuck-media` and `retry-delivery`. An expired upload lease returns to open. A live lease stays leased. Delivery retry reuses the stored idempotency key and does not send again for the same host request.
@@ -1223,16 +1323,16 @@ Not done: a physical phone, venue Wi-Fi, a projector or HDMI output, a deployed 
 
 ### Unresolved issues
 
-- No birthday Cloudflare account, R2 bucket, Images attachment, Neon database, or Resend key is configured. The exact list is in `docs/deployment.md`.
+- No birthday Cloudflare account, R2 bucket, Images attachment, Neon database, or Resend key is configured. The exact list is in [docs/deployment.md](deployment.md).
 - `apps/api/r2-cors.json` still allows only the local preview origins. The deployed origin is not known, so it was not added.
-- The question pack is still the illustrative demo. `docs/event-runbook.md` lists what Humza still has to supply and which venue checks remain.
+- The question pack is still the illustrative demo. [docs/event-runbook.md](event-runbook.md) lists what Humza still has to supply and which venue checks remain.
 - The 75-guest figures remain the local emulator sample from stage 18. Staging was not measured.
 - `eslint-visitor-keys@5.0.1` still wants Node `^22.13.0`. This machine is v22.12.0. Lint passed.
 - GitHub Actions was not run.
 
 ### Next stage
 
-The numbered prompt sequence is complete. Do not start another prompt from this stage. Event preparation is the external list in `docs/deployment.md` and `docs/event-runbook.md`.
+The numbered prompt sequence is complete. Do not start another prompt from this stage. Event preparation is the external list in [docs/deployment.md](deployment.md) and [docs/event-runbook.md](event-runbook.md).
 
 ## Neon auth database
 
@@ -1271,7 +1371,7 @@ Not run in a browser. Schema and seed were checked with SQL.
 
 ### Next stage
 
-The numbered prompt sequence stays complete. Remaining setup is the Resend from-address, `BETTER_AUTH_URL`, and Cloudflare Worker secrets in `docs/deployment.md`.
+The numbered prompt sequence stays complete. Remaining setup is the Resend from-address, `BETTER_AUTH_URL`, and Cloudflare Worker secrets in [docs/deployment.md](deployment.md).
 
 ## Client API key protection layer
 
@@ -1329,7 +1429,7 @@ The current look is registered as **26 basic**. Every screen colour is written i
 - `apps/web/vite.config.ts` injects a blocking style for every palette and the `theme-color` meta from the default background.
 - `apps/web/src/index.css` maps Tailwind colour utilities with `@theme inline`. It no longer contains hex values.
 - The join code uses `var(--mark)` and `var(--mark-quiet)`. The dialog scrim mixes the theme background at 72% opacity.
-- `.agents/rules/40-design.md` says screen colours come from the theme file. `npm run agents:sync` copied that rule.
+- [.agents/rules/40-design.md](../.agents/rules/40-design.md) says screen colours come from the theme file. `npm run agents:sync` copied that rule.
 
 ### Decisions and defaults
 
@@ -1379,7 +1479,7 @@ A question is one TypeScript file. The birthday catalogue can hold drafts. A roo
 - `demo-set.ts` re-exports that demo pack. Gameplay, scoring, trolls, diagnostics, and statistics read the room's version.
 - Public questions use a boolean `illustrative`, points from 0, question ids up to 40 characters, `presentation`, and optional phone `instructions`. `explanation` is on the play snapshot only after scoring. Presenter notes are added only for the control audience.
 - `apps/web/src/play/presentation.ts` exports `resolvePresentation`. `standard` returns nothing, so the existing phone and stage components render the question.
-- `docs/question-authoring.md` is the workflow. `.agents/rules/15-question-authoring.md` points agents at it. `npm run agents:sync` copied that rule.
+- [docs/question-authoring.md](question-authoring.md) is the workflow. [.agents/rules/15-question-authoring.md](../.agents/rules/15-question-authoring.md) points agents at it. `npm run agents:sync` copied that rule.
 
 ### Decisions and defaults
 
@@ -1399,7 +1499,7 @@ A question is one TypeScript file. The birthday catalogue can hold drafts. A roo
 
 - `npm run agents:sync` updated `AGENTS.md` and the question-authoring rule copies.
 - `npm run content:check` passed for `demo` (`demo-2026-09-22`) and `birthday` (`birthday-draft`).
-- `npm run content:export` wrote the illustrative key and running order unchanged, and wrote `docs/content/birthday-answer-key.md` and `docs/content/birthday-running-order.md`. Both birthday files say the catalogue has no playable questions.
+- `npm run content:export` wrote the illustrative key and running order unchanged, and wrote [docs/content/birthday-answer-key.md](content/birthday-answer-key.md) and [docs/content/birthday-running-order.md](content/birthday-running-order.md). Both birthday files say the catalogue has no playable questions.
 - `npx tsc -b packages/shared apps/api apps/web/tsconfig.app.json` passed.
 - `npm run lint` passed.
 - `npm run format:check` failed on 15 files outside this change, including theme, lobby, and script files that were already unformatted. The question-authoring files were formatted with Prettier.
@@ -1901,7 +2001,7 @@ The phone lists other players in alphabetical order, with a search box, and keep
 - `apps/web/src/troll/Picker.tsx` is the search box and the player list. This phone's own player id is left out.
 - `apps/web/src/troll/Confirm.tsx` asks "Troll Sam with Fake Call?" before `onSend`. Cancel does not send. Confirm sends once.
 - `apps/web/src/troll/applied.ts` exports `newSelfTroll`. `VictimToast` shows "🎯 You've been trolled" and dismisses after 4 seconds.
-- `docs/qol-map.md` marks a named toast BLOCKED.
+- [docs/qol-map.md](qol-map.md) marks a named toast BLOCKED.
 
 ### Decisions and defaults
 
@@ -1928,7 +2028,7 @@ In the IDE browser the phone was still Amina in lobby `SM5WPR`, after the quiz h
 ### Unresolved issues
 
 - Confirm, search filtering, and the toast were not watched with two phones on a live round. The unit tests cover the filter, the excluded name, the lock, cancel, one confirm send, and the toast dismiss.
-- A named toast is BLOCKED in `docs/qol-map.md` until a guest payload already includes the sender.
+- A named toast is BLOCKED in [docs/qol-map.md](qol-map.md) until a guest payload already includes the sender.
 
 ### Next stage
 
@@ -2131,7 +2231,7 @@ Status: complete.
 ### Files and interfaces
 
 - Dependencies in `apps/web/package.json`: `@iconify/react@6.0.2`, `@iconify-icons/lucide@2.0.13`, `@iconify-icons/simple-icons@2.0.4`, `@iconify-icons/game-icons@2.0.0`, `@iconify-icons/mdi@2.0.0`.
-- `.agents/rules/45-themes.md` lists the install commands, the offline import, and which pack to search for each category. `.agents/rules/40-design.md` and `.agents/rules/30-web.md` point at that rule.
+- [.agents/rules/45-themes.md](../.agents/rules/45-themes.md) lists the install commands, the offline import, and which pack to search for each category. [.agents/rules/40-design.md](../.agents/rules/40-design.md) and [.agents/rules/30-web.md](../.agents/rules/30-web.md) point at that rule.
 
 ### Decisions and defaults
 
@@ -2162,7 +2262,7 @@ Every skin now has a finish. The shared frame can be solid, glass, cartoon, real
 
 - `finish` on `ThemeSkin` in `apps/web/src/theme/skins.ts`. `applyTheme` writes `data-finish`.
 - `apps/web/src/theme/theme-skin.css` paints the six treatments from the existing palette variables.
-- `.agents/rules/45-themes.md` tells a new theme to pick a finish. `npm run agents:sync` updated the generated copies.
+- [.agents/rules/45-themes.md](../.agents/rules/45-themes.md) tells a new theme to pick a finish. `npm run agents:sync` updated the generated copies.
 
 ### Decisions and defaults
 
@@ -2205,7 +2305,7 @@ Some themes now draw a static icon on the ground. The icon stays behind the ques
 
 - `motif` and `icon` on `ThemeSkin` in `apps/web/src/theme/skins.ts`. `applyTheme` writes `data-motif` and, when there is an icon, `data-motif-icon`.
 - `apps/web/src/theme/skin-motif.tsx` renders the icons inside `.skin-ground`. Crest, scatter, and bleed are positioned in `apps/web/src/theme/theme-skin.css`.
-- `.agents/rules/45-themes.md` tells a new theme when to add a motif. `npm run agents:sync` updated the generated copies.
+- [.agents/rules/45-themes.md](../.agents/rules/45-themes.md) tells a new theme when to add a motif. `npm run agents:sync` updated the generated copies.
 
 ### Decisions and defaults
 
@@ -2330,7 +2430,7 @@ Status: complete. Eight of the ten birthday questions are ready. None is in the 
 - The guest `text` command routes to the typed question when one is open, so there is no new message type.
 - `packages/shared`: public choice `outcome`, public `typed` question, choice reveal `tally`/`winners`/`everyone`/`met`, typed reveal, `contentLimits.typedMax`.
 - Web: `GuestText` takes a label, action and length; the phone shows counts and who scored; the stage shows a poll leader, threshold winners, and typed results. `choiceNote` and `outcomeLine` are exported for tests.
-- `.agents/rules/15-question-authoring.md` and `docs/question-authoring.md` list the new mechanics. `npm run agents:sync` updated the copies.
+- [.agents/rules/15-question-authoring.md](../.agents/rules/15-question-authoring.md) and [docs/question-authoring.md](question-authoring.md) list the new mechanics. `npm run agents:sync` updated the copies.
 
 ### Decisions and defaults
 
@@ -2466,7 +2566,7 @@ Status: planning complete; implementation has not started. User requested a full
 
 ### Files and interfaces
 
-- Added `docs/admin-experience-plan.md`: observed issues, public/admin journeys, proposed routes, page compositions, required server interfaces, design constraints, five implementation stages and acceptance criteria.
+- Added [docs/admin-experience-plan.md](admin-experience-plan.md): observed issues, public/admin journeys, proposed routes, page compositions, required server interfaces, design constraints, five implementation stages and acceptance criteria.
 - No runtime interfaces, application code, dependencies or deployment changed.
 
 ### Decisions and defaults
@@ -2498,7 +2598,7 @@ Status: planning complete; implementation has not started. User requested a full
 
 ### Exact next stage
 
-Stage A in `docs/admin-experience-plan.md`: implement the home, dedicated join/login routes, compatibility links and reliable authentication UI states. Stop after its checks and review; do not automatically begin Stage B.
+Stage A in [docs/admin-experience-plan.md](admin-experience-plan.md): implement the home, dedicated join/login routes, compatibility links and reliable authentication UI states. Stop after its checks and review; do not automatically begin Stage B.
 
 ## Admin redesign Stage A — front door and access
 
@@ -2547,7 +2647,7 @@ Status: complete and locally verified on 19 October 2026; ready for review. Not 
 
 ### Exact next stage
 
-Review Stage A. The exact next implementation stage is Stage B in `docs/admin-experience-plan.md`: recoverable admin workspace, authoritative room discovery/resume and contextual sidebar navigation. Do not begin it automatically.
+Review Stage A. The exact next implementation stage is Stage B in [docs/admin-experience-plan.md](admin-experience-plan.md): recoverable admin workspace, authoritative room discovery/resume and contextual sidebar navigation. Do not begin it automatically.
 
 ## Admin redesign Stage B — recoverable workspace
 
@@ -2594,7 +2694,7 @@ Status: complete and locally verified on 19 October 2026; ready for review. Not 
 
 ### Exact next stage
 
-Review Stage B after its final checks. The next implementation is Stage C in `docs/admin-experience-plan.md`: live desk and player tools, with deliberate command confirmations and scoped feedback. Do not start it automatically.
+Review Stage B after its final checks. The next implementation is Stage C in [docs/admin-experience-plan.md](admin-experience-plan.md): live desk and player tools, with deliberate command confirmations and scoped feedback. Do not start it automatically.
 
 ## Admin redesign Stage C — live desk and player tools
 
@@ -2641,7 +2741,7 @@ Status: complete and locally verified on 19 October 2026; ready for review. Not 
 
 ### Exact next stage
 
-Review Stage C. Next is Stage D in `docs/admin-experience-plan.md`: dedicated Media, Results, Content and Health pages, their backing interfaces, and public results composition. Do not begin automatically.
+Review Stage C. Next is Stage D in [docs/admin-experience-plan.md](admin-experience-plan.md): dedicated Media, Results, Content and Health pages, their backing interfaces, and public results composition. Do not begin automatically.
 
 ## Admin redesign Stage D — media, results, content and health
 
@@ -2691,7 +2791,7 @@ Status: complete and locally verified on 19 October 2026; ready for review. Not 
 
 ### Exact next stage
 
-Review Stage D. Next is Stage E in `docs/admin-experience-plan.md`: separate projector setup/presentation, whole-site responsive polish and the controller/presenter rehearsal. Do not begin automatically.
+Review Stage D. Next is Stage E in [docs/admin-experience-plan.md](admin-experience-plan.md): separate projector setup/presentation, whole-site responsive polish and the controller/presenter rehearsal. Do not begin automatically.
 
 ## Admin experience Stage E — complete locally (19 October 2026)
 
@@ -2763,7 +2863,7 @@ The completed admin redesign was committed separately as `4ebe630` (`Redesign ad
 | `common-password`       | Room-frequency ranking requested / draft | User confirmed matching other guests' made-up passwords. Needs matching/tie rules, points schedule and an authoritative ranking mechanic. No real-password or third-party popularity dataset is used.                        |
 | `complete-a-wordle`     | Wordle requested / draft                 | Encore located beside 26. Needs a repeated-guess mechanic, target word and attempt/time/scoring rules.                                                                                                                       |
 
-The password/Wordle files use blocked typed authoring placeholders, and Christianity uses a blocked choice placeholder. These do not claim to implement the requested mechanics: explicit requirements and missing answer representations prevent them from becoming playable accidentally. This follows `docs/question-authoring.md`: unsupported interactions are saved as drafts rather than forced into unrelated mechanics or a new score engine. No missing prices, Wordle target or scoring rules were invented.
+The password/Wordle files use blocked typed authoring placeholders, and Christianity uses a blocked choice placeholder. These do not claim to implement the requested mechanics: explicit requirements and missing answer representations prevent them from becoming playable accidentally. This follows [docs/question-authoring.md](question-authoring.md): unsupported interactions are saved as drafts rather than forced into unrelated mechanics or a new score engine. No missing prices, Wordle target or scoring rules were invented.
 
 Encore was read only at `../Encore`: `packages/game-glyph/src/mark.ts`, `play.ts`, `glyph-game-module.ts`, dictionary licence, tests and `apps/web/src/games/glyph-board.tsx`. Its root licence is MIT, copyright 2026 Encore contributors; copied substantial code must preserve its notice and dictionary attribution. No code has been copied yet. The draft records the useful source locations and the need to keep its answer-bearing puzzle/play state server-side when porting. Encore was not modified.
 
@@ -2818,7 +2918,7 @@ Status: implemented. The agreed direction is a hosted Kahoot/Jackbox-style show:
 - `/admin/phone-preview/:version/:questionId` uses the actual `GuestPlay`, `PhoneShell`, phone dock and bespoke presentation registry. Rehearsal input is local component state only: no room, WebSocket, scoring or persistence. Names in roster/duel rehearsals are explicit stand-ins. The route supports sign-in returns when opened on another device.
 - `QuestionExperience` gives phone questions a screen-filling frame, progress and mechanic/role/phase-specific action cue. Standard choices use large labelled tiles with eased staggered entrances; existing bespoke compositions remain registered under their own presentation ids. Selection and accepted answers remain distinct. Sending/locked labels animate while their accessible name changes immediately.
 - The existing dock keeps the send action accessible. Photo/sound tools and troll selection are collapsed. Incoming troll notices/escape controls remain visible. Phase exits disable outgoing controls, including the portalled dock button; normal stage headings still update immediately with authoritative server state.
-- Added `.agents/rules/35-question-experience.md`, updated the authoring rule and guide, and regenerated agent copies with `npm run agents:sync`. Future question work must use full-screen compositions, explicit next actions, eased transitions, reduced-motion fades and the real admin phone rehearsal.
+- Added [.agents/rules/35-question-experience.md](../.agents/rules/35-question-experience.md), updated the authoring rule and guide, and regenerated agent copies with `npm run agents:sync`. Future question work must use full-screen compositions, explicit next actions, eased transitions, reduced-motion fades and the real admin phone rehearsal.
 
 ### Verification for the question experience
 
@@ -2850,7 +2950,7 @@ Status: implemented. `complete-a-wordle` is now a ready native `wordle` question
 - The existing text command and durable receipt transaction accept subsequent Wordle guesses. Each player's board updates the existing `round_response` row before acknowledgement. Snapshots restore that board after reconnect/eviction. The score ledger gives the configured points only for a solved board and remains idempotent at reveal. Stage/control receive aggregate finished-board progress; individual guesses are guest-only. The target enters the public reveal only in revealed phases.
 - Registered `glyph` in the existing bespoke presentation registry. The phone has a six-by-five board, touch keyboard, physical typing, remembered key feedback, labelled symbols as well as colour, eased letter reveals and reduced-motion fades. It keeps rejected drafts and clears accepted ones. Pending state follows the command acknowledgement rather than treating the first Wordle guess as a completed round. The stage presents a large mystery word, instructions, progress and the eventual reveal. Projector spacing was tightened after screenshot review to keep all content visible.
 - The real admin phone preview uses authenticated, same-origin `POST /api/admin/content/:version/questions/:questionId/preview/wordle`. It replays a bounded history on the server and returns feedback only; it does not persist, open a game socket, enforce a rehearsal timer or award points. JSON input is stream-limited to 1 KiB. The public preview GET omits the target. `/design?q=glyph` has an explicitly labelled development stand-in word, WORDS, for layout/reveal checks.
-- Updated `docs/question-authoring.md` and `.agents/rules/15-question-authoring.md`, then regenerated agent copies with `npm run agents:sync`. A wider auth check exposed an older production test fixture omitting the required client key; that fixture now supplies a test key/header so the original authentication assertions run unchanged. No production auth behaviour changed.
+- Updated [docs/question-authoring.md](question-authoring.md) and [.agents/rules/15-question-authoring.md](../.agents/rules/15-question-authoring.md), then regenerated agent copies with `npm run agents:sync`. A wider auth check exposed an older production test fixture omitting the required client key; that fixture now supplies a test key/header so the original authentication assertions run unchanged. No production auth behaviour changed.
 
 ### Verification
 
@@ -2878,7 +2978,7 @@ Status: implemented. The four supplied pictures appear in the existing Pokémon 
 - Added `QuestionOptionImage` and its shared phone/stage styles. The image uses `object-fit: contain` inside an absolutely positioned area, so its intrinsic dimensions cannot resize a card. Existing option text remains the accessible name; decorative images do not intercept taps. Images fade in after loading, and a missing image leaves the labelled control usable. No palette, theme or additional presentation registry was introduced.
 - Stored four genuine PNGs in `apps/web/public/assets/questions/favourite-pokemon/`. Turtwig, Mudkip and Tepig were copied byte-for-byte. The supplied WebP portrait was decoded and saved losslessly as `osama-bin-laden.png`; its 250×302 dimensions and decoded RGB pixels are unchanged. The original transparency and dimensions of the other PNGs were retained. Conversion used the bundled Pillow runtime and did not change the supplied artwork.
 - Added option-image path validation and missing-file checks to existing content preflight. No new media service, processing in the live path, asset fetcher, socket or scoring system was added.
-- Researched the price references and recorded full links, dates, definitions and limitations in `docs/content/inflation-price-sources.md`. Freddo compares a typical UK 20p single-bar baseline in 2012 (inferred from StepChange's 2011–2014 timeline, with a contemporaneous petition as corroboration) against a Tesco 18g single at 35p checked on 20 October 2026. It does not claim identical historical pack-size/retailer records or one universal UK retail price.
+- Researched the price references and recorded full links, dates, definitions and limitations in [docs/content/inflation-price-sources.md](content/inflation-price-sources.md). Freddo compares a typical UK 20p single-bar baseline in 2012 (inferred from StepChange's 2011–2014 timeline, with a contemporaneous petition as corroboration) against a Tesco 18g single at 35p checked on 20 October 2026. It does not claim identical historical pack-size/retailer records or one universal UK retail price.
 - Petrol uses official DESNZ UK weekly ULSP pump averages: 138.35p/litre on 15 October 2012 and 175.28p/litre on 12 October 2026. The guest is explicitly asked for the 2026 value rounded to the nearest penny: the scoring answer is 175p, with the exact 175.28p in the reveal. Neither figure is described as an annual average. Both sliders retain ordinary 20-second/100-point exact-answer defaults; bounds and initial values are recorded in the source note.
 - Updated ready-state assertions while retaining explicit incomplete-slider fixtures for missing-scale/answer coverage. Fixed the existing Wordle authoring example's replacement character.
 
@@ -2901,7 +3001,7 @@ Status: implemented. Added three ready slider questions to the birthday catalogu
 
 Each question has its own TypeScript file in `apps/api/src/questions/packs/birthday/`, registered in `manifest.ts`, using the existing slider helper, renderer, public preview and scoring. No new interface, presentation registry, socket, score engine or live-room path was needed. Defaults remain 20 seconds and 100 points for the exact answer. All values are in pence, step 1, with historical-price initial values and reachable scoring targets.
 
-The comparison is explicitly dated rather than presented as a full-year national average: Tesco £3 in 2012 to £3.85 with a Clubcard checked 20 October 2026; Greggs reported 66p to the £1.35 price reported for most shops on 8 January 2026; cheeseburger 99p to the £1.39 quote in an independent September 2026 menu guide. The last quote is not official restaurant verification: that limitation is stated in phone wording, reveal and private notes. Tesco's current price has a primary retailer source; the historic Tesco statement and Greggs prices use news reporting. Sources, inference boundaries and price scope are recorded in `docs/content/inflation-price-sources.md`. A pint was rejected because the accessible ONS observations stopped in January 2025.
+The comparison is explicitly dated rather than presented as a full-year national average: Tesco £3 in 2012 to £3.85 with a Clubcard checked 20 October 2026; Greggs reported 66p to the £1.35 price reported for most shops on 8 January 2026; cheeseburger 99p to the £1.39 quote in an independent September 2026 menu guide. The last quote is not official restaurant verification: that limitation is stated in phone wording, reveal and private notes. Tesco's current price has a primary retailer source; the historic Tesco statement and Greggs prices use news reporting. Sources, inference boundaries and price scope are recorded in [docs/content/inflation-price-sources.md](content/inflation-price-sources.md). A pint was rejected because the accessible ONS observations stopped in January 2025.
 
 Verification:
 
@@ -2946,7 +3046,7 @@ Status: implemented. Added ready typed questions `real-name-vin-diesel` and `rea
 
 - Added the two corresponding server-side TypeScript files under `apps/api/src/questions/packs/birthday/` and imported them into `manifest.ts`. No new interface, client question pack, presentation id, renderer, matching engine or socket. No existing question was edited. `birthday-draft` remains unreleased, with its empty running order; demo and room versions are unchanged.
 - Vin Diesel's canonical answer is Mark Sinclair, supported by CUNY's own commencement announcement. Mark Sinclair Vincent and Mark Vincent are also accepted because a direct Industria interview and TIME's original reporting use those earlier forms. Jamie Foxx's canonical answer is Eric Marlon Bishop, corroborated by Biography.com, with Eric Bishop also accepted as used in his direct Irish Times interview. The existing typo matcher accepts the Marlin spelling found in the Ferriss transcript. First name plus surname is enough; no middle-name trivia is compulsory. Stage names and single-name guesses do not score.
-- Prompts ask for an “original name”, avoiding an unsupported claim about present legal names or deed-poll paperwork. Humorous reveal copy is original. Full source links and answer-scope decisions are recorded in `docs/content/original-name-sources.md`; concise private notes stay on each question. Accepted names and explanations remain server-side, absent from phone preview payloads.
+- Prompts ask for an “original name”, avoiding an unsupported claim about present legal names or deed-poll paperwork. Humorous reveal copy is original. Full source links and answer-scope decisions are recorded in [docs/content/original-name-sources.md](content/original-name-sources.md); concise private notes stay on each question. Accepted names and explanations remain server-side, absent from phone preview payloads.
 
 ### Verification
 
@@ -2969,8 +3069,8 @@ Status: the ten supplied rounds are saved and their presentation is implemented;
 
 - Added ten `choiceQuestion` files under `apps/api/src/questions/packs/birthday/`, in supplied order in the birthday catalogue: `who-said-it-empathy`, `who-said-it-freedom`, `who-said-it-sleep`, `who-said-it-salvation`, `who-said-it-crying-ceo`, `who-said-it-nihilism`, `who-said-it-technology`, `who-said-it-performance-review`, `who-said-it-absolute-force`, and `who-said-it-grief-pipeline`. The initial “True equality…” example is not an eleventh round. Quote wording and both option labels are preserved; all fit existing prompt/label limits, so no schema expansion or silent abridgement was needed.
 - The user's proposed answer letters and explanations are preserved in private notes. Each question has a `quote-source` requirement and a missing `verified-attribution` answer, so it cannot become playable or score accidentally. These are correct-answer choice drafts, not unscored polls standing in for the requested quiz. Ordinary defaults remain 20 seconds/100 points when a sourced question is ready. `birthday-draft` stays unreleased; the running order is empty and demo/live rooms are unchanged.
-- Exact-phrase searches did not authenticate the precise Persona/Shin Megami Tensei/LinkedIn/manifesto wording. This is an unresolved verification gap, not proof that no occurrence exists. The crying-CEO incident is real, but contemporary reporting concerns two employees and does not authenticate the supplied wording/15% figure. Do not attribute that supplied paragraph to Braden Wallake as established fact. The identifiable original LinkedIn post could not be retrieved by the browsing tool. Full audit, ids, source limitations and the proposed A/B answers are in `docs/content/who-said-it-sources.md`.
-- Updated `docs/question-authoring.md` with the existing-field quotation workflow, source gap, parody framing and rehearsal labelling. No generated agent copies were edited.
+- Exact-phrase searches did not authenticate the precise Persona/Shin Megami Tensei/LinkedIn/manifesto wording. This is an unresolved verification gap, not proof that no occurrence exists. The crying-CEO incident is real, but contemporary reporting concerns two employees and does not authenticate the supplied wording/15% figure. Do not attribute that supplied paragraph to Braden Wallake as established fact. The identifiable original LinkedIn post could not be retrieved by the browsing tool. Full audit, ids, source limitations and the proposed A/B answers are in [docs/content/who-said-it-sources.md](content/who-said-it-sources.md).
+- Updated [docs/question-authoring.md](question-authoring.md) with the existing-field quotation workflow, source gap, parody framing and rehearsal labelling. No generated agent copies were edited.
 
 ### Interface and presentation
 
@@ -2996,7 +3096,7 @@ Exact next stage: resolve the pending sourced-quote/parody preference, then repl
 
 ## Party mini-game concepts — 20 October 2026
 
-Status: saved fifteen new catalogue entries: **four ready Real/Made up choices and eleven explicit drafts**. These concepts do not yet supply all the facts or interactions needed for playable mini-games. Full ids, status, source links and gaps are in `docs/content/party-concepts.md`. The ten existing Who said it drafts were not duplicated or promoted. The birthday pack remains unreleased with an empty running order; the demo and live rooms are unchanged.
+Status: saved fifteen new catalogue entries: **four ready Real/Made up choices and eleven explicit drafts**. These concepts do not yet supply all the facts or interactions needed for playable mini-games. Full ids, status, source links and gaps are in [docs/content/party-concepts.md](content/party-concepts.md). The ten existing Who said it drafts were not duplicated or promoted. The birthday pack remains unreleased with an empty running order; the demo and live rooms are unchanged.
 
 ### Files and decisions
 
@@ -3005,7 +3105,7 @@ Status: saved fifteen new catalogue entries: **four ready Real/Made up choices a
 - Guess the Tab preserves closest-without-going-over as a missing scoring requirement. Slider definitions are authoring placeholders only, with no invented price or input range. The four reference prices need dated, comparable bases; no generic insurance average, unspecified pub menu or assumed electricity tariff was supplied as a factual answer. Ties and all-guesses-over behaviour also need implementation.
 - The AI choice preserves all three supplied example options without asserting that any is a genuine Humza take. Heathrow records the missing blind 1v1 tournament rather than substituting the existing all-submissions ballot. Driving sins preserves the list without treating its supplied order as the answer; fixed target versus consensus and the requested accessible drag list remain gaps. Dating records the explicit 30-second writing window and missing three-award voting flow. The dials retain their supplied 0–100 endpoints and neutral initial control position of 50, without claiming a personal target or using exact-price scoring.
 - `question-preview.ts` labels unsupported interactions as disabled draft layouts. The AI preview explicitly labels example choices. Missing numeric ranges remain unavailable, with no placeholder bounds. Public projections continue to exclude truth, notes, requirements and future reveals.
-- Fixed isolated previews for catalogues exceeding forty entries: unordered questions now show `1 / 1`, while ordered questions retain their actual running-order position. Previously the catalogue count entered a public field limited to forty live questions, making otherwise valid previews unavailable. The live-order limit stays forty. Documented the distinction in `docs/question-authoring.md`.
+- Fixed isolated previews for catalogues exceeding forty entries: unordered questions now show `1 / 1`, while ordered questions retain their actual running-order position. Previously the catalogue count entered a public field limited to forty live questions, making otherwise valid previews unavailable. The live-order limit stays forty. Documented the distinction in [docs/question-authoring.md](question-authoring.md).
 
 ### Verification
 
@@ -3045,18 +3145,18 @@ Status: complete locally and verified. All **23 former drafts** are now ready, c
 - Added real common-password crowd-frequency scoring, exact-set multiple choice, decimal closest-under bids, consensus sliders, accessible ordered ranking, repeated award ballots and a persisted anonymous knockout bracket. Pure crowd helpers live in `packages/shared/src/party-scoring.ts`; UI uses the actual guest renderer and existing phone dock. Readiness no longer hides missing mechanics behind ordinary placeholders.
 - Commonness ignores case and whitespace variations; unique answers score zero, matching groups scale by `(count − 1) / (largest − 1)`, with dense frequency ranks. Christianity requires exactly the three user-confirmed branches and no distractors. All-over price bids score zero; tied closest-under bids share the prize. Subjective dials use the room median; driving uses mean-position room consensus, preserving ties. These consensus choices were stated after optional clarification received no answer.
 - Heathrow uses the frozen seeded tournament with byes, no self-votes, epoch-bound ballots and 15-second matches. Dating has the supplied three awards and 60 points per category. Tied award authors share the category; no votes gives no prize. Ballot generations, selections and frozen results survive eviction. Stage/phone tournament order matches.
-- Replaced the ten unverified Who said it passages with verified short game/primary-author quotations while retaining stable ids and the original A/B pattern. Game quotations use exact original script messages hosted on a third-party mirror, not a publisher-hosted archive. No invented LinkedIn anecdotes or real-person quotation claims remain. The AI round now uses an actual earlier Humza message from this chat, with two generated decoys and an accurately named design-planning context. See `docs/content/who-said-it-sources.md` and `docs/content/party-polish-sources.md`.
+- Replaced the ten unverified Who said it passages with verified short game/primary-author quotations while retaining stable ids and the original A/B pattern. Game quotations use exact original script messages hosted on a third-party mirror, not a publisher-hosted archive. No invented LinkedIn anecdotes or real-person quotation claims remain. The AI round now uses an actual earlier Humza message from this chat, with two generated decoys and an accurately named design-planning context. See [docs/content/who-said-it-sources.md](content/who-said-it-sources.md) and [docs/content/party-polish-sources.md](content/party-polish-sources.md).
 - The four price questions have dated, explicit scopes: default-route Sutton/Oxford Circus adult peak PAYG £8.80, The Roxy standard Camden Hells pint £7.30, ideal 62 kWh charging at Ofgem's Jan–Mar 2026 average rate £17.17, and Go.Compare's June 2026 median for newly qualified **25+** drivers £1,002. The insurance question explicitly changes the unsupported exact-age-25/first-policy average to the measured cohort. No current live quote is implied by a frozen reference price.
 - Added the durable `round_state` table and upgraded additive room metadata **13 → 14**. Settlements and vote flow use this extension; existing intents, score ledger, socket client and single scheduler remain authoritative. No Neon migration. The preview still blocks a legacy placeholder if its actual variant is absent; no answer key, notes, truth or future reveal is sent into rehearsals.
 
 ### New concepts and kart
 
-- Saved all eight new concepts, including five Council/Dystopia rounds. Broadwater Farm, Blackbird Leys and Thamesmead South have council/primary references; Redoubt is the user's invented dystopia. The apology scenario is explicitly fictional and uses the working tournament. `Ferrier Sector` remains a draft because Royal Greenwich documents **Ferrier Estate**; the supplied exact name has not been authenticated. The Tribunal, Nextdoor and property rounds still need genuine source material. Group-chat double self-vote scoring, spoken debate pairing and push-your-luck raids remain disabled mechanic drafts. Exact ids, gaps and sources: `docs/content/tribunal-and-chaos.md`.
+- Saved all eight new concepts, including five Council/Dystopia rounds. Broadwater Farm, Blackbird Leys and Thamesmead South have council/primary references; Redoubt is the user's invented dystopia. The apology scenario is explicitly fictional and uses the working tournament. `Ferrier Sector` remains a draft because Royal Greenwich documents **Ferrier Estate**; the supplied exact name has not been authenticated. The Tribunal, Nextdoor and property rounds still need genuine source material. Group-chat double self-vote scoring, spoken debate pairing and push-your-luck raids remain disabled mechanic drafts. Exact ids, gaps and sources: [docs/content/tribunal-and-chaos.md](content/tribunal-and-chaos.md).
 - Added `KartGameWrapper.tsx`, `useKartSocket.ts`, `TouchController.tsx` and the lazy Three.js stage canvas. These TypeScript versions match the repository. Default phones load a lightweight SVG HUD and A/B/R plus analog steering; the TV draws numbered ghost karts and live standings. Pointer cancellation, blur, hidden tabs, disconnection, pause and unmount release controls. Reduced motion, safe scrolling, keyboard controls and optional existing stage audio are retained.
 - Inspected `Nathan-Richard-21/mario-kart-js` at `0f7a4305981206193c5efba64bc90755e6e85773` and the related upstream Mario Kart 3.js source. Ported the damped driving/release-boost model into pure server physics with a procedural party circuit. No upstream Nintendo artwork, music, original track, landing page, Playroom store or effect stack is bundled. Preserved the selected fork's declared permission notice in `THIRD_PARTY_NOTICES.md`; this is a documented party adaptation, not an untouched upstream engine build. Three.js/types are pinned and the lockfile retained.
 - `packages/shared/src/kart.ts` owns pure input/tick/end reduction, eight ordered gates, timing and rankings. `apps/api/src/questions/kart.ts` persists frozen participants, bounded per-driver input queues, replay cursors, simulation and ledger results. Race ids include room id and phase generation. Only authenticated normalised inputs are accepted, at most one per 80ms. No client time, frames, position or hash can grant a lap. A guest sees its own kart and the leading results; the stage sees all participants. Reconnect cursors do not depend on a phone's clock.
 - The existing durable scheduler owns a 200ms auxiliary race tick and the 45-second cutoff; physics substeps are at most 50ms. A finishing tick cannot double-advance with a due cutoff. Pause saves active-time remainders. Finishing times rank ahead of DNF, ties share place, DNF scores zero; finishers get `round(points × (participants − place + 1) / participants)`. The existing reveal/scores/next-question/final/podium phases handle the rest.
-- Added an explicit authenticated **local** quiz → kart → podium rehearsal start. It pins `kart-rehearsal-v1`, is hidden in production builds and rejected by staging/production bindings, and never releases the birthday pack. Question packs remains an isolated controller-layout preview. Socket.io message semantics are mapped to the existing native WebSocket snapshots/inputs in `docs/kart-minigame.md`; no second transport or client-selected winner is introduced.
+- Added an explicit authenticated **local** quiz → kart → podium rehearsal start. It pins `kart-rehearsal-v1`, is hidden in production builds and rejected by staging/production bindings, and never releases the birthday pack. Question packs remains an isolated controller-layout preview. Socket.io message semantics are mapped to the existing native WebSocket snapshots/inputs in [docs/kart-minigame.md](kart-minigame.md); no second transport or client-selected winner is introduced.
 - Browser rehearsal exposed stop/start steering sensitivity: turning now scales with speed, as in the upstream model, and the boundary allows a recoverable slide. It also caught generic “No answer was received” race copy, duplicate timers, radial direction arrows and small race numbers. These were corrected, with regression checks for variable-speed laps, race result copy and server-confirmed completion callbacks.
 
 ### Verification
@@ -3102,7 +3202,7 @@ Real browser run reached the race and checked the new thumb pad/widths, but the 
 
 Complete. The administrator receives one email containing a six-digit code and the existing scanner-safe magic link. Both expire after five minutes; code verification uses the existing Better Auth 1.7.5 instance, hashed OTP storage, disabled sign-up, five failed attempts, same-origin protection and the configured administrator allowlist. The existing session cookies and admin return destination work for either method. The login page offers paste/autofill-friendly code entry with explicit errors, loading states, focus after delivery and the local development inbox.
 
-Added `packages/emails` with pinned React Email 6.11.3, shared responsive branding, code block, action button and results statistics. Resend now receives HTML plus the canonical plain text. HTML is rendered at delivery time so existing stored retries and provider idempotency keys remain unchanged; no extra outbox schema or auth migration is needed. Guest text is escaped and an embedded URL in a nickname cannot replace the final generated recap link. `npm run email:preview` renders three invented email fixtures without sending mail. Interfaces/docs are in the package, auth factory/routes/email adapter, admin API/page, shared optional local-inbox HTML and `apps/api/src/auth/README.md`.
+Added `packages/emails` with pinned React Email 6.11.3, shared responsive branding, code block, action button and results statistics. Resend now receives HTML plus the canonical plain text. HTML is rendered at delivery time so existing stored retries and provider idempotency keys remain unchanged; no extra outbox schema or auth migration is needed. Guest text is escaped and an embedded URL in a nickname cannot replace the final generated recap link. `npm run email:preview` renders three invented email fixtures without sending mail. Interfaces/docs are in the package, auth factory/routes/email adapter, admin API/page, shared optional local-inbox HTML and [apps/api/src/auth/README.md](../apps/api/src/auth/README.md).
 
 Verified in an isolated C: release copy with the prior kart implementation: root `npm run test:unit` **61 files / 228 tests passed**; `npm run typecheck` passed; full API auth project **31 files / 208 tests passed**. Existing admin browser suite passed five cases; new email/code suite passed two after fixing disabled-at-mount focus and React Email's padding-on-cell responsive behaviour. Code login/session restoration and all three templates at 320/390/900px passed. Sign-in code entry fit 320/390/430px. Reviewed the actual 390px sign-in email screenshot. The initial preview harness failure was Playwright's JSX transform; a separate Vite-rendered fixture command resolved it. Production dry run and 485-file artefact/content checks passed. Seven unrelated birthday drafts remain incomplete and the running order remains unreleased.
 
@@ -3156,7 +3256,7 @@ The big screen uses an SVG `KartMap` for every public driver pose, checkpoint se
 
 No physics, socket protocol, scheduler or score-engine fork was introduced. Each phone still receives only its own pose, uses the existing 100ms input heartbeat and renders the server's saved ticks. The birthday `kart-sprint` remains ready in the draft catalogue and outside the running order. Its instructions and guest cues now say to race on the phone. New local rehearsals pin `kart-rehearsal-v2`; v1 remains resolvable with its original prompt/instructions so stored content is not rewritten. The birthday pack is not released.
 
-Files/interfaces: `KartDriverView.tsx`, `KartMap.tsx`, `KartLeaderboard.tsx`, camera framing in `presentation.ts`, focused capacity/pose lookup in `circuit.ts`, existing canvas/wrapper/GuestKart/CSS, guest copy/direction, question instructions/registry, tests and `docs/kart-minigame.md`. Verified root `npm run test:unit -- -- --maxWorkers=2`: **64 files / 249 tests passed**. Typecheck and focused ESLint passed. Focused API kart logic/DO checks passed **2 files / 13 tests**, including 80-player persisted input isolation/recovery and old/new rehearsal content. Build, artefact checks and content preflight passed; seven unrelated birthday drafts remain incomplete.
+Files/interfaces: `KartDriverView.tsx`, `KartMap.tsx`, `KartLeaderboard.tsx`, camera framing in `presentation.ts`, focused capacity/pose lookup in `circuit.ts`, existing canvas/wrapper/GuestKart/CSS, guest copy/direction, question instructions/registry, tests and [docs/kart-minigame.md](kart-minigame.md). Verified root `npm run test:unit -- -- --maxWorkers=2`: **64 files / 249 tests passed**. Typecheck and focused ESLint passed. Focused API kart logic/DO checks passed **2 files / 13 tests**, including 80-player persisted input isolation/recovery and old/new rehearsal content. Build, artefact checks and content preflight passed; seven unrelated birthday drafts remain incomplete.
 
 The real two-phone quiz → race → pause/reload → GPU loss/retry → finish/DNF → saved award → podium browser test passed. An expanded real local room with two playing browser phones plus 48 passive registered stand-ins also passed, including all 50 map markers, browsing to drivers 46–50, scoreboard viewport fit, personal renderer identities, map switching and phone control bounds. Reviewed actual phone and 50-player stage screenshots. The first expanded attempt timed out at the existing cold local sign-in retry screen before enrolling any guests; the test now handles that explicit retry. The four-second carousel rerun caught a compact-phone viewport issue: the separate map-switch row could push pedals below the screen. Moving this secondary action into the driving viewport preserves full-size controls. After that fix, the full unit suite, typecheck, focused lint and build/content checks passed again. The final real 50-player browser rerun passed **1 case**, including the four-second carousel, 320/390/430px pedal bounds, short-landscape acceleration controls, GPU loss/retry, finish/DNF and podium. Reviewed the final 320px driving and 50-player broadcast screenshots. The verified source was copied back to E: and checked byte-for-byte.
 
@@ -3180,7 +3280,7 @@ Final local setup: dependency installation in E: completed successfully and the 
 
 ## 21 October 2026 — realtime fan-out, reconnects and sign-in start-up
 
-Applied the plan in `docs/jackbox-realtime-plan.md`, which compares 26 with the shipped Jackbox Party Pack 11 network client. All phases are built locally. Status, deviations and reasons are in that file's implementation table. Before and after figures are in `docs/verification-report.md`: at 80 guests the stage's worst wait between race updates fell from 31.8 seconds to 317 ms, and answer acknowledgement p95 fell from 3.1 s to 785 ms.
+Applied the plan in [docs/jackbox-realtime-plan.md](jackbox-realtime-plan.md), which compares 26 with the shipped Jackbox Party Pack 11 network client. All phases are built locally. Status, deviations and reasons are in that file's implementation table. Before and after figures are in [docs/verification-report.md](verification-report.md): at 80 guests the stage's worst wait between race updates fell from 31.8 seconds to 317 ms, and answer acknowledgement p95 fell from 3.1 s to 785 ms.
 
 Files/interfaces: `room/realtime-meter.ts` (room health traffic), `packages/shared/src/rate-limit.ts`, `kartFrameSchema`, `acceptKartInputs` and `kartFrames` in `questions/kart.ts`, patch/resume views in `PartyRoom`, `live/server-clock.ts`, `play/preload.ts`, `device/error-reporter.ts`, `npm run load:realtime` with `apps/api/vitest.load.config.ts`. Socket messages added: `kart` frames, opt-in `patch` messages (`patches=1`, resume with `since=`), and `time:` clock samples. Room health gains Socket traffic and Phone errors, with the build id.
 
@@ -3188,7 +3288,7 @@ Decisions: controls stay durable before the tick reads them, as `kart-room.spec.
 
 Also fixed: `PartyRoom` now opens its own database pool. The module-wide pool could be reused across rooms in one isolate, which Workers forbid, and a second room's diagnostics could hang. In development, a cold sign-in check could take longer than the 12-second client timeout and leave "We couldn’t reach sign-in" on screen. Vite now warms sign-in when it starts, and `useAdminSession` retries quietly up to three times before showing the message.
 
-Commands: `npm run test:unit` 70 files / 276 tests passed; typecheck and build passed; API results and the two pre-existing lint errors are listed in the verification report. Not run: a browser check of the sign-in fix (another session held the dev port), staging, and the venue Wi-Fi drill. Changes are local and uncommitted. Exact next stage: review, then a staging deploy and the rehearsal steps in `docs/event-runbook.md` when requested.
+Commands: `npm run test:unit` 70 files / 276 tests passed; typecheck and build passed; API results and the two pre-existing lint errors are listed in the verification report. Not run: a browser check of the sign-in fix (another session held the dev port), staging, and the venue Wi-Fi drill. Changes are local and uncommitted. Exact next stage: review, then a staging deploy and the rehearsal steps in [docs/event-runbook.md](event-runbook.md) when requested.
 
 Deployed-site follow-up (21 October 2026): staging showed the real cause of "We couldn’t reach sign-in". About one `/api/admin/session` call per page load ended in Cloudflare error 1101; the Worker log said the code had hung. `openDatabase` cached one Neon pool for the whole isolate, and Workers do not let a request use I/O that an earlier request opened, so the reused pool's query never finished. The error page is HTML, so the client could not read it and showed the message. `openDatabase` now gives each Neon caller its own pool and still caches local PGlite. `test/database-sharing.spec.ts` covers both.
 
@@ -3196,7 +3296,7 @@ Deployed-site follow-up (21 October 2026): staging showed the real cause of "We 
 
 Status: implementation and logic/runtime checks complete; end-to-end browser rehearsal remains unverified. This stage hardens the existing connected ring circuit. The imported `/kart` circuit remains solo practice; no deployment, birthday release, external resource creation or unrelated Jackbox changes were made.
 
-Files/interfaces: `questions/kart.ts` gains a bounded per-driver transient input buffer and saved pause-boundary release; `PartyRoom` validates collection/race/roster before buffering, flushes arrivals before host phase commands and retains the existing tick transaction. The pure shared kart reducer gains a trusted `release` event, with no WebSocket wire change or storage migration. `room-socket.ts` rejects backwards race time, old room/race frames, paused/non-collecting frames and attempts to reopen ended results. Existing kart API/scoring and socket test files cover these changes. Updated `docs/kart-minigame.md` documents the transport and pause behaviour.
+Files/interfaces: `questions/kart.ts` gains a bounded per-driver transient input buffer and saved pause-boundary release; `PartyRoom` validates collection/race/roster before buffering, flushes arrivals before host phase commands and retains the existing tick transaction. The pure shared kart reducer gains a trusted `release` event, with no WebSocket wire change or storage migration. `room-socket.ts` rejects backwards race time, old room/race frames, paused/non-collecting frames and attempts to reopen ended results. Existing kart API/scoring and socket test files cover these changes. Updated [docs/kart-minigame.md](kart-minigame.md) documents the transport and pause behaviour.
 
 Decisions: at most four transient controls per driver, at least 80ms between arrivals, maximum 80 roster members. Invalid inputs and one noisy driver cannot evict another driver's queue. These controls remain unacknowledged until the existing durable tick processes them; eviction can lose transient arrivals. Pause catches up to its boundary, releases held controls and drift charge, clears pending histories and preserves reconnect sequence cursors. Existing speed/active boost, track, 45-second deadline, scoring, private phone projection and single room socket/scheduler remain in use.
 
@@ -3286,7 +3386,7 @@ Try npm run dev → Admin → Kart → Drive, drive straight through a glowing b
 
 ## 21 October 2026 — kart drivers with guest photo faces
 
-Implemented drivers in the karts, chosen in the lobby, with an optional guest photo on the driver's face. Details and decisions are in `docs/kart-minigame.md` under "Drivers and guest faces".
+Implemented drivers in the karts, chosen in the lobby, with an optional guest photo on the driver's face. Details and decisions are in [docs/kart-minigame.md](kart-minigame.md) under "Drivers and guest faces".
 
 Files/interfaces: `packages/shared/src/kart-driver.ts` (roster, `driverChoiceSchema`, `lobbyDriverSchema`); `apps/api/src/room/drivers.ts`; `driver` socket command in `PartyRoom`; media `purpose` column with face rules in `media/records.ts`; exclusions in stats, trolls, the archive gallery and stage media; admin media face marker. Web: `DriverPicker`, `DriverBadge`, `driver-face.ts`, `drivers-context.ts`, `KartDriversProvider`, `driver-rig.ts`, `media/face-upload.ts`, `media/photo-prepare.ts`; circuit, canvas, map and leaderboard wiring.
 
@@ -3310,19 +3410,17 @@ The embedded investigation found a second product issue: terrain warning text hi
 
 Final repeated unit suite after the HUD fix: `npm run test:unit -- -- --maxWorkers=2` passed **75 files / 311 tests** (170 seconds). Final focused lint and whitespace checks passed. Required whole-workspace typecheck passed earlier, with solo typecheck repeated successfully after the last solo UI change. Stage complete locally. Exact next stage remains physical-device feel/lap review and connected multiplayer rehearsal; commit/deploy only on request.
 
-
 ## 21 October 2026 — photo wall, phase 1 (uploads and posts)
 
-Plan: `docs/photo-wall-plan.md`. Defaults chosen by Humza: approve first, show in breaks only, gallery opt-in ticked by default.
+Plan: [docs/photo-wall-plan.md](photo-wall-plan.md). Defaults chosen by Humza: approve first, show in breaks only, gallery opt-in ticked by default.
 
 Built: media purpose `wall` (photos only, allowed in every phase including the lobby and podium, its own limits of 15 per player and 250 per room, plus a 45-second cooldown and at most 3 waiting per player). New room tables `wall_post`, `wall_reaction` and `wall_setting`. Guest socket commands `wall-post` (media id, caption, frame, keep) and `wall-withdraw`, both through the receipted `acceptGuestValue` path. Captions are cleaned in `@26/shared` (`cleanWallCaption`) and frames come from `wallFrames`. Image reads for wall media: the host sees everything, the owner sees their own, and anyone else (the stage included) only sees a photo that is showing or has been shown. Withdrawing hides the image.
 
 Fix found on the way: every committed photo was being added to the stage as a "Photo from" cue, whatever its purpose. Cues are now limited to question photos (`purpose = 'round'`), so wall photos and kart face photos no longer appear there.
 
-Files: `apps/api/src/wall/store.ts`, `packages/shared/src/wall.ts`, `apps/api/src/media/records.ts`, `apps/api/src/media/routes.ts`, `apps/api/src/room/party-room.ts`, `apps/api/src/room/schema.ts`, `apps/api/src/room/limits.ts`, `docs/data-inventory.md`.
+Files: `apps/api/src/wall/store.ts`, `packages/shared/src/wall.ts`, `apps/api/src/media/records.ts`, `apps/api/src/media/routes.ts`, `apps/api/src/room/party-room.ts`, `apps/api/src/room/schema.ts`, `apps/api/src/room/limits.ts`, [docs/data-inventory.md](data-inventory.md).
 
 Checks: `test/wall-upload.spec.ts` (6 tests) passed; `test/drivers-room.spec.ts` and `test/media.spec.ts` (10 tests) still pass; `npm run typecheck` passed. The full API and web suites were not run. Not built yet: the queue and scheduler (phase 2), host moderation commands (phase 3), snapshots (phase 4), and every screen. Nothing is committed.
-
 
 ## 21 October 2026 — photo wall, phase 2 (queue and timing)
 
@@ -3346,7 +3444,6 @@ Checks: `npm run typecheck` passed. `npm run test:unit` passed **76 files / 314 
 
 Browser: a local lobby with one guest skipped the facts phase. Final scores moved straight to the podium. The projector showed the podium and the existing device highlight, not a fun-fact sentence. Join → About this game includes the room-totals sentence. The public results page then showed Amina’s standing and the comparison highlight, and it omitted “From your phones” because that room had no fact cards. The archive read applies the schema itself, so the new tables were created on that read. A three-guest live facts beat, the phone “That’s you” line, and reduced motion on that beat were not reached in the browser. Those screens are covered by the web unit tests. Nothing is committed. Exact next step: re-run `test/archive-room.spec.ts` and `test/results-room.spec.ts` now that the tables exist, then walk a three-guest room through the facts beat.
 
-
 ## 22 October 2026 — photo wall, phase 3 (host moderation)
 
 Built: host commands `wall-approve`, `wall-decline`, `wall-pull` (all take `postId`), `wall-skip`, `wall-next`, `wall-settings` (`wallSettings`: enabled, moderation, placement, showMs from 4 to 20 seconds, captions; only the fields given change), `wall-mute` and `wall-unmute` (`playerId`). They go through `/api/rooms/play` and `readHostDetails` like the troll switches, with receipts and rollback from `phaseCommand`. Decline and pull hide the image, even from its owner. Mute declines that guest's waiting photos, and kick now does the same. Every command runs the queue once, so the wall reacts straight away. `changeWallSettings` validates again inside the room rather than trusting the route. Host notices are in `apps/web/src/admin/command-notices.ts`.
@@ -3354,7 +3451,6 @@ Built: host commands `wall-approve`, `wall-decline`, `wall-pull` (all take `post
 Files: `apps/api/src/wall/moderation.ts`, `apps/api/src/room/routes.ts`, `apps/api/src/room/host-actions.ts`, `apps/api/src/room/party-room.ts`, `apps/api/src/room/limits.ts`, `apps/web/src/live/room-api.ts`. Test: `test/wall-moderation.spec.ts` (6); `test/wall-support.ts` gained a `host()` helper.
 
 Checks: the first run passed 4 of 6 moderation tests. It found two problems: bad settings were accepted when the room was called directly (fixed by validating in the room), and the unmute test hit the cooldown (correct behaviour; the test now allows for it). The re-run after those fixes did not complete: the Cloudflare test workers failed to start while the machine was overloaded. Only `wall-engine.spec.ts` (8) ran and passed. **The room specs have not been re-run since the two fixes.** `npm run typecheck` reported no errors. Nothing is committed.
-
 
 ## 22 October 2026 — photo wall, phases 4 to 9
 
@@ -3374,19 +3470,18 @@ Checks run (machine short on memory, so one worker): `wall-snapshot` and `wall-m
 
 Final check run (one worker): `wall-upload`, `wall-queue`, `wall-moderation`, `wall-load`, `media` and `archive-room`: 29 of 30 passed after the load test was corrected (the first photo of a rush goes up while the queue is empty, so it rightly gets the normal time; the test now checks the next photo). **`archive-room.spec.ts` › "reports preparing and ready without reading the archive database" fails** (`preparing` instead of `ready` after the export alarm). It still fails with the photo wall gallery query reverted and with the wall's phase-entry hook disabled, and no photos exist in that test, so it is not caused by the photo wall. It most likely comes from commit `13cbf91` (fun facts and the `facts` phase). Not investigated further.
 
-
 ## 22 October 2026 — admin coverage for every feature
 
-Built a feature registry (`apps/web/src/admin/features.ts`) that drives the admin sidebar, page titles and room overview cards, and a coverage test (`features.test.ts`) that fails when a source folder has no admin owner, or when routes and registry disagree. A probe folder in both `apps/api/src` and `apps/web/src` was caught by the test and then removed. New rule `.agents/rules/50-admin-coverage.md` (see, manage, rehearse; host-only snapshot data; tests), synced with `npm run agents:sync` (into `AGENTS.md`/`GEMINI.md` like the other always-on rules, and `.cursor/rules`).
+Built a feature registry (`apps/web/src/admin/features.ts`) that drives the admin sidebar, page titles and room overview cards, and a coverage test (`features.test.ts`) that fails when a source folder has no admin owner, or when routes and registry disagree. A probe folder in both `apps/api/src` and `apps/web/src` was caught by the test and then removed. New rule [.agents/rules/50-admin-coverage.md](../.agents/rules/50-admin-coverage.md) (see, manage, rehearse; host-only snapshot data; tests), synced with `npm run agents:sync` (into `AGENTS.md`/`GEMINI.md` like the other always-on rules, and `.cursor/rules`).
 
 New or extended views: room overview cards for every feature with live status and a "Try it" line; `/admin/rooms/:gameId/analytics`; troll history on the room Trolls page (`trollHistory` in the host snapshot only, from `trollHistoryRows`) with Cancel; a photo wall frame preview using a shipped sample picture. Page titles now use the registry labels (for example "Results" and "Health").
 
 Checks: `npm run typecheck` passed; all 19 web admin test files (102 tests, including the new `analytics-page` and `features` tests) passed; `wall-snapshot` (with the new host-only troll history test) and `troll` specs (7) passed. Not run: the full suites and Playwright. Nothing is committed.
 
-
 ## 22 October 2026 — trolls finished
 
-Every troll that was a placeholder or an idea in `apps/api/src/troll/README.md` is now built, in six commits on master:
+Every troll that was a placeholder or an idea in [apps/api/src/troll/README.md](../apps/api/src/troll/README.md) is now built, in six commits on master:
+
 1. **Placeholders made real.** Invasion (the troller's driver face), Call from Mum (Answer or Decline), a shattered screen, generated sponsor lines, and a real theme jingle (`scripts/generate-theme-sting.mjs`).
 2. **Fake phone chrome.** Screen recording, 1% battery, AirDrop spam, overheating, fake audience, always typing.
 3. **Input sabotage, for any question design.** Shuffled answers, Pig Latin, possessed slider, reverse typing, autocorrect, character limit, haptics storm. Also adds `questionKinds`, and `submissionDisrupted` now reads the catalogue flag.
@@ -3395,3 +3490,14 @@ Every troll that was a placeholder or an idea in `apps/api/src/troll/README.md` 
 6. **Scoring.** Steal, Robin Hood and shared score (`applyPointTransfers`, opt-in per question through `modifiers`), plus public vote and misattributed (stage captions only).
 
 The catalogue now has 50 trolls. Checks: typecheck after every batch; `troll-catalogue`, `troll-identity`, `troll-theatre`, `troll`, `troll-score`, `quiz-score` and `stage-effects` specs passed; web `src/troll` (23 tests), `stage-page` and the admin coverage test passed. Not run: Playwright (including the updated crack step in `quiz.spec.ts`), the full suites, and real phones. No question pack opts in to steal, Robin Hood or share yet.
+
+## 22 October 2026 — GitHub documentation presentation
+
+Status: complete. Refreshed 43 existing Markdown pages and added `docs/README.md` as the documentation hub.
+
+- **Files and interfaces:** root README introduction, task-based documentation directory, shared page navigation, collapsible contents on longer guides, clickable document references and consistent Markdown tables. No application interfaces changed.
+- **Decisions:** preserved technical wording and historical results; left generated content exports, line-count reports, agent instructions and third-party licence text intact. Used repository-relative links and GitHub-compatible Markdown without external visual assets.
+- **Verification:** unit tests passed (83 files, 346 tests). Relative-link and heading checks passed across 44 pages (292 file links). Prettier check and `git diff --check` passed before this log entry. `npm run typecheck` passed.
+- **Manual verification:** reviewed source diffs and navigation structure. GitHub-rendered pages have not been visually inspected.
+- **Remaining limitation:** some existing domain guides describe earlier implementation stages; this presentation pass does not certify or rewrite their technical claims.
+- **Exact next stage:** review the README and documentation hub in GitHub’s rendered view. No implementation stage or deployment started.

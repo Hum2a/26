@@ -127,7 +127,7 @@ export function WallPage() {
       <section className="admin-task-section" aria-label="Waiting for approval">
         <h2>Waiting for approval ({pending.length})</h2>
         {pending.length === 0 ? <p>Nothing waiting.</p> : null}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="admin-card-grid">
           <AnimatePresence initial={false}>
             {pending.map((item) => (
               <PendingCard
@@ -185,7 +185,7 @@ export function WallPage() {
       </Disclosure>
 
       <Disclosure title={`Shown so far (${wall.recent?.length ?? 0})`}>
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="admin-card-grid">
           {(wall.recent ?? []).map((item) => (
             <li key={item.postId} className="grid gap-2">
               {item.status === "shown" ? (
@@ -216,7 +216,7 @@ export function WallPage() {
 
       <Disclosure title="Rehearse: preview every frame">
         <p>How a photo looks on the big screen in each frame, using a sample picture.</p>
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="admin-card-grid">
           {wallFrames.map((frame) => (
             <li key={frame} className="grid gap-1">
               <span className="font-bold">{frameLabels[frame]}</span>

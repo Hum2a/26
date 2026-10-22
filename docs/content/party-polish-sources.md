@@ -1,5 +1,7 @@
 # Draft completion reference notes — 20 October 2026
 
+[Home](../../README.md) · [Documentation](../README.md) · [Event runbook](../event-runbook.md)
+
 The current pass implements the real missing interactions, with explicit deterministic scoring and frozen room results. Ready means the question can use those interactions; it does not release the birthday pack or add anything to its running order.
 
 ## Guess the Tab

@@ -1,8 +1,29 @@
 # One-lap kart sprint
 
+[Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
+
 Open **Admin → Kart** (`/admin/kart`) for direct access. **Drive** embeds solo practice, with **Open kart full screen** for a separate tab. **Phone & stage** opens the existing layout comparison without searching question packs. **Multiplayer** links to rooms and explains the current connected-race rehearsal. Solo driving and layout previews do not start a room race.
 
 Each phone has its own playable 3D chase view, touch controls and local driver HUD. The TV is a whole-room spectator map and live scoreboard for 50-plus players, with five leaders pinned and five more drivers cycling every four seconds. All public kart positions appear on the map; only the top three get number labels to keep the map readable. A phone can switch to a lightweight personal map without changing controls or race authority. The sprint ends after one lap per driver or at the server's 45-second deadline. Finished times rank ahead of DNFs; equal times share a place. DNF scores zero. Finisher points are `round(question.points × (participants − place + 1) / participants)`.
+
+<details>
+<summary>On this page</summary>
+
+- [Try the real multiplayer rehearsal](#try-the-real-multiplayer-rehearsal)
+- [Deliverables](#deliverables)
+- [Transport contracts](#transport-contracts)
+- [State and timing](#state-and-timing)
+- [Engine provenance and rendering](#engine-provenance-and-rendering)
+- [Enhanced driving feedback and input replay](#enhanced-driving-feedback-and-input-replay)
+- [Personal driving and spectator broadcast](#personal-driving-and-spectator-broadcast)
+- [Play the actual upstream circuit in solo practice](#play-the-actual-upstream-circuit-in-solo-practice)
+- [Arcade handling and solid scenery (October 2026)](#arcade-handling-and-solid-scenery-october-2026)
+- [Animated drift effects](#animated-drift-effects)
+- [Collectable power-ups](#collectable-power-ups)
+- [Drivers and guest faces (October 2026)](#drivers-and-guest-faces-october-2026)
+- [Drift handling polish (21 October 2026)](#drift-handling-polish-21-october-2026)
+
+</details>
 
 ## Try the real multiplayer rehearsal
 
@@ -95,7 +116,7 @@ Press **Start driving**. On a keyboard, use the arrow keys to accelerate/reverse
 
 `apps/kart-solo` is a separate static Vite/React Three Fiber bundle embedded by the public `/kart` route. Web development and production builds run its build first; generated files live under the ignored `apps/web/public/kart-engine/`. Rebuild with `npm run build -w @26/kart-solo` and refresh after editing engine source during web development. The same Worker serves the generated assets in production. No additional hosting service is needed.
 
-This copies the pinned upstream kart and circuit GLBs and adapts its real ground-following/wheel, steering, drift and chase-camera code. Draco decoding stays on the site's own origin. The bundle pins Three 0.176.0, Fiber 9.1.2 and Drei 10.0.7 independently of the existing party renderer. Mobile settings use DPR 1, low-power rendering, no shadows or post-processing; drift feedback uses bounded instanced sparks. Copyright/provenance notices are retained in `THIRD_PARTY_NOTICES.md`, `apps/kart-solo/UPSTREAM.md` and the served bundle.
+This copies the pinned upstream kart and circuit GLBs and adapts its real ground-following/wheel, steering, drift and chase-camera code. Draco decoding stays on the site's own origin. The bundle pins Three 0.176.0, Fiber 9.1.2 and Drei 10.0.7 independently of the existing party renderer. Mobile settings use DPR 1, low-power rendering, no shadows or post-processing; drift feedback uses bounded instanced sparks. Copyright/provenance notices are retained in `THIRD_PARTY_NOTICES.md`, [apps/kart-solo/UPSTREAM.md](../apps/kart-solo/UPSTREAM.md) and the served bundle.
 
 This is explicitly free solo practice. The upstream store holds transient solo input/physics only: no room, multiplayer, party scores, validated lap or 45-second cutoff. There is no alternative socket client or score engine. Existing live races continue to use authoritative server physics and the procedural party circuit. The later arcade model adds static collisions and local power-ups; opponents are not supplied by this solo adaptation. Connecting this engine to the room is a later stage, as requested.
 

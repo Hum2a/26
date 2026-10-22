@@ -1,8 +1,25 @@
 # Question authoring
 
+[Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
+
 Questions are versioned TypeScript. There is no CMS. Give a coding agent a question idea in ordinary language. It should choose an existing mechanic, create one file, and leave anything it does not know as an explicit gap.
 
 Do not invent personal facts, guest names, photos, or anecdotes. The illustrative pack in `apps/api/src/questions/packs/demo/` is a fixture. It is not the party script.
+
+<details>
+<summary>On this page</summary>
+
+- [What to say](#what-to-say)
+- [Where a question goes](#where-a-question-goes)
+- [Draft, ready, and playable](#draft-ready-and-playable)
+- [Defaults](#defaults)
+- [Completed party variants](#completed-party-variants)
+- [Versions](#versions)
+- [Checks](#checks)
+- [Custom design](#custom-design)
+- [Kart sprint](#kart-sprint)
+
+</details>
 
 ## What to say
 

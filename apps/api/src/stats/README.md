@@ -1,5 +1,7 @@
 # Factual statistics
 
+[Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
+
 Facts are calculated before any sentence. A card may only repeat numbers that already sit on its fact: the numerator, the denominator, the unknown count, or a named part.
 
 `client_class` decides who counts. `guest` counts. `host`, `test`, and `synthetic` do not. Demo-cloud names are synthetic. A transferred player stays one guest.

@@ -1,5 +1,7 @@
 # Room credentials
 
+[Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
+
 An authenticated administrator can issue a short-lived credential for a room id. The id is only an authorisation label. This stage does not create a room, a guest, or a live command.
 
 | Role           | Cookie                 | Path | Lifetime   |

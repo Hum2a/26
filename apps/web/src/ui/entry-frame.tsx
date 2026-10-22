@@ -11,14 +11,17 @@ export function EntryFrame({
   children,
   navigation,
   wide = false,
+  full = false,
 }: {
   children: ReactNode;
   navigation?: ReactNode;
   wide?: boolean;
+  /** Use the whole window width, with no cap. For desktop tools like admin. */
+  full?: boolean;
 }) {
   const reduced = useReducedMotion();
   return (
-    <div className={`entry-frame ${wide ? "entry-wide" : ""}`}>
+    <div className={`entry-frame ${wide ? "entry-wide" : ""} ${full ? "entry-full" : ""}`}>
       <div className="skin-ground" aria-hidden="true">
         <SkinMotif />
       </div>

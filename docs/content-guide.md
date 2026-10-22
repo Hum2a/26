@@ -1,5 +1,7 @@
 # Content guide
 
+[Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
+
 Questions stay in versioned TypeScript. There is no CMS. How to add one is in [question-authoring.md](question-authoring.md).
 
 The pack a new room plays is the illustrative demo, version `demo-2026-09-22`, in `apps/api/src/questions/packs/demo/`. It is not Humza's party script. Fixture names there exist so a round can be scored. They are not statements about guests. `apps/api/src/questions/demo-set.ts` re-exports that pack.

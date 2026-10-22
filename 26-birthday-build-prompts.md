@@ -1,8 +1,40 @@
 # 26.humza.website - build prompts
 
+[Home](README.md) · [Documentation](docs/README.md) · [Event runbook](docs/event-runbook.md)
+
 Prepared: 22 September 2026  
 Source: `26-birthday-party-game-plan.md`  
 Purpose: A sequential set of implementation prompts for building the birthday game in its own repository.
+
+<details>
+<summary>On this page</summary>
+
+- [How to use this file](#how-to-use-this-file)
+- [Sequence](#sequence)
+- [Rules that apply to every prompt](#rules-that-apply-to-every-prompt)
+- [Prompt 01 - Establish the separate project](#prompt-01---establish-the-separate-project)
+- [Prompt 02 - Admin authentication and control credentials](#prompt-02---admin-authentication-and-control-credentials)
+- [Prompt 03 - Durable rooms, guest identity and live connections](#prompt-03---durable-rooms-guest-identity-and-live-connections)
+- [Prompt 04 - Durable scheduling and the phase lifecycle](#prompt-04---durable-scheduling-and-the-phase-lifecycle)
+- [Prompt 05 - The first complete playable quiz](#prompt-05---the-first-complete-playable-quiz)
+- [Prompt 06 - Name cloud and the full host control deck](#prompt-06---name-cloud-and-the-full-host-control-deck)
+- [Prompt 07 - Slider and tap-based ranking](#prompt-07---slider-and-tap-based-ranking)
+- [Prompt 08 - Whole-room voting and guess-the-guest](#prompt-08---whole-room-voting-and-guess-the-guest)
+- [Prompt 09 - Simultaneous duels and the finale](#prompt-09---simultaneous-duels-and-the-finale)
+- [Prompt 10 - Troll engine and reusable visual effects](#prompt-10---troll-engine-and-reusable-visual-effects)
+- [Prompt 11 - R2 uploads, finalisation and media serving](#prompt-11---r2-uploads-finalisation-and-media-serving)
+- [Prompt 12 - The public and recurring party effects](#prompt-12---the-public-and-recurring-party-effects)
+- [Prompt 13 - Browser/device context and connection measurements](#prompt-13---browserdevice-context-and-connection-measurements)
+- [Prompt 14 - Factual statistics and comparison cards](#prompt-14---factual-statistics-and-comparison-cards)
+- [Prompt 15 - Reliable game archive in Neon](#prompt-15---reliable-game-archive-in-neon)
+- [Prompt 16 - Results, gallery and optional email](#prompt-16---results-gallery-and-optional-email)
+- [Prompt 17 - Party presentation and content workflow](#prompt-17---party-presentation-and-content-workflow)
+- [Prompt 18 - Failure, security and load verification](#prompt-18---failure-security-and-load-verification)
+- [Prompt 19 - Staging, operations and the event runbook](#prompt-19---staging-operations-and-the-event-runbook)
+- [Optional continuation prompt when a stage was interrupted](#optional-continuation-prompt-when-a-stage-was-interrupted)
+- [Final handoff expected from the completed sequence](#final-handoff-expected-from-the-completed-sequence)
+
+</details>
 
 ## How to use this file
 
@@ -55,7 +87,7 @@ Prompt 01 writes these into the new repository's `AGENTS.md`. Every later prompt
 - Keep production paths real. Deterministic local fakes are allowed only behind explicit test/development adapters; they must not silently succeed in deployed environments.
 - Implement, run relevant checks, fix failures and update documentation. Do not rewrite unrelated work or weaken checks to obtain a pass.
 - No deployments, paid resource creation or changes to unrelated remote resources are implied by Prompts 01-18. Missing external credentials should not prevent completing locally testable work; report precisely what remains unverified.
-- At the end of every stage update `docs/build-progress.md`: status, files/interfaces added, decisions/defaults, commands and results, manual verification, unresolved issues and the exact next stage. Never label an unrun check as passed.
+- At the end of every stage update [docs/build-progress.md](docs/build-progress.md): status, files/interfaces added, decisions/defaults, commands and results, manual verification, unresolved issues and the exact next stage. Never label an unrun check as passed.
 - Final response for each stage: what now works, how to run/try it, what was verified and any concrete remaining limitation. Do not automatically begin the next prompt.
 
 ---

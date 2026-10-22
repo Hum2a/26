@@ -1,5 +1,7 @@
 # UI primitives
 
+[Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
+
 Shared controls for the party surfaces. Use these instead of one-off buttons and dialogs.
 
 `entry-frame.tsx` and `entry.css` provide the public/home/login composition, theme-aware chrome, a home link, focused form widths and eased status feedback. `LinkButton` uses the same styling as `Button`, with normal link semantics. The guest controller retains `PhoneShell` after joining; the projector retains its existing frame until the presentation stage of the redesign.

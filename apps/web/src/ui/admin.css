@@ -1,7 +1,7 @@
 .admin-workspace {
   display: grid;
-  grid-template-columns: 14rem minmax(0, 1fr);
-  gap: clamp(2rem, 4vw, 5rem);
+  grid-template-columns: 15rem minmax(0, 1fr);
+  gap: clamp(1.5rem, 2.5vw, 3rem);
   align-items: start;
 }
 .admin-sidebar {
@@ -87,7 +87,6 @@
   margin: 0;
 }
 .admin-section > p {
-  max-width: 42rem;
   color: var(--muted);
 }
 .admin-section .admin-actions {
@@ -188,7 +187,7 @@
 }
 .admin-room-facts {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   gap: 1.5rem;
   border-block: 1px solid var(--line);
   padding: 1.5rem 0;
@@ -315,7 +314,7 @@
 }
 .admin-live-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 14rem;
+  grid-template-columns: minmax(0, 1fr) 20rem;
   gap: 2rem;
   align-items: start;
 }
@@ -428,7 +427,7 @@
 }
 .admin-player-grid {
   display: grid;
-  grid-template-columns: minmax(16rem, 0.85fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(20rem, 0.7fr) minmax(0, 1.3fr);
   gap: 2rem;
   align-items: start;
 }
@@ -598,7 +597,7 @@
 
 .admin-operations-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
   gap: 2.5rem;
 }
 .admin-operations-grid ul {
@@ -627,7 +626,7 @@
 }
 .admin-report-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 20rem;
+  grid-template-columns: minmax(0, 1fr) 26rem;
   gap: 3rem;
 }
 .admin-report-aside {
@@ -639,7 +638,7 @@
 }
 .admin-content-grid {
   display: grid;
-  grid-template-columns: 15rem minmax(0, 1fr);
+  grid-template-columns: 20rem minmax(0, 1fr);
   gap: 2rem;
 }
 .admin-pack-list {
@@ -1009,4 +1008,16 @@
   .admin-question-catalogue-list {
     max-height: 19rem;
   }
+}
+
+/* Card grids that fill the width on a desktop. Used by the wall, trolls and analytics pages. */
+.admin-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: 1rem;
+}
+.admin-card-grid-wide {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(24rem, 1fr));
+  gap: 1rem;
 }

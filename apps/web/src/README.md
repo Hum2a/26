@@ -1,5 +1,7 @@
 # Web app
 
+[Home](../../../README.md) · [Documentation](../../../docs/README.md) · [Event runbook](../../../docs/event-runbook.md)
+
 React screens for the party. Vite builds them, and the API Worker serves the build.
 
 | Folder    | Route        | Purpose                        |

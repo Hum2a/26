@@ -1,5 +1,7 @@
 # Projector
 
+[Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
+
 `/screen` and the compatible `/host` open projector setup. Connect with the room code in the browser where admin opened that room: lookup and the single stage socket still require the existing presentation credential. A join code, guest identity or URL alone grants no access. Remote presenter pairing is outside this stage.
 
 Setup separates connection, optional local sound and presentation. Present is enabled after the stage socket connects. Full screen is a separate optional setup action; refusal does not stop presentation. F requests full screen while presenting; M toggles optional sound. Escape, leaving browser full screen, or the accessible Projector setup button returns to setup and restores keyboard focus. Space, P, H, D and O have no host-command/diagnostic wiring on this page. Admin owns the quiz.

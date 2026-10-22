@@ -1,8 +1,24 @@
 # What Jackbox Party Pack 11 does to stay smooth, and how 26 should use it
 
+[Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
+
+<details>
+<summary>On this page</summary>
+
+- [Implementation status (21 October 2026)](#implementation-status-21-october-2026)
+- [0. Method and limits](#0-method-and-limits)
+- [1. How Jackbox does it](#1-how-jackbox-does-it)
+- [2. Where 26 stands today](#2-where-26-stands-today)
+- [3. The improvement plan](#3-the-improvement-plan)
+- [4. Prioritised backlog](#4-prioritised-backlog)
+- [5. Open questions and unknowns](#5-open-questions-and-unknowns)
+- [Appendix A: Evidence index (Jackbox, static)](#appendix-a-evidence-index-jackbox-static)
+
+</details>
+
 ## Implementation status (21 October 2026)
 
-Every phase below has been built locally and is uncommitted. Measured figures are in `docs/verification-report.md`. Where the build differs from this plan, the reason is given here.
+Every phase below has been built locally and is uncommitted. Measured figures are in [docs/verification-report.md](verification-report.md). Where the build differs from this plan, the reason is given here.
 
 | Phase                | Status        | What changed from the plan                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | -------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -255,7 +271,7 @@ The phases are ordered so each one is measurable, and so the biggest risk to eve
    - random disconnects and reconnects (about 2% per second).
 2. **Server timing.** In `PartyRoom`, wrap `broadcast`, `buildSnapshot` and `alarm` with `performance.now()` deltas. Record a rolling p50/p95/max and bytes sent in memory, and expose them through the existing diagnostics read (`room/diagnostics.ts`, `party-room.ts:1288`).
 3. **Client metrics.** The existing connection log (`device/connection-log.ts`) already reports RTT and retries. Add the snapshot apply time and the gap between snapshot arrivals.
-4. **Baseline.** Record the numbers in `docs/verification-report.md` for 8, 30 and 80 guests in quiz and kart phases. Capture the Worker CPU time per alarm from `wrangler tail` on staging.
+4. **Baseline.** Record the numbers in [docs/verification-report.md](verification-report.md) for 8, 30 and 80 guests in quiz and kart phases. Capture the Worker CPU time per alarm from `wrangler tail` on staging.
 
 **Done when:** you have a table of p95 ack latency, snapshot bytes, builds per second and DO CPU ms for each phase type. Every later phase reports against this table.
 

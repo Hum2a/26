@@ -1,6 +1,18 @@
 # Administrator auth
 
+[Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
+
 One Better Auth instance for Humza. There are no guest accounts. Public email sign-up is disabled, and both magic-link/email-OTP plugins have `disableSignUp: true`. A user row is created only by `npm run auth:seed`, and `databaseHooks.user.create.before` rejects every other address.
+
+<details>
+<summary>On this page</summary>
+
+- [Factories](#factories)
+- [Magic links and email scanners](#magic-links-and-email-scanners)
+- [Migrations](#migrations)
+- [Email codes and the shared email design](#email-codes-and-the-shared-email-design)
+
+</details>
 
 ## Factories
 

@@ -46,6 +46,16 @@
   width: min(100%, 90rem);
   padding-inline: clamp(1.25rem, 4vw, 4rem);
 }
+/* Full width for desktop tools (the admin workspace): no 90rem cap. */
+.entry-full .entry-bar,
+.entry-full .entry-footer,
+.entry-full .entry-main {
+  width: 100%;
+  padding-inline: clamp(1rem, 2vw, 2.5rem);
+}
+.entry-full .entry-main {
+  padding-block: clamp(1.5rem, 3vh, 2.5rem);
+}
 .entry-footer {
   border-top: 1px solid var(--line);
   color: var(--muted);

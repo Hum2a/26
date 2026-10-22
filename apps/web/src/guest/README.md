@@ -1,5 +1,7 @@
 # Guest
 
+[Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
+
 Phone controller for `/` and `/j/:code`.
 
 | File              | Purpose                                                                        |

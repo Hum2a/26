@@ -169,7 +169,7 @@ function TrollCatalogue({
           </Button>
         </div>
       ) : null}
-      <div className="grid gap-3">
+      <div className="admin-card-grid-wide">
         {trolls.map((troll) => {
           const on = switches?.isOn(troll.kind);
           return (

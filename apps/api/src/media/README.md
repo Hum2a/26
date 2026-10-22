@@ -1,5 +1,7 @@
 # Media
 
+[Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
+
 Photos and short voice clips use one upload record. The phone receives a short-lived PUT URL for a server-generated temporary key under `tmp/`. Finalisation reads that object with an ETag precondition, checks the bytes, and writes a new key under `accepted/`. The guest never receives a write URL for the accepted key. Repeating finalisation returns the accepted record. Replacing the temporary object afterwards does not change it.
 
 R2 and SQLite are not one transaction. A crash after the accepted object is written is recovered from the upload row: the same final key is committed, or deleted if the question closed. Abandoned `tmp/` objects are deleted by the lifecycle file `apps/api/r2-lifecycle.json` one day after upload. Staging and production buckets already have that rule. Re-apply with `npx wrangler r2 bucket lifecycle set <bucket> --file apps/api/r2-lifecycle.json -y` if the file changes.

@@ -1,5 +1,7 @@
 # Original-name additions
 
+[Home](../../README.md) · [Documentation](../README.md) · [Event runbook](../event-runbook.md)
+
 Checked on 20 October 2026. The user requested two famous people with less obvious original names. Chosen as a judgement about recognisability and surprise, not a measured claim about how many guests know their names.
 
 Both questions use the existing typed-answer mechanic and `redacted-file` presentation. The wording asks for an original name, rather than implying the celebrity's professional name is illegitimate or that a legal deed poll took place. No portrait asset is required. Ordinary defaults apply: 20 seconds, 100 points, 60-character entry, no speed bonus. First name plus surname is sufficient; middle names are optional, as stated to guests. The existing server matcher handles case, spacing, punctuation and small typos.

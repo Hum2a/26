@@ -1,6 +1,24 @@
 # Admin experience and page redesign
 
+[Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
+
 Prepared: 18 October 2026. Updated: 19 October 2026. Status: Stages A and B implemented and locally verified. Stages C–E remain planned. Not deployed.
+
+<details>
+<summary>On this page</summary>
+
+- [Outcome](#outcome)
+- [Evidence and limits](#evidence-and-limits)
+- [Journeys and navigation](#journeys-and-navigation)
+- [Proposed routes](#proposed-routes)
+- [Page compositions](#page-compositions)
+- [Existing foundations and required server work](#existing-foundations-and-required-server-work)
+- [Design and interaction rules](#design-and-interaction-rules)
+- [Implementation sequence and acceptance gates](#implementation-sequence-and-acceptance-gates)
+- [Success criteria](#success-criteria)
+- [Decisions to revisit only if needed](#decisions-to-revisit-only-if-needed)
+
+</details>
 
 ## Outcome
 
@@ -231,7 +249,7 @@ Tests: `apps/web/src/stage/stage-page.test.tsx`, `e2e/admin-stage-flow.spec.ts`,
 
 Done when no key control is covered, no page scrolls sideways, the projector shows no admin chrome/private details, and the complete create → join → play → recover → finish → results flow passes. Required checks pass. Report any real-device or venue verification still outstanding.
 
-Each stage updates `docs/build-progress.md` with exact commands/results and stops for review. Do not automatically start the next stage. No deployment or paid resource creation is part of this plan.
+Each stage updates [docs/build-progress.md](build-progress.md) with exact commands/results and stops for review. Do not automatically start the next stage. No deployment or paid resource creation is part of this plan.
 
 ## Success criteria
 

@@ -33,6 +33,7 @@ export function AdminShell({
   return (
     <EntryFrame
       wide
+      full
       navigation={
         <NavLink to="/join" className="entry-text-link">
           Join the party

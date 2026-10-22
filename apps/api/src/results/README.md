@@ -1,5 +1,7 @@
 # Results and optional email
 
+[Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
+
 `/r/:gameId` reads the published archive. Standings, comparison cards, and the shared gallery are the public projection. A guest cookie, or a personal link, is required for one player's position, scored answers, troll counts, and recap.
 
 The public JSON does not include player ids, credential hashes, device reports, private drafts, or another player's detail. Hidden media is left out of the gallery list. A gallery image is served only while the room still marks that photo as shared. The response uses `public, max-age=60, must-revalidate`. A hidden photo responds with `no-store`. A copy that was already downloaded cannot be recalled.

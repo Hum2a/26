@@ -1,10 +1,35 @@
 # 26.humza.website - birthday party game plan
 
+[Home](README.md) · [Documentation](docs/README.md) · [Event runbook](docs/event-runbook.md)
+
 Updated: 22 September 2026  
 Event: Humza's 26th birthday, 21 November 2026  
 Presenter: Baseer  
 Screen operator and administrator: Humza  
 Status: Consolidated working plan. Agreed product decisions are distinguished from recommended implementation defaults and remaining content choices.
+
+<details>
+<summary>On this page</summary>
+
+- [1. Purpose and agreed direction](#1-purpose-and-agreed-direction)
+- [2. Surfaces and architecture](#2-surfaces-and-architecture)
+- [3. Guest identity and session recovery](#3-guest-identity-and-session-recovery)
+- [4. Durable state and memory](#4-durable-state-and-memory)
+- [5. Protocol and round state machine](#5-protocol-and-round-state-machine)
+- [6. One durable scheduler per room](#6-one-durable-scheduler-per-room)
+- [7. Round types and content](#7-round-types-and-content)
+- [8. Scoring](#8-scoring)
+- [9. Lobby, names and attribution](#9-lobby-names-and-attribution)
+- [10. Troll system](#10-troll-system)
+- [11. R2 photo and voice pipeline](#11-r2-photo-and-voice-pipeline)
+- [12. Browser/device information and end-game statistics](#12-browserdevice-information-and-end-game-statistics)
+- [13. Results, archive and email](#13-results-archive-and-email)
+- [14. Host controls and security](#14-host-controls-and-security)
+- [15. Build sequence](#15-build-sequence)
+- [16. Acceptance tests and rehearsal](#16-acceptance-tests-and-rehearsal)
+- [17. Remaining content and presentation choices](#17-remaining-content-and-presentation-choices)
+
+</details>
 
 ## 1. Purpose and agreed direction
 

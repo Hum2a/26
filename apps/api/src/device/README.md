@@ -1,5 +1,7 @@
 # Device statistics
 
+[Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
+
 Browser details are collected so the end of the game can show playful comparisons. They are not an identity, a login, or a score.
 
 The collector version is 1. The phone feature-detects each field and sends only the allowlist. The room normalises the report again and drops anything else. A missing, rejected, or extreme value is stored as unknown. The answer is still accepted.
@@ -23,7 +25,15 @@ Detailed rows and round-trip samples are removed 30 days after `room.created_at`
 `profile.ts` reads the reports above for easter eggs. It collects nothing new. Inside the room, read with the room's `SqlStorage`, then use the pure helpers:
 
 ```ts
-import { deviceExtreme, deviceOddOneOut, deviceTally, devicesWhere, playerDevice, read, roomDevices } from "../device/profile.ts";
+import {
+  deviceExtreme,
+  deviceOddOneOut,
+  deviceTally,
+  devicesWhere,
+  playerDevice,
+  read,
+  roomDevices,
+} from "../device/profile.ts";
 
 const devices = roomDevices(sql); // latest report per active player who has reported
 deviceOddOneOut(devices, read.family); // the one Android among iPhones, or null

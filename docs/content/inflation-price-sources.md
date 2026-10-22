@@ -1,5 +1,7 @@
 # Inflation question sources
 
+[Home](../../README.md) · [Documentation](../README.md) · [Event runbook](../event-runbook.md)
+
 Researched on **20 October 2026**. These are nominal UK prices. This is a price-guessing round, not a measure of economy-wide inflation. Both questions remain in the unreleased birthday catalogue, outside its running order.
 
 | Question               | 2012 reference shown to guests                | Dated 2026 price                                                     | Scoring answer                                          |

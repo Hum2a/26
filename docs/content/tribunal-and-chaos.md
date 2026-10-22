@@ -1,5 +1,7 @@
 # Tribunal and chaos concepts
 
+[Home](../../README.md) · [Documentation](../README.md) · [Event runbook](../event-runbook.md)
+
 Saved all eight supplied concepts as twelve catalogue entries. They stay out of the birthday running order. Five are ready: the apology tournament and four Council/Dystopia choices. Seven are drafts with explicit facts or mechanics missing. The separate kart sprint adds one ready entry. Together with the earlier fifty completed questions, the birthday catalogue has **56 ready / 7 draft** entries.
 
 | Id                            | State | Mechanic / missing item                                                                                                                                                                                                           |

@@ -1,5 +1,7 @@
 # Who said it: verified replacements
 
+[Home](../../README.md) · [Documentation](../README.md) · [Event runbook](../event-runbook.md)
+
 Checked 20 October 2026. The completion/polish pass replaces the ten unverified supplied passages with short sourced excerpts. Stable ids and the original A/B answer-letter distribution remain; speakers and titles now match the actual source. No anonymous “genuine viral LinkedIn” story is asserted. These are real-world essays, a corporate letter and manifesto versus Persona game dialogue. Being an option in this quiz does not classify a real-world author as an extremist.
 
 The earlier proposals were not authenticated; the prior commit preserves them. In particular, the crying-CEO paragraph/15% figure is not presented as Braden Wallake’s quotation. No parody is being passed off as fact. The id `who-said-it-crying-ceo` is retained for stable references, while its displayed title/content now concern the verified Thiel passage.

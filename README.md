@@ -1,8 +1,32 @@
 # 26.humza.website
 
-Humza's birthday party game. One Cloudflare Worker serves the React app and the API. Locally, an administrator can open a lobby, guests can play the illustrative pack, and the stage can follow the room. After deploy, staging is https://26-staging.humza.website and production is https://26.humza.website. Deployment and the event runbook are in `docs/deployment.md` and `docs/event-runbook.md`.
+> **One birthday. One big screen. Everyone plays.**
+>
+> A hosted party quiz for Humza’s 26th — Baseer presents, Humza runs the show, and guests play individually on their phones.
 
-The product requirements are in `docs/party-game-plan.md`. The build sequence is in `docs/build-prompts.md`. Progress is in `docs/build-progress.md`.
+[Get started](#local-app) · [Browse the docs](docs/README.md) · [Run the event](docs/event-runbook.md) · [Build progress](docs/build-progress.md)
+
+| Play                        | Present                        | Control                                      |
+| :-------------------------- | :----------------------------- | :------------------------------------------- |
+| Guests join on their phones | The projector follows the room | The host manages and rehearses from `/admin` |
+
+Humza's birthday party game. One Cloudflare Worker serves the React app and the API. Locally, an administrator can open a lobby, guests can play the illustrative pack, and the stage can follow the room. After deploy, staging is https://26-staging.humza.website and production is https://26.humza.website. Deployment and the event runbook are in [docs/deployment.md](docs/deployment.md) and [docs/event-runbook.md](docs/event-runbook.md).
+
+The product requirements are in [docs/party-game-plan.md](docs/party-game-plan.md). The build sequence is in [docs/build-prompts.md](docs/build-prompts.md). Progress is in [docs/build-progress.md](docs/build-progress.md).
+
+<details>
+<summary>On this page</summary>
+
+- [Requirements](#requirements)
+- [Local app](#local-app)
+- [Checks](#checks)
+- [Administrator sign-in](#administrator-sign-in)
+- [Configuration](#configuration)
+- [Release commands](#release-commands)
+- [Agent instructions](#agent-instructions)
+- [Secrets](#secrets)
+
+</details>
 
 ## Requirements
 
@@ -66,9 +90,9 @@ Runtime configuration is a Worker binding. The app reads `c.env.APP_ENV`. It doe
 
 One Worker serves the React app and the API. `npm run deploy:staging` and `npm run deploy:prod` each publish both in a single `wrangler deploy`. Staging is https://26-staging.humza.website. Production is https://26.humza.website. Those hostnames are Worker custom domains. `workers.dev` is off for the remote environments.
 
-`wrangler.jsonc` pins Humza's personal Cloudflare `account_id`. It binds two SQLite Durable Object classes, `PartyRoom` and `RoomCodeRegistry`. Staging and production repeat those bindings, bind the remote R2 buckets, require the secret list in `docs/deployment.md`, and declare an `IMAGES` binding. The `humza.website` zone must be on that account before a deploy can attach the custom domains. Do not deploy the local build to staging.
+`wrangler.jsonc` pins Humza's personal Cloudflare `account_id`. It binds two SQLite Durable Object classes, `PartyRoom` and `RoomCodeRegistry`. Staging and production repeat those bindings, bind the remote R2 buckets, require the secret list in [docs/deployment.md](docs/deployment.md), and declare an `IMAGES` binding. The `humza.website` zone must be on that account before a deploy can attach the custom domains. Do not deploy the local build to staging.
 
-Passing `--env` only on `wrangler deploy` does not retarget a Vite build. The deploy scripts set `CLOUDFLARE_ENV`, confirm the generated worker name, then deploy that file. Commands, rollback, migrations, and the missing account setup are in `docs/deployment.md`. The presenter and operator steps are in `docs/event-runbook.md`.
+Passing `--env` only on `wrangler deploy` does not retarget a Vite build. The deploy scripts set `CLOUDFLARE_ENV`, confirm the generated worker name, then deploy that file. Commands, rollback, migrations, and the missing account setup are in [docs/deployment.md](docs/deployment.md). The presenter and operator steps are in [docs/event-runbook.md](docs/event-runbook.md).
 
 ## Release commands
 
@@ -95,7 +119,7 @@ Do not deploy the local build to staging. The script refuses a generated name of
 
 ## Agent instructions
 
-`.agents` is the source of truth for coding-agent rules, skills, and the shared exclusion list. Edit those files, then run `npm run agents:sync`. The command copies them into the files Cursor, Antigravity, Claude, ChatGPT, and Copilot read. Those generated directories are gitignored; run the command after a clone. Destinations are listed in `.agents/README.md`.
+`.agents` is the source of truth for coding-agent rules, skills, and the shared exclusion list. Edit those files, then run `npm run agents:sync`. The command copies them into the files Cursor, Antigravity, Claude, ChatGPT, and Copilot read. Those generated directories are gitignored; run the command after a clone. Destinations are listed in [.agents/README.md](.agents/README.md).
 
 ## Secrets
 
@@ -105,7 +129,7 @@ Do not deploy the local build to staging. The script refuses a generated name of
 - Run `npm run client-api-key:rotate -- --env local` to generate the paired `CLIENT_API_KEY` and `VITE_CLIENT_API_KEY` values. Restart dev or rebuild after rotation. The same command works for staging and production; then run `npm run secrets-sync:staging` or upload `CLIENT_API_KEY` with Wrangler.
 - Do not commit `.dev.vars`, `.env`, or credential files. They are gitignored.
 - Fill in secrets only on your machine or in the deployed Worker environment.
-- Deployed secrets are set with `npm run secrets-sync:staging` or `npx wrangler secret put NAME --env staging` for this project only. The names are listed in `docs/deployment.md`. Do not put values in the bundle or in git. Staging and production `vars` do not contain empty secret placeholders, because an empty var would replace a secret on the next deploy.
+- Deployed secrets are set with `npm run secrets-sync:staging` or `npx wrangler secret put NAME --env staging` for this project only. The names are listed in [docs/deployment.md](docs/deployment.md). Do not put values in the bundle or in git. Staging and production `vars` do not contain empty secret placeholders, because an empty var would replace a secret on the next deploy.
 
 Regenerate Worker types after changing bindings:
 

@@ -1,5 +1,7 @@
 # Game archive
 
+[Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
+
 The podium is rendered from the room's SQLite. Neon is not on the path that accepts an answer, writes a score, or builds that snapshot.
 
 When the room enters the podium, the same storage transaction records `room_archive` and a pending `archive-export` job. The scheduler owns the alarm. After gameplay commits, the alarm exports. A database failure reschedules that job. It does not roll the podium back.

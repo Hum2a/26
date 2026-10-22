@@ -1,5 +1,7 @@
 # Deployment
 
+[Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
+
 This file is the deployable configuration for 26.humza.website. One Worker serves the React assets and the API. A staging or production deploy publishes both in one `wrangler deploy`.
 
 | Environment | Public origin                    | Worker name                |
@@ -24,6 +26,21 @@ Pinned content for the current build:
 | Media buckets          | `26-humza-media-local`, `26-humza-media-staging`, `26-humza-media`                                |
 
 `vars`, Durable Object bindings, R2 bindings, `secrets`, and `images` are repeated on each Wrangler environment. The `v1` migration is inherited. A later migration tag may add a class. It must not delete or recreate `PartyRoom` or `RoomCodeRegistry`. Room table changes stay additive inside `ensurePartySchema`. An unknown schema version throws. Do not delete the Durable Object database to recover.
+
+<details>
+<summary>On this page</summary>
+
+- [Local](#local)
+- [Staging and production releases](#staging-and-production-releases)
+- [Production build](#production-build)
+- [Rollback](#rollback)
+- [Neon migrations](#neon-migrations)
+- [R2](#r2)
+- [Secret manifest](#secret-manifest)
+- [Missing external setup](#missing-external-setup)
+- [Diagnostics and recovery](#diagnostics-and-recovery)
+
+</details>
 
 ## Local
 

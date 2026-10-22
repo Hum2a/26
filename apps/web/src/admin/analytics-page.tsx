@@ -50,7 +50,7 @@ export function AnalyticsPage() {
         {eligible.length === 0 ? (
           <p>No highlights yet. They appear as answers come in.</p>
         ) : (
-          <ul className="grid gap-3">
+          <ul className="admin-card-grid-wide">
             {eligible.map((card) => (
               <li key={card.id} className="rounded-3xl border border-line bg-surface p-4">
                 {card.illustrative ? <p className="font-bold">Illustrative</p> : null}
@@ -66,7 +66,7 @@ export function AnalyticsPage() {
         <section className="admin-task-section" aria-label="Held back">
           <h2>Held back ({held.length})</h2>
           <p>These groups are too small for a fair percentage, so the stage will not show them.</p>
-          <ul className="grid gap-2">
+          <ul className="admin-card-grid">
             {held.map((card) => (
               <li key={card.id}>{card.results}</li>
             ))}

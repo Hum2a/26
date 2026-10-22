@@ -1,5 +1,7 @@
 # @26/shared
 
+[Home](../../README.md) · [Documentation](../../docs/README.md) · [Event runbook](../../docs/event-runbook.md)
+
 Validation schemas used by the Worker and the web app.
 
 | File           | Purpose                                                                            |

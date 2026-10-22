@@ -1,6 +1,8 @@
 # Questions
 
-Questions are versioned TypeScript. There is no CMS and no client-side pack. The authoring workflow is `docs/question-authoring.md`.
+[Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
+
+Questions are versioned TypeScript. There is no CMS and no client-side pack. The authoring workflow is [docs/question-authoring.md](../../../../docs/question-authoring.md).
 
 | Path                                                               | What it holds                                                       |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------- |
@@ -35,6 +37,18 @@ Speed bonus, when a question sets one, uses the server receipt:
 Each demo question carries an attribution mode: `after` names choices at the reveal, `never` leaves the public reveal unnamed, and `live` shows a count plus a short rolling sample of names while answers arrive. The mode can be public. Another player's option is omitted from guest and stage snapshots until that mode allows the name. The host snapshot can still list who chose what. Hiding the stage removes the question, the reveal, and those names from the stage payload.
 
 Later voting, effects, and device context add records beside these. They do not replace the ledger or the socket client.
+
+<details>
+<summary>On this page</summary>
+
+- [Slider questions](#slider-questions)
+- [Ranking questions](#ranking-questions)
+- [Answer-and-vote](#answer-and-vote)
+- [Guess-the-guest](#guess-the-guest)
+- [Duels](#duels)
+- [Spectated finale](#spectated-finale)
+
+</details>
 
 ## Slider questions
 
@@ -128,4 +142,4 @@ Attribution `after` shows prediction backers only once the question is scored. `
 
 The illustrative duel is `clash`: target 26, within 2, scale 0 to 50, 50 points, odd solo, tie shared, absence forfeit, late join ineligible, tie-break off. The illustrative finale is `finale`: the same scale and target, 70 points for the contestants, 30 prediction points, a 20 second prediction window, contestants Amina and Bilal, and tie-break `tied`. Both prompts are illustrative.
 
-A question lists `modifiers` when it allows a score-changing troll. The only implemented modifier is `double`. It is applied after the question's own points. `suppressSpeedBonus` removes speed points while a dodging-button troll is active for that player. Questions that omit these fields are unchanged. The implemented and candidate trolls are listed in `apps/api/src/troll/README.md`.
+A question lists `modifiers` when it allows a score-changing troll. The only implemented modifier is `double`. It is applied after the question's own points. `suppressSpeedBonus` removes speed points while a dodging-button troll is active for that player. Questions that omit these fields are unchanged. The implemented and candidate trolls are listed in [apps/api/src/troll/README.md](../troll/README.md).

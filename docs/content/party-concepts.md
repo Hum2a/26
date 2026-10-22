@@ -1,5 +1,7 @@
 # Party mini-game concepts — completed 20 October 2026
 
+[Home](../../README.md) · [Documentation](../README.md) · [Event runbook](../event-runbook.md)
+
 All fifteen entries from the supplied mini-game concepts are now ready, alongside the ten sourced Who Said It replacements. They remain in the unreleased `birthday-draft` catalogue, outside the running order.
 
 | Id                                 | Implemented mechanic                           | Status / reference                                                                                                                                         |
