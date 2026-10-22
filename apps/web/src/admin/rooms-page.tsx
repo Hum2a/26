@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { featurePath, roomFeatures } from "./features";
 import type { AdminRoomList, LobbySnapshot } from "@26/shared";
 import { Button, Dialog, LinkButton } from "../ui/primitives";
 import { JoinMark } from "../lobby/join-mark";
@@ -245,6 +246,25 @@ export function RoomOverview() {
           Choose another room
         </LinkButton>
       </div>
+      <section aria-label="Everything in this room" className="grid gap-3">
+        <h2>Everything in this room</h2>
+        <ul className="admin-feature-grid">
+          {roomFeatures
+            .filter((feature) => feature.id !== "overview")
+            .map((feature) => (
+              <li key={feature.id}>
+                <Link to={featurePath(feature, snapshot.gameId)} className="admin-feature-card">
+                  <strong>{feature.label}</strong>
+                  {feature.status ? (
+                    <span className="admin-feature-status">{feature.status(snapshot)}</span>
+                  ) : null}
+                  <span>{feature.summary}</span>
+                  <span className="admin-feature-rehearse">Try it: {feature.rehearsal}</span>
+                </Link>
+              </li>
+            ))}
+        </ul>
+      </section>
     </section>
   );
 }

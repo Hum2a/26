@@ -78,6 +78,14 @@ it("gives the stage the photo on screen and the next one to preload, with queue 
   expect(control?.queue?.map((item) => item.position)).toEqual([1, 2]);
 });
 
+it("sends troll history to the host only", async () => {
+  const { stub, join } = await setup();
+  const amina = await join("Amina");
+  expect((await stub.snapshotFor("control")).trollHistory).toEqual([]);
+  expect((await stub.snapshotFor("stage")).trollHistory).toBeUndefined();
+  expect((await stub.snapshotFor("guest", amina.playerId)).trollHistory).toBeUndefined();
+});
+
 it("leaves captions off the stage when the host turns them off", async () => {
   const { gameId, stub, join, host } = await setup();
   const amina = await join("Amina");

@@ -194,6 +194,7 @@ import {
   escapeTroll,
   hidesPersonalScore,
   hostTrollRows,
+  trollHistoryRows,
   trollSnapshot,
 } from "../troll/engine.ts";
 import { acceptMultiple } from "../questions/multiple.ts";
@@ -3244,6 +3245,7 @@ export class PartyRoom extends DurableObject<Env> {
               control: this.ctx.getWebSockets("control").length,
             },
             hostEffects: hostTrollRows(this.ctx.storage.sql),
+            trollHistory: trollHistoryRows(this.ctx.storage.sql),
             adjustments: recentAdjustments(this.ctx.storage.sql),
             adminPlayers: adminPlayerRows(
               this.ctx.storage.sql,

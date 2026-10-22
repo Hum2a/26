@@ -5,6 +5,7 @@ import { AdminPage, AdminSettingsPage } from "./admin/admin-page";
 import { LiveConsole } from "./admin/live-console";
 import { RoomTrollsPage, TrollsPage } from "./admin/trolls-page";
 import { WallPage } from "./admin/wall-page";
+import { AnalyticsPage } from "./admin/analytics-page";
 import { PlayersPage } from "./admin/players-page";
 import { MediaPage } from "./admin/media-page";
 import { HealthPage } from "./admin/health-page";
@@ -73,6 +74,7 @@ export const appRoutes: RouteObject[] = [
           { path: "health", element: <HealthPage /> },
           { path: "trolls", element: <RoomTrollsPage /> },
           { path: "wall", element: <WallPage /> },
+          { path: "analytics", element: <AnalyticsPage /> },
         ],
       },
     ],

@@ -47,3 +47,10 @@ The optional `adminPlayers` snapshot projection is control-only, with stored nic
 `content-page.tsx` shows authenticated read-only pack versions, release state, running order, mechanic/presentation and recorded missing authoring requirements. This is authoring visibility, not a deployment asset check or a CMS. No start/publish/reorder action is added. A short on-page workflow links the existing project authoring guide by filename.
 
 `sections-api.ts` validates the two new shared schemas. `api/read-data.ts` and `api/use-resource.ts` bound read/decoding lifetime and ignore outdated responses across refresh/navigation. They hold read-only section results; they do not duplicate the authoritative room state or socket. All mutation feedback remains in `room-provider.tsx`, now with Media/Results/Health scopes.
+
+
+## Feature registry and coverage
+
+`features.ts` lists every feature (`adminFeatures`) with its page, a summary, what the host can rehearse without guests, the source folders it owns, and a live status line for room features. The sidebar, page titles and the room overview's "Everything in this room" cards are built from it. `features.test.ts` fails when a source folder in `apps/api/src` or `apps/web/src` has no owner, a folder is owned twice, an owned folder is missing, or an `/admin` route and a registry entry do not match. Plumbing folders are listed in `adminExempt` with a reason. The rule is `.agents/rules/50-admin-coverage.md`.
+
+Room features: Overview, Live controls, Players, Media, Photo wall, Trolls (switches, previews and every troll sent, with Cancel for unfinished ones), Analytics (totals, podium highlights including ones held back as too small, fun facts and trolls by type), Results and Health. Global: Home, Rooms, Question packs, Kart, the troll catalogue, and Account & appearance.

@@ -1008,6 +1008,22 @@ export const lobbySnapshotSchema = z
           .nullable(),
       })
       .strict(),
+    /** Control only: every troll sent this game, newest first. */
+    trollHistory: z
+      .array(
+        z
+          .object({
+            effectId: z.uuid(),
+            label: z.string().min(1).max(40),
+            actorNickname: z.string().min(1).max(24),
+            targetNickname: z.string().min(1).max(24),
+            status: z.enum(["queued", "active", "ended", "cancelled", "refunded"]),
+            createdAt: z.number().int(),
+          })
+          .strict(),
+      )
+      .max(100)
+      .optional(),
     /** Photo wall. Filled per audience; see `wallSnapshotSchema`. */
     wall: wallSnapshotSchema.optional(),
     connections: z

@@ -484,6 +484,63 @@ export function setTrollSwitch(sql: SqlStorage, kind: TrollKind, enabled: boolea
   );
 }
 
+/**
+ * Every troll sent this game, newest first, for the host only. Ended means it
+ * ran its course or was escaped; refunded means it never started.
+ */
+export function trollHistoryRows(sql: SqlStorage): {
+  effectId: string;
+  label: string;
+  actorNickname: string;
+  targetNickname: string;
+  status: "queued" | "active" | "ended" | "cancelled" | "refunded";
+  createdAt: number;
+}[] {
+  return sql
+    .exec<{
+      effect_id: string;
+      kind: string;
+      status: string;
+      refunded: number;
+      created_at: number;
+      actor: string | null;
+      target: string | null;
+    }>(
+      `SELECT troll_effect.effect_id, troll_effect.kind, troll_effect.status,
+              troll_effect.refunded, troll_effect.created_at,
+              actor.nickname AS actor, target.nickname AS target
+       FROM troll_effect
+       LEFT JOIN player AS actor ON actor.player_id = troll_effect.actor_id
+       LEFT JOIN player AS target ON target.player_id = troll_effect.target_id
+       ORDER BY troll_effect.created_at DESC
+       LIMIT 100`,
+    )
+    .toArray()
+    .flatMap((row) => {
+      if (!isTrollKind(row.kind)) {
+        return [];
+      }
+      const status =
+        row.refunded === 1
+          ? ("refunded" as const)
+          : row.status === "queued" || row.status === "active"
+            ? row.status
+            : row.status === "cancelled"
+              ? ("cancelled" as const)
+              : ("ended" as const);
+      return [
+        {
+          effectId: row.effect_id,
+          label: trollDefinitions[row.kind].label,
+          actorNickname: row.actor ?? "Removed player",
+          targetNickname: row.target ?? "Removed player",
+          status,
+          createdAt: row.created_at,
+        },
+      ];
+    });
+}
+
 export function hostTrollRows(sql: SqlStorage): {
   effectId: string;
   label: string;

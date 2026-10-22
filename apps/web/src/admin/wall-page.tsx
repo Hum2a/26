@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import type { LobbySnapshot } from "@26/shared";
+import { wallFrames, type LobbySnapshot } from "@26/shared";
 import { Button, Disclosure } from "../ui/primitives";
-import { FramedPhoto } from "../wall/framed-photo";
+import { FramedPhoto, frameLabels } from "../wall/framed-photo";
 import type { PlayIntent } from "../live/room-api";
 import { CommandFeedback } from "./command-feedback";
 import { useAdminRoom, type AdminCommand } from "./room-provider";
@@ -213,9 +213,30 @@ export function WallPage() {
           ))}
         </ul>
       </Disclosure>
+
+      <Disclosure title="Rehearse: preview every frame">
+        <p>How a photo looks on the big screen in each frame, using a sample picture.</p>
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {wallFrames.map((frame) => (
+            <li key={frame} className="grid gap-1">
+              <span className="font-bold">{frameLabels[frame]}</span>
+              <FramedPhoto
+                src={samplePhoto}
+                frame={frame}
+                nickname="Sample guest"
+                caption="A sample caption"
+                size="thumb"
+              />
+            </li>
+          ))}
+        </ul>
+      </Disclosure>
     </section>
   );
 }
+
+/** A picture already shipped with the questions, used only for frame previews. */
+const samplePhoto = "/assets/questions/favourite-pokemon/mudkip.png";
 
 function PendingCard({
   item,

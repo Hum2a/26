@@ -46,13 +46,69 @@ export function RoomTrollsPage() {
     <TrollCatalogue
       eyebrow="This room"
       intro="Switch trolls on or off for this room. Switched-off trolls disappear from guests' phones straight away. Trolls already running finish normally."
-      feedback={<CommandFeedback scope="trolls" />}
+      feedback={
+        <>
+          <CommandFeedback scope="trolls" />
+          <TrollHistory locked={locked} />
+        </>
+      }
       switches={{
         isOn: (kind) => !disabled.some((item) => item === kind),
         locked,
         flip,
       }}
     />
+  );
+}
+
+const historyStatus = {
+  queued: "Waiting",
+  active: "Running",
+  ended: "Finished",
+  cancelled: "Cancelled",
+  refunded: "Refunded",
+} as const;
+
+/** Every troll sent this game, newest first, with Cancel for unfinished ones. */
+function TrollHistory({ locked }: { locked: boolean }) {
+  const { snapshot, execute } = useAdminRoom();
+  const history = snapshot.trollHistory ?? [];
+  return (
+    <section className="admin-task-section" aria-label="Sent this game">
+      <h2>Sent this game ({history.length})</h2>
+      {history.length === 0 ? (
+        <p>No trolls sent yet.</p>
+      ) : (
+        <ul className="grid gap-2">
+          {history.map((item) => (
+            <li key={item.effectId} className="flex flex-wrap items-center gap-3">
+              <span>
+                <strong>{item.actorNickname}</strong> → {item.targetNickname}: {item.label}
+              </span>
+              <span className="text-sm">
+                {historyStatus[item.status]} ·{" "}
+                {new Date(item.createdAt).toLocaleTimeString("en-GB")}
+              </span>
+              {item.status === "queued" || item.status === "active" ? (
+                <Button
+                  variant="secondary"
+                  disabled={locked}
+                  onClick={() =>
+                    void execute(
+                      { action: "cancel-effect", effectId: item.effectId },
+                      `Cancel ${item.label}`,
+                      "trolls",
+                    )
+                  }
+                >
+                  Cancel
+                </Button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

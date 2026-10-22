@@ -2,6 +2,13 @@ import { NavLink, useLocation } from "react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, type ReactNode } from "react";
 import { EntryFrame } from "./entry-frame";
+import {
+  adminFeatures,
+  featurePath,
+  globalFeatures,
+  roomFeatures,
+  type AdminFeature,
+} from "../admin/features";
 import "./admin.css";
 
 export function AdminShell({
@@ -17,28 +24,8 @@ export function AdminShell({
   useEffect(() => {
     // The question inspector owns its title, including loading and error states.
     if (location.pathname.startsWith("/admin/content/")) return;
-    const title = roomPath
-      ? location.pathname.endsWith("/live")
-        ? "Live controls"
-        : location.pathname.endsWith("/players")
-          ? "Players"
-          : location.pathname.endsWith("/media")
-            ? "Media"
-            : location.pathname.endsWith("/results")
-              ? "Results & exports"
-              : location.pathname.endsWith("/health")
-                ? "Room health"
-                : "Room overview"
-      : location.pathname.endsWith("/settings")
-        ? "Account & appearance"
-        : location.pathname.endsWith("/rooms")
-          ? "Rooms"
-          : location.pathname.endsWith("/content")
-            ? "Question packs"
-            : location.pathname.endsWith("/kart")
-              ? "Kart"
-              : "Admin overview";
-    document.title = `${title} · 26`;
+    const feature = currentFeature(location.pathname, roomPath);
+    document.title = `${feature?.label ?? "Admin overview"} · 26`;
   }, [location.pathname, roomPath]);
   return (
     <EntryFrame
@@ -53,29 +40,31 @@ export function AdminShell({
         <aside className="admin-sidebar">
           <p className="entry-eyebrow">Running the night</p>
           <p className="admin-label">The control room.</p>
+          {/* Built from `adminFeatures`: a new feature only needs its entry there. */}
           <nav aria-label="Admin workspace">
-            <NavLink end to="/admin">
-              Home
-            </NavLink>
-            <NavLink end to="/admin/rooms">
-              Rooms
-            </NavLink>
-            <NavLink to="/admin/content">Question packs</NavLink>
-            <NavLink to="/admin/kart">Kart</NavLink>
-            <NavLink to="/admin/trolls">Trolls</NavLink>
+            {globalFeatures
+              .filter((feature) => feature.id !== "settings")
+              .map((feature) => (
+                <NavLink
+                  key={feature.id}
+                  end={feature.path === "" || feature.path === "rooms"}
+                  to={featurePath(feature)}
+                >
+                  {feature.label}
+                </NavLink>
+              ))}
             {roomPath ? (
               <div className="admin-room-nav">
                 <p>Selected room</p>
-                <NavLink end to={`/admin/rooms/${roomPath}`}>
-                  Overview
-                </NavLink>
-                <NavLink to={`/admin/rooms/${roomPath}/live`}>Live controls</NavLink>
-                <NavLink to={`/admin/rooms/${roomPath}/players`}>Players</NavLink>
-                <NavLink to={`/admin/rooms/${roomPath}/media`}>Media</NavLink>
-                <NavLink to={`/admin/rooms/${roomPath}/results`}>Results</NavLink>
-                <NavLink to={`/admin/rooms/${roomPath}/health`}>Health</NavLink>
-                <NavLink to={`/admin/rooms/${roomPath}/trolls`}>Trolls</NavLink>
-                <NavLink to={`/admin/rooms/${roomPath}/wall`}>Photo wall</NavLink>
+                {roomFeatures.map((feature) => (
+                  <NavLink
+                    key={feature.id}
+                    end={feature.path === ""}
+                    to={featurePath(feature, roomPath)}
+                  >
+                    {feature.label}
+                  </NavLink>
+                ))}
               </div>
             ) : null}
             <NavLink to="/admin/settings">Account & appearance</NavLink>
@@ -97,5 +86,19 @@ export function AdminShell({
         </div>
       </div>
     </EntryFrame>
+  );
+}
+
+/** The feature whose page is open, for the document title. */
+function currentFeature(
+  pathname: string,
+  roomPath: string | undefined,
+): AdminFeature | undefined {
+  const rest = roomPath
+    ? (pathname.split(`/admin/rooms/${roomPath}`)[1] ?? "")
+    : pathname.replace(/^\/admin/, "");
+  const segment = rest.replace(/^\//, "").split("/")[0] ?? "";
+  return adminFeatures.find(
+    (feature) => feature.scope === (roomPath ? "room" : "global") && feature.path === segment,
   );
 }

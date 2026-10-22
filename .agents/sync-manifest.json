@@ -70,6 +70,7 @@
     ".cursor/rules/35-question-experience.mdc",
     ".cursor/rules/40-design.mdc",
     ".cursor/rules/45-themes.mdc",
+    ".cursor/rules/50-admin-coverage.mdc",
     ".cursor/skills/neon-ai-gateway/SKILL.md",
     ".cursor/skills/neon-auth/SKILL.md",
     ".cursor/skills/neon-auth/references/managed-auth.md",
