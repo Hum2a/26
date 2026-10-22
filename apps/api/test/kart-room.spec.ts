@@ -13,7 +13,66 @@ import {
   useKartItem,
 } from "../src/questions/kart.ts";
 import { questionFor } from "../src/questions/registry.ts";
-import { kartNeutral } from "@26/shared";
+import { kartNeutral, createDrivingBody } from "@26/shared";
+
+for (const action of ["kart-course-on", "kart-course-off"] as const)
+  it(`${action}: persists a change once, replays its receipt and refuses outside a kart round`, async () => {
+    const { stub, now, credential } = await setup();
+    if (action === "kart-course-off")
+      await runInDurableObject(stub, (_instance, state) => {
+        const q = questionFor(createSqlStore(state.storage.sql).readRoom());
+        if (q?.kind !== "kart") throw new Error("Kart required");
+        const race = readKart(state.storage.sql, q.id)!;
+        const driver = race.drivers[0]!;
+        driver.physics = {
+          ...createDrivingBody(driver.x, driver.z, driver.heading),
+          height: 4,
+          verticalSpeed: 2,
+        };
+        writeRoundState(state.storage.sql, q.id, "kart-race", race);
+      });
+    const command = {
+      ...credential,
+      action,
+      requestId: crypto.randomUUID(),
+      nowMs: now + 10,
+    };
+    const first = await stub.hostAction(command);
+    expect(first.ok).toBe(true);
+    await evictDurableObject(stub);
+    expect(await stub.hostAction(command)).toEqual(first);
+    for (const audience of ["control", "stage"] as const) {
+      const snapshot = await stub.snapshotFor(audience);
+      expect(snapshot.play?.kart?.courseEnabled).toBe(action === "kart-course-on");
+      if (audience === "control")
+        expect(snapshot.kartCourseHistory).toEqual([
+          { atMs: now + 10, enabled: action === "kart-course-on" },
+        ]);
+      else expect(snapshot.kartCourseHistory).toBeUndefined();
+      expect(snapshot.play?.kart?.participants[0]).not.toHaveProperty("physics");
+      if (action === "kart-course-off")
+        expect(snapshot.play?.kart?.participants[0]?.height).toBe(0);
+    }
+    expect(
+      (
+        await stub.snapshotFor(
+          "guest",
+          (await stub.snapshotFor("control")).players[0]!.playerId,
+        )
+      ).kartCourseHistory,
+    ).toBeUndefined();
+    await stub.advanceRound({
+      ...credential,
+      requestId: crypto.randomUUID(),
+      nowMs: now + 20,
+    });
+    const refused = await stub.hostAction({
+      ...command,
+      requestId: crypto.randomUUID(),
+      nowMs: now + 30,
+    });
+    expect(refused.ok).toBe(false);
+  });
 
 async function setup(names = ["Amina", "Bilal"]) {
   // Keep automatic wall-clock alarms in the future; tests explicitly drive the injected clock.
@@ -295,6 +354,16 @@ it("persists lap winners once, ignores client times, and continues to scores and
         })
       ).ok,
     ).toBe(true);
+  expect((await stub.snapshotFor("stage")).phase).toBe("facts");
+  expect(
+    (
+      await stub.finishRound({
+        ...credential,
+        requestId: crypto.randomUUID(),
+        nowMs: now + 46_010,
+      })
+    ).ok,
+  ).toBe(true);
   expect((await stub.snapshotFor("stage")).phase).toBe("podium");
 });
 

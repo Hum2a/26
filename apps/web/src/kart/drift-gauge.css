@@ -1,0 +1,45 @@
+.kart-tier-gauge {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+}
+.kart-tier-segments {
+  display: flex;
+  gap: 0.3rem;
+}
+.kart-tier-segment {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  padding: 0.3rem;
+}
+.kart-tier-segment > span {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  opacity: 0.25;
+  transform-origin: left;
+  transition:
+    transform 180ms ease-out,
+    opacity 180ms ease-out;
+}
+.kart-tier-segment[data-ready="true"] {
+  border-color: var(--highlight);
+}
+.kart-tier-segment[data-ready="true"] > span {
+  background: var(--highlight);
+  opacity: 0.35;
+}
+.kart-tier-segment small {
+  position: relative;
+  color: var(--foreground);
+  font-size: 0.7rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kart-tier-segment > span {
+    transition-duration: 100ms;
+  }
+}

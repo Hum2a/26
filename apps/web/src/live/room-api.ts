@@ -44,12 +44,17 @@ export async function seedSampleRoom(
       return { count: Number(body.count) };
     }
     const message =
-      body && typeof body === "object" && "message" in body && typeof body.message === "string"
+      body &&
+      typeof body === "object" &&
+      "message" in body &&
+      typeof body.message === "string"
         ? body.message
         : "The sample data could not be added. Try again.";
     return { error: message };
   } catch {
-    return { error: "The sample data could not be added. Check the connection and try again." };
+    return {
+      error: "The sample data could not be added. Check the connection and try again.",
+    };
   }
 }
 
@@ -112,6 +117,8 @@ export async function lookupStage(
 
 export type PlayAction =
   | "start-kart-rehearsal"
+  | "kart-course-on"
+  | "kart-course-off"
   | "start"
   | "pause"
   | "resume"

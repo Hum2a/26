@@ -34,6 +34,7 @@ import {
   swapNicknames,
 } from "./names.ts";
 import { createSqlStore } from "./sql-store.ts";
+import { changeKartCourse } from "../questions/kart.ts";
 
 const shownPhases = new Set(["reveal", "scores", "final", "podium"]);
 
@@ -59,6 +60,11 @@ export function applyHostAction(
   sql: SqlStorage,
   input: HostActionInput,
 ): { transferCode?: string; released?: number } {
+  if (input.action === "kart-course-on" || input.action === "kart-course-off") {
+    changeKartCourse(sql, input.action === "kart-course-on", input.nowMs);
+    touch(sql);
+    return {};
+  }
   if (input.action === "reveal-names") {
     const room = createSqlStore(sql).readRoom();
     if (room.phase !== "lobby") {

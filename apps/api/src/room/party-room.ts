@@ -9,6 +9,7 @@ import {
   releaseKartInputs,
   recoverKart,
   useKartItem,
+  readKart,
 } from "../questions/kart.ts";
 import { readRoundState } from "../questions/round-state.ts";
 import { DurableObject } from "cloudflare:workers";
@@ -160,7 +161,13 @@ import { seedSampleRoom, type SampleMedia } from "./sample.ts";
 import type { WallSettingsChange } from "../wall/moderation.ts";
 
 type WallCommand =
-  | { name: "wall-post"; mediaId: unknown; caption: unknown; frame: unknown; keep: unknown }
+  | {
+      name: "wall-post";
+      mediaId: unknown;
+      caption: unknown;
+      frame: unknown;
+      keep: unknown;
+    }
   | { name: "wall-withdraw"; postId: unknown }
   | { name: "wall-react"; postId: unknown; reaction: unknown };
 import { adminMedia } from "./admin-media.ts";
@@ -1446,8 +1453,14 @@ export class PartyRoom extends DurableObject<Env> {
     secret: string;
     nowMs: number;
     media: SampleMedia[];
-  }): Promise<{ ok: true; count: number } | Extract<PhaseCommandResult, { ok: false }>> {
-    const allowed = await this.requireControl(input.credentialId, input.secret, input.nowMs);
+  }): Promise<
+    { ok: true; count: number } | Extract<PhaseCommandResult, { ok: false }>
+  > {
+    const allowed = await this.requireControl(
+      input.credentialId,
+      input.secret,
+      input.nowMs,
+    );
     if (!allowed.ok) {
       return allowed;
     }
@@ -3274,6 +3287,11 @@ export class PartyRoom extends DurableObject<Env> {
             },
             hostEffects: hostTrollRows(this.ctx.storage.sql),
             trollHistory: trollHistoryRows(this.ctx.storage.sql),
+            kartCourseHistory:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.courseHistory ??
+                  [])
+                : [],
             adjustments: recentAdjustments(this.ctx.storage.sql),
             adminPlayers: adminPlayerRows(
               this.ctx.storage.sql,
@@ -4043,7 +4061,11 @@ function readCommand(body: unknown):
     };
   }
   if (record.name === "wall-withdraw") {
-    return { requestId: record.requestId, name: "wall-withdraw", postId: record.postId };
+    return {
+      requestId: record.requestId,
+      name: "wall-withdraw",
+      postId: record.postId,
+    };
   }
   if (record.name === "wall-react") {
     return {

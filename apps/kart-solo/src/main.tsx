@@ -9,6 +9,14 @@ import {
   DEFAULT_THEME_ID,
 } from "../../web/src/theme/themes";
 import { TrackItems } from "./TrackItems";
+import { Course } from "./Course";
+import { DriftGauge } from "../../web/src/kart/DriftGauge";
+import {
+  defaultCourseSettings,
+  clearCourseSettings,
+  soloCourse,
+  type CourseSettings,
+} from "@26/shared";
 import { PowerUpControl } from "../../web/src/kart/PowerUpControl";
 import { PlayerController } from "./upstream/PlayerController.jsx";
 import { Track } from "./upstream/models/Mario-circuit-test.jsx";
@@ -25,7 +33,10 @@ function Ready() {
   useEffect(() => {
     camera.position.set(0, 2, 5);
     camera.lookAt(0, -2, -9);
-    useGameStore.setState({ soloStarted: true, soloPaused: document.hidden });
+    useGameStore.setState({
+      soloStarted: true,
+      soloPaused: useGameStore.getState().soloPaused || document.hidden,
+    });
   }, [camera]);
   return null;
 }
@@ -41,6 +52,7 @@ function Circuit() {
       </Bvh>
       <PlayerController key={revision} />
       <TrackItems />
+      <Course />
       <Ready key={`camera-${revision}`} />
     </>
   );
@@ -56,6 +68,10 @@ function Telemetry() {
   const sliding = useGameStore((state) => state.driftLevel?.charging ?? false);
   const surface = useGameStore((state) => state.soloSurface);
   const contact = useGameStore((state) => state.soloContact);
+  const chargeMs = useGameStore((state) => state.soloChargeMs);
+  const boostLevel = useGameStore((state) => state.soloBoostLevel);
+  const height = useGameStore((state) => Math.round(state.soloHeight * 10) / 10);
+  const notice = useGameStore((state) => state.soloTrackNotice);
   return (
     <div className="solo-telemetry">
       <output aria-label="Speed">
@@ -87,12 +103,17 @@ function Telemetry() {
             : "Off-road — reduced grip and speed"}
         </span>
       ) : null}
-      <output aria-label="Drift charge level">
-        {boost
-          ? "Turbo active"
-          : drift
-            ? `Drift ${drift}/3 · ${["", "Mini", "Super", "Ultra"][drift]} turbo ready`
-            : "Steer + hold drift to charge"}
+      <DriftGauge chargeMs={chargeMs} boostLevel={boost ? boostLevel || 1 : 0} />
+      <output aria-label="Track feedback">
+        {height > 0
+          ? `Gliding · ${height} m · A: glide · B: descend`
+          : notice === "boost"
+            ? "Floor boost"
+            : notice === "hazard"
+              ? "Sweeper hit — keep driving"
+              : notice === "landed"
+                ? "Landed"
+                : "Look for boost chevrons and ramps"}
       </output>
     </div>
   );
@@ -180,6 +201,7 @@ function SoloGame() {
     };
   }, []);
   const start = () => {
+    resume();
     setMounted(true);
     // Keyboard driving should work immediately after pressing a menu button.
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
@@ -283,6 +305,7 @@ function SoloGame() {
           </nav>
         ) : null}
       </header>
+      <SoloCourseSettings />
       {ready && !lost ? (
         <>
           <Telemetry />
@@ -303,6 +326,80 @@ function SoloGame() {
         </>
       ) : null}
     </main>
+  );
+}
+
+function SoloCourseSettings() {
+  const [open, setOpen] = useState(false);
+  const settings = useGameStore((state) => state.soloCourseSettings);
+  const update = (value: CourseSettings) => {
+    pause();
+    useGameStore.setState({ soloCourseSettings: value });
+    reset();
+  };
+  return (
+    <section className="solo-course-settings" data-open={open}>
+      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
+        Course set-up
+      </button>
+      <div className="solo-course-options" aria-hidden={!open} inert={!open}>
+        <div>
+          <p>Changes reset the kart and pause practice.</p>
+          {(
+            [
+              ["boosts", "Floor boosts"],
+              ["ramps", "Ramps and gliding"],
+              ["hazards", "Moving sweepers"],
+            ] as const
+          ).map(([key, label]) => (
+            <label key={key}>
+              <input
+                type="checkbox"
+                checked={settings[key]}
+                onChange={(event) =>
+                  update({ ...settings, [key]: event.target.checked })
+                }
+              />
+              {label}
+            </label>
+          ))}
+          <button onClick={() => update({ ...clearCourseSettings })}>
+            Clear track
+          </button>
+          <button onClick={() => update({ ...defaultCourseSettings })}>
+            Restore course
+          </button>
+          {soloCourse.map((feature) => (
+            <button
+              key={feature.id}
+              onClick={() => {
+                useGameStore.setState({ soloPractice: feature.id });
+                update({ ...defaultCourseSettings });
+              }}
+            >
+              Rehearse{" "}
+              {feature.kind === "boost"
+                ? "floor boost"
+                : feature.kind === "ramp"
+                  ? "ramp and glide"
+                  : "sweeper"}
+            </button>
+          ))}
+          <button
+            onClick={() => {
+              useGameStore.setState({ soloPractice: null });
+              update(settings);
+            }}
+          >
+            Return to starting grid
+          </button>
+          <p>
+            On the opening straight: left lane for boost and ramp; right lane for the
+            sweeper.
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 

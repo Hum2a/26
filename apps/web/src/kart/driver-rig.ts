@@ -324,7 +324,7 @@ export function createDriverRig({
     place(
       playerId: string,
       order: number,
-      pose: { x: number; z: number; heading: number },
+      pose: { x: number; z: number; heading: number; height?: number },
       cue: Omit<DriverCue, "turnRate">,
       kartColour: THREE.Color,
       secondColour: THREE.Color,
@@ -351,7 +351,7 @@ export function createDriverRig({
       };
       moods.set(playerId, mood);
 
-      root.position.set(pose.x, 0, pose.z);
+      root.position.set(pose.x, pose.height ?? 0, pose.z);
       root.rotation.set(0, -pose.heading, 0);
       torso.rotation.set(mood.lean, 0, 0);
       head.rotation.set(0, mood.look, 0);

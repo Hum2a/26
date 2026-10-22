@@ -61,8 +61,9 @@ export const adminFeatures: readonly AdminFeature[] = [
     label: "Kart",
     scope: "global",
     path: "kart",
-    summary: "The kart engine, its phone controls and multiplayer notes.",
-    rehearsal: "Drive the real engine, or try the phone and stage views.",
+    summary: "The kart engine, turbo tiers, course features and multiplayer notes.",
+    rehearsal:
+      "Drive boosts, ramps and gliding in the real engine; use Course set-up to clear or restore the track.",
     owns: ["apps/web/src/kart"],
   },
   {
@@ -93,9 +94,16 @@ export const adminFeatures: readonly AdminFeature[] = [
     path: "live",
     summary: "Start, pause, advance and fix the running game.",
     rehearsal: "Start the illustrative demo, or the kart rehearsal, with no guests.",
-    owns: ["apps/api/src/room", "apps/web/src/live", "apps/web/src/stage", "apps/web/src/net"],
+    owns: [
+      "apps/api/src/room",
+      "apps/web/src/live",
+      "apps/web/src/stage",
+      "apps/web/src/net",
+    ],
     status: (snapshot) =>
-      snapshot.play ? `Question ${snapshot.play.question.index + 1}` : "No question running",
+      snapshot.play
+        ? `Question ${snapshot.play.question.index + 1}`
+        : "No question running",
   },
   {
     id: "players",
@@ -130,7 +138,8 @@ export const adminFeatures: readonly AdminFeature[] = [
       const wall = snapshot.wall;
       if (!wall) return "Unavailable";
       if (!wall.enabled) return "Switched off";
-      const pending = wall.queue?.filter((item) => item.status === "pending").length ?? 0;
+      const pending =
+        wall.queue?.filter((item) => item.status === "pending").length ?? 0;
       return `${pending} waiting for you · ${wall.waiting} queued${wall.now ? " · one on screen" : ""}`;
     },
   },
@@ -162,19 +171,17 @@ export const adminFeatures: readonly AdminFeature[] = [
     path: "results",
     summary: "The archive, the public results page and result emails.",
     rehearsal: "Open the public results page; retry delivery and the archive.",
-    owns: [
-      "apps/api/src/results",
-      "apps/api/src/archive",
-      "apps/web/src/results",
-    ],
-    status: (snapshot) => (snapshot.archive ? `Archive ${snapshot.archive.status}` : "Not archived yet"),
+    owns: ["apps/api/src/results", "apps/api/src/archive", "apps/web/src/results"],
+    status: (snapshot) =>
+      snapshot.archive ? `Archive ${snapshot.archive.status}` : "Not archived yet",
   },
   {
     id: "health",
     label: "Health",
     scope: "room",
     path: "health",
-    summary: "Connections, scheduler, media processing, script errors and device telemetry.",
+    summary:
+      "Connections, scheduler, media processing, script errors and device telemetry.",
     rehearsal: "Refresh to check every subsystem; release stuck uploads.",
     owns: [
       "apps/api/src/device",
@@ -216,5 +223,7 @@ export function featurePath(feature: AdminFeature, gameId?: string): string {
   return feature.path ? `/admin/${feature.path}` : "/admin";
 }
 
-export const globalFeatures = adminFeatures.filter((feature) => feature.scope === "global");
+export const globalFeatures = adminFeatures.filter(
+  (feature) => feature.scope === "global",
+);
 export const roomFeatures = adminFeatures.filter((feature) => feature.scope === "room");

@@ -39,7 +39,7 @@ export function DriftEffects({ body }: { body: { current: DrivingBody } }) {
     const particles = driftSparks(
       time.current,
       strength.current,
-      d.driftMs / 700,
+      d.driftMs / 2400,
       d.boostMs > 0,
       reduced,
     );

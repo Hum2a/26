@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { ringBounds } from "@26/shared";
+import { ringBounds, ringCourse, courseFeaturePose } from "@26/shared";
 import type { KartRaceView } from "@26/shared";
 import { driftSparks, driftStrength } from "./drift-effects";
 import { smoothKartPose, type KartPose } from "./presentation";
@@ -224,6 +224,10 @@ export function createCircuit(
   sparks.name = "kart-drift-sparks";
   sparks.count = 0;
   sparks.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  const courseProps = batch(seats.geometry, bright, ringCourse.length);
+  courseProps.name = "kart-course-features";
+  const gliders = batch(seats.geometry, second, capacity);
+  gliders.name = "kart-gliders";
   const itemBoxes = batch(seats.geometry, bright, 24),
     oilSlicks = batch(helmets.geometry, dark, 64);
   const shieldMaterial = new THREE.MeshBasicMaterial({
@@ -246,6 +250,7 @@ export function createCircuit(
   let effectTime = 0,
     effectRaceId: string | undefined;
   const poses = new Map<string, KartPose>();
+  const featurePoses = new Map<string, { x: number; z: number }>();
   const labels = new Map<string, THREE.Sprite>();
   function label(driver: KartRaceView["participants"][number]) {
     const canvas = document.createElement("canvas");
@@ -278,6 +283,7 @@ export function createCircuit(
   function update(race: KartRaceView, dt: number, reduced: boolean) {
     if (effectRaceId !== race.raceId) {
       emission.clear();
+      featurePoses.clear();
       effectTime = 0;
       effectRaceId = race.raceId;
     }
@@ -299,13 +305,14 @@ export function createCircuit(
           reduced,
         );
       poses.set(driver.playerId, pose);
+      const height = pose.height ?? 0;
       const { x, z, heading } = pose,
         c = Math.cos(heading),
         s = Math.sin(heading);
-      place(bodies, i, x, 0.6, z, -heading);
-      place(noses, i, x + c * 1.25, 0.5, z + s * 1.25, -heading);
+      place(bodies, i, x, 0.6 + height, z, -heading);
+      place(noses, i, x + c * 1.25, 0.5 + height, z + s * 1.25, -heading);
       // The seat is now a backrest behind the driver.
-      place(seats, i, x - c * 0.78, 1.05, z - s * 0.78, -heading, 0.5, 1, 1.1);
+      place(seats, i, x - c * 0.78, 1.05 + height, z - s * 0.78, -heading, 0.5, 1, 1.1);
       bodies.setColorAt(i, driver.number % 2 ? accent : highlight);
       rig.place(
         driver.playerId,
@@ -324,7 +331,7 @@ export function createCircuit(
           wheels,
           i * 4 + j,
           x + c * localX - s * localZ,
-          0.35,
+          0.35 + height,
           z + s * localX + c * localZ,
           -heading,
         );
@@ -334,7 +341,7 @@ export function createCircuit(
           (e) => e.playerId === driver.playerId && e.shieldMs > 0,
         )
       )
-        place(shields, shieldCount++, x, 0.9, z, 0, 3.5, 3, 3.5);
+        place(shields, shieldCount++, x, 0.9 + height, z, 0, 3.5, 3, 3.5);
       const active =
         driver.status === "RACING" && (driver.drifting || driver.boostRemainingMs > 0);
       const strength = driftStrength(emission.get(driver.playerId) ?? 0, active, dt);
@@ -344,7 +351,7 @@ export function createCircuit(
         for (const spark of driftSparks(
           effectTime + i * 0.17,
           strength,
-          driver.driftCharge,
+          (driver.driftChargeMs ?? driver.driftCharge * 700) / 2400,
           driver.boostRemainingMs > 0,
           reduced,
         )) {
@@ -352,7 +359,7 @@ export function createCircuit(
             sparks,
             sparkCount,
             x - c * spark.z - s * spark.x,
-            0.22 + spark.y,
+            0.22 + spark.y + height,
             z - s * spark.z + c * spark.x,
             -heading,
             spark.scale * 2.5,
@@ -365,7 +372,7 @@ export function createCircuit(
       const sprite = focusPlayerId
         ? undefined
         : (labels.get(driver.playerId) ?? label(driver));
-      if (sprite) sprite.position.set(x, 3.8, z);
+      if (sprite) sprite.position.set(x, 3.8 + height, z);
     }
     for (const value of [bodies, noses, seats]) {
       value.count = drivers.length;
@@ -374,6 +381,64 @@ export function createCircuit(
     rig.end(new Set(drivers.map((driver) => driver.playerId)));
     wheels.count = drivers.length * 4;
     wheels.instanceMatrix.needsUpdate = true;
+    let gliderCount = 0;
+    for (const driver of drivers) {
+      const pose = poses.get(driver.playerId);
+      if (pose && (pose.height ?? 0) > 0.05)
+        place(
+          gliders,
+          gliderCount++,
+          pose.x,
+          (pose.height ?? 0) + 2.8,
+          pose.z,
+          -pose.heading,
+          1.5,
+          0.08,
+          6,
+        );
+    }
+    gliders.count = gliderCount;
+    gliders.instanceMatrix.needsUpdate = true;
+    let featureCount = 0;
+    if (race.courseEnabled)
+      for (const feature of ringCourse) {
+        const target = courseFeaturePose(feature, race.elapsedMs);
+        const previous = featurePoses.get(feature.id) ?? target;
+        const alpha = reduced ? 1 : 1 - Math.exp(-14 * Math.max(0, Math.min(0.1, dt)));
+        const pose = {
+          x: previous.x + (target.x - previous.x) * alpha,
+          z: previous.z + (target.z - previous.z) * alpha,
+        };
+        featurePoses.set(feature.id, pose);
+        const i = featureCount++;
+        place(
+          courseProps,
+          i,
+          pose.x,
+          feature.kind === "ramp" ? 0.6 : feature.kind === "hazard" ? 0.5 : 0.1,
+          pose.z,
+          -feature.heading,
+          feature.length / 0.65,
+          (feature.kind === "hazard" ? 1 : 0.15) / 0.9,
+          feature.width / 0.65,
+        );
+        if (feature.kind === "ramp") {
+          transform.rotation.z = 0.22;
+          transform.updateMatrix();
+          courseProps.setMatrixAt(i, transform.matrix);
+        }
+        courseProps.setColorAt(
+          i,
+          feature.kind === "hazard"
+            ? ink
+            : feature.kind === "ramp"
+              ? highlight
+              : accent,
+        );
+      }
+    courseProps.count = featureCount;
+    courseProps.instanceMatrix.needsUpdate = true;
+    if (courseProps.instanceColor) courseProps.instanceColor.needsUpdate = true;
     let boxCount = 0;
     for (const box of race.powers?.boxes ?? [])
       if (box.available)
@@ -417,6 +482,7 @@ export function createCircuit(
       instances.forEach((i) => i.dispose());
       emission.clear();
       poses.clear();
+      featurePoses.clear();
       labels.clear();
       scene.clear();
     },

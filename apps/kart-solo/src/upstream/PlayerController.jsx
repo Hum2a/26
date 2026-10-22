@@ -1,6 +1,7 @@
 // Adapted from mario-kart-js 0f7a430. See UPSTREAM.md and THIRD_PARTY_NOTICES.md.
 // Rendering is upstream-derived; movement/contact use the shared pure model.
 import { DriftEffects } from "../DriftEffects";
+import { themes, DEFAULT_THEME_ID } from "../../../web/src/theme/themes";
 import { driftPose } from "../../../web/src/kart/drift-effects";
 import { Kart } from "./models/Kart";
 import { useFrame, useThree } from "@react-three/fiber";
@@ -18,6 +19,9 @@ import {
   powerDrivingBody,
   soloItemBoxes,
   kartItemNames,
+  soloCourse,
+  courseEnabled,
+  drivingDriftLevel,
 } from "@26/shared";
 import { readGamepad } from "../gamepad";
 import { nearbySoloWalls } from "../track/collision-world";
@@ -31,12 +35,16 @@ export const PlayerController = () => {
   const gamepadArmed = useRef(true);
   const hop = useRef(0),
     heldDrift = useRef(false);
-  const body = useRef(createDrivingBody(0, 0, -Math.PI / 2));
+  const practice = soloCourse.find(
+    (f) => f.id === useGameStore.getState().soloPractice,
+  );
+  const start = practice ? { x: practice.x, z: practice.z + 12 } : { x: 0, z: 0 };
+  const body = useRef(createDrivingBody(start.x, start.z, -Math.PI / 2));
   const powers = useRef(createKartPowers()),
     oils = useRef([]),
     usedItem = useRef(useGameStore.getState().soloItemUse);
   const previous = useRef(body.current);
-  const safe = useRef({ x: 0, z: 0, heading: -Math.PI / 2 });
+  const safe = useRef({ ...start, heading: -Math.PI / 2 });
   const elapsed = useRef(0),
     accumulator = useRef(0),
     lastRecovery = useRef(-2000),
@@ -141,8 +149,10 @@ export const PlayerController = () => {
             drift: controls.drift || pad.drift,
           }
         : controls;
-      const effective = surface === "unsupported" ? kartNeutral : input;
+      const effective =
+        surface === "unsupported" && !(body.current.height > 0) ? kartNeutral : input;
       previous.current = body.current;
+      body.current = { ...body.current, courseMs: elapsed.current };
       body.current = powerDrivingBody(body.current, powers.current, elapsed.current);
       body.current = stepDriving(
         body.current,
@@ -152,17 +162,19 @@ export const PlayerController = () => {
         nearbySoloWalls(
           body.current.x,
           body.current.z,
-          soloDriving.radius + soloDriving.boostSpeed * 0.02,
+          soloDriving.radius + Math.hypot(body.current.vx, body.current.vz) * 0.02,
         ),
         surface !== "road" || powers.current.slowedUntil > elapsed.current,
+        true,
+        soloCourse.filter((f) => courseEnabled(f, store.soloCourseSettings)),
       );
       const effect = stepKartPowers(
         powers.current,
         "solo",
         previous.current,
         body.current,
-        surface === "road" ? soloItemBoxes : [],
-        oils.current,
+        surface === "road" && !(body.current.height > 0) ? soloItemBoxes : [],
+        body.current.height > 0 ? [] : oils.current,
         elapsed.current + 20,
         "solo",
       );
@@ -187,6 +199,7 @@ export const PlayerController = () => {
       surface = surfaceAt(body.current.x, body.current.z);
       if (
         surface === "road" &&
+        !(body.current.height > 0) &&
         !body.current.contact &&
         clearOfWalls(
           body.current.x,
@@ -207,7 +220,7 @@ export const PlayerController = () => {
       old = previous.current;
     player.position.set(
       old.x + (d.x - old.x) * alpha,
-      0,
+      (old.height ?? 0) + ((d.height ?? 0) - (old.height ?? 0)) * alpha,
       old.z + (d.z - old.z) * alpha,
     );
     const turn = Math.atan2(
@@ -261,6 +274,12 @@ export const PlayerController = () => {
       soloSurface: surface,
       soloContact: d.contact,
       soloRecoveryReady: elapsed.current - lastRecovery.current >= 2000,
+      soloHeight: d.height ?? 0,
+      soloVerticalSpeed: d.verticalSpeed ?? 0,
+      soloTrackNotice: d.trackNotice ?? "",
+      soloChargeMs: d.driftMs,
+      soloBoostLevel: d.boostLevel ?? 0,
+      driftLevel: { level: drivingDriftLevel(d.driftMs), charging: d.wasDrifting },
     });
   });
   return (
@@ -268,6 +287,7 @@ export const PlayerController = () => {
       <group ref={cameraGroupRef} position={[0, 2, 5]} />
       <DriftEffects body={body} />
       <group ref={kartRef}>
+        <Glider body={body} />
         <Kart
           speed={speedRef}
           driftDirection={driftDirection}
@@ -281,3 +301,27 @@ export const PlayerController = () => {
     </group>
   );
 };
+
+function Glider({ body }) {
+  const wing = useRef(null);
+  useFrame((_, dt) => {
+    if (!wing.current) return;
+    const target = body.current.height > 0 ? 1 : 0.001;
+    wing.current.scale.lerp(
+      new Vector3(target, target, target),
+      1 - Math.exp(-12 * Math.min(dt, 0.1)),
+    );
+  });
+  return (
+    <group ref={wing} scale={0.001} position={[0, 0.9, 0]}>
+      <mesh rotation={[0, 0, -0.08]}>
+        <boxGeometry args={[5, 0.12, 1.6]} />
+        <meshStandardMaterial color={themes[DEFAULT_THEME_ID].colors.accent} />
+      </mesh>
+      <mesh position={[0, -1, 0.7]}>
+        <boxGeometry args={[0.1, 2, 0.1]} />
+        <meshStandardMaterial color={themes[DEFAULT_THEME_ID].colors.foreground} />
+      </mesh>
+    </group>
+  );
+}

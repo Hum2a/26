@@ -15,7 +15,10 @@ import {
   trollKindSchema,
   type TrollKindName,
 } from "@26/shared";
-import { parseWallSettingsChange, type WallSettingsChange } from "../wall/moderation.ts";
+import {
+  parseWallSettingsChange,
+  type WallSettingsChange,
+} from "../wall/moderation.ts";
 import { acceptedKey } from "../media/keys.ts";
 import { sampleWallPostCount, type SampleMedia } from "./sample.ts";
 
@@ -290,6 +293,8 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     const commands = [
       "start",
       "start-kart-rehearsal",
+      "kart-course-on",
+      "kart-course-off",
       "pause",
       "resume",
       "advance",
@@ -473,7 +478,10 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       const status = seeded.error === "invalid" ? 400 : 401;
       return roomFailure(status, seeded.error, seeded.message);
     }
-    return Response.json({ count: seeded.count }, { headers: { "cache-control": "no-store" } });
+    return Response.json(
+      { count: seeded.count },
+      { headers: { "cache-control": "no-store" } },
+    );
   });
 
   app.get("/api/rooms/:gameId/diagnostics", async (c) => {
@@ -814,7 +822,11 @@ function readHostDetails(
     }
     fields.mediaId = mediaId.data;
   }
-  if (action === "wall-approve" || action === "wall-decline" || action === "wall-pull") {
+  if (
+    action === "wall-approve" ||
+    action === "wall-decline" ||
+    action === "wall-pull"
+  ) {
     const postId = z.uuid().safeParse(field(body, "postId"));
     if (!postId.success) {
       return { ok: false, message: "Choose a photo on the wall." };

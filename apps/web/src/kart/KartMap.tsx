@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import type { KartRaceView } from "@26/shared";
+import { ringCourse, courseFeaturePose, type KartRaceView } from "@26/shared";
 import { driverFaceUrl } from "./driver-face";
 import { useKartDrivers } from "./drivers-context";
 
@@ -67,6 +67,42 @@ export function KartMap({
       <circle r="42" className="kart-map-road" />
       <circle r="42" className="kart-map-centreline" />
       <circle r="31" className="kart-map-kerb" />
+      {race.courseEnabled
+        ? ringCourse.map((feature) => {
+            const pose = courseFeaturePose(feature, race.elapsedMs);
+            return (
+              <motion.g
+                key={feature.id}
+                initial={false}
+                animate={{
+                  x: pose.x,
+                  y: pose.z,
+                  rotate: (feature.heading * 180) / Math.PI,
+                }}
+                transition={{ duration: reduced ? 0.1 : 0.18, ease: "easeOut" }}
+                aria-label={`Track ${feature.kind}`}
+              >
+                <rect
+                  x={-feature.length / 2}
+                  y={-feature.width / 2}
+                  width={feature.length}
+                  height={feature.width}
+                  fill={
+                    feature.kind === "hazard" ? "var(--foreground)" : "var(--accent)"
+                  }
+                />
+                <text
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fill="var(--background)"
+                  fontSize="3"
+                >
+                  {feature.kind === "boost" ? "»" : feature.kind === "ramp" ? "↗" : "!"}
+                </text>
+              </motion.g>
+            );
+          })
+        : null}
       {Array.from({ length: 8 }, (_, i) => {
         const a = ((i + 1) * Math.PI) / 4;
         return (

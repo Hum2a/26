@@ -29,7 +29,12 @@ export type {
 } from "./admin.ts";
 
 export { clientApiKeyHeader, clientApiKeyQueryParam } from "./client-api-key.ts";
-export { funFactCap, funFactCardSchema, minimumComparisonGroup, statCardSchema } from "./stats.ts";
+export {
+  funFactCap,
+  funFactCardSchema,
+  minimumComparisonGroup,
+  statCardSchema,
+} from "./stats.ts";
 export {
   cleanWallCaption,
   nextWall,
@@ -999,16 +1004,15 @@ export const lobbySnapshotSchema = z
     trolls: z
       .object({
         token: z.enum(["locked", "ready", "spent"]),
-        offers: z
-          .array(
-            z
-              .object({
-                kind: trollKindSchema,
-                label: z.string().min(1).max(40),
-                enabled: z.boolean(),
-              })
-              .strict(),
-          ),
+        offers: z.array(
+          z
+            .object({
+              kind: trollKindSchema,
+              label: z.string().min(1).max(40),
+              enabled: z.boolean(),
+            })
+            .strict(),
+        ),
         active: z
           .array(
             z
@@ -1043,6 +1047,14 @@ export const lobbySnapshotSchema = z
       })
       .strict(),
     /** Control only: every troll sent this game, newest first. */
+    kartCourseHistory: z
+      .array(
+        z
+          .object({ atMs: z.number().int().nonnegative(), enabled: z.boolean() })
+          .strict(),
+      )
+      .max(20)
+      .optional(),
     trollHistory: z
       .array(
         z
@@ -1407,3 +1419,4 @@ export function remainingUntil(
 }
 
 export * from "./kart-powers.ts";
+export * from "./kart-course.ts";

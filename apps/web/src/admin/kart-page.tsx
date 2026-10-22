@@ -58,6 +58,13 @@ export function AdminKartPage() {
                 on-screen phone controls. Solo practice has no room connection or party
                 points.
               </p>
+              <p>
+                Charge Mini, Super and Ultra turbos by holding drift, then release. On
+                the opening straight, take the left lane for a floor boost and ramp; the
+                right lane has a moving sweeper. Hold A to glide and B to descend.
+                Course set-up inside the driving view can switch each feature off, clear
+                the track or restore it. Changes reset and pause practice.
+              </p>
               <iframe
                 className="admin-kart-drive-frame"
                 title="Solo kart practice"

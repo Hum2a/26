@@ -74,7 +74,6 @@ export function Kart({
 
   const setFlamePositions = useGameStore((state) => state.setFlamePositions);
   const setBoostPower = useGameStore((state) => state.setBoostPower);
-  const setDriftLevel = useGameStore((state) => state.setDriftLevel);
   const setGroundPosition = useGameStore((state) => state.setGroundPosition);
   const setWheelPositions = useGameStore((state) => state.setWheelPositions);
   const { scene } = useThree();
@@ -94,6 +93,7 @@ export function Kart({
   }
 
   function getGroundPosition(wheelBase, wheel, offset = 0, wheelIndex, delta) {
+    if (useGameStore.getState().soloHeight > 0) return;
     const origin = new Vector3();
 
     wheelBase.current.getWorldPosition(origin);
@@ -172,6 +172,9 @@ export function Kart({
   }
 
   function moveAndRotateKart(wheelPositions) {
+    // The controller raises the whole assembly in flight. Reusing world-space
+    // wheel height here would lift the chassis twice and detach its wheels.
+    if (useGameStore.getState().soloHeight > 0) return;
     const a = wheelPositions[0];
     const b = wheelPositions[1];
     const c = wheelPositions[2];
@@ -262,7 +265,6 @@ export function Kart({
         sparksLeftRef?.current?.setColor(driftLevel.color);
         sparksRightRef?.current?.setColor(driftLevel.color);
       }
-      setDriftLevel({ ...driftLevel, charging: driftPower.current > 0 });
 
       setFlamePositions([
         flamePositionLeftRef.current.getWorldPosition(new Vector3()),

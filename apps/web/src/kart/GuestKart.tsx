@@ -5,6 +5,7 @@ import { TouchController } from "./TouchController";
 import { useKartSocket } from "./useKartSocket";
 import { PowerUpControl } from "./PowerUpControl";
 import { Button } from "../ui/primitives";
+import { DriftGauge } from "./DriftGauge";
 
 export function GuestKart({
   snapshot,
@@ -99,36 +100,22 @@ export function GuestKart({
                 ? "Wrong way — turn around"
                 : self.boostRemainingMs > 0
                   ? "BOOST! Keep holding A"
-                  : self.driftCharge >= 1
+                  : (self.driftLevel ?? 0) >= 1
                     ? "Drift ready — release R!"
                     : self.drifting
                       ? "Charging drift…"
                       : "Hold A · steer gently to the right"}
           </p>
-          <div
-            className="kart-drift-meter"
-            role="progressbar"
-            aria-label="Drift charge"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(self.driftCharge * 100)}
-            aria-valuetext={
-              self.driftCharge >= 1
-                ? "Charged — release R to boost"
-                : `${Math.round(self.driftCharge * 100)} per cent`
-            }
-          >
-            <motion.span
-              animate={{ scaleX: self.driftCharge }}
-              style={{ transformOrigin: "left" }}
-              transition={{ duration: reduced ? 0.1 : 0.18, ease: "easeOut" }}
-            />
-          </div>
+          <DriftGauge
+            chargeMs={self.driftChargeMs ?? self.driftCharge * 700}
+            boostLevel={self.boostRemainingMs > 0 ? self.boostLevel || 1 : 0}
+          />
+          {(self.height ?? 0) > 0 ? (
+            <p>Gliding · {self.height!.toFixed(1)} m · A: glide · B: descend</p>
+          ) : null}
           <div className="kart-telemetry-labels">
             <span>R: hold to charge, release to boost</span>
-            <span>
-              {Math.round(Math.min(1, Math.abs(self.speed) / 14) * 100)}% speed
-            </span>
+            <span>{Math.round(Math.abs(self.speed) * 3.6)} km/h</span>
           </div>
         </div>
       ) : null}

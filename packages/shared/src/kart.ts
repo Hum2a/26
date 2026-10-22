@@ -1,3 +1,4 @@
+import { ringCourse } from "./kart-course.ts";
 import {
   createKartPowers,
   stepKartPowers,
@@ -13,6 +14,7 @@ import {
   clearOfWalls,
   createDrivingBody,
   stepDriving,
+  drivingDriftLevel,
   ringDriving,
   ringWalls,
   indexWalls,
@@ -52,8 +54,12 @@ export const kartDriverSchema = z
     checkpoint: z.number().int().min(0).max(8),
     // Defaults accept older stored/public snapshots during a rolling update.
     driftCharge: z.number().min(0).max(1).default(0),
+    driftChargeMs: z.number().min(0).max(2400).optional(),
     boostRemainingMs: z.number().int().min(0).max(1200).default(0),
     drifting: z.boolean().default(false),
+    driftLevel: z.number().int().min(0).max(3).optional(),
+    boostLevel: z.number().int().min(0).max(3).optional(),
+    height: z.number().min(0).max(20).optional(),
     wrongWay: z.boolean().default(false),
     status: z.enum(["RACING", "FINISHED", "DNF"]),
     lapTimeMs: z.number().int().nonnegative().nullable(),
@@ -72,6 +78,7 @@ export const kartRaceSchema = z
     // Frozen race size; phone leaderboards intentionally contain only a shortlist.
     participantCount: z.number().int().min(0).max(80).optional(),
     powers: kartPowerViewSchema.optional(),
+    courseEnabled: z.boolean().optional(),
     participants: z.array(kartDriverSchema).max(80),
     leaderboard: z
       .array(
@@ -140,6 +147,8 @@ export type KartRace = {
   powerUpVersion?: 1;
   oils?: OilSlick[];
   physicsVersion?: "arcade-v2";
+  courseEnabled?: boolean;
+  courseHistory?: { atMs: number; enabled: boolean }[];
 };
 
 export function createKartRace(
@@ -149,6 +158,8 @@ export function createKartRace(
   return {
     raceId,
     physicsVersion: "arcade-v2",
+    courseEnabled: false,
+    courseHistory: [],
     powerUpVersion: 1,
     oils: [],
     elapsedMs: 0,
@@ -223,11 +234,12 @@ function advanceDriver(
   target: number,
   version?: "arcade-v2",
   oils?: readonly OilSlick[],
+  courseEnabled = false,
 ): void {
   const step = version ? 20 : 50;
   for (let t = from; t < target && driver.status === "RACING"; t += step) {
     const ms = Math.min(step, target - t);
-    stepDriver(driver, t + ms, ms, version, oils);
+    stepDriver(driver, t + ms, ms, version, oils, courseEnabled);
   }
 }
 function settleRace(race: KartRace, force = false): KartRace {
@@ -290,6 +302,7 @@ export function reduceKartTimeline(
         event.elapsed,
         race.physicsVersion,
         race.powerUpVersion ? (race.oils ?? []) : undefined,
+        race.courseEnabled,
       );
       cursor = event.elapsed;
       applyInput(driver, race.raceId, event.input, event.elapsed);
@@ -300,6 +313,7 @@ export function reduceKartTimeline(
       target,
       race.physicsVersion,
       race.powerUpVersion ? (race.oils ?? []) : undefined,
+      race.courseEnabled,
     );
   }
   next.elapsedMs = target;
@@ -397,12 +411,14 @@ function stepDriver(
   ms: number,
   version?: "arcade-v2",
   oils?: readonly OilSlick[],
+  courseEnabled = false,
 ): void {
   const dt = ms / 1000;
   const fresh = elapsed <= d.inputUntil;
   const input = fresh ? d.input : kartNeutral;
   if (version === "arcade-v2") {
     let body = d.physics ?? createDrivingBody(d.x, d.z, d.heading);
+    body = { ...body, courseMs: elapsed - ms };
     if (oils) {
       d.power ??= createKartPowers();
       body = powerDrivingBody(body, d.power, elapsed);
@@ -415,10 +431,11 @@ function stepDriver(
       nearbyRingWalls(
         body.x,
         body.z,
-        ringDriving.radius + ringDriving.boostSpeed * 0.02,
+        ringDriving.radius + Math.hypot(body.vx, body.vz) * 0.02,
       ),
       Boolean(d.power && d.power.slowedUntil > elapsed),
       fresh,
+      courseEnabled ? ringCourse : [],
     );
     if (oils && d.power) {
       const effect = stepKartPowers(
@@ -426,8 +443,8 @@ function stepDriver(
         d.playerId,
         body,
         next,
-        ringItemBoxes,
-        oils,
+        (next.height ?? 0) > 0 ? [] : ringItemBoxes,
+        (next.height ?? 0) > 0 ? [] : oils,
         elapsed,
         d.playerId,
       );
@@ -493,6 +510,7 @@ function stepDriver(
   if (
     version === "arcade-v2" &&
     !d.physics?.contact &&
+    !(d.physics?.height ?? 0) &&
     clearOfWalls(d.x, d.z, nearbyRingWalls(d.x, d.z, 3), ringDriving.radius + 2)
   )
     d.lastSafe = {
@@ -555,6 +573,7 @@ export function projectKartRace(
 ): KartRaceView {
   return kartRaceSchema.parse({
     raceId: race.raceId,
+    courseEnabled: race.courseEnabled ?? false,
     trackId: kartTrackId,
     timeLimitMs: kartLimitMs,
     elapsedMs: race.elapsedMs,
@@ -621,8 +640,12 @@ export function projectKartRace(
         status,
         lapTimeMs,
         driftCharge: status === "RACING" ? Math.min(1, driftMs / 700) : 0,
+        driftChargeMs: status === "RACING" ? Math.min(2400, driftMs) : 0,
         boostRemainingMs: status === "RACING" ? Math.floor(boostMs) : 0,
         drifting: status === "RACING" && wasDrifting,
+        driftLevel: status === "RACING" ? drivingDriftLevel(driftMs) : 0,
+        boostLevel: status === "RACING" && boostMs > 0 ? physics?.boostLevel || 1 : 0,
+        height: round(physics?.height ?? 0, 3),
         wrongWay:
           status === "RACING" &&
           wrongWayVelocity(

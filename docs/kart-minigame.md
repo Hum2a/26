@@ -23,6 +23,8 @@ Each phone has its own playable 3D chase view, touch controls and local driver H
 - [Drivers and guest faces (October 2026)](#drivers-and-guest-faces-october-2026)
 - [Drift handling polish (21 October 2026)](#drift-handling-polish-21-october-2026)
 
+- [Power, turbo tiers and course features (22 October 2026)](#power-turbo-tiers-and-course-features-22-october-2026)
+
 </details>
 
 ## Try the real multiplayer rehearsal
@@ -171,3 +173,31 @@ Solo presentation reads the same simulation for gamepad, touch and keyboard. It 
 Try `/kart`: accelerate, steer and hold Space (or the touch drift button), adjust steering while holding drift, then release drift while continuing to accelerate. The HUD says when a turbo is ready. These are deliberately tuned arcade mechanics inspired by Nintendo's documented hold/turn/release mini-turbo and Sega-style controllable slides; they are not a claim to reproduce either game's proprietary physics or every mechanic.
 
 Run the focused real-engine drift regression with `npx playwright test --config playwright.kart.config.ts`. It builds the solo engine and serves its production files locally, without party credentials. The test charges on the opening straight, returns steering to neutral, verifies the bank survives, releases drift, observes Boost and over 100 km/h, then verifies recovery stops the kart. The broader `/kart` iframe rehearsal remains in `kart-solo.spec.ts`; it now starts the manoeuvre earlier on a gentler line and retains its speed and distance checks. Turbo feedback stays visible alongside terrain warnings, so dirt cannot hide an active boost.
+
+## Power, turbo tiers and course features (22 October 2026)
+
+Forward speed now follows engine acceleration and power per unit mass, with rolling resistance and quadratic aerodynamic drag. There is no forward-speed clamp or attraction to a target velocity. Turbo expiry removes extra thrust; it does not brake towards the old normal-speed target. The `maxSpeed` profile field is retained only as a steering/drift-entry reference. Solo uses 12 m/s² initial acceleration and 240 W/kg; the smaller party ring uses 5 m/s² and 32 W/kg. These are arcade tuning values, not a manufacturer specification. Reverse still has a bounded speed, and stale/disconnected controls apply additional resistance to bring the kart to rest.
+
+The existing 700/1400/2400 ms drift thresholds now give **Mini / Super / Ultra** turbo, with increasing thrust (6/9/12 times engine thrust) and 600/900/1200 ms duration. Both phone and solo use the same three-segment gauge, with named ready and active tiers. Public `driftCharge` keeps its old first-tier normalisation for compatibility; `driftChargeMs` carries the full three-tier bank. Effects use the full bank too.
+
+### Try the course
+
+Run `npm run dev`, then open **Admin → Kart → Drive** or `/kart`. Course set-up has independent floor-boost, ramp and sweeper switches, Clear track, Restore course, Return to starting grid and direct rehearsal starts for each real interaction. Changing set-up resets and pauses practice; resume to drive. The imported opening straight has a boost and ramp in its left lane and a moving sweeper in its right lane. Rehearsal starts are placed on verified road, avoiding the imported start-grid surface gap around z = −30 to −32.
+
+- **Floor boost:** drive forwards across the chevrons with A held for a Super-tier burst. Swept checks catch crossings between simulation steps; cooldown prevents repeated activation while sitting on the pad.
+- **Ramp and glider:** cross a ramp forwards at speed to launch. The real physics body has height and vertical velocity. Hold A to glide, steer gently in flight, or hold B for a quicker descent. The wing deploys visually; landing retains horizontal momentum. Airborne karts clear floor sweepers and item/oil interactions. Boundary walls remain solid at all heights, so flying cannot escape the track.
+- **Moving sweeper:** a visibly marked obstacle moves across its lane using active simulation time. Contact slows the kart and cancels drift/turbo. It freezes while paused. This is a track obstacle, so an oil shield does not block it.
+
+### Connected race controls
+
+New connected races start with course features **off**. In **Admin → room → Live controls → Kart course**, the host sees airborne/boosting counts, switches all features on or off, reads the latest 20 changes and opens solo rehearsal. Switching off lands every kart and clears course boost. Commands are validated in the room and persisted through the existing host receipts before success. Course history is control-only; guests and the projector receive the enabled state and public poses. Older races without the course field refuse the new switches.
+
+The ring has one boost pad, one ramp and one moving sweeper, with the same pure collision/effect rules as solo. Both the 3D view and SVG map show enabled features; karts, drivers and chase cameras follow projected flight height. No new timers, sockets, score engines or external assets were added.
+
+### Verification entry points
+
+- API pure suites: `npm run test -w @26/api -- --project auth test/kart-driving.spec.ts test/kart-score.spec.ts test/kart-powers.spec.ts test/kart-guard.spec.ts`
+- Room persistence/receipts: `npm run test -w @26/api -- --project room test/kart-room.spec.ts`
+- Real solo browser rehearsals: `npx playwright test --config playwright.kart.config.ts --workers=1`
+
+The imported solo circuit and multiplayer ring remain separate tracks. Gliding is ramp-launched flight with automatic landing; it does not add an unrestricted free-flight mode.

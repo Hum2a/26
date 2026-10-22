@@ -13,6 +13,7 @@ import { useAdminRoom, type AdminCommand } from "./room-provider";
 import { CommandFeedback } from "./command-feedback";
 import { WallQuickPanel } from "./wall-page";
 import { RoomExtras } from "./room-extras";
+import { KartCourseControls } from "./kart-course-controls";
 
 const revealPhases = new Set<RoomPhaseName>(["reveal", "scores", "final", "podium"]);
 type Confirmation = {
@@ -143,7 +144,9 @@ export function LiveConsole() {
               : "Next fact"
             : "Advance";
   const shownFact =
-    phase === "facts" ? snapshot.funFactList?.cards[snapshot.funFactList.index] : undefined;
+    phase === "facts"
+      ? snapshot.funFactList?.cards[snapshot.funFactList.index]
+      : undefined;
   const upcomingFact =
     phase === "facts" && snapshot.funFactList
       ? snapshot.funFactList.cards[snapshot.funFactList.index + 1]
@@ -237,7 +240,10 @@ export function LiveConsole() {
                 Skip question
               </Button>
             ) : null}
-            {playing && phase !== "final" && phase !== "facts" && !snapshot.finishAfterRound ? (
+            {playing &&
+            phase !== "final" &&
+            phase !== "facts" &&
+            !snapshot.finishAfterRound ? (
               <Button
                 variant="secondary"
                 disabled={locked}
@@ -320,6 +326,7 @@ export function LiveConsole() {
           </section>
           <LiveResponses locked={locked} />
           <WallQuickPanel />
+          <KartCourseControls />
           {snapshot.hostEffects?.length || snapshot.trolls.announcement ? (
             <section className="admin-task-section">
               <h2>On the screens now</h2>

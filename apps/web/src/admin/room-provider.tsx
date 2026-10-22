@@ -19,7 +19,16 @@ import { playNotice } from "./command-notices";
 
 export type AdminCommand =
   Omit<PlayIntent, "gameId" | "requestId"> | { action: "transfer"; playerId: string };
-export type CommandScope = "live" | "players" | "room" | "media" | "results" | "health" | "trolls" | "wall";
+export type CommandScope =
+  | "live"
+  | "players"
+  | "room"
+  | "media"
+  | "results"
+  | "health"
+  | "trolls"
+  | "wall"
+  | "kart";
 type CommandRequest = {
   command: AdminCommand;
   requestId: string;

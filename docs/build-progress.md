@@ -123,6 +123,8 @@ Source of stage order: [docs/build-prompts.md](build-prompts.md)
 
 - [22 October 2026 — GitHub documentation presentation](#22-october-2026--github-documentation-presentation)
 
+- [22 October 2026 — kart power, turbo tiers and track interactions](#22-october-2026--kart-power-turbo-tiers-and-track-interactions)
+
 </details>
 
 ## Stage 01
@@ -3501,3 +3503,40 @@ Status: complete. Refreshed 43 existing Markdown pages and added `docs/README.md
 - **Manual verification:** reviewed source diffs and navigation structure. GitHub-rendered pages have not been visually inspected.
 - **Remaining limitation:** some existing domain guides describe earlier implementation stages; this presentation pass does not certify or rewrite their technical claims.
 - **Exact next stage:** review the README and documentation hub in GitHub’s rendered view. No implementation stage or deployment started.
+
+## 22 October 2026 — kart power, turbo tiers and track interactions
+
+Status: complete locally. The shared arcade driving model, both kart renderers and the host controls now support the requested handling and course changes.
+
+### What changed
+
+- Replaced forward target-speed damping with acceleration, power per unit mass, rolling resistance and aerodynamic drag. Boost expiry removes thrust without pulling the kart towards a speed cap. Kept bounded reverse and stronger resistance for stale controls. Swept-wall queries now use actual velocity.
+- Mini, Super and Ultra drift releases now differ in thrust as well as duration. Added the shared `DriftGauge`, explicit ready/active tier labels and speed in km/h. Kept the older first-tier `driftCharge` wire field and added full-bank milliseconds/tier fields.
+- Added `packages/shared/src/kart-course.ts`: deterministic moving sweepers, floor boosts, ramps, height/vertical velocity, glide/descent and independent per-feature cooldowns, so a boost can feed directly into a ramp. Physics and rendered hazards use the existing active race clock, including after recovery. Airborne karts skip floor items/oil; boundary walls remain solid.
+- Integrated course props, deployed wings and flight height into solo, connected 3D and the SVG map. Kept shared geometry and disposal budgets. Corrected the upstream chassis calculation so flight raises wheels and body together.
+- Admin → Kart → Drive has real-engine course switches, clear/restore, return to grid and direct boost/ramp/sweeper rehearsals. Configuration changes reset and pause practice. Imported rehearsal starts use verified road surface.
+- Live controls show course status, airborne/boosting counts, on/off commands and history. New connected races default to course off. Turning it off lands karts and clears course boost. Commands use existing validation, transaction rollback and persisted receipts. The latest 20 changes are host-only `kartCourseHistory`; guest/stage snapshots omit it.
+
+### Files and interfaces
+
+Shared `kart-driving.ts`, `kart-course.ts`, `kart.ts` and `index.ts`; the existing API kart adapter, host actions/routes and control snapshot; existing solo controller/store/session plus `Course.tsx`; shared `DriftGauge`, connected phone/map/circuit/camera/driver rendering; `kart-course-controls.tsx`, command notices, scope and registry. Updated the data inventory and kart guide. No new resources, tables, sockets, schedulers or dependencies.
+
+### Checks and results
+
+- Web unit suite: **85 files, 350 tests passed**, including registry coverage, course controls, turbo gauge and real Three.js scene/resource checks. Both the root `npm run test:unit` and the final single-worker workspace suite were run; the first root run had 349 tests before the additional flight-rendering regression.
+- Kart pure suites: **4 files, 35 tests passed**, covering power/coasting, tier thrust, boost-to-ramp combinations, swept triggers, glide/descent/landing, hazards, authoritative race integration and restored clock state.
+- Kart room suite: **9 tests passed**, including on/off success, refusal, replay after eviction, forced landing and host-only history. Updated the existing end-of-game test to assert the facts phase before finishing at the podium.
+- `npm run typecheck`: passed after fixing optional cooldown typing. The pure suites were rerun after the clock/cooldown changes.
+- `npm run build`: passed, including the secret-artifact scan and content preflight. Existing large-chunk/PGlite build warnings and incomplete birthday drafts remain reported by the existing checks.
+- Real browser suite: **4 Playwright tests passed** with `npx playwright test --config playwright.kart.config.ts --workers=1`: bank/release drift, ramp/glide/descent/landing with course switches, floor boost and moving sweeper. No party credentials or simulated engine were used.
+- Targeted kart ESLint passed. Full `npm run lint` remains blocked by **five existing photo-wall errors** in `stage/wall/stage-wall.tsx`, `wall/guest-wall.tsx` and `packages/shared/src/wall.ts`; those unrelated files were not changed.
+
+### Manual verification and remaining limits
+
+Inspected real WebGL screenshots for deployed flight, phone practice at 390×844, landscape at 844×390 and the course set-up panel. Adjusted the panel, HUD and power-up placement to keep the driving controls clear. Corrected a rehearsal spawn in the imported start-grid surface gap and preserved pause across reset/remount.
+
+No deployment. Physical phones, projector hardware, multiplayer flight in a browser and the full Worker suite have not been checked. Solo and connected races retain their separate tracks. Flight is a ramp-launched glide with landing, not unrestricted flight. Reload clients when introducing the new strict snapshot fields.
+
+### Exact next stage
+
+Try the handling in Admin → Kart → Drive and tune power/drag, tier thrust and course placement from hands-on feedback; then rehearse a connected room on real phones and the projector. No further stage started.

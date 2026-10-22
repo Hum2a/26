@@ -20,12 +20,47 @@ import {
 import { readRoundState, writeRoundState } from "./round-state.ts";
 import type { KartQuestion } from "./definition.ts";
 import { publicQuestionCore } from "./project.ts";
+import { createSqlStore } from "../room/sql-store.ts";
+import { questionFor } from "./registry.ts";
 
 const key = "kart-race";
 export const readKart = (sql: SqlStorage, id: string) =>
   readRoundState<KartRace>(sql, id, key);
 const write = (sql: SqlStorage, id: string, race: KartRace) =>
   writeRoundState(sql, id, key, race);
+
+export function changeKartCourse(sql: SqlStorage, enabled: boolean, now: number) {
+  if (typeof enabled !== "boolean" || !Number.isSafeInteger(now) || now < 0)
+    throw new Error("Choose a valid course setting.");
+  const store = createSqlStore(sql);
+  const room = store.readRoom();
+  const q = questionFor(room);
+  if (q?.kind !== "kart" || !["intro", "collect"].includes(room.phase))
+    throw new Error("Course controls need an open kart round.");
+  const race = catchUp(sql, store, q, now);
+  if (!race || race.ended || race.courseEnabled === undefined)
+    throw new Error("This race does not support course features.");
+  race.courseEnabled = enabled;
+  race.courseHistory = [
+    ...(race.courseHistory ?? []),
+    { atMs: Math.floor(now), enabled },
+  ].slice(-20);
+  if (!enabled)
+    for (const driver of race.drivers)
+      if (driver.physics) {
+        // Turning off a course lands every kart and removes its outstanding course effects.
+        driver.physics = {
+          ...driver.physics,
+          height: 0,
+          verticalSpeed: 0,
+          boostMs: 0,
+          boostLevel: 0,
+          featureCooldowns: {},
+        };
+        driver.boostMs = 0;
+      }
+  write(sql, q.id, race);
+}
 
 export function enterKart(
   sql: SqlStorage,

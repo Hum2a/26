@@ -139,6 +139,42 @@ it("snaps recovered server poses instead of travelling across the circuit", () =
   );
 });
 
+it("renders enabled course props and an airborne kart from public server height", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((role) => [
+      role,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const state = createKartRace("flight", [{ playerId: "a", name: "Driver" }]);
+  state.courseEnabled = true;
+  const race = projectKartRace(state, "a", 100);
+  race.participants[0]!.height = 3;
+  const circuit = createCircuit(palette, true, "a");
+  circuit.update(race, 0.1, true);
+  expect(circuit.pose("a")?.height).toBe(3);
+  expect(
+    (circuit.scene.getObjectByName("kart-course-features") as THREE.InstancedMesh)
+      .count,
+  ).toBe(3);
+  expect(
+    (circuit.scene.getObjectByName("kart-gliders") as THREE.InstancedMesh).count,
+  ).toBe(1);
+  expect(kartCameraPose(circuit.pose("a")!, false).position[1]).toBe(9);
+  race.courseEnabled = false;
+  race.participants[0]!.height = 0;
+  circuit.update(race, 0.1, true);
+  expect(
+    (circuit.scene.getObjectByName("kart-course-features") as THREE.InstancedMesh)
+      .count,
+  ).toBe(0);
+  expect(
+    (circuit.scene.getObjectByName("kart-gliders") as THREE.InstancedMesh).count,
+  ).toBe(0);
+  circuit.dispose();
+});
+
 it("animates drift sparks from server feedback, reduces motion and clears new races", () => {
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   const palette = Object.fromEntries(

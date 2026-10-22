@@ -2,6 +2,9 @@ import type { RoomPhaseName } from "@26/shared";
 import type { PlayAction } from "../live/room-api";
 
 export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
+  if (action === "kart-course-on") return "Floor boosts, ramps and sweepers are on.";
+  if (action === "kart-course-off")
+    return "Course features are off. Airborne karts have landed.";
   if (action === "start") {
     return "The illustrative demo has started.";
   }

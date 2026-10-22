@@ -175,6 +175,20 @@ a:focus-visible {
   color: var(--highlight);
   transition: color 0.18s ease;
 }
+.solo-telemetry {
+  top: calc(7rem + env(safe-area-inset-top));
+}
+.solo-telemetry output[aria-label="Track feedback"] {
+  font-size: 0.75rem;
+  max-width: 17rem;
+  text-align: right;
+}
+.solo-telemetry .kart-tier-gauge {
+  width: min(17rem, 80vw);
+}
+.solo-power {
+  max-width: 16rem;
+}
 .solo-telemetry > span {
   font-size: 0.75rem;
   background: var(--surface);
@@ -358,13 +372,103 @@ a:focus-visible {
   background: var(--surface);
   color: var(--foreground);
 }
+.solo-course-settings {
+  position: absolute;
+  z-index: 4;
+  top: calc(3.5rem + env(safe-area-inset-top));
+  right: 0.6rem;
+  max-width: 16rem;
+  background: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  width: 16rem;
+  transition: width 180ms ease;
+}
+.solo-course-settings[data-open="false"] {
+  width: 8rem;
+}
+.solo-course-settings > button {
+  min-height: 36px;
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+}
+.solo-course-options {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 180ms ease,
+    opacity 180ms ease;
+}
+.solo-course-options > div {
+  overflow: hidden;
+  min-height: 0;
+  max-height: 60vh;
+}
+.solo-course-settings[data-open="true"] .solo-course-options {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.solo-course-settings[data-open="true"] .solo-course-options > div {
+  overflow-y: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .solo-course-options {
+    transition-duration: 100ms;
+  }
+}
+.solo-course-settings label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding-block: 0.5rem;
+}
+.solo-course-settings button {
+  margin: 0.2rem;
+}
+.solo-telemetry output[aria-label="Track feedback"] {
+  background: var(--surface);
+  border-radius: var(--radius-control);
+  padding: 0.3rem 0.5rem;
+}
+@media (max-width: 700px) and (min-height: 501px) {
+  .solo-power {
+    top: auto;
+    bottom: calc(240px + env(safe-area-inset-bottom));
+  }
+}
+@media (max-height: 500px) {
+  .solo-telemetry {
+    top: 4rem;
+    left: calc(50% - 7rem);
+    right: auto;
+    width: 14rem;
+    justify-items: center;
+    gap: 0.15rem;
+  }
+  .solo-telemetry .kart-tier-gauge {
+    width: 14rem;
+  }
+  .solo-telemetry output {
+    font-size: 1.4rem;
+  }
+  .solo-telemetry .solo-distance,
+  .solo-telemetry output[aria-label="Track feedback"],
+  .solo-telemetry output[aria-label="Drift charge level"],
+  .solo-telemetry > span {
+    font-size: 0.65rem;
+  }
+}
 .solo-power .kart-power-control {
   gap: 0.4rem;
 }
 @media (max-height: 500px) {
   .solo-power {
     top: 4rem;
-    max-width: 16rem;
+    max-width: min(12rem, 25vw);
   }
   .solo-power p {
     font-size: 0.65rem;

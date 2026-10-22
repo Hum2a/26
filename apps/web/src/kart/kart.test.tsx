@@ -210,7 +210,7 @@ it("shows server-confirmed drift and wrong-way feedback, and replaces pedals wit
     screen
       .getByRole("progressbar", { name: "Drift charge" })
       .getAttribute("aria-valuenow"),
-  ).toBe("100");
+  ).toBe("1");
   expect(screen.getByText("Drift ready — release R!")).toBeTruthy();
   race.participants[0]!.wrongWay = true;
   view.rerender(<GuestKart snapshot={{ ...snapshot }} />);

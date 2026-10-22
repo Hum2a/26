@@ -1,4 +1,5 @@
 /** Pure arcade driving and swept-circle contacts. No clocks, browser or rendering APIs. */
+import { stepCourse, type CourseFeature } from "./kart-course.ts";
 export type DrivingInput = {
   steer: number;
   gas: boolean;
@@ -15,6 +16,12 @@ export type DrivingBody = {
   turn: number;
   driftMs: number;
   boostMs: number;
+  boostLevel?: number;
+  height?: number;
+  verticalSpeed?: number;
+  courseMs?: number;
+  featureCooldowns?: Record<string, number>;
+  trackNotice?: "boost" | "ramp" | "hazard" | "landed";
   wasDrifting: boolean;
   /** Latched on entry; counter-steering widens the slide without losing charge. */
   driftSide?: number;
@@ -22,28 +29,36 @@ export type DrivingBody = {
   offRoad: boolean;
 };
 export type DrivingProfile = {
+  /** Reference for steering and drift entry only; never a velocity limit. */
   maxSpeed: number;
   reverseSpeed: number;
-  boostSpeed: number;
   radius: number;
   acceleration: number;
+  /** Power per unit mass (m²/s³); force falls as road speed rises. */
+  power: number;
+  drag: number;
+  rollingResistance: number;
   turnRate: number;
   driftTurnBase?: number;
 };
 export const ringDriving: DrivingProfile = {
   maxSpeed: 11,
   reverseSpeed: 3,
-  boostSpeed: 14,
   radius: 0.8,
-  acceleration: 3.6,
+  acceleration: 5,
+  power: 32,
+  drag: 0.018,
+  rollingResistance: 0.18,
   turnRate: 1.1,
 };
 export const soloDriving: DrivingProfile = {
   maxSpeed: 30,
   reverseSpeed: 8,
-  boostSpeed: 42,
   radius: 0.85,
-  acceleration: 3.6,
+  acceleration: 12,
+  power: 240,
+  drag: 0.006,
+  rollingResistance: 0.35,
   turnRate: 1.35,
   driftTurnBase: 0.25,
 };
@@ -66,6 +81,9 @@ const damp = (a: number, b: number, k: number, dt: number) =>
 export function drivingDriftLevel(chargeMs: number): 0 | 1 | 2 | 3 {
   return chargeMs >= 2400 ? 3 : chargeMs >= 1400 ? 2 : chargeMs >= 700 ? 1 : 0;
 }
+
+export const driftTierNames = ["Charging", "Mini", "Super", "Ultra"] as const;
+export const driftThresholds = [700, 1400, 2400] as const;
 
 /** First contact with a segment expanded by the kart radius, including round ends. */
 function sweep(
@@ -169,6 +187,7 @@ export function stepDriving(
   walls: readonly Wall[],
   offRoad = false,
   fresh = true,
+  features: readonly CourseFeature[] = [],
 ): DrivingBody {
   if (!Number.isFinite(ms) || ms <= 0 || ms > 20) return body;
   const dt = ms / 1000,
@@ -176,6 +195,7 @@ export function stepDriving(
   const fx = Math.cos(body.heading),
     fz = Math.sin(body.heading);
   const forward = body.vx * fx + body.vz * fz;
+  const airborne = (body.height ?? 0) > 0;
   const drifting =
     fresh &&
     input.drift &&
@@ -183,7 +203,8 @@ export function stepDriving(
     forward > profile.maxSpeed * (body.wasDrifting ? 0.25 : 0.4) &&
     input.gas &&
     !input.brake &&
-    !offRoad;
+    !offRoad &&
+    !airborne;
   if (
     body.wasDrifting &&
     !drifting &&
@@ -194,12 +215,15 @@ export function stepDriving(
     !offRoad &&
     !body.contact &&
     body.driftMs >= 700
-  )
+  ) {
+    next.boostLevel = drivingDriftLevel(body.driftMs);
     next.boostMs = Math.max(
       body.boostMs,
       [0, 600, 900, 1200][drivingDriftLevel(body.driftMs)]!,
     );
+  }
   next.boostMs = Math.max(0, next.boostMs - ms);
+  if (!next.boostMs) next.boostLevel = 0;
   const side = body.wasDrifting
     ? body.driftSide || Math.sign(body.turn) || Math.sign(input.steer)
     : Math.sign(input.steer);
@@ -209,22 +233,30 @@ export function stepDriving(
     ? Math.min(2400, body.driftMs + ms * (1 + Math.max(0, input.steer * side) * 0.5))
     : 0;
   next.wasDrifting = drifting;
-  let target = input.brake
-    ? forward > 0.4
-      ? 0
-      : -profile.reverseSpeed
-    : input.gas
-      ? next.boostMs > 0
-        ? profile.boostSpeed
-        : profile.maxSpeed
-      : 0;
-  if (offRoad) target *= 0.45;
-  const speed = damp(
-    forward,
-    target,
-    input.brake ? 7 : next.boostMs > 0 ? 12 : profile.acceleration,
-    dt,
+  // Engine force + power + road/aerodynamic losses. No target-speed attraction:
+  // boost expiry removes extra thrust; it never brakes towards a speed ceiling.
+  const thrust = Math.min(
+    profile.acceleration,
+    profile.power / Math.max(1, Math.abs(forward)),
   );
+  const boost = next.boostMs > 0 ? [1, 6, 9, 12][next.boostLevel || 1]! : 1;
+  const resistance =
+    profile.rollingResistance +
+    profile.drag * forward * forward +
+    (!fresh ? Math.abs(forward) * 1.5 : 0) +
+    (offRoad && !airborne ? Math.abs(forward) * 1.8 : 0);
+  let speed = forward;
+  if (input.brake && !airborne) {
+    speed =
+      forward > 0.4
+        ? Math.max(0, forward - profile.acceleration * 2 * dt)
+        : Math.max(-profile.reverseSpeed, forward - profile.acceleration * dt);
+  } else {
+    const engine =
+      input.gas && fresh ? thrust * boost * (airborne ? 0.15 : offRoad ? 0.4 : 1) : 0;
+    speed += (engine - Math.sign(forward) * resistance) * dt;
+    if (!engine && Math.sign(speed) !== Math.sign(forward)) speed = 0;
+  }
   next.turn = damp(
     body.turn,
     (drifting
@@ -232,17 +264,17 @@ export function stepDriving(
         ((profile.driftTurnBase ?? 0.12) +
           (profile.driftTurnBase ? 0.9 : 0.75) * input.steer * side)
       : input.steer) * profile.turnRate,
-    10,
+    airborne ? 3 : 10,
     dt,
   );
   next.heading +=
-    next.turn * Math.max(-0.8, Math.min(1, speed / (profile.maxSpeed * 0.65))) * dt;
+    next.turn * (airborne ? 0.55 : 1) * Math.max(-0.8, speed / profile.maxSpeed) * dt;
   const nx = Math.cos(next.heading),
     nz = Math.sin(next.heading);
   // Remove lateral velocity gradually while drifting, quickly under ordinary grip.
   const lateral =
     (body.vx * -nz + body.vz * nx) *
-    Math.exp(-(drifting ? 2.2 : offRoad ? 7 : 14) * dt);
+    Math.exp(-(airborne ? 1.2 : drifting ? 2.2 : offRoad ? 7 : 14) * dt);
   next.vx = nx * speed - nz * lateral;
   next.vz = nz * speed + nx * lateral;
   const moved = moveWithWalls(next, dt, walls, profile.radius);
@@ -252,7 +284,14 @@ export function stepDriving(
     moved.driftSide = 0;
     moved.boostMs = 0;
   }
-  return moved;
+  return stepCourse(
+    body,
+    moved,
+    fresh ? input : { steer: 0, gas: false, brake: false, drift: false },
+    ms,
+    features,
+    profile.radius,
+  );
 }
 
 /** Shared visible/collision boundary definition for the procedural circuit. */

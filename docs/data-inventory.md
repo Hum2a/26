@@ -18,6 +18,8 @@ There are three stores: +
 - [Cloudflare R2](#cloudflare-r2)
 - [Not stored anywhere](#not-stored-anywhere)
 
+- [Kart driving and course state (22 October 2026)](#kart-driving-and-course-state-22-october-2026)
+
 </details>
 
 ## Room database (per room)
@@ -151,3 +153,11 @@ These tables cover the host only. Guests never sign in.
 - The raw user agent string, device model, location, contacts or browsing history.
 - Keystrokes as telemetry. While a "typing" troll is running, the stage can see that player's draft live, but draft keystrokes are not recorded as telemetry.
 - Any data from a permission that the game does not already use for photo or voice rounds.
+
+## Kart driving and course state (22 October 2026)
+
+The existing `round_state` kart race JSON now also holds optional vertical height/velocity, active simulation time, course-trigger cooldown and turbo tier on each physics body. Public kart frames project height, drift charge in milliseconds and drift/boost tiers; raw velocity, controls and cooldown state remain server-side. No new personal data or database table is introduced.
+
+Course features are off by default for connected races. The race stores the enabled flag and the latest 20 host changes (`atMs`, `enabled`). Only the control snapshot receives `kartCourseHistory`; stage and guest snapshots omit it. Host on/off commands use the existing control receipts. Turning features off lands airborne karts and clears outstanding course boost. Existing race retention applies.
+
+Standalone practice retains its course switches, practice starting point and flight state only in the existing in-memory solo store. Reset clears active physics and item effects; no room, archive or identity is created.

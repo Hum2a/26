@@ -18,8 +18,9 @@ test("real solo engine banks a neutral-steering drift and accelerates on release
     let peak = 0;
     new MutationObserver(() => {
       if (
-        element.querySelector("output[aria-label='Drift charge level']")
-          ?.textContent !== "Turbo active"
+        element
+          .querySelector("output[aria-label='Drift charge level']")
+          ?.textContent?.includes("turbo active") !== true
       )
         return;
       peak = Math.max(
@@ -55,3 +56,73 @@ test("real solo engine banks a neutral-steering drift and accelerates on release
   await expect.poll(speed).toBe(0);
   expect(errors).toEqual([]);
 });
+
+test("real course rehearsals launch, glide, land and can clear every track feature", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/kart-engine/index.html");
+  await page.getByText("Course set-up", { exact: true }).click();
+  await page.getByRole("button", { name: "Rehearse ramp and glide" }).click();
+  await page.getByText("Course set-up", { exact: true }).click();
+  await page.getByRole("button", { name: "Start driving" }).click();
+  await expect(
+    page.getByRole("button", { name: "Accelerate", exact: true }),
+  ).toBeEnabled({ timeout: 60_000 });
+  await page.locator("canvas").click({ position: { x: 200, y: 180 } });
+  await page.keyboard.down("ArrowUp");
+  await expect(page.getByLabel("Track feedback")).toContainText("Gliding", {
+    timeout: 20_000,
+  });
+  await page.screenshot({ path: "artifacts/kart-glide.png" });
+  await page.keyboard.down("ArrowDown");
+  await expect(page.getByLabel("Track feedback")).toContainText("Landed", {
+    timeout: 10_000,
+  });
+  await page.keyboard.up("ArrowDown");
+  await page.keyboard.up("ArrowUp");
+  await page.getByText("Course set-up", { exact: true }).click();
+  await page.getByRole("button", { name: "Clear track", exact: true }).click();
+  for (const name of ["Floor boosts", "Ramps and gliding", "Moving sweepers"])
+    await expect(page.getByRole("checkbox", { name })).not.toBeChecked();
+  await page.getByRole("button", { name: "Restore course" }).click();
+  for (const name of ["Floor boosts", "Ramps and gliding", "Moving sweepers"])
+    await expect(page.getByRole("checkbox", { name })).toBeChecked();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: "artifacts/kart-course-phone.png" });
+  await page.getByText("Course set-up", { exact: true }).click();
+  await page.getByRole("button", { name: "Keep driving" }).click();
+  await expect(page.getByRole("button", { name: "Accelerate", exact: true })).toHaveCSS(
+    "opacity",
+    "1",
+  );
+  await expect(page.locator(".solo-course-options")).toHaveCSS("opacity", "0");
+  await page.screenshot({ path: "artifacts/kart-phone-driving.png" });
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.screenshot({ path: "artifacts/kart-landscape.png" });
+  expect(errors).toEqual([]);
+});
+
+for (const [name, feedback] of [
+  ["floor boost", "Floor boost"],
+  ["sweeper", "Sweeper hit"],
+])
+  test(`real ${name} rehearsal applies the course interaction`, async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.goto("/kart-engine/index.html");
+    await page.getByText("Course set-up", { exact: true }).click();
+    await page.getByRole("button", { name: `Rehearse ${name}`, exact: true }).click();
+    await page.getByText("Course set-up", { exact: true }).click();
+    await page.getByRole("button", { name: "Start driving" }).click();
+    await expect(
+      page.getByRole("button", { name: "Accelerate", exact: true }),
+    ).toBeEnabled({ timeout: 60_000 });
+    await page.locator("canvas").click({ position: { x: 200, y: 180 } });
+    await page.keyboard.down("ArrowUp");
+    await expect(page.getByLabel("Track feedback")).toContainText(feedback, {
+      timeout: 15_000,
+    });
+    await page.keyboard.up("ArrowUp");
+  });
