@@ -14,6 +14,7 @@ import {
   trollModifierMessage,
   trollPhaseMessage,
   trollQuestionMessage,
+  trollPhotoMessage,
   trollSelfMessage,
   trollSlotMessage,
   trollAttributionMessage,
@@ -29,6 +30,7 @@ import {
   slotDecision,
   themeCueCap,
   trollDefinitions,
+  zoomAssetLabel,
   type TrollDefinition,
   type TrollKind,
 } from "./catalogue.ts";
@@ -94,6 +96,9 @@ export function acceptTroll(
   }
   if (!questionFits(definition, room)) {
     return { ok: false, message: trollQuestionMessage };
+  }
+  if (kind === "zoom-photo" && !zoomPhotoFor(sql, targetId)) {
+    return { ok: false, message: trollPhotoMessage };
   }
   const voiceMedia = kind === "voice" ? ownedVoice(sql, actorId, mediaId) : null;
   if (kind === "voice" && !voiceMedia) {
@@ -259,6 +264,7 @@ export function settleTrolls(sql: SqlStorage, room: RoomClock, now: number): voi
   promoteQueues(sql, store, room, now);
   releaseHeldCues(sql, store, room, now);
   enqueueThemeCues(sql, store, room, now);
+  enqueueTheatreCues(sql, store, room, now);
 }
 
 export function completeScheduledTroll(
@@ -895,6 +901,26 @@ function announceStart(
   voiceMedia: string | null,
   now: number,
 ): void {
+  if (definition.kind === "fake-exit") {
+    const nickname = nicknameOf(sql, targetId) ?? "A player";
+    // The stage reads "<label> <asset>.", so the asset must not give the joke away.
+    enqueueCue(sql, store, room, effectId, `${nickname} has left the party.`, "Breaking news", now, {
+      durationMs: 3_500,
+    });
+    enqueueCue(sql, store, room, effectId, `Only joking. ${nickname} is still here.`, "Breaking news", now, {
+      durationMs: 3_000,
+    });
+    return;
+  }
+  if (definition.kind === "zoom-photo") {
+    const mediaId = zoomPhotoFor(sql, targetId);
+    const nickname = nicknameOf(sql, targetId) ?? "A player";
+    enqueueCue(sql, store, room, effectId, `${nickname}, up close.`, zoomAssetLabel, now, {
+      ...(mediaId ? { mediaId, mediaKind: "photo" as const } : {}),
+      durationMs: 7_000,
+    });
+    return;
+  }
   if (definition.announce === "now") {
     enqueueCue(
       sql,
@@ -1047,6 +1073,87 @@ function enqueueThemeCues(
       },
     );
   }
+}
+
+/**
+ * Stage theatre that waits for its moment: an instant replay of the target's
+ * answer at the reveal, and a call for a speech at the scores. Each plays once
+ * and then ends.
+ */
+function enqueueTheatreCues(
+  sql: SqlStorage,
+  store: GameStore,
+  room: RoomClock,
+  now: number,
+): void {
+  const due = room.phase === "reveal" ? "replay" : room.phase === "scores" ? "speech" : null;
+  if (!due) {
+    return;
+  }
+  for (const effect of readOpen(sql)) {
+    if (
+      effect.kind !== due ||
+      effect.status !== "active" ||
+      effect.question_index !== room.questionIndex
+    ) {
+      continue;
+    }
+    const nickname = nicknameOf(sql, effect.target_id) ?? "A player";
+    const label =
+      due === "replay"
+        ? replayLine(sql, room, effect.target_id, nickname)
+        : `${nickname}, the floor is yours.`;
+    // Read on stage as "<label> <asset>."
+    const asset = due === "replay" ? "Instant replay" : "Speech! Speech!";
+    enqueueCue(sql, store, room, effect.effect_id, label, asset, now, {
+      questionIndex: room.questionIndex,
+      durationMs: due === "speech" ? 8_000 : 5_000,
+    });
+    closeEffect(sql, effect.effect_id, "expired", now);
+  }
+}
+
+/** What the target went with on this choice question. Not judged: the reveal does that. */
+function replayLine(sql: SqlStorage, room: RoomClock, playerId: string, nickname: string): string {
+  const question = questionFor(room);
+  const answer = sql
+    .exec<{ option_id: string }>(
+      `SELECT option_id FROM choice_answer WHERE player_id = ? AND question_id = ?`,
+      playerId,
+      question?.id ?? "",
+    )
+    .toArray()[0];
+  const option =
+    question?.kind === "choice"
+      ? question.options.find((item) => item.id === answer?.option_id)
+      : undefined;
+  return (
+    option
+      ? `${nickname} went with “${option.label}”.`
+      : `${nickname} didn't answer at all.`
+  ).slice(0, 120);
+}
+
+/**
+ * The target's most recent photo the stage may show: a question photo, their
+ * driver face, or a wall photo that has been on screen. Hidden photos never.
+ */
+export function zoomPhotoFor(sql: SqlStorage, playerId: string): string | null {
+  return (
+    sql
+      .exec<{ media_id: string }>(
+        `SELECT media_upload.media_id FROM media_upload
+         LEFT JOIN wall_post ON wall_post.media_id = media_upload.media_id
+         WHERE media_upload.player_id = ? AND media_upload.status = 'accepted'
+           AND media_upload.hidden = 0 AND media_upload.kind = 'photo'
+           AND media_upload.media_id IS NOT NULL
+           AND (media_upload.purpose IN ('round', 'face')
+                OR wall_post.status IN ('showing', 'shown'))
+         ORDER BY media_upload.created_at DESC LIMIT 1`,
+        playerId,
+      )
+      .toArray()[0]?.media_id ?? null
+  );
 }
 
 export function enqueuePhotoCue(

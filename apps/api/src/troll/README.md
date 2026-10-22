@@ -48,7 +48,6 @@ These stay in the catalogue and are rejected if a phone asks for them. They are 
 
 | Group              | Not built                                                                                                                                                                        |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stage theatre      | Replay of a bad answer, speech, fake departure, zoomed photo                                                                                                                     |
 | Scoring            | Misattributed answer, public vote, shared round score, steal points, redirect points                                                                                             |
 
 ## Phone gags
@@ -102,3 +101,16 @@ The silly name and Guest 14 go through `displayNickname`, so every screen that s
 | Silly name      | Transient | A name like "Captain Wrong" on every screen for 45 seconds       |
 | Guest 14        | Transient | "Guest 14" on every screen for 45 seconds                        |
 | Fake last place | Transient | The target's phone shows them last below real players' names     |
+
+## Stage theatre
+
+Built on the stage cue queue. The stage reads a cue as "<label> <asset>.", so asset labels never give a joke away.
+
+| Effect           | When it plays                     | What the stage shows                                                     |
+| ---------------- | --------------------------------- | ------------------------------------------------------------------------ |
+| Instant replay   | The reveal of that choice question | "Amina went with “Pink”." (not judged: the reveal does that)            |
+| Speech!          | The scores after that question    | "Amina, the floor is yours." for 8 seconds                               |
+| Fake exit        | Straight away                     | "Amina has left the party.", then "Only joking." The phone plays along   |
+| Zoom and enhance | Straight away                     | The target's latest photo the stage may show, zooming slowly in          |
+
+Replay and speech use the persistent slot, wait for their phase in `enqueueTheatreCues` (run by `settleTrolls`), play once and end. `zoomPhotoFor` takes a question photo, driver face, or a wall photo that has been on screen, never a hidden or pending one; with none, the room refuses the troll and the token is not spent.

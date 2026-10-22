@@ -831,6 +831,9 @@ export const playSnapshotSchema = z
 
 export type PlaySnapshot = z.infer<typeof playSnapshotSchema>;
 
+/** The stage zooms slowly into a troll cue photo with this asset label. */
+export const trollZoomCueLabel = "Zoom and enhance";
+
 /** Every troll the server can run. The API catalogue holds their rules. */
 export const trollKinds = [
   "invasion",
@@ -873,6 +876,10 @@ export const trollKinds = [
   "temp-nickname",
   "guest-14",
   "fake-last",
+  "replay",
+  "speech",
+  "fake-exit",
+  "zoom-photo",
 ] as const;
 
 export const trollKindSchema = z.enum(trollKinds);

@@ -84,6 +84,9 @@ const targetLine: Partial<Record<string, string>> = {
   theme: "You have a theme tune now. It plays whenever the scores come up.",
   "temp-nickname": "You have a new name on every screen for a while. Your points are safe.",
   "guest-14": "You are Guest 14 on every screen for a while. Your points are safe.",
+  replay: "Your answer will be replayed on the big screen at the reveal.",
+  speech: "Get ready: the big screen will ask you for a speech at the scores.",
+  "zoom-photo": "One of your photos is on the big screen. Up close.",
 };
 
 /** The troller's name and driver face, from the shared player list. */

@@ -252,3 +252,30 @@
 .projector-cue .text-3xl {
   font-size: 40px;
 }
+
+/* Zoom and enhance troll: the cue photo creeps in to the middle. */
+.stage-zoom-photo {
+  animation: stage-zoom 6.5s ease-in both;
+  transform-origin: 50% 45%;
+}
+
+@keyframes stage-zoom {
+  from {
+    scale: 1;
+  }
+  to {
+    scale: 3.2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-zoom-photo {
+    animation: none;
+  }
+}
+
+.stage-zoom-frame {
+  overflow: hidden;
+  max-height: 40vh;
+  border-radius: 1rem;
+}

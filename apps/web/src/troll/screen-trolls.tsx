@@ -16,7 +16,7 @@ import {
   Overheating,
   ScreenRecording,
 } from "./chrome-trolls";
-import { FakeLastPlace } from "./identity-trolls";
+import { FakeExit, FakeLastPlace } from "./identity-trolls";
 import {
   Autocorrect,
   CharacterLimit,
@@ -63,6 +63,7 @@ const screenKinds = [
   "char-limit",
   "haptic-storm",
   "fake-last",
+  "fake-exit",
 ] as const;
 
 export type ScreenTrollKind = (typeof screenKinds)[number];
@@ -130,6 +131,8 @@ export function ScreenTroll({
       return <HapticStorm label={label} />;
     case "fake-last":
       return <FakeLastPlace label={label} others={others} />;
+    case "fake-exit":
+      return <FakeExit label={label} />;
     case "netanyahu":
       return <NetanyahuFlood label={label} />;
     case "australia":

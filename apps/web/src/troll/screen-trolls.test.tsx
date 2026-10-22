@@ -93,6 +93,20 @@ describe("screen trolls", () => {
     expect(rows).toEqual(["1.Amina", "2.Bilal", "3.Chen", "LASTYou"]);
   });
 
+  it("tells the target they have left, then that it was a joke", () => {
+    vi.useFakeTimers();
+    try {
+      render(<ScreenTroll kind="fake-exit" label="You have left the party" escape={null} />);
+      expect(screen.getByText("You have left the party")).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(3_600);
+      });
+      expect(screen.getByText("Only joking 😜")).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("draws a shattered screen that can be dismissed", () => {
     const onEscape = vi.fn();
     render(

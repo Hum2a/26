@@ -1,4 +1,4 @@
-import { trollKinds } from "@26/shared";
+import { trollKinds, trollZoomCueLabel } from "@26/shared";
 import type { RoomPhase } from "../room/lifecycle.ts";
 
 export const implementedTrollKinds = trollKinds;
@@ -10,6 +10,9 @@ export const implementedTrollKinds = trollKinds;
 export const demoStingAsset = "/assets/demo-sting.wav";
 
 export const themeCueCap = 4;
+
+/** The stage zooms slowly into a cue photo with this asset label. */
+export const zoomAssetLabel = trollZoomCueLabel;
 export const draftGapMs = 200;
 
 export type TrollKind = (typeof implementedTrollKinds)[number];
@@ -252,6 +255,27 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     ...screenTroll("fake-last", "Fake last place", "You are last. Apparently.", 8_000),
     phases: ["intro", "prompt", "collect", "vote", "predict", "reveal", "scores"],
   },
+  replay: {
+    ...screenTroll("replay", "Instant replay", "Your answer, on the big screen", null),
+    slot: "persistent",
+    phases: ["collect", "vote", "predict"],
+    announce: "reveal",
+    questionKinds: ["choice"],
+  },
+  speech: {
+    ...screenTroll("speech", "Speech!", "The floor is yours at the scores", null),
+    slot: "persistent",
+    phases: ["prompt", "collect", "vote", "predict", "reveal"],
+    announce: "scores",
+  },
+  "fake-exit": {
+    ...screenTroll("fake-exit", "Fake exit", "You have left the party", 7_000),
+    phases: ["intro", "prompt", "collect", "vote", "predict", "reveal", "scores"],
+  },
+  "zoom-photo": {
+    ...screenTroll("zoom-photo", "Zoom and enhance", zoomAssetLabel, 7_000),
+    phases: ["intro", "prompt", "collect", "vote", "predict", "reveal", "scores"],
+  },
   "haptic-storm": {
     ...screenTroll("haptic-storm", "Haptics storm", "Phone won't stop buzzing", 10_000),
     phases: ["collect", "vote", "predict"],
@@ -287,7 +311,7 @@ function screenTroll(
   kind: TrollKind,
   label: string,
   assetLabel: string,
-  durationMs: number,
+  durationMs: number | null,
   escape: string | null = null,
 ): TrollDefinition {
   return {

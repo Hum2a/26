@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { entertainmentCueDecision, type LobbySnapshot } from "@26/shared";
+import { entertainmentCueDecision, trollZoomCueLabel, type LobbySnapshot } from "@26/shared";
 import { withClientApiKey } from "../api/client-key.ts";
 import { stageShow } from "./audio";
 
@@ -91,6 +91,7 @@ export function StageSound({
               src={withClientApiKey(
                 `/api/rooms/${gameId}/media/${announcement.mediaId}`,
               )}
+              zoom={announcement.assetLabel === trollZoomCueLabel}
             />
           ) : null}
         </div>
@@ -99,19 +100,22 @@ export function StageSound({
   );
 }
 
-function CuePhoto({ src }: { src: string }) {
+/** A cue photo. A zoom-and-enhance troll creeps slowly in to the middle. */
+function CuePhoto({ src, zoom = false }: { src: string; zoom?: boolean }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return <p>This photo did not load. The caption stays.</p>;
   }
-  return (
+  const image = (
     <img
       alt="Stage caption"
-      className="max-h-[40vh] w-full object-contain"
+      className={`max-h-[40vh] w-full object-contain${zoom ? " stage-zoom-photo" : ""}`}
       src={src}
       onError={() => setFailed(true)}
     />
   );
+  // The frame clips the zoom so it never spills over the rest of the stage.
+  return zoom ? <div className="stage-zoom-frame">{image}</div> : image;
 }
 
 function remember(

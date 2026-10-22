@@ -1,4 +1,29 @@
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
+
+/** "You have left the party", then the reveal that it's a joke. */
+export function FakeExit({ label }: { label: string }) {
+  const [joking, setJoking] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setJoking(true), 3_500);
+    return () => window.clearTimeout(timer);
+  }, []);
+  return (
+    <div className="troll-cover" role="alert" aria-label={label}>
+      {joking ? (
+        <>
+          <p className="troll-cover-title">Only joking 😜</p>
+          <p>You're still here. The whole room just watched you leave, though.</p>
+        </>
+      ) : (
+        <>
+          <p className="troll-cover-title">You have left the party</p>
+          <p>Thanks for playing. Your session has ended.</p>
+        </>
+      )}
+    </div>
+  );
+}
 
 /**
  * Identity gags on the target's own phone. The silly name and Guest 14 are
