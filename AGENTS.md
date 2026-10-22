@@ -338,6 +338,7 @@ A skin family also has a deep layer in `apps/web/src/theme/deep-skins.ts`, drawn
 - **Heading.** How question and page titles are dressed: `shadow-stack`, `glow`, `gradient`, `highlighter`, `prompt`, `ransom`, `stamp`, `marquee` or `underline`. The text must stay as readable as plain.
 - **Motion.** The `--ease-party` curve and how a panel arrives, once: `snappy`, `springy`, `floaty`, `glitchy`, `cinematic` or `mechanical`.
 - **Align.** Headings `left` or `center`.
+- **Phone.** The same control and panel values dress the guest phone: the phone bar and dock, choice tiles and their letter marks, the picked state, the slider thumb and track, and text fields. A new control or panel value needs its phone rules too, and an option's text stays upright and on one layer.
 
 Choose the combination for the idea, not the last family. A new value goes in both `deep-skins.ts` and `theme-deep.css`, built only from the theme's colour variables. Reduced motion stops every scene and texture animation, turns panel arrivals into a short fade, and turns off glass blur.
 

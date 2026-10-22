@@ -1159,6 +1159,416 @@ html[data-align="center"] :is(.phone-prompt, .stage-prompt, .entry-heading) {
   justify-items: center;
 }
 
+/* --------------------------------------------------------------- Phone -- */
+/* The guest phone: the bar, the dock, choice tiles, their letter marks, the
+   slider and text fields. Keyed by the same control and panel values, so a
+   phone in a family feels like the same product as its stage. */
+
+/* Phone bar and dock dress like the family's panels. */
+html[data-panel="glass"] :is(.phone-bar, .phone-dock:not(:empty)) {
+  background: color-mix(in srgb, var(--background) 55%, transparent);
+  backdrop-filter: blur(12px) saturate(140%);
+}
+html[data-panel="double"] .phone-bar {
+  border-bottom: 4px double var(--accent);
+}
+html[data-panel="double"] .phone-dock:not(:empty) {
+  border-top: 4px double var(--accent);
+}
+html[data-panel="taped"] .phone-bar {
+  border-bottom: 3px solid var(--foreground);
+  background: color-mix(in srgb, var(--highlight) 22%, var(--background));
+}
+html[data-panel="taped"] .phone-dock:not(:empty) {
+  border-top: 3px solid var(--foreground);
+}
+html[data-panel="terminal"] .phone-bar {
+  background: color-mix(in srgb, var(--accent) 10%, var(--background));
+  border-bottom-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+html[data-panel="terminal"] .phone-bar::before {
+  content: "● ● ●";
+  order: -1;
+  font: 0.7rem ui-monospace, Consolas, monospace;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+}
+html[data-panel="terminal"] .phone-dock:not(:empty)::before {
+  content: "$ ready";
+  font: 0.75rem ui-monospace, Consolas, monospace;
+  color: var(--muted);
+}
+html[data-panel="tilted"] .phone-bar {
+  border-bottom: 3px solid var(--foreground);
+  box-shadow: 0 5px 0 var(--accent);
+}
+html[data-panel="receipt"] :is(.phone-bar, .phone-dock:not(:empty)) {
+  border-style: dashed;
+  border-color: var(--muted);
+}
+html[data-panel="notebook"] .phone-bar {
+  border-bottom: 2px solid color-mix(in srgb, var(--accent) 50%, transparent);
+}
+html[data-panel="notebook"] .phone-scroll {
+  background-image: linear-gradient(
+    to right,
+    transparent 0.55rem,
+    color-mix(in srgb, var(--highlight) 45%, transparent) 0.55rem 0.65rem,
+    transparent 0.65rem
+  );
+}
+html[data-panel="jagged"] .phone-bar {
+  border-bottom: 0;
+  background: linear-gradient(
+    172deg,
+    color-mix(in srgb, var(--accent) 28%, var(--background)) 0 78%,
+    transparent 78.5%
+  );
+  padding-bottom: 1.4rem;
+}
+html[data-panel="jagged"] .phone-dock:not(:empty) {
+  border-top: 0;
+  clip-path: polygon(0 0.6rem, 100% 0, 100% 100%, 0 100%);
+  padding-top: 1.35rem;
+}
+html[data-panel="scoreboard"] :is(.phone-bar, .phone-dock:not(:empty)) {
+  border-color: color-mix(in srgb, var(--foreground) 25%, transparent);
+  border-width: 3px;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--foreground) 8%, transparent) 1px,
+    transparent 1.5px
+  );
+  background-size: 5px 5px;
+}
+html[data-panel="polaroid"] .phone-bar {
+  border-bottom: 0;
+  background: var(--surface);
+  color: var(--surface-foreground);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--background) 40%, transparent);
+}
+
+/* Letter marks on choice tiles. */
+html[data-control="neon"] .question-choice-mark {
+  border-radius: 999px;
+  border-color: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+html[data-control="bevel"] .question-choice-mark {
+  border: 0;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle at 35% 30%,
+    color-mix(in srgb, var(--foreground) 45%, var(--highlight)),
+    var(--highlight) 60%
+  );
+  color: var(--highlight-foreground);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--background) 60%, transparent);
+}
+html[data-control="hard-shadow"] .question-choice-mark {
+  border: 2px solid currentColor;
+  border-radius: 0;
+  font-weight: 900;
+  box-shadow: 2px 2px 0 currentColor;
+}
+html[data-control="slant"] .question-choice-mark {
+  border: 0;
+  border-radius: 0;
+  background: var(--foreground);
+  color: var(--background);
+  clip-path: polygon(12% 0, 100% 0, 88% 100%, 0 100%);
+  font-weight: 900;
+}
+html[data-control="bracket"] .question-choice-mark {
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  border: 0;
+  font-family: var(--font-sans);
+}
+html[data-control="bracket"] .question-choice-mark::after {
+  content: ")";
+}
+html[data-control="scoreboard"] .question-choice-mark {
+  border: 0;
+  border-radius: 0.15rem;
+  background: var(--background);
+  color: var(--highlight);
+  font-family: ui-monospace, Consolas, monospace;
+  text-shadow: 0 0 6px color-mix(in srgb, var(--highlight) 70%, transparent);
+}
+html[data-control="stamp"] .question-choice-mark {
+  border: 2px dashed currentColor;
+  border-radius: 999px;
+  rotate: -8deg;
+}
+html[data-control="pill-glass"] .question-choice-mark {
+  border-radius: 999px;
+  border-color: color-mix(in srgb, var(--foreground) 35%, transparent);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 30%, transparent),
+    transparent
+  );
+}
+
+/* Choice tiles: fixes where a control shape fights a two-line tile, and a
+   picked state with the family's own feel. */
+html[data-control="bracket"] .option-button::before,
+html[data-control="bracket"] .option-button::after {
+  content: "";
+  position: absolute;
+  width: 0.7rem;
+  height: 0.7rem;
+  opacity: 0.8;
+  pointer-events: none;
+}
+html[data-control="bracket"] .option-button {
+  position: relative;
+}
+html[data-control="bracket"] .option-button::before {
+  top: 0.35rem;
+  left: 0.35rem;
+  border-top: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+}
+html[data-control="bracket"] .option-button::after {
+  right: 0.35rem;
+  bottom: 0.35rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+}
+html[data-control="bracket"] .option-button[aria-pressed="true"] .option-text::before {
+  content: "> ";
+}
+
+/* Text inside a slanted option stands upright; big tiles lean less. */
+html[data-control="slant"] .option-button > * {
+  transform: skewX(12deg);
+}
+html[data-control="slant"] .question-choice-grid .option-button {
+  transform: skewX(-6deg);
+}
+html[data-control="slant"] .question-choice-grid .option-button > * {
+  transform: skewX(6deg);
+}
+
+html[data-control="neon"] .option-button[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 28px color-mix(in srgb, var(--accent) 75%, transparent),
+    inset 0 0 18px color-mix(in srgb, var(--foreground) 25%, transparent);
+}
+html[data-control="hard-shadow"] .option-button[aria-pressed="true"] {
+  translate: 3px 3px;
+  box-shadow: 2px 2px 0 var(--foreground);
+}
+html[data-control="bevel"] .option-button[aria-pressed="true"] {
+  box-shadow:
+    inset 0 3px 6px color-mix(in srgb, var(--background) 45%, transparent),
+    0 1px 0 color-mix(in srgb, var(--foreground) 30%, transparent);
+}
+html[data-control="scoreboard"] .option-button[aria-pressed="true"] {
+  box-shadow:
+    inset 0 0 0 2px var(--highlight),
+    0 0 16px color-mix(in srgb, var(--highlight) 45%, transparent);
+}
+html[data-control="stamp"] .option-button {
+  position: relative;
+}
+html[data-control="stamp"] .option-button[aria-pressed="true"]::after {
+  content: "Picked";
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  padding: 0.05rem 0.35rem;
+  border: 2px solid currentColor;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  rotate: 10deg;
+  opacity: 0.85;
+  pointer-events: none;
+}
+html[data-control="pill-glass"] .question-choice-grid .option-button {
+  border-radius: 1.6rem;
+}
+
+/* Slider: the thumb and track take the control's shape. */
+html[data-control="neon"] .slider-range::-webkit-slider-runnable-track {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+html[data-control="neon"] .slider-range::-webkit-slider-thumb {
+  background: var(--background);
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 18px var(--accent);
+}
+html[data-control="neon"] .slider-range::-moz-range-thumb {
+  background: var(--background);
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 18px var(--accent);
+}
+
+html[data-control="bevel"] .slider-range::-webkit-slider-runnable-track {
+  box-shadow: inset 0 2px 3px color-mix(in srgb, var(--background) 60%, transparent);
+}
+html[data-control="bevel"] .slider-range::-webkit-slider-thumb {
+  background: radial-gradient(
+    circle at 35% 30%,
+    color-mix(in srgb, var(--foreground) 50%, var(--accent)),
+    var(--accent) 65%
+  );
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--background) 60%, transparent);
+}
+
+html[data-control="hard-shadow"] .slider-range::-webkit-slider-runnable-track {
+  height: 0.8rem;
+  border: 2px solid var(--foreground);
+  border-radius: 0;
+}
+html[data-control="hard-shadow"] .slider-range::-webkit-slider-thumb {
+  margin-top: -1.15rem;
+  border: 3px solid var(--foreground);
+  border-radius: 0.3rem;
+  box-shadow: 4px 4px 0 var(--foreground);
+}
+html[data-control="hard-shadow"] .slider-range::-moz-range-thumb {
+  border: 3px solid var(--foreground);
+  border-radius: 0.3rem;
+  box-shadow: 4px 4px 0 var(--foreground);
+}
+
+html[data-control="slant"] .slider-range::-webkit-slider-runnable-track {
+  border-radius: 0;
+  background: linear-gradient(
+    100deg,
+    var(--highlight) 0 50%,
+    var(--line) 50%
+  );
+  background-size: 14px 100%;
+}
+html[data-control="slant"] .slider-range::-webkit-slider-thumb {
+  border-radius: 0;
+  clip-path: polygon(25% 0, 100% 0, 75% 100%, 0 100%);
+  box-shadow: none;
+}
+html[data-control="slant"] .slider-range::-moz-range-thumb {
+  border-radius: 0;
+  clip-path: polygon(25% 0, 100% 0, 75% 100%, 0 100%);
+  box-shadow: none;
+}
+
+html[data-control="bracket"] .slider-range::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 0;
+  background: repeating-linear-gradient(
+    to right,
+    var(--muted) 0 6px,
+    transparent 6px 10px
+  );
+}
+html[data-control="bracket"] .slider-range::-webkit-slider-thumb {
+  width: 1.5rem;
+  height: 2.5rem;
+  margin-top: -1.2rem;
+  border-radius: 0;
+  box-shadow: none;
+}
+html[data-control="bracket"] .slider-range::-moz-range-thumb {
+  width: 1.5rem;
+  height: 2.5rem;
+  border-radius: 0;
+  box-shadow: none;
+}
+html[data-control="bracket"] .slider-readout::before {
+  content: "= ";
+  color: var(--muted);
+}
+
+html[data-control="scoreboard"] .slider-range::-webkit-slider-runnable-track {
+  border-radius: 0;
+  background: radial-gradient(var(--highlight) 1.5px, transparent 2px) 0 50% / 8px 100%;
+}
+html[data-control="scoreboard"] .slider-range::-webkit-slider-thumb {
+  border-radius: 0.2rem;
+  background: var(--highlight);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--highlight) 60%, transparent);
+}
+html[data-control="scoreboard"] .slider-range::-moz-range-thumb {
+  border-radius: 0.2rem;
+  background: var(--highlight);
+}
+html[data-control="scoreboard"] .slider-readout {
+  font-family: ui-monospace, Consolas, monospace;
+  color: var(--highlight);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--highlight) 55%, transparent);
+}
+
+html[data-control="stamp"] .slider-range::-webkit-slider-thumb {
+  border: 3px dashed var(--foreground);
+  box-shadow: none;
+}
+html[data-control="stamp"] .slider-range::-moz-range-thumb {
+  border: 3px dashed var(--foreground);
+  box-shadow: none;
+}
+
+html[data-control="pill-glass"] .slider-range::-webkit-slider-runnable-track {
+  height: 0.9rem;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 25%, var(--line)),
+    var(--line)
+  );
+}
+html[data-control="pill-glass"] .slider-range::-webkit-slider-thumb {
+  margin-top: -0.95rem;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 45%, var(--accent)),
+    var(--accent) 60%
+  );
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--foreground) 50%, transparent),
+    0 6px 16px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* Text fields. */
+html[data-control="neon"] .skin-field:focus {
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+html[data-control="bevel"] .skin-field {
+  box-shadow: inset 0 2px 4px color-mix(in srgb, var(--background) 55%, transparent);
+}
+html[data-control="hard-shadow"] .skin-field {
+  border: 3px solid var(--foreground);
+  box-shadow: 4px 4px 0 var(--foreground);
+}
+html[data-control="slant"] .skin-field {
+  border-width: 0 0 3px;
+  border-color: var(--highlight);
+  border-radius: 0;
+  font-style: italic;
+}
+html[data-control="bracket"] .skin-field {
+  border-width: 0 0 2px;
+  border-radius: 0;
+  font-family: var(--font-sans);
+  caret-color: var(--accent);
+}
+html[data-control="scoreboard"] .skin-field {
+  border-radius: 0.2rem;
+  background: color-mix(in srgb, var(--background) 80%, black);
+  font-family: ui-monospace, Consolas, monospace;
+  letter-spacing: 0.05em;
+}
+html[data-control="stamp"] .skin-field {
+  border: 2px dashed currentColor;
+}
+html[data-control="pill-glass"] .skin-field {
+  border-radius: 999px;
+  box-shadow: inset 0 2px 6px color-mix(in srgb, var(--background) 35%, transparent);
+}
+
 /* ------------------------------------------------------ Reduced motion -- */
 
 @media (prefers-reduced-motion: reduce) {
