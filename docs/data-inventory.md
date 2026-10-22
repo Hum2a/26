@@ -55,7 +55,8 @@ Every answer table, plus `name_reaction` and `troll_effect`, also stores the `de
 |---|---|
 | `media_upload` | One row per photo or voice upload: owner, purpose (`round`, `face` or `wall`), R2 keys, status, size in bytes, width and height or duration, content type, whether the host hid it |
 | `wall_post` | One row per photo sent to the photo wall: the upload, the sender, caption (up to 60 characters), frame, whether to keep it in the results gallery, status (pending, queued, showing, shown, declined or removed) and its times |
-| `wall_reaction` | Reaction counts per wall photo and emoji. Counts only, not who reacted. |
+| `wall_reaction` | Reaction totals per wall photo and emoji, shown on the stage. |
+| `wall_reactor` | How many reactions each guest has sent to each wall photo, and when the last one was, but not which emoji. Used only to enforce the per-guest cap of 20; it is never shown. |
 | `wall_setting` | The host's photo wall settings, including which players are muted |
 
 The files themselves are in R2 (see below).

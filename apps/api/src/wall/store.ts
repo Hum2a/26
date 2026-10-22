@@ -1,6 +1,7 @@
 import {
   cleanWallCaption,
   wallFrameSchema,
+  wallReactions,
   type WallFrame,
   type WallPostStatus,
 } from "@26/shared";
@@ -12,6 +13,10 @@ import {
   wallMediaMessage,
   wallMutedMessage,
   wallPostMissingMessage,
+  wallReactionClosedMessage,
+  wallReactionGapMs,
+  wallReactionLimitMessage,
+  wallReactionsPerPhoto,
   wallSentMessage,
   wallWaitingMessage,
   wallWaitingPerPlayer,
@@ -235,34 +240,61 @@ export function readWallPosts(sql: SqlStorage, playerId?: string): WallPost[] {
 }
 
 /**
- * Who may fetch a wall image. The host sees everything so they can moderate.
- * The owner sees their own. Anyone else, the stage included, only sees a photo
- * that is on screen or has been shown. A pending photo never leaves the room.
+ * One reaction to the photo on screen. Taps closer than `wallReactionGapMs`
+ * are dropped quietly (accepted, not counted), and each guest has at most
+ * `wallReactionsPerPhoto` per photo. Only totals per emoji are kept for the
+ * stage; the per-guest row exists only to enforce the cap.
  */
-export function wallMediaViewable(
+export function reactToWall(
   sql: SqlStorage,
-  mediaId: string,
-  viewer: { role: "control" } | { role: "presentation" } | { role: "guest"; playerId: string },
-): boolean {
-  if (viewer.role === "control") {
-    return true;
+  playerId: string,
+  input: { postId: unknown; reaction: unknown },
+  now: number,
+): Result {
+  if (
+    typeof input.reaction !== "string" ||
+    !(wallReactions as readonly string[]).includes(input.reaction) ||
+    typeof input.postId !== "string"
+  ) {
+    return { ok: false, message: wallReactionClosedMessage };
   }
-  const row = sql
-    .exec<{ player_id: string; status: string | null }>(
-      `SELECT media_upload.player_id, wall_post.status
-       FROM media_upload
-       LEFT JOIN wall_post ON wall_post.media_id = media_upload.media_id
-       WHERE media_upload.media_id = ?`,
-      mediaId,
+  const showing = sql
+    .exec<{ post_id: string }>(
+      `SELECT post_id FROM wall_post WHERE post_id = ? AND status = 'showing'`,
+      input.postId,
     )
     .toArray()[0];
-  if (!row) {
-    return false;
+  if (!showing) {
+    return { ok: false, message: wallReactionClosedMessage };
   }
-  if (viewer.role === "guest" && viewer.playerId === row.player_id) {
-    return true;
+  const mine = sql
+    .exec<{ count: number; last_at: number }>(
+      `SELECT count, last_at FROM wall_reactor WHERE post_id = ? AND player_id = ?`,
+      input.postId,
+      playerId,
+    )
+    .toArray()[0];
+  if (mine && mine.count >= wallReactionsPerPhoto) {
+    return { ok: false, message: wallReactionLimitMessage };
   }
-  return row.status === "showing" || row.status === "shown";
+  if (mine && now - mine.last_at < wallReactionGapMs) {
+    return { ok: true };
+  }
+  sql.exec(
+    `INSERT INTO wall_reactor (post_id, player_id, count, last_at) VALUES (?, ?, 1, ?)
+     ON CONFLICT (post_id, player_id) DO UPDATE SET count = count + 1, last_at = excluded.last_at`,
+    input.postId,
+    playerId,
+    now,
+  );
+  sql.exec(
+    `INSERT INTO wall_reaction (post_id, emoji, count) VALUES (?, ?, 1)
+     ON CONFLICT (post_id, emoji) DO UPDATE SET count = count + 1`,
+    input.postId,
+    input.reaction,
+  );
+  touch(sql);
+  return { ok: true };
 }
 
 function readMuted(json: string): string[] {

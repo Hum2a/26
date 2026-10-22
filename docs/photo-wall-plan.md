@@ -1,6 +1,6 @@
 # Photo wall: implementation plan
 
-Status: phases 1 to 3 built (21 and 22 October 2026). Phases 4 to 9 not started. Defaults chosen: approve first, breaks only, gallery opt-in ticked.
+Status: phases 1 to 9 built (21 and 22 October 2026); see docs/build-progress.md for what was verified. The Playwright spec has not been run. Defaults chosen: approve first, breaks only, gallery opt-in ticked.
 
 Guests send a photo from their phone at any point in the night, and it appears on the projector. It works like the photo feature on a karaoke machine: pick a photo, add a caption and a frame, press send, then watch it drop onto the big screen while the room reacts.
 

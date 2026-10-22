@@ -272,6 +272,13 @@ const scheduleStatements = [
     count INTEGER NOT NULL,
     PRIMARY KEY (post_id, emoji)
   )`,
+  `CREATE TABLE IF NOT EXISTS wall_reactor (
+    post_id TEXT NOT NULL,
+    player_id TEXT NOT NULL,
+    count INTEGER NOT NULL,
+    last_at INTEGER NOT NULL,
+    PRIMARY KEY (post_id, player_id)
+  )`,
   `CREATE TABLE IF NOT EXISTS wall_setting (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     enabled INTEGER NOT NULL,

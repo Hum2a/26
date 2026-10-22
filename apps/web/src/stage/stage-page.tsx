@@ -12,6 +12,7 @@ import { useStageShow } from "./use-stage-show";
 import { StageSound } from "./stage-sound";
 import { stageShow } from "./audio";
 import { StagePresentation } from "./stage-presentation";
+import { StageWall } from "./wall/stage-wall";
 import { usePreloadQuestion } from "../play/preload";
 import "./projector.css";
 
@@ -113,12 +114,17 @@ export function StagePage() {
   return (
     <div className={presenting ? "projector-page is-presenting" : "projector-page"}>
       {presenting && snapshot ? (
-        <StagePresentation
-          snapshot={snapshot}
-          observedAt={observedAt}
-          connected={connected}
-          onSetup={setup}
-        />
+        <>
+          <StagePresentation
+            snapshot={snapshot}
+            observedAt={observedAt}
+            connected={connected}
+            onSetup={setup}
+          />
+          {snapshot.wall && displayEnabled ? (
+            <StageWall wall={snapshot.wall} gameId={snapshot.gameId} phase={snapshot.phase} />
+          ) : null}
+        </>
       ) : (
         <EntryFrame
           wide

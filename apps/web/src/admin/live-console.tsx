@@ -11,6 +11,7 @@ import {
 import { usePhaseCountdown } from "../live/use-phase-countdown";
 import { useAdminRoom, type AdminCommand } from "./room-provider";
 import { CommandFeedback } from "./command-feedback";
+import { WallQuickPanel } from "./wall-page";
 import { RoomExtras } from "./room-extras";
 
 const revealPhases = new Set<RoomPhaseName>(["reveal", "scores", "final", "podium"]);
@@ -318,6 +319,7 @@ export function LiveConsole() {
             {snapshot.play?.explanation ? <p>{snapshot.play.explanation}</p> : null}
           </section>
           <LiveResponses locked={locked} />
+          <WallQuickPanel />
           {snapshot.hostEffects?.length || snapshot.trolls.announcement ? (
             <section className="admin-task-section">
               <h2>On the screens now</h2>

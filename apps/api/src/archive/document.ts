@@ -187,7 +187,19 @@ export function readArchiveDocument(
        JOIN player ON player.player_id = media_upload.player_id
        WHERE media_upload.status = 'accepted'
          AND media_upload.media_id IS NOT NULL
-         AND media_upload.purpose = 'round'
+         AND (
+           media_upload.purpose = 'round'
+           OR (
+             -- Photo wall: only photos that were shown and the guest chose to keep.
+             media_upload.purpose = 'wall'
+             AND EXISTS (
+               SELECT 1 FROM wall_post
+               WHERE wall_post.media_id = media_upload.media_id
+                 AND wall_post.status = 'shown'
+                 AND wall_post.keep = 1
+             )
+           )
+         )
          AND player.client_class = 'guest'`,
     )
     .toArray()

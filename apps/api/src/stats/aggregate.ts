@@ -59,6 +59,8 @@ export type StatsSource = {
   scores: { playerId: string; points: number }[];
   revealedQuestionIds: string[];
   mediaPlayers: { playerId: string; kind: "photo" | "voice" }[];
+  /** Photo wall photos that were shown and not hidden, with their reaction totals. */
+  wallPhotos?: { postId: string; playerId: string; reactions: number }[];
 };
 
 export type StatFact = {
@@ -115,6 +117,7 @@ export function aggregateFacts(source: StatsSource): StatFact[] {
   facts.push(...trollFacts(source));
   facts.push(...reconnectFacts(source));
   facts.push(...mediaFacts(source));
+  facts.push(...wallFacts(source));
   facts.push(...recapFacts(source));
   return facts;
 }
@@ -659,6 +662,38 @@ function mediaFacts(source: StatsSource): StatFact[] {
   ];
 }
 
+/**
+ * Most loved photo wall photo: the most reactions, at least
+ * `wallLovedMinimum`. A tie gives no award rather than an arbitrary winner.
+ */
+export const wallLovedMinimum = 5;
+
+function wallFacts(source: StatsSource): StatFact[] {
+  const people = new Map(guests(source).map((player) => [player.playerId, player]));
+  const photos = (source.wallPhotos ?? []).filter((photo) => people.has(photo.playerId));
+  const sorted = [...photos].sort((left, right) => right.reactions - left.reactions);
+  const [best, second] = sorted;
+  if (!best || best.reactions < wallLovedMinimum || second?.reactions === best.reactions) {
+    return [];
+  }
+  const nickname = people.get(best.playerId)?.nickname ?? "A guest";
+  return [
+    make(source, {
+      id: `wall-loved:${best.postId}`,
+      scope: "game",
+      scopeId: source.gameId,
+      metric: "wall-loved",
+      grouping: `Shown photo wall photos that were not hidden. Reactions are totals across every emoji. At least ${wallLovedMinimum}; a tie has no winner.`,
+      numerator: best.reactions,
+      denominator: photos.length,
+      unknownCount: 0,
+      display: "eligible",
+      labels: [nickname],
+      parts: [{ label: nickname, count: best.reactions }],
+    }),
+  ];
+}
+
 function recapFacts(source: StatsSource): StatFact[] {
   const facts: StatFact[] = [];
   const revealed = new Set(source.revealedQuestionIds);
@@ -784,6 +819,10 @@ function highlightCards(source: StatsSource, facts: StatFact[]): StatCard[] {
   if (reconnect) {
     chosen.push(reconnect);
   }
+  const loved = facts.find((fact) => fact.metric === "wall-loved");
+  if (loved) {
+    chosen.push(loved);
+  }
   const media = facts.find((fact) => fact.metric === "media-players");
   if (media) {
     chosen.push(media);
@@ -875,6 +914,13 @@ function wordFact(
   }
   if (fact.metric === "reconnect-winner") {
     return wordReconnect(fact);
+  }
+  if (fact.metric === "wall-loved") {
+    const nickname = fact.labels[0] ?? "A guest";
+    return {
+      stage: `Most loved photo: ${nickname}'s, with ${fact.numerator} reactions.`,
+      results: `Most loved photo on the wall: ${nickname}'s, with ${fact.numerator} reactions, out of ${fact.denominator} photos shown.`,
+    };
   }
   if (fact.metric === "media-players") {
     return {

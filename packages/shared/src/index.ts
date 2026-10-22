@@ -14,6 +14,7 @@ export {
 } from "./wordle.ts";
 export type { WordleBoard, WordleMark } from "./wordle.ts";
 import { funFactCardSchema, statCardSchema } from "./stats.ts";
+import { wallSnapshotSchema } from "./wall.ts";
 export {
   adminContentSchema,
   adminMediaSchema,
@@ -39,12 +40,17 @@ export {
   wallFrameSchema,
   wallFrames,
   wallPostStatuses,
+  wallQueueOrder,
+  wallReactions,
+  wallSnapshotSchema,
 } from "./wall.ts";
 export type {
   WallEvent,
   WallFrame,
   WallPostStatus,
   WallQueueState,
+  WallReaction,
+  WallSnapshot,
   WallStep,
 } from "./wall.ts";
 export type { FunFactCard, StatCard } from "./stats.ts";
@@ -1002,6 +1008,8 @@ export const lobbySnapshotSchema = z
           .nullable(),
       })
       .strict(),
+    /** Photo wall. Filled per audience; see `wallSnapshotSchema`. */
+    wall: wallSnapshotSchema.optional(),
     connections: z
       .object({
         guests: z.number().int().nonnegative(),

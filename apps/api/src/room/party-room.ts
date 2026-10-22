@@ -152,13 +152,16 @@ import { funFactApplies } from "../stats/fun-facts.ts";
 import { readFunFactSelection } from "../stats/fun-source.ts";
 import { readRoomArchive } from "../archive/schedule.ts";
 import { readRoomDiagnostics } from "./diagnostics.ts";
-import { createWallPost, wallMediaViewable, withdrawWallPost } from "../wall/store.ts";
+import { createWallPost, reactToWall, withdrawWallPost } from "../wall/store.ts";
+import { wallMediaViewable } from "../wall/access.ts";
+import { wallSnapshot } from "../wall/snapshot.ts";
 import { syncWall } from "../wall/queue.ts";
 import type { WallSettingsChange } from "../wall/moderation.ts";
 
 type WallCommand =
   | { name: "wall-post"; mediaId: unknown; caption: unknown; frame: unknown; keep: unknown }
-  | { name: "wall-withdraw"; postId: unknown };
+  | { name: "wall-withdraw"; postId: unknown }
+  | { name: "wall-react"; postId: unknown; reaction: unknown };
 import { adminMedia } from "./admin-media.ts";
 import { scoreSummaryMarkdown } from "./score-summary.ts";
 import { archiveWriterFor, settleArchive } from "../archive/settle.ts";
@@ -2013,6 +2016,14 @@ export class PartyRoom extends DurableObject<Env> {
       });
       return;
     }
+    if (command.name === "wall-react") {
+      await this.acceptGuestValue(ws, attachment, command.requestId, {
+        name: "wall-react",
+        postId: command.postId,
+        reaction: command.reaction,
+      });
+      return;
+    }
     if (command.name === "react") {
       await this.acceptReaction(
         ws,
@@ -2812,7 +2823,11 @@ export class PartyRoom extends DurableObject<Env> {
     });
     this.sendSnapshot(ws);
     if (accepted) {
-      if (command.name === "troll" || command.name === "troll-escape") {
+      if (
+        command.name === "troll" ||
+        command.name === "troll-escape" ||
+        command.name.startsWith("wall-")
+      ) {
         this.broadcast();
       } else {
         this.broadcastFacilitators();
@@ -3220,6 +3235,7 @@ export class PartyRoom extends DurableObject<Env> {
       media: parts.media,
       ...this.publicDraft(audience),
       trolls,
+      wall: wallSnapshot(this.ctx.storage.sql, audience, selfPlayerId, Date.now()),
       ...(audience === "control"
         ? {
             connections: {
@@ -3854,6 +3870,9 @@ function acceptRoundCommand(
   if (command.name === "troll-escape") {
     return escapeTroll(sql, store, playerId, command.effectId, now);
   }
+  if (command.name === "wall-react") {
+    return reactToWall(sql, playerId, command, now);
+  }
   if (command.name === "wall-post" || command.name === "wall-withdraw") {
     const result =
       command.name === "wall-post"
@@ -3915,6 +3934,7 @@ function readCommand(body: unknown):
       keep: unknown;
     }
   | { requestId: string; name: "wall-withdraw"; postId: unknown }
+  | { requestId: string; name: "wall-react"; postId: unknown; reaction: unknown }
   | { requestId: string; name: "react"; targetId: string; reaction: "like" | "dislike" }
   | { requestId: string; name: "driver"; style: unknown; faceMediaId: unknown }
   | { requestId: string; name: "device"; reason: string; report: unknown }
@@ -3994,6 +4014,14 @@ function readCommand(body: unknown):
   }
   if (record.name === "wall-withdraw") {
     return { requestId: record.requestId, name: "wall-withdraw", postId: record.postId };
+  }
+  if (record.name === "wall-react") {
+    return {
+      requestId: record.requestId,
+      name: "wall-react",
+      postId: record.postId,
+      reaction: record.reaction,
+    };
   }
   if (record.name === "troll") {
     const mediaId =

@@ -21,6 +21,7 @@ import { FunFactPhone } from "../play/fun-fact";
 import { WaitingNext } from "../play/WaitingNext";
 import { GuestMedia } from "../media/guest-media";
 import { GuestTrolls } from "../troll/guest-troll";
+import { GuestWall } from "../wall/guest-wall";
 import { ControllerRoot } from "../controller/ControllerRoot";
 import {
   hapticCues,
@@ -605,6 +606,23 @@ export function GuestPage() {
                   </Disclosure>
                 </div>
               </>
+            ) : null}
+            {snapshot?.wall ? (
+              <Disclosure title="📸 Send to the big screen">
+                <GuestWall
+                  wall={snapshot.wall}
+                  gameId={session.gameId}
+                  selfNickname={
+                    snapshot.players.find((player) => player.playerId === session.playerId)
+                      ?.nickname ?? "You"
+                  }
+                  onPost={(post) => socketRef.current?.submitWallPost(post)}
+                  onWithdraw={(postId) => socketRef.current?.submitWallWithdraw(postId)}
+                  onReact={(postId, reaction) =>
+                    socketRef.current?.submitWallReact(postId, reaction)
+                  }
+                />
+              </Disclosure>
             ) : null}
             {snapshot?.recap && snapshot.recap.length > 0 ? (
               <Panel title="Your recap">

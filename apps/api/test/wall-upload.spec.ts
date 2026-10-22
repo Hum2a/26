@@ -11,7 +11,7 @@ import {
   wallSentMessage,
   wallWaitingMessage,
 } from "../src/room/limits.ts";
-import { wallMediaViewable } from "../src/wall/store.ts";
+import { wallMediaViewable } from "../src/wall/access.ts";
 import { phone, posts, setup, upload, wallSettings, type Player, type Stub } from "./wall-support.ts";
 
 /** Moves this player's latest post back past the cooldown. */
@@ -148,7 +148,8 @@ it("keeps a pending photo away from the stage and other guests", async () => {
       };
     });
   expect(await view("pending")).toEqual({ stage: false, host: true });
-  expect(await view("queued")).toEqual({ stage: false, host: true });
+  // The next approved photo may be fetched by the stage so it can preload it.
+  expect(await view("queued")).toEqual({ stage: true, host: true });
   expect(await view("declined")).toEqual({ stage: false, host: true });
   expect(await view("showing")).toEqual({ stage: true, host: true });
   expect((await read(bilal)).ok).toBe(true);

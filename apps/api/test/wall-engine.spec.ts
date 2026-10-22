@@ -90,7 +90,7 @@ describe("photo wall queue", () => {
 
   it("waits for a break during questions, but lets the current photo finish", () => {
     const queued = [post("a", "amina", 10)];
-    for (const phase of ["prompt", "predict", "collect", "vote", "reveal"]) {
+    for (const phase of ["prompt", "predict", "collect", "vote", "reveal", "facts"]) {
       expect(nextWall(state({ phase, queued }), "tick", 1_000).started).toBeNull();
     }
     for (const phase of ["lobby", "intro", "scores", "final", "podium"]) {
