@@ -1,3 +1,4 @@
+import { deepSkinFor } from "./deep-skins";
 import { skinFor } from "./skins";
 import { DEFAULT_THEME_ID, isThemeId, themes, type ThemeId } from "./themes";
 
@@ -47,11 +48,36 @@ export function applyTheme(id: ThemeId) {
   } else {
     root.dataset.motifIcon = skin.icon;
   }
+  const deep = deepSkinFor(skin);
+  root.dataset.type = deep.type;
+  root.dataset.scene = deep.scene;
+  root.dataset.texture = deep.texture;
+  root.dataset.control = deep.control;
+  root.dataset.panel = deep.panel;
+  root.dataset.heading = deep.heading;
+  root.dataset.motion = deep.motion;
+  root.dataset.align = deep.align;
+  ensureTextureLayer();
   root.style.colorScheme = theme.colorScheme;
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute("content", theme.colors.background);
   rememberTheme(id);
+}
+
+/**
+ * One full-screen texture layer above the page (grain, scanlines, a vignette),
+ * like a shader. It is faint, ignores the pointer and is hidden from assistive
+ * technology. CSS decides what it draws from `data-texture`.
+ */
+function ensureTextureLayer() {
+  if (document.querySelector(".deep-texture")) {
+    return;
+  }
+  const layer = document.createElement("div");
+  layer.className = "deep-texture";
+  layer.setAttribute("aria-hidden", "true");
+  document.body.append(layer);
 }
 
 export function activeThemeId(): ThemeId {

@@ -1,7 +1,10 @@
 /*
  * Skin chrome. Grounds, corners, marks, and finishes use the palette variables
  * already set by the theme. Nothing here introduces a new colour.
+ * The deep layer (type, scene, texture, controls, panels, headings, motion)
+ * is in theme-deep.css.
  */
+@import "./theme-deep.css";
 
 :root {
   --radius-control: 999px;

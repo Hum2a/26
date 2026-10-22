@@ -55,7 +55,21 @@ The skin changes the shared frame only:
 - **Finish.** How solid the frame is: `solid`, `glass`, `cartoon`, `realistic`, `minimal`, or `extravagant`. Pick the one that fits the idea. `26 basic` stays `solid`. Glass keeps a readable plate over the ground, and reduced motion turns its blur off. Cartoon is a thick outline and a hard shadow, with no bounce. Realistic is depth only. A finish never outlines the heading, never covers an option, and never loops.
 - **Motif.** An optional static icon on the ground: `none`, `crest`, `scatter`, or `bleed`. Use `none` when the ground pattern is already the picture, including `26 basic`. Company marks come from Simple Icons. Other motifs come from Lucide. The icon stays behind the question.
 
-Question flow, scoring, and copy stay put. Patterns are static. Do not add a looping animation on a control. Reduced motion already removes the corner transition.
+Question flow, scoring, and copy stay put. Do not add a looping animation on a control or a question. Reduced motion already removes the corner transition.
+
+## Deep layer
+
+A skin family also has a deep layer in `apps/web/src/theme/deep-skins.ts`, drawn by `theme-deep.css`. It goes beyond the surface, so two themes in different families feel like different products, not recolours. Every family except 26 basic's `plain` needs an entry; `deep-skins.test.ts` fails otherwise.
+
+- **Type.** `grotesk`, `serif`, `mono`, `condensed`, `rounded`, `slab` or `italic`: sets `--font-display` and `--font-sans` and the heading case. Use system font stacks; do not load web fonts from the network.
+- **Scene.** An illustrated background in the ground (spotlights, stars, falling code, an equaliser, a sunburst, confetti, doodles, lasers, hills, a synthwave grid, palms, a notebook, speed lines, shards, cubes, a road, receipts, a pub, a pitch, a globe). Built from the 24 `.deep-scene i` pieces, which carry `--x`, `--y`, `--s`, `--d` and `--r`. A scene may move slowly; keep anything behind a title faint, and keep bright shapes off the left third where titles sit.
+- **Texture.** A faint full-screen layer over the page, like a shader: `grain`, `scanlines`, `crt`, `halftone`, `vignette` or `holo`. It ignores the pointer. Keep it light: the edges of the page carry text, so a vignette darkens corners only.
+- **Control and panel.** The shape, edge and lighting of buttons (`neon`, `bevel`, `hard-shadow`, `slant`, `bracket`, `scoreboard`, `stamp`, `pill-glass`) and cards (`glass`, `double`, `taped`, `terminal`, `tilted`, `receipt`, `notebook`, `jagged`, `scoreboard`, `polaroid`).
+- **Heading.** How question and page titles are dressed: `shadow-stack`, `glow`, `gradient`, `highlighter`, `prompt`, `ransom`, `stamp`, `marquee` or `underline`. The text must stay as readable as plain.
+- **Motion.** The `--ease-party` curve and how a panel arrives, once: `snappy`, `springy`, `floaty`, `glitchy`, `cinematic` or `mechanical`.
+- **Align.** Headings `left` or `center`.
+
+Choose the combination for the idea, not the last family. A new value goes in both `deep-skins.ts` and `theme-deep.css`, built only from the theme's colour variables. Reduced motion stops every scene and texture animation, turns panel arrivals into a short fade, and turns off glass blur.
 
 ## Icons
 
@@ -96,5 +110,5 @@ The favicon stays the 26 basic mark.
 ## Check
 
 - `npx tsc -b apps/web`
-- `npx vitest run src/theme/skins.test.ts` in `apps/web`
+- `npx vitest run src/theme` in `apps/web` (skins and deep skins)
 - Preview with `?theme=its-id` and confirm the ground, corners, mark, and finish are visible while the question text stays readable. If the theme has a motif, the icon shows in the margin and a point on the heading still hits the heading.
