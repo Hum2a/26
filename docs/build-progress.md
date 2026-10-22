@@ -3382,3 +3382,16 @@ Built a feature registry (`apps/web/src/admin/features.ts`) that drives the admi
 New or extended views: room overview cards for every feature with live status and a "Try it" line; `/admin/rooms/:gameId/analytics`; troll history on the room Trolls page (`trollHistory` in the host snapshot only, from `trollHistoryRows`) with Cancel; a photo wall frame preview using a shipped sample picture. Page titles now use the registry labels (for example "Results" and "Health").
 
 Checks: `npm run typecheck` passed; all 19 web admin test files (102 tests, including the new `analytics-page` and `features` tests) passed; `wall-snapshot` (with the new host-only troll history test) and `troll` specs (7) passed. Not run: the full suites and Playwright. Nothing is committed.
+
+
+## 22 October 2026 — trolls finished
+
+Every troll that was a placeholder or an idea in `apps/api/src/troll/README.md` is now built, in six commits on master:
+1. **Placeholders made real.** Invasion (the troller's driver face), Call from Mum (Answer or Decline), a shattered screen, generated sponsor lines, and a real theme jingle (`scripts/generate-theme-sting.mjs`).
+2. **Fake phone chrome.** Screen recording, 1% battery, AirDrop spam, overheating, fake audience, always typing.
+3. **Input sabotage, for any question design.** Shuffled answers, Pig Latin, possessed slider, reverse typing, autocorrect, character limit, haptics storm. Also adds `questionKinds`, and `submissionDisrupted` now reads the catalogue flag.
+4. **Identity.** Silly name and Guest 14 via `displayNickname`, and fake last place.
+5. **Stage theatre.** Instant replay, Speech!, fake exit, zoom and enhance.
+6. **Scoring.** Steal, Robin Hood and shared score (`applyPointTransfers`, opt-in per question through `modifiers`), plus public vote and misattributed (stage captions only).
+
+The catalogue now has 50 trolls. Checks: typecheck after every batch; `troll-catalogue`, `troll-identity`, `troll-theatre`, `troll`, `troll-score`, `quiz-score` and `stage-effects` specs passed; web `src/troll` (23 tests), `stage-page` and the admin coverage test passed. Not run: Playwright (including the updated crack step in `quiz.spec.ts`), the full suites, and real phones. No question pack opts in to steal, Robin Hood or share yet.

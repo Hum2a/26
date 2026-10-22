@@ -87,6 +87,11 @@ const targetLine: Partial<Record<string, string>> = {
   replay: "Your answer will be replayed on the big screen at the reveal.",
   speech: "Get ready: the big screen will ask you for a speech at the scores.",
   "zoom-photo": "One of your photos is on the big screen. Up close.",
+  steal: "Someone is stealing half your points for this question.",
+  "robin-hood": "Your points for this question go to whoever is in last place.",
+  share: "You are splitting your points for this question with someone.",
+  "public-vote": "Your vote will be shown on the big screen at the reveal.",
+  misattributed: "At the reveal, the big screen will say you wrote someone else's answer.",
 };
 
 /** The troller's name and driver face, from the shared player list. */

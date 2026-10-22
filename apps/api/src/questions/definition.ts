@@ -83,7 +83,8 @@ export type ChoiceBody = {
   outcome: ChoiceOutcome;
   options: QuestionOption[];
   speedBonus: { maxPoints: number } | null;
-  modifiers?: readonly "double"[];
+  /** Score trolls this question allows. See `scoreModifiers` in the troll catalogue. */
+  modifiers?: readonly ("double" | "steal" | "robin-hood" | "share")[];
   suppressSpeedBonus?: boolean;
 };
 

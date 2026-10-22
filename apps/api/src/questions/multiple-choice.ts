@@ -64,9 +64,10 @@ import {
   sliderReveal,
   sliderScores,
 } from "./slider.ts";
-import { applyScoreModifiers } from "../troll/catalogue.ts";
+import { applyPointTransfers, applyScoreModifiers } from "../troll/catalogue.ts";
 import {
   activeModifierKinds,
+  activeTransfers,
   completeScheduledTroll,
   displayNickname,
   settleTrolls,
@@ -385,36 +386,76 @@ export function recordRevealScores(
     question,
     [...answers.values()].map((row) => row.option_id),
   );
+  const awards = new Map<string, { points: number; detail: string }>();
   for (const player of players) {
     const answer = answers.get(player.player_id);
-    const scored = pointsFor(
-      question,
-      answer
-        ? {
-            optionId: answer.option_id,
-            receivedAt: answer.received_at,
-            deadlineAt: answer.deadline_at,
-          }
-        : undefined,
-      {
-        suppressSpeed: answer
-          ? submissionDisrupted(sql, player.player_id, answer.received_at)
-          : false,
-        modifiers: activeModifierKinds(sql, player.player_id, room.questionIndex),
-      },
-      settlement,
+    awards.set(
+      player.player_id,
+      pointsFor(
+        question,
+        answer
+          ? {
+              optionId: answer.option_id,
+              receivedAt: answer.received_at,
+              deadlineAt: answer.deadline_at,
+            }
+          : undefined,
+        {
+          suppressSpeed: answer
+            ? submissionDisrupted(sql, player.player_id, answer.received_at)
+            : false,
+          modifiers: activeModifierKinds(sql, player.player_id, room.questionIndex),
+        },
+        settlement,
+      ),
     );
+  }
+  // Points-moving trolls run once every award is known, and only when the
+  // question opts in to that kind.
+  const allowed = (question.modifiers ?? []) as readonly string[];
+  const transfers = activeTransfers(sql, room.questionIndex).filter(
+    (transfer) => allowed.includes(transfer.kind) && awards.has(transfer.targetId),
+  );
+  const settled = applyPointTransfers(awards, transfers, (excludeId) =>
+    lastPlaceGuest(sql, excludeId),
+  );
+  for (const [playerId, scored] of settled) {
     sql.exec(
       `INSERT OR IGNORE INTO score_ledger (
          question_id, player_id, points, detail, created_at
        ) VALUES (?, ?, ?, ?, ?)`,
       question.id,
-      player.player_id,
+      playerId,
       scored.points,
       scored.detail,
       now,
     );
   }
+}
+
+/**
+ * The guest with the lowest total before this question (ledger plus host
+ * adjustments), for Robin Hood. Ties go to whoever joined first. Never the
+ * excluded player, and never a host, test or synthetic client.
+ */
+function lastPlaceGuest(sql: SqlStorage, excludeId: string): string | null {
+  return (
+    sql
+      .exec<{ player_id: string }>(
+        `SELECT player.player_id,
+                COALESCE((SELECT SUM(points) FROM score_ledger
+                          WHERE score_ledger.player_id = player.player_id), 0) +
+                COALESCE((SELECT SUM(points) FROM score_adjustment
+                          WHERE score_adjustment.player_id = player.player_id), 0) AS total
+         FROM player
+         WHERE player.revoked_at IS NULL AND player.client_class = 'guest'
+           AND player.player_id != ?
+         ORDER BY total ASC, player.rowid ASC
+         LIMIT 1`,
+        excludeId,
+      )
+      .toArray()[0]?.player_id ?? null
+  );
 }
 
 export function ledgerTotal(sql: SqlStorage): number {

@@ -880,6 +880,11 @@ export const trollKinds = [
   "speech",
   "fake-exit",
   "zoom-photo",
+  "steal",
+  "robin-hood",
+  "share",
+  "public-vote",
+  "misattributed",
 ] as const;
 
 export const trollKindSchema = z.enum(trollKinds);

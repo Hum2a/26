@@ -19,6 +19,15 @@ export type TrollKind = (typeof implementedTrollKinds)[number];
 
 export const modifierOrder = ["double"] as const;
 
+/**
+ * Score modifiers a question can opt into with `modifiers`. `double` changes
+ * one player's own award. The rest move points between players after every
+ * award is known, in `transferOrder`.
+ */
+export const scoreModifiers = ["double", "steal", "robin-hood", "share"] as const;
+export type ScoreModifier = (typeof scoreModifiers)[number];
+export const transferOrder = ["steal", "robin-hood", "share"] as const;
+
 export type TrollDefinition = {
   kind: TrollKind;
   label: string;
@@ -35,6 +44,8 @@ export type TrollDefinition = {
   cueMs: number;
   /** Only offered on these question kinds, because it does nothing elsewhere. */
   questionKinds?: readonly string[];
+  /** A score modifier: only offered when the question lists it in `modifiers`. */
+  modifier?: boolean;
 };
 
 const immediate = {
@@ -276,11 +287,42 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     ...screenTroll("zoom-photo", "Zoom and enhance", zoomAssetLabel, 7_000),
     phases: ["intro", "prompt", "collect", "vote", "predict", "reveal", "scores"],
   },
+  steal: scoring("steal", "Steal", "Half your points, taken"),
+  "robin-hood": scoring("robin-hood", "Robin Hood", "Your points go to last place"),
+  share: scoring("share", "Shared score", "You split your points"),
+  "public-vote": {
+    ...screenTroll("public-vote", "Public vote", "Your vote, on the big screen", null),
+    slot: "persistent",
+    phases: ["collect", "vote", "predict"],
+    announce: "reveal",
+    questionKinds: ["vote"],
+  },
+  misattributed: {
+    ...screenTroll("misattributed", "Misattributed", "Someone else's answer, in your name", null),
+    slot: "persistent",
+    phases: ["collect", "vote", "predict"],
+    announce: "reveal",
+    questionKinds: ["typed", "vote"],
+  },
   "haptic-storm": {
     ...screenTroll("haptic-storm", "Haptics storm", "Phone won't stop buzzing", 10_000),
     phases: ["collect", "vote", "predict"],
   },
 };
+
+/**
+ * A points-moving troll. It only runs on a choice question that lists its kind
+ * in `modifiers`, lasts the question, and settles at the reveal.
+ */
+function scoring(kind: TrollKind, label: string, assetLabel: string): TrollDefinition {
+  return {
+    ...screenTroll(kind, label, assetLabel, null),
+    slot: "persistent",
+    phases: ["collect", "vote", "predict"],
+    questionKinds: ["choice"],
+    modifier: true,
+  };
+}
 
 /**
  * Input sabotage: messes with the answer controls while the target answers.
@@ -385,4 +427,65 @@ export function applyScoreModifiers(
     }
   }
   return { points: next, detail: text };
+}
+
+export type PointTransfer = {
+  kind: (typeof transferOrder)[number];
+  actorId: string;
+  targetId: string;
+};
+
+/**
+ * Moves points between players after every award for a question is known.
+ * Runs in `transferOrder` so the result never depends on send order:
+ * - steal: the actor takes half (rounded down) of the target's positive award;
+ * - robin-hood: the target's positive award goes to `lastPlaceId` (the guest
+ *   in last place before this question, never the target);
+ * - share: actor and target split their combined award, the odd point to the target.
+ * Nothing goes below zero, and points are only moved, never created.
+ */
+export function applyPointTransfers(
+  awards: ReadonlyMap<string, { points: number; detail: string }>,
+  transfers: readonly PointTransfer[],
+  lastPlaceId: (excludeId: string) => string | null,
+): Map<string, { points: number; detail: string }> {
+  const result = new Map([...awards].map(([id, award]) => [id, { ...award }]));
+  const ensure = (id: string) => {
+    const existing = result.get(id);
+    if (existing) return existing;
+    const created = { points: 0, detail: "none" };
+    result.set(id, created);
+    return created;
+  };
+  for (const kind of transferOrder) {
+    for (const transfer of transfers.filter((item) => item.kind === kind)) {
+      const target = ensure(transfer.targetId);
+      if (kind === "steal") {
+        const moved = Math.floor(Math.max(0, target.points) / 2);
+        if (moved === 0) continue;
+        const actor = ensure(transfer.actorId);
+        target.points -= moved;
+        target.detail += "*stolen";
+        actor.points += moved;
+        actor.detail += "*stole";
+      } else if (kind === "robin-hood") {
+        const recipientId = lastPlaceId(transfer.targetId);
+        const moved = Math.max(0, target.points);
+        if (!recipientId || moved === 0) continue;
+        const recipient = ensure(recipientId);
+        target.points -= moved;
+        target.detail += "*robbed";
+        recipient.points += moved;
+        recipient.detail += "*robin-hood";
+      } else {
+        const actor = ensure(transfer.actorId);
+        const total = Math.max(0, actor.points) + Math.max(0, target.points);
+        actor.points = Math.floor(total / 2);
+        target.points = total - actor.points;
+        actor.detail += "*shared";
+        target.detail += "*shared";
+      }
+    }
+  }
+  return result;
 }

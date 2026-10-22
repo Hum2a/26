@@ -31,6 +31,7 @@ import {
   themeCueCap,
   trollDefinitions,
   zoomAssetLabel,
+  type PointTransfer,
   type TrollDefinition,
   type TrollKind,
 } from "./catalogue.ts";
@@ -88,7 +89,7 @@ export function acceptTroll(
   if (!activePlayer(sql, targetId) || !activePlayer(sql, actorId)) {
     return { ok: false, message: trollTargetMessage };
   }
-  if (kind === "double" && !questionAllowsDouble(room)) {
+  if ((kind === "double" || definition.modifier) && !questionAllowsModifier(room, kind)) {
     return { ok: false, message: trollModifierMessage };
   }
   if (kind === "typing" && !questionAllowsTyping(room)) {
@@ -462,7 +463,8 @@ export function trollSnapshot(
           label: definition.label,
           enabled:
             definition.phases.includes(room.phase) &&
-            (definition.kind !== "double" || questionAllowsDouble(room)) &&
+            ((definition.kind !== "double" && !definition.modifier) ||
+              questionAllowsModifier(room, definition.kind)) &&
             (definition.kind !== "typing" || questionAllowsTyping(room)) &&
             questionFits(definition, room) &&
             token === "ready",
@@ -633,9 +635,30 @@ export function hostTrollRows(sql: SqlStorage): {
     .slice(0, 20);
 }
 
-function questionAllowsDouble(room: RoomClock): boolean {
+/** A score troll needs the question to list it in `modifiers`. */
+function questionAllowsModifier(room: RoomClock, kind: string): boolean {
   const question = questionFor(room);
-  return question?.kind === "choice" && question.modifiers?.includes("double") === true;
+  return (
+    question?.kind === "choice" &&
+    (question.modifiers as readonly string[] | undefined)?.includes(kind) === true
+  );
+}
+
+/** Points-moving trolls that are active for this question, for the reveal. */
+export function activeTransfers(sql: SqlStorage, questionIndex: number): PointTransfer[] {
+  return sql
+    .exec<{ kind: string; actor_id: string; target_id: string }>(
+      `SELECT kind, actor_id, target_id FROM troll_effect
+       WHERE status = 'active' AND question_index = ? AND kind IN ('steal', 'robin-hood', 'share')
+       ORDER BY created_at, effect_id`,
+      questionIndex,
+    )
+    .toArray()
+    .map((row) => ({
+      kind: row.kind as PointTransfer["kind"],
+      actorId: row.actor_id,
+      targetId: row.target_id,
+    }));
 }
 
 /** A troll with `questionKinds` only fits those questions. */
@@ -1086,31 +1109,88 @@ function enqueueTheatreCues(
   room: RoomClock,
   now: number,
 ): void {
-  const due = room.phase === "reveal" ? "replay" : room.phase === "scores" ? "speech" : null;
-  if (!due) {
-    return;
-  }
+  const due: readonly string[] =
+    room.phase === "reveal"
+      ? ["replay", "public-vote", "misattributed"]
+      : room.phase === "scores"
+        ? ["speech"]
+        : [];
   for (const effect of readOpen(sql)) {
     if (
-      effect.kind !== due ||
+      !due.includes(effect.kind) ||
       effect.status !== "active" ||
       effect.question_index !== room.questionIndex
     ) {
       continue;
     }
     const nickname = nicknameOf(sql, effect.target_id) ?? "A player";
-    const label =
-      due === "replay"
-        ? replayLine(sql, room, effect.target_id, nickname)
-        : `${nickname}, the floor is yours.`;
-    // Read on stage as "<label> <asset>."
-    const asset = due === "replay" ? "Instant replay" : "Speech! Speech!";
+    const [label, asset] =
+      effect.kind === "replay"
+        ? [replayLine(sql, room, effect.target_id, nickname), "Instant replay"]
+        : effect.kind === "public-vote"
+          ? [publicVoteLine(sql, room, effect.target_id, nickname), "Public vote"]
+          : effect.kind === "misattributed"
+            ? [misattributedLine(sql, room, effect, nickname), "Totally true"]
+            : [`${nickname}, the floor is yours.`, "Speech! Speech!"];
     enqueueCue(sql, store, room, effect.effect_id, label, asset, now, {
       questionIndex: room.questionIndex,
-      durationMs: due === "speech" ? 8_000 : 5_000,
+      durationMs: effect.kind === "speech" ? 8_000 : 5_000,
     });
     closeEffect(sql, effect.effect_id, "expired", now);
   }
+}
+
+/** Who the target voted for on this vote question. */
+function publicVoteLine(sql: SqlStorage, room: RoomClock, playerId: string, nickname: string): string {
+  const question = questionFor(room);
+  const ballot = sql
+    .exec<{ label: string }>(
+      `SELECT vote_candidate.label FROM vote_ballot
+       JOIN vote_candidate ON vote_candidate.question_id = vote_ballot.question_id
+         AND vote_candidate.candidate_id = vote_ballot.candidate_id
+       WHERE vote_ballot.player_id = ? AND vote_ballot.question_id = ?`,
+      playerId,
+      question?.id ?? "",
+    )
+    .toArray()[0];
+  return (
+    ballot ? `${nickname} voted for "${ballot.label}".` : `${nickname} didn't vote. Coward.`
+  ).slice(0, 120);
+}
+
+/**
+ * Claims the target wrote another guest's answer to this question. Picked by
+ * the effect id, so it is the same on every screen and replay.
+ */
+function misattributedLine(
+  sql: SqlStorage,
+  room: RoomClock,
+  effect: { effect_id: string; target_id: string },
+  nickname: string,
+): string {
+  const question = questionFor(room);
+  const others = sql
+    .exec<{ body: string }>(
+      `SELECT body FROM text_response WHERE question_id = ? AND player_id != ?
+       UNION ALL
+       SELECT label AS body FROM vote_candidate
+       WHERE question_id = ? AND owner_id IS NOT NULL AND owner_id != ?`,
+      question?.id ?? "",
+      effect.target_id,
+      question?.id ?? "",
+      effect.target_id,
+    )
+    .toArray()
+    .map((row) => row.body)
+    .filter((body) => body.trim().length > 0);
+  if (others.length === 0) {
+    return `${nickname} wrote nothing at all. Suspicious.`;
+  }
+  let hash = 0;
+  for (const character of effect.effect_id) {
+    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  }
+  return `${nickname} wrote "${others[hash % others.length]}".`.slice(0, 120);
 }
 
 /** What the target went with on this choice question. Not judged: the reveal does that. */

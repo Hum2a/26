@@ -123,7 +123,7 @@ export function choiceQuestion(
     outcome?: ChoiceOutcome;
     correctOption?: Answer<string>;
     speedBonus?: { maxPoints: number } | null;
-    modifiers?: readonly "double"[];
+    modifiers?: readonly ("double" | "steal" | "robin-hood" | "share")[];
     suppressSpeedBonus?: boolean;
   },
 ): AuthoredChoice {
