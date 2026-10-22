@@ -48,6 +48,10 @@ export const adminTrollsSchema = z
           escape: z.string().nullable(),
           disruptsSubmission: z.boolean(),
           announce: z.enum(["now", "reveal", "scores"]),
+          /** Only offered on these question kinds. Empty means any question. */
+          questionKinds: z.array(z.string()),
+          /** A score troll: only runs on a question that lists it in `modifiers`. */
+          modifier: z.boolean(),
         })
         .strict(),
     ),

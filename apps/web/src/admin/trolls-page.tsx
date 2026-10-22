@@ -211,6 +211,11 @@ function TrollCatalogue({
                 <dd>{troll.escape ?? "None"}</dd>
                 <dt>Phases</dt>
                 <dd>{troll.phases.join(", ")}</dd>
+                <dt>Questions</dt>
+                <dd>
+                  {troll.questionKinds.length > 0 ? troll.questionKinds.join(", ") : "Any"}
+                  {troll.modifier ? " · only where the question allows it" : ""}
+                </dd>
               </dl>
               {isScreenTroll(troll.kind) ? (
                 <Button

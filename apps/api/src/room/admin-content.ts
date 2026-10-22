@@ -1,4 +1,9 @@
-import { adminContentSchema, adminTrollsSchema, type AdminContent } from "@26/shared";
+import {
+  adminContentSchema,
+  adminTrollsSchema,
+  type AdminContent,
+  type AdminTrolls,
+} from "@26/shared";
 import { implementedTrollKinds, trollDefinitions } from "../troll/catalogue.ts";
 import type { Hono } from "hono";
 import { authFailure, jsonData } from "../auth/http.ts";
@@ -8,6 +13,31 @@ import { rejectUnlessRoomCreator } from "./access.ts";
 import { adminQuestion } from "./admin-question.ts";
 import { previewWordle, readWordlePreviewBody } from "./wordle-preview.ts";
 import { questionPreview } from "./question-preview.ts";
+
+/**
+ * The troll catalogue for the admin Trolls pages. Named fields only, so a new
+ * catalogue field can never make the strict schema refuse the whole page.
+ */
+export function adminTrollCatalogue(): AdminTrolls {
+  return adminTrollsSchema.parse({
+    trolls: implementedTrollKinds.map((kind) => {
+      const definition = trollDefinitions[kind];
+      return {
+        kind: definition.kind,
+        label: definition.label,
+        assetLabel: definition.assetLabel,
+        slot: definition.slot,
+        durationMs: definition.durationMs,
+        phases: [...definition.phases],
+        escape: definition.escape,
+        disruptsSubmission: definition.disruptsSubmission,
+        announce: definition.announce,
+        questionKinds: [...(definition.questionKinds ?? [])],
+        modifier: definition.modifier === true || kind === "double",
+      };
+    }),
+  });
+}
 
 /** Explicit read-only authoring projection. Never serialise authored objects. */
 export function adminContent(): AdminContent | null {
@@ -105,14 +135,7 @@ export function registerAdminContentRoutes(app: Hono<{ Bindings: Env }>) {
     if (rejected) {
       return rejected;
     }
-    return jsonData(
-      adminTrollsSchema.parse({
-        trolls: implementedTrollKinds.map((kind) => {
-          const { survivesQuestions: _, cueMs: __, ...rest } = trollDefinitions[kind];
-          return { ...rest, phases: [...rest.phases] };
-        }),
-      }),
-    );
+    return jsonData(adminTrollCatalogue());
   });
   app.get("/api/admin/content", async (c) => {
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);

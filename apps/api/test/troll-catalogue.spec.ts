@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { trollKinds } from "@26/shared";
 import { sponsorLine } from "../src/troll/engine.ts";
+import { adminTrollCatalogue } from "../src/room/admin-content.ts";
 import { applyPointTransfers, trollDefinitions } from "../src/troll/catalogue.ts";
 
 describe("troll catalogue", () => {
@@ -98,6 +99,18 @@ describe("troll catalogue", () => {
         "amina",
       )?.points,
     ).toBe(100);
+  });
+
+  it("builds the admin Trolls page data for every troll without the schema refusing it", () => {
+    // This page broke once when a new catalogue field leaked into a strict schema.
+    const catalogue = adminTrollCatalogue();
+    expect(catalogue.trolls.map((troll) => troll.kind)).toEqual([...trollKinds]);
+    expect(catalogue.trolls.find((troll) => troll.kind === "slider-drift")?.questionKinds).toEqual([
+      "slider",
+    ]);
+    expect(catalogue.trolls.find((troll) => troll.kind === "steal")?.modifier).toBe(true);
+    expect(catalogue.trolls.find((troll) => troll.kind === "double")?.modifier).toBe(true);
+    expect(catalogue.trolls.find((troll) => troll.kind === "confetti")?.modifier).toBe(false);
   });
 
   it("picks the same sponsor line for the same troll", () => {
