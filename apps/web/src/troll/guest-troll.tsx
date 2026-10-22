@@ -8,6 +8,7 @@ import { TrollConfirm } from "./Confirm";
 import { TrollPicker } from "./Picker";
 import { VictimToast } from "./VictimToast";
 import { isScreenTroll, ScreenTroll } from "./screen-trolls";
+import { seedFrom, type TrollSender } from "./classic-trolls";
 
 export function GuestTrolls({
   snapshot,
@@ -52,6 +53,7 @@ export function GuestTrolls({
         <TrollOverlay
           key={effect.effectId}
           effect={effect}
+          sender={senderOf(snapshot, gameId, effect.fromPlayerId)}
           pending={pending}
           onEscape={onEscape}
         />
@@ -69,12 +71,41 @@ export function GuestTrolls({
   );
 }
 
+/** What the target is told for trolls that are not drawn as a screen gag. */
+const targetLine: Partial<Record<string, string>> = {
+  swap: "Your name has swapped with someone else's on every screen.",
+  "hide-score": "Your score is hidden from you for now.",
+  double: "Your points for this question are double or nothing.",
+  typing: "The big screen can see what you type. Sending still stores the answer.",
+  voice: "A voice clip about you will play at the reveal.",
+  theme: "You have a theme tune now. It plays whenever the scores come up.",
+};
+
+/** The troller's name and driver face, from the shared player list. */
+function senderOf(
+  snapshot: LobbySnapshot,
+  gameId: string,
+  playerId: string | undefined,
+): TrollSender | undefined {
+  const player = snapshot.players.find((item) => item.playerId === playerId);
+  if (!player) {
+    return undefined;
+  }
+  const face = player.driver?.faceMediaId;
+  return {
+    nickname: player.nickname,
+    faceSrc: face ? `/api/rooms/${gameId}/media/${face}` : null,
+  };
+}
+
 function TrollOverlay({
   effect,
+  sender,
   pending,
   onEscape,
 }: {
   effect: LobbySnapshot["trolls"]["active"][number];
+  sender: TrollSender | undefined;
   pending: boolean;
   onEscape: (effectId: string) => void;
 }) {
@@ -103,29 +134,15 @@ function TrollOverlay({
         label={effect.assetLabel}
         escape={effect.escape}
         onEscape={pending ? undefined : () => onEscape(effect.effectId)}
+        from={sender}
+        seed={seedFrom(effect.effectId)}
       />
     );
   }
-  const blocking =
-    effect.kind === "invasion" || effect.kind === "call" || effect.kind === "crack";
   return (
-    <div
-      className={
-        blocking
-          ? "grid gap-3 rounded-3xl border border-line bg-surface p-4"
-          : "grid gap-3"
-      }
-      role={blocking ? "dialog" : "status"}
-      aria-label={effect.assetLabel}
-    >
-      <p className="text-2xl font-bold">{effect.assetLabel}</p>
-      <p>{effect.label}. This is a labelled demo asset.</p>
-      {effect.kind === "typing" ? (
-        <p>The stage can see what you type. Sending still stores the answer.</p>
-      ) : null}
-      {effect.kind === "crack" ? (
-        <div className="troll-crack" aria-hidden="true" />
-      ) : null}
+    <div className="grid gap-3" role="status" aria-label={effect.assetLabel}>
+      <p className="text-2xl font-bold">{effect.label}</p>
+      <p>{targetLine[effect.kind] ?? effect.assetLabel}</p>
       {effect.escape ? (
         <Button
           type="button"

@@ -93,9 +93,6 @@ export function StageSound({
               )}
             />
           ) : null}
-          {!presentation && announcement.assetLabel === "Demo sponsor" ? (
-            <p>Demo sponsor. Replace this caption with the party line.</p>
-          ) : null}
         </div>
       ) : null}
     </div>

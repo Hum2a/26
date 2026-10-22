@@ -117,7 +117,7 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
   await bilal.getByRole("button", { name: "Troll Amina", exact: true }).click();
   await bilal.getByRole("button", { name: "Send troll" }).click();
   await bilal.getByRole("button", { name: "Confirm" }).click();
-  await expect(amina.getByRole("dialog", { name: "Demo crack" })).toBeVisible();
+  await expect(amina.getByRole("status", { name: "Shattered screen" })).toBeVisible();
   const trollOverflow = await amina.evaluate(
     () =>
       document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
@@ -125,7 +125,7 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
   expect(trollOverflow).toBe(false);
   await expect(stage.getByText(/Bilal used Cracked screen on Amina/)).toBeVisible();
   await amina.getByRole("button", { name: "Dismiss" }).click();
-  await expect(amina.getByRole("dialog", { name: "Demo crack" })).toHaveCount(0);
+  await expect(amina.getByRole("status", { name: "Shattered screen" })).toHaveCount(0);
   expect(frames.join("\n")).not.toContain('"truth"');
   const slider = amina.getByRole("slider", { name: "Estimate" });
   // A phase can reach the projector before the phone's socket/render catches up.

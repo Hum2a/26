@@ -857,6 +857,12 @@ export const trollKinds = [
   "notification-storm",
   "confetti",
   "dvd",
+  "screen-recording",
+  "low-battery",
+  "airdrop",
+  "overheating",
+  "answer-viewers",
+  "typing-dots",
 ] as const;
 
 export const trollKindSchema = z.enum(trollKinds);
@@ -989,6 +995,8 @@ export const lobbySnapshotSchema = z
                 label: z.string().min(1).max(40),
                 escape: z.string().min(1).max(40).nullable(),
                 assetLabel: z.string().min(1).max(40),
+                /** Target's own view only: who sent it. */
+                fromPlayerId: z.uuid().optional(),
               })
               .strict(),
           )

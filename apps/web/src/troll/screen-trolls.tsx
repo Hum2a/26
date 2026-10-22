@@ -1,5 +1,21 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import "./screen-trolls.css";
+import "./phone-gags.css";
+import {
+  CallFromMum,
+  ScreenInvasion,
+  ShatteredScreen,
+  SponsorCard,
+  type TrollSender,
+} from "./classic-trolls";
+import {
+  AirDropSpam,
+  AnswerViewers,
+  EndlessTyping,
+  LowBattery,
+  Overheating,
+  ScreenRecording,
+} from "./chrome-trolls";
 
 /**
  * Phone-only gags. The server owns when they start and stop; these components
@@ -19,6 +35,16 @@ const screenKinds = [
   "notification-storm",
   "confetti",
   "dvd",
+  "invasion",
+  "call",
+  "crack",
+  "sponsor",
+  "screen-recording",
+  "low-battery",
+  "airdrop",
+  "overheating",
+  "answer-viewers",
+  "typing-dots",
 ] as const;
 
 export type ScreenTrollKind = (typeof screenKinds)[number];
@@ -32,10 +58,34 @@ type Props = {
   label: string;
   escape: string | null;
   onEscape?: () => void;
+  /** Who sent it, when the phone knows. */
+  from?: TrollSender;
+  /** Seeds visuals that should stay the same across re-renders. */
+  seed?: number;
 };
 
-export function ScreenTroll({ kind, label, escape, onEscape }: Props) {
+export function ScreenTroll({ kind, label, escape, onEscape, from, seed = 26 }: Props) {
   switch (kind) {
+    case "invasion":
+      return <ScreenInvasion label={label} from={from} escape={escape} onEscape={onEscape} />;
+    case "call":
+      return <CallFromMum label={label} escape={escape} onEscape={onEscape} />;
+    case "crack":
+      return <ShatteredScreen label={label} seed={seed} escape={escape} onEscape={onEscape} />;
+    case "sponsor":
+      return <SponsorCard label={label} />;
+    case "screen-recording":
+      return <ScreenRecording label={label} />;
+    case "low-battery":
+      return <LowBattery label={label} escape={escape} onEscape={onEscape} />;
+    case "airdrop":
+      return <AirDropSpam label={label} from={from} />;
+    case "overheating":
+      return <Overheating label={label} />;
+    case "answer-viewers":
+      return <AnswerViewers label={label} />;
+    case "typing-dots":
+      return <EndlessTyping label={label} from={from} />;
     case "netanyahu":
       return <NetanyahuFlood label={label} />;
     case "australia":

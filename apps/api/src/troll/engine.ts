@@ -434,6 +434,8 @@ export function trollSnapshot(
               label: definition.label,
               escape: effect.status === "active" ? definition.escape : null,
               assetLabel: definition.assetLabel,
+              // Who sent it, for the target's own screen. The stage already announces it.
+              ...(effect.target_id === selfPlayerId ? { fromPlayerId: effect.actor_id } : {}),
             },
           ];
         })
@@ -837,7 +839,9 @@ function announceStart(
       store,
       room,
       effectId,
-      cueLabel(sql, actorId, targetId, definition.label),
+      definition.kind === "sponsor"
+        ? sponsorLine(nicknameOf(sql, targetId) ?? "A guest", effectId)
+        : cueLabel(sql, actorId, targetId, definition.label),
       definition.assetLabel,
       now,
       { durationMs: definition.cueMs },
@@ -847,6 +851,26 @@ function announceStart(
   if (voiceMedia) {
     holdVoice(sql, store, room, effectId, actorId, targetId, voiceMedia, now);
   }
+}
+
+/** Fake sponsors for the sponsor break. The effect id picks one, so a replay matches. */
+const sponsorLines = [
+  (name: string) => `This round is brought to you by ${name}'s overdraft.`,
+  (name: string) => `Sponsored by ${name}'s screen time: 11 hours a day and counting.`,
+  (name: string) => `Today's question is supported by ${name}'s unread group chat.`,
+  (name: string) => `Brought to you by ${name}. Ask them about their crypto.`,
+  (name: string) => `A word from our sponsor: ${name}'s mum says hello.`,
+  (name: string) => `This break is paid for by ${name}'s Deliveroo habit.`,
+  (name: string) => `${name} Airlines. Delays guaranteed.`,
+  (name: string) => `Proudly sponsored by ${name}'s 47 open browser tabs.`,
+];
+
+export function sponsorLine(nickname: string, effectId: string): string {
+  let hash = 0;
+  for (const character of effectId) {
+    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  }
+  return sponsorLines[hash % sponsorLines.length]!(nickname);
 }
 
 function holdVoice(
@@ -952,7 +976,7 @@ function enqueueThemeCues(
       room,
       effect.effect_id,
       `${nickname}'s theme.`,
-      "Demo sting",
+      "Theme jingle",
       now,
       {
         audioAsset: demoStingAsset,

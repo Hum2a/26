@@ -89,18 +89,6 @@ dialog::backdrop {
   animation: troll-dodge 0.8s var(--ease-party) 3;
 }
 
-.troll-crack {
-  min-height: 4rem;
-  border: 2px dashed var(--color-accent);
-  background: repeating-linear-gradient(
-    135deg,
-    transparent,
-    transparent 8px,
-    var(--color-line) 8px,
-    var(--color-line) 10px
-  );
-}
-
 .troll-flood {
   position: fixed;
   inset: 0;
