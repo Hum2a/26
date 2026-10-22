@@ -16,7 +16,7 @@ describe("theme skins", () => {
     expect(document.documentElement.dataset.motifIcon).toBeUndefined();
   });
 
-  it("gives the six trials a distinct ground, shape, and mark", () => {
+  it("gives the trial families a distinct ground, shape, and mark", () => {
     expect(skinFor("persona-5-take-your-time")).toMatchObject({
       id: "persona-5",
       ground: "slash",
@@ -27,11 +27,6 @@ describe("theme skins", () => {
       ground: "grid",
       shape: "chunky",
       mark: "card",
-    });
-    expect(skinFor("cafe-leblanc-but-make-it-tea")).toMatchObject({
-      ground: "split",
-      shape: "soft",
-      mark: "cup",
     });
     expect(skinFor("pitbull-mr-worldwide")).toMatchObject({
       ground: "stripes",
@@ -72,7 +67,7 @@ describe("theme skins", () => {
       mark: "beam",
     });
     expect(skinFor("26-karat")).toMatchObject({ ground: "foil", mark: "star" });
-    expect(skinFor("absolutely-rigged").ground).toBe("tape");
+    expect(skinFor("friendly-sabotage").ground).toBe("tape");
     expect(skinFor("nissan-leaf")).toMatchObject({
       ground: "charge",
       shape: "soft",

@@ -19,7 +19,7 @@ export const skinGrounds = [
   "ruled",
   "floodlight",
   "foil",
-  "tape",
+  "tape"
 ] as const;
 
 export const skinShapes = [
@@ -28,7 +28,7 @@ export const skinShapes = [
   "chunky",
   "soft",
   "ticket",
-  "cut",
+  "cut"
 ] as const;
 
 export const skinMarks = [
@@ -48,7 +48,7 @@ export const skinMarks = [
   "star",
   "mic",
   "leaf",
-  "plus",
+  "plus"
 ] as const;
 
 export const skinFinishes = [
@@ -57,7 +57,7 @@ export const skinFinishes = [
   "cartoon",
   "realistic",
   "minimal",
-  "extravagant",
+  "extravagant"
 ] as const;
 
 export const skinMotifs = ["none", "crest", "scatter", "bleed"] as const;
@@ -70,7 +70,7 @@ export const motifIcons = [
   "mic",
   "star",
   "utensils",
-  "mask",
+  "mask"
 ] as const;
 
 export type SkinGround = (typeof skinGrounds)[number];
@@ -134,13 +134,6 @@ const skinned = {
     motif: "crest",
     icon: "card",
   }),
-  ...family(["cafe-leblanc-but-make-it-tea"], {
-    id: "leblanc-tea",
-    ground: "split",
-    shape: "soft",
-    mark: "cup",
-    finish: "realistic",
-  }),
   ...family(["pitbull-mr-worldwide"], {
     id: "pitbull",
     ground: "stripes",
@@ -166,12 +159,10 @@ const skinned = {
   }),
   ...family(
     [
-      "phantom-thieves-of-portsmouth",
-      "naruto-akatsuki",
       "persona-1-origins",
       "persona-2-innocent-birthday",
       "persona-3-portable-pink-route",
-      "my-hero-academia-plus-ultra",
+      "my-hero-academia-plus-ultra"
     ],
     {
       id: "slash",
@@ -205,15 +196,8 @@ const skinned = {
     [
       "humza-os",
       "birthday-exe",
-      "localhost-26",
-      "commit-twenty-six",
-      "just-one-more-game",
       "scarlet-nexus-brain-drive",
-      "26-humza-website",
-      "one-more-tweak",
-      "overengineered-birthday",
-      "humzas-control-room",
-      "usual-table-laptop-open",
+      "usual-table-laptop-open"
     ],
     { id: "crt", ground: "grid", shape: "chunky", mark: "terminal", finish: "minimal" },
   ),
@@ -223,31 +207,20 @@ const skinned = {
       "tea-obviously",
       "paper-party",
       "chinese-takeaway-at-humzas",
-      "one-more-plate",
       "midnight-matcha",
       "pistachio-party",
       "peach-please",
-      "sorbet-social",
-      "lavender-menace",
-      "soft-launch-hard-questions",
+      "lavender-menace"
     ],
     { id: "paper", ground: "split", shape: "soft", mark: "cup", finish: "realistic" },
   ),
   ...family(
     [
-      "dj-khaled-another-one",
       "bbno-birthday-budget",
       "yung-gravy-gravy-boat",
-      "velvet-rope",
       "ultraviolet",
-      "electric-orchid",
-      "deep-sea-disco",
-      "cobalt-club",
       "rum-and-coke",
-      "black-cherry",
-      "petrol-and-peach",
-      "ember-room",
-      "mixtape-26",
+      "petrol-and-peach"
     ],
     {
       id: "club",
@@ -267,20 +240,19 @@ const skinned = {
   ...family(
     [
       "mchumza-birthday-meal",
-      "restaurant-shift-last-orders",
       "amazon-out-for-delivery",
-      "501-fun-maximum-fun",
+      "501-fun-maximum-fun"
     ],
     { id: "service", ground: "tiles", shape: "ticket", mark: "spoon", finish: "solid" },
   ),
-  ...family(["corestream-risk-accepted", "made-by-humza"], {
+  ...family(["corestream-risk-accepted"], {
     id: "service",
     ground: "tiles",
     shape: "ticket",
     mark: "stamp",
     finish: "solid",
   }),
-  ...family(["gta-vi-made-me-late", "retro-future"], {
+  ...family([ "retro-future"], {
     id: "sunset",
     ground: "sunset",
     shape: "cut",
@@ -293,7 +265,7 @@ const skinned = {
       "main-character",
       "the-humza-show",
       "humza-according-to-everyone",
-      "21-november",
+      "21-november"
     ],
     {
       id: "show",
@@ -303,7 +275,7 @@ const skinned = {
       finish: "extravagant",
     },
   ),
-  ...family(["baseer-live", "baseer-has-the-mic"], {
+  ...family(["baseer-live"], {
     id: "mic",
     ground: "glow",
     shape: "round",
@@ -316,11 +288,10 @@ const skinned = {
     [
       "the-velvet-room",
       "persona-3-midnight-hour",
-      "moonlit-chrome",
       "november-nights",
       "humza-after-hours",
       "pokemon-gengar-hours",
-      "final-fantasy-vii-mako",
+      "final-fantasy-vii-mako"
     ],
     { id: "glow", ground: "glow", shape: "soft", mark: "mask", finish: "glass" },
   ),
@@ -331,12 +302,11 @@ const skinned = {
       "tsukigakirei-moonlit-walk",
       "naruto-hidden-leaf",
       "pokemon-pallet-town",
-      "chocobo-crossing",
       "blue-hour",
       "poolside-2000",
       "final-fantasy-crystal-prelude",
       "dragon-ball-capsule-corp",
-      "bunny-girl-senpai-after-school",
+      "bunny-girl-senpai-after-school"
     ],
     {
       id: "horizon",
@@ -353,7 +323,7 @@ const skinned = {
       "wallington-grammar-school-arc",
       "greenshaw-next-chapter",
       "portsmouth-student-save-file",
-      "the-humza-archives",
+      "the-humza-archives"
     ],
     { id: "ruled", ground: "ruled", shape: "chunky", mark: "numeral", finish: "solid" },
   ),
@@ -363,7 +333,7 @@ const skinned = {
       "stamford-bridge-on-the-clock",
       "twickenham-under-the-floodlights",
       "queens-centre-court",
-      "goodwood-all-access",
+      "goodwood-all-access"
     ],
     {
       id: "floodlight",
@@ -376,15 +346,12 @@ const skinned = {
   ...family(
     [
       "26-karat",
-      "playstation-platinum-trophy",
       "confetti-department",
       "high-score-club",
-      "bragging-rights",
       "steal-the-spotlight",
       "quarter-life-deluxe",
       "dragon-ball-birthday-saiyan",
-      "super-saiyan-closing-shift",
-      "humza-studio",
+      "humza-studio"
     ],
     {
       id: "foil",
@@ -398,14 +365,11 @@ const skinned = {
   ),
   ...family(
     [
-      "absolutely-rigged",
       "big-red-button",
       "keijo-absolutely-necessary",
-      "risk-assessment-keijo",
       "friendly-sabotage",
       "plot-twist",
-      "the-hot-seat",
-      "final-answer",
+      "final-answer"
     ],
     { id: "tape", ground: "tape", shape: "sharp", mark: "numeral", finish: "cartoon" },
   ),
