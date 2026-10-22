@@ -14,9 +14,22 @@ const app = new Hono<{ Bindings: Env }>();
 registerAdminRoomRoutes(app);
 registerAdminContentRoutes(app);
 const listRooms = vi.fn().mockResolvedValue({ rooms: [], nextCursor: null });
+const order = {
+  revision: 0,
+  ids: [...birthdayPack.order],
+  updatedAt: null,
+  history: [],
+};
+const updateBirthdayOrder = vi.fn().mockResolvedValue(order);
 const bindings = {
   APP_ENV: "staging",
-  ROOM_CODE_REGISTRY: { getByName: () => ({ listRooms }) },
+  ROOM_CODE_REGISTRY: {
+    getByName: () => ({
+      listRooms,
+      birthdayOrder: async () => order,
+      updateBirthdayOrder,
+    }),
+  },
 } as unknown as Env;
 beforeEach(() => {
   vi.clearAllMocks();
@@ -86,12 +99,14 @@ it("protects a read-only content projection and excludes answer/reveal fields", 
   );
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
-  const content = adminContent();
+  const content = adminContent(order);
   expect(content).not.toBeNull();
   expect(await response.json()).toEqual(content);
   const birthday = content!.packs.find((pack) => pack.id === "birthday")!;
   expect(birthday.release).toBe("draft");
-  expect(birthday.questions.every((question) => question.order === null)).toBe(true);
+  expect(birthday.questions.find((q) => q.id === "kart-sprint")?.order).toBe(
+    birthdayPack.order.length,
+  );
   for (const pack of content!.packs)
     for (const question of pack.questions) {
       expect(Object.keys(question).sort()).toEqual([
@@ -404,4 +419,35 @@ it("requires administrator access to previews and reports incomplete/placeholder
   const denied = await app.request(`${base}/favourite-pokemon/preview`, {}, bindings);
   expect(denied.status).toBe(401);
   expect(await denied.text()).not.toContain("options");
+});
+
+it("authenticates order writes, bounds chunked bodies and returns revision conflicts", async () => {
+  const post = (body: string, origin = "https://example.com") =>
+    app.request(
+      "https://example.com/api/admin/content/birthday/order",
+      { method: "POST", headers: { origin, "content-type": "application/json" }, body },
+      bindings,
+    );
+  const input = {
+    requestId: crypto.randomUUID(),
+    expectedRevision: 0,
+    ids: ["kart-sprint"],
+  };
+  expect((await post(JSON.stringify(input), "https://other.example")).status).toBe(403);
+  expect((await post(JSON.stringify({ ...input, ids: [] }))).status).toBe(400);
+  expect(
+    (await post(JSON.stringify({ ...input, padding: "x".repeat(17000) }))).status,
+  ).toBe(400);
+  expect(updateBirthdayOrder).not.toHaveBeenCalled();
+  expect((await post(JSON.stringify(input))).status).toBe(200);
+  expect(updateBirthdayOrder).toHaveBeenCalledWith(input, expect.any(Number));
+  updateBirthdayOrder.mockResolvedValueOnce({
+    error: "invalid",
+    message: "The running order changed in another tab.",
+  });
+  expect((await post(JSON.stringify(input))).status).toBe(409);
+  vi.mocked(administratorForRequest).mockResolvedValue(
+    Response.json({ error: "unauthenticated" }, { status: 401 }),
+  );
+  expect((await post(JSON.stringify(input))).status).toBe(401);
 });

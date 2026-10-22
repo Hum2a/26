@@ -126,12 +126,12 @@ it("ranks finished times before DNFs, shares tied prizes and reveals no control 
   ])
     expect(view.participants[0]).not.toHaveProperty(key);
 });
-it("registers a ready 45-second kart round without releasing the birthday order or inventing a preview race", () => {
+it("registers the imported birthday race at the end without inventing a preview race", () => {
   const q = birthdayPack.catalogue.find((q) => q.id === "kart-sprint")!;
   expect(toPlayable(q)).toMatchObject({
     kind: "kart",
-    collectMs: 45_000,
-    timeLimitMs: 45_000,
+    collectMs: 180_000,
+    timeLimitMs: 180_000,
     attribution: "live",
   });
   expect(questionPreview(birthdayPack, q)).toMatchObject({
@@ -140,7 +140,7 @@ it("registers a ready 45-second kart round without releasing the birthday order 
   });
   expect(questionPreview(birthdayPack, q).question).not.toHaveProperty("kart");
   expect(validatePack(birthdayPack).filter((i) => i.level === "error")).toEqual([]);
-  expect(birthdayPack.order).toEqual([]);
+  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
   expect(birthdayPack.release).toBe("draft");
 });
 

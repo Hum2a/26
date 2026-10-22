@@ -1,6 +1,12 @@
+import { importedRoute } from "../../../../packages/shared/src/kart-route";
 import { useId } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { ringCourse, courseFeaturePose, type KartRaceView } from "@26/shared";
+import {
+  ringCourse,
+  soloCourse,
+  courseFeaturePose,
+  type KartRaceView,
+} from "@26/shared";
 import { driverFaceUrl } from "./driver-face";
 import { useKartDrivers } from "./drivers-context";
 
@@ -43,6 +49,9 @@ export function KartMap({
   race: KartRaceView;
   personal?: boolean;
 }) {
+  const imported = race.trackId === "mario-circuit-v1";
+  const px = (x: number) => (imported ? (x - 150) * 0.34 : x);
+  const pz = (z: number) => (imported ? z * 0.34 : z);
   const reduced = useReducedMotion();
   const faces = useKartDrivers();
   const drivers = personal
@@ -62,21 +71,32 @@ export function KartMap({
           : `Live race map: ${drivers.length} drivers`
       }
     >
-      <circle r="59" className="kart-map-orbit" />
-      <circle r="53" className="kart-map-kerb" />
-      <circle r="42" className="kart-map-road" />
-      <circle r="42" className="kart-map-centreline" />
-      <circle r="31" className="kart-map-kerb" />
+      {imported ? (
+        <polyline
+          points={importedRoute.map(([x, z]) => `${px(x)},${pz(z)}`).join(" ")}
+          fill="none"
+          stroke="var(--surface)"
+          strokeWidth="8"
+        />
+      ) : (
+        <>
+          <circle r="59" className="kart-map-orbit" />
+          <circle r="53" className="kart-map-kerb" />
+          <circle r="42" className="kart-map-road" />
+          <circle r="42" className="kart-map-centreline" />
+          <circle r="31" className="kart-map-kerb" />
+        </>
+      )}
       {race.courseEnabled
-        ? ringCourse.map((feature) => {
+        ? (imported ? soloCourse : ringCourse).map((feature) => {
             const pose = courseFeaturePose(feature, race.elapsedMs);
             return (
               <motion.g
                 key={feature.id}
                 initial={false}
                 animate={{
-                  x: pose.x,
-                  y: pose.z,
+                  x: px(pose.x),
+                  y: pz(pose.z),
                   rotate: (feature.heading * 180) / Math.PI,
                 }}
                 transition={{ duration: reduced ? 0.1 : 0.18, ease: "easeOut" }}
@@ -103,38 +123,39 @@ export function KartMap({
             );
           })
         : null}
-      {Array.from({ length: 8 }, (_, i) => {
-        const a = ((i + 1) * Math.PI) / 4;
-        return (
-          <g key={i}>
-            <path
-              d={`M${Math.cos(a) * 34} ${Math.sin(a) * 34}L${Math.cos(a) * 50} ${Math.sin(a) * 50}`}
-              className="kart-map-checkpoint"
-            />
-            <text
-              x={Math.cos(a) * 57}
-              y={Math.sin(a) * 57 + 1}
-              className="kart-map-sector"
-            >
-              {i === 7 ? "START" : i + 1}
-            </text>
-          </g>
-        );
-      })}
+      {!imported &&
+        Array.from({ length: 8 }, (_, i) => {
+          const a = ((i + 1) * Math.PI) / 4;
+          return (
+            <g key={i}>
+              <path
+                d={`M${Math.cos(a) * 34} ${Math.sin(a) * 34}L${Math.cos(a) * 50} ${Math.sin(a) * 50}`}
+                className="kart-map-checkpoint"
+              />
+              <text
+                x={Math.cos(a) * 57}
+                y={Math.sin(a) * 57 + 1}
+                className="kart-map-sector"
+              >
+                {i === 7 ? "START" : i + 1}
+              </text>
+            </g>
+          );
+        })}
       {race.powers?.boxes
         .filter((b) => b.available)
         .map((b) => (
           <g key={b.id} aria-label="Item box">
             <rect
-              x={b.x - 1.3}
-              y={b.z - 1.3}
+              x={px(b.x) - 1.3}
+              y={pz(b.z) - 1.3}
               width={2.6}
               height={2.6}
               fill="var(--accent)"
             />
             <text
-              x={b.x}
-              y={b.z + 0.8}
+              x={px(b.x)}
+              y={pz(b.z) + 0.8}
               textAnchor="middle"
               fontSize="2.4"
               fill="var(--accent-foreground)"
@@ -146,8 +167,8 @@ export function KartMap({
       {race.powers?.oils.map((o) => (
         <circle
           key={o.id}
-          cx={o.x}
-          cy={o.z}
+          cx={px(o.x)}
+          cy={pz(o.z)}
           r={1.6}
           fill="var(--background)"
           stroke="var(--highlight)"
@@ -155,22 +176,26 @@ export function KartMap({
           aria-label="Oil slick"
         />
       ))}
-      <path d="M34 0H50" className="kart-map-finish" />
-      <text y="-2" className="kart-map-wordmark">
-        26
-      </text>
-      <text y="6" className="kart-map-caption">
-        GRAND PRIX
-      </text>
-      <text y="13" className="kart-map-caption">
-        CLOCKWISE ↻
-      </text>
+      {!imported && (
+        <>
+          <path d="M34 0H50" className="kart-map-finish" />
+          <text y="-2" className="kart-map-wordmark">
+            26
+          </text>
+          <text y="6" className="kart-map-caption">
+            GRAND PRIX
+          </text>
+          <text y="13" className="kart-map-caption">
+            CLOCKWISE ↻
+          </text>
+        </>
+      )}
       {drivers.map((driver) => (
         <motion.g
           key={driver.playerId}
           data-map-player={driver.playerId}
           initial={false}
-          animate={{ x: driver.x, y: driver.z }}
+          animate={{ x: px(driver.x), y: pz(driver.z) }}
           transition={{ duration: reduced ? 0 : 0.18, ease: "linear" }}
         >
           <title>{`#${driver.number} ${driver.name} · ${driver.status === "FINISHED" ? "Finished" : driver.status === "DNF" ? "DNF" : `${Math.round(driver.progress * 100)}%`}`}</title>

@@ -100,7 +100,7 @@ it("reports unavailable layouts and retries without inventing a race or a questi
   expect(screen.queryByText(/Shared preview/)).toBeNull();
 });
 
-it("keeps room actions in the existing room controls and explains the solo/multiplayer distinction", async () => {
+it("keeps room actions in the existing controls and explains the birthday race", async () => {
   mount();
   fireEvent.click(screen.getByRole("button", { name: "Multiplayer" }));
   await screen.findByRole("heading", { name: "Race with phones" });
@@ -108,9 +108,7 @@ it("keeps room actions in the existing room controls and explains the solo/multi
   expect(screen.getByRole("link", { name: "Open rooms →" }).getAttribute("href")).toBe(
     "/admin/rooms",
   );
-  expect(
-    screen.getByText(/rehearsal start is available only in local development/),
-  ).toBeTruthy();
+  expect(screen.getByText(/birthday race uses this imported circuit/)).toBeTruthy();
   expect(readContent).not.toHaveBeenCalled();
 });
 

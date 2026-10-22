@@ -1121,18 +1121,53 @@ export class PartyRoom extends DurableObject<Env> {
     });
   }
 
-  async startBirthday(input: { credentialId: string; secret: string; requestId: string; nowMs: number }): Promise<PhaseCommandResult> {
-    const allowed = await this.requireControl(input.credentialId, input.secret, input.nowMs);
+  async startBirthday(input: {
+    credentialId: string;
+    secret: string;
+    requestId: string;
+    nowMs: number;
+  }): Promise<PhaseCommandResult> {
+    const allowed = await this.requireControl(
+      input.credentialId,
+      input.secret,
+      input.nowMs,
+    );
     if (!allowed.ok) return allowed;
+    if (this.readReceipt("control", input.requestId))
+      return this.phaseCommand(input.requestId, { action: "start-birthday" }, () => {});
     const order = await this.env.ROOM_CODE_REGISTRY.getByName("codes").birthdayOrder();
     let script;
-    try { script = await freezeBirthdayOrder(order); }
-    catch (error) { return { ok: false, error: "invalid", message: error instanceof Error ? error.message : "The birthday running order is unavailable." }; }
-    return this.phaseCommand(input.requestId, { action: "start-birthday" }, sql => {
-      if (createSqlStore(sql).readRoom().phase !== "lobby") throw new Error("This game has already started.");
+    try {
+      script = await freezeBirthdayOrder(order);
+    } catch (error) {
+      return {
+        ok: false,
+        error: "invalid",
+        message:
+          error instanceof Error
+            ? error.message
+            : "The birthday running order is unavailable.",
+      };
+    }
+    return this.phaseCommand(input.requestId, { action: "start-birthday" }, (sql) => {
+      if (createSqlStore(sql).readRoom().phase !== "lobby")
+        throw new Error("This game has already started.");
       writeRoundState(sql, "__pack", "birthday-script", script);
-      sql.exec("UPDATE room SET question_set_version = ?, scoring_version = ?, opening = 'done'", script.version, demoScoringVersion);
-      startRound(createGameStore(sql), input.nowMs, { ...multipleChoicePlugin(), questionCount: script.questions.length, collectWindows: script.questions.map(q => q.collectMs) }, crypto.randomUUID());
+      sql.exec(
+        "UPDATE room SET question_set_version = ?, scoring_version = ?, opening = 'done'",
+        script.version,
+        demoScoringVersion,
+      );
+      startRound(
+        createGameStore(sql),
+        input.nowMs,
+        {
+          ...multipleChoicePlugin(),
+          questionCount: script.questions.length,
+          collectWindows: script.questions.map((q) => q.collectMs),
+        },
+        crypto.randomUUID(),
+      );
     });
   }
 

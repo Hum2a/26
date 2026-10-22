@@ -39,6 +39,7 @@ export type DrivingProfile = {
   drag: number;
   rollingResistance: number;
   turnRate: number;
+  lowSpeedTurnRate?: number;
   driftTurnBase?: number;
 };
 export const ringDriving: DrivingProfile = {
@@ -60,6 +61,7 @@ export const soloDriving: DrivingProfile = {
   drag: 0.006,
   rollingResistance: 0.35,
   turnRate: 1.35,
+  lowSpeedTurnRate: 2.4,
   driftTurnBase: 0.25,
 };
 export const createDrivingBody = (x = 0, z = 0, heading = 0): DrivingBody => ({
@@ -257,13 +259,22 @@ export function stepDriving(
     speed += (engine - Math.sign(forward) * resistance) * dt;
     if (!engine && Math.sign(speed) !== Math.sign(forward)) speed = 0;
   }
+  // Tight circuit bends need more steering lock at low speed, easing to the
+  // established high-speed steering rate rather than amplifying a fast drift.
+  const turnRate =
+    profile.turnRate +
+    ((profile.lowSpeedTurnRate ?? profile.turnRate) - profile.turnRate) *
+      Math.max(
+        0,
+        Math.min(1, (profile.maxSpeed - Math.abs(speed)) / (profile.maxSpeed * 0.4)),
+      );
   next.turn = damp(
     body.turn,
     (drifting
       ? side *
         ((profile.driftTurnBase ?? 0.12) +
           (profile.driftTurnBase ? 0.9 : 0.75) * input.steer * side)
-      : input.steer) * profile.turnRate,
+      : input.steer) * turnRate,
     airborne ? 3 : 10,
     dt,
   );

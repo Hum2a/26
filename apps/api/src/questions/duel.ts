@@ -151,7 +151,7 @@ export function nextDemoIndex(sql: SqlStorage, room: RoomClock): number | "final
   const totals = pointTotals(sql);
   while (index < room.questionCount) {
     const question = questionFor({
-      questionSetVersion: room.questionSetVersion,
+      ...room,
       questionIndex: index,
     });
     if (

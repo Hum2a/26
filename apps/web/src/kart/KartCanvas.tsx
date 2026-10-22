@@ -82,9 +82,11 @@ export default function KartCanvas({
       },
       mobile,
       followPlayerId,
+      race.trackId,
+      () => setFailed(true),
     );
     const camera = followPlayerId
-      ? new THREE.PerspectiveCamera(65, 1, 0.1, 200)
+      ? new THREE.PerspectiveCamera(65, 1, 0.1, 1000)
       : new THREE.OrthographicCamera(-64, 64, 64, -64, 0.1, 500);
     camera.position.set(0, 112, 72);
     camera.lookAt(0, 0, -3);
@@ -166,7 +168,7 @@ export default function KartCanvas({
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [mobile, followPlayerId, race.raceId, revision]);
+  }, [mobile, followPlayerId, race.raceId, race.trackId, revision]);
   return (
     <div className="kart-canvas-root">
       <div ref={mount} className="kart-canvas-mount" />

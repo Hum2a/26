@@ -18,6 +18,7 @@ Do not invent personal facts, guest names, photos, or anecdotes. The illustrativ
 - [Checks](#checks)
 - [Custom design](#custom-design)
 - [Kart sprint](#kart-sprint)
+- [Arrange and start the birthday pack](#arrange-and-start-the-birthday-pack)
 
 </details>
 
@@ -111,9 +112,9 @@ When an ordinary setting is omitted, the helper uses `apps/api/src/questions/def
 - Duel: 50 points, a solo player if the room is odd, a shared tie, a missing opponent forfeits.
 - Finale: 70 points for the contestants, 30 for a correct prediction, 20 seconds to predict.
 
-Windows must be a whole number of milliseconds from 15 to 45 seconds. Points are a whole number from 0 to 1000. A question id is 1 to 40 characters, lowercase letters, digits, and hyphens. A prompt is 1 to 200 characters. Option ids are 1 to 16 characters in the same slug form. Labels are 1 to 80 characters. A pack order holds at most 40 questions.
+Windows must be a whole number of milliseconds from 15 to 45 seconds. Points are a whole number from 0 to 1000. A question id is 1 to 40 characters, lowercase letters, digits, and hyphens. A prompt is 1 to 200 characters. Option ids are 1 to 16 characters in the same slug form. Labels are 1 to 80 characters. A pack order holds at most 80 rounds. Wordle and the imported kart circuit may use up to 180 seconds.
 
-The catalogue may hold more than 40 entries; that limit applies to the live running order. An unordered question's isolated phone rehearsal shows `1 / 1`. A question in a running order keeps its position and that order's total.
+The catalogue may hold more than 80 entries; that limit applies to the live running order. An unordered question's isolated phone rehearsal shows `1 / 1`. A question in a running order keeps its position and that order's total.
 
 ## Completed party variants
 
@@ -166,8 +167,16 @@ A phone design receives the phone's `open`, `pending`, `selectedId`, and the sel
 
 ## Kart sprint
 
-`kartQuestion` uses the supported `party-ring-v1` circuit, a fixed 45-second collection window, live participant numbers/names and 100 ordinary points. It reuses intro → prompt → collect (race) → reveal → scores. The server freezes participants at intro and owns physics, ordered checkpoints, timing and scores. Phones send only normalised controls on the existing authenticated WebSocket. No client lap time or checkpoint hash awards a result.
+`kartQuestion` defaults to `party-ring-v1` with a 45-second window. The birthday `kart-sprint` selects `mario-circuit-v1` with a three-minute window. Both use live participant numbers/names and 100 ordinary points. It reuses intro → prompt → collect (race) → reveal → scores. The server freezes participants at intro and owns physics, ordered checkpoints, timing and scores. Phones send only normalised controls on the existing authenticated WebSocket. No client lap time or checkpoint hash awards a result.
 
-The Question packs phone preview is an isolated controller layout rehearsal, labelled with no running race. For a real multi-device rehearsal, use a fresh local lobby and Admin → Live controls → Start local kart rehearsal. That explicit development start is rejected in staging/production. Full contracts, engine provenance, scoring, rendering limits and the quiz/race/podium sequence are in [kart-minigame.md](kart-minigame.md). `kart-sprint` remains out of the birthday running order until a separate release is requested.
+The Question packs phone preview is an isolated controller layout rehearsal, labelled with no running race. For a real multi-device rehearsal, use a fresh local lobby and Admin → Live controls → Start local kart rehearsal. That explicit development start is rejected in staging/production. Full contracts, engine provenance, scoring, rendering limits and the quiz/race/podium sequence are in [kart-minigame.md](kart-minigame.md). `kart-sprint` is the final round in the default birthday order.
 
 The Tribunal/chaos ideas are recorded in [content/tribunal-and-chaos.md](content/tribunal-and-chaos.md). A real Reddit/community/listing round needs its genuine source and answer. Self-vote multipliers, live spoken debates and push-your-luck raids remain explicit unsupported drafts; ordinary polls or text ballots must not be presented as those finished mechanics.
+
+## Arrange and start the birthday pack
+
+Admin → Question packs → Running order offers drag handles, keyboard-accessible move buttons, move to end, remove and add completed rounds. Save explicitly, or discard edits. Unfinished drafts cannot be included. Saves use revisions to refuse stale edits from another tab and retain the latest 20 save summaries. This edits ordering only; question content remains versioned server-side TypeScript.
+
+The default order includes completed catalogue questions with kart last. In a fresh room’s Live controls, choose **Start birthday game**. The server validates the saved order and freezes the full private question script under `birthday-r<revision>-<content hash>`. Subsequent order or catalogue changes do not alter that game, including after eviction. The catalogue id `birthday-draft` remains unavailable as a directly playable version; the explicit birthday start creates the immutable room version. The illustrative demo is still separate.
+
+For a short connected rehearsal, save an order containing only `kart-sprint`, create a fresh lobby, join from a second tab or phone and start the birthday game. Restore the intended order afterwards. There is no guest account or new CMS.

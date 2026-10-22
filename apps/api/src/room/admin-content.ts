@@ -52,8 +52,12 @@ export function adminContent(order?: BirthdayOrder): AdminContent | null {
       ...(pack.packId === "birthday" && order ? { runningOrder: order } : {}),
       questions: [...pack.catalogue]
         .sort((a, b) => {
-          const left = (pack.packId === "birthday" && order ? order.ids : pack.order).indexOf(a.id),
-            right = (pack.packId === "birthday" && order ? order.ids : pack.order).indexOf(b.id);
+          const left = (
+              pack.packId === "birthday" && order ? order.ids : pack.order
+            ).indexOf(a.id),
+            right = (
+              pack.packId === "birthday" && order ? order.ids : pack.order
+            ).indexOf(b.id);
           return (left < 0 ? Infinity : left) - (right < 0 ? Infinity : right);
         })
         .map((question) => ({
@@ -63,8 +67,13 @@ export function adminContent(order?: BirthdayOrder): AdminContent | null {
           mechanic: question.kind,
           presentation: question.presentation,
           status: question.status,
-          order: (pack.packId === "birthday" && order ? order.ids : pack.order).includes(question.id)
-            ? (pack.packId === "birthday" && order ? order.ids : pack.order).indexOf(question.id) + 1
+          order: (pack.packId === "birthday" && order
+            ? order.ids
+            : pack.order
+          ).includes(question.id)
+            ? (pack.packId === "birthday" && order ? order.ids : pack.order).indexOf(
+                question.id,
+              ) + 1
             : null,
           missing: missingRequirements(question).map(({ code, name, detail }) => ({
             code,
@@ -85,16 +94,36 @@ export function adminContent(order?: BirthdayOrder): AdminContent | null {
 }
 
 export function registerAdminContentRoutes(app: Hono<{ Bindings: Env }>) {
-  app.post("/api/admin/content/birthday/order", async c => {
+  app.post("/api/admin/content/birthday/order", async (c) => {
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
     if (rejected) return rejected;
     let raw: unknown;
-    try { if (Number(c.req.header("content-length") ?? 0) > 16384) return authFailure("invalid", 413); raw = await c.req.json(); }
-    catch { return authFailure("invalid", 400); }
+    try {
+      if (Number(c.req.header("content-length") ?? 0) > 16384)
+        return authFailure("invalid", 413);
+      raw = await readWordlePreviewBody(c.req.raw, 16384);
+    } catch {
+      return authFailure("invalid", 400);
+    }
     const parsed = saveBirthdayOrderSchema.safeParse(raw);
     if (!parsed.success) return authFailure("invalid", 400);
-    try { return jsonData(await c.env.ROOM_CODE_REGISTRY.getByName("codes").updateBirthdayOrder(parsed.data, Date.now())); }
-    catch (error) { return jsonData({ error: "invalid", message: error instanceof Error ? error.message : "The running order could not be saved." }, 409); }
+    try {
+      const result = await c.env.ROOM_CODE_REGISTRY.getByName(
+        "codes",
+      ).updateBirthdayOrder(parsed.data, Date.now());
+      return jsonData(result, "error" in result ? 409 : 200);
+    } catch (error) {
+      return jsonData(
+        {
+          error: "invalid",
+          message:
+            error instanceof Error
+              ? error.message
+              : "The running order could not be saved.",
+        },
+        409,
+      );
+    }
   });
   app.post(
     "/api/admin/content/:version/questions/:questionId/preview/wordle",
@@ -124,7 +153,18 @@ export function registerAdminContentRoutes(app: Hono<{ Bindings: Env }>) {
         },
         404,
       );
-    return jsonData(questionPreview(pack, question));
+    return jsonData(
+      questionPreview(
+        pack.packId === "birthday"
+          ? {
+              ...pack,
+              order: (await c.env.ROOM_CODE_REGISTRY.getByName("codes").birthdayOrder())
+                .ids,
+            }
+          : pack,
+        question,
+      ),
+    );
   });
   app.get("/api/admin/content/:version/questions/:questionId", async (c) => {
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
@@ -141,7 +181,16 @@ export function registerAdminContentRoutes(app: Hono<{ Bindings: Env }>) {
         },
         404,
       );
-    const detail = adminQuestion(pack, question);
+    const detail = adminQuestion(
+      pack.packId === "birthday"
+        ? {
+            ...pack,
+            order: (await c.env.ROOM_CODE_REGISTRY.getByName("codes").birthdayOrder())
+              .ids,
+          }
+        : pack,
+      question,
+    );
     return detail ? jsonData(detail) : authFailure("invalid", 500);
   });
   app.get("/api/admin/trolls", async (c) => {
@@ -156,7 +205,12 @@ export function registerAdminContentRoutes(app: Hono<{ Bindings: Env }>) {
     if (rejected) {
       return rejected;
     }
-    const order = await c.env.ROOM_CODE_REGISTRY.getByName("codes").birthdayOrder();
+    let order: BirthdayOrder;
+    try {
+      order = await c.env.ROOM_CODE_REGISTRY.getByName("codes").birthdayOrder();
+    } catch {
+      return authFailure("invalid", 500);
+    }
     const content = adminContent(order);
     if (!content) {
       return authFailure("invalid", 500);

@@ -30,6 +30,11 @@ export function GuestKart({
 }) {
   const reduced = useReducedMotion();
   const race = snapshot.play?.kart;
+  const timeLimitMs =
+    race?.timeLimitMs ??
+    (snapshot.play?.question.kind === "kart"
+      ? snapshot.play.question.timeLimitMs
+      : 45_000);
   const self = race?.participants.find((d) => d.playerId === race.selfPlayerId);
   const place = race?.leaderboard.find((d) => d.playerId === self?.playerId)?.place;
   const complete = self && self.status !== "RACING";
@@ -47,11 +52,13 @@ export function GuestKart({
           ? "Your driving view opens here. Wait for the race to start."
           : race && !self
             ? "You’re watching this race. Join the next round."
-            : "Drive on this screen. Hold A and steer clockwise.";
+            : "Drive on this screen. Hold A and follow the circuit.";
   return (
     <section className="kart-phone" aria-label="Sprint controller">
       <header className="kart-phone-heading">
-        <p className="kart-eyebrow">ONE LAP · 45 SECONDS</p>
+        <p className="kart-eyebrow">
+          ONE LAP · {timeLimitMs === 180_000 ? "3 MINUTES" : "45 SECONDS"}
+        </p>
         <h1 className="phone-prompt">
           {complete
             ? self.status === "FINISHED"
@@ -62,7 +69,12 @@ export function GuestKart({
               : "Start your engines"}
         </h1>
       </header>
-      {self?.gridPosition && snapshot.phase !== "collect" ? <p>Starting grid: {self.gridPosition} of {race?.participantCount} · seeded by quiz score</p> : null}
+      {self?.gridPosition && snapshot.phase !== "collect" ? (
+        <p>
+          Starting grid: {self.gridPosition} of {race?.participantCount} · seeded by
+          quiz score
+        </p>
+      ) : null}
       <p role="status">
         {rehearsal ? "Controller rehearsal — no race is running." : instruction}
       </p>
@@ -79,7 +91,7 @@ export function GuestKart({
                 ? self.status === "FINISHED"
                   ? `Position ${place ?? "—"}`
                   : `${Math.round(self.progress * 100)}% of the lap`
-                : `${Math.max(0, ((race?.timeLimitMs ?? 45_000) - (race?.elapsedMs ?? 0)) / 1000).toFixed(1)}s left`}
+                : `${Math.max(0, (timeLimitMs - (race?.elapsedMs ?? 0)) / 1000).toFixed(1)}s left`}
             </p>
             <p>
               {complete
@@ -140,7 +152,7 @@ export function GuestKart({
           <p>
             {self.status === "FINISHED"
               ? "You made it. Take your hands off the wheel."
-              : "The 45-second limit is up. There’s always the next round."}
+              : "The race time is up. There’s always the next round."}
           </p>
           <p>Watch the stage for the results.</p>
         </motion.div>
@@ -183,7 +195,7 @@ export function GuestKart({
         <p className="kart-help">
           A: accelerate · B: brake / reverse · R: drift / boost
           <br />
-          Keyboard: arrows and space. Follow the clockwise arrows.
+          Keyboard: arrows and space. Follow the circuit.
         </p>
       ) : null}
       {snapshot.play?.selfAward != null ? (

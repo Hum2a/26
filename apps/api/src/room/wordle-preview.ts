@@ -22,7 +22,10 @@ export function previewWordle(question: AuthoredQuestion, input: unknown) {
 }
 
 /** Also bounds chunked bodies; Content-Length alone is not a limit. */
-export async function readWordlePreviewBody(request: Request): Promise<unknown> {
+export async function readWordlePreviewBody(
+  request: Request,
+  maximum = 1024,
+): Promise<unknown> {
   const reader = request.body?.getReader();
   if (!reader) return undefined;
   const decoder = new TextDecoder();
@@ -33,7 +36,7 @@ export async function readWordlePreviewBody(request: Request): Promise<unknown> 
       const next = await reader.read();
       if (next.done) break;
       size += next.value.byteLength;
-      if (size > 1024) {
+      if (size > maximum) {
         await reader.cancel();
         return undefined;
       }

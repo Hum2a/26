@@ -78,22 +78,24 @@ export function AdminKartPage() {
             <section className="admin-kart-pane" aria-label="Multiplayer rehearsal">
               <h2>Race with phones</h2>
               <p>
-                The connected party race uses the ring circuit: guests drive on their
-                phones and the stage shows the field and scoreboard. The imported solo
-                circuit above is not connected to rooms yet.
+                The birthday race uses this imported circuit, with up to 80 racers and a
+                three-minute limit. Current quiz scores set the starting grid, highest
+                first; equal scores keep joining order. Guests drive on their phones
+                while the stage shows the field and scoreboard.
               </p>
               <ol className="list-decimal space-y-2 pl-6">
                 <li>Create or open a room, then open its Live controls.</li>
                 <li>Connect the stage and join from each phone using the room code.</li>
                 <li>
-                  In local development, choose Start local kart rehearsal. Advance
-                  through the quiz and kart get-ready beats to start the race.
+                  Choose Start birthday game. Advance through the pack to the kart round
+                  and through its get-ready beats. For a short rehearsal, save an order
+                  containing only kart before creating a fresh game.
                 </li>
               </ol>
               <p>
-                The rehearsal start is available only in local development. On the
-                deployed site, kart must be included in the room’s released question
-                pack. Layout previews do not start a race or change a room.
+                Question packs controls the order for new games. Existing games keep
+                their frozen script. The local kart rehearsal retains the shorter ring
+                circuit. Layout previews do not start a race or change a room.
               </p>
               <Link className="entry-text-link" to="/admin/rooms">
                 Open rooms →

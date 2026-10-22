@@ -21,6 +21,17 @@ import {
 } from "./controls.test-support";
 beforeEach(() => setupControls());
 
+it("starts the saved birthday script from the lobby", async () => {
+  setupControls(roomFixture);
+  await mountControls(<LiveConsole />);
+  fireEvent.click(screen.getByRole("button", { name: "Start birthday game" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "start-birthday" }),
+    ),
+  );
+});
+
 it("offers lobby actions without misleading phase controls", async () => {
   setupControls(roomFixture);
   await mountControls(<LiveConsole />);
@@ -163,7 +174,9 @@ it("steps fun facts and shows the next line only on this screen", async () => {
   expect(screen.getByText("Next: 60% of you use dark mode.")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Next fact" }));
   await waitFor(() =>
-    expect(playRoom).toHaveBeenCalledWith(expect.objectContaining({ action: "advance" })),
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "advance" }),
+    ),
   );
   update({
     ...playingFixture,
@@ -187,6 +200,8 @@ it("steps fun facts and shows the next line only on this screen", async () => {
   });
   fireEvent.click(screen.getByRole("button", { name: "Show the podium" }));
   await waitFor(() =>
-    expect(playRoom).toHaveBeenCalledWith(expect.objectContaining({ action: "advance" })),
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "advance" }),
+    ),
   );
 });

@@ -39,7 +39,7 @@ export function QuestionPage() {
       : "Question details · 26";
   }, [question]);
   return (
-    <section className="admin-section admin-question-page">
+    <section className="admin-section admin-question-page admin-question-detail-page">
       <Link className="entry-text-link" to={`/admin/content?${backParams.toString()}`}>
         ← Back to question packs
       </Link>
@@ -180,11 +180,11 @@ export function QuestionPage() {
             </aside>
           </div>
           <Disclosure title="Phone and stage rehearsal">
-          <PhonePreviewPanel
-            key={`${version}/${questionId}`}
-            version={version}
-            questionId={questionId}
-          />
+            <PhonePreviewPanel
+              key={`${version}/${questionId}`}
+              version={version}
+              questionId={questionId}
+            />
           </Disclosure>
         </motion.div>
       ) : null}

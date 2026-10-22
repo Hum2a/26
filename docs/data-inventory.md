@@ -161,3 +161,9 @@ The existing `round_state` kart race JSON now also holds optional vertical heigh
 Course features are off by default for connected races. The race stores the enabled flag and the latest 20 host changes (`atMs`, `enabled`). Only the control snapshot receives `kartCourseHistory`; stage and guest snapshots omit it. Host on/off commands use the existing control receipts. Turning features off lands airborne karts and clears outstanding course boost. Existing race retention applies.
 
 Standalone practice retains its course switches, practice starting point and flight state only in the existing in-memory solo store. Reset clears active physics and item effects; no room, archive or identity is created.
+
+## Birthday order and frozen scripts
+
+The existing room-code registry stores one `pack_order` row for birthday: ordered question ids, revision, save timestamp and the latest 20 revision/count/timestamp summaries. Its existing receipt table stores idempotent order-save results under `pack-order`. Access requires the administrator session and same-origin request validation. No answers are included in the ordering projection.
+
+Each started birthday room stores its frozen private question script in existing `round_state` under `__pack` / `birthday-script`, with its revision and content-hashed version. It contains server-only answer/scoring definitions and is never serialised into control, guest or stage snapshots. It follows room storage retention. Public snapshots continue to use deliberate question projections. Kart state additionally records track, deadline and score-seeded grid positions; guest phone projections expose only that phone’s pose plus bounded standings.

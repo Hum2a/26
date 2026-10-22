@@ -34,13 +34,15 @@ it("shows draft readiness and order without editing or releasing a pack", async 
     </MemoryRouter>,
   );
   await screen.findByText("Photo: Photo not supplied");
-  expect(screen.getByText(/Preparation only/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: /Pack details/ }));
+  expect(screen.getByText(/Versioned question source/)).toBeTruthy();
   expect(screen.getByText(/Not in running order/)).toBeTruthy();
   expect(
     screen.getByRole("link", { name: "View Draft question" }).getAttribute("href"),
   ).toContain(
     "/admin/content/birthday-draft/draft-question?pack=birthday-draft&question=draft-question",
   );
+  fireEvent.click(screen.getByRole("button", { name: /Phone and stage rehearsal/ }));
   expect(screen.getByTitle("Interactive phone preview").getAttribute("src")).toContain(
     "/admin/phone-preview/birthday-draft/draft-question",
   );
@@ -59,6 +61,9 @@ it("recovers a failed readiness request", async () => {
   );
   await screen.findByText("Content unavailable");
   fireEvent.click(screen.getByRole("button", { name: "Refresh packs" }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: /How to update a question/ }),
+  );
   await screen.findByText("How to update a question", { selector: "h2" });
   expect(readContent).toHaveBeenCalledTimes(2);
 });
@@ -119,6 +124,7 @@ it("browses grouped questions with search, readiness filters and previous/next i
       .getByRole("button", { name: "Preview Third choice" })
       .getAttribute("aria-current"),
   ).toBe("true");
+  fireEvent.click(screen.getByRole("button", { name: /Phone and stage rehearsal/ }));
   expect(screen.getByTitle("Interactive phone preview").getAttribute("src")).toContain(
     "/third?",
   );
@@ -166,6 +172,7 @@ it("restores a deep-linked selected question", async () => {
       "aria-current",
     ),
   ).toBe("true");
+  fireEvent.click(screen.getByRole("button", { name: /Phone and stage rehearsal/ }));
   expect(screen.getByTitle("Interactive phone preview").getAttribute("src")).toContain(
     "/b?",
   );

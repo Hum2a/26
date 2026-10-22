@@ -47,7 +47,8 @@ export const adminFeatures: readonly AdminFeature[] = [
     label: "Question packs",
     scope: "global",
     path: "content",
-    summary: "Every question, its answers, readiness and media.",
+    summary:
+      "Manage the birthday running order and inspect questions, answers, readiness and media.",
     rehearsal: "Each question opens on a rehearsal phone and stage with no room.",
     owns: [
       "apps/api/src/questions",

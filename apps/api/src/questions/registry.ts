@@ -48,7 +48,10 @@ for (const pack of questionPacks) {
 
 /** Explicit local rehearsal only; never in the admin pack catalogue or a production start path. */
 export const kartRehearsalVersion = "kart-rehearsal-v2";
-const rehearsalKart = toPlayable(kartSprint, true)!;
+const rehearsalKart = toPlayable(
+  { ...kartSprint, trackId: "party-ring-v1", timeLimitMs: 45000, collectMs: 45000 },
+  true,
+)!;
 released.set("kart-rehearsal-v1", {
   packId: "kart-rehearsal",
   version: "kart-rehearsal-v1",
@@ -96,8 +99,21 @@ export function playableQuestions(pack: QuestionPack): Question[] {
   return questions;
 }
 
-export function resolveContent(version: string, script?: BirthdayScript): ContentResolution {
-  if (script && script.version === version) return { status: "playable", pack: { packId: "birthday", version, illustrative: false, profile: "party", questions: script.questions } };
+export function resolveContent(
+  version: string,
+  script?: BirthdayScript,
+): ContentResolution {
+  if (script && script.version === version)
+    return {
+      status: "playable",
+      pack: {
+        packId: "birthday",
+        version,
+        illustrative: false,
+        profile: "party",
+        questions: script.questions,
+      },
+    };
   if (version === pinnedQuestionSetVersion) {
     return { status: "lobby" };
   }
@@ -140,7 +156,9 @@ export function unavailableContentMessage(room: {
   if (room.phase === "lobby" || room.questionCount <= 0) {
     return undefined;
   }
-  if (resolveContent(room.questionSetVersion, room.questionScript).status === "playable") {
+  if (
+    resolveContent(room.questionSetVersion, room.questionScript).status === "playable"
+  ) {
     return undefined;
   }
   return contentUnavailableMessage;

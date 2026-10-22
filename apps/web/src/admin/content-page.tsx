@@ -19,7 +19,9 @@ export function ContentPage() {
     content.data?.packs.find((pack) => pack.version === version) ??
     content.data?.packs.find((pack) => pack.id === "birthday") ??
     content.data?.packs[0];
-  const view = params.get("view") ?? (pack?.runningOrder && !params.has("question") ? "order" : "catalogue");
+  const view =
+    params.get("view") ??
+    (pack?.runningOrder && !params.has("question") ? "order" : "catalogue");
   const matches =
     pack?.questions.filter(
       (question) =>
@@ -70,7 +72,9 @@ export function ContentPage() {
           Refresh packs
         </Button>
       </header>
-      <p className="admin-meta">Arrange the show, browse the catalogue and rehearse each round.</p>
+      <p className="admin-meta">
+        Arrange the show, browse the catalogue and rehearse each round.
+      </p>
       <EntryNotice message={content.error} />
       {content.loading ? <p role="status">Checking question packs…</p> : null}
       <div className="admin-content-grid">
@@ -100,201 +104,243 @@ export function ContentPage() {
               className="admin-pack-detail"
             >
               <Disclosure title="Pack details">
-              <header>
-                <p className="entry-eyebrow">
-                  {pack.release}
-                  {pack.illustrative ? " · illustrative" : ""}
-                </p>
-                <h2>{pack.version}</h2>
-                <p>
-                  {pack.questions.filter((question) => question.order !== null).length}{" "}
-                  in the running order · {pack.questions.length} in the catalogue
-                </p>
-                <p>
-                  {pack.release === "draft"
-                    ? "Preparation only. Ready questions remain outside the running order until explicitly included and released."
-                    : "Released version. Existing rooms keep the version they started with."}
-                </p>
-              </header>
-              </Disclosure>
-              {pack.runningOrder ? <nav className="content-view-nav" aria-label="Content views">{[["order", "Running order"], ["catalogue", "Question catalogue"]].map(([id, label]) => <button key={id} type="button" aria-pressed={view === id} onClick={() => { const next = new URLSearchParams(params); next.set("view", id!); setParams(next); }}>{label}</button>)}</nav> : null}
-              {view === "order" && pack.runningOrder ? <RunningOrder key={`${pack.version}:${pack.runningOrder.revision}`} pack={{ ...pack, runningOrder: pack.runningOrder }} onSaved={() => void content.refresh()} /> : <>
-              <div className="admin-question-browser">
-                <aside
-                  className="admin-question-catalogue"
-                  aria-label="Browse questions"
-                >
-                  <TextField
-                    label="Search questions"
-                    hint="Search titles, wording, IDs or game types."
-                    type="search"
-                    value={query}
-                    onChange={(event) => filter("q", event.target.value)}
-                  />
-                  <div
-                    className="admin-question-filters"
-                    role="group"
-                    aria-label="Question readiness"
-                  >
-                    {(
-                      [
-                        ["all", "All"],
-                        ["ready", "Ready"],
-                        ["draft", "Drafts"],
-                      ] as const
-                    ).map(([value, label]) => (
-                      <Button
-                        key={value}
-                        variant="secondary"
-                        aria-pressed={status === value}
-                        onClick={() => filter("status", value)}
-                      >
-                        {label} (
-                        {value === "all"
-                          ? pack.questions.length
-                          : pack.questions.filter((q) => q.status === value).length}
-                        )
-                      </Button>
-                    ))}
-                  </div>
-                  <p className="admin-meta" role="status">
-                    {questions.length} of {pack.questions.length} questions shown
+                <header>
+                  <p className="entry-eyebrow">
+                    {pack.release}
+                    {pack.illustrative ? " · illustrative" : ""}
                   </p>
-                  <nav
-                    className="admin-question-catalogue-list"
-                    aria-label="Questions in this pack"
-                  >
-                    {mechanics.map((mechanic) => (
-                      <section key={mechanic}>
-                        <h3>
-                          {mechanic}{" "}
-                          <span>
-                            ({questions.filter((q) => q.mechanic === mechanic).length})
-                          </span>
-                        </h3>
-                        <ul>
-                          {questions
-                            .filter((q) => q.mechanic === mechanic)
-                            .map((question) => (
-                              <li key={question.id}>
-                                <button
-                                  type="button"
-                                  aria-current={
-                                    preview?.id === question.id ? "true" : undefined
-                                  }
-                                  data-question-id={question.id}
-                                  aria-label={`Preview ${question.title}`}
-                                  onClick={() => selectQuestion(question.id)}
-                                >
-                                  <strong>{question.title}</strong>
-                                  <span>
-                                    {question.status} ·{" "}
-                                    {question.order === null
-                                      ? "Not in running order"
-                                      : `Question ${question.order}`}
-                                  </span>
-                                </button>
-                              </li>
-                            ))}
-                        </ul>
-                      </section>
-                    ))}
-                  </nav>
-                  {!questions.length ? (
-                    <p>No questions match. Try another search or readiness filter.</p>
-                  ) : null}
-                </aside>
-                {preview ? (
-                  <section
-                    className="admin-question-selected"
-                    aria-label="Selected question"
-                  >
-                    <nav
-                      className="admin-question-stepper"
-                      aria-label="Step through questions"
+                  <h2>{pack.version}</h2>
+                  <p>
+                    {
+                      pack.questions.filter((question) => question.order !== null)
+                        .length
+                    }{" "}
+                    in the running order · {pack.questions.length} in the catalogue
+                  </p>
+                  <p>
+                    {pack.release === "draft"
+                      ? "Versioned question source. Save the birthday running order here, then start the birthday game from a room’s Live controls. Incomplete drafts cannot be included."
+                      : "Released version. Existing rooms keep the version they started with."}
+                  </p>
+                </header>
+              </Disclosure>
+              {pack.runningOrder ? (
+                <nav className="content-view-nav" aria-label="Content views">
+                  {[
+                    ["order", "Running order"],
+                    ["catalogue", "Question catalogue"],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      aria-pressed={view === id}
+                      onClick={() => {
+                        const next = new URLSearchParams(params);
+                        next.set("view", id!);
+                        setParams(next);
+                      }}
                     >
-                      <Button
-                        variant="secondary"
-                        disabled={position <= 0}
-                        onClick={() => selectQuestion(questions[position - 1]!.id)}
-                      >
-                        ← Previous
-                      </Button>
-                      <span>
-                        {position + 1} / {questions.length}
-                      </span>
-                      <Button
-                        variant="secondary"
-                        disabled={position >= questions.length - 1}
-                        onClick={() => selectQuestion(questions[position + 1]!.id)}
-                      >
-                        Next →
-                      </Button>
-                    </nav>
-                    <motion.div
-                      key={preview.id}
-                      initial={{ opacity: 0.7 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+              ) : null}
+              {view === "order" && pack.runningOrder ? (
+                <RunningOrder
+                  key={`${pack.version}:${pack.runningOrder.revision}`}
+                  pack={{ ...pack, runningOrder: pack.runningOrder }}
+                  onSaved={() => void content.refresh()}
+                />
+              ) : (
+                <>
+                  <div className="admin-question-browser">
+                    <aside
+                      className="admin-question-catalogue"
+                      aria-label="Browse questions"
                     >
-                      <p className="entry-eyebrow">
-                        {preview.mechanic} · {preview.status}
+                      <TextField
+                        label="Search questions"
+                        hint="Search titles, wording, IDs or game types."
+                        type="search"
+                        value={query}
+                        onChange={(event) => filter("q", event.target.value)}
+                      />
+                      <div
+                        className="admin-question-filters"
+                        role="group"
+                        aria-label="Question readiness"
+                      >
+                        {(
+                          [
+                            ["all", "All"],
+                            ["ready", "Ready"],
+                            ["draft", "Drafts"],
+                          ] as const
+                        ).map(([value, label]) => (
+                          <Button
+                            key={value}
+                            variant="secondary"
+                            aria-pressed={status === value}
+                            onClick={() => filter("status", value)}
+                          >
+                            {label} (
+                            {value === "all"
+                              ? pack.questions.length
+                              : pack.questions.filter((q) => q.status === value).length}
+                            )
+                          </Button>
+                        ))}
+                      </div>
+                      <p className="admin-meta" role="status">
+                        {questions.length} of {pack.questions.length} questions shown
                       </p>
-                      <h3 className="admin-question-selected-title">{preview.title}</h3>
-                      <p className="admin-question-selected-prompt">{preview.prompt}</p>
-                      <Link
-                        className="admin-question-link"
-                        to={`/admin/content/${encodeURIComponent(pack.version)}/${encodeURIComponent(preview.id)}?${detailParams.toString()}`}
-                        aria-label={`View ${preview.title}`}
+                      <nav
+                        className="admin-question-catalogue-list"
+                        aria-label="Questions in this pack"
                       >
-                        View full question details →
-                      </Link>
-                      {preview.missing.length ? (
-                        <ul
-                          className="admin-question-browser-gaps"
-                          aria-label={`Missing for ${preview.title}`}
-                        >
-                          {preview.missing.map((item, i) => (
-                            <li key={i}>
-                              {item.name}: {item.detail}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="admin-meta">
-                          No missing authoring requirements recorded.
+                        {mechanics.map((mechanic) => (
+                          <section key={mechanic}>
+                            <h3>
+                              {mechanic}{" "}
+                              <span>
+                                (
+                                {
+                                  questions.filter((q) => q.mechanic === mechanic)
+                                    .length
+                                }
+                                )
+                              </span>
+                            </h3>
+                            <ul>
+                              {questions
+                                .filter((q) => q.mechanic === mechanic)
+                                .map((question) => (
+                                  <li key={question.id}>
+                                    <button
+                                      type="button"
+                                      aria-current={
+                                        preview?.id === question.id ? "true" : undefined
+                                      }
+                                      data-question-id={question.id}
+                                      aria-label={`Preview ${question.title}`}
+                                      onClick={() => selectQuestion(question.id)}
+                                    >
+                                      <strong>{question.title}</strong>
+                                      <span>
+                                        {question.status} ·{" "}
+                                        {question.order === null
+                                          ? "Not in running order"
+                                          : `Question ${question.order}`}
+                                      </span>
+                                    </button>
+                                  </li>
+                                ))}
+                            </ul>
+                          </section>
+                        ))}
+                      </nav>
+                      {!questions.length ? (
+                        <p>
+                          No questions match. Try another search or readiness filter.
                         </p>
-                      )}
-                    </motion.div>
-                    <Disclosure title="Phone and stage rehearsal">
-                    <PhonePreviewPanel
-                      key={`${pack.version}/${preview.id}`}
-                      version={pack.version}
-                      questionId={preview.id}
-                    />
-                    </Disclosure>
-                  </section>
-                ) : null}
-              </div>
-              </>}
+                      ) : null}
+                    </aside>
+                    {preview ? (
+                      <section
+                        className="admin-question-selected"
+                        aria-label="Selected question"
+                      >
+                        <nav
+                          className="admin-question-stepper"
+                          aria-label="Step through questions"
+                        >
+                          <Button
+                            variant="secondary"
+                            disabled={position <= 0}
+                            onClick={() => selectQuestion(questions[position - 1]!.id)}
+                          >
+                            ← Previous
+                          </Button>
+                          <span>
+                            {position + 1} / {questions.length}
+                          </span>
+                          <Button
+                            variant="secondary"
+                            disabled={position >= questions.length - 1}
+                            onClick={() => selectQuestion(questions[position + 1]!.id)}
+                          >
+                            Next →
+                          </Button>
+                        </nav>
+                        <motion.div
+                          key={preview.id}
+                          initial={{ opacity: 0.7 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.15, ease: "easeOut" }}
+                        >
+                          <p className="entry-eyebrow">
+                            {preview.mechanic} · {preview.status}
+                          </p>
+                          <h3 className="admin-question-selected-title">
+                            {preview.title}
+                          </h3>
+                          <p className="admin-question-selected-prompt">
+                            {preview.prompt}
+                          </p>
+                          <Link
+                            className="admin-question-link"
+                            to={`/admin/content/${encodeURIComponent(pack.version)}/${encodeURIComponent(preview.id)}?${detailParams.toString()}`}
+                            aria-label={`View ${preview.title}`}
+                          >
+                            View full question details →
+                          </Link>
+                          {preview.missing.length ? (
+                            <ul
+                              className="admin-question-browser-gaps"
+                              aria-label={`Missing for ${preview.title}`}
+                            >
+                              {preview.missing.map((item, i) => (
+                                <li key={i}>
+                                  {item.name}: {item.detail}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="admin-meta">
+                              No missing authoring requirements recorded.
+                            </p>
+                          )}
+                        </motion.div>
+                        <Disclosure title="Phone and stage rehearsal">
+                          <PhonePreviewPanel
+                            key={`${pack.version}/${preview.id}`}
+                            version={pack.version}
+                            questionId={preview.id}
+                          />
+                        </Disclosure>
+                      </section>
+                    ) : null}
+                  </div>
+                </>
+              )}
             </motion.section>
           ) : null}
         </AnimatePresence>
       </div>
       <Disclosure title="How to update a question">
-      <section className="admin-task-section" id="authoring-workflow">
-        <h2>How to update a question</h2>
-        <p>
-          Tell the project assistant the question idea or its existing ID. Wording,
-          facts and assets stay in the versioned party script. New ideas are saved as
-          drafts; making a question ready does not add it to the running order.
-          Inclusion and release are separate decisions.
-        </p>
-        <p>
-          Use “Next question idea…”, “Make this question ready”, or “Move this question
-          before…”. The detailed project guide is docs/question-authoring.md.
-        </p>
-      </section>
+        <section className="admin-task-section" id="authoring-workflow">
+          <h2>How to update a question</h2>
+          <p>
+            Tell the project assistant the question idea or its existing ID. Wording,
+            facts and assets stay in the versioned party script. New ideas are saved as
+            drafts; making a question ready does not add it to the running order.
+            Inclusion and release are separate decisions.
+          </p>
+          <p>
+            Use “Next question idea…”, “Make this question ready”, or “Move this
+            question before…”. The detailed project guide is docs/question-authoring.md.
+          </p>
+        </section>
       </Disclosure>
     </section>
   );

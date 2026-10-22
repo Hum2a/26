@@ -1,5 +1,7 @@
 import * as THREE from "three";
-import { ringBounds, ringCourse, courseFeaturePose } from "@26/shared";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
+import { ringBounds, ringCourse, soloCourse, courseFeaturePose } from "@26/shared";
 import type { KartRaceView } from "@26/shared";
 import { driftSparks, driftStrength } from "./drift-effects";
 import { smoothKartPose, type KartPose } from "./presentation";
@@ -15,11 +17,20 @@ export function createCircuit(
   palette: Palette,
   mobile: boolean,
   focusPlayerId?: string,
+  trackId = "party-ring-v1",
+  onAssetError?: () => void,
 ) {
+  const imported = trackId === "mario-circuit-v1";
+  const course = imported ? soloCourse : ringCourse;
+  let disposed = false;
+  const venue = new THREE.Group();
+  venue.visible = !imported;
+  let target: THREE.Object3D = venue;
   const capacity = focusPlayerId ? 1 : 80;
   const { ground, road, accent, highlight, ink, muted } = palette;
   const scene = new THREE.Scene();
   scene.background = ground;
+  scene.add(venue);
   scene.add(new THREE.HemisphereLight(ink, ground, 2));
   const sun = new THREE.DirectionalLight(ink, 2);
   sun.position.set(25, 70, 10);
@@ -43,6 +54,46 @@ export function createCircuit(
     text = mat(ink),
     dark = mat(ground),
     quiet = mat(muted);
+  const releaseModel = (root: THREE.Object3D) =>
+    root.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      object.geometry.dispose();
+      for (const material of Array.isArray(object.material)
+        ? object.material
+        : [object.material]) {
+        for (const value of Object.values(material))
+          if (value instanceof THREE.Texture) {
+            const bitmap = value.source.data;
+            if (bitmap && typeof bitmap.close === "function") bitmap.close();
+            value.dispose();
+          }
+        material.dispose();
+      }
+    });
+  let model: THREE.Object3D | undefined;
+  const draco = imported
+    ? new DRACOLoader().setDecoderPath("/kart-engine/draco/").setWorkerLimit(1)
+    : undefined;
+  if (draco)
+    new GLTFLoader().setDRACOLoader(draco).load(
+      "/kart-engine/models/mario-circuit-test-transformed.glb",
+      (gltf) => {
+        if (disposed) {
+          releaseModel(gltf.scene);
+          return;
+        }
+        model = gltf.scene;
+        model.position.set(155, -26.4, 15);
+        model.scale.setScalar(0.08);
+        scene.add(model);
+        draco.dispose();
+      },
+      undefined,
+      () => {
+        draco.dispose();
+        onAssetError?.();
+      },
+    );
   const transform = new THREE.Object3D();
   const mesh = (
     geometry: THREE.BufferGeometry,
@@ -53,7 +104,7 @@ export function createCircuit(
   ) => {
     const value = new THREE.Mesh(geometry, material);
     value.position.set(x, y, z);
-    scene.add(value);
+    target.add(value);
     return value;
   };
   const batch = (
@@ -63,7 +114,7 @@ export function createCircuit(
   ) => {
     const value = new THREE.InstancedMesh(geometry, material, count);
     value.frustumCulled = false;
-    scene.add(value);
+    target.add(value);
     instances.add(value);
     return value;
   };
@@ -184,6 +235,7 @@ export function createCircuit(
   }
   // Six batches instead of one group of draw calls per racer (including 320 wheels).
   // Instance colours are the palette; the base material is a neutral multiplier.
+  target = scene;
   const bodyMat = mat(ink);
   bodyMat.color.setRGB(1, 1, 1);
   const bodies = batch(geo(new THREE.BoxGeometry(2.8, 0.65, 1.5)), bodyMat, capacity);
@@ -224,7 +276,7 @@ export function createCircuit(
   sparks.name = "kart-drift-sparks";
   sparks.count = 0;
   sparks.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  const courseProps = batch(seats.geometry, bright, ringCourse.length);
+  const courseProps = batch(seats.geometry, bright, course.length);
   courseProps.name = "kart-course-features";
   const gliders = batch(seats.geometry, second, capacity);
   gliders.name = "kart-gliders";
@@ -401,7 +453,7 @@ export function createCircuit(
     gliders.instanceMatrix.needsUpdate = true;
     let featureCount = 0;
     if (race.courseEnabled)
-      for (const feature of ringCourse) {
+      for (const feature of course) {
         const target = courseFeaturePose(feature, race.elapsedMs);
         const previous = featurePoses.get(feature.id) ?? target;
         const alpha = reduced ? 1 : 1 - Math.exp(-14 * Math.max(0, Math.min(0.1, dt)));
@@ -475,6 +527,9 @@ export function createCircuit(
     setDrivers: rig.setDrivers,
     driverCounts: rig.counts,
     dispose() {
+      disposed = true;
+      draco?.dispose();
+      if (model) releaseModel(model);
       rig.dispose();
       geometries.forEach((g) => g.dispose());
       materials.forEach((m) => m.dispose());

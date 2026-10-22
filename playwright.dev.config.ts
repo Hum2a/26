@@ -10,7 +10,7 @@ export default defineConfig({
     command: "npm run dev -w @26/web -- --port 4173",
     env: { LOCAL_DATABASE_ID: "browser-checks" },
     url: "http://localhost:4173",
-    reuseExistingServer: false,
+    reuseExistingServer: process.env.REUSE_DEV_SERVER === "1",
     timeout: 120_000,
   },
 });

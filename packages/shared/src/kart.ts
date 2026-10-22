@@ -1,4 +1,11 @@
-import { importedTrackId, importedTrackLimitMs, importedLapLength, importedTrackProgress, nearbyImportedWalls, importedSurfaceAt } from "./kart-track.ts";
+import {
+  importedTrackId,
+  importedTrackLimitMs,
+  importedLapLength,
+  importedTrackProgress,
+  nearbyImportedWalls,
+  importedSurfaceAt,
+} from "./kart-track.ts";
 import { ringCourse, soloCourse } from "./kart-course.ts";
 import {
   createKartPowers,
@@ -163,12 +170,21 @@ export function createKartRace(
   players: readonly { playerId: string; name: string; points?: number }[],
   options: { seedGrid?: boolean; trackId?: KartTrackId } = {},
 ): KartRace {
-  if (players.length > 80 || new Set(players.map(p => p.playerId)).size !== players.length) throw new Error("A race supports at most 80 different players.");
-  const roster = options.seedGrid ? players.map((p, index) => ({ ...p, index })).sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || a.index - b.index) : players;
+  if (
+    players.length > 80 ||
+    new Set(players.map((p) => p.playerId)).size !== players.length
+  )
+    throw new Error("A race supports at most 80 different players.");
+  const roster = options.seedGrid
+    ? players
+        .map((p, index) => ({ ...p, index }))
+        .sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || a.index - b.index)
+    : players;
   return {
     raceId,
     trackId: options.trackId ?? kartTrackId,
-    timeLimitMs: options.trackId === importedTrackId ? importedTrackLimitMs : kartLimitMs,
+    timeLimitMs:
+      options.trackId === importedTrackId ? importedTrackLimitMs : kartLimitMs,
     physicsVersion: "arcade-v2",
     courseEnabled: options.trackId === importedTrackId,
     courseHistory: [],
@@ -182,8 +198,18 @@ export function createKartRace(
       number: i + 1,
       ...(options.seedGrid ? { gridPosition: i + 1 } : {}),
       power: createKartPowers(),
-      ...(options.seedGrid || options.trackId === importedTrackId ? gridSlot(i, options.trackId ?? kartTrackId) : { x: 42 + ((i % 5) - 2) * 1.5, z: 0, heading: Math.PI / 2 }),
-      ...(options.seedGrid || options.trackId === importedTrackId ? { lastSafe: { ...gridSlot(i, options.trackId ?? kartTrackId), checkpoint: 0, progress: 0 } } : {}),
+      ...(options.seedGrid || options.trackId === importedTrackId
+        ? gridSlot(i, options.trackId ?? kartTrackId)
+        : { x: 42 + ((i % 5) - 2) * 1.5, z: 0, heading: Math.PI / 2 }),
+      ...(options.seedGrid || options.trackId === importedTrackId
+        ? {
+            lastSafe: {
+              ...gridSlot(i, options.trackId ?? kartTrackId),
+              checkpoint: 0,
+              progress: 0,
+            },
+          }
+        : {}),
       speed: 0,
       progress: 0,
       checkpoint: 0,
@@ -193,8 +219,14 @@ export function createKartRace(
       input: { ...kartNeutral },
       inputUntil: 0,
       turn: 0,
-      angle: options.seedGrid || options.trackId === importedTrackId ? gridSlot(i, options.trackId ?? kartTrackId).angle : 0,
-      distance: options.seedGrid || options.trackId === importedTrackId ? gridSlot(i, options.trackId ?? kartTrackId).distance : 0,
+      angle:
+        options.seedGrid || options.trackId === importedTrackId
+          ? gridSlot(i, options.trackId ?? kartTrackId).angle
+          : 0,
+      distance:
+        options.seedGrid || options.trackId === importedTrackId
+          ? gridSlot(i, options.trackId ?? kartTrackId).distance
+          : 0,
       driftMs: 0,
       boostMs: 0,
       wasDrifting: false,
@@ -287,7 +319,10 @@ export function reduceKartTimeline(
   elapsedMs: number,
 ): KartRace {
   if (race.ended || !Number.isFinite(elapsedMs)) return race;
-  const target = Math.min(race.timeLimitMs ?? kartLimitMs, Math.max(race.elapsedMs, Math.floor(elapsedMs)));
+  const target = Math.min(
+    race.timeLimitMs ?? kartLimitMs,
+    Math.max(race.elapsedMs, Math.floor(elapsedMs)),
+  );
   const next = copyRace(race);
   const byPlayer = new Map<string, KartTimedInput[]>();
   for (const event of events) {
@@ -447,15 +482,12 @@ function stepDriver(
       body,
       input,
       ms,
-      ringDriving,
-      nearbyWalls(
-        body.x,
-        body.z,
-        profile.radius + Math.hypot(body.vx, body.vz) * 0.02,
-      ),
-      Boolean(d.power && d.power.slowedUntil > elapsed) || (imported && importedSurfaceAt(body.x, body.z) !== "road"),
+      profile,
+      nearbyWalls(body.x, body.z, profile.radius + Math.hypot(body.vx, body.vz) * 0.02),
+      Boolean(d.power && d.power.slowedUntil > elapsed) ||
+        (imported && importedSurfaceAt(body.x, body.z) !== "road"),
       fresh,
-      courseEnabled ? imported ? soloCourse : ringCourse : [],
+      courseEnabled ? (imported ? soloCourse : ringCourse) : [],
     );
     if (oils && d.power) {
       const effect = stepKartPowers(
@@ -523,14 +555,40 @@ function stepDriver(
   let change = angle - d.angle;
   if (change > lapLength / 2) change -= lapLength;
   if (change < -lapLength / 2) change += lapLength;
-  const plausible = !projection || (projection.distance <= 20 && Math.abs(change) <= Math.abs(d.speed) * dt * 2 + 2);
-  if (plausible) { d.angle = angle; d.distance = Math.max(-lapLength, d.distance + change); }
-  else change = 0;
+  const plausible =
+    !projection ||
+    (projection.distance <= 20 && Math.abs(change) <= Math.abs(d.speed) * dt * 2 + 2);
   const nextCheckpoint = ((d.checkpoint + 1) * lapLength) / 8;
-  if (change > 0 && d.distance >= nextCheckpoint && d.checkpoint < 8) d.checkpoint += 1;
+  let safeProgress = plausible;
+  if (imported) {
+    const unwrap = (along: number) =>
+      d.checkpoint === 0 && along > lapLength / 2
+        ? along - lapLength
+        : d.checkpoint === 7 && along < lapLength / 8
+          ? along + lapLength
+          : along;
+    const previous = unwrap(d.angle),
+      candidate = unwrap(angle);
+    // A sector is a physical crossing, not accumulated travel: a rejected
+    // projection jump must never let short loops manufacture a completed lap.
+    const crossed =
+      plausible &&
+      change > 0 &&
+      previous < nextCheckpoint &&
+      candidate >= nextCheckpoint;
+    safeProgress = plausible && (candidate < nextCheckpoint || crossed);
+    if (safeProgress) d.distance = candidate;
+    if (crossed && d.checkpoint < 8) d.checkpoint += 1;
+  } else {
+    if (plausible) d.distance = Math.max(-lapLength, d.distance + change);
+    if (change > 0 && d.distance >= nextCheckpoint && d.checkpoint < 8)
+      d.checkpoint += 1;
+  }
+  d.angle = angle;
   d.progress = Math.min(1, Math.max(0, d.distance / lapLength));
   if (
     version === "arcade-v2" &&
+    safeProgress &&
     !d.physics?.contact &&
     !(d.physics?.height ?? 0) &&
     (!imported || importedSurfaceAt(d.x, d.z) === "road") &&
@@ -615,7 +673,10 @@ export function projectKartRace(
             selfItem:
               race.drivers.find((d) => d.playerId === selfPlayerId)?.power?.item ??
               null,
-            boxes: (race.trackId === importedTrackId ? importedBoxes : ringItemBoxes).map((box) => ({
+            boxes: (race.trackId === importedTrackId
+              ? importedBoxes
+              : ringItemBoxes
+            ).map((box) => ({
               ...box,
               available:
                 (race.drivers.find((d) => d.playerId === selfPlayerId)?.power
@@ -692,5 +753,33 @@ function wrongWayVelocity(x: number, z: number, vx: number, vz: number): boolean
   );
 }
 
-function importedWrongWay(x: number,z: number,vx: number,vz: number) { const p=importedTrackProgress(x,z); return Math.hypot(vx,vz)>0.5 && vx*Math.cos(p.heading)+vz*Math.sin(p.heading)<-0.5; }
-function gridSlot(i:number,track:KartTrackId) { const behind=1.5+Math.floor(i/5)*3; if(track===importedTrackId) { const x=((i%5)-2)*4,z=behind;return {x,z,heading:-Math.PI/2,angle:importedTrackProgress(x,z).along,distance:-behind}; } const angle=-behind/42, radius=42+((i%5)-2)*2.5;return{x:Math.cos(angle)*radius,z:Math.sin(angle)*radius,heading:Math.PI/2+angle,angle,distance:angle}; }
+function importedWrongWay(x: number, z: number, vx: number, vz: number) {
+  const p = importedTrackProgress(x, z);
+  return (
+    Math.hypot(vx, vz) > 0.5 &&
+    vx * Math.cos(p.heading) + vz * Math.sin(p.heading) < -0.5
+  );
+}
+function gridSlot(i: number, track: KartTrackId) {
+  const behind = 1.5 + Math.floor(i / 5) * 3;
+  if (track === importedTrackId) {
+    const x = ((i % 5) - 2) * 4,
+      z = behind;
+    return {
+      x,
+      z,
+      heading: -Math.PI / 2,
+      angle: importedTrackProgress(x, z).along,
+      distance: -behind,
+    };
+  }
+  const angle = -behind / 42,
+    radius = 42 + ((i % 5) - 2) * 2.5;
+  return {
+    x: Math.cos(angle) * radius,
+    z: Math.sin(angle) * radius,
+    heading: Math.PI / 2 + angle,
+    angle,
+    distance: angle,
+  };
+}

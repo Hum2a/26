@@ -151,6 +151,10 @@ function loadLocalApp(apiEntry: string): Promise<LocalApp> {
     const loader = await createServer({
       configFile: false,
       appType: "custom",
+      // This SSR-only server must not compete with the browser's dependency
+      // optimiser for the same cache (Windows refuses the concurrent rename).
+      cacheDir: fileURLToPath(new URL("../../artifacts/vite-auth", import.meta.url)),
+      optimizeDeps: { noDiscovery: true, include: [] },
       server: { middlewareMode: true },
       resolve: {
         alias: {

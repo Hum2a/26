@@ -365,16 +365,22 @@ export function finaleQuestion(
   );
 }
 
-export function kartQuestion(input: SharedInput): AuthoredKart {
+export function kartQuestion(
+  input: SharedInput & { trackId?: "party-ring-v1" | "mario-circuit-v1" },
+): AuthoredKart {
   return finish(
     {
       ...shared(
-        { ...input, collectMs: 45_000, attribution: "live" },
+        {
+          ...input,
+          collectMs: input.trackId === "mario-circuit-v1" ? 180_000 : 45_000,
+          attribution: "live",
+        },
         input.points ?? 100,
       ),
       kind: "kart",
-      trackId: "party-ring-v1",
-      timeLimitMs: 45_000,
+      trackId: input.trackId ?? "party-ring-v1",
+      timeLimitMs: input.trackId === "mario-circuit-v1" ? 180_000 : 45_000,
     },
     input.status,
   );

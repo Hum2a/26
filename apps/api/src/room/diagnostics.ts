@@ -1,3 +1,4 @@
+import { createSqlStore } from "./sql-store.ts";
 import { roomDiagnosticsSchema, type RoomDiagnostics } from "@26/shared";
 import { questionFor } from "../questions/registry.ts";
 import { recentScriptErrors } from "../device/store.ts";
@@ -111,10 +112,7 @@ export function readRoomDiagnostics(
     .toArray()[0];
   const questionId =
     room.question_count > 0
-      ? (questionFor({
-          questionSetVersion: room.question_set_version,
-          questionIndex: room.question_index,
-        })?.id ?? null)
+      ? (questionFor(createSqlStore(sql).readRoom())?.id ?? null)
       : null;
   return roomDiagnosticsSchema.parse({
     gameId: room.game_id,

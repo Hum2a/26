@@ -5,6 +5,9 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
+    // Keep jsdom isolation while avoiding slow Windows child-process handshakes.
+    pool: "threads",
+    maxWorkers: 2,
     // Node 25+ otherwise shadows jsdom's real browser Storage globals.
     execArgv: ["--no-webstorage"],
     css: true,

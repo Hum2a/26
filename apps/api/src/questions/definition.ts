@@ -206,7 +206,11 @@ export type AuthoredFinale = AuthorFields &
     contestants: Answer<readonly [string, string]>;
   };
 
-export type KartBody = { kind: "kart"; trackId: "party-ring-v1"; timeLimitMs: 45_000 };
+export type KartBody = {
+  kind: "kart";
+  trackId: "party-ring-v1" | "mario-circuit-v1";
+  timeLimitMs: 45_000 | 180_000;
+};
 export type AuthoredKart = AuthorFields & KartBody;
 export type KartQuestion = PlayableFields & KartBody;
 

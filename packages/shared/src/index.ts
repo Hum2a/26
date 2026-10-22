@@ -365,8 +365,8 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
     .object({
       ...publicQuestionCore,
       kind: z.literal("kart"),
-      trackId: z.literal("party-ring-v1"),
-      timeLimitMs: z.literal(45_000),
+      trackId: z.enum(["party-ring-v1", "mario-circuit-v1"]),
+      timeLimitMs: z.union([z.literal(45_000), z.literal(180_000)]),
     })
     .strict(),
   z

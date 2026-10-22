@@ -163,16 +163,13 @@ function validateAuthored(
   }
   if (
     question.kind === "kart" &&
-    (question.trackId !== "party-ring-v1" ||
-      question.timeLimitMs !== 45_000 ||
-      question.collectMs !== 45_000 ||
-      question.attribution !== "live")
+    (!validKart(question) || question.attribution !== "live")
   )
     issues.push(
       issue(
         "error",
         "kart",
-        `${question.id} needs the supported track, 45-second window and live participant names.`,
+        `${question.id} needs the supported track, matching race window and live participant names.`,
       ),
     );
   issues.push(...suppliedIssues(question, profile));
@@ -328,7 +325,9 @@ function suppliedIssues(
       question.id,
       "collection",
       question.collectMs,
-      question.kind === "wordle" ? 180_000 : contentLimits.collectMaxMs,
+      question.kind === "wordle" || question.kind === "kart"
+        ? 180_000
+        : contentLimits.collectMaxMs,
     ),
   );
   if (
@@ -514,7 +513,9 @@ function validatePlayableQuestions(
         question.id,
         "collection",
         question.collectMs,
-        question.kind === "wordle" ? 180_000 : contentLimits.collectMaxMs,
+        question.kind === "wordle" || question.kind === "kart"
+          ? 180_000
+          : contentLimits.collectMaxMs,
       ),
     );
     if (
@@ -580,9 +581,7 @@ function illustrativeCoverage(questions: readonly Question[]): ContentIssue[] {
 
 function checkPlayable(question: Question): ContentIssue[] {
   if (question.kind === "kart")
-    return question.trackId === "party-ring-v1" &&
-      question.timeLimitMs === 45_000 &&
-      question.collectMs === 45_000
+    return validKart(question)
       ? []
       : [
           issue(
@@ -794,4 +793,14 @@ function issue(
   message: string,
 ): ContentIssue {
   return { level, code, message };
+}
+
+function validKart(q: { trackId: string; timeLimitMs: number; collectMs: number }) {
+  const limit =
+    q.trackId === "party-ring-v1"
+      ? 45000
+      : q.trackId === "mario-circuit-v1"
+        ? 180000
+        : 0;
+  return limit > 0 && q.timeLimitMs === limit && q.collectMs === limit;
 }

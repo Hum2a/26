@@ -87,8 +87,12 @@ export function enterKart(
       q.id,
       createKartRace(
         raceId,
-        players.map((p) => ({ playerId: p.player_id, name: p.nickname, points: p.points })),
-        { seedGrid: true },
+        players.map((p) => ({
+          playerId: p.player_id,
+          name: p.nickname,
+          points: p.points,
+        })),
+        { seedGrid: true, trackId: q.trackId },
       ),
     );
     writeRoundState(sql, q.id, "kart-session", {
@@ -112,7 +116,12 @@ function collectDue(sql: SqlStorage, store: GameStore): CollectDue {
     .toArray()[0];
 }
 
-function elapsedAt(job: CollectDue, paused: boolean, now: number): number {
+function elapsedAt(
+  job: CollectDue,
+  paused: boolean,
+  now: number,
+  limit = kartLimitMs,
+): number {
   const remaining = paused
     ? job?.remaining_ms
     : job?.due_at == null
@@ -120,11 +129,16 @@ function elapsedAt(job: CollectDue, paused: boolean, now: number): number {
       : job.due_at - now;
   return remaining == null
     ? 0
-    : Math.floor(Math.max(0, Math.min(kartLimitMs, kartLimitMs - remaining)));
+    : Math.floor(Math.max(0, Math.min(limit, limit - remaining)));
 }
 
-function elapsed(sql: SqlStorage, store: GameStore, now: number): number {
-  return elapsedAt(collectDue(sql, store), store.readRoom().paused, now);
+function elapsed(
+  sql: SqlStorage,
+  store: GameStore,
+  now: number,
+  limit = kartLimitMs,
+): number {
+  return elapsedAt(collectDue(sql, store), store.readRoom().paused, now, limit);
 }
 
 function catchUp(
@@ -135,7 +149,7 @@ function catchUp(
 ): KartRace | undefined {
   const race = readKart(sql, q.id);
   if (!race) return undefined;
-  const target = elapsed(sql, store, now);
+  const target = elapsed(sql, store, now, q.timeLimitMs);
   const events = sql
     .exec<{ payload: string }>(
       "SELECT payload FROM round_state WHERE question_id = ? AND state_key LIKE 'kart-input:%'",
@@ -358,8 +372,8 @@ export function acceptKartInputs(
       (now - previous.at < 80 || parsed.data.sequence <= previous.lastSequence)
     )
       return false;
-    const at = elapsedAt(due, room.paused, now);
-    if (at >= kartLimitMs) return false;
+    const at = elapsedAt(due, room.paused, now, q.timeLimitMs);
+    if (at >= q.timeLimitMs) return false;
     queues.set(playerId, {
       at: now,
       lastSequence: parsed.data.sequence,

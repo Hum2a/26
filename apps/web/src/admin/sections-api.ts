@@ -17,7 +17,11 @@ export { readSection } from "../api/read-data";
 import { readSection } from "../api/read-data";
 export const readContent = (): Promise<AdminContent | { error: string }> =>
   readSection("/api/admin/content", adminContentSchema);
-export const saveRunningOrder = (request: { requestId: string; expectedRevision: number; ids: string[] }) => readSection("/api/admin/content/birthday/order", birthdayOrderSchema, request);
+export const saveRunningOrder = (request: {
+  requestId: string;
+  expectedRevision: number;
+  ids: string[];
+}) => readSection("/api/admin/content/birthday/order", birthdayOrderSchema, request);
 export const readTrolls = (): Promise<AdminTrolls | { error: string }> =>
   readSection("/api/admin/trolls", adminTrollsSchema);
 export const readQuestion = (

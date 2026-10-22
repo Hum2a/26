@@ -4,7 +4,7 @@
 
 Open **Admin → Kart** (`/admin/kart`) for direct access. **Drive** embeds solo practice, with **Open kart full screen** for a separate tab. **Phone & stage** opens the existing layout comparison without searching question packs. **Multiplayer** links to rooms and explains the current connected-race rehearsal. Solo driving and layout previews do not start a room race.
 
-Each phone has its own playable 3D chase view, touch controls and local driver HUD. The TV is a whole-room spectator map and live scoreboard for 50-plus players, with five leaders pinned and five more drivers cycling every four seconds. All public kart positions appear on the map; only the top three get number labels to keep the map readable. A phone can switch to a lightweight personal map without changing controls or race authority. The sprint ends after one lap per driver or at the server's 45-second deadline. Finished times rank ahead of DNFs; equal times share a place. DNF scores zero. Finisher points are `round(question.points × (participants − place + 1) / participants)`.
+Each phone has its own playable 3D chase view, touch controls and local driver HUD. The TV is a whole-room spectator map and live scoreboard for up to 80 players, with five leaders pinned and five more drivers cycling every four seconds. All public kart positions appear on the map; only the top three get number labels to keep the map readable. A phone can switch to a lightweight personal map without changing controls or race authority. The sprint ends after one lap per driver or at the server's three-minute birthday deadline (45 seconds for the legacy ring rehearsal). Finished times rank ahead of DNFs; equal times share a place. DNF scores zero. Finisher points are `round(question.points × (participants − place + 1) / participants)`.
 
 <details>
 <summary>On this page</summary>
@@ -24,6 +24,7 @@ Each phone has its own playable 3D chase view, touch controls and local driver H
 - [Drift handling polish (21 October 2026)](#drift-handling-polish-21-october-2026)
 
 - [Power, turbo tiers and course features (22 October 2026)](#power-turbo-tiers-and-course-features-22-october-2026)
+- [Birthday integration (22 October 2026)](#birthday-integration-22-october-2026)
 
 </details>
 
@@ -33,7 +34,7 @@ Run `npm run dev`. Sign in, create a fresh lobby, connect a presentation screen 
 
 This is an explicit local development start action. The button is development-only and the server requires `APP_ENV=local` as well as a valid control credential. Staging/production reject it. It pins `kart-rehearsal-v2` (the stored v1 fixture remains resolvable with its original wording), containing an existing illustrative quiz fixture and the kart round; it does not edit the demo version or release a birthday running order. The normal authenticated Question packs preview rehearses the controller layout only, with no room, simulation or fabricated result.
 
-`kart-sprint` is ready in the birthday catalogue, excluded from the running order. To use it at the party, include it in a separately released birthday version. The engine follows whatever stored version a room already owns.
+`kart-sprint` is last in the default birthday running order. Reorder it in Admin → Question packs, then use Start birthday game in a fresh room. The room freezes that script; existing games keep their stored version.
 
 ## Deliverables
 
@@ -201,3 +202,11 @@ The ring has one boost pad, one ramp and one moving sweeper, with the same pure 
 - Real solo browser rehearsals: `npx playwright test --config playwright.kart.config.ts --workers=1`
 
 The imported solo circuit and multiplayer ring remain separate tracks. Gliding is ramp-launched flight with automatic landing; it does not add an unrestricted free-flight mode.
+
+## Birthday integration (22 October 2026)
+
+The birthday round uses the imported Mario circuit (`mario-circuit-v1`) with a three-minute server deadline. `kart-route.ts` supplies the centreline and ordered progress; `kart-track.ts` indexes baked solid walls and road/dirt triangles from the pinned GLB. `npm run kart:colliders` regenerates both the solo collider data and shared `kart-circuit.json`. The visible start-grid mesh bridges a small road-mesh seam. The connected GLB is raised 1.6 metres visually so its road matches the shared renderer’s ground plane; collision coordinates stay in X/Z.
+
+At intro the server freezes up to 80 active players, sums their ledger points and manual adjustments, sorts highest score first and uses joining order for ties. Five columns and sixteen staggered rows give each kart a unique start slot. Karts remain ghosts. Initial safe recovery positions preserve the distance behind the line, so recovery cannot erase a starting disadvantage. Later score changes do not reseed an underway race.
+
+The existing scheduler, control receipts, input queues, pause/resume, reconnect, score settlement and podium flow apply to this round. Imported races start with course features enabled; Live controls can switch them off and force a safe landing. The local `kart-rehearsal-v1/v2` fixtures retain their original ring and 45-second timing. Phones render their own kart; the stage uses the lightweight whole-field map. The admin Drive tab rehearses the real imported engine; the Phone & stage tab rehearses the real layout.

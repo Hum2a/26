@@ -1,3 +1,4 @@
+import { createSqlStore } from "../room/sql-store.ts";
 import {
   answerClosedMessage,
   answerDuplicateMessage,
@@ -1228,19 +1229,8 @@ function currentBallotQuestion(
   return undefined;
 }
 
-function readRoomQuestion(sql: SqlStorage): {
-  questionSetVersion: string;
-  questionIndex: number;
-} {
-  const row = sql
-    .exec<{ question_index: number; question_set_version: string }>(
-      `SELECT question_index, question_set_version FROM room`,
-    )
-    .toArray()[0];
-  return {
-    questionIndex: row?.question_index ?? 0,
-    questionSetVersion: row?.question_set_version ?? "unreleased",
-  };
+function readRoomQuestion(sql: SqlStorage) {
+  return createSqlStore(sql).readRoom();
 }
 
 function readPhase(sql: SqlStorage): string {
