@@ -16,6 +16,15 @@ import {
   Overheating,
   ScreenRecording,
 } from "./chrome-trolls";
+import {
+  Autocorrect,
+  CharacterLimit,
+  HapticStorm,
+  PossessedSlider,
+  ReshuffledOptions,
+  ReverseTyping,
+  TranslatedOptions,
+} from "./sabotage-trolls";
 
 /**
  * Phone-only gags. The server owns when they start and stop; these components
@@ -45,6 +54,13 @@ const screenKinds = [
   "overheating",
   "answer-viewers",
   "typing-dots",
+  "reshuffle",
+  "translate",
+  "slider-drift",
+  "reverse-typing",
+  "autocorrect",
+  "char-limit",
+  "haptic-storm",
 ] as const;
 
 export type ScreenTrollKind = (typeof screenKinds)[number];
@@ -86,6 +102,20 @@ export function ScreenTroll({ kind, label, escape, onEscape, from, seed = 26 }: 
       return <AnswerViewers label={label} />;
     case "typing-dots":
       return <EndlessTyping label={label} from={from} />;
+    case "reshuffle":
+      return <ReshuffledOptions label={label} />;
+    case "translate":
+      return <TranslatedOptions label={label} />;
+    case "slider-drift":
+      return <PossessedSlider label={label} />;
+    case "reverse-typing":
+      return <ReverseTyping label={label} />;
+    case "autocorrect":
+      return <Autocorrect label={label} />;
+    case "char-limit":
+      return <CharacterLimit label={label} />;
+    case "haptic-storm":
+      return <HapticStorm label={label} />;
     case "netanyahu":
       return <NetanyahuFlood label={label} />;
     case "australia":

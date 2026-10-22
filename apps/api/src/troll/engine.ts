@@ -13,6 +13,7 @@ import {
   trollMissingMessage,
   trollModifierMessage,
   trollPhaseMessage,
+  trollQuestionMessage,
   trollSelfMessage,
   trollSlotMessage,
   trollAttributionMessage,
@@ -28,6 +29,7 @@ import {
   slotDecision,
   themeCueCap,
   trollDefinitions,
+  type TrollDefinition,
   type TrollKind,
 } from "./catalogue.ts";
 
@@ -89,6 +91,9 @@ export function acceptTroll(
   }
   if (kind === "typing" && !questionAllowsTyping(room)) {
     return { ok: false, message: trollAttributionMessage };
+  }
+  if (!questionFits(definition, room)) {
+    return { ok: false, message: trollQuestionMessage };
   }
   const voiceMedia = kind === "voice" ? ownedVoice(sql, actorId, mediaId) : null;
   if (kind === "voice" && !voiceMedia) {
@@ -322,6 +327,11 @@ export function hidesPersonalScore(sql: SqlStorage, playerId: string): boolean {
   );
 }
 
+/** Kinds that interfere with answering; see `disruptsSubmission`. */
+const disruptingKinds = Object.values(trollDefinitions)
+  .filter((definition) => definition.disruptsSubmission)
+  .map((definition) => definition.kind);
+
 export function submissionDisrupted(
   sql: SqlStorage,
   playerId: string,
@@ -330,8 +340,10 @@ export function submissionDisrupted(
   return sql
     .exec<{ started_at: number; expires_at: number | null }>(
       `SELECT started_at, expires_at FROM troll_effect
-       WHERE kind = 'yield' AND target_id = ? AND started_at IS NOT NULL`,
+       WHERE target_id = ? AND started_at IS NOT NULL
+         AND kind IN (${disruptingKinds.map(() => "?").join(", ")})`,
       playerId,
+      ...disruptingKinds,
     )
     .toArray()
     .some(
@@ -406,6 +418,7 @@ export function trollSnapshot(
             definition.phases.includes(room.phase) &&
             (definition.kind !== "double" || questionAllowsDouble(room)) &&
             (definition.kind !== "typing" || questionAllowsTyping(room)) &&
+            questionFits(definition, room) &&
             token === "ready",
         }))
       : [];
@@ -577,6 +590,15 @@ export function hostTrollRows(sql: SqlStorage): {
 function questionAllowsDouble(room: RoomClock): boolean {
   const question = questionFor(room);
   return question?.kind === "choice" && question.modifiers?.includes("double") === true;
+}
+
+/** A troll with `questionKinds` only fits those questions. */
+function questionFits(definition: TrollDefinition, room: RoomClock): boolean {
+  if (!definition.questionKinds) {
+    return true;
+  }
+  const kind = questionFor(room)?.kind;
+  return kind !== undefined && definition.questionKinds.includes(kind);
 }
 
 function questionAllowsTyping(room: RoomClock): boolean {

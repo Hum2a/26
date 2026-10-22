@@ -48,7 +48,6 @@ These stay in the catalogue and are rejected if a phone asks for them. They are 
 
 | Group              | Not built                                                                                                                                                                        |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Input sabotage     | Inverted or drifting slider, reshuffled options, reverse typing, comic autocorrect, short character limit, Comic Sans, mirrored or upside-down text, translated options, haptics |
 | Stage theatre      | Replay of a bad answer, speech, fake departure, zoomed photo                                                                                                                     |
 | Identity           | Temporary nickname, Guest 14, fake last place                                                                                                                                    |
 | Scoring            | Misattributed answer, public vote, shared round score, steal points, redirect points                                                                                             |
@@ -78,3 +77,19 @@ Drawn by `apps/web/src/troll` (`screen-trolls.tsx`, `classic-trolls.tsx`, `chrom
 | Overheating        | "Your phone needs to cool down" with a rising temperature         |
 | Fake audience      | "People are watching you answer", climbing                        |
 | Always typing      | "{troller} is typing" that never sends                            |
+
+## Input sabotage
+
+`apps/web/src/troll/sabotage-trolls.tsx`. These act on the answer controls of any question design through the page itself: option buttons (`button[aria-pressed]`), sliders (`input[type=range]`) and text inputs, skipping the troll panel and the photo wall. Each puts everything back when it ends. The answer sent is whatever the controls hold. Each sets `disruptsSubmission`, so a question with `suppressSpeedBonus` gives no speed points while it runs (`submissionDisrupted` now reads the catalogue flag rather than naming `yield`). `questionKinds` limits each one to questions it can affect; elsewhere it is not offered and the room refuses it.
+
+| Effect              | Questions                                  | What the target sees                                   |
+| ------------------- | ------------------------------------------ | ------------------------------------------------------ |
+| Shuffled answers    | choice, vote, guess, duel, finale, rank    | Options swap places every 1.5 seconds                  |
+| Lost in translation | choice, vote, guess, duel, finale, rank    | Option text in Pig Latin                               |
+| Possessed slider    | slider                                     | The slider runs backwards and drifts                   |
+| Reverse typing      | typed, vote                                | Each letter goes in at the front                       |
+| Autocorrect         | typed, vote                                | Finished words "corrected" (love becomes tolerate)     |
+| Character limit     | typed, vote                                | Twelve characters only, the rest cut                   |
+| Haptics storm       | any, while answering                       | The phone buzzes in random bursts                      |
+
+`test/troll-catalogue.spec.ts` checks every kind is defined within the snapshot's 40-character limits and that no label still says "Demo".

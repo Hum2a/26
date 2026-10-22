@@ -30,6 +30,8 @@ export type TrollDefinition = {
   /** Persistent effects usually end with the question. A theme song continues. */
   survivesQuestions: boolean;
   cueMs: number;
+  /** Only offered on these question kinds, because it does nothing elsewhere. */
+  questionKinds?: readonly string[];
 };
 
 const immediate = {
@@ -37,6 +39,10 @@ const immediate = {
   survivesQuestions: false,
   cueMs: 4_000,
 };
+
+/** Question kinds with option buttons, and with typed answers. */
+const optionKinds = ["choice", "vote", "guess", "duel", "finale", "rank"] as const;
+const textKinds = ["typed", "vote"] as const;
 
 export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
   invasion: {
@@ -86,7 +92,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
   yield: {
     kind: "yield",
     label: "Dodging button",
-    assetLabel: "Demo button",
+    assetLabel: "The send button runs away",
     slot: "transient",
     durationMs: 3_000,
     phases: ["collect"],
@@ -97,7 +103,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
   swap: {
     kind: "swap",
     label: "Nickname swap",
-    assetLabel: "Demo nickname swap",
+    assetLabel: "Names swapped",
     slot: "transient",
     durationMs: 15_000,
     phases: ["intro", "prompt", "collect", "vote", "predict", "reveal", "scores"],
@@ -108,7 +114,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
   "hide-score": {
     kind: "hide-score",
     label: "Hidden score",
-    assetLabel: "Demo hidden score",
+    assetLabel: "Score hidden",
     slot: "transient",
     durationMs: 12_000,
     phases: ["reveal", "scores", "final"],
@@ -130,7 +136,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
   typing: {
     kind: "typing",
     label: "Live typing",
-    assetLabel: "Demo typing",
+    assetLabel: "Typing live on the big screen",
     slot: "transient",
     durationMs: 12_000,
     phases: ["collect"],
@@ -141,7 +147,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
   voice: {
     kind: "voice",
     label: "Voice clip",
-    assetLabel: "Demo voice",
+    assetLabel: "A voice clip about you",
     slot: "persistent",
     durationMs: null,
     phases: ["collect", "vote", "predict"],
@@ -225,7 +231,37 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     15_000,
   ),
   "typing-dots": screenTroll("typing-dots", "Always typing", "Someone is typing…", 20_000),
+  reshuffle: sabotage("reshuffle", "Shuffled answers", "Options keep moving", 12_000, optionKinds),
+  translate: sabotage("translate", "Lost in translation", "Options in Pig Latin", 15_000, optionKinds),
+  "slider-drift": sabotage("slider-drift", "Possessed slider", "Backwards, drifting slider", 12_000, ["slider"]),
+  "reverse-typing": sabotage("reverse-typing", "Reverse typing", "Letters go in backwards", 15_000, textKinds),
+  autocorrect: sabotage("autocorrect", "Autocorrect", "Helpful corrections", 20_000, textKinds),
+  "char-limit": sabotage("char-limit", "Character limit", "Twelve characters only", 20_000, textKinds),
+  "haptic-storm": {
+    ...screenTroll("haptic-storm", "Haptics storm", "Phone won't stop buzzing", 10_000),
+    phases: ["collect", "vote", "predict"],
+  },
 };
+
+/**
+ * Input sabotage: messes with the answer controls while the target answers.
+ * It counts as disrupting a submission, so a question that suppresses speed
+ * points does so while it runs.
+ */
+function sabotage(
+  kind: TrollKind,
+  label: string,
+  assetLabel: string,
+  durationMs: number,
+  questionKinds: readonly string[],
+): TrollDefinition {
+  return {
+    ...screenTroll(kind, label, assetLabel, durationMs),
+    phases: ["collect", "vote", "predict"],
+    disruptsSubmission: true,
+    questionKinds,
+  };
+}
 
 /**
  * A phone-only gag. The phone draws it and the target can keep playing

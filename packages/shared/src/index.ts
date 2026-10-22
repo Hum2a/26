@@ -863,6 +863,13 @@ export const trollKinds = [
   "overheating",
   "answer-viewers",
   "typing-dots",
+  "reshuffle",
+  "translate",
+  "slider-drift",
+  "reverse-typing",
+  "autocorrect",
+  "char-limit",
+  "haptic-storm",
 ] as const;
 
 export const trollKindSchema = z.enum(trollKinds);

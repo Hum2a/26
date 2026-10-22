@@ -114,6 +114,7 @@ export default defineConfig({
             "test/device-profile.spec.ts",
             "test/wall-engine.spec.ts",
             "test/wall-loved.spec.ts",
+            "test/troll-catalogue.spec.ts",
             "test/stats.spec.ts",
             "test/fun-facts.spec.ts",
             "test/archive.spec.ts",
