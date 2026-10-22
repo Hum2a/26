@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import {
   apiErrorSchema,
   apiNotFoundMessage,
+  appVersion,
   healthResponseSchema,
   liveConnectionNotFoundMessage,
 } from "@26/shared";
@@ -40,6 +41,7 @@ app.get("/api/health", (c) => {
     ok: true,
     service: "26-humza-website",
     environment: c.env.APP_ENV,
+    version: appVersion,
   });
 
   if (!parsed.success) {

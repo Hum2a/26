@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from "react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
+import { appVersion } from "@26/shared";
 import { readCurrentRoom } from "../admin/rooms-api";
 import { EntryFrame } from "./entry-frame";
 import {
@@ -85,6 +86,10 @@ export function AdminShell({
             <NavLink to="/admin/settings">Account & appearance</NavLink>
           </nav>
           <div className="admin-account">{account}</div>
+          {/* Set by release.sh, so the host can tell which release is live. */}
+          <p className="admin-version" title="Release version">
+            v{appVersion}
+          </p>
         </aside>
         <div className="admin-content">
           <AnimatePresence mode="wait" initial={false}>

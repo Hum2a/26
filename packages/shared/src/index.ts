@@ -104,7 +104,11 @@ export const healthResponseSchema = z.object({
   ok: z.literal(true),
   service: z.literal("26-humza-website"),
   environment: appEnvironmentSchema,
+  /** The release this Worker was built from, e.g. "0.0.1". See release.sh. */
+  version: z.string().regex(/^\d+\.\d+\.\d+$/),
 });
+
+export { appVersion } from "./version.ts";
 
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 
