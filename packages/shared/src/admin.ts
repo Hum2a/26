@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+export const birthdayOrderSchema = z.object({
+  revision: z.number().int().nonnegative(),
+  ids: z.array(z.string().regex(/^[a-z0-9-]{1,40}$/)).min(1).max(80),
+  updatedAt: z.number().int().nonnegative().nullable(),
+  history: z.array(z.object({ revision: z.number().int().positive(), at: z.number().int().nonnegative(), count: z.number().int().min(1).max(80) }).strict()).max(20),
+}).strict();
+export type BirthdayOrder = z.infer<typeof birthdayOrderSchema>;
+export const saveBirthdayOrderSchema = z.object({ requestId: z.uuid(), expectedRevision: z.number().int().nonnegative(), ids: birthdayOrderSchema.shape.ids }).strict();
+
 export const adminContentSchema = z
   .object({
     packs: z.array(
@@ -9,6 +18,7 @@ export const adminContentSchema = z
           version: z.string(),
           release: z.enum(["draft", "released"]),
           illustrative: z.boolean(),
+          runningOrder: birthdayOrderSchema.optional(),
           questions: z.array(
             z
               .object({

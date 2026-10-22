@@ -2,6 +2,7 @@
  * Phase graph for every round. A plugin chooses whether `vote` is included.
  * Host commands cannot name an arbitrary phase.
  */
+import type { BirthdayScript } from "../questions/birthday-order.ts";
 export const roomPhases = [
   "lobby",
   "intro",
@@ -83,6 +84,8 @@ export type RoomClock = {
   funFactIndex: number;
   /** Stored content version. `unreleased` is the lobby before a pack is chosen. */
   questionSetVersion: string;
+  /** Server-only immutable script captured when an administrator starts a birthday game. */
+  questionScript?: BirthdayScript;
 };
 
 export type GameStore = {

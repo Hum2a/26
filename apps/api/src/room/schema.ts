@@ -60,6 +60,7 @@ const partyStatements = [
 ];
 
 const registryStatements = [
+  `CREATE TABLE IF NOT EXISTS pack_order (id TEXT PRIMARY KEY, payload TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS schema_meta (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     version INTEGER NOT NULL

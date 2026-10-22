@@ -8,6 +8,7 @@ import { toPlayable } from "./authoring.ts";
 import type { PackProfile, Question, QuestionPack } from "./definition.ts";
 import { birthdayPack } from "./packs/birthday/manifest.ts";
 import { demoPack } from "./packs/demo/manifest.ts";
+import type { BirthdayScript } from "./birthday-order.ts";
 
 export type ResolvedPack = {
   packId: string;
@@ -95,7 +96,8 @@ export function playableQuestions(pack: QuestionPack): Question[] {
   return questions;
 }
 
-export function resolveContent(version: string): ContentResolution {
+export function resolveContent(version: string, script?: BirthdayScript): ContentResolution {
+  if (script && script.version === version) return { status: "playable", pack: { packId: "birthday", version, illustrative: false, profile: "party", questions: script.questions } };
   if (version === pinnedQuestionSetVersion) {
     return { status: "lobby" };
   }
@@ -112,8 +114,9 @@ export function resolveContent(version: string): ContentResolution {
 export function questionFor(room: {
   questionSetVersion: string;
   questionIndex: number;
+  questionScript?: BirthdayScript;
 }): Question | undefined {
-  const resolved = resolveContent(room.questionSetVersion);
+  const resolved = resolveContent(room.questionSetVersion, room.questionScript);
   if (resolved.status !== "playable") {
     return undefined;
   }
@@ -132,11 +135,12 @@ export function unavailableContentMessage(room: {
   phase: string;
   questionCount: number;
   questionSetVersion: string;
+  questionScript?: BirthdayScript;
 }): string | undefined {
   if (room.phase === "lobby" || room.questionCount <= 0) {
     return undefined;
   }
-  if (resolveContent(room.questionSetVersion).status === "playable") {
+  if (resolveContent(room.questionSetVersion, room.questionScript).status === "playable") {
     return undefined;
   }
   return contentUnavailableMessage;

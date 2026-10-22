@@ -1,11 +1,13 @@
 import { Link, useSearchParams } from "react-router";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Button, TextField } from "../ui/primitives";
+import { Button, TextField, Disclosure } from "../ui/primitives";
 import { EntryNotice } from "../ui/entry-frame";
 import { readContent } from "./sections-api";
 import { useSection } from "./use-section";
 import { PhonePreviewPanel } from "./phone-preview-panel";
+import { RunningOrder } from "./running-order";
+import "./content-workspace.css";
 
 export function ContentPage() {
   const content = useSection(readContent);
@@ -17,6 +19,7 @@ export function ContentPage() {
     content.data?.packs.find((pack) => pack.version === version) ??
     content.data?.packs.find((pack) => pack.id === "birthday") ??
     content.data?.packs[0];
+  const view = params.get("view") ?? (pack?.runningOrder && !params.has("question") ? "order" : "catalogue");
   const matches =
     pack?.questions.filter(
       (question) =>
@@ -67,13 +70,7 @@ export function ContentPage() {
           Refresh packs
         </Button>
       </header>
-      <p>
-        Read-only readiness and running order. Drafts cannot be started. Questions are
-        maintained in the versioned party script.
-      </p>
-      <a href="#authoring-workflow" className="entry-text-link">
-        How to update a question ↓
-      </a>
+      <p className="admin-meta">Arrange the show, browse the catalogue and rehearse each round.</p>
       <EntryNotice message={content.error} />
       {content.loading ? <p role="status">Checking question packs…</p> : null}
       <div className="admin-content-grid">
@@ -102,6 +99,7 @@ export function ContentPage() {
               transition={{ duration: 0.15 }}
               className="admin-pack-detail"
             >
+              <Disclosure title="Pack details">
               <header>
                 <p className="entry-eyebrow">
                   {pack.release}
@@ -118,6 +116,9 @@ export function ContentPage() {
                     : "Released version. Existing rooms keep the version they started with."}
                 </p>
               </header>
+              </Disclosure>
+              {pack.runningOrder ? <nav className="content-view-nav" aria-label="Content views">{[["order", "Running order"], ["catalogue", "Question catalogue"]].map(([id, label]) => <button key={id} type="button" aria-pressed={view === id} onClick={() => { const next = new URLSearchParams(params); next.set("view", id!); setParams(next); }}>{label}</button>)}</nav> : null}
+              {view === "order" && pack.runningOrder ? <RunningOrder key={`${pack.version}:${pack.runningOrder.revision}`} pack={{ ...pack, runningOrder: pack.runningOrder }} onSaved={() => void content.refresh()} /> : <>
               <div className="admin-question-browser">
                 <aside
                   className="admin-question-catalogue"
@@ -265,18 +266,22 @@ export function ContentPage() {
                         </p>
                       )}
                     </motion.div>
+                    <Disclosure title="Phone and stage rehearsal">
                     <PhonePreviewPanel
                       key={`${pack.version}/${preview.id}`}
                       version={pack.version}
                       questionId={preview.id}
                     />
+                    </Disclosure>
                   </section>
                 ) : null}
               </div>
+              </>}
             </motion.section>
           ) : null}
         </AnimatePresence>
       </div>
+      <Disclosure title="How to update a question">
       <section className="admin-task-section" id="authoring-workflow">
         <h2>How to update a question</h2>
         <p>
@@ -290,6 +295,7 @@ export function ContentPage() {
           before…”. The detailed project guide is docs/question-authoring.md.
         </p>
       </section>
+      </Disclosure>
     </section>
   );
 }

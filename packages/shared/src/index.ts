@@ -17,11 +17,14 @@ import { funFactCardSchema, statCardSchema } from "./stats.ts";
 import { wallSnapshotSchema } from "./wall.ts";
 export {
   adminContentSchema,
+  birthdayOrderSchema,
+  saveBirthdayOrderSchema,
   adminMediaSchema,
   adminQuestionDetailSchema,
   adminTrollsSchema,
 } from "./admin.ts";
 export type {
+  BirthdayOrder,
   AdminContent,
   AdminMedia,
   AdminQuestionDetail,
@@ -267,7 +270,7 @@ export const contentLimits = {
   rankMax: 8,
   collectMinMs: 15_000,
   collectMaxMs: 45_000,
-  packMax: 40,
+  packMax: 80,
   unitMax: 24,
   typedMax: 80,
 } as const;

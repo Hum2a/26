@@ -62,6 +62,7 @@ export function GuestKart({
               : "Start your engines"}
         </h1>
       </header>
+      {self?.gridPosition && snapshot.phase !== "collect" ? <p>Starting grid: {self.gridPosition} of {race?.participantCount} · seeded by quiz score</p> : null}
       <p role="status">
         {rehearsal ? "Controller rehearsal — no race is running." : instruction}
       </p>

@@ -80,7 +80,7 @@ export function validatePack(
   }
   if (pack.order.length > contentLimits.packMax) {
     issues.push(
-      issue("error", "pack", "A running order can contain at most 40 questions."),
+      issue("error", "pack", "A running order can contain at most 80 questions."),
     );
   }
   const ordered: Question[] = [];

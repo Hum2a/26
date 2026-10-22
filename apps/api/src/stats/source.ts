@@ -1,5 +1,6 @@
 import { reportedScreenGroup } from "@26/shared";
 import { resolveContent } from "../questions/registry.ts";
+import { createSqlStore } from "../room/sql-store.ts";
 import type { Question } from "../questions/definition.ts";
 import { trollDefinitions, type TrollKind } from "../troll/catalogue.ts";
 import type { StatsAnswer, StatsQuestion, StatsSource } from "./aggregate.ts";
@@ -103,7 +104,7 @@ export function readStatsSource(sql: SqlStorage): StatsSource {
       .toArray()
       .map((row) => [`${row.question_id}:${row.player_id}`, row.detail]),
   );
-  const resolved = resolveContent(room.question_set_version);
+  const resolved = resolveContent(room.question_set_version, createSqlStore(sql).readRoom().questionScript);
   const packQuestions = resolved.status === "playable" ? resolved.pack.questions : [];
   const answers: StatsAnswer[] = [
     ...choice.map((row) => {

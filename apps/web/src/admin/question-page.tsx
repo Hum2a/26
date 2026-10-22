@@ -6,6 +6,7 @@ import { EntryNotice } from "../ui/entry-frame";
 import { readQuestion } from "./sections-api";
 import { useSection } from "./use-section";
 import { PhonePreviewPanel } from "./phone-preview-panel";
+import "./content-workspace.css";
 
 export function QuestionPage() {
   const { version = "", questionId = "" } = useParams();
@@ -178,11 +179,13 @@ export function QuestionPage() {
               ) : null}
             </aside>
           </div>
+          <Disclosure title="Phone and stage rehearsal">
           <PhonePreviewPanel
             key={`${version}/${questionId}`}
             version={version}
             questionId={questionId}
           />
+          </Disclosure>
         </motion.div>
       ) : null}
     </section>

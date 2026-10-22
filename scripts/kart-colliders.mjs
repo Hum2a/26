@@ -102,6 +102,8 @@ const output = {
   solidNodes: [...solidNodes],
   edges,
 };
+fs.mkdirSync(new URL("packages/shared/src/", root), { recursive: true });
+fs.writeFileSync(new URL("packages/shared/src/kart-circuit.json", root), JSON.stringify({ ...output, road: audit.road, dirt: audit.dirt }));
 fs.mkdirSync(new URL("apps/kart-solo/src/track/", root), { recursive: true });
 fs.writeFileSync(
   new URL("apps/kart-solo/src/track/colliders.json", root),

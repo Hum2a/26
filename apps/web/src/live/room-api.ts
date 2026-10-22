@@ -116,6 +116,7 @@ export async function lookupStage(
 }
 
 export type PlayAction =
+  | "start-birthday"
   | "start-kart-rehearsal"
   | "kart-course-on"
   | "kart-course-off"

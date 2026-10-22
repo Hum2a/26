@@ -3,6 +3,9 @@ import { lobbyCreatedSchema, type LobbyCreated } from "@26/shared";
 import { randomToken } from "./codes.ts";
 import { digestMismatchMessage } from "./limits.ts";
 import { ensureRegistrySchema } from "./schema.ts";
+import { readBirthdayOrder, saveBirthdayOrder } from "../questions/birthday-order.ts";
+import { saveBirthdayOrderSchema } from "@26/shared";
+import { payloadDigest } from "./digest.ts";
 
 type CreateResult = LobbyCreated & {
   control: { credentialId: string; secret: string; expiresAt: string };
@@ -18,6 +21,23 @@ type StoredCreate =
  * A join code maps to a game id after this isolate has slept.
  */
 export class RoomCodeRegistry extends DurableObject<Env> {
+  async birthdayOrder() { return readBirthdayOrder(this.ctx.storage.sql); }
+
+  async updateBirthdayOrder(raw: unknown, now: number) {
+    const input = saveBirthdayOrderSchema.parse(raw);
+    const digest = await payloadDigest({ action: "birthday-order", revision: input.expectedRevision, ids: input.ids.join(",") });
+    return this.ctx.storage.transactionSync(() => {
+      const sql = this.ctx.storage.sql;
+      const prior = sql.exec<{ payload_digest: string; result_json: string }>("SELECT payload_digest, result_json FROM receipt WHERE principal = 'pack-order' AND request_id = ?", input.requestId).toArray()[0];
+      if (prior) {
+        if (prior.payload_digest !== digest) throw new Error(digestMismatchMessage);
+        return JSON.parse(prior.result_json) as Awaited<ReturnType<RoomCodeRegistry["birthdayOrder"]>>;
+      }
+      const result = saveBirthdayOrder(sql, input, now);
+      sql.exec("INSERT INTO receipt (principal, request_id, payload_digest, result_json) VALUES ('pack-order', ?, ?, ?)", input.requestId, digest, JSON.stringify(result));
+      return result;
+    });
+  }
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     ctx.blockConcurrencyWhile(async () => {

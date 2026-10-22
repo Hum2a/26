@@ -25,6 +25,7 @@ type RoomRecord = {
   finish_after: number;
   fun_fact_index: number;
   question_set_version: string;
+  question_script_json: string | null;
 };
 
 type JobRecord = {
@@ -81,7 +82,8 @@ function readRoom(sql: SqlStorage): RoomClock {
       `SELECT phase, phase_generation, scope_generation, paused, controller_present,
               stage_present, hold, round_id, phases_json, durations_json, fault,
               question_index, question_count, collect_windows_json, finish_after,
-              fun_fact_index, question_set_version
+              fun_fact_index, question_set_version,
+              (SELECT payload FROM round_state WHERE question_id = '__pack' AND state_key = 'birthday-script') AS question_script_json
        FROM room`,
     )
     .toArray()[0];
@@ -106,6 +108,7 @@ function readRoom(sql: SqlStorage): RoomClock {
     finishAfterRound: row.finish_after === 1,
     funFactIndex: row.fun_fact_index,
     questionSetVersion: row.question_set_version,
+    ...(row.question_script_json ? { questionScript: JSON.parse(row.question_script_json) } : {}),
   };
 }
 

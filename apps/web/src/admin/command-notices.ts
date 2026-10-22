@@ -2,6 +2,7 @@ import type { RoomPhaseName } from "@26/shared";
 import type { PlayAction } from "../live/room-api";
 
 export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
+  if (action === "start-birthday") return "The birthday game has started with its saved running order.";
   if (action === "kart-course-on") return "Floor boosts, ramps and sweepers are on.";
   if (action === "kart-course-off")
     return "Course features are off. Airborne karts have landed.";

@@ -71,8 +71,11 @@ export function enterKart(
   const room = store.readRoom();
   if (room.phase === "intro" && !readKart(sql, q.id)) {
     const players = sql
-      .exec<{ player_id: string; nickname: string }>(
-        "SELECT player_id, nickname FROM player WHERE revoked_at IS NULL ORDER BY rowid",
+      .exec<{ player_id: string; nickname: string; points: number }>(
+        `SELECT player_id, nickname,
+        COALESCE((SELECT SUM(points) FROM score_ledger WHERE player_id = player.player_id), 0) +
+        COALESCE((SELECT SUM(points) FROM score_adjustment WHERE player_id = player.player_id), 0) AS points
+        FROM player WHERE revoked_at IS NULL ORDER BY rowid`,
       )
       .toArray();
     const gameId = sql
@@ -84,7 +87,8 @@ export function enterKart(
       q.id,
       createKartRace(
         raceId,
-        players.map((p) => ({ playerId: p.player_id, name: p.nickname })),
+        players.map((p) => ({ playerId: p.player_id, name: p.nickname, points: p.points })),
+        { seedGrid: true },
       ),
     );
     writeRoundState(sql, q.id, "kart-session", {

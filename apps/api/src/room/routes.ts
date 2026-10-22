@@ -292,6 +292,7 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     const action = field(body, "action");
     const commands = [
       "start",
+      "start-birthday",
       "start-kart-rehearsal",
       "kart-course-on",
       "kart-course-off",
@@ -356,6 +357,8 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     const result =
       command === "start-kart-rehearsal"
         ? await target.startKartRehearsal(input)
+        : command === "start-birthday"
+          ? await target.startBirthday(input)
         : command === "start"
           ? await target.startDemo(input)
           : command === "pause"
