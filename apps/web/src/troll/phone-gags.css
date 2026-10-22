@@ -325,6 +325,32 @@
   }
 }
 
+/* Fake last place */
+.troll-last-board {
+  display: grid;
+  gap: 0.5rem;
+  width: min(20rem, 100%);
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.troll-last-board li {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.8rem;
+  background: var(--color-surface);
+  color: var(--color-surface-foreground);
+  font-weight: 700;
+}
+
+.troll-last-board li[data-you] {
+  background: var(--color-mark);
+  color: var(--color-background);
+}
+
 @keyframes troll-blink {
   to {
     opacity: 0.2;

@@ -80,6 +80,19 @@ describe("screen trolls", () => {
     }
   });
 
+  it("puts the target at the bottom of a fake leaderboard of real names", () => {
+    render(
+      <ScreenTroll
+        kind="fake-last"
+        label="You are last"
+        escape={null}
+        others={["Amina", "Bilal", "Chen"]}
+      />,
+    );
+    const rows = screen.getAllByRole("listitem").map((row) => row.textContent);
+    expect(rows).toEqual(["1.Amina", "2.Bilal", "3.Chen", "LASTYou"]);
+  });
+
   it("draws a shattered screen that can be dismissed", () => {
     const onEscape = vi.fn();
     render(

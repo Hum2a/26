@@ -870,6 +870,9 @@ export const trollKinds = [
   "autocorrect",
   "char-limit",
   "haptic-storm",
+  "temp-nickname",
+  "guest-14",
+  "fake-last",
 ] as const;
 
 export const trollKindSchema = z.enum(trollKinds);

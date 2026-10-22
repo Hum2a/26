@@ -40,6 +40,9 @@ const immediate = {
   cueMs: 4_000,
 };
 
+/** Phases where a changed name is seen: questions, reveals and scores. */
+const namePhases = ["intro", "prompt", "collect", "vote", "predict", "reveal", "scores"] as const;
+
 /** Question kinds with option buttons, and with typed answers. */
 const optionKinds = ["choice", "vote", "guess", "duel", "finale", "rank"] as const;
 const textKinds = ["typed", "vote"] as const;
@@ -237,6 +240,18 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
   "reverse-typing": sabotage("reverse-typing", "Reverse typing", "Letters go in backwards", 15_000, textKinds),
   autocorrect: sabotage("autocorrect", "Autocorrect", "Helpful corrections", 20_000, textKinds),
   "char-limit": sabotage("char-limit", "Character limit", "Twelve characters only", 20_000, textKinds),
+  "temp-nickname": {
+    ...screenTroll("temp-nickname", "Silly name", "A new name on every screen", 45_000),
+    phases: namePhases,
+  },
+  "guest-14": {
+    ...screenTroll("guest-14", "Guest 14", "Nobody knows who you are", 45_000),
+    phases: namePhases,
+  },
+  "fake-last": {
+    ...screenTroll("fake-last", "Fake last place", "You are last. Apparently.", 8_000),
+    phases: ["intro", "prompt", "collect", "vote", "predict", "reveal", "scores"],
+  },
   "haptic-storm": {
     ...screenTroll("haptic-storm", "Haptics storm", "Phone won't stop buzzing", 10_000),
     phases: ["collect", "vote", "predict"],

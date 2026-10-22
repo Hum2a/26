@@ -16,6 +16,7 @@ import {
   Overheating,
   ScreenRecording,
 } from "./chrome-trolls";
+import { FakeLastPlace } from "./identity-trolls";
 import {
   Autocorrect,
   CharacterLimit,
@@ -61,6 +62,7 @@ const screenKinds = [
   "autocorrect",
   "char-limit",
   "haptic-storm",
+  "fake-last",
 ] as const;
 
 export type ScreenTrollKind = (typeof screenKinds)[number];
@@ -78,9 +80,19 @@ type Props = {
   from?: TrollSender;
   /** Seeds visuals that should stay the same across re-renders. */
   seed?: number;
+  /** Other players' names, for gags that fake a leaderboard. */
+  others?: string[];
 };
 
-export function ScreenTroll({ kind, label, escape, onEscape, from, seed = 26 }: Props) {
+export function ScreenTroll({
+  kind,
+  label,
+  escape,
+  onEscape,
+  from,
+  seed = 26,
+  others = [],
+}: Props) {
   switch (kind) {
     case "invasion":
       return <ScreenInvasion label={label} from={from} escape={escape} onEscape={onEscape} />;
@@ -116,6 +128,8 @@ export function ScreenTroll({ kind, label, escape, onEscape, from, seed = 26 }: 
       return <CharacterLimit label={label} />;
     case "haptic-storm":
       return <HapticStorm label={label} />;
+    case "fake-last":
+      return <FakeLastPlace label={label} others={others} />;
     case "netanyahu":
       return <NetanyahuFlood label={label} />;
     case "australia":

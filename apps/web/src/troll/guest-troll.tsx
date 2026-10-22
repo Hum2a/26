@@ -54,6 +54,9 @@ export function GuestTrolls({
           key={effect.effectId}
           effect={effect}
           sender={senderOf(snapshot, gameId, effect.fromPlayerId)}
+          others={snapshot.players
+            .filter((player) => player.playerId !== selfId)
+            .map((player) => player.nickname)}
           pending={pending}
           onEscape={onEscape}
         />
@@ -79,6 +82,8 @@ const targetLine: Partial<Record<string, string>> = {
   typing: "The big screen can see what you type. Sending still stores the answer.",
   voice: "A voice clip about you will play at the reveal.",
   theme: "You have a theme tune now. It plays whenever the scores come up.",
+  "temp-nickname": "You have a new name on every screen for a while. Your points are safe.",
+  "guest-14": "You are Guest 14 on every screen for a while. Your points are safe.",
 };
 
 /** The troller's name and driver face, from the shared player list. */
@@ -101,11 +106,13 @@ function senderOf(
 function TrollOverlay({
   effect,
   sender,
+  others,
   pending,
   onEscape,
 }: {
   effect: LobbySnapshot["trolls"]["active"][number];
   sender: TrollSender | undefined;
+  others: string[];
   pending: boolean;
   onEscape: (effectId: string) => void;
 }) {
@@ -136,6 +143,7 @@ function TrollOverlay({
         onEscape={pending ? undefined : () => onEscape(effect.effectId)}
         from={sender}
         seed={seedFrom(effect.effectId)}
+        others={others}
       />
     );
   }

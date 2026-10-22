@@ -49,7 +49,6 @@ These stay in the catalogue and are rejected if a phone asks for them. They are 
 | Group              | Not built                                                                                                                                                                        |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Stage theatre      | Replay of a bad answer, speech, fake departure, zoomed photo                                                                                                                     |
-| Identity           | Temporary nickname, Guest 14, fake last place                                                                                                                                    |
 | Scoring            | Misattributed answer, public vote, shared round score, steal points, redirect points                                                                                             |
 
 ## Phone gags
@@ -93,3 +92,13 @@ Drawn by `apps/web/src/troll` (`screen-trolls.tsx`, `classic-trolls.tsx`, `chrom
 | Haptics storm       | any, while answering                       | The phone buzzes in random bursts                      |
 
 `test/troll-catalogue.spec.ts` checks every kind is defined within the snapshot's 40-character limits and that no label still says "Demo".
+
+## Identity
+
+The silly name and Guest 14 go through `displayNickname`, so every screen that shows names (player lists, reactions, standings, the stage) shows the new one while the troll runs, and the real name returns when it ends. Stored names, scores and answers never change. When several apply, the silly name wins, then Guest 14, then a nickname swap. `sillyNameFor` picks from a fixed list by the effect id, so the name is stable for the whole troll.
+
+| Effect          | Slot      | What happens                                                     |
+| --------------- | --------- | ---------------------------------------------------------------- |
+| Silly name      | Transient | A name like "Captain Wrong" on every screen for 45 seconds       |
+| Guest 14        | Transient | "Guest 14" on every screen for 45 seconds                        |
+| Fake last place | Transient | The target's phone shows them last below real players' names     |

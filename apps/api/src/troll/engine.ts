@@ -288,11 +288,51 @@ export function completeScheduledTroll(
   promoteQueues(sql, store, room, now);
 }
 
+/** Silly names for the temporary nickname troll. The effect id picks one. */
+const sillyNames = [
+  "Sir Loses-a-Lot",
+  "Captain Wrong",
+  "Big Dave",
+  "Toaster",
+  "Mr Bean's Cousin",
+  "Lord Snacks",
+  "The Imposter",
+  "Brenda from HR",
+  "Wi-Fi Thief",
+  "Lil Ketchup",
+  "Professor Guess",
+  "Soggy Biscuit",
+] as const;
+
+export function sillyNameFor(effectId: string): string {
+  let hash = 0;
+  for (const character of effectId) {
+    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  }
+  return sillyNames[hash % sillyNames.length]!;
+}
+
+/**
+ * The name shown for a player on every screen. Active identity trolls win:
+ * a silly name, then "Guest 14", then a nickname swap. Stored names, scores
+ * and answers never change.
+ */
 export function displayNickname(
   sql: SqlStorage,
   playerId: string,
   stored: string,
 ): string {
+  const renamed = sql
+    .exec<{ effect_id: string; kind: string }>(
+      `SELECT effect_id, kind FROM troll_effect
+       WHERE kind IN ('temp-nickname', 'guest-14') AND status = 'active' AND target_id = ?
+       ORDER BY started_at DESC LIMIT 1`,
+      playerId,
+    )
+    .toArray()[0];
+  if (renamed) {
+    return renamed.kind === "guest-14" ? "Guest 14" : sillyNameFor(renamed.effect_id);
+  }
   const swap = sql
     .exec<{ actor_id: string; target_id: string }>(
       `SELECT actor_id, target_id FROM troll_effect
