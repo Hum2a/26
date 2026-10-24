@@ -133,3 +133,50 @@ it("ignores a stale resume id and sends a full snapshot", async () => {
   expect(phone.inbox[0]!.kind).toBe("snapshot");
   phone.socket.close();
 });
+
+it("builds room statistics once per fan-out and refreshes them for the next change", async () => {
+  const { room, stub } = await setup();
+  const players = await Promise.all(
+    ["Amina", "Bilal", "Chen"].map((name) => join(stub, name)),
+  );
+  const phones = [];
+  for (const player of players) {
+    const phone = await connect(stub, room.gameId, player, "&patches=1");
+    await expect
+      .poll(() => phone.inbox.some((message) => message.kind === "snapshot"))
+      .toBe(true);
+    phones.push(phone);
+  }
+  const statisticsBuilds = async () => {
+    const result = await stub.diagnostics({
+      credentialId: room.control.credentialId,
+      secret: room.control.secret,
+      nowMs: Date.now(),
+    });
+    if (!result.ok) throw new Error(result.message);
+    return (
+      result.report.realtime?.series.find(
+        (series) => series.name === "build:statistics",
+      )?.total ?? 0
+    );
+  };
+  const before = await statisticsBuilds();
+  for (const nickname of ["Dina", "Eve"]) {
+    const previous = await statisticsBuilds();
+    const count = players.length + (nickname === "Dina" ? 1 : 2);
+    await join(stub, nickname);
+    for (const phone of phones) {
+      await expect
+        .poll(() =>
+          phone.inbox.some((message) => {
+            const set = message.set as { players?: unknown[] } | undefined;
+            return message.kind === "patch" && set?.players?.length === count;
+          }),
+        )
+        .toBe(true);
+    }
+    expect(await statisticsBuilds()).toBe(previous + 1);
+  }
+  expect(await statisticsBuilds()).toBe(before + 2);
+  phones.forEach((phone) => phone.socket.close());
+});

@@ -20,7 +20,9 @@ function featureFolders(): string[] {
   }
   for (const file of webFiles) {
     // Vite writes this test's own folder as "./", not "../admin/".
-    const folder = file.startsWith("./") ? "admin" : file.replace(/^\.\.\//, "").split("/")[0];
+    const folder = file.startsWith("./")
+      ? "admin"
+      : file.replace(/^\.\.\//, "").split("/")[0];
     folders.add(`apps/web/src/${folder}`);
   }
   return [...folders].sort();
@@ -37,7 +39,10 @@ function adminPaths(): string[] {
             ? route.path
             : `${prefix}/${route.path}`
           : prefix;
-      if (own.startsWith("/admin") && (route.element || route.index)) {
+      if (
+        own.startsWith("/admin") &&
+        (route.element || route.Component || route.lazy || route.index)
+      ) {
         found.push(own);
       }
       if (route.children) {
@@ -69,9 +74,10 @@ describe("admin coverage", () => {
 
   it("only names folders that exist", () => {
     const real = new Set(featureFolders());
-    const stale = [...owned.map((item) => item.folder), ...Object.keys(adminExempt)].filter(
-      (folder) => !real.has(folder),
-    );
+    const stale = [
+      ...owned.map((item) => item.folder),
+      ...Object.keys(adminExempt),
+    ].filter((folder) => !real.has(folder));
     expect(stale).toEqual([]);
   });
 
@@ -98,7 +104,13 @@ describe("admin coverage", () => {
         !route.startsWith("/admin/phone-preview") &&
         !route.startsWith("/admin/stage-preview"),
     );
-    expect(pages.filter((route) => !registered.includes(route)), "Routes with no registry entry").toEqual([]);
-    expect(registered.filter((route) => !routes.includes(route)), "Registry entries with no route").toEqual([]);
+    expect(
+      pages.filter((route) => !registered.includes(route)),
+      "Routes with no registry entry",
+    ).toEqual([]);
+    expect(
+      registered.filter((route) => !routes.includes(route)),
+      "Registry entries with no route",
+    ).toEqual([]);
   });
 });

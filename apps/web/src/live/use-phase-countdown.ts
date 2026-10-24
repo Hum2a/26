@@ -8,10 +8,11 @@ export function usePhaseCountdown(
 ): { label: string; value: string; note: string; remainingMs: number | null } | null {
   const deadlineAt = snapshot?.deadlineAt ?? null;
   const serverNow = snapshot?.serverNow ?? 0;
+  const running = deadlineAt !== null && !snapshot?.paused && !snapshot?.held;
   const [now, setNow] = useState(observedAt);
 
   useEffect(() => {
-    if (deadlineAt === null) {
+    if (!running) {
       return;
     }
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -24,7 +25,7 @@ export function usePhaseCountdown(
     return () => {
       window.clearInterval(timer);
     };
-  }, [deadlineAt, serverNow]);
+  }, [deadlineAt, running]);
 
   if (!snapshot) {
     return null;

@@ -104,11 +104,17 @@ export function readStatsSource(sql: SqlStorage): StatsSource {
       .toArray()
       .map((row) => [`${row.question_id}:${row.player_id}`, row.detail]),
   );
-  const resolved = resolveContent(room.question_set_version, createSqlStore(sql).readRoom().questionScript);
+  const resolved = resolveContent(
+    room.question_set_version,
+    createSqlStore(sql).readRoom().questionScript,
+  );
   const packQuestions = resolved.status === "playable" ? resolved.pack.questions : [];
+  const questionsById = new Map(
+    packQuestions.map((question) => [question.id, question]),
+  );
   const answers: StatsAnswer[] = [
     ...choice.map((row) => {
-      const question = packQuestions.find((item) => item.id === row.question_id);
+      const question = questionsById.get(row.question_id);
       const optionLabel =
         question && question.kind === "choice"
           ? (question.options.find((option) => option.id === row.option_id)?.label ??
@@ -182,7 +188,8 @@ export function readStatsSource(sql: SqlStorage): StatsSource {
     gameId: room.game_id,
     sourceRevision: room.state_version,
     illustrative: resolved.status === "playable" && resolved.pack.illustrative,
-    complete: room.phase === "podium" || room.phase === "final" || room.phase === "facts",
+    complete:
+      room.phase === "podium" || room.phase === "final" || room.phase === "facts",
     players: players.map((player) => {
       const report = participating.get(player.player_id);
       return {

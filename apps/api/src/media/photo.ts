@@ -1,4 +1,3 @@
-import { decode, encode } from "jpeg-js";
 import {
   acceptedImageBytes,
   mediaConfigMessage,
@@ -45,6 +44,7 @@ export async function localJpegPhoto(bytes: Uint8Array): Promise<PhotoCheck> {
     return { ok: false, message: mediaHeicMessage };
   }
   try {
+    const { decode, encode } = await import("jpeg-js");
     const decoded = decode(bytes, {
       useTArray: true,
       formatAsRGBA: true,

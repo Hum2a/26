@@ -44,6 +44,16 @@ export default defineConfig({
         plugins: [
           cloudflareTest({
             wrangler: { configPath: path.join(here, "wrangler.jsonc") },
+            // Room tests use their explicit local adapters, never a developer's
+            // configured database or email provider from local secret files.
+            miniflare: {
+              bindings: {
+                DATABASE_URL: "",
+                RESEND_API_KEY: "",
+                RESEND_FROM: "",
+                EMAIL_TEST_RECIPIENT: "",
+              },
+            },
           }),
         ],
         test: {

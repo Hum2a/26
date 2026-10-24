@@ -151,7 +151,25 @@ async function measure(size: number) {
     },
     server: diagnostics.report.realtime,
   };
+  // Stop this room's race before measuring the next size. Otherwise its durable
+  // tick keeps consuming CPU with no listeners, and can outlive the test RPC.
+  const paused = await stub.pauseRound({
+    ...credential(created),
+    requestId: crypto.randomUUID(),
+    nowMs: Date.now(),
+  });
+  expect(paused.ok).toBe(true);
   for (const peer of [...guests, stage, control]) peer.close();
+  await expect
+    .poll(async () => {
+      const closed = await stub.diagnostics({
+        ...credential(created),
+        nowMs: Date.now(),
+      });
+      if (!closed.ok) throw new Error(closed.message);
+      return closed.report.connections;
+    })
+    .toEqual({ guests: 0, stage: 0, control: 0 });
   return summary;
 }
 

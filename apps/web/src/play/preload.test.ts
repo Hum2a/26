@@ -1,7 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { LobbySnapshot } from "@26/shared";
 import { roomFixture } from "../admin/room-fixture.test-support";
-import { preloadImages, questionImages } from "./preload";
+import { preloadImages, questionImages, warmKart } from "./preload";
+
+const moduleLoads = vi.hoisted(() => ({ canvas: vi.fn(), stage: vi.fn() }));
+vi.mock("../kart/KartCanvas", () => {
+  moduleLoads.canvas();
+  return { default: () => null };
+});
+vi.mock("../kart/KartGameWrapper", () => {
+  moduleLoads.stage();
+  return { default: () => null };
+});
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -18,6 +28,18 @@ function withOptions(
 }
 
 describe("question preloading", () => {
+  it("warms only the renderer used by each screen, and does so once", async () => {
+    warmKart("stage");
+    warmKart("stage");
+    await vi.dynamicImportSettled();
+    expect(moduleLoads.stage).toHaveBeenCalledTimes(1);
+    expect(moduleLoads.canvas).not.toHaveBeenCalled();
+    warmKart("phone");
+    warmKart("phone");
+    await vi.dynamicImportSettled();
+    expect(moduleLoads.canvas).toHaveBeenCalledTimes(1);
+    expect(moduleLoads.stage).toHaveBeenCalledTimes(1);
+  });
   it("lists only the pictures of the question already announced", () => {
     const snapshot = withOptions([
       { id: "a", label: "A", image: "/assets/questions/a.png" },

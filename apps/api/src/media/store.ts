@@ -1,3 +1,11 @@
+/** Accepted final keys are immutable. A single R2 read streams their atomic body. */
+export async function readAcceptedBody(
+  bucket: Pick<R2Bucket, "get">,
+  key: string,
+): Promise<ReadableStream<Uint8Array> | null> {
+  return (await bucket.get(key))?.body ?? null;
+}
+
 export type StoredObject = {
   etag: string;
   bytes: Uint8Array;

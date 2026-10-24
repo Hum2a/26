@@ -11,6 +11,21 @@ import {
 } from "../src/stats/aggregate.ts";
 
 describe("factual statistics", () => {
+  it("projects shared facts exactly like fresh aggregation for every audience", () => {
+    const model = source({
+      players: [guest("a", "Amina", "iphone"), guest("b", "Bilal", "android")],
+    });
+    const facts = aggregateFacts(model);
+    const before = JSON.stringify(facts);
+    for (const place of ["preview", "stage", "recap"] as const) {
+      for (const playerId of [undefined, "a", "b"]) {
+        expect(presentStats(model, place, playerId, facts)).toEqual(
+          presentStats(model, place, playerId),
+        );
+      }
+    }
+    expect(JSON.stringify(facts)).toBe(before);
+  });
   it("counts classified devices once and keeps unknown guests visible", () => {
     const facts = aggregateFacts(
       source({

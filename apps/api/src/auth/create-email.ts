@@ -1,5 +1,3 @@
-import { renderPartyEmail } from "@26/emails";
-import { Resend } from "resend";
 import { presentBinding, type AuthBindings } from "./bindings.ts";
 import type { AppDatabase } from "./create-database.ts";
 
@@ -80,13 +78,17 @@ export function createEmail(env: AuthBindings, database: AppDatabase): EmailSend
 }
 
 function createResendSender(apiKey: string, from: string | undefined): EmailSender {
-  const resend = new Resend(apiKey);
   return {
     kind: "resend",
     async send(message) {
       if (!from) {
         throw new Error("Email delivery is not configured.");
       }
+      const [{ renderPartyEmail }, { Resend }] = await Promise.all([
+        import("@26/emails"),
+        import("resend"),
+      ]);
+      const resend = new Resend(apiKey);
       const html = await renderPartyEmail(message);
       try {
         const result = await resend.emails.send(
@@ -151,6 +153,7 @@ function createLocalInbox(database: AppDatabase): EmailSender {
 }
 
 export async function listLocalInbox(database: AppDatabase): Promise<InboxMessage[]> {
+  const { renderPartyEmail } = await import("@26/emails");
   const rows = await database.executor.query(
     `select id, recipient, subject, body
      from dev_inbox

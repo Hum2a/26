@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 const stroke = {
   fill: "none",
   stroke: "currentColor",
@@ -6,7 +8,7 @@ const stroke = {
   strokeLinejoin: "round" as const,
 };
 
-export function Wordmark() {
+export const Wordmark = memo(function Wordmark() {
   return (
     <p className="skin-wordmark flex items-center gap-2 font-display text-3xl text-accent">
       <span className="skin-mark" aria-hidden="true">
@@ -77,4 +79,4 @@ export function Wordmark() {
       26
     </p>
   );
-}
+});

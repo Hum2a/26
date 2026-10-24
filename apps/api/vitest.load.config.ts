@@ -20,6 +20,10 @@ export default defineConfig({
             wrangler: { configPath: path.join(here, "wrangler.jsonc") },
             miniflare: {
               bindings: {
+                DATABASE_URL: "",
+                RESEND_API_KEY: "",
+                RESEND_FROM: "",
+                EMAIL_TEST_RECIPIENT: "",
                 LOAD_SIZES: process.env.LOAD_SIZES ?? "8,30,80",
                 LOAD_KART_MS: process.env.LOAD_KART_MS ?? "6000",
                 LOAD_INPUT_HZ: process.env.LOAD_INPUT_HZ ?? "10",

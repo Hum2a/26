@@ -149,7 +149,7 @@ import {
   noteGuestSocket,
   readTelemetry,
 } from "../device/store.ts";
-import { presentStats } from "../stats/aggregate.ts";
+import { aggregateFacts, presentStats } from "../stats/aggregate.ts";
 import { readStatsSource } from "../stats/source.ts";
 import { funFactApplies } from "../stats/fun-facts.ts";
 import { readFunFactSelection } from "../stats/fun-source.ts";
@@ -246,6 +246,11 @@ function viewKey(attachment: { role: string; principalId: string }): string {
   return `${attachment.role}:${attachment.principalId}`;
 }
 type SnapshotPartsCache = Map<string, ReturnType<PartyRoom["snapshotParts"]>>;
+type SnapshotStatistics = {
+  stats: ReturnType<typeof readStatsSource>;
+  facts: ReturnType<typeof aggregateFacts>;
+  funFacts: ReturnType<typeof readFunFactSelection>;
+};
 /** Changes inside this window share one fan-out. Short enough not to be seen. */
 const broadcastWindowMs = 30;
 /** Three buckets for each of 80 phones plus stage and control, with room to spare. */
@@ -3200,7 +3205,10 @@ export class PartyRoom extends DurableObject<Env> {
    * The parts of a snapshot that are the same for every screen of one audience.
    * A broadcast builds these once and reuses them for each socket.
    */
-  private snapshotParts(audience: "guest" | "stage" | "control") {
+  private snapshotParts(
+    audience: "guest" | "stage" | "control",
+    statistics?: SnapshotStatistics,
+  ) {
     this.meter.add("build:public", 0, Date.now());
     const room = this.readRoom();
     if (!room) {
@@ -3227,6 +3235,15 @@ export class PartyRoom extends DurableObject<Env> {
         `SELECT opening, stage_hidden, reveal_nonce FROM room`,
       )
       .toArray()[0];
+    if (!statistics) {
+      this.meter.add("build:statistics", 0, Date.now());
+      const stats = readStatsSource(sql);
+      statistics = {
+        stats,
+        facts: aggregateFacts(stats),
+        funFacts: readFunFactSelection(sql, stats),
+      };
+    }
     return {
       room,
       players,
@@ -3235,7 +3252,8 @@ export class PartyRoom extends DurableObject<Env> {
       stored: store.readRoom(),
       presentation,
       stageHidden: presentation?.stage_hidden === 1,
-      stats: readStatsSource(sql),
+      statistics,
+      ...statistics,
       cloud: cloudRows(sql),
       namesReveal: presentation?.opening === "showing" ? revealNames(sql) : null,
       media: listUploads(sql, audience),
@@ -3267,15 +3285,15 @@ export class PartyRoom extends DurableObject<Env> {
     const trolls = trollSnapshot(this.ctx.storage.sql, store, audience, selfPlayerId);
     const highlights =
       audience === "control"
-        ? presentStats(stats, "preview").highlights
+        ? presentStats(stats, "preview", undefined, parts.facts).highlights
         : audience === "stage" && clock.phase === "podium" && !stageHidden
-          ? presentStats(stats, "stage").highlights
+          ? presentStats(stats, "stage", undefined, parts.facts).highlights
           : undefined;
     const recap =
       audience === "guest" && selfPlayerId
-        ? presentStats(stats, "recap", selfPlayerId).recap
+        ? presentStats(stats, "recap", selfPlayerId, parts.facts).recap
         : undefined;
-    const funFacts = readFunFactSelection(this.ctx.storage.sql);
+    const funFacts = parts.funFacts;
     const factIndex =
       funFacts.cards.length === 0
         ? 0
@@ -3591,7 +3609,10 @@ export class PartyRoom extends DurableObject<Env> {
           : "stage";
     let parts = shared?.get(audience);
     if (!parts) {
-      parts = this.snapshotParts(audience);
+      // This synchronous fan-out cannot interleave writes. Share room-wide
+      // calculations across audiences, keeping private projections separate.
+      const statistics = shared?.values().next().value?.statistics;
+      parts = this.snapshotParts(audience, statistics);
       shared?.set(audience, parts);
     }
     const snapshot = this.buildSnapshot(
@@ -3612,13 +3633,13 @@ export class PartyRoom extends DurableObject<Env> {
     attachment: SocketAttachment,
     snapshot: LobbySnapshot,
   ) {
-    const fields = new Map(
-      Object.entries(snapshot).map(([key, value]) => [key, JSON.stringify(value)]),
-    );
     if (!attachment.patches) {
       this.send(ws, { kind: "snapshot", scope: "public", snapshot });
       return;
     }
+    const fields = new Map(
+      Object.entries(snapshot).map(([key, value]) => [key, JSON.stringify(value)]),
+    );
     const previous = this.views.get(ws);
     this.viewCount += 1;
     const view = { id: `${this.viewEpoch}.${this.viewCount}`, fields };

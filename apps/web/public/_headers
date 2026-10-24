@@ -1,0 +1,20 @@
+# Only generated script, style and font extensions at this level. Unversioned
+# audio and question pictures keep the default revalidation policy.
+/assets/:file.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/:file.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/:file.woff2
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/:file.woff
+  Cache-Control: public, max-age=31536000, immutable
+
+# The standalone practice app has its own fingerprinted build outputs.
+/kart-engine/assets/:file.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/kart-engine/assets/:file.css
+  Cache-Control: public, max-age=31536000, immutable

@@ -34,15 +34,16 @@ export function questionImages(snapshot: LobbySnapshot | undefined): string[] {
   );
 }
 
-let kartWarm: Promise<unknown> | undefined;
+const kartWarm: Partial<Record<"phone" | "stage", Promise<unknown>>> = {};
 
 /** Load the 3D circuit code during the kart intro, not when the race starts. */
-export function warmKart(): void {
-  kartWarm ??= Promise.all([
-    import("../kart/KartCanvas"),
-    import("../kart/KartGameWrapper"),
-  ]).catch(() => {
-    kartWarm = undefined;
+export function warmKart(surface: "phone" | "stage" = "phone"): void {
+  kartWarm[surface] ??= (
+    surface === "phone"
+      ? import("../kart/KartCanvas")
+      : import("../kart/KartGameWrapper")
+  ).catch(() => {
+    delete kartWarm[surface];
   });
 }
 
@@ -50,7 +51,10 @@ export function warmKart(): void {
  * Starts loading what the current question needs as soon as it is announced.
  * The intro beat gives a few seconds, so the answer phase opens fully drawn.
  */
-export function usePreloadQuestion(snapshot: LobbySnapshot | undefined): void {
+export function usePreloadQuestion(
+  snapshot: LobbySnapshot | undefined,
+  surface: "phone" | "stage" = "phone",
+): void {
   const questionId = snapshot?.play?.question.id;
   const kind = snapshot?.play?.question.kind;
   const images = questionImages(snapshot).join("|");
@@ -59,7 +63,7 @@ export function usePreloadQuestion(snapshot: LobbySnapshot | undefined): void {
       preloadImages(images.split("|"));
     }
     if (kind === "kart") {
-      warmKart();
+      warmKart(surface);
     }
-  }, [questionId, kind, images]);
+  }, [questionId, kind, images, surface]);
 }

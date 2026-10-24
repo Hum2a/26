@@ -28,6 +28,7 @@
 | [Photo wall](photo-wall-plan.md)             | Uploads, moderation, queues and projector presentation  |
 | [Kart mini-game](kart-minigame.md)           | Driving, multiplayer rehearsal and engine provenance    |
 | [Quality-of-life map](qol-map.md)            | Improvements across the party experience                |
+| [Performance pass](performance.md)           | Loading, live-room optimisations and repeatable checks  |
 | [Data inventory](data-inventory.md)          | Stored data, access and retention                       |
 | [Lines-of-code report](loc-report.md)        | Generated repository size report                        |
 

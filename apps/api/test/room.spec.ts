@@ -10,6 +10,32 @@ import type { GuestJoinResult } from "../src/room/party-room.ts";
 const now = new Date(Date.now() - 60_000).toISOString();
 
 describe("durable lobby", () => {
+  it("indexes the round counts and per-player scoring queries used by snapshots", async () => {
+    const created = await createRoom();
+    await runInDurableObject(room(created.gameId), (_instance, state) => {
+      const checks = [
+        [
+          "SELECT COUNT(*) FROM choice_answer WHERE question_id = ?",
+          "choice_answer_question",
+        ],
+        [
+          "SELECT SUM(points) FROM score_ledger WHERE player_id = ?",
+          "score_ledger_player",
+        ],
+        [
+          "SELECT SUM(points) FROM score_adjustment WHERE player_id = ?",
+          "score_adjustment_player",
+        ],
+        ["SELECT * FROM name_reaction WHERE target_id = ?", "name_reaction_target"],
+      ];
+      for (const [query, index] of checks) {
+        const plan = state.storage.sql
+          .exec<{ detail: string }>(`EXPLAIN QUERY PLAN ${query}`, "sample")
+          .toArray();
+        expect(plan.map((row) => row.detail).join(" ")).toContain(index);
+      }
+    });
+  });
   it("rejects a repeated join code and a repeated game id", async () => {
     const registry = env.ROOM_CODE_REGISTRY.getByName("codes");
     const first = await registry.claim({
@@ -348,6 +374,7 @@ describe("durable lobby", () => {
       "stageHidden",
       "stateVersion",
       "trolls",
+      "wall",
     ]);
   });
 

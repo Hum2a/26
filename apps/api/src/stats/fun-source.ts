@@ -1,5 +1,5 @@
 import type { NormalisedDeviceReport } from "@26/shared";
-import { presentStats } from "./aggregate.ts";
+import { presentStats, type StatsSource } from "./aggregate.ts";
 import {
   selectFunFacts,
   type FunFactSelection,
@@ -9,8 +9,10 @@ import {
 import { readStatsSource } from "./source.ts";
 import { trollDefinitions, type TrollKind } from "../troll/catalogue.ts";
 
-export function readFunFactSelection(sql: SqlStorage): FunFactSelection {
-  const stats = readStatsSource(sql);
+export function readFunFactSelection(
+  sql: SqlStorage,
+  stats: StatsSource = readStatsSource(sql),
+): FunFactSelection {
   const deviceFamilyHighlighted = (
     presentStats({ ...stats, complete: true }, "stage").highlights ?? []
   ).some((card) => card.factId.startsWith("device-family"));
@@ -54,7 +56,9 @@ function readFunFactModel(
       .toArray()
       .map((row) => [row.player_id, traitsOf(row.report_json)]),
   );
-  const clientClass = (value: string): FunFactSource["guests"][number]["clientClass"] =>
+  const clientClass = (
+    value: string,
+  ): FunFactSource["guests"][number]["clientClass"] =>
     value === "guest" || value === "host" || value === "test" || value === "synthetic"
       ? value
       : "test";

@@ -156,8 +156,8 @@ export function presentStats(
   source: StatsSource,
   place: "preview" | "stage" | "recap",
   playerId?: string,
+  facts: readonly StatFact[] = aggregateFacts(source),
 ): { highlights?: StatCard[]; recap?: StatCard[] } {
-  const facts = aggregateFacts(source);
   const revealed = new Set(source.revealedQuestionIds);
   if (place === "recap" && playerId) {
     const recap = recapCards(
@@ -670,10 +670,16 @@ export const wallLovedMinimum = 5;
 
 function wallFacts(source: StatsSource): StatFact[] {
   const people = new Map(guests(source).map((player) => [player.playerId, player]));
-  const photos = (source.wallPhotos ?? []).filter((photo) => people.has(photo.playerId));
+  const photos = (source.wallPhotos ?? []).filter((photo) =>
+    people.has(photo.playerId),
+  );
   const sorted = [...photos].sort((left, right) => right.reactions - left.reactions);
   const [best, second] = sorted;
-  if (!best || best.reactions < wallLovedMinimum || second?.reactions === best.reactions) {
+  if (
+    !best ||
+    best.reactions < wallLovedMinimum ||
+    second?.reactions === best.reactions
+  ) {
     return [];
   }
   const nickname = people.get(best.playerId)?.nickname ?? "A guest";

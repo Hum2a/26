@@ -13,11 +13,10 @@ import {
   finaliseUpload,
   galleryMediaHeaders,
   hiddenMediaHeaders,
-  readAcceptedBytes,
 } from "./finalise.ts";
 import { createPhotoProcessor } from "./photo.ts";
 import { uploadTarget } from "./presign.ts";
-import { r2ObjectStore } from "./store.ts";
+import { r2ObjectStore, readAcceptedBody } from "./store.ts";
 import {
   mediaLargeMessage,
   mediaMissingMessage,
@@ -199,10 +198,7 @@ export function registerMediaRoutes(app: Hono<{ Bindings: Env }>): void {
         allowed.message,
       );
     }
-    const bytes = await readAcceptedBytes(
-      r2ObjectStore(c.env.MEDIA_BUCKET),
-      allowed.finalKey,
-    );
+    const bytes = await readAcceptedBody(c.env.MEDIA_BUCKET, allowed.finalKey);
     if (!bytes) {
       return roomFailure(404, "not_found", mediaMissingMessage);
     }
@@ -224,10 +220,7 @@ export function registerMediaRoutes(app: Hono<{ Bindings: Env }>): void {
     if (!listed || !live.ok) {
       return new Response(null, { status: 404, headers: hiddenMediaHeaders() });
     }
-    const bytes = await readAcceptedBytes(
-      r2ObjectStore(c.env.MEDIA_BUCKET),
-      live.finalKey,
-    );
+    const bytes = await readAcceptedBody(c.env.MEDIA_BUCKET, live.finalKey);
     if (!bytes) {
       return new Response(null, { status: 404, headers: hiddenMediaHeaders() });
     }

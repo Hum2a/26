@@ -8,7 +8,7 @@ import utensils from "@iconify-icons/lucide/utensils";
 import nissan from "@iconify-icons/simple-icons/nissan";
 import toyota from "@iconify-icons/simple-icons/toyota";
 import type { IconifyIcon } from "@iconify/types";
-import type { CSSProperties } from "react";
+import { memo, type CSSProperties } from "react";
 
 const motifIcons = {
   nissan,
@@ -37,7 +37,7 @@ const scenePieces = Array.from({ length: 24 }, (_, index) => ({
   "--r": `${(index * 47) % 360}deg`,
 })) as CSSProperties[];
 
-export function SkinMotif() {
+export const SkinMotif = memo(function SkinMotif() {
   return (
     <>
       <div className="deep-scene" aria-hidden="true">
@@ -54,4 +54,4 @@ export function SkinMotif() {
       ))}
     </>
   );
-}
+});

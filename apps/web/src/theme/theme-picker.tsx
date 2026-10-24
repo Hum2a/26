@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useId, useRef, useState } from "react";
+import { memo, useEffect, useId, useRef, useState } from "react";
 import { activeThemeId, applyTheme } from "./install";
 import { themeCategories, themes, type ThemeId } from "./themes";
 
@@ -163,7 +163,7 @@ function categoryIndexFor(themeId: ThemeId) {
   return index === -1 ? 0 : index;
 }
 
-export function ThemePicker() {
+export const ThemePicker = memo(function ThemePicker() {
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState<ThemeId>(activeThemeId);
   const [activeCategory, setActiveCategory] = useState(() =>
@@ -455,7 +455,7 @@ export function ThemePicker() {
       ) : null}
     </div>
   );
-}
+});
 
 function usePrefersReducedMotion() {
   const [reduce, setReduce] = useState(

@@ -1,27 +1,6 @@
 import { Navigate, useSearchParams, type RouteObject } from "react-router";
-import { AdminConfirmPage } from "./admin/admin-confirm-page";
-import { AdminLoginPage } from "./admin/admin-login-page";
-import { AdminPage, AdminSettingsPage } from "./admin/admin-page";
-import { LiveConsole } from "./admin/live-console";
-import { RoomTrollsPage, TrollsPage } from "./admin/trolls-page";
-import { WallPage } from "./admin/wall-page";
-import { AnalyticsPage } from "./admin/analytics-page";
-import { PlayersPage } from "./admin/players-page";
-import { MediaPage } from "./admin/media-page";
-import { HealthPage } from "./admin/health-page";
-import { ContentPage } from "./admin/content-page";
-import { AdminKartPage } from "./admin/kart-page";
-import { QuestionPage } from "./admin/question-page";
-import { QuestionPhonePreview } from "./admin/question-phone-preview";
-import { QuestionStagePreview } from "./admin/question-stage-preview";
-import { AdminResultsPage } from "./admin/results-page";
-import { AdminRoomRoute } from "./admin/room-provider";
-import { RoomsPage, RoomOverview } from "./admin/rooms-page";
-import { GuestPage } from "./guest/guest-page";
 import { HomePage } from "./home/home-page";
 import { NotFoundPage } from "./not-found-page";
-import { ResultsPage } from "./results/results-page";
-import { StagePage } from "./stage/stage-page";
 
 function HomeEntry() {
   const [params] = useSearchParams();
@@ -32,56 +11,173 @@ function HomeEntry() {
   );
 }
 
-export const appRoutes: RouteObject[] = [
+const routes: RouteObject[] = [
   { path: "/", element: <HomeEntry /> },
-  { path: "/join", element: <GuestPage /> },
-  { path: "/play", element: <GuestPage /> },
+  {
+    path: "/join",
+    lazy: async () => ({ Component: (await import("./guest/guest-page")).GuestPage }),
+  },
+  {
+    path: "/play",
+    lazy: async () => ({ Component: (await import("./guest/guest-page")).GuestPage }),
+  },
   {
     path: "/kart",
     lazy: async () => ({ Component: (await import("./kart/solo-page")).SoloKartPage }),
   },
-  { path: "/j/:code", element: <GuestPage /> },
-  { path: "/host", element: <StagePage /> },
-  { path: "/screen", element: <StagePage /> },
+  {
+    path: "/j/:code",
+    lazy: async () => ({ Component: (await import("./guest/guest-page")).GuestPage }),
+  },
+  {
+    path: "/host",
+    lazy: async () => ({ Component: (await import("./stage/stage-page")).StagePage }),
+  },
+  {
+    path: "/screen",
+    lazy: async () => ({ Component: (await import("./stage/stage-page")).StagePage }),
+  },
   {
     path: "/admin/phone-preview/:version/:questionId",
-    element: <QuestionPhonePreview />,
+    lazy: async () => ({
+      Component: (await import("./admin/question-phone-preview")).QuestionPhonePreview,
+    }),
   },
   {
     path: "/admin/stage-preview/:version/:questionId",
-    element: <QuestionStagePreview />,
+    lazy: async () => ({
+      Component: (await import("./admin/question-stage-preview")).QuestionStagePreview,
+    }),
   },
   {
     path: "/admin",
-    element: <AdminPage />,
+    lazy: async () => ({ Component: (await import("./admin/admin-page")).AdminPage }),
     children: [
-      { index: true, element: <RoomsPage overview /> },
-      { path: "rooms", element: <RoomsPage /> },
-      { path: "settings", element: <AdminSettingsPage /> },
-      { path: "content", element: <ContentPage /> },
-      { path: "kart", element: <AdminKartPage /> },
-      { path: "trolls", element: <TrollsPage /> },
-      { path: "content/:version/:questionId", element: <QuestionPage /> },
+      {
+        index: true,
+        lazy: async () => {
+          const { RoomsPage } = await import("./admin/rooms-page");
+          return { Component: () => <RoomsPage overview /> };
+        },
+      },
+      {
+        path: "rooms",
+        lazy: async () => ({
+          Component: (await import("./admin/rooms-page")).RoomsPage,
+        }),
+      },
+      {
+        path: "settings",
+        lazy: async () => ({
+          Component: (await import("./admin/admin-page")).AdminSettingsPage,
+        }),
+      },
+      {
+        path: "content",
+        lazy: async () => ({
+          Component: (await import("./admin/content-page")).ContentPage,
+        }),
+      },
+      {
+        path: "kart",
+        lazy: async () => ({
+          Component: (await import("./admin/kart-page")).AdminKartPage,
+        }),
+      },
+      {
+        path: "trolls",
+        lazy: async () => ({
+          Component: (await import("./admin/trolls-page")).TrollsPage,
+        }),
+      },
+      {
+        path: "content/:version/:questionId",
+        lazy: async () => ({
+          Component: (await import("./admin/question-page")).QuestionPage,
+        }),
+      },
       {
         path: "rooms/:gameId",
-        element: <AdminRoomRoute />,
+        lazy: async () => ({
+          Component: (await import("./admin/room-provider")).AdminRoomRoute,
+        }),
         children: [
-          { index: true, element: <RoomOverview /> },
-          { path: "live", element: <LiveConsole /> },
-          { path: "players", element: <PlayersPage /> },
-          { path: "media", element: <MediaPage /> },
-          { path: "results", element: <AdminResultsPage /> },
-          { path: "health", element: <HealthPage /> },
-          { path: "trolls", element: <RoomTrollsPage /> },
-          { path: "wall", element: <WallPage /> },
-          { path: "analytics", element: <AnalyticsPage /> },
+          {
+            index: true,
+            lazy: async () => ({
+              Component: (await import("./admin/rooms-page")).RoomOverview,
+            }),
+          },
+          {
+            path: "live",
+            lazy: async () => ({
+              Component: (await import("./admin/live-console")).LiveConsole,
+            }),
+          },
+          {
+            path: "players",
+            lazy: async () => ({
+              Component: (await import("./admin/players-page")).PlayersPage,
+            }),
+          },
+          {
+            path: "media",
+            lazy: async () => ({
+              Component: (await import("./admin/media-page")).MediaPage,
+            }),
+          },
+          {
+            path: "results",
+            lazy: async () => ({
+              Component: (await import("./admin/results-page")).AdminResultsPage,
+            }),
+          },
+          {
+            path: "health",
+            lazy: async () => ({
+              Component: (await import("./admin/health-page")).HealthPage,
+            }),
+          },
+          {
+            path: "trolls",
+            lazy: async () => ({
+              Component: (await import("./admin/trolls-page")).RoomTrollsPage,
+            }),
+          },
+          {
+            path: "wall",
+            lazy: async () => ({
+              Component: (await import("./admin/wall-page")).WallPage,
+            }),
+          },
+          {
+            path: "analytics",
+            lazy: async () => ({
+              Component: (await import("./admin/analytics-page")).AnalyticsPage,
+            }),
+          },
         ],
       },
     ],
   },
-  { path: "/admin/login", element: <AdminLoginPage /> },
-  { path: "/admin/confirm", element: <AdminConfirmPage /> },
-  { path: "/r/:gameId", element: <ResultsPage /> },
+  {
+    path: "/admin/login",
+    lazy: async () => ({
+      Component: (await import("./admin/admin-login-page")).AdminLoginPage,
+    }),
+  },
+  {
+    path: "/admin/confirm",
+    lazy: async () => ({
+      Component: (await import("./admin/admin-confirm-page")).AdminConfirmPage,
+    }),
+  },
+  {
+    path: "/r/:gameId",
+    lazy: async () => ({
+      Component: (await import("./results/results-page")).ResultsPage,
+    }),
+  },
   ...(import.meta.env.DEV
     ? [
         {
@@ -95,3 +191,9 @@ export const appRoutes: RouteObject[] = [
     : []),
   { path: "*", element: <NotFoundPage /> },
 ];
+
+// Initial lazy routes wait on the existing document before their real frame loads.
+export const appRoutes: RouteObject[] = routes.map((route) => ({
+  HydrateFallback: () => null,
+  ...route,
+}));

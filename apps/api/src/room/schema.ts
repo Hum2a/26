@@ -134,6 +134,8 @@ const scheduleStatements = [
     created_at INTEGER NOT NULL,
     PRIMARY KEY (question_id, player_id)
   )`,
+  `CREATE INDEX IF NOT EXISTS choice_answer_question ON choice_answer (question_id)`,
+  `CREATE INDEX IF NOT EXISTS score_ledger_player ON score_ledger (player_id)`,
   `CREATE TABLE IF NOT EXISTS name_reaction (
     voter_id TEXT NOT NULL,
     target_id TEXT NOT NULL,
@@ -148,6 +150,8 @@ const scheduleStatements = [
     reason TEXT NOT NULL,
     created_at INTEGER NOT NULL
   )`,
+  `CREATE INDEX IF NOT EXISTS name_reaction_target ON name_reaction (target_id)`,
+  `CREATE INDEX IF NOT EXISTS score_adjustment_player ON score_adjustment (player_id)`,
   `CREATE TABLE IF NOT EXISTS round_response (
     player_id TEXT NOT NULL,
     question_id TEXT NOT NULL,

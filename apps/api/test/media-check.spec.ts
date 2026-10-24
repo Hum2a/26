@@ -1,5 +1,6 @@
 import { encode } from "jpeg-js";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { readAcceptedBody } from "../src/media/store.ts";
 import { acceptedMediaHeaders } from "../src/media/finalise.ts";
 import { temporaryKey } from "../src/media/keys.ts";
 import { localJpegPhoto, createPhotoProcessor } from "../src/media/photo.ts";
@@ -13,6 +14,28 @@ import {
 } from "../src/room/limits.ts";
 
 describe("media checks", () => {
+  it("streams an accepted object with one read and without buffering", async () => {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array([1, 2, 3]));
+        controller.close();
+      },
+    });
+    const arrayBuffer = vi.fn();
+    const get = vi.fn().mockResolvedValue({ body, arrayBuffer });
+    expect(
+      await readAcceptedBody({ get } as Pick<R2Bucket, "get">, "final/photo"),
+    ).toBe(body);
+    expect(get).toHaveBeenCalledExactlyOnceWith("final/photo");
+    expect(arrayBuffer).not.toHaveBeenCalled();
+    expect([...new Uint8Array(await new Response(body).arrayBuffer())]).toEqual([
+      1, 2, 3,
+    ]);
+    get.mockResolvedValue(null);
+    expect(
+      await readAcceptedBody({ get } as Pick<R2Bucket, "get">, "missing"),
+    ).toBeNull();
+  });
   it("re-encodes a real JPEG and rejects other bytes", async () => {
     const photo = await localJpegPhoto(tinyJpeg(4, 2));
     expect(photo.ok).toBe(true);

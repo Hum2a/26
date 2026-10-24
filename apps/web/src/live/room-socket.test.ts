@@ -96,6 +96,35 @@ describe("applySnapshotPatch", () => {
     expect(next?.players).toHaveLength(1);
     expect(next?.stateVersion).toBe(2);
     expect(next?.joinCode).toBe(roomFixture.joinCode);
+    expect(next?.trolls).toBe(roomFixture.trolls);
+    expect(next?.media).toBe(roomFixture.media);
+    expect(next?.players).not.toBe(roomFixture.players);
+  });
+
+  it("keeps the existing question and players when only the clock changes", () => {
+    const next = applySnapshotPatch(roomFixture, "e.1", {
+      ...patch,
+      set: { serverNow: roomFixture.serverNow + 1000 },
+    });
+    expect(next?.players).toBe(roomFixture.players);
+    expect(next?.play).toBe(roomFixture.play);
+    expect(next?.serverNow).toBe(roomFixture.serverNow + 1000);
+  });
+
+  it("still removes optional fields and rejects unknown input", () => {
+    const next = applySnapshotPatch({ ...roomFixture, highlights: [] }, "e.1", {
+      ...patch,
+      set: {},
+      unset: ["highlights"],
+    });
+    expect(next).toBeDefined();
+    expect(next).not.toHaveProperty("highlights");
+    expect(
+      applySnapshotPatch(roomFixture, "e.1", {
+        ...patch,
+        set: { unexpected: "discard me" },
+      }),
+    ).toBeUndefined();
   });
 
   it("refuses a patch for a different view", () => {
@@ -221,6 +250,35 @@ describe("openRoomSocket liveness", () => {
     const next = FakeSocket.instances.at(-1)!;
     next.open();
     expect(next.sent).toContain(command);
+    client.close();
+  });
+
+  it("does not retain accepted commands for replay, but keeps uncertain ones", () => {
+    const client = open("guest");
+    const first = FakeSocket.instances[0]!;
+    first.open();
+    for (let index = 0; index < 200; index++) {
+      const requestId = client.submitReaction("player", "like");
+      first.emit("message", {
+        data: JSON.stringify({
+          kind: "ack",
+          scope: "private",
+          requestId,
+          accepted: true,
+        }),
+      });
+    }
+    const requestId = client.submitReaction("pending-player", "like");
+    first.close(1006, "");
+    window.dispatchEvent(new Event("online"));
+    const next = FakeSocket.instances.at(-1)!;
+    next.open();
+    const replayed = next.sent
+      .filter((value) => value.includes('"reaction"'))
+      .map((value) => JSON.parse(value));
+    expect(replayed).toEqual([
+      expect.objectContaining({ requestId, targetId: "pending-player" }),
+    ]);
     client.close();
   });
 

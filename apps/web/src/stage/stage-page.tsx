@@ -32,7 +32,7 @@ export function StagePage() {
   const presentButton = useRef<HTMLButtonElement>(null);
   const wasPresenting = useRef(false);
   const show = useStageShow();
-  usePreloadQuestion(snapshot);
+  usePreloadQuestion(snapshot, "stage");
   useEffect(() => {
     if (!presenting && wasPresenting.current) presentButton.current?.focus();
     wasPresenting.current = presenting;
@@ -122,7 +122,11 @@ export function StagePage() {
             onSetup={setup}
           />
           {snapshot.wall && displayEnabled ? (
-            <StageWall wall={snapshot.wall} gameId={snapshot.gameId} phase={snapshot.phase} />
+            <StageWall
+              wall={snapshot.wall}
+              gameId={snapshot.gameId}
+              phase={snapshot.phase}
+            />
           ) : null}
         </>
       ) : (

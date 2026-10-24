@@ -94,7 +94,17 @@ export function applySnapshotPatch(
     if (typeof key === "string") delete next[key];
   }
   const parsed = lobbySnapshotSchema.safeParse(next);
-  return parsed.success ? parsed.data : undefined;
+  if (!parsed.success) return undefined;
+  // Zod clones nested data. Unchanged fields already came from a validated view;
+  // retain their identities so a clock/count patch does not redraw every player,
+  // photo and question control. Changed fields still use the validated result.
+  const result = parsed.data;
+  for (const key of Object.keys(snapshot) as (keyof LobbySnapshot)[]) {
+    if (!Object.hasOwn(patch.set, key) && Object.hasOwn(result, key)) {
+      Object.assign(result, { [key]: snapshot[key] });
+    }
+  }
+  return result;
 }
 
 /**
@@ -179,7 +189,7 @@ type CommandBody =
     };
 
 type TrackedCommand = {
-  state: "pending" | "sent" | "accepted";
+  state: "pending" | "sent";
   body: CommandBody;
 };
 
@@ -417,11 +427,7 @@ export function openRoomSocket(options: {
     options.onConnection("open");
     let resent = 0;
     for (const command of tracked.values()) {
-      if (
-        command.state !== "accepted" &&
-        socket &&
-        socket.readyState === WebSocket.OPEN
-      ) {
+      if (socket && socket.readyState === WebSocket.OPEN) {
         if (command.state === "sent") {
           resent += 1;
         }
@@ -477,7 +483,7 @@ export function openRoomSocket(options: {
     ) {
       const command = tracked.get(record.requestId);
       if (command && record.accepted === true) {
-        command.state = "accepted";
+        tracked.delete(record.requestId);
       }
       options.onAck({
         requestId: record.requestId,
