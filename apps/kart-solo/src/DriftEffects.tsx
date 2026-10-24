@@ -12,8 +12,11 @@ import { driftSparks, driftStrength } from "../../web/src/kart/drift-effects";
 import { themes, DEFAULT_THEME_ID } from "../../web/src/theme/themes";
 import { useGameStore } from "./upstream/store.js";
 import type { DrivingBody } from "@26/shared";
+import { useGraphicsTier } from "../../web/src/kart/graphics-preferences";
+import { graphicsProfiles } from "../../web/src/kart/graphics";
 
 export function DriftEffects({ body }: { body: { current: DrivingBody } }) {
+  const tier = useGraphicsTier();
   const mesh = useRef<InstancedMesh>(null);
   const dummy = useRef(new Object3D());
   const time = useRef(0),
@@ -42,8 +45,8 @@ export function DriftEffects({ body }: { body: { current: DrivingBody } }) {
       d.driftMs / 2400,
       d.boostMs > 0,
       reduced,
-    );
-    mesh.current.count = reduced ? particles.length : 40;
+    ).filter((_, index) => index % graphicsProfiles[tier].sparkStride === 0);
+    mesh.current.count = reduced || tier !== "high" ? particles.length : 40;
     particles.forEach((p, i) => {
       const object = dummy.current;
       object.position.set(p.x, -1.1 + p.y, p.z);
@@ -63,7 +66,7 @@ export function DriftEffects({ body }: { body: { current: DrivingBody } }) {
     emission.current += seconds;
     while (emission.current >= 0.025) {
       emission.current -= 0.025;
-      if (!active || reduced) continue;
+      if (!active || reduced || tier !== "high") continue;
       for (const side of [-1, 1]) {
         const trail = trails.current[cursor.current++ % trails.current.length]!;
         trail.position.set(side * 0.83, -1.05, 0.8);
@@ -72,7 +75,7 @@ export function DriftEffects({ body }: { body: { current: DrivingBody } }) {
         trail.power = 0.6 + Math.min(1, d.driftMs / 2400);
       }
     }
-    if (!reduced)
+    if (!reduced && tier === "high")
       trails.current.forEach((trail, i) => {
         const object = dummy.current;
         object.position.copy(trail.position);

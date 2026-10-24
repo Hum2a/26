@@ -197,10 +197,14 @@ export function StagePresentation({
   );
 }
 function StagePhoto({ nickname, src }: { nickname: string; src: string }) {
-  const [failed, setFailed] = useState(false);
-  return failed ? (
+  const [failedSource, setFailedSource] = useState<string>();
+  return failedSource === src ? (
     <p>Photo from {nickname} is unavailable.</p>
   ) : (
-    <img alt={`Photo from ${nickname}`} src={src} onError={() => setFailed(true)} />
+    <img
+      alt={`Photo from ${nickname}`}
+      src={src}
+      onError={() => setFailedSource(src)}
+    />
   );
 }

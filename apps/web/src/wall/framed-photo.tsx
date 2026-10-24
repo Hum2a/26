@@ -47,8 +47,10 @@ export function FramedPhoto({
   caption: string | null;
   size?: "phone" | "stage" | "corner" | "thumb";
 }) {
-  const [failed, setFailed] = useState(false);
-  const alt = caption ? `${caption}, a photo from ${nickname}` : `Photo from ${nickname}`;
+  const [failedSource, setFailedSource] = useState<string>();
+  const alt = caption
+    ? `${caption}, a photo from ${nickname}`
+    : `Photo from ${nickname}`;
   return (
     <figure className={`wall-frame wall-frame--${frame} wall-frame--${size}`}>
       {frame === "wanted" ? <p className="wall-frame-banner">WANTED</p> : null}
@@ -59,10 +61,15 @@ export function FramedPhoto({
         <p className="wall-frame-banner">26 MAGAZINE · {nickname.toUpperCase()}</p>
       ) : null}
       <div className="wall-frame-image">
-        {failed ? (
+        {failedSource === src ? (
           <p className="wall-frame-missing">This photo could not be shown.</p>
         ) : (
-          <img src={src} alt={alt} onError={() => setFailed(true)} draggable={false} />
+          <img
+            src={src}
+            alt={alt}
+            onError={() => setFailedSource(src)}
+            draggable={false}
+          />
         )}
         {frame === "vhs" ? (
           <span className="wall-frame-rec" aria-hidden="true">

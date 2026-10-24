@@ -16,6 +16,7 @@ import { writeRoundState } from "../questions/round-state.ts";
 import { freezeBirthdayOrder } from "../questions/birthday-order.ts";
 import { DurableObject } from "cloudflare:workers";
 import { createRealtimeMeter } from "./realtime-meter.ts";
+import { photoBiasDetails, photoBiasState, roughPhoto } from "../media/photo-bias.ts";
 import { adminPlayerRows } from "./admin-players.ts";
 import {
   guestSessionSchema,
@@ -1024,7 +1025,7 @@ export class PartyRoom extends DurableObject<Env> {
   readGalleryMedia(
     mediaId: string,
   ):
-    | { ok: true; finalKey: string; contentType: string }
+    | { ok: true; finalKey: string; contentType: string; rough: boolean }
     | { ok: false; reason: "hidden" | "missing" } {
     const row = readServable(this.ctx.storage.sql, mediaId);
     if (!row) {
@@ -1033,7 +1034,12 @@ export class PartyRoom extends DurableObject<Env> {
     if (row.hidden) {
       return { ok: false, reason: "hidden" };
     }
-    return { ok: true, finalKey: row.finalKey, contentType: row.contentType };
+    return {
+      ok: true,
+      finalKey: row.finalKey,
+      contentType: row.contentType,
+      rough: roughPhoto(this.ctx.storage.sql, mediaId),
+    };
   }
 
   async startFixture(input: {
@@ -1764,7 +1770,12 @@ export class PartyRoom extends DurableObject<Env> {
         message: mediaMissingMessage,
       };
     }
-    return { ok: true as const, finalKey: row.finalKey, contentType: row.contentType };
+    return {
+      ok: true as const,
+      finalKey: row.finalKey,
+      contentType: row.contentType,
+      rough: roughPhoto(this.ctx.storage.sql, input.mediaId),
+    };
   }
 
   async snapshotFor(
@@ -3256,6 +3267,7 @@ export class PartyRoom extends DurableObject<Env> {
       ...statistics,
       cloud: cloudRows(sql),
       namesReveal: presentation?.opening === "showing" ? revealNames(sql) : null,
+      mediaDisplayRevision: photoBiasState(sql).revision,
       media: listUploads(sql, audience),
     };
   }
@@ -3331,6 +3343,7 @@ export class PartyRoom extends DurableObject<Env> {
       remainingMs: clock.remainingMs,
       serverNow: Date.now(),
       stateVersion: room.state_version,
+      mediaDisplayRevision: parts.mediaDisplayRevision,
       questionSetVersion: room.question_set_version,
       scoringVersion: room.scoring_version,
       players,
@@ -3356,6 +3369,7 @@ export class PartyRoom extends DurableObject<Env> {
               control: this.ctx.getWebSockets("control").length,
             },
             hostEffects: hostTrollRows(this.ctx.storage.sql),
+            photoBias: photoBiasDetails(this.ctx.storage.sql),
             trollHistory: trollHistoryRows(this.ctx.storage.sql),
             kartCourseHistory:
               play?.question.kind === "kart"

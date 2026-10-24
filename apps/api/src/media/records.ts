@@ -24,6 +24,7 @@ import {
 } from "../room/limits.ts";
 import { wallSendBlock } from "../wall/store.ts";
 import { acceptedKey, temporaryKey } from "./keys.ts";
+import { photoFamily } from "./photo-bias.ts";
 
 export type MediaKind = "photo" | "voice";
 /**
@@ -139,11 +140,19 @@ export function reserveUpload(
     }
   }
   const playerLimit =
-    purpose === "face" ? playerFaceSlots : purpose === "wall" ? playerWallSlots : playerMediaSlots;
+    purpose === "face"
+      ? playerFaceSlots
+      : purpose === "wall"
+        ? playerWallSlots
+        : playerMediaSlots;
   if (playerCount >= playerLimit) {
     return fail(
       "full",
-      purpose === "face" ? faceQuotaMessage : purpose === "wall" ? wallQuotaMessage : mediaQuotaMessage,
+      purpose === "face"
+        ? faceQuotaMessage
+        : purpose === "wall"
+          ? wallQuotaMessage
+          : mediaQuotaMessage,
     );
   }
   const roomCount = count(
@@ -153,16 +162,23 @@ export function reserveUpload(
     purpose,
   );
   const roomLimit =
-    purpose === "face" ? roomFaceSlots : purpose === "wall" ? roomWallSlots : roomMediaSlots;
+    purpose === "face"
+      ? roomFaceSlots
+      : purpose === "wall"
+        ? roomWallSlots
+        : roomMediaSlots;
   if (roomCount >= roomLimit) {
-    return fail("full", purpose === "wall" ? wallRoomQuotaMessage : mediaRoomQuotaMessage);
+    return fail(
+      "full",
+      purpose === "wall" ? wallRoomQuotaMessage : mediaRoomQuotaMessage,
+    );
   }
   const uploadId = crypto.randomUUID();
   const tempKey = temporaryKey(room.game_id, uploadId);
   sql.exec(
     `INSERT INTO media_upload (
-      upload_id, request_id, player_id, kind, question_index, temp_key, status, attempts, created_at, hidden, purpose
-    ) VALUES (?, ?, ?, ?, ?, ?, 'open', 0, ?, 0, ?)`,
+      upload_id, request_id, player_id, kind, question_index, temp_key, status, attempts, created_at, hidden, purpose, photo_family
+    ) VALUES (?, ?, ?, ?, ?, ?, 'open', 0, ?, 0, ?, ?)`,
     uploadId,
     input.requestId,
     input.playerId,
@@ -171,6 +187,7 @@ export function reserveUpload(
     tempKey,
     input.nowMs,
     purpose,
+    input.kind === "photo" ? photoFamily(sql, input.playerId) : "unknown",
   );
   const row = mustRow(sql, uploadId);
   return reserved(row);
@@ -318,11 +335,11 @@ export function commitUpload(
     row.purpose === "wall"
       ? !room
       : row.purpose === "face"
-      ? !room || room.phase === "podium"
-      : !room ||
-        room.question_index !== row.question_index ||
-        room.phase === "podium" ||
-        room.phase === "lobby";
+        ? !room || room.phase === "podium"
+        : !room ||
+          room.question_index !== row.question_index ||
+          room.phase === "podium" ||
+          room.phase === "lobby";
   if (late) {
     sql.exec(
       `UPDATE media_upload SET status = 'cancelled', failure = ? WHERE upload_id = ?`,

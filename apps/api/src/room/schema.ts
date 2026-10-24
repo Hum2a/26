@@ -434,6 +434,10 @@ export function ensurePartySchema(sql: SqlStorage): void {
   addColumn(sql, "connection_summary", "last_script_error", "TEXT");
   addColumn(sql, "connection_summary", "last_script_error_at", "TEXT");
   addColumn(sql, "room", "fun_fact_index", "INTEGER NOT NULL DEFAULT 0");
+  addColumn(sql, "room", "photo_bias_enabled", "INTEGER NOT NULL DEFAULT 1");
+  addColumn(sql, "room", "photo_bias_revision", "INTEGER NOT NULL DEFAULT 0");
+  addColumn(sql, "room", "photo_bias_history", "TEXT NOT NULL DEFAULT '[]'");
+  addColumn(sql, "media_upload", "photo_family", "TEXT NOT NULL DEFAULT 'unknown'");
   if (!existing) {
     sql.exec("INSERT INTO schema_meta (id, version) VALUES (1, 15)");
     return;

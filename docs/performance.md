@@ -131,14 +131,19 @@ starts, venue Wi-Fi and real-user interaction latency still need measurement.
 The normal local Worker transport also has an existing intermittent timeout;
 isolating the frontend allows the loading/layout checks to run independently.
 
-These changes would need a separate decision because they can affect appearance
-or behaviour:
+The user approved a separate graphics/photo pass on 24 October:
 
-- Reducing render resolution, geometry, textures or effects in the kart views.
-- Lossy image recompression, smaller photos or different font/theme treatments.
-- Reducing animation, scene decoration, theme variety or retained history.
-- Sending fewer/slower live updates, adding client prediction or changing race
-  tick/input frequency.
+- Kart Auto/High/Low graphics: Auto uses balanced detail at 16–20 racers and low
+  detail above 20, or after sustained slow visible frames. High is a local
+  override. Only pixel density and decorative drift sparks change; course
+  objects, controls and server timing stay the same. See `kart-minigame.md`.
+- New photos keep a clean, normalised accepted copy. iPhone uploads receive a
+  reversible rough display treatment; Android and unclassified uploads use the
+  clean copy. Admin → room → Media can restore clean photos, see counts/history
+  and rehearse both treatments through the real image processor.
+- Animation, scene decoration, theme variety, history, live update frequency,
+  prediction and race tick/input frequency remain unchanged by user decision.
+  Font/theme treatments were not requested.
 
 Further profiling may identify additional equivalent optimisations; these items
 are candidates, not requirements to change the product.

@@ -281,19 +281,21 @@ export function createDriverRig({
   let time = 0;
 
   function texture(mediaId: string) {
-    let value = faceTextures.get(mediaId);
+    const url = faceUrl(mediaId);
+    let value = faceTextures.get(url);
     if (!value) {
-      value = loader.load(faceUrl(mediaId));
+      value = loader.load(url);
       value.colorSpace = THREE.SRGBColorSpace;
-      faceTextures.set(mediaId, value);
+      faceTextures.set(url, value);
       textures.add(value);
     }
     return value;
   }
 
   function faceFor(playerId: string, mediaId: string | undefined) {
+    const signature = mediaId ? faceUrl(mediaId) : undefined;
     const current = faces.get(playerId);
-    if (current && current.mediaId === mediaId) return current.mesh;
+    if (current && current.mediaId === signature) return current.mesh;
     if (current) {
       scene.remove(current.mesh);
       (current.mesh.material as THREE.Material).dispose();
@@ -305,7 +307,7 @@ export function createDriverRig({
     mesh.matrixAutoUpdate = false;
     mesh.name = "kart-driver-face";
     scene.add(mesh);
-    faces.set(playerId, { mesh, mediaId });
+    faces.set(playerId, { mesh, mediaId: signature! });
     return mesh;
   }
 
@@ -316,6 +318,18 @@ export function createDriverRig({
     ) {
       drivers = next;
       faceUrl = url;
+      const used = new Set(
+        [...next.values()].flatMap((driver) =>
+          driver.faceMediaId ? [url(driver.faceMediaId)] : [],
+        ),
+      );
+      for (const [key, value] of faceTextures) {
+        if (!used.has(key)) {
+          value.dispose();
+          textures.delete(value);
+          faceTextures.delete(key);
+        }
+      }
     },
     begin(dt: number) {
       time += Math.max(0, Math.min(0.1, dt));

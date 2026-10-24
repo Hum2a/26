@@ -9,8 +9,9 @@ export function adminMedia(sql: SqlStorage, before?: number) {
       nickname: string;
       hidden: number;
       purpose: string;
+      photo_family: "iphone" | "android" | "unknown";
     }>(
-      `SELECT m.rowid AS cursor, m.media_id, m.kind, p.nickname, m.hidden, m.purpose
+      `SELECT m.rowid AS cursor, m.media_id, m.kind, p.nickname, m.hidden, m.purpose, m.photo_family
      FROM media_upload m JOIN player p ON p.player_id = m.player_id
      WHERE m.status = 'accepted' AND m.media_id IS NOT NULL AND m.rowid < ?
      ORDER BY m.rowid DESC LIMIT 51`,
@@ -23,6 +24,7 @@ export function adminMedia(sql: SqlStorage, before?: number) {
       kind: row.kind,
       nickname: row.nickname,
       hidden: row.hidden === 1,
+      ...(row.kind === "photo" ? { photoFamily: row.photo_family } : {}),
       // Faces are listed so the host can hide one; hiding returns a plain driver.
       ...(row.purpose === "face" ? { purpose: "face" as const } : {}),
     })),

@@ -62,9 +62,10 @@ export const adminFeatures: readonly AdminFeature[] = [
     label: "Kart",
     scope: "global",
     path: "kart",
-    summary: "The kart engine, turbo tiers, course features and multiplayer notes.",
+    summary:
+      "The kart engine, adaptive graphics, turbo tiers, course features and multiplayer notes.",
     rehearsal:
-      "Drive boosts, ramps and gliding in the real engine; use Course set-up to clear or restore the track.",
+      "Drive the real engine; compare Auto/High/Low and rehearse 16/21-player graphics inside Course set-up, plus boosts, ramps and gliding.",
     owns: ["apps/web/src/kart"],
   },
   {
@@ -122,8 +123,9 @@ export const adminFeatures: readonly AdminFeature[] = [
     label: "Media",
     scope: "room",
     path: "media",
-    summary: "Every photo and voice clip, with hide.",
-    rehearsal: "Upload from a second tab; hiding works on any upload.",
+    summary: "Every photo and voice clip, moderation and reversible iPhone photo bias.",
+    rehearsal:
+      "Run the real clean/rough photo processor on a stand-in sample; upload from a second tab to try hiding.",
     owns: ["apps/api/src/media", "apps/web/src/media"],
     status: (snapshot) => `${snapshot.media.length} question photos and clips`,
   },

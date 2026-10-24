@@ -1,6 +1,8 @@
 import { lazy, Suspense, useState } from "react";
 import type { KartRaceView } from "@26/shared";
 import { KartMap } from "./KartMap";
+import { GraphicsControls } from "./graphics-controls";
+import { useKartGraphics } from "./graphics-preferences";
 const KartCanvas = lazy(() => import("./KartCanvas"));
 
 export function KartDriverView({
@@ -11,6 +13,7 @@ export function KartDriverView({
   reducedMotion: boolean;
 }) {
   const [map, setMap] = useState(false);
+  const graphics = useKartGraphics(race.participantCount ?? race.participants.length);
   return (
     <div className="kart-driver-view">
       <div className="kart-driver-viewport" data-view={map ? "map" : "chase"}>
@@ -28,6 +31,8 @@ export function KartDriverView({
               mobile
               reducedMotion={reducedMotion}
               followPlayerId={race.selfPlayerId}
+              graphicsTier={graphics.tier}
+              onFrameHealth={graphics.onHealth}
             />
           </Suspense>
         ) : null}
@@ -41,6 +46,7 @@ export function KartDriverView({
       >
         {map ? "3D view" : "Map view"}
       </button>
+      <GraphicsControls {...graphics} compact />
     </div>
   );
 }

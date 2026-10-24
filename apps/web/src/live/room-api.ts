@@ -120,6 +120,8 @@ export type PlayAction =
   | "start-kart-rehearsal"
   | "kart-course-on"
   | "kart-course-off"
+  | "photo-bias-on"
+  | "photo-bias-off"
   | "start"
   | "pause"
   | "resume"

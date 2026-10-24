@@ -25,8 +25,26 @@ import {
   voiceMaxBytes,
 } from "../room/limits.ts";
 import { roomFailure } from "../room/routes.ts";
+import { rejectUnlessRoomCreator } from "../room/access.ts";
 
 export function registerMediaRoutes(app: Hono<{ Bindings: Env }>): void {
+  app.post("/api/admin/media/photo-preview", async (c) => {
+    const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
+    if (rejected) return rejected;
+    const treatment = c.req.query("treatment");
+    if (treatment !== "clean" && treatment !== "rough")
+      return roomFailure(400, "invalid", mediaTypeMessage);
+    const bytes = await boundedPhotoBytes(c.req.raw.body);
+    if (!bytes) return roomFailure(413, "invalid", mediaLargeMessage);
+    const clean = await createPhotoProcessor(c.env, "clean")(bytes);
+    if (!clean.ok) return roomFailure(400, "invalid", clean.message);
+    const result =
+      treatment === "rough"
+        ? await createPhotoProcessor(c.env, "rough")(clean.bytes)
+        : clean;
+    if (!result.ok) return roomFailure(400, "invalid", result.message);
+    return new Response(result.bytes, { headers: acceptedMediaHeaders("image/jpeg") });
+  });
   app.post("/api/rooms/:gameId/media/slots", async (c) => {
     if (sameOriginRejection(c.req.raw)) {
       return authFailure("forbidden", 403);
@@ -203,7 +221,17 @@ export function registerMediaRoutes(app: Hono<{ Bindings: Env }>): void {
       return roomFailure(404, "not_found", mediaMissingMessage);
     }
     const headers = acceptedMediaHeaders(allowed.contentType);
-    return new Response(bytes, { status: 200, headers });
+    const displayed =
+      allowed.rough && allowed.contentType === "image/jpeg"
+        ? await roughDisplay(c.env, bytes, allowed.finalKey, c.executionCtx)
+        : bytes;
+    if (!displayed)
+      return roomFailure(
+        503,
+        "invalid",
+        "That photo could not be prepared. Try again.",
+      );
+    return new Response(displayed, { status: 200, headers });
   });
 
   app.get("/api/rooms/:gameId/gallery/:mediaId", async (c) => {
@@ -224,11 +252,87 @@ export function registerMediaRoutes(app: Hono<{ Bindings: Env }>): void {
     if (!bytes) {
       return new Response(null, { status: 404, headers: hiddenMediaHeaders() });
     }
-    return new Response(bytes, {
+    const displayed =
+      live.rough && live.contentType === "image/jpeg"
+        ? await roughDisplay(c.env, bytes, live.finalKey, c.executionCtx)
+        : bytes;
+    if (!displayed)
+      return new Response(null, { status: 503, headers: hiddenMediaHeaders() });
+    return new Response(displayed, {
       status: 200,
       headers: galleryMediaHeaders(live.contentType),
     });
   });
+}
+
+async function roughDisplay(
+  env: Env,
+  body: ReadableStream<Uint8Array>,
+  finalKey: string,
+  ctx: Pick<ExecutionContext, "waitUntil">,
+) {
+  // Only reached after the room's current permission and visibility checks.
+  // The clean object is immutable; this cache is disposable and never public.
+  const key = new Request(
+    `https://photo-display.invalid/${encodeURIComponent(finalKey)}/rough-v1`,
+  );
+  const cache = await caches.open("private-photo-display-v1");
+  const cached = await cache.match(key);
+  if (cached?.body) {
+    await body.cancel();
+    return cached.body;
+  }
+  const bytes = await boundedPhotoBytes(body);
+  if (!bytes) return null;
+  const result = await createPhotoProcessor(env, "rough")(bytes);
+  if (!result.ok) return null;
+  ctx.waitUntil(
+    cache
+      .put(
+        key,
+        new Response(result.bytes, {
+          headers: {
+            "content-type": "image/jpeg",
+            "cache-control": "public, max-age=300",
+          },
+        }),
+      )
+      .catch(() => {
+        /* A missed cache write only means reprocessing next time. */
+      }),
+  );
+  return result.bytes;
+}
+
+async function boundedPhotoBytes(
+  body: ReadableStream<Uint8Array> | null,
+): Promise<Uint8Array | null> {
+  if (!body) return null;
+  const reader = body.getReader();
+  const parts: Uint8Array[] = [];
+  let length = 0;
+  try {
+    while (true) {
+      const next = await reader.read();
+      if (next.done) break;
+      length += next.value.byteLength;
+      if (length > 1_048_576) {
+        await reader.cancel();
+        return null;
+      }
+      parts.push(next.value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  if (!length) return null;
+  const result = new Uint8Array(length);
+  let offset = 0;
+  for (const part of parts) {
+    result.set(part, offset);
+    offset += part.byteLength;
+  }
+  return result;
 }
 
 function room(env: Env, gameId: string) {

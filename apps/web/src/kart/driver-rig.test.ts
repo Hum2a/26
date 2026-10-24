@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { approachAngle, createDriverRig, driverMood, lookBackMs } from "./driver-rig";
 
 const racing = {
@@ -67,7 +67,7 @@ function rig(capacity = 4) {
       highlight: new THREE.Color(0x00ff00),
     },
   });
-  return { scene, value };
+  return { scene, value, textures };
 }
 
 const pose = { x: 42, z: 0, heading: Math.PI / 2 };
@@ -79,6 +79,35 @@ function drawn(value: ReturnType<typeof rig>["value"]) {
 }
 
 describe("driver rig", () => {
+  it("refreshes photo policy URLs and releases the previous face texture", () => {
+    const load = vi
+      .spyOn(THREE.TextureLoader.prototype, "load")
+      .mockImplementation(() => new THREE.Texture());
+    try {
+      const { scene, value, textures } = rig();
+      const drivers = new Map([
+        ["a", { style: "racer" as const, faceMediaId: "photo" }],
+      ]);
+      value.setDrivers(drivers, () => "/media/photo?display=1");
+      value.begin(0.016);
+      value.place("a", 0, pose, cue, red, red, 0.016, false);
+      const previous = [...textures][0]!;
+      const dispose = vi.spyOn(previous, "dispose");
+      const oldFace = scene.getObjectByName("kart-driver-face");
+      value.setDrivers(drivers, () => "/media/photo?display=2");
+      value.begin(0.016);
+      value.place("a", 0, pose, cue, red, red, 0.016, false);
+      expect(load.mock.calls.map(([url]) => url)).toEqual([
+        "/media/photo?display=1",
+        "/media/photo?display=2",
+      ]);
+      expect(dispose).toHaveBeenCalledOnce();
+      expect(textures.size).toBe(1);
+      expect(scene.getObjectByName("kart-driver-face")).not.toBe(oldFace);
+    } finally {
+      load.mockRestore();
+    }
+  });
   it("draws only the chosen style's headgear", () => {
     const { value } = rig();
     value.setDrivers(new Map([["a", { style: "royal" }]]), () => "");

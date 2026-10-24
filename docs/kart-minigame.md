@@ -210,3 +210,31 @@ The birthday round uses the imported Mario circuit (`mario-circuit-v1`) with a t
 At intro the server freezes up to 80 active players, sums their ledger points and manual adjustments, sorts highest score first and uses joining order for ties. Five columns and sixteen staggered rows give each kart a unique start slot. Karts remain ghosts. Initial safe recovery positions preserve the distance behind the line, so recovery cannot erase a starting disadvantage. Later score changes do not reseed an underway race.
 
 The existing scheduler, control receipts, input queues, pause/resume, reconnect, score settlement and podium flow apply to this round. Imported races start with course features enabled; Live controls can switch them off and force a safe landing. The local `kart-rehearsal-v1/v2` fixtures retain their original ring and 45-second timing. Phones render their own kart; the stage uses the lightweight whole-field map. The admin Drive tab rehearses the real imported engine; the Phone & stage tab rehearses the real layout.
+
+## Adaptive graphics (24 October 2026)
+
+Connected phone views and the real solo engine offer **Auto**, **High** and
+**Low** graphics. The choice stays in the current tab's session storage. Auto
+starts at high detail up to 15 racers, balanced at 16–20 and low above 20. The
+connected view uses the server's full participant count, not its phone-only pose
+projection. Legacy snapshots fall back to their participant list.
+
+High/balanced/low cap phone pixel density at 1.5/1/0.75 and draw every/every
+second/every fourth decorative drift spark. Solo uses the same pixel densities
+and keeps spark trails only on High. Course geometry, obstacles, items, shields,
+physics, server ticks, input cadence and scoring do not change. The projector's
+spectator map is unchanged. Changing graphics resizes the existing renderer.
+
+Auto also watches actual visible frame cadence while racing: a two-second
+warm-up, then 90 samples per window. More than 20% of gaps above 42ms marks the
+view strained and selects Low. Hidden/suspended time is ignored. Two smooth
+windows mark it smooth. A detected slowdown stays latched until the user changes
+the mode, avoiding repeated quality oscillation; High always overrides Auto.
+This is a practical in-view measurement, not a promise about a phone model or a
+GPU fingerprint. Reduced motion continues to use the existing rendering rules.
+
+To rehearse without guests, open **Admin → Kart → Drive → Course set-up**. Set
+**Graphics rehearsal: room size** to 16 and 21 and inspect the detail status,
+then choose High or Low. This exercises the real solo renderer and shared
+policy without inventing live racers. Drive to check frame health on the actual
+device. The control does not reset the kart; course-edit controls still do.

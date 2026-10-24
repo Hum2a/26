@@ -5,6 +5,12 @@ import { createCircuit } from "./circuit";
 import { kartCameraPose } from "./presentation";
 import { driverFaceUrl } from "./driver-face";
 import { useKartDrivers, type KartDrivers } from "./drivers-context";
+import {
+  createFrameProbe,
+  graphicsProfiles,
+  type GraphicsTier,
+  type FrameHealth,
+} from "./graphics";
 
 /** Interpolates public poses only. Phone rendering is bounded to its own kart. */
 export default function KartCanvas({
@@ -12,11 +18,15 @@ export default function KartCanvas({
   mobile,
   reducedMotion,
   followPlayerId,
+  graphicsTier = "balanced",
+  onFrameHealth,
 }: {
   race: KartRaceView;
   mobile: boolean;
   reducedMotion: boolean;
   followPlayerId?: string;
+  graphicsTier?: GraphicsTier;
+  onFrameHealth?: (health: FrameHealth) => void;
 }) {
   const mount = useRef<HTMLDivElement>(null);
   const live = useRef(race),
@@ -25,6 +35,12 @@ export default function KartCanvas({
   const liveDrivers = useRef(drivers);
   const [revision, setRevision] = useState(0);
   const [failed, setFailed] = useState(false);
+  const quality = useRef(graphicsTier);
+  const report = useRef(onFrameHealth);
+  useEffect(() => {
+    quality.current = graphicsTier;
+    report.current = onFrameHealth;
+  }, [graphicsTier, onFrameHealth]);
   useEffect(() => {
     live.current = race;
     reduced.current = reducedMotion;
@@ -55,7 +71,12 @@ export default function KartCanvas({
         retry.remove();
       };
     }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1 : 1.5));
+    renderer.setPixelRatio(
+      Math.min(
+        window.devicePixelRatio || 1,
+        graphicsProfiles[quality.current].pixelRatio,
+      ),
+    );
     renderer.shadowMap.enabled = false;
     root.append(renderer.domElement);
     renderer.domElement.setAttribute(
@@ -94,6 +115,8 @@ export default function KartCanvas({
       lastFrame = 0,
       lastSnapshot: KartRaceView | undefined,
       lastDrivers: KartDrivers | undefined;
+    let lastQuality = quality.current;
+    const probe = createFrameProbe();
     const resize = new ResizeObserver(() => {
       const width = Math.max(1, root.clientWidth),
         height = Math.max(1, root.clientHeight),
@@ -112,6 +135,28 @@ export default function KartCanvas({
     resize.observe(root);
     const frame = (now: number) => {
       if (document.hidden) return;
+      if (
+        !reduced.current &&
+        live.current.participants.some((driver) => driver.status === "RACING")
+      ) {
+        const health = probe.sample(now);
+        if (health) report.current?.(health);
+      }
+      if (lastQuality !== quality.current) {
+        lastQuality = quality.current;
+        renderer.setPixelRatio(
+          Math.min(
+            window.devicePixelRatio || 1,
+            graphicsProfiles[lastQuality].pixelRatio,
+          ),
+        );
+        renderer.setSize(
+          Math.max(1, root.clientWidth),
+          Math.max(1, root.clientHeight),
+          false,
+        );
+        dirty = true;
+      }
       if (mobile && lastFrame && now - lastFrame < 1000 / 30 - 1) return;
       const delta = lastFrame ? (now - lastFrame) / 1000 : 1 / 60;
       lastFrame = now;
@@ -122,7 +167,12 @@ export default function KartCanvas({
         dirty = true;
       }
       if (reduced.current && lastSnapshot === live.current && !dirty) return;
-      circuit.update(live.current, delta, reduced.current);
+      circuit.update(
+        live.current,
+        delta,
+        reduced.current,
+        graphicsProfiles[quality.current].sparkStride,
+      );
       const pose = followPlayerId ? circuit.pose(followPlayerId) : undefined;
       if (pose) {
         const framing = kartCameraPose(pose, reduced.current);
@@ -143,6 +193,7 @@ export default function KartCanvas({
       setRevision((value) => value + 1);
     };
     const visibility = () => {
+      probe.reset();
       lastFrame = 0;
       dirty = true;
       renderer.setAnimationLoop(document.hidden ? null : frame);

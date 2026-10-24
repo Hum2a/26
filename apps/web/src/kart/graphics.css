@@ -1,0 +1,28 @@
+.kart-graphics {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font: inherit;
+}
+.kart-graphics select {
+  min-height: 44px;
+  padding: 0.35rem 0.65rem;
+  color: var(--foreground);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control, 0.5rem);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+}
+.kart-graphics select:focus-visible {
+  outline: 2px solid var(--highlight);
+  outline-offset: 2px;
+}
+.kart-graphics p {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}

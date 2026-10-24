@@ -1,4 +1,4 @@
-import { withClientApiKey } from "../api/client-key.ts";
+import { withClientApiKey, noteMediaDisplayRevision } from "../api/client-key.ts";
 import {
   kartFrameSchema,
   lobbySnapshotSchema,
@@ -521,6 +521,7 @@ export function openRoomSocket(options: {
   }
 
   function acceptSnapshot(snapshot: LobbySnapshot, view: unknown) {
+    noteMediaDisplayRevision(snapshot.gameId, snapshot.mediaDisplayRevision);
     lastView = typeof view === "string" ? view : undefined;
     lastSnapshot = snapshot;
     snapshotRequested = false;

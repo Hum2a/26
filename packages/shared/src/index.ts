@@ -1075,6 +1075,34 @@ export const lobbySnapshotSchema = z
       .optional(),
     /** Photo wall. Filled per audience; see `wallSnapshotSchema`. */
     wall: wallSnapshotSchema.optional(),
+    /** Cache-buster only; no device diagnostics are sent to public screens. */
+    mediaDisplayRevision: z
+      .number()
+      .int()
+      .nonnegative()
+      .max(Number.MAX_SAFE_INTEGER)
+      .optional(),
+    /** Host-only photo policy, counts and change history. */
+    photoBias: z
+      .object({
+        enabled: z.boolean(),
+        revision: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+        iphonePhotos: z.number().int().min(0).max(5000),
+        androidPhotos: z.number().int().min(0).max(5000),
+        otherPhotos: z.number().int().min(0).max(5000),
+        history: z
+          .array(
+            z
+              .object({
+                atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+                enabled: z.boolean(),
+              })
+              .strict(),
+          )
+          .max(20),
+      })
+      .strict()
+      .optional(),
     connections: z
       .object({
         guests: z.number().int().nonnegative(),

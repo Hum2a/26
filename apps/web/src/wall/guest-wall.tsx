@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { withClientApiKey } from "../api/client-key";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   wallCaptionMax,
@@ -9,7 +10,12 @@ import {
   type WallReaction,
 } from "@26/shared";
 import { Button } from "../ui/primitives";
-import { FramedPhoto, frameLabels, reactionEmoji, reactionLabels } from "./framed-photo";
+import {
+  FramedPhoto,
+  frameLabels,
+  reactionEmoji,
+  reactionLabels,
+} from "./framed-photo";
 import { sendWallPhoto } from "./wall-upload";
 import { buzz } from "../device/haptics";
 import { serverOffset } from "../live/server-clock";
@@ -56,12 +62,19 @@ export function GuestWall({
   wall: Wall;
   gameId: string;
   selfNickname: string;
-  onPost: (post: { mediaId: string; caption: string; frame: WallFrame; keep: boolean }) => void;
+  onPost: (post: {
+    mediaId: string;
+    caption: string;
+    frame: WallFrame;
+    keep: boolean;
+  }) => void;
   onWithdraw: (postId: string) => void;
   onReact: (postId: string, reaction: WallReaction) => void;
 }) {
   const mine = wall.mine ?? [];
-  const showingMine = Boolean(wall.now && mine.some((item) => item.postId === wall.now?.postId));
+  const showingMine = Boolean(
+    wall.now && mine.some((item) => item.postId === wall.now?.postId),
+  );
   // A buzz when your own photo reaches the big screen.
   const mineOnScreen = showingMine ? wall.now?.postId : undefined;
   useEffect(() => {
@@ -107,7 +120,12 @@ function Composer({
   nickname: string;
   blocked: string | null;
   cooldownUntil: number | null;
-  onPost: (post: { mediaId: string; caption: string; frame: WallFrame; keep: boolean }) => void;
+  onPost: (post: {
+    mediaId: string;
+    caption: string;
+    frame: WallFrame;
+    keep: boolean;
+  }) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -232,7 +250,9 @@ function Composer({
                 value={caption}
                 maxLength={wallCaptionMax * 2}
                 placeholder="Say something about it"
-                onChange={(event) => setCaption([...event.target.value].slice(0, wallCaptionMax).join(""))}
+                onChange={(event) =>
+                  setCaption([...event.target.value].slice(0, wallCaptionMax).join(""))
+                }
                 aria-describedby="wall-caption-count"
               />
               <p id="wall-caption-count" className="text-sm">
@@ -282,8 +302,8 @@ function Composer({
       </AnimatePresence>
       {cooling ? (
         <p role="status">
-          You can send another photo in {Math.ceil(((cooldownUntil ?? now) - now) / 1_000)}{" "}
-          seconds.
+          You can send another photo in{" "}
+          {Math.ceil(((cooldownUntil ?? now) - now) / 1_000)} seconds.
         </p>
       ) : blocked && preview ? (
         <p role="status">{blocked}</p>
@@ -329,7 +349,10 @@ function Tray({
                 🚫
               </span>
             ) : (
-              <img src={`/api/rooms/${gameId}/media/${item.mediaId}`} alt="" />
+              <img
+                src={withClientApiKey(`/api/rooms/${gameId}/media/${item.mediaId}`)}
+                alt=""
+              />
             )}
             <div className="grid gap-1">
               <span className="wall-status" data-status={item.status}>
@@ -337,7 +360,9 @@ function Tray({
               </span>
               {item.status === "queued" && item.position ? (
                 <span>
-                  {item.position === 1 ? "You're next" : `${item.position - 1} ahead of you`}
+                  {item.position === 1
+                    ? "You're next"
+                    : `${item.position - 1} ahead of you`}
                 </span>
               ) : null}
               {item.reactions > 0 ? <span>{item.reactions} reactions</span> : null}

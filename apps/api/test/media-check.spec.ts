@@ -14,6 +14,17 @@ import {
 } from "../src/room/limits.ts";
 
 describe("media checks", () => {
+  it("keeps a clean copy and creates a visibly smaller rough display without mutating it", async () => {
+    const source = tinyJpeg(600, 300);
+    const clean = await localJpegPhoto(source);
+    expect(clean.ok).toBe(true);
+    if (!clean.ok) throw new Error(clean.message);
+    const kept = clean.bytes.slice();
+    const rough = await localJpegPhoto(clean.bytes, "rough");
+    expect(rough).toMatchObject({ ok: true, width: 256, height: 128 });
+    expect(clean.width).toBe(600);
+    expect(clean.bytes).toEqual(kept);
+  });
   it("streams an accepted object with one read and without buffering", async () => {
     const body = new ReadableStream<Uint8Array>({
       start(controller) {
@@ -114,7 +125,7 @@ describe("media checks", () => {
     });
     const checked = await processor(jpeg);
     expect(checked.ok).toBe(true);
-    expect(calls).toEqual([{ width: 1280, fit: "scale-down" }]);
+    expect(calls).toEqual([{ width: 1280, height: 1280, fit: "scale-down" }]);
     const unconfigured = createPhotoProcessor({ APP_ENV: "staging" });
     expect(await unconfigured(jpeg)).toMatchObject({
       ok: false,

@@ -1,6 +1,16 @@
 import { Component, Suspense, useEffect, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { GraphicsControls } from "../../web/src/kart/graphics-controls";
+import {
+  GraphicsTierContext,
+  useKartGraphics,
+} from "../../web/src/kart/graphics-preferences";
+import {
+  createFrameProbe,
+  graphicsProfiles,
+  type FrameHealth,
+} from "../../web/src/kart/graphics";
 import { Bvh, useProgress } from "@react-three/drei";
 import { TouchController } from "../../web/src/kart/TouchController";
 import {
@@ -180,6 +190,8 @@ function SoloPowerInventory() {
 }
 
 function SoloGame() {
+  const [graphicsPlayers, setGraphicsPlayers] = useState(1);
+  const graphics = useKartGraphics(graphicsPlayers);
   const [mounted, setMounted] = useState(false);
   const [lost, setLost] = useState(false);
   const paused = useGameStore((state) => state.soloPaused);
@@ -211,125 +223,167 @@ function SoloGame() {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   };
   return (
-    <main className="solo-game" data-ready={ready} aria-label="Solo kart practice">
-      <div className="solo-world">
-        {mounted ? (
-          <GameBoundary>
-            {lost ? (
-              <Recovery />
-            ) : (
-              <Canvas
-                dpr={1}
-                shadows={false}
-                frameloop={paused && ready ? "demand" : "always"}
-                camera={{ position: [0, 2, 5], far: 2500, fov: 65 }}
-                gl={{ antialias: false, alpha: false, powerPreference: "low-power" }}
-                fallback={<Recovery />}
-                onCreated={({ camera, gl }) => {
-                  camera.layers.enable(1);
-                  gl.domElement.setAttribute(
-                    "aria-label",
-                    "Mario Kart 3.js driving view",
-                  );
-                  gl.domElement.addEventListener(
-                    "webglcontextlost",
-                    (event) => {
-                      event.preventDefault();
-                      pause();
-                      setLost(true);
-                    },
-                    { once: true },
-                  );
+    <GraphicsTierContext value={graphics.tier}>
+      <main className="solo-game" data-ready={ready} aria-label="Solo kart practice">
+        <div className="solo-world">
+          {mounted ? (
+            <GameBoundary>
+              {lost ? (
+                <Recovery />
+              ) : (
+                <Canvas
+                  dpr={graphicsProfiles[graphics.tier].pixelRatio}
+                  shadows={false}
+                  frameloop={paused && ready ? "demand" : "always"}
+                  camera={{ position: [0, 2, 5], far: 2500, fov: 65 }}
+                  gl={{ antialias: false, alpha: false, powerPreference: "low-power" }}
+                  fallback={<Recovery />}
+                  onCreated={({ camera, gl }) => {
+                    camera.layers.enable(1);
+                    gl.domElement.setAttribute(
+                      "aria-label",
+                      "Mario Kart 3.js driving view",
+                    );
+                    gl.domElement.addEventListener(
+                      "webglcontextlost",
+                      (event) => {
+                        event.preventDefault();
+                        pause();
+                        setLost(true);
+                      },
+                      { once: true },
+                    );
+                  }}
+                >
+                  <color
+                    attach="background"
+                    args={[themes[DEFAULT_THEME_ID].colors.background]}
+                  />
+                  <Suspense fallback={null}>
+                    <GraphicsMonitor onHealth={graphics.onHealth} />
+                    <Circuit />
+                  </Suspense>
+                </Canvas>
+              )}
+              {!ready && !lost ? <Loading /> : null}
+            </GameBoundary>
+          ) : (
+            <section className="solo-message solo-intro">
+              <p className="solo-eyebrow">Mario Kart 3.js · solo practice</p>
+              <h1>Your own starting grid.</h1>
+              <p>
+                Explore the upstream circuit in 3D. No room, time limit or party points.
+              </p>
+              <button className="solo-start" onClick={start}>
+                Start driving
+              </button>
+              <a
+                href="https://github.com/Nathan-Richard-21/mario-kart-js"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Based on Mario Kart 3.js
+              </a>
+              <p>
+                Arrow keys to drive · Space to hop and drift.
+                <br />
+                On a phone, hold A and steer with your other thumb.
+              </p>
+            </section>
+          )}
+        </div>
+        <header className="solo-toolbar">
+          <a href="/" target="_top" aria-label="Back to 26">
+            ← 26
+          </a>
+          <span>Solo practice</span>
+          {ready && !lost ? (
+            <nav aria-label="Practice actions">
+              <button onClick={paused ? continueDriving : pause}>
+                {paused ? "Resume" : "Pause"}
+              </button>
+              <button
+                onClick={recover}
+                disabled={paused || recoveryPending || !recoveryReady}
+              >
+                {recoveryPending ? "Returning…" : "Back to track"}
+              </button>
+              <button
+                onClick={() => {
+                  reset();
+                  continueDriving();
                 }}
               >
-                <color
-                  attach="background"
-                  args={[themes[DEFAULT_THEME_ID].colors.background]}
-                />
-                <Suspense fallback={null}>
-                  <Circuit />
-                </Suspense>
-              </Canvas>
-            )}
-            {!ready && !lost ? <Loading /> : null}
-          </GameBoundary>
-        ) : (
-          <section className="solo-message solo-intro">
-            <p className="solo-eyebrow">Mario Kart 3.js · solo practice</p>
-            <h1>Your own starting grid.</h1>
-            <p>
-              Explore the upstream circuit in 3D. No room, time limit or party points.
-            </p>
-            <button className="solo-start" onClick={start}>
-              Start driving
-            </button>
-            <a
-              href="https://github.com/Nathan-Richard-21/mario-kart-js"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Based on Mario Kart 3.js
-            </a>
-            <p>
-              Arrow keys to drive · Space to hop and drift.
-              <br />
-              On a phone, hold A and steer with your other thumb.
-            </p>
-          </section>
-        )}
-      </div>
-      <header className="solo-toolbar">
-        <a href="/" target="_top" aria-label="Back to 26">
-          ← 26
-        </a>
-        <span>Solo practice</span>
-        {ready && !lost ? (
-          <nav aria-label="Practice actions">
-            <button onClick={paused ? continueDriving : pause}>
-              {paused ? "Resume" : "Pause"}
-            </button>
-            <button
-              onClick={recover}
-              disabled={paused || recoveryPending || !recoveryReady}
-            >
-              {recoveryPending ? "Returning…" : "Back to track"}
-            </button>
-            <button
-              onClick={() => {
-                reset();
-                continueDriving();
-              }}
-            >
-              Reset kart
-            </button>
-          </nav>
-        ) : null}
-      </header>
-      <SoloCourseSettings />
-      {ready && !lost ? (
-        <>
-          <Telemetry />
-          <SoloPowerInventory />
-          {paused ? (
-            <div className="solo-message solo-paused" role="status">
-              <h2>Taking a pit stop.</h2>
-              <button onClick={continueDriving}>Keep driving</button>
-            </div>
+                Reset kart
+              </button>
+            </nav>
           ) : null}
-          <aside className="solo-controls" aria-label="Driving controls">
-            <TouchController disabled={paused || recoveryPending} onChange={drive} />
-            <p role="status">
-              {recoveryMessage ||
-                "Arrows: drive · Space: drift · Back to track if you get stuck"}
-            </p>
-          </aside>
-        </>
-      ) : null}
-    </main>
+        </header>
+        <SoloCourseSettings
+          graphics={
+            <>
+              <GraphicsControls {...graphics} />
+              <label>
+                Graphics rehearsal: room size
+                <input
+                  aria-label="Graphics rehearsal room size"
+                  type="number"
+                  min={1}
+                  max={80}
+                  value={graphicsPlayers}
+                  onChange={(event) =>
+                    setGraphicsPlayers(
+                      Math.max(1, Math.min(80, Number(event.target.value) || 1)),
+                    )
+                  }
+                />
+              </label>
+              <p>
+                This tests the automatic detail policy; it does not create players or
+                change driving.
+              </p>
+            </>
+          }
+        />
+        {ready && !lost ? (
+          <>
+            <Telemetry />
+            <SoloPowerInventory />
+            {paused ? (
+              <div className="solo-message solo-paused" role="status">
+                <h2>Taking a pit stop.</h2>
+                <button onClick={continueDriving}>Keep driving</button>
+              </div>
+            ) : null}
+            <aside className="solo-controls" aria-label="Driving controls">
+              <TouchController disabled={paused || recoveryPending} onChange={drive} />
+              <p role="status">
+                {recoveryMessage ||
+                  "Arrows: drive · Space: drift · Back to track if you get stuck"}
+              </p>
+            </aside>
+          </>
+        ) : null}
+      </main>
+    </GraphicsTierContext>
   );
 }
 
-function SoloCourseSettings() {
+function GraphicsMonitor({ onHealth }: { onHealth: (health: FrameHealth) => void }) {
+  const [probe] = useState(createFrameProbe);
+  useFrame(() => {
+    const state = useGameStore.getState();
+    if (state.soloPaused || !state.soloStarted || document.hidden) {
+      probe.reset();
+      return;
+    }
+    const next = probe.sample(performance.now());
+    if (next) onHealth(next);
+  });
+  return null;
+}
+
+function SoloCourseSettings({ graphics }: { graphics: ReactNode }) {
   const [open, setOpen] = useState(false);
   const settings = useGameStore((state) => state.soloCourseSettings);
   const update = (value: CourseSettings) => {
@@ -344,6 +398,7 @@ function SoloCourseSettings() {
       </button>
       <div className="solo-course-options" aria-hidden={!open} inert={!open}>
         <div>
+          {graphics}
           <p>Changes reset the kart and pause practice.</p>
           {(
             [

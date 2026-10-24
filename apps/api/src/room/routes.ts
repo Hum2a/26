@@ -296,6 +296,8 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "start-kart-rehearsal",
       "kart-course-on",
       "kart-course-off",
+      "photo-bias-on",
+      "photo-bias-off",
       "pause",
       "resume",
       "advance",
@@ -359,23 +361,23 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
         ? await target.startKartRehearsal(input)
         : command === "start-birthday"
           ? await target.startBirthday(input)
-        : command === "start"
-          ? await target.startDemo(input)
-          : command === "pause"
-            ? await target.pauseRound(input)
-            : command === "resume"
-              ? await target.resumeRound(input)
-              : command === "advance"
-                ? await target.advanceRound(input)
-                : command === "skip"
-                  ? await target.skipRound(input)
-                  : command === "finish"
-                    ? await target.finishRound(input)
-                    : await target.hostAction({
-                        ...input,
-                        action: command,
-                        ...details.fields,
-                      });
+          : command === "start"
+            ? await target.startDemo(input)
+            : command === "pause"
+              ? await target.pauseRound(input)
+              : command === "resume"
+                ? await target.resumeRound(input)
+                : command === "advance"
+                  ? await target.advanceRound(input)
+                  : command === "skip"
+                    ? await target.skipRound(input)
+                    : command === "finish"
+                      ? await target.finishRound(input)
+                      : await target.hostAction({
+                          ...input,
+                          action: command,
+                          ...details.fields,
+                        });
     if (!result.ok) {
       const status = result.error === "invalid" ? 400 : 401;
       return roomFailure(status, result.error, result.message);
@@ -763,6 +765,9 @@ function readHostDetails(
       };
     }
   | { ok: false; message: string } {
+  if (action === "photo-bias-on" || action === "photo-bias-off") {
+    return { ok: true, fields: {} };
+  }
   const needsPlayer = [
     "rename",
     "swap",

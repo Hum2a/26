@@ -1,3 +1,4 @@
+import { withClientApiKey } from "../api/client-key";
 import { useState } from "react";
 import type { LobbySnapshot } from "@26/shared";
 import { uploadVoiceClip } from "../media/media-transfer";
@@ -82,7 +83,8 @@ const targetLine: Partial<Record<string, string>> = {
   typing: "The big screen can see what you type. Sending still stores the answer.",
   voice: "A voice clip about you will play at the reveal.",
   theme: "You have a theme tune now. It plays whenever the scores come up.",
-  "temp-nickname": "You have a new name on every screen for a while. Your points are safe.",
+  "temp-nickname":
+    "You have a new name on every screen for a while. Your points are safe.",
   "guest-14": "You are Guest 14 on every screen for a while. Your points are safe.",
   replay: "Your answer will be replayed on the big screen at the reveal.",
   speech: "Get ready: the big screen will ask you for a speech at the scores.",
@@ -91,7 +93,8 @@ const targetLine: Partial<Record<string, string>> = {
   "robin-hood": "Your points for this question go to whoever is in last place.",
   share: "You are splitting your points for this question with someone.",
   "public-vote": "Your vote will be shown on the big screen at the reveal.",
-  misattributed: "At the reveal, the big screen will say you wrote someone else's answer.",
+  misattributed:
+    "At the reveal, the big screen will say you wrote someone else's answer.",
 };
 
 /** The troller's name and driver face, from the shared player list. */
@@ -107,7 +110,7 @@ function senderOf(
   const face = player.driver?.faceMediaId;
   return {
     nickname: player.nickname,
-    faceSrc: face ? `/api/rooms/${gameId}/media/${face}` : null,
+    faceSrc: face ? withClientApiKey(`/api/rooms/${gameId}/media/${face}`) : null,
   };
 }
 

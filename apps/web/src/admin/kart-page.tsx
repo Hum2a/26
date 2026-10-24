@@ -59,6 +59,12 @@ export function AdminKartPage() {
                 points.
               </p>
               <p>
+                Graphics are local to each screen. Inside Course set-up, compare Auto,
+                High and Low, then rehearse room sizes of 16 and 21. Auto also measures
+                visible frames while driving and lowers detail after sustained slow
+                frames; choose High to override it. It does not benchmark a phone model.
+              </p>
+              <p>
                 Charge Mini, Super and Ultra turbos by holding drift, then release. On
                 the opening straight, take the left lane for a floor boost and ramp; the
                 right lane has a moving sweeper. Hold A to glide and B to descend.

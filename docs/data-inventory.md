@@ -2,7 +2,7 @@
 
 [Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
 
-What 26 stores, where it is stored, and how long it is kept. This describes the code as of 21 October 2026, taken from `apps/api/src/room/schema.ts`, `apps/api/src/archive/schema.ts` and `apps/api/src/auth/migrations/`. Update this file whenever a table or a collected field changes.
+What 26 stores, where it is stored, and how long it is kept. This describes the code as of 24 October 2026, taken from `apps/api/src/room/schema.ts`, `apps/api/src/archive/schema.ts` and `apps/api/src/auth/migrations/`. Update this file whenever a table or a collected field changes.
 
 There are three stores: +
 
@@ -167,3 +167,36 @@ Standalone practice retains its course switches, practice starting point and fli
 The existing room-code registry stores one `pack_order` row for birthday: ordered question ids, revision, save timestamp and the latest 20 revision/count/timestamp summaries. Its existing receipt table stores idempotent order-save results under `pack-order`. Access requires the administrator session and same-origin request validation. No answers are included in the ordering projection.
 
 Each started birthday room stores its frozen private question script in existing `round_state` under `__pack` / `birthday-script`, with its revision and content-hashed version. It contains server-only answer/scoring definitions and is never serialised into control, guest or stage snapshots. It follows room storage retention. Public snapshots continue to use deliberate question projections. Kart state additionally records track, deadline and score-seeded grid positions; guest phone projections expose only that phone’s pose plus bounded standings.
+
+## Graphics preferences and reversible photo treatment (24 October 2026)
+
+- The browser keeps `26-kart-graphics` (`auto`, `high` or `low`) in session storage
+  for that tab. Visible frame cadence is measured locally; no benchmark, GPU
+  identifier or frame samples are uploaded or stored in the room. The admin's
+  solo graphics rehearsal room-size value is temporary component state.
+- `media_upload.photo_family` freezes `iphone`, `android` or `unknown` from the
+  uploader's existing, explicitly reported device context when a photo slot is
+  reserved. Voice uploads and pre-existing photos use `unknown`. This coarse
+  presentation hint remains with the upload after detailed telemetry expires;
+  it never grants identity, access or scoring authority. Admin media rows expose
+  the hint; public snapshots do not.
+- The room stores `photo_bias_enabled` (default on), `photo_bias_revision` and a
+  bounded history of the latest 20 switches (time and enabled state). Host
+  snapshots include the setting, history and accepted-photo counts by family.
+  Guest/stage snapshots receive only a public `mediaDisplayRevision` counter to
+  refresh displayed images when the setting changes.
+- R2 retains the clean accepted JPEG, normalised within the existing 1280px and
+  1MiB limits and stripped of source metadata. New client/server JPEG encoding
+  starts at quality 95, lowering server quality only to meet the byte limit.
+  This is the accepted clean copy, not a raw camera original. Existing discarded
+  resolution cannot be recovered. iPhone display derivatives use a 256px edge
+  and JPEG quality 20; Android and unknown-family photos use the clean copy.
+- Rough derivatives are disposable entries in the Worker's private named Cache
+  API namespace, with a 300-second lifetime and no extra R2 object. Every request
+  still checks current room permissions and hidden/published status before
+  cache access. Normal media responses retain private/no-store headers; gallery
+  responses retain their existing freshness policy. Admin previews stay clean.
+- The authenticated admin photo rehearsal processes a stand-in asset without
+  saving media or room state. Its browser object URLs are revoked on replacement
+  or unmount. No new service, bucket or retention job is
+  introduced.

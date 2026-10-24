@@ -7,7 +7,7 @@ export function KartDriversProvider({
   snapshot,
   children,
 }: {
-  snapshot: Pick<LobbySnapshot, "gameId" | "players">;
+  snapshot: Pick<LobbySnapshot, "gameId" | "players" | "mediaDisplayRevision">;
   children: ReactNode;
 }) {
   const key = snapshot.players
@@ -27,7 +27,7 @@ export function KartDriversProvider({
     }),
     // The players array is rebuilt on every snapshot; only real driver changes matter.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [snapshot.gameId, key],
+    [snapshot.gameId, key, snapshot.mediaDisplayRevision],
   );
   return <KartDriversContext value={value}>{children}</KartDriversContext>;
 }

@@ -25,21 +25,27 @@ const imageFormats = new Set([
   "image/heic",
 ]);
 
-export function createPhotoProcessor(env: {
-  APP_ENV: string;
-  IMAGES?: ImagesBinding;
-}): (bytes: Uint8Array) => Promise<PhotoCheck> {
+export function createPhotoProcessor(
+  env: {
+    APP_ENV: string;
+    IMAGES?: ImagesBinding;
+  },
+  profile: "clean" | "rough" = "clean",
+): (bytes: Uint8Array) => Promise<PhotoCheck> {
   if (env.IMAGES) {
     const images = env.IMAGES;
-    return (bytes) => cloudflarePhoto(images, bytes);
+    return (bytes) => cloudflarePhoto(images, bytes, profile);
   }
   if (env.APP_ENV === "local") {
-    return localJpegPhoto;
+    return (bytes) => localJpegPhoto(bytes, profile);
   }
   return async () => ({ ok: false, message: mediaConfigMessage });
 }
 
-export async function localJpegPhoto(bytes: Uint8Array): Promise<PhotoCheck> {
+export async function localJpegPhoto(
+  bytes: Uint8Array,
+  profile: "clean" | "rough" = "clean",
+): Promise<PhotoCheck> {
   if (isHeic(bytes)) {
     return { ok: false, message: mediaHeicMessage };
   }
@@ -51,8 +57,8 @@ export async function localJpegPhoto(bytes: Uint8Array): Promise<PhotoCheck> {
       maxResolutionInMP: 20,
       maxMemoryUsageInMB: 32,
     });
-    const scaled = scaleDown(decoded, photoEdgePx);
-    let quality = 80;
+    const scaled = scaleDown(decoded, profile === "rough" ? 256 : photoEdgePx);
+    let quality = profile === "rough" ? 20 : 95;
     let encoded = encode(
       { data: scaled.data, width: scaled.width, height: scaled.height },
       quality,
@@ -86,6 +92,7 @@ export async function localJpegPhoto(bytes: Uint8Array): Promise<PhotoCheck> {
 async function cloudflarePhoto(
   images: ImagesBinding,
   bytes: Uint8Array,
+  profile: "clean" | "rough",
 ): Promise<PhotoCheck> {
   try {
     const info = await images.info(streamFrom(bytes));
@@ -101,24 +108,33 @@ async function cloudflarePhoto(
         message: format === "image/heic" ? mediaHeicMessage : mediaTypeMessage,
       };
     }
-    const response = (
-      await images
-        .input(streamFrom(bytes))
-        .transform({ width: photoEdgePx, fit: "scale-down" })
-        .output({ format: "image/jpeg", quality: 80 })
-    ).response();
-    const encoded = new Uint8Array(await response.arrayBuffer());
+    const edge = profile === "rough" ? 256 : photoEdgePx;
+    let quality = profile === "rough" ? 20 : 95;
+    let encoded: Uint8Array;
+    do {
+      const response = (
+        await images
+          .input(streamFrom(bytes))
+          .transform({ width: edge, height: edge, fit: "scale-down" })
+          .output({ format: "image/jpeg", quality })
+      ).response();
+      encoded = new Uint8Array(await response.arrayBuffer());
+      quality -= 10;
+    } while (encoded.byteLength > acceptedImageBytes && quality >= 35);
     if (encoded.byteLength > acceptedImageBytes || encoded.byteLength < 4) {
       return { ok: false, message: mediaLargeMessage };
     }
     return {
       ok: true,
       bytes: encoded,
-      width: Math.min(info.width, photoEdgePx),
-      height:
-        info.width > photoEdgePx
-          ? Math.max(1, Math.round((info.height * photoEdgePx) / info.width))
-          : info.height,
+      width: Math.max(
+        1,
+        Math.round(info.width * Math.min(1, edge / Math.max(info.width, info.height))),
+      ),
+      height: Math.max(
+        1,
+        Math.round(info.height * Math.min(1, edge / Math.max(info.width, info.height))),
+      ),
       contentType: "image/jpeg",
     };
   } catch {

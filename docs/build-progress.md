@@ -3567,3 +3567,66 @@ Status: implemented and verified locally. No deployment, new dependency, paid re
 - **Manual/browser verification:** `npm run perf:audit -- verified` against the explicit frontend-only `perf:serve` build recorded no script errors or horizontal overflow. All four 390×844 full-document screenshots match the pre-change baseline pixel for pixel. Inspected the home screenshot as well. Audit JSON, screenshots and command logs are under ignored `artifacts/browser-checks/performance/`.
 - **Limits:** the normal local Worker preview intermittently timed out, so frontend metrics/layout checks used the isolated production-client preview and explicit signed-out session fixtures. The before/after servers differed in compression and other machine workloads were active: paint/long-task observations are diagnostic, not controlled speed comparisons or production Core Web Vitals. Initial parallel test attempts hit local worker-start/file-access failures; required checks were rerun successfully. Existing large-chunk/PGlite warnings and incomplete birthday drafts remain. Physical phones/projector, deployed headers/compression, production cold starts and real-user INP remain unverified. Live connected browser race flows were not rerun in this pass.
 - **Exact next stage:** rehearse the unchanged app on physical phones and projector hardware, verify deployed delivery after an explicitly authorised deployment, and use those measurements to prioritise any further equivalent optimisations. Graphics/image quality, animation reduction, update cadence, prediction and history changes are listed separately in `performance.md` for a later user decision. No such pass or deployment has begun.
+
+## 24 October 2026 — adaptive kart graphics and reversible photo bias
+
+Status: implemented locally as the separately approved visual pass. The preceding
+performance work was committed as `9c008d7` (`Optimise loading, room broadcasts and
+media delivery`). This follow-up remains uncommitted; no deployment or paid
+resource creation.
+
+- **Kart:** connected phone views and real solo practice offer Auto, High and Low.
+  Auto chooses balanced detail at 16–20 racers and low above 20, or after sustained
+  slow visible frames. High overrides the policy. Shared graphics profiles change
+  pixel density and decorative drift sparks/trails only. A local frame probe
+  ignores warm-up and suspension; a slowdown stays latched until a mode change.
+  Session storage holds the local choice; no frame/GPU diagnostics are uploaded.
+  Changing graphics keeps the canvas, controls, race and server timing intact.
+- **Photo bias:** new photos retain a clean normalised JPEG within the existing
+  1280px/1MiB limits, starting at JPEG quality 95. The existing reported device
+  family is frozen on photo reservation as iPhone, Android or unknown. iPhone
+  display uses a 256px/quality-20 derivative; Android and unknown use the clean
+  accepted copy. This is reversible and never replaces that copy. Previously
+  discarded resolution cannot be restored, and legacy uploads remain unknown.
+  Processing stays in the Worker outside the room's live action path. A private
+  five-minute derivative cache follows current permission/visibility checks;
+  ordinary private and published-gallery response policies are preserved.
+- **Admin:** room Media shows the policy, per-family counts and latest 20 changes;
+  receipted on/off commands persist and replay safely. It retains clean admin
+  previews and rehearses both treatments through the real authenticated image
+  processor with a stand-in asset, without saving a room action or photo. Kart
+  Drive rehearses the shared 16/21-player policy in the actual solo renderer.
+  Updated the existing feature registry, command notices and feedback scope.
+  Public snapshots expose only a display revision, which refreshes photos and
+  face textures immediately; source-family details/history stay host-only.
+- **Files/interfaces:** `kart/graphics.ts`, preferences/controls/CSS and renderer
+  adapters; `media/photo-bias.ts`, processor profiles, media delivery/cache,
+  additive room/upload columns, host actions and snapshot schema; admin Media
+  and photo rehearsal, media URL revision handling and face-texture disposal.
+  Updated data inventory, kart guide and performance boundaries. No animation,
+  theme, retained history, server update, tick or input rate was reduced.
+- **Verification:** root `npm run test:unit` passed **92 files / 370 tests** and
+  `npm run typecheck` passed. Focused existing Worker room/media/driver/wall
+  privacy suites passed **31 tests**; new photo-policy suite passed **6 tests**
+  (success/refusal/replay, audience privacy, source pinning, reversible real JPEG
+  output, unchanged R2 bytes and hidden-media checks after derivative caching).
+  Pure media/preview endpoint suites passed **10 tests**, including origin/auth,
+  body bounds and both processor profiles. Targeted ESLint completed with zero
+  errors and three existing Fast Refresh constant-export warnings in
+  `framed-photo.tsx`. The real-engine browser test passed: 16/21-player policy,
+  manual override, actual pixel-density changes on the same canvas and continued
+  driving at 390px. No assertions were skipped or weakened.
+- **Build/manual limits:** standalone kart and Worker/client production
+  compilation completed, with existing large-chunk/PGlite warnings and unfinished
+  birthday drafts. The final artifact scan passed (663 files), and the content
+  preflight passed when rerun separately after the build session ended. Browser
+  screenshots exercise software-rendered Chromium, not
+  physical iPhones/Android phones or the projector. Cloudflare's deployed Images
+  binding and connected multiplayer browser flow remain unverified. Initial
+  local checks encountered worker-start/shutdown and server-start timeouts;
+  successful reruns are logged under ignored `artifacts/browser-checks/performance`.
+  `KART_PREBUILT=1` permits an explicitly completed standalone build in browser
+  checks; `KART_TEST_PORT` isolates that preview from other workspace servers.
+- **Exact next stage:** review this local follow-up, then rehearse the graphics
+  options and photo switch on real phones/projector before an explicitly
+  authorised deployment. No further feature pass has started.

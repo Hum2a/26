@@ -1,5 +1,64 @@
 import { expect, test } from "@playwright/test";
 
+test("graphics scale the real renderer and keep driving through manual overrides", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/kart-engine/index.html");
+  await page.getByText("Course set-up", { exact: true }).click();
+  const graphics = page.getByLabel("Graphics", { exact: true });
+  const players = page.getByLabel("Graphics rehearsal room size");
+  await players.fill("16");
+  await expect(page.getByRole("status").filter({ hasText: "Balanced" })).toBeVisible();
+  await players.fill("21");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Low detail" }),
+  ).toBeVisible();
+  await graphics.selectOption("high");
+  await expect(
+    page.getByRole("status").filter({ hasText: "High detail" }),
+  ).toBeVisible();
+  await page.getByText("Course set-up", { exact: true }).click();
+  await page.getByRole("button", { name: "Start driving" }).click();
+  await expect(
+    page.getByRole("button", { name: "Accelerate", exact: true }),
+  ).toBeEnabled({ timeout: 60_000 });
+  const canvas = page.locator("canvas");
+  const original = await canvas.elementHandle();
+  const ratio = () =>
+    canvas.evaluate((node: HTMLCanvasElement) => node.width / node.clientWidth);
+  await expect.poll(ratio).toBeGreaterThan(1.4);
+  await page.getByText("Course set-up", { exact: true }).click();
+  await graphics.selectOption("auto");
+  await expect.poll(ratio).toBeLessThan(0.8);
+  expect(await canvas.evaluate((node, previous) => node === previous, original)).toBe(
+    true,
+  );
+  await graphics.selectOption("high");
+  await expect.poll(ratio).toBeGreaterThan(1.4);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await graphics.scrollIntoViewIfNeeded();
+  await expect(graphics).toBeInViewport();
+  await page.screenshot({
+    path: "artifacts/browser-checks/performance/kart-graphics-phone.png",
+  });
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+  await page.getByText("Course set-up", { exact: true }).click();
+  await canvas.click({ position: { x: 150, y: 180 } });
+  await page.keyboard.down("ArrowUp");
+  await expect
+    .poll(async () =>
+      Number.parseInt((await page.getByLabel("Speed", { exact: true }).textContent())!),
+    )
+    .toBeGreaterThan(20);
+  await page.keyboard.up("ArrowUp");
+  expect(errors).toEqual([]);
+});
+
 test("real solo engine banks a neutral-steering drift and accelerates on release", async ({
   page,
 }) => {

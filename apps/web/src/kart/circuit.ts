@@ -332,7 +332,7 @@ export function createCircuit(
     labels.set(driver.playerId, sprite);
     return sprite;
   }
-  function update(race: KartRaceView, dt: number, reduced: boolean) {
+  function update(race: KartRaceView, dt: number, reduced: boolean, sparkStride = 1) {
     if (effectRaceId !== race.raceId) {
       emission.clear();
       featurePoses.clear();
@@ -406,7 +406,7 @@ export function createCircuit(
           (driver.driftChargeMs ?? driver.driftCharge * 700) / 2400,
           driver.boostRemainingMs > 0,
           reduced,
-        )) {
+        ).filter((_, index) => index % sparkStride === 0)) {
           place(
             sparks,
             sparkCount,

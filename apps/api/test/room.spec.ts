@@ -361,6 +361,7 @@ describe("durable lobby", () => {
       "held",
       "joinCode",
       "media",
+      "mediaDisplayRevision",
       "namesReveal",
       "paused",
       "phase",

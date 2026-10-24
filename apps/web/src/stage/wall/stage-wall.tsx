@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { wallQuestionPhases, type LobbySnapshot, type WallReaction } from "@26/shared";
 import { FramedPhoto, reactionEmoji } from "../../wall/framed-photo";
 import { serverOffset } from "../../live/server-clock";
+import { withClientApiKey } from "../../api/client-key";
 
 type Wall = NonNullable<LobbySnapshot["wall"]>;
 type Now = NonNullable<Wall["now"]>;
@@ -21,7 +22,8 @@ export function StageWall({
   gameId: string;
   phase: string;
 }) {
-  const src = (mediaId: string) => `/api/rooms/${gameId}/media/${mediaId}`;
+  const src = (mediaId: string) =>
+    withClientApiKey(`/api/rooms/${gameId}/media/${mediaId}`);
   const inQuestion = (wallQuestionPhases as readonly string[]).includes(phase);
   const corner = Boolean(wall.now) && inQuestion && wall.placement === "corner";
   return (
@@ -86,7 +88,13 @@ function Spotlight({ now, src }: { now: Now; src: string }) {
         initial={
           reduce
             ? { opacity: 0 }
-            : { opacity: 0, y: -80, rotate: -8, scale: 1.08, filter: "brightness(3) saturate(0)" }
+            : {
+                opacity: 0,
+                y: -80,
+                rotate: -8,
+                scale: 1.08,
+                filter: "brightness(3) saturate(0)",
+              }
         }
         animate={
           reduce
@@ -159,7 +167,9 @@ function Reactions({ now, reduce }: { now: Now; reduce: boolean }) {
                 animate={{ y: "-90vh", opacity: 0, scale: 1.3 }}
                 transition={{ duration: 2.4, ease: "easeOut" }}
                 onAnimationComplete={() =>
-                  setFloaters((current) => current.filter((item) => item.id !== floater.id))
+                  setFloaters((current) =>
+                    current.filter((item) => item.id !== floater.id),
+                  )
                 }
               >
                 {reactionEmoji[floater.reaction]}
@@ -200,7 +210,11 @@ function Reel({
       <motion.div
         className="wall-reel-track"
         animate={reduce ? undefined : { x: ["0%", "-50%"] }}
-        transition={{ duration: Math.max(20, reel.length * 4), ease: "linear", repeat: Infinity }}
+        transition={{
+          duration: Math.max(20, reel.length * 4),
+          ease: "linear",
+          repeat: Infinity,
+        }}
       >
         {strip.map((item, index) => (
           <img

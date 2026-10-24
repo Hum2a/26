@@ -40,7 +40,7 @@ export async function compactJpeg(
   );
   bitmap.close();
   const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob((next) => resolve(next), "image/jpeg", 0.8);
+    canvas.toBlob((next) => resolve(next), "image/jpeg", 0.95);
   });
   if (!blob) {
     throw new Error("This phone cannot prepare that photo.");
