@@ -3819,5 +3819,29 @@ below. No deployment, new dependency or paid resource.
   Publish that same validated artifact and check each live health endpoint.
 - No secret rotation, Neon migration, R2 provisioning or unrelated resource
   change is required. Durable Object developer tables are additive at bootstrap.
-- Status: release/deployment in progress; actual deployment identifiers and
-  results will be recorded after Cloudflare confirms them.
+- **Complete:** feature commit `9ef618b` and release commit `1653c2c` are
+  pushed to GitHub master, with annotated release tag `v0.0.5`.
+- **Staging:** deployed `26-humza-website-staging`, version
+  `ef8dbeb7-fc69-49b1-8c01-ad4832cbe4f3`. Live health reports
+  `ok: true`, environment `staging`, version `0.0.5`; `/admin` returns HTTP 200.
+- **Production:** deployed `26-humza-website`, version
+  `dfa86a6b-714c-43c3-bd30-01da4e997587`. Live health reports
+  `ok: true`, environment `production`, version `0.0.5`; `/admin` returns HTTP 200.
+- **Release verification:** both environment builds, 682-file secret scans,
+  content preflights, generated target/config assertions and Wrangler 4.136.3
+  packaging dry runs passed. Each upload used its validated build. Production
+  reused the freshly built environment-independent solo kart bundle; its Worker
+  and web app were rebuilt for production. Existing large-chunk/PGlite warnings
+  and unfinished birthday draft notices remain.
+- **GitHub CI limitation:** the release workflow did not start any steps because
+  GitHub reported an account billing/spending-limit block. This is not a test
+  pass. Run: https://github.com/Hum2a/26/actions/runs/40654648290.
+- **Testing limitation and cleanup:** no local tests, bots, browser rehearsals or
+  dev servers were restarted. The retained final Worker regression and full
+  connected 100-bot/phone-flow checks above remain unverified. Deployment health
+  and HTTP checks do not establish those behaviours.
+- **Try it:** open `/admin`, choose Fresh rehearsal, then use the room's Developer
+  tools. Start with a small bot preset and increase counts when ready.
+- **Exact next stage:** user-led rehearsal on staging or production. Retry the
+  retained Worker/browser checks only when the user wants testing resumed and
+  the local environment is healthy. No further automatic stage is started.
