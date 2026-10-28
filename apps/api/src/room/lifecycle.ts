@@ -399,7 +399,7 @@ export function onAlarm(store: GameStore, now: number): void {
       ) {
         continue;
       }
-      if (job.payload === wallAdvancePayload) {
+      if (job.payload === wallAdvancePayload || job.payload === "developer-runner") {
         // Marked done first: the hook schedules the next wake-up under the same id.
         store.saveJob({ ...job, status: "done", dueAt: null });
         store.onBackgroundJob?.(job, now);
@@ -412,7 +412,8 @@ export function onAlarm(store: GameStore, now: number): void {
     }
   }
 
-  if (room.paused) {
+  // A background rehearsal job can pause the room during this alarm.
+  if (store.readRoom().paused) {
     return;
   }
 
@@ -656,6 +657,31 @@ function moveTo(
     store.writeRoom(room);
     throw error;
   }
+}
+
+/** Rehearsal caller enforces isolation and clears the selected question's records. */
+export function restartQuestion(store: GameStore, index: number, now: number): void {
+  const room = store.readRoom();
+  if (!Number.isInteger(index) || index < 0 || index >= room.questionCount)
+    throw new Error("Choose a question in this room's pack.");
+  endPhase(store, room.roundId, now);
+  for (const job of store.jobs())
+    if (job.jobType === "gameplay" && job.status === "pending")
+      store.saveJob({ ...job, status: "cancelled", dueAt: null, remainingMs: null });
+  const next = {
+    ...room,
+    questionIndex: index,
+    phase: "intro" as const,
+    phaseGeneration: room.phaseGeneration + 1,
+    scopeGeneration: room.scopeGeneration + 1,
+    paused: false,
+    hold: null,
+    finishAfterRound: false,
+    roundId: room.roundId ?? `rehearsal:${room.phaseGeneration + 1}`,
+  };
+  if (!store.casRoom(room.phaseGeneration, next))
+    throw new Error("The room moved. Try again.");
+  openPhase(store, next, now);
 }
 
 function openPhase(store: GameStore, room: RoomClock, now: number): void {

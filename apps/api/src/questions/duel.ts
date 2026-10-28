@@ -871,7 +871,7 @@ function hostRows(
       summary: `backed ${nicknameOf(sql, prediction.contestant_id) ?? "a contestant"}`,
     })),
   ];
-  return rows.filter((row) => row.nickname.length > 0).slice(0, 80);
+  return rows.filter((row) => row.nickname.length > 0).slice(0, 100);
 }
 
 function liveNames(

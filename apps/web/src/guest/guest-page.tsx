@@ -41,12 +41,18 @@ import type { DriverStyle } from "@26/shared";
 import { PhoneShell } from "./phone-shell";
 import { EntryFrame, EntryHeading, EntryNotice } from "../ui/entry-frame";
 
-export function GuestPage() {
+export function GuestPage({
+  rehearsalSession,
+  rehearsalCredential,
+}: {
+  rehearsalSession?: GuestSession;
+  rehearsalCredential?: { playerId: string; secret: string };
+} = {}) {
   const params = useParams();
   const [search] = useSearchParams();
   const linked =
     roomCodeFromQuery(search.get("room")) ?? roomCodeFromQuery(params.code ?? null);
-  const [session, setSession] = useState<GuestSession>();
+  const [session, setSession] = useState<GuestSession | undefined>(rehearsalSession);
   const [snapshot, setSnapshot] = useState<LobbySnapshot>();
   const [code, setCode] = useState(linked ?? "");
   const [nicknameError, setNicknameError] = useState("");
@@ -56,7 +62,7 @@ export function GuestPage() {
     "connecting" | "open" | "closed" | "idle"
   >("idle");
   const [busy, setBusy] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(true);
+  const [checkingSession, setCheckingSession] = useState(!rehearsalSession);
   const joinRequest = useRef<{ payload: string; requestId: string } | null>(null);
   const [selectedId, setSelectedId] = useState<string>();
   const [pending, setPending] = useState(false);
@@ -110,6 +116,7 @@ export function GuestPage() {
 
   useEffect(() => {
     document.title = "Guest · 26";
+    if (rehearsalSession) return;
     let active = true;
     void resumeGuest()
       .then((resumed) => {
@@ -131,7 +138,7 @@ export function GuestPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [rehearsalSession]);
 
   const gameId = session?.gameId;
   const playerId = session?.playerId;
@@ -144,6 +151,7 @@ export function GuestPage() {
     const socket = openRoomSocket({
       gameId,
       role: "guest",
+      ...(rehearsalCredential ? { botSession: rehearsalCredential } : {}),
       onSnapshot(next) {
         if (recoveryRace.current !== next.play?.kart?.raceId) {
           recoveryRace.current = next.play?.kart?.raceId;
@@ -256,7 +264,7 @@ export function GuestPage() {
       socketRef.current = null;
       socket.close();
     };
-  }, [gameId, playerId]);
+  }, [gameId, playerId, rehearsalCredential]);
 
   useEffect(() => {
     function onLeave(event: BeforeUnloadEvent) {
@@ -511,6 +519,12 @@ export function GuestPage() {
           </h1>
         )}
         <StatusMessage>{status}</StatusMessage>
+        {rehearsalCredential ? (
+          <p className="text-sm text-muted">
+            Live test phone. Use an ordinary second-browser guest for photos and phone
+            transfer.
+          </p>
+        ) : null}
         <ReconnectBanner
           disconnected={reconnecting}
           snapshotId={snapshotPulse}
@@ -530,17 +544,19 @@ export function GuestPage() {
                   onReact={onReact}
                   minRem={0.875}
                 />
-                <DriverPicker
-                  gameId={snapshot.gameId}
-                  nickname={nickname ?? session.nickname}
-                  driver={
-                    snapshot.players.find(
-                      (player) => player.playerId === session.playerId,
-                    )?.driver
-                  }
-                  pending={driverPending}
-                  onChoose={onDriver}
-                />
+                {!rehearsalCredential ? (
+                  <DriverPicker
+                    gameId={snapshot.gameId}
+                    nickname={nickname ?? session.nickname}
+                    driver={
+                      snapshot.players.find(
+                        (player) => player.playerId === session.playerId,
+                      )?.driver
+                    }
+                    pending={driverPending}
+                    onChoose={onDriver}
+                  />
+                ) : null}
               </div>
             ) : null}
             <PhaseTransition phase={snapshot?.phase ?? "lobby"}>
@@ -600,21 +616,24 @@ export function GuestPage() {
                   onSend={onTroll}
                   onEscape={onTrollEscape}
                 />
-                <div className="phone-secondary-tools">
-                  <Disclosure title="Photos & sound">
-                    <GuestMedia gameId={session.gameId} />
-                  </Disclosure>
-                </div>
+                {!rehearsalCredential ? (
+                  <div className="phone-secondary-tools">
+                    <Disclosure title="Photos & sound">
+                      <GuestMedia gameId={session.gameId} />
+                    </Disclosure>
+                  </div>
+                ) : null}
               </>
             ) : null}
-            {snapshot?.wall ? (
+            {snapshot?.wall && !rehearsalCredential ? (
               <Disclosure title="📸 Send to the big screen">
                 <GuestWall
                   wall={snapshot.wall}
                   gameId={session.gameId}
                   selfNickname={
-                    snapshot.players.find((player) => player.playerId === session.playerId)
-                      ?.nickname ?? "You"
+                    snapshot.players.find(
+                      (player) => player.playerId === session.playerId,
+                    )?.nickname ?? "You"
                   }
                   onPost={(post) => socketRef.current?.submitWallPost(post)}
                   onWithdraw={(postId) => socketRef.current?.submitWallWithdraw(postId)}
@@ -638,12 +657,14 @@ export function GuestPage() {
                 </ul>
               </Panel>
             ) : null}
-            <TransferPhone
-              busy={busy}
-              code={transferCode}
-              onCode={setTransferCode}
-              onSubmit={(event) => void onRedeem(event)}
-            />
+            {!rehearsalCredential ? (
+              <TransferPhone
+                busy={busy}
+                code={transferCode}
+                onCode={setTransferCode}
+                onSubmit={(event) => void onRedeem(event)}
+              />
+            ) : null}
           </div>
         </ReconnectBanner>
       </PhoneShell>

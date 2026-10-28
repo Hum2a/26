@@ -1,6 +1,17 @@
 import { noteArchiveCorrection, requeueFailedArchive } from "../archive/schedule.ts";
 import { hideUpload, releaseStuckUploads } from "../media/records.ts";
-import { recordRevealScores } from "../questions/multiple-choice.ts";
+import {
+  createGameStore,
+  multipleChoicePlugin,
+  recordRevealScores,
+} from "../questions/multiple-choice.ts";
+import { rehearsalConfigSchema, rehearsalScenarioSchema } from "@26/shared";
+import {
+  configureRehearsal,
+  changeRunner,
+  jumpRehearsal,
+  setRehearsalScenario,
+} from "../developer/rehearsal.ts";
 import type { TrollKindName } from "@26/shared";
 import { cancelTroll, dismissCue, setTrollSwitch } from "../troll/engine.ts";
 import {
@@ -36,11 +47,16 @@ import {
 import { createSqlStore } from "./sql-store.ts";
 import { changeKartCourse } from "../questions/kart.ts";
 import { changePhotoBias } from "../media/photo-bias.ts";
+import { setBotCount } from "../developer/bots.ts";
 
 const shownPhases = new Set(["reveal", "scores", "final", "podium"]);
 
 export type HostActionInput = {
   action: string;
+  botCount?: number;
+  rehearsalConfig?: unknown;
+  questionIndex?: number;
+  scenario?: unknown;
   playerId?: string;
   otherPlayerId?: string;
   nickname?: string;
@@ -61,6 +77,48 @@ export function applyHostAction(
   sql: SqlStorage,
   input: HostActionInput,
 ): { transferCode?: string; released?: number } {
+  if (input.action === "developer-configure") {
+    configureRehearsal(
+      sql,
+      rehearsalConfigSchema.parse(input.rehearsalConfig),
+      input.nowMs,
+      createGameStore(sql),
+      multipleChoicePlugin(),
+    );
+    return {};
+  }
+  if (input.action === "developer-run" || input.action === "developer-stop") {
+    changeRunner(
+      sql,
+      createGameStore(sql),
+      input.action === "developer-run",
+      input.nowMs,
+    );
+    return {};
+  }
+  if (input.action === "developer-jump" || input.action === "developer-repeat") {
+    jumpRehearsal(
+      sql,
+      createGameStore(sql),
+      input.action === "developer-repeat"
+        ? createSqlStore(sql).readRoom().questionIndex
+        : (input.questionIndex ?? -1),
+      input.nowMs,
+    );
+    return {};
+  }
+  if (input.action === "developer-scenario") {
+    setRehearsalScenario(
+      sql,
+      rehearsalScenarioSchema.parse(input.scenario),
+      input.nowMs,
+    );
+    return {};
+  }
+  if (input.action === "developer-bots") {
+    setBotCount(sql, input.botCount, input.nowMs);
+    return {};
+  }
   if (input.action === "photo-bias-on" || input.action === "photo-bias-off") {
     changePhotoBias(sql, input.action === "photo-bias-on", input.nowMs);
     return {};

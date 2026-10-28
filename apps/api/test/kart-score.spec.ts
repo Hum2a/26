@@ -212,7 +212,7 @@ it("reports wrong-way velocity for both forward and reverse driving without reve
 });
 
 it("replays independent ghost-kart timelines deterministically at full-room size", () => {
-  const players = Array.from({ length: 80 }, (_, i) => ({
+  const players = Array.from({ length: 100 }, (_, i) => ({
     playerId: `p${i}`,
     name: `Driver ${i}`,
   }));

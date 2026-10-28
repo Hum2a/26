@@ -57,7 +57,7 @@ export const kartDriverSchema = z
     playerId: z.string(),
     name: z.string().min(1).max(24),
     number: z.number().int().positive(),
-    gridPosition: z.number().int().min(1).max(80).optional(),
+    gridPosition: z.number().int().min(1).max(100).optional(),
     x: z.number().finite(),
     z: z.number().finite(),
     heading: z.number().finite(),
@@ -88,10 +88,10 @@ export const kartRaceSchema = z
     selfPlayerId: z.string().nullable(),
     inputCursor: z.number().int().nonnegative().nullable(),
     // Frozen race size; phone leaderboards intentionally contain only a shortlist.
-    participantCount: z.number().int().min(0).max(80).optional(),
+    participantCount: z.number().int().min(0).max(100).optional(),
     powers: kartPowerViewSchema.optional(),
     courseEnabled: z.boolean().optional(),
-    participants: z.array(kartDriverSchema).max(80),
+    participants: z.array(kartDriverSchema).max(100),
     leaderboard: z
       .array(
         z
@@ -105,7 +105,7 @@ export const kartRaceSchema = z
           })
           .strict(),
       )
-      .max(80),
+      .max(100),
   })
   .strict();
 export type KartRaceView = z.infer<typeof kartRaceSchema>;
@@ -171,10 +171,10 @@ export function createKartRace(
   options: { seedGrid?: boolean; trackId?: KartTrackId } = {},
 ): KartRace {
   if (
-    players.length > 80 ||
+    players.length > 100 ||
     new Set(players.map((p) => p.playerId)).size !== players.length
   )
-    throw new Error("A race supports at most 80 different players.");
+    throw new Error("A race supports at most 100 different players.");
   const roster = options.seedGrid
     ? players
         .map((p, index) => ({ ...p, index }))

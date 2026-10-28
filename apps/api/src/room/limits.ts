@@ -1,4 +1,5 @@
-export const maxPlayers = 80;
+import { roomPlayerLimit } from "@26/shared";
+export const maxPlayers = roomPlayerLimit;
 export const maxTransfers = 40;
 export const maxNameReactions = 10;
 export const liveSampleSize = 8;

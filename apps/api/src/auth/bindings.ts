@@ -2,6 +2,8 @@ import type { AppEnvironment } from "@26/shared";
 
 declare global {
   interface Env {
+    /** Memory-only local Node-to-Worker proof; never configured for a deployment. */
+    LOCAL_ADMIN_PROOF_KEY?: string;
     /** Isolates in-memory PGlite databases in tests. Not a deployed binding. */
     LOCAL_DATABASE_ID?: string;
   }

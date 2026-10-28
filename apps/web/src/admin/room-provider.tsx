@@ -28,7 +28,8 @@ export type CommandScope =
   | "health"
   | "trolls"
   | "wall"
-  | "kart";
+  | "kart"
+  | "developer";
 type CommandRequest = {
   command: AdminCommand;
   requestId: string;

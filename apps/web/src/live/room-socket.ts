@@ -199,6 +199,8 @@ type TrackedCommand = {
  */
 export function openRoomSocket(options: {
   gameId: string;
+  /** Admin-issued synthetic guest only; never written to a URL or browser storage. */
+  botSession?: { playerId: string; secret: string };
   role: RoomSocketRole;
   onSnapshot: (snapshot: LobbySnapshot) => void;
   onAck: (ack: { requestId: string; accepted: boolean; error?: string }) => void;
@@ -367,6 +369,7 @@ export function openRoomSocket(options: {
   }
 
   function sendDevice(reason: "initial" | "phase" | "interval") {
+    if (options.botSession) return;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       return;
     }
@@ -382,6 +385,7 @@ export function openRoomSocket(options: {
   }
 
   function sendConnection() {
+    if (options.botSession) return;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       return;
     }
@@ -416,6 +420,9 @@ export function openRoomSocket(options: {
       withClientApiKey(
         `${protocol}//${location.host}/ws/${options.gameId}?role=${options.role}&patches=1${resume}`,
       ),
+      options.botSession
+        ? [`26-bot.${options.botSession.playerId}.${options.botSession.secret}`]
+        : undefined,
     );
     socket = current;
     current.addEventListener("open", onOpen);
@@ -435,7 +442,7 @@ export function openRoomSocket(options: {
         socket.send(JSON.stringify(command.body));
       }
     }
-    noteSubmissionRetries(resent);
+    if (!options.botSession) noteSubmissionRetries(resent);
     attempt = 0;
     startHeartbeat();
     for (let index = 0; index < timeProbesOnOpen; index += 1) {
@@ -449,7 +456,7 @@ export function openRoomSocket(options: {
   function onMessage(event: MessageEvent) {
     if (event.data === "pong") {
       if (pingSentAt > 0) {
-        noteRtt(Date.now() - pingSentAt);
+        if (!options.botSession) noteRtt(Date.now() - pingSentAt);
         pingSentAt = 0;
       }
       return;
@@ -469,7 +476,8 @@ export function openRoomSocket(options: {
       typeof record.sentAt === "number" &&
       typeof record.serverNow === "number"
     ) {
-      noteServerTime(record.sentAt, record.serverNow, Date.now());
+      if (!options.botSession)
+        noteServerTime(record.sentAt, record.serverNow, Date.now());
       return;
     }
     if (record.kind === "replaced" && typeof record.message === "string") {

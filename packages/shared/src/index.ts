@@ -5,6 +5,8 @@ export * from "./kart-driver.ts";
 export * from "./kart-driving.ts";
 export * from "./rate-limit.ts";
 import { z } from "zod";
+import { developerToolsSchema } from "./developer.ts";
+export * from "./developer.ts";
 import { wordleBoardSchema } from "./wordle.ts";
 export {
   wordleBoardSchema,
@@ -577,7 +579,7 @@ const duelStateSchema = z
     reason: z.enum(["open", "waiting", "closed", "late"]),
     board: z
       .object({
-        total: z.number().int().nonnegative().max(80),
+        total: z.number().int().nonnegative().max(100),
         rows: z
           .array(
             z
@@ -637,7 +639,7 @@ const revealSchema = z
         answer: z.string().min(1).max(contentLimits.typedMax),
         correctCount: z.number().int().nonnegative(),
         responseCount: z.number().int().nonnegative(),
-        correctNames: z.array(z.string().min(1).max(24)).max(80).nullable(),
+        correctNames: z.array(z.string().min(1).max(24)).max(100).nullable(),
         groups: z
           .array(
             z
@@ -649,7 +651,7 @@ const revealSchema = z
               })
               .strict(),
           )
-          .max(80)
+          .max(100)
           .optional(),
       })
       .strict(),
@@ -668,7 +670,7 @@ const revealSchema = z
               })
               .strict(),
           )
-          .max(80),
+          .max(100),
       })
       .strict(),
     z
@@ -696,7 +698,7 @@ const revealSchema = z
               })
               .strict(),
           )
-          .max(80),
+          .max(100),
       })
       .strict(),
     z
@@ -765,12 +767,12 @@ export const playSnapshotSchema = z
       .nullable(),
     ballot: z
       .object({
-        total: z.number().int().nonnegative().max(80),
+        total: z.number().int().nonnegative().max(100),
         epoch: z.number().int().nonnegative().optional(),
         label: z.string().max(120).optional(),
         instruction: z.string().max(200).optional(),
         reason: z.enum(["open", "late", "empty", "closed"]),
-        cards: z.array(ballotCardSchema).max(80),
+        cards: z.array(ballotCardSchema).max(100),
       })
       .strict()
       .nullable(),
@@ -795,7 +797,7 @@ export const playSnapshotSchema = z
           })
           .strict(),
       )
-      .max(80)
+      .max(100)
       .nullable(),
     liveSample: z.array(z.string().min(1).max(24)).max(8).nullable(),
     attributions: z
@@ -803,7 +805,7 @@ export const playSnapshotSchema = z
         z
           .object({
             optionId: publicOptionIdSchema,
-            nicknames: z.array(z.string().min(1).max(24)).max(80),
+            nicknames: z.array(z.string().min(1).max(24)).max(100),
           })
           .strict(),
       )
@@ -819,7 +821,7 @@ export const playSnapshotSchema = z
           })
           .strict(),
       )
-      .max(80)
+      .max(100)
       .optional(),
     hostResponses: z
       .array(
@@ -834,7 +836,7 @@ export const playSnapshotSchema = z
           })
           .strict(),
       )
-      .max(80)
+      .max(100)
       .optional(),
     explanation: z.string().min(1).max(contentLimits.explanationMax).nullable(),
     presenterNotes: z.string().min(1).max(contentLimits.notesMax).optional(),
@@ -905,6 +907,9 @@ export type TrollKindName = (typeof trollKinds)[number];
 /** Public lobby view. Verifiers, transfer codes, and admin details are absent. */
 export const lobbySnapshotSchema = z
   .object({
+    developerTools: developerToolsSchema.optional(),
+    /** Safe epoch only; no rehearsal settings or diagnostics reach guests. */
+    rehearsalRevision: z.number().int().nonnegative().optional(),
     gameId: gameIdSchema,
     joinCode: joinCodeSchema,
     phase: roomPhaseSchema,
@@ -945,7 +950,7 @@ export const lobbySnapshotSchema = z
           })
           .strict(),
       )
-      .max(80),
+      .max(100),
     selfReactions: z
       .array(
         z

@@ -190,6 +190,6 @@ export const kartPowerViewSchema = z
           })
           .strict(),
       )
-      .max(80),
+      .max(100),
   })
   .strict();

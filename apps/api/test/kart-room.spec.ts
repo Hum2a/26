@@ -369,7 +369,7 @@ it("persists lap winners once, ignores client times, and continues to scores and
 
 it("persists full-room control queues before a tick and replays them after eviction without cross-driver leakage", async () => {
   const { stub, players, now } = await setup(
-    Array.from({ length: 80 }, (_, i) => `Driver ${i + 1}`),
+    Array.from({ length: 100 }, (_, i) => `Driver ${i + 1}`),
   );
   const raceId = (await stub.snapshotFor("stage")).play!.kart!.raceId;
   await runInDurableObject(stub, (_instance, state) => {
@@ -406,7 +406,7 @@ it("persists full-room control queues before a tick and replays them after evict
     if (q?.kind !== "kart") throw new Error("Kart required");
     onAlarm(createGameStore(sql), now + 200);
     const saved = readKart(sql, q.id)!;
-    expect(saved.drivers).toHaveLength(80);
+    expect(saved.drivers).toHaveLength(100);
     expect(saved.elapsedMs).toBe(200);
     for (const [i, driver] of saved.drivers.entries()) {
       expect(driver.sequence).toBe(2);
@@ -419,10 +419,10 @@ it("persists full-room control queues before a tick and replays them after evict
     );
     expect(readKart(sql, q.id)!.drivers.every((d) => d.inputUntil === 500)).toBe(true);
   });
-  const guest = (await stub.snapshotFor("guest", players[79])).play!.kart!;
-  expect(guest.participantCount).toBe(80);
+  const guest = (await stub.snapshotFor("guest", players[99])).play!.kart!;
+  expect(guest.participantCount).toBe(100);
   expect(guest.participants).toHaveLength(1);
-  expect(guest.participants[0]!.playerId).toBe(players[79]);
+  expect(guest.participants[0]!.playerId).toBe(players[99]);
   expect(guest.inputCursor).toBe(2);
   expect(guest.leaderboard).toHaveLength(9); // Top eight plus this phone's own place.
   expect(JSON.stringify(guest)).not.toContain("inputUntil");

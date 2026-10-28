@@ -1,4 +1,5 @@
 import { enterKart, tickKart, kartScores, projectKart } from "./kart.ts";
+import { enterRehearsalPhase, tickRehearsal } from "../developer/rehearsal.ts";
 import { playSnapshotSchema, type PlaySnapshot } from "@26/shared";
 import {
   submissionGate,
@@ -184,7 +185,7 @@ export function speedBonusPoints(
 
 export function createGameStore(sql: SqlStorage): GameStore {
   const store = createSqlStore(sql);
-  return {
+  const gameStore: GameStore = {
     ...store,
     onEnterPhase(room, now) {
       if (room.phase === "podium") {
@@ -221,6 +222,7 @@ export function createGameStore(sql: SqlStorage): GameStore {
       }
       // A break may have started, or a question begun; the wall decides.
       syncWall(sql, "tick", now);
+      enterRehearsalPhase(sql, gameStore, now);
     },
     nextPhaseOverride(room) {
       if (room.phase === "final" && funFactTotal(sql) > 0) {
@@ -249,6 +251,10 @@ export function createGameStore(sql: SqlStorage): GameStore {
       completeScheduledTroll(sql, job, now);
     },
     onBackgroundJob(job, now) {
+      if (job.payload === "developer-runner") {
+        tickRehearsal(sql, gameStore, job, now);
+        return;
+      }
       if (job.payload === wallAdvancePayload) {
         syncWall(sql, "tick", now);
         return;
@@ -256,6 +262,7 @@ export function createGameStore(sql: SqlStorage): GameStore {
       purgeDetailedTelemetry(sql, now);
     },
   };
+  return gameStore;
 }
 
 export function acceptChoice(

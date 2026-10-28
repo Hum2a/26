@@ -17,6 +17,16 @@ import { freezeBirthdayOrder } from "../questions/birthday-order.ts";
 import { DurableObject } from "cloudflare:workers";
 import { createRealtimeMeter } from "./realtime-meter.ts";
 import { photoBiasDetails, photoBiasState, roughPhoto } from "../media/photo-bias.ts";
+import { developerDetails, isActiveBot } from "../developer/bots.ts";
+import {
+  readRehearsal,
+  recordRehearsalEvent,
+  recordRehearsalConnection,
+  rehearsalDetails,
+  rehearsalOutage,
+  isRehearsalPhone,
+} from "../developer/rehearsal.ts";
+import { rehearsalConfigSchema } from "@26/shared";
 import { adminPlayerRows } from "./admin-players.ts";
 import {
   guestSessionSchema,
@@ -326,7 +336,7 @@ type PhaseCommandResult =
 
 type Failure = {
   ok: false;
-  status: 401 | 403 | 404;
+  status: 401 | 403 | 404 | 503;
   error: "unauthenticated" | "forbidden" | "not_found";
   message: string;
 };
@@ -502,6 +512,11 @@ export class PartyRoom extends DurableObject<Env> {
           secretHash,
           expiresAt,
         });
+        if (readRehearsal(this.ctx.storage.sql))
+          this.ctx.storage.sql.exec(
+            `UPDATE player SET client_class='test' WHERE player_id=?`,
+            playerId,
+          );
         this.writeCount("room", "joins");
         const stateVersion = this.bumpState();
         const room = this.readRoom();
@@ -1301,6 +1316,10 @@ export class PartyRoom extends DurableObject<Env> {
     requestId: string;
     nowMs: number;
     action: string;
+    botCount?: number;
+    rehearsalConfig?: unknown;
+    questionIndex?: number;
+    scenario?: unknown;
     playerId?: string;
     otherPlayerId?: string;
     nickname?: string;
@@ -1322,6 +1341,37 @@ export class PartyRoom extends DurableObject<Env> {
       return allowed;
     }
     const payload: Record<string, string | number> = { action: input.action };
+    if (input.rehearsalConfig !== undefined)
+      payload.rehearsalConfig = JSON.stringify(input.rehearsalConfig);
+    if (input.questionIndex !== undefined) payload.questionIndex = input.questionIndex;
+    if (input.scenario !== undefined) payload.scenario = String(input.scenario);
+    let rehearsalScript: Awaited<ReturnType<typeof freezeBirthdayOrder>> | undefined;
+    if (
+      input.action === "developer-configure" &&
+      !readRehearsal(this.ctx.storage.sql)
+    ) {
+      const parsed = rehearsalConfigSchema.safeParse(input.rehearsalConfig);
+      if (!parsed.success)
+        return {
+          ok: false,
+          error: "invalid",
+          message: "Choose valid rehearsal settings.",
+        };
+      if (parsed.data.pack === "birthday") {
+        try {
+          rehearsalScript = await freezeBirthdayOrder(
+            await this.env.ROOM_CODE_REGISTRY.getByName("codes").birthdayOrder(),
+          );
+        } catch {
+          return {
+            ok: false,
+            error: "invalid",
+            message: "The birthday pack is not ready for rehearsal.",
+          };
+        }
+      }
+    }
+    if (input.botCount !== undefined) payload.botCount = input.botCount;
     if (input.playerId) {
       payload.playerId = input.playerId;
     }
@@ -1382,15 +1432,30 @@ export class PartyRoom extends DurableObject<Env> {
           )
         : 0;
     }
+    let appliedNew = false;
     const result = await this.phaseCommand(
       input.requestId,
       payload,
       (sql) => {
+        appliedNew = true;
+        if (input.action === "developer-configure" && !readRehearsal(sql)) {
+          if (rehearsalScript)
+            writeRoundState(sql, "__pack", "birthday-script", rehearsalScript);
+          sql.exec(
+            `UPDATE room SET question_set_version=?,scoring_version=?`,
+            rehearsalScript?.version ?? demoQuestionSetVersion,
+            demoScoringVersion,
+          );
+        }
         if (input.action === "retry-delivery") {
           return;
         }
         const applied = applyHostAction(sql, {
           action: input.action,
+          botCount: input.botCount,
+          rehearsalConfig: input.rehearsalConfig,
+          questionIndex: input.questionIndex,
+          scenario: input.scenario,
           playerId: input.playerId,
           otherPlayerId: input.otherPlayerId,
           nickname: input.nickname,
@@ -1418,7 +1483,104 @@ export class PartyRoom extends DurableObject<Env> {
     if (result.ok && input.action === "kick" && input.playerId) {
       this.closePlayerSockets(input.playerId, removedSessionMessage);
     }
+    if (
+      result.ok &&
+      (input.action === "developer-bots" || input.action === "developer-configure")
+    ) {
+      for (const socket of this.ctx.getWebSockets("guest")) {
+        const id = this.attachment(socket)?.principalId;
+        if (id && this.readPlayer(id)?.revoked_at)
+          this.closePlayerSockets(id, removedSessionMessage);
+      }
+    }
+    if (result.ok && appliedNew && input.action === "developer-scenario") {
+      if (input.scenario === "host-loss")
+        for (const socket of this.ctx.getWebSockets("control"))
+          socket.close(4002, "Rehearsal host disconnect");
+      if (input.scenario === "disconnect")
+        for (const socket of this.ctx.getWebSockets("guest")) {
+          const id = this.attachment(socket)?.principalId;
+          if (id && rehearsalOutage(this.ctx.storage.sql, id, input.nowMs))
+            socket.close(4002, "Rehearsal guest disconnect");
+        }
+    }
     return result;
+  }
+
+  async openRehearsalPhone(input: {
+    credentialId: string;
+    secret: string;
+    nowMs: number;
+    requestId: string;
+  }) {
+    const allowed = await this.requireControl(
+      input.credentialId,
+      input.secret,
+      input.nowMs,
+    );
+    if (!allowed.ok) return allowed;
+    if (!readRehearsal(this.ctx.storage.sql))
+      return {
+        ok: false as const,
+        error: "invalid" as const,
+        message: "Open phones only in a dedicated rehearsal room.",
+      };
+    const joined = await this.joinPlayer({
+      nickname: `Phone ${input.requestId.replaceAll("-", "").slice(0, 16)}`,
+      requestId: input.requestId,
+      now: new Date(input.nowMs).toISOString(),
+    });
+    if (!joined.ok) return joined;
+    this.ctx.storage.transactionSync(() =>
+      this.ctx.storage.sql.exec(
+        `INSERT OR IGNORE INTO developer_phone (player_id) VALUES (?)`,
+        joined.playerId,
+      ),
+    );
+    return joined;
+  }
+
+  /** Authenticated transport bootstrap; credentials are returned once and only hashes persist. */
+  async openBotSessions(input: {
+    credentialId: string;
+    secret: string;
+    nowMs: number;
+  }) {
+    const allowed = await this.requireControl(
+      input.credentialId,
+      input.secret,
+      input.nowMs,
+    );
+    if (!allowed.ok) return allowed;
+    const sessions = await Promise.all(
+      developerDetails(this.ctx.storage.sql).bots.map(async (bot) => {
+        const secret = createCredentialSecret();
+        return {
+          playerId: bot.playerId,
+          secret,
+          hash: await hashCredentialSecret(secret),
+        };
+      }),
+    );
+    const active: { playerId: string; secret: string }[] = [];
+    this.ctx.storage.transactionSync(() => {
+      for (const bot of sessions) {
+        if (!isActiveBot(this.ctx.storage.sql, bot.playerId)) continue;
+        this.ctx.storage.sql.exec(
+          `DELETE FROM credential WHERE player_id = ? AND principal = 'guest'`,
+          bot.playerId,
+        );
+        insertCredential(this.ctx.storage.sql, {
+          id: crypto.randomUUID(),
+          principal: "guest",
+          playerId: bot.playerId,
+          secretHash: bot.hash,
+          expiresAt: new Date(input.nowMs + guestCredentialTtlMs).toISOString(),
+        });
+        active.push({ playerId: bot.playerId, secret: bot.secret });
+      }
+    });
+    return { ok: true as const, sessions: active };
   }
 
   async adminMediaPage(input: {
@@ -1919,6 +2081,12 @@ export class PartyRoom extends DurableObject<Env> {
     if (identity.attachment.role === "guest") {
       this.ctx.storage.transactionSync(() => {
         noteGuestSocket(this.ctx.storage.sql, identity.attachment.principalId);
+        recordRehearsalConnection(
+          this.ctx.storage.sql,
+          identity.attachment.principalId,
+          true,
+          Date.now(),
+        );
       });
     }
     // Resume: a screen that still holds the last view this room sent it gets
@@ -1932,7 +2100,17 @@ export class PartyRoom extends DurableObject<Env> {
     }
     await this.refreshPresence();
     this.sendSnapshot(server);
-    return new Response(null, { status: 101, webSocket: client });
+    return new Response(null, {
+      status: 101,
+      webSocket: client,
+      ...(request.headers.get("sec-websocket-protocol")?.startsWith("26-bot.")
+        ? {
+            headers: {
+              "sec-websocket-protocol": request.headers.get("sec-websocket-protocol")!,
+            },
+          }
+        : {}),
+    });
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
@@ -2198,6 +2376,24 @@ export class PartyRoom extends DurableObject<Env> {
     ) {
       this.broadcastStage();
     }
+    if (attachment?.role === "guest") {
+      const stillConnected = this.ctx
+        .getWebSockets("guest")
+        .some(
+          (other) =>
+            other !== ws &&
+            other.readyState === WebSocket.OPEN &&
+            this.attachment(other)?.principalId === attachment.principalId,
+        );
+      this.ctx.storage.transactionSync(() =>
+        recordRehearsalConnection(
+          this.ctx.storage.sql,
+          attachment.principalId,
+          stillConnected,
+          Date.now(),
+        ),
+      );
+    }
     await this.refreshPresence(ws);
   }
 
@@ -2297,6 +2493,15 @@ export class PartyRoom extends DurableObject<Env> {
           result = this.replay<PhaseCommandResult>(again, digest);
           return;
         }
+        if (
+          readRehearsal(sql) &&
+          ["start-demo", "start-birthday", "start-kart-rehearsal"].includes(
+            String(payload.action),
+          )
+        )
+          throw new Error(
+            "Use Run or continue show in this dedicated rehearsal. Its pack is frozen.",
+          );
         this.flushKartInputs(sql);
         apply(sql);
         const clock = publicClock(createSqlStore(sql));
@@ -2309,9 +2514,24 @@ export class PartyRoom extends DurableObject<Env> {
           ...extra?.(),
         };
         this.writeReceipt("control", requestId, digest, result);
+        recordRehearsalEvent(sql, {
+          kind: "host",
+          detail: String(payload.action),
+          status: "accepted",
+          now: Date.now(),
+        });
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : roundStartMessage;
+      await commitAndArm(this.ctx.storage, (sql) =>
+        recordRehearsalEvent(sql, {
+          kind: "host",
+          detail: message,
+          status: "refused",
+          now: Date.now(),
+        }),
+      );
+      this.broadcast();
       return { ok: false, error: "invalid", message };
     }
     this.broadcast();
@@ -2487,6 +2707,15 @@ export class PartyRoom extends DurableObject<Env> {
     if (!this.readRoom()) {
       return;
     }
+    const current = createSqlStore(this.ctx.storage.sql).readRoom();
+    if (
+      current.controllerPresent === this.socketOpen("control", closing) &&
+      current.stagePresent === this.socketOpen("presentation", closing)
+    ) {
+      // Guest churn changes counts, not the durable game clock or its alarm.
+      this.broadcastFacilitators();
+      return;
+    }
     let changed = false;
     await commitAndArm(this.ctx.storage, (sql) => {
       const store = createSqlStore(sql);
@@ -2540,7 +2769,20 @@ export class PartyRoom extends DurableObject<Env> {
   ): Promise<{ ok: true; attachment: SocketAttachment } | Failure> {
     const cookie = request.headers.get("cookie") ?? undefined;
     if (role === "guest") {
-      const guest = readGuestCookie(cookie);
+      const protocol = request.headers.get("sec-websocket-protocol");
+      const bot = protocol?.match(/^26-bot\.([0-9a-f-]{36})\.([A-Za-z0-9_-]{43})$/i);
+      if (
+        protocol &&
+        (!bot ||
+          (!isActiveBot(this.ctx.storage.sql, bot[1]!) &&
+            !isRehearsalPhone(this.ctx.storage.sql, bot[1]!)))
+      )
+        return denied(401, "unauthenticated", "This bot session is unavailable.");
+      const guest = bot
+        ? { gameId, playerId: bot[1]!, secret: bot[2]! }
+        : readGuestCookie(cookie);
+      if (guest && rehearsalOutage(this.ctx.storage.sql, guest.playerId, now.getTime()))
+        return denied(503, "unauthenticated", "Rehearsal disconnect is active.");
       if (!guest || guest.gameId.toUpperCase() !== gameId) {
         return denied(401, "unauthenticated", "Join this room before connecting.");
       }
@@ -2554,6 +2796,11 @@ export class PartyRoom extends DurableObject<Env> {
       };
     }
     if (role === "stage" || role === "control") {
+      if (
+        role === "control" &&
+        rehearsalOutage(this.ctx.storage.sql, "control", now.getTime())
+      )
+        return denied(503, "unauthenticated", "Rehearsal host disconnect is active.");
       const credentialRole: RoomCredentialRole =
         role === "stage" ? "presentation" : "control";
       const presented = readCredentialCookie(cookie, credentialRole);
@@ -2930,6 +3177,13 @@ export class PartyRoom extends DurableObject<Env> {
         error,
         name: command.name,
       });
+      recordRehearsalEvent(sql, {
+        kind: "answer",
+        playerId: attachment.principalId,
+        detail: accepted ? `${command.name} accepted` : (error ?? "Command refused"),
+        status: accepted ? "accepted" : "refused",
+        now,
+      });
     });
     this.sendSnapshot(ws);
     if (accepted) {
@@ -3044,6 +3298,13 @@ export class PartyRoom extends DurableObject<Env> {
         accepted,
         error,
         name: "answer",
+      });
+      recordRehearsalEvent(sql, {
+        kind: "answer",
+        playerId: attachment.principalId,
+        detail: accepted ? "Answer accepted" : (error ?? "Answer refused"),
+        status: accepted ? "accepted" : "refused",
+        now,
       });
     });
     this.sendSnapshot(ws);
@@ -3344,6 +3605,9 @@ export class PartyRoom extends DurableObject<Env> {
       serverNow: Date.now(),
       stateVersion: room.state_version,
       mediaDisplayRevision: parts.mediaDisplayRevision,
+      ...(readRehearsal(this.ctx.storage.sql)
+        ? { rehearsalRevision: readRehearsal(this.ctx.storage.sql)!.revision }
+        : {}),
       questionSetVersion: room.question_set_version,
       scoringVersion: room.scoring_version,
       players,
@@ -3370,6 +3634,10 @@ export class PartyRoom extends DurableObject<Env> {
             },
             hostEffects: hostTrollRows(this.ctx.storage.sql),
             photoBias: photoBiasDetails(this.ctx.storage.sql),
+            developerTools: {
+              ...developerDetails(this.ctx.storage.sql),
+              rehearsal: rehearsalDetails(this.ctx.storage.sql, Date.now()),
+            },
             trollHistory: trollHistoryRows(this.ctx.storage.sql),
             kartCourseHistory:
               play?.question.kind === "kart"

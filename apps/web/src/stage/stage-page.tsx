@@ -67,6 +67,35 @@ export function StagePage() {
     });
     return () => socket.close();
   }, [gameId, connectionAttempt]);
+  const rehearsalCode = params.get("rehearsal") === "1" ? params.get("code") : null;
+  useEffect(() => {
+    if (!rehearsalCode) return;
+    let active = true;
+    void lookupStage(rehearsalCode)
+      .then((found) => {
+        if (!active) return;
+        if ("error" in found) {
+          setNotice(found.error);
+          return;
+        }
+        // Automatic presentation is explicitly requested and restricted to test rooms.
+        if (found.rehearsalRevision === undefined) {
+          setNotice("Open this room using the normal projector setup.");
+          return;
+        }
+        setSnapshot(found);
+        setObservedAt(Date.now());
+        setAccessLost(false);
+        setPresenting(true);
+      })
+      .catch(() => {
+        if (active)
+          setNotice("The rehearsal stage could not connect. Retry from setup.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [rehearsalCode]);
   function setup() {
     setPresenting(false);
     exitStageFullscreen();

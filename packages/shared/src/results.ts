@@ -30,7 +30,7 @@ export const publicStandingSchema = z
 export const publicResultsSchema = z
   .object({
     state: z.enum(["unknown", "preparing", "ready"]),
-    standings: z.array(publicStandingSchema).max(80).optional(),
+    standings: z.array(publicStandingSchema).max(100).optional(),
     highlights: z.array(statCardSchema).max(8).optional(),
     funFacts: z.array(funFactCardSchema).max(10).optional(),
     gallery: z

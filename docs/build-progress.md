@@ -3630,3 +3630,194 @@ resource creation.
 - **Exact next stage:** review this local follow-up, then rehearse the graphics
   options and photo switch on real phones/projector before an explicitly
   authorised deployment. No further feature pass has started.
+
+## 27 October 2026 - developer tools and 100-player rehearsals
+
+Status: implemented and checked locally, with the connected-browser limitation
+below. No deployment, new dependency or paid resource.
+
+- **Host workflow:** a registered room page at `/admin/rooms/:gameId/developer`
+  sets 10/25/50/75/100 bots or a custom target, preserving identities on growth
+  and enforcing a combined 100-player limit. It offers automatic answers,
+  varied response pace, participation percentages, a manual answer burst,
+  disconnect/reconnect, optional 10 Hz kart controls, measurement reset and JSON
+  report download. Start demo/birthday, pause/resume, advance and skip reuse
+  existing host commands. A private roster shows connection/answer status and
+  points; the latest 20 population changes remain visible.
+- **Real traffic and authority:** individual synthetic players use the existing
+  guest socket client, public projections, command receipts and scoring path.
+  An authenticated same-origin bootstrap issues ephemeral per-bot credentials;
+  only hashes persist. Secrets travel in protocol headers rather than URLs,
+  snapshots or browser storage. Removing bots revokes credentials and closes
+  sockets, retaining accepted actions/history. Synthetic clients stay excluded
+  from guest statistics, fun facts and the final guest archive. Automatic
+  answering and kart traffic default off. At most four pending handshakes avoid
+  flooding the browser connection queue.
+- **Capacity:** the room, player collections, ballots, attribution, results and
+  kart limits support 100 players. Text/content length limits stay unchanged.
+  Full-room kart recovery and deterministic timeline tests now exercise 100
+  drivers. The real-time load harness defaults to 10/25/50/75/100 guests and
+  retains configurable duration/input rate.
+- **Files/interfaces:** shared bot-count, private bootstrap and host projection
+  schemas; `apps/api/src/developer/bots.ts`; additive `developer_bot` and
+  `developer_tools` SQLite tables; existing host action/route/credential
+  plumbing; `apps/web/src/developer/` planner, fleet, controls and tests;
+  registry/route/sign-in return/command feedback integration;
+  `apps/web/e2e/developer-tools.spec.ts`. Added [the rehearsal guide](developer-tools.md),
+  documentation index entry and data inventory details. No competing socket
+  client, scheduler, score engine or deployed adapter.
+- **Verified:** root `npm run test:unit` passed **95 files / 383 tests**, and
+  `npm run typecheck` passed. Developer/kart/route suites passed **32 tests**;
+  room/Wordle/rank/vote/duel/stats/results regressions passed **34 tests**.
+  `npm run load:realtime` passed all five populations through accepted answer
+  bursts and kart updates. Focused developer UI/planner/fleet tests passed
+  **12 tests**, including bounded pending handshakes, partial rankings,
+  public Wordle boards, receipts, privacy and teardown. Targeted ESLint passed
+  with only existing Fast Refresh warnings in `room-provider.tsx` and
+  `routes.tsx`; the new developer files pass without warnings. New files pass
+  Prettier checks. `npm run build` passed, including a 672-file secret scan
+  and both content preflights; existing large-chunk/PGlite warnings and
+  incomplete birthday drafts remain. No failing assertion was skipped or weakened.
+- **Browser limits:** connected Chromium reached ten authenticated bot sockets.
+  Initial 100-bot attempts exposed the need to bound browser handshakes; that
+  ramp now has a regression test. Subsequent browser runs, including a
+  separately started preview, alternated between the previously recorded local
+  Worker room-opening timeouts and slow guest upgrades (six of ten connected
+  within the 45-second check). The complete browser
+  10-to-100 answer/reconnect/removal flow and phone layout are therefore not
+  yet verified; its Playwright test is retained. The local load harness is a
+  separate successful 100-connection check, not a substitute for this browser
+  result. The compiled production preview also timed out opening a room; a
+  final source-preview attempt timed out starting its server. Speculative
+  local transport changes were reverted, leaving the existing auth and
+  presence behaviour intact.
+- **Operational limits:** keep Developer tools open to run its bots; background
+  throttling and the host machine affect timings. Kart bots generate traffic
+  without intelligent navigation or 100 rendered phones. Real devices, venue
+  Wi-Fi and deployed capacity need manual rehearsal. Accepted test actions
+  remain: use a fresh room for a clean run.
+- **Exact next stage:** resolve the local Worker browser transport timeout,
+  complete the retained connected-browser test, then rehearse staged
+  populations with a real phone and projector. No deployment or later feature
+  stage has started.
+
+## 27 October 2026 — complete developer rehearsal toolkit
+
+- **Status:** implemented; final connected validation stopped at the user’s request on 28 October. See the handover below.
+- **Now available:** fresh isolated rehearsals from Admin Home/Rooms with saved
+  browser setups and 10/25/50/75/100 presets; frozen demo or birthday order;
+  automatic stage launch and bot-ready show start; a durable automatic runner,
+  pause-at-reveal and stop-on-failure; question jump/repeat; five-second bot/host
+  disconnect, late join and near-deadline answer scenarios; real generated phone
+  launch at common viewport sizes beside the actual stage; 200-event private
+  timeline, automatic checks and richer downloadable reports.
+- **Files/interfaces:** `packages/shared/src/developer.ts` validates configuration,
+  scenarios, bounded private rehearsal state/events/checks and a safe public
+  revision; new `apps/api/src/developer/rehearsal.ts` uses the existing lifecycle,
+  durable scheduler and receipted host commands. Additive room tables hold mode,
+  diagnostic history, current connection presence, brief outages and generated
+  phone markers. The phone bootstrap is authenticated and non-cacheable; its
+  credentials use the existing game-scoped transport. New developer setup,
+  profiles, controls, phone launcher and route reuse the real guest/stage screens.
+  Registry, command notices, sign-in return paths and documentation are updated.
+- **Decisions/defaults:** new setups default to demo, ten bots, automatic answers,
+  1s base delay, full participation, 1s presentation beats and an 8s runner answer
+  target; kart off, pause-at-reveal off, stop-on-failure on. Normal room clocks
+  remain authoritative. The runner waits through host loss. Repeat/jump clears
+  only the selected question’s answers/votes/points/runtime state and stops the
+  runner; the private history and other questions remain. A dedicated room never
+  queues final archives/emails. Ordinary rooms retain the previous bot-only tools
+  and refuse destructive rehearsal navigation and scenario commands.
+- **Local testing fix:** the existing Node local administrator check now signs a
+  short-lived method/path/session proof and forwards it through both Node header
+  representations. The Vite-to-Worker bridge uses raw headers; updating only the
+  normal header map dropped the proof and produced a false sign-in failure.
+  Untrusted proofs are removed first. Staging/production retain real auth.
+- **Checks so far:** `npm run test:unit` passed **98 files / 388 tests** and root
+  typecheck passed. Focused room/bootstrap/auth tests passed **24 tests** before
+  final guard/forwarding refinements. Targeted lint passed after fixing ref reads
+  during render. Initial Chromium runs exposed the proof forwarding issue; a
+  diagnostic Chromium check now confirms authenticated room creation and reads
+  return 200. The final connected browser suites are still running.
+- **Manual verification / remaining limits:** no deployment or venue test has
+  been performed. Bots need the Developer tools tab, do not render 100 phones
+  and do not drive intelligently. Browser scheduling affects near-deadline
+  timing and measured replies. The real phone launcher isolates the normal guest
+  cookie; cookie-based upload/recovery needs an ordinary second-browser session.
+  Answer-count checks explicitly show waiting for unsupported mechanics.
+- **Exact next stage:** finish connected Chromium checks and final regression,
+  lint/type/build checks, record actual outcomes here, then rehearse with physical
+  phones and a projector in staged populations. No deployment is implied.
+
+### 28 October continuation — final verification
+
+- Production build passed, including the 682-file secret scan and both content
+  preflights. Existing large-chunk/PGlite warnings and incomplete birthday drafts
+  remain unchanged; no deployment was run.
+- Targeted developer/guest/stage/admin web checks passed 19 files / 47 tests,
+  and typecheck and targeted ESLint passed before the final unattended-runner
+  refinement. The full unit rerun uses one worker after concurrent checks caused
+  memory pressure on this machine. Cancelled resource-constrained runs are not
+  counted as passes.
+- A running rehearsal now pauses and cancels its runner wakeup when its controller
+  disappears. The deliberate five-second host-loss scenario has a bounded 15s
+  recovery grace. Browser checks explicitly isolate temporary Worker room storage
+  alongside their existing temporary auth; ordinary local rooms stay persistent.
+- Browser verification remains open: earlier source-browser runs reached the
+  automatic reveal pause and presenting stage, but Vite errors after aborted
+  requests blocked subsequent controls. Cold/stale-server runs also failed room
+  reads or connection waits. Tests retain their real 100-client, answer and phone
+  assertions; none is skipped or removed.
+
+- Final full web rerun passed **98 files / 390 tests** using
+  `npm run test:unit -- -- --maxWorkers=1`. All assertions stayed enabled.
+- Final root `npm run typecheck` passed, including the standalone kart project.
+
+### Handover — testing stopped at user request (28 October 2026)
+
+- **Implementation:** all seven requested additions are present: saved fresh
+  rehearsals, question jump/repeat, automatic runner, failure scenarios, real
+  phone launcher, private event timeline/report and automatic checks. No
+  deployment or paid resource creation was performed.
+- **Verified:** full web suite **98 files / 390 tests**; root typecheck including
+  standalone kart; production build and **682-file secret scan**; content
+  preflights; targeted lint. Earlier Worker suites passed as recorded above.
+- **Not fully verified:** the final Worker regression reruns failed to start the
+  Cloudflare test worker (`fetch failed` / `ECONNRESET`) on Node 26 and the
+  bundled Node 24. One broader attempt also timed out on the existing 30-second
+  idle-alarm test. These are not counted as passes. The newest unattended-runner
+  and late-alarm resume assertions therefore remain unverified in that runtime.
+  Complete connected-browser testing, including 100 bots and the real phone
+  flow, also remains unverified. Earlier runs reached four connected bots,
+  automatic reveal pause and the presenting stage, before local Vite/runtime
+  failures blocked further interaction.
+- **Final refinements:** an alarm re-reads paused state after background work so a
+  diagnostic pause preserves the resume timer. New developer panels have a zero
+  minimum width for narrow admin layouts. Their latest connected layout check
+  has not run. The ordinary private join receipt retains a generated phone’s
+  join response for idempotent recovery, as documented in the data inventory.
+- **Cleanup:** stopped the temporary dev server. No project Node/Worker process
+  or listener on 4173, 5173 or 9229 remained in the cleanup inspection. Browser
+  bot connections stop with their test browser/server; saved local test records
+  are retained. No unrelated application was stopped.
+- **Exact next stage:** no more testing runs in this session. When the user wants
+  to resume, first retry the retained Worker and Playwright checks in a healthy
+  local environment, then rehearse physical phones/projector and staged player
+  counts. Do not deploy automatically.
+
+## 28 October 2026 — requested push and deployment
+
+- User explicitly requested pushing and deploying the developer toolkit after
+  stopping local tests. Target: the configured staging and production Workers
+  in the personal birthday-project account, staging first.
+- Reuse the recorded 98-file/390-test web pass, root typecheck, lint and build
+  verification. Do not restart load, bot or connected-browser test processes.
+  The final Worker/browser validation limitations above still apply.
+- Release plan: commit the feature, cut v0.0.5 using the existing release script,
+  push master and the tag, then build each environment through the existing
+  deploy script with its environment/config assertion and packaging dry run.
+  Publish that same validated artifact and check each live health endpoint.
+- No secret rotation, Neon migration, R2 provisioning or unrelated resource
+  change is required. Durable Object developer tables are additive at bootstrap.
+- Status: release/deployment in progress; actual deployment identifiers and
+  results will be recorded after Cloudflare confirms them.

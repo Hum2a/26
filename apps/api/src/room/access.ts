@@ -2,6 +2,7 @@ import { adminSessionSchema, clientApiKeyHeader } from "@26/shared";
 import { presentBinding } from "../auth/bindings.ts";
 import { authFailure } from "../auth/http.ts";
 import { administratorForRequest } from "../auth/routes.ts";
+import { validLocalAdminProof } from "./local-auth-proof.ts";
 import {
   sameOriginRejection,
   sameOriginReadRejection,
@@ -25,6 +26,10 @@ export async function rejectUnlessRoomCreator(
     return authFailure("forbidden", 403);
   }
   if (env.APP_ENV === "local") {
+    if (env.LOCAL_ADMIN_PROOF_KEY)
+      return validLocalAdminProof(env.LOCAL_ADMIN_PROOF_KEY, request, Date.now())
+        ? undefined
+        : authFailure("unauthenticated", 401);
     return localAdministrator(request, env);
   }
   const admin = await administratorForRequest(env, request);

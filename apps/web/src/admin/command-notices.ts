@@ -2,6 +2,16 @@ import type { RoomPhaseName } from "@26/shared";
 import type { PlayAction } from "../live/room-api";
 
 export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
+  if (action === "developer-configure") return "Rehearsal settings saved.";
+  if (action === "developer-run")
+    return "Automatic rehearsal started. Keep this tab open for bot traffic.";
+  if (action === "developer-stop") return "Automatic rehearsal paused.";
+  if (action === "developer-jump" || action === "developer-repeat")
+    return "Question reset for a fresh attempt. Its rehearsal answers and points have been cleared.";
+  if (action === "developer-scenario")
+    return "Failure scenario armed. Watch the checks and timeline.";
+  if (action === "developer-bots")
+    return "Bot count saved. Keep Developer tools open to run their connections.";
   if (action === "photo-bias-on")
     return "Photo bias is on. iPhone uploads get the rough display treatment; clean copies are kept.";
   if (action === "photo-bias-off")

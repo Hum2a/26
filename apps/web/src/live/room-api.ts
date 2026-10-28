@@ -13,19 +13,30 @@ import {
   type LobbySnapshot,
   type PlayCommand,
   type TransferIssued,
+  type RehearsalConfig,
 } from "@26/shared";
 import { clientApiHeaders } from "../api/client-key.ts";
 
 export async function createLobby(
   requestId: string,
+  rehearsal?: RehearsalConfig,
 ): Promise<LobbyCreated | { error: string }> {
-  const response = await fetch("/api/rooms", {
-    method: "POST",
-    credentials: "same-origin",
-    headers: clientApiHeaders({ "content-type": "application/json" }),
-    body: JSON.stringify({ requestId }),
-  });
-  return read(response, lobbyCreatedSchema);
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 30_000);
+  try {
+    const response = await fetch("/api/rooms", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: clientApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ requestId, ...(rehearsal ? { rehearsal } : {}) }),
+      signal: controller.signal,
+    });
+    return await read(response, lobbyCreatedSchema);
+  } catch {
+    return { error: "We couldn’t confirm room creation. Retry the same request." };
+  } finally {
+    window.clearTimeout(timer);
+  }
 }
 
 /** Fills an empty room with sample guests, photos, trolls and scores. */
@@ -116,6 +127,13 @@ export async function lookupStage(
 }
 
 export type PlayAction =
+  | "developer-configure"
+  | "developer-run"
+  | "developer-stop"
+  | "developer-jump"
+  | "developer-repeat"
+  | "developer-scenario"
+  | "developer-bots"
   | "start-birthday"
   | "start-kart-rehearsal"
   | "kart-course-on"
@@ -158,6 +176,10 @@ export type PlayAction =
   | "retry-delivery";
 
 export type PlayIntent = {
+  rehearsalConfig?: RehearsalConfig;
+  questionIndex?: number;
+  scenario?: "disconnect" | "late-join" | "deadline-burst" | "host-loss";
+  botCount?: number;
   gameId: string;
   action: PlayAction;
   requestId: string;

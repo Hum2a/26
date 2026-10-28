@@ -5,15 +5,15 @@ import { payloadDigest } from "../src/room/digest.ts";
 
 /**
  * Realtime fan-out harness. Run with `npm run load:realtime`.
- * LOAD_SIZES (default 8,30,80) and LOAD_KART_MS (default 6000) tune it.
+ * LOAD_SIZES (default 10,25,50,75,100) and LOAD_KART_MS (default 6000) tune it.
  * Results print as `LOAD-REALTIME {json}` lines for docs/verification-report.md.
  * This is a local workerd measurement, not production.
  */
 const settings = env as unknown as Record<string, string | undefined>;
-const sizes = (settings.LOAD_SIZES ?? "8,30,80")
+const sizes = (settings.LOAD_SIZES ?? "10,25,50,75,100")
   .split(",")
   .map((value) => Number(value.trim()))
-  .filter((value) => Number.isInteger(value) && value > 0 && value <= 80);
+  .filter((value) => Number.isInteger(value) && value > 0 && value <= 100);
 const kartMs = positive(settings.LOAD_KART_MS, 6_000);
 // Phone control rate during the race. 0 sends no controls, which isolates the tick cost.
 const inputHz = Math.max(0, Math.min(20, Number(settings.LOAD_INPUT_HZ ?? "10") || 0));

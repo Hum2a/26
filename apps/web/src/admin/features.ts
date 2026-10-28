@@ -25,6 +25,19 @@ export type AdminFeature = {
 
 export const adminFeatures: readonly AdminFeature[] = [
   {
+    id: "developer",
+    label: "Developer tools",
+    scope: "room",
+    path: "developer",
+    summary:
+      "Run isolated shows with 100 bots, question controls, real phones, failure scenarios and checks.",
+    rehearsal:
+      "Create a saved rehearsal setup, run the show with ten bots, repeat a question, disconnect bots and inspect the timeline.",
+    owns: ["apps/api/src/developer", "apps/web/src/developer"],
+    status: (snapshot) =>
+      `${snapshot.developerTools?.bots.length ?? 0} bots · ${snapshot.connections?.guests ?? 0} guest connections`,
+  },
+  {
     id: "home",
     label: "Home",
     scope: "global",

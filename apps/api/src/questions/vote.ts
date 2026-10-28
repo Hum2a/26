@@ -999,7 +999,7 @@ function hostRows(
   counts: Map<string, number>,
 ) {
   if (question.kind === "guess" && ballots.length > 0) {
-    return ballots.slice(0, 80).flatMap((ballot) => {
+    return ballots.slice(0, 100).flatMap((ballot) => {
       const candidate = candidates.find(
         (item) => item.candidate_id === ballot.candidate_id,
       );
@@ -1042,7 +1042,7 @@ function hostRows(
         };
       });
   }
-  return candidates.slice(0, 80).flatMap((candidate) => {
+  return candidates.slice(0, 100).flatMap((candidate) => {
     const nickname = nicknameOf(sql, candidate.owner_id);
     if (!nickname || !candidate.owner_id) {
       return [];

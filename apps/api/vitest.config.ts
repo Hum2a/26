@@ -60,6 +60,8 @@ export default defineConfig({
           name: "room",
           include: [
             "test/room.spec.ts",
+            "test/developer-room.spec.ts",
+            "test/rehearsal-room.spec.ts",
             "test/wordle-room.spec.ts",
             "test/party-polish-room.spec.ts",
             "test/kart-room.spec.ts",
@@ -114,6 +116,8 @@ export default defineConfig({
             "test/auth.spec.ts",
             "test/email-design.spec.ts",
             "test/admin-rooms-auth.spec.ts",
+            "test/developer-routes.spec.ts",
+            "test/local-auth-proof.spec.ts",
             "test/credentials.spec.ts",
             "test/schedule.spec.ts",
             "test/quiz-score.spec.ts",

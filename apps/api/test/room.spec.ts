@@ -172,11 +172,11 @@ describe("durable lobby", () => {
     expect(again.players.map((player) => player.nickname)).toEqual(["Amina"]);
   });
 
-  it("stops joining when the room already has 80 players", async () => {
+  it("stops joining when the room already has 100 players", async () => {
     const created = await createRoom();
     const stub = room(created.gameId);
     await runInDurableObject(stub, async (_instance, state) => {
-      for (let index = 0; index < 80; index += 1) {
+      for (let index = 0; index < 100; index += 1) {
         const nickname = `Guest ${index}`;
         state.storage.sql.exec(
           `INSERT INTO player (

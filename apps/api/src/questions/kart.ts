@@ -201,7 +201,7 @@ export class KartInputBuffer {
       )
         return;
     }
-    if (!this.drivers.has(playerId) && this.drivers.size >= 80) return;
+    if (!this.drivers.has(playerId) && this.drivers.size >= 100) return;
     this.drivers.set(
       playerId,
       [...queue, { playerId, raw: parsed.data, at }].slice(-4),

@@ -1,4 +1,9 @@
 import { Buffer } from "node:buffer";
+import { randomBytes } from "node:crypto";
+import {
+  localAdminProof,
+  replaceLocalAdminProof,
+} from "../api/src/room/local-auth-proof.ts";
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import type { ServerResponse } from "node:http";
@@ -21,6 +26,7 @@ import { DEFAULT_THEME_ID, themeDocumentHead } from "./src/theme/themes.ts";
 const clientApiKeyHeader = "x-26-client-key";
 
 const localAuthPrefixes = ["/api/auth", "/api/admin", "/api/dev", "/api/stage"];
+const localAdminProofKey = randomBytes(32).toString("hex");
 const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 const devVarsPath = fileURLToPath(new URL("../api/.dev.vars", import.meta.url));
 
@@ -114,6 +120,11 @@ function localAuthInNode(): Plugin {
 function warmLocalAuth(server: ViteDevServer | PreviewServer, apiEntry: string) {
   server.httpServer?.once("listening", () => {
     const began = Date.now();
+    const address = server.httpServer?.address();
+    const warmWorker =
+      address && typeof address !== "string"
+        ? fetch(`http://127.0.0.1:${address.port}/api/health`).catch(() => undefined)
+        : Promise.resolve();
     void loadLocalApp(apiEntry)
       .then((app) =>
         app.fetch(
@@ -123,8 +134,9 @@ function warmLocalAuth(server: ViteDevServer | PreviewServer, apiEntry: string) 
           localAuthEnv(),
         ),
       )
-      .then(() => {
-        console.info(`Local sign-in ready in ${Date.now() - began}ms.`);
+      .then(async () => {
+        await warmWorker;
+        console.info(`Local sign-in and room API ready in ${Date.now() - began}ms.`);
       })
       .catch((error: unknown) => {
         // The first real request retries the same work and reports any failure.
@@ -174,6 +186,7 @@ function loadLocalApp(apiEntry: string): Promise<LocalApp> {
 
 function attachLocalAuth(server: ViteDevServer | PreviewServer, apiEntry: string) {
   server.middlewares.use(async (req, res, next) => {
+    replaceLocalAdminProof(req);
     const path = (req.url ?? "").split("?")[0] ?? "";
     const handled =
       !path.startsWith("/api/admin/rooms") &&
@@ -183,6 +196,37 @@ function attachLocalAuth(server: ViteDevServer | PreviewServer, apiEntry: string
         (prefix) => path === prefix || path.startsWith(`${prefix}/`),
       );
     if (!handled) {
+      const protectedRoomRequest =
+        path.startsWith("/api/admin/") ||
+        (req.method === "POST" &&
+          (/^\/api\/rooms(?:\/(?:play|transfer|sample|demo-cloud))?$/.test(path) ||
+            /^\/api\/rooms\/[^/]+\/(?:bot-sessions|rehearsal-phone)$/.test(path)));
+      if (protectedRoomRequest) {
+        try {
+          const app = await loadLocalApp(apiEntry);
+          const origin = `http://${req.headers.host ?? "localhost:4173"}`;
+          const session = await app.fetch(
+            new Request(`${origin}/api/admin/session`, {
+              headers: {
+                ...clientApiHeadersForNode(),
+                cookie: req.headers.cookie ?? "",
+              },
+            }),
+            localAuthEnv(),
+          );
+          const body = (await session.json()) as { signedIn?: boolean };
+          if (session.ok && body.signedIn === true) {
+            const proofRequest = new Request(`${origin}${req.url}`, {
+              method: req.method,
+              headers: { cookie: req.headers.cookie ?? "" },
+            });
+            const proof = localAdminProof(localAdminProofKey, proofRequest, Date.now());
+            replaceLocalAdminProof(req, proof);
+          }
+        } catch {
+          // The Worker refuses missing proof. Never turn an auth failure into success.
+        }
+      }
       next();
       return;
     }
@@ -312,7 +356,7 @@ function partyThemes(): Plugin {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   envDir: repoRoot,
   define: {
     "import.meta.env.VITE_CLIENT_API_KEY": JSON.stringify(
@@ -325,7 +369,20 @@ export default defineConfig({
     localAuthInNode(),
     react(),
     tailwindcss(),
-    cloudflare({ configPath: "../api/wrangler.jsonc" }),
+    cloudflare({
+      configPath: "../api/wrangler.jsonc",
+      // Browser checks already use temporary local auth. Keep their rooms and
+      // alarms isolated too; normal development retains its persistent rooms.
+      persistState: !(
+        command === "serve" &&
+        !process.env.CLOUDFLARE_ENV &&
+        process.env.LOCAL_DATABASE_ID === "browser-checks"
+      ),
+      config: (current) =>
+        command === "serve" && current.vars?.APP_ENV === "local"
+          ? { vars: { ...current.vars, LOCAL_ADMIN_PROOF_KEY: localAdminProofKey } }
+          : {},
+    }),
   ],
   server: {
     host: true,
@@ -336,4 +393,4 @@ export default defineConfig({
     port: 4173,
     strictPort: true,
   },
-});
+}));

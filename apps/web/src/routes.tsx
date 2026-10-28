@@ -44,6 +44,12 @@ const routes: RouteObject[] = [
     }),
   },
   {
+    path: "/admin/phone-preview/room/:gameId",
+    lazy: async () => ({
+      Component: (await import("./developer/rehearsal-phone")).RehearsalPhone,
+    }),
+  },
+  {
     path: "/admin/stage-preview/:version/:questionId",
     lazy: async () => ({
       Component: (await import("./admin/question-stage-preview")).QuestionStagePreview,
@@ -102,6 +108,12 @@ const routes: RouteObject[] = [
           Component: (await import("./admin/room-provider")).AdminRoomRoute,
         }),
         children: [
+          {
+            path: "developer",
+            lazy: async () => ({
+              Component: (await import("./developer/developer-page")).DeveloperPage,
+            }),
+          },
           {
             index: true,
             lazy: async () => ({

@@ -1,5 +1,9 @@
 import {
   gameIdSchema,
+  botCountSchema,
+  botSessionsSchema,
+  rehearsalConfigSchema,
+  rehearsalScenarioSchema,
   publicResultsSchema,
   resultsEmailSchema,
   liveConnectionNotFoundMessage,
@@ -53,6 +57,47 @@ import { rejectUnlessRoomCreator } from "./access.ts";
 import { selectedRoomCookie, releasePreviousAdmin } from "./admin-routes.ts";
 
 export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
+  app.post("/api/rooms/:gameId/rehearsal-phone", async (c) => {
+    const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
+    if (rejected) return rejected;
+    const gameId = gameIdSchema.safeParse(c.req.param("gameId")),
+      body = await readJson(c.req.raw),
+      requestId = readRequestId(body);
+    const control = readCredentialCookie(c.req.header("cookie"), "control");
+    if (!gameId.success || !control || !requestId)
+      return roomFailure(400, "invalid", "Open a rehearsal room first.");
+    const result = await room(c.env, gameId.data).openRehearsalPhone({
+      ...control,
+      requestId,
+      nowMs: Date.now(),
+    });
+    if (!result.ok) return roomFailure(400, result.error, result.message);
+    return jsonData({
+      ...guestSessionSchema.parse({
+        gameId: result.gameId,
+        joinCode: result.joinCode,
+        playerId: result.playerId,
+        nickname: result.nickname,
+        stateVersion: result.stateVersion,
+      }),
+      secret: result.secret,
+    });
+  });
+  app.post("/api/rooms/:gameId/bot-sessions", async (c) => {
+    const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
+    if (rejected) return rejected;
+    if (sameOriginRejection(c.req.raw)) return authFailure("forbidden", 403);
+    const gameId = gameIdSchema.safeParse(c.req.param("gameId"));
+    const control = readCredentialCookie(c.req.header("cookie"), "control");
+    if (!gameId.success || !control)
+      return roomFailure(401, "unauthenticated", controlMissingMessage);
+    const result = await room(c.env, gameId.data).openBotSessions({
+      ...control,
+      nowMs: Date.now(),
+    });
+    if (!result.ok) return roomFailure(401, result.error, result.message);
+    return jsonData(botSessionsSchema.parse({ sessions: result.sessions }));
+  });
   app.post("/api/rooms", async (c) => {
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
     if (rejected) {
@@ -60,16 +105,37 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     }
     const body = await readJson(c.req.raw);
     const requestId = readRequestId(body);
+    const rehearsalValue = field(body, "rehearsal");
+    const rehearsal =
+      rehearsalValue === undefined
+        ? undefined
+        : rehearsalConfigSchema.safeParse(rehearsalValue);
+    if (rehearsal && !rehearsal.success)
+      return roomFailure(400, "invalid", "Choose valid rehearsal settings.");
     if (!requestId) {
       return roomFailure(400, "invalid", "That request was not accepted.");
     }
     const created = await codes(c.env).createLobby({
       requestId,
-      digest: await payloadDigest({ action: "create" }),
+      digest: await payloadDigest({
+        action: "create",
+        ...(rehearsal?.success ? { rehearsal: JSON.stringify(rehearsal.data) } : {}),
+      }),
       now: new Date().toISOString(),
     });
     if (!created.ok) {
       return roomFailure(409, created.error, created.message);
+    }
+    if (rehearsal?.success) {
+      const prepared = await room(c.env, created.result.gameId).hostAction({
+        credentialId: created.result.control.credentialId,
+        secret: created.result.control.secret,
+        requestId,
+        nowMs: Date.now(),
+        action: "developer-configure",
+        rehearsalConfig: rehearsal.data,
+      });
+      if (!prepared.ok) return roomFailure(400, prepared.error, prepared.message);
     }
     const headers = new Headers();
     await releasePreviousAdmin(
@@ -291,6 +357,13 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     const requestId = readRequestId(body);
     const action = field(body, "action");
     const commands = [
+      "developer-configure",
+      "developer-run",
+      "developer-stop",
+      "developer-jump",
+      "developer-repeat",
+      "developer-scenario",
+      "developer-bots",
       "start",
       "start-birthday",
       "start-kart-rehearsal",
@@ -751,6 +824,10 @@ function readHostDetails(
   | {
       ok: true;
       fields: {
+        rehearsalConfig?: unknown;
+        questionIndex?: number;
+        scenario?: unknown;
+        botCount?: number;
         playerId?: string;
         otherPlayerId?: string;
         nickname?: string;
@@ -765,6 +842,35 @@ function readHostDetails(
       };
     }
   | { ok: false; message: string } {
+  if (action === "developer-configure") {
+    const config = rehearsalConfigSchema.safeParse(field(body, "rehearsalConfig"));
+    return config.success
+      ? { ok: true, fields: { rehearsalConfig: config.data } }
+      : { ok: false, message: "Choose valid rehearsal settings." };
+  }
+  if (action === "developer-jump") {
+    const index = z
+      .number()
+      .int()
+      .min(0)
+      .max(79)
+      .safeParse(field(body, "questionIndex"));
+    return index.success
+      ? { ok: true, fields: { questionIndex: index.data } }
+      : { ok: false, message: "Choose a question in this room." };
+  }
+  if (action === "developer-scenario") {
+    const scenario = rehearsalScenarioSchema.safeParse(field(body, "scenario"));
+    return scenario.success
+      ? { ok: true, fields: { scenario: scenario.data } }
+      : { ok: false, message: "Choose a rehearsal scenario." };
+  }
+  if (action === "developer-bots") {
+    const count = botCountSchema.safeParse(field(body, "botCount"));
+    return count.success
+      ? { ok: true, fields: { botCount: count.data } }
+      : { ok: false, message: "Choose a whole bot count from 0 to 100." };
+  }
   if (action === "photo-bias-on" || action === "photo-bias-off") {
     return { ok: true, fields: {} };
   }

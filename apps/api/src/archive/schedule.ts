@@ -21,6 +21,8 @@ export type RoomArchiveRow = {
 };
 
 export function queueFinalExport(sql: SqlStorage, now: number): void {
+  if (sql.exec(`SELECT id FROM developer_rehearsal WHERE id=1`).toArray().length)
+    return;
   if (readRoomArchive(sql)) {
     return;
   }

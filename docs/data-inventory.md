@@ -37,6 +37,25 @@ There are three stores: +
 | `counter`      | Rate-limit and sequence counters                                                                                                                           |                                                                           |
 | `schedule_job` | The room's timers and background jobs                                                                                                                      |                                                                           |
 
+### Developer rehearsal
+
+`developer_bot` associates a synthetic player id with a monotonically increasing
+bot number. `developer_tools` holds the population revision and latest 20 count
+changes with server timestamps. These records stay in the room SQLite database;
+only control snapshots expose the bot list and count history. Removed bots are
+revoked rather than deleting their accepted actions, scores or history. The
+existing room retention policy applies.
+
+Bot credentials use the existing `credential` table: only hashes and expiry are
+stored. An authenticated same-origin bootstrap returns ephemeral secrets to the
+developer tab; they are sent in WebSocket protocol headers and never included
+in public snapshots, URLs, downloads or browser storage. Browser memory holds
+bot settings and bounded acknowledgement measurements (latest 1,000 timings)
+for the current run. Bot sockets do not copy the host's device report or consume
+its connection telemetry. Synthetic players remain excluded from guest
+statistics, fun facts and the final guest archive. Downloadable reports contain
+only room/question ids, counts, configuration and aggregate measurements.
+
 ### Answers and scoring
 
 | Table                                                                                                          | Holds                                                                                                                            |
@@ -200,3 +219,41 @@ Each started birthday room stores its frozen private question script in existing
   saving media or room state. Its browser object URLs are revoked on replacement
   or unmount. No new service, bucket or retention job is
   introduced.
+
+## Isolated developer rehearsals (27 October 2026)
+
+- SQLite `developer_rehearsal` holds the validated pack/count/traffic/timing
+  settings, runner state, replay revision, entry times and last failure scenario.
+  `developer_event` holds at most 200 outcome events: time, kind, display nickname,
+  short fixed outcome detail, status, phase and question id. No answer bodies,
+  answer keys, raw diagnostics or credentials are recorded in that timeline.
+- `developer_connection` records the latest connected flag and change time per
+  test player. `developer_outage` records a five-second simulated reconnect block
+  for selected bot ids or the controller. `developer_phone` marks real generated
+  rehearsal phone identities. These rows follow the room's storage lifecycle;
+  only the authenticated control snapshot receives settings, history and checks.
+- Public snapshots receive only `rehearsalRevision`, an integer used to recognise
+  fresh attempts. Resetting a question clears its accepted rehearsal submissions,
+  votes, score entries and runtime state; diagnostic events and other questions
+  remain. Ordinary rooms refuse reset/runner/scenario commands.
+- Rehearsal phones are game-scoped test identities. Their random credentials
+  stay in memory and travel in the existing scoped WebSocket protocol header;
+  hashes use existing credential storage. The existing private join receipt
+  retains the join response, including its credential, for idempotent recovery
+  of the same test phone; this follows the ordinary guest join path. The browser
+  does not persist that credential. The URL contains only a non-secret
+  idempotent take id. These phones do not replace the browser's ordinary guest
+  cookie. Dedicated rehearsal rooms do not queue final archives or email exports.
+- Browser local storage `26-rehearsal-profiles-v1` keeps at most ten named validated
+  setups, each name up to 40 characters. Names and settings contain no credentials
+  or question answers. Delete controls remove them. Downloaded reports contain
+  population, settings, aggregate reply metrics, private rehearsal events and
+  check outcomes; reports are explicitly requested by the administrator.
+- Local Vite development creates an in-memory random signing key for the existing
+  Node administrator check. A ten-second proof binds the method, path and session
+  cookie, avoiding a Worker HTTP loopback. Caller-supplied proof headers are
+  stripped. The key is never a deployed configuration value or browser payload;
+  staging and production always use their real administrator checks.
+- Explicit local browser checks (`LOCAL_DATABASE_ID=browser-checks`, local serve
+  without a deployment target) use temporary Worker storage as well as temporary
+  auth. Normal development keeps persistent storage; remote data is unaffected.

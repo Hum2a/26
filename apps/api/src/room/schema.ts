@@ -1,4 +1,11 @@
 const partyStatements = [
+  `CREATE TABLE IF NOT EXISTS developer_phone (player_id TEXT PRIMARY KEY)`,
+  `CREATE TABLE IF NOT EXISTS developer_rehearsal (id INTEGER PRIMARY KEY CHECK (id=1), payload TEXT NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS developer_event (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, kind TEXT NOT NULL, actor TEXT NOT NULL, detail TEXT NOT NULL, status TEXT NOT NULL, phase TEXT NOT NULL, question_id TEXT)`,
+  `CREATE TABLE IF NOT EXISTS developer_connection (player_id TEXT PRIMARY KEY, connected INTEGER NOT NULL, changed_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS developer_outage (principal TEXT PRIMARY KEY, until_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS developer_bot (player_id TEXT PRIMARY KEY, ordinal INTEGER NOT NULL UNIQUE)`,
+  `CREATE TABLE IF NOT EXISTS developer_tools (id INTEGER PRIMARY KEY CHECK (id = 1), revision INTEGER NOT NULL, history TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS schema_meta (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     version INTEGER NOT NULL

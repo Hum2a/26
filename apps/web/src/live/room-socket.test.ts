@@ -165,8 +165,10 @@ class FakeSocket {
   closed: { code?: number; reason?: string } | null = null;
   private listeners = new Map<string, Set<(event: unknown) => void>>();
   url: string;
-  constructor(url: string) {
+  protocols?: string[];
+  constructor(url: string, protocols?: string[]) {
     this.url = url;
+    this.protocols = protocols;
     FakeSocket.instances.push(this);
   }
   addEventListener(type: string, listener: (event: unknown) => void) {
@@ -214,6 +216,27 @@ describe("openRoomSocket liveness", () => {
       onConnection: vi.fn(),
     });
   }
+
+  it("puts bot credentials only in the subprotocol and does not report the host device as a bot", () => {
+    const botSession = { playerId: crypto.randomUUID(), secret: "x".repeat(43) };
+    const client = openRoomSocket({
+      gameId: "ABCDEFGH",
+      role: "guest",
+      botSession,
+      onSnapshot: vi.fn(),
+      onAck: vi.fn(),
+      onConnection: vi.fn(),
+      onReplaced: vi.fn(),
+    });
+    const socket = FakeSocket.instances[0]!;
+    expect(socket.protocols).toEqual([
+      `26-bot.${botSession.playerId}.${botSession.secret}`,
+    ]);
+    expect(socket.url).not.toContain(botSession.secret);
+    socket.open();
+    expect(socket.sent.some((message) => message.includes('"device"'))).toBe(false);
+    client.close();
+  });
 
   it("replays a recovery with its original request id after reconnecting", () => {
     const client = open("guest");

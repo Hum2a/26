@@ -7,6 +7,7 @@ import { JoinMark } from "../lobby/join-mark";
 import { EntryNotice } from "../ui/entry-frame";
 import { createLobby, seedSampleRoom } from "../live/room-api";
 import { listRooms, readCurrentRoom } from "./rooms-api";
+import { RehearsalSetup } from "../developer/rehearsal-setup";
 import { useAdminRoom } from "./room-provider";
 
 export function RoomsPage({ overview = false }: { overview?: boolean }) {
@@ -86,6 +87,7 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
         Pick up where you left off, or open a fresh lobby for the guests. Creating or
         switching rooms selects one room for this browser, including its stage access.
       </p>
+      <RehearsalSetup />
       <div className="admin-actions">
         <Button disabled={busy || loading} onClick={() => void create()}>
           {busy ? "Working…" : "Create a lobby"}
@@ -171,7 +173,8 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
  */
 function EverythingGrid({ roomId }: { roomId: string | null }) {
   const listed = adminFeatures.filter(
-    (feature) => feature.id !== "home" && feature.id !== "rooms" && feature.id !== "overview",
+    (feature) =>
+      feature.id !== "home" && feature.id !== "rooms" && feature.id !== "overview",
   );
   return (
     <section aria-label="Everything you can manage" className="grid gap-3">
@@ -188,20 +191,33 @@ function EverythingGrid({ roomId }: { roomId: string | null }) {
             <>
               <strong>{feature.label}</strong>
               <span className="admin-feature-status">
-                {feature.scope === "global" ? "Any time" : roomId ? "This room" : "Open a room to use this"}
+                {feature.scope === "global"
+                  ? "Any time"
+                  : roomId
+                    ? "This room"
+                    : "Open a room to use this"}
               </span>
               <span>{feature.summary}</span>
-              <span className="admin-feature-rehearse">Try it: {feature.rehearsal}</span>
+              <span className="admin-feature-rehearse">
+                Try it: {feature.rehearsal}
+              </span>
             </>
           );
           return (
             <li key={feature.id}>
               {available ? (
-                <Link to={featurePath(feature, roomId ?? undefined)} className="admin-feature-card">
+                <Link
+                  to={featurePath(feature, roomId ?? undefined)}
+                  className="admin-feature-card"
+                >
                   {body}
                 </Link>
               ) : (
-                <div className="admin-feature-card" aria-disabled="true" data-disabled="">
+                <div
+                  className="admin-feature-card"
+                  aria-disabled="true"
+                  data-disabled=""
+                >
                   {body}
                 </div>
               )}
@@ -236,9 +252,9 @@ function SampleSeed({ gameId }: { gameId: string }) {
     <section className="admin-current" aria-label="Sample data">
       <h2>Preview with sample data</h2>
       <p>
-        See what every page looks like during a party: 12 sample guests, scores, troll history,
-        connection stats and photo wall posts waiting, queued and shown. Use a spare room: sample
-        guests stay in this room.
+        See what every page looks like during a party: 12 sample guests, scores, troll
+        history, connection stats and photo wall posts waiting, queued and shown. Use a
+        spare room: sample guests stay in this room.
       </p>
       <div className="admin-actions">
         <Button disabled={state !== "idle"} onClick={() => setConfirming(true)}>
@@ -257,8 +273,8 @@ function SampleSeed({ gameId }: { gameId: string }) {
         }}
       >
         <p>
-          This adds 12 sample guests to this room. They can't be removed one by one, so only do
-          this in a room you are using to preview.
+          This adds 12 sample guests to this room. They can't be removed one by one, so
+          only do this in a room you are using to preview.
         </p>
       </ConfirmDialog>
       {message ? <p role="status">{message}</p> : null}
@@ -356,13 +372,20 @@ export function RoomOverview() {
             .filter((feature) => feature.id !== "overview")
             .map((feature) => (
               <li key={feature.id}>
-                <Link to={featurePath(feature, snapshot.gameId)} className="admin-feature-card">
+                <Link
+                  to={featurePath(feature, snapshot.gameId)}
+                  className="admin-feature-card"
+                >
                   <strong>{feature.label}</strong>
                   {feature.status ? (
-                    <span className="admin-feature-status">{feature.status(snapshot)}</span>
+                    <span className="admin-feature-status">
+                      {feature.status(snapshot)}
+                    </span>
                   ) : null}
                   <span>{feature.summary}</span>
-                  <span className="admin-feature-rehearse">Try it: {feature.rehearsal}</span>
+                  <span className="admin-feature-rehearse">
+                    Try it: {feature.rehearsal}
+                  </span>
                 </Link>
               </li>
             ))}
