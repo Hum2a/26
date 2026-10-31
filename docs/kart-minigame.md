@@ -2,7 +2,30 @@
 
 [Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
 
-Open **Admin → Kart** (`/admin/kart`) for direct access. **Drive** embeds solo practice, with **Open kart full screen** for a separate tab. **Phone & stage** opens the existing layout comparison without searching question packs. **Multiplayer** links to rooms and explains the current connected-race rehearsal. Solo driving and layout previews do not start a room race.
+Open **Admin → Kart** (`/admin/kart`) for direct access. **Create kart lobby** makes a fresh multiplayer room for just the real Mario circuit. **Drive** embeds solo practice, with **Open kart full screen** for a separate tab. **Phone & stage** opens the existing layout comparison. Solo driving and layout previews do not start a room race.
+
+## Kart-only lobbies
+
+Choose **Create kart lobby**, share its normal guest link/code and connect the stage.
+When everyone is in, choose **Start kart race** in Live controls, then advance the
+get-ready and prompt beats. The race is one lap with a three-minute server limit,
+up to 80 racers, the normal pause/resume and course switches, and saved race results.
+After the race, reveal → scores → final → podium uses the existing scheduler;
+kart-only rooms skip the birthday phone-facts interlude.
+
+This is a real room mode available in deployed environments, separate from the
+development-only ring rehearsal. Creation freezes the existing `kart-sprint`
+question in that room, without saving or replacing the birthday running order.
+The lobby cannot be switched into a quiz or developer rehearsal. Ordinary rooms
+keep their existing start options. A retry reuses the same creation request;
+reopening a room preserves its type and frozen script.
+
+The grid freezes when Start kart race is accepted. Late arrivals may join and
+watch, but cannot enter that race. Create a fresh kart lobby for another race;
+this version does not restart a completed race in place. To rehearse without
+guests, join from a private second browser tab and connect the stage from the
+host browser. Players, removal, recovery, joining controls and score tools remain
+on their existing Admin pages.
 
 Each phone has its own playable 3D chase view, touch controls and local driver HUD. The TV is a whole-room spectator map and live scoreboard for up to 80 players, with five leaders pinned and five more drivers cycling every four seconds. All public kart positions appear on the map; only the top three get number labels to keep the map readable. A phone can switch to a lightweight personal map without changing controls or race authority. The sprint ends after one lap per driver or at the server's three-minute birthday deadline (45 seconds for the legacy ring rehearsal). Finished times rank ahead of DNFs; equal times share a place. DNF scores zero. Finisher points are `round(question.points × (participants − place + 1) / participants)`.
 

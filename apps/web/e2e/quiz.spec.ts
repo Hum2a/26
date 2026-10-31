@@ -37,11 +37,10 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
   await expect(stage.getByRole("button", { name: "Pause" })).toHaveCount(0);
 
   await join(amina, joinCode, "Amina");
-  await join(await bilalContext.newPage(), joinCode, "Bilal");
+  const bilal = await bilalContext.newPage();
   await join(await chenContext.newPage(), joinCode, "Chen");
-  const bilal = bilalContext.pages()[0];
   const chen = chenContext.pages()[0];
-  if (!bilal || !chen) {
+  if (!chen) {
     throw new Error("The guest pages did not open.");
   }
 
@@ -49,6 +48,20 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
   await expect(admin.getByText("The illustrative demo has started.")).toBeVisible();
   await expect(stage.getByRole("heading", { name: "Get ready" })).toBeVisible();
   await advanceUntil(admin, stage, "Answers are open");
+  // A late arrival joins the real phone renderer during an existing question.
+  // Pause while the new phone loads, then let that guest answer normally.
+  await admin.getByRole("button", { name: "Pause", exact: true }).click();
+  await expect(stage.getByText("Paused.", { exact: true })).toBeVisible();
+  await bilal.goto(`/j/${joinCode}`);
+  await bilal.getByLabel("Nickname").fill("Bilal");
+  await bilal.getByRole("button", { name: "Join", exact: true }).click();
+  await expect(bilal.locator(".skin-status[role=status]")).toContainText(
+    "The game is paused.",
+  );
+  await admin.getByRole("button", { name: "Resume", exact: true }).click();
+  await expect(bilal.locator(".skin-status[role=status]")).toContainText(
+    "Choose an answer.",
+  );
   await expect(amina.locator(".skin-status[role=status]")).toContainText(
     "Choose an answer.",
   );
@@ -362,21 +375,22 @@ async function join(page: Page, code: string, nickname: string) {
 }
 
 async function advanceUntil(admin: Page, stage: Page, text: string) {
+  const target =
+    text === "Podium"
+      ? stage.getByRole("heading", { name: text, exact: true })
+      : stage.getByText(text);
   for (let step = 0; step < 40; step += 1) {
-    if (
-      await stage
-        .getByText(text)
-        .isVisible()
-        .catch(() => false)
-    ) {
+    if (await target.isVisible().catch(() => false)) {
       return;
     }
     const phase = stage.locator("[data-phase-motion]");
     const previous = (await phase.getAttribute("data-phase")) ?? "";
+    const previousContent = await phase.innerText();
     await Promise.all([
       admin.waitForResponse(
         (response) =>
           response.url().includes("/api/rooms/play") && response.status() === 200,
+        { timeout: 15_000 },
       ),
       (async () => {
         const finish = admin.getByRole("button", { name: "Finish quiz", exact: true });
@@ -387,12 +401,21 @@ async function advanceUntil(admin: Page, stage: Page, text: string) {
             .getByRole("button", { name: "Finish quiz", exact: true })
             .click();
         } else
-          await admin.getByRole("button", { name: "Advance", exact: true }).click();
+          await admin
+            .getByRole("button", {
+              name: /^(Advance|Next fact|Show the podium)$/,
+            })
+            .click();
       })(),
     ]);
-    await expect(phase).not.toHaveAttribute("data-phase", previous, { timeout: 5_000 });
+    if (previous === "facts")
+      await expect(phase).not.toHaveText(previousContent, { timeout: 5_000 });
+    else
+      await expect(phase).not.toHaveAttribute("data-phase", previous, {
+        timeout: 5_000,
+      });
   }
-  await expect(stage.getByText(text)).toBeVisible();
+  await expect(target).toBeVisible();
 }
 
 async function closeAll(...contexts: BrowserContext[]) {

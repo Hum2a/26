@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { beforeEach, expect, it, vi } from "vitest";
 vi.mock("./sections-api", () => ({ readContent: vi.fn() }));
+vi.mock("../live/room-api", () => ({ createLobby: vi.fn() }));
 vi.mock("./phone-preview-panel", () => ({
   PhonePreviewPanel: ({
     version,
@@ -16,11 +17,25 @@ vi.mock("./phone-preview-panel", () => ({
   ),
 }));
 import { readContent } from "./sections-api";
+import { createLobby } from "../live/room-api";
 import { AdminKartPage } from "./kart-page";
 import { AdminShell } from "../ui/admin-shell";
 import { safeAdminReturnTo } from "./admin-return";
 
 beforeEach(() => vi.resetAllMocks());
+
+it("creates only a kart lobby and reuses the request after uncertain creation", async () => {
+  vi.mocked(createLobby).mockResolvedValue({ error: "Connection lost" });
+  mount();
+  fireEvent.click(screen.getByRole("button", { name: "Create kart lobby" }));
+  await screen.findByText("Connection lost");
+  fireEvent.click(screen.getByRole("button", { name: "Retry kart lobby" }));
+  await waitFor(() => expect(createLobby).toHaveBeenCalledTimes(2));
+  expect(vi.mocked(createLobby).mock.calls[0]).toEqual(
+    vi.mocked(createLobby).mock.calls[1],
+  );
+  expect(createLobby).toHaveBeenCalledWith(expect.any(String), undefined, "kart");
+});
 
 function mount(path = "/admin/kart") {
   return render(
@@ -100,7 +115,7 @@ it("reports unavailable layouts and retries without inventing a race or a questi
   expect(screen.queryByText(/Shared preview/)).toBeNull();
 });
 
-it("keeps room actions in the existing controls and explains the birthday race", async () => {
+it("keeps race actions in the existing room controls and explains multiplayer", async () => {
   mount();
   fireEvent.click(screen.getByRole("button", { name: "Multiplayer" }));
   await screen.findByRole("heading", { name: "Race with phones" });
@@ -108,7 +123,7 @@ it("keeps room actions in the existing controls and explains the birthday race",
   expect(screen.getByRole("link", { name: "Open rooms →" }).getAttribute("href")).toBe(
     "/admin/rooms",
   );
-  expect(screen.getByText(/birthday race uses this imported circuit/)).toBeTruthy();
+  expect(screen.getByText(/multiplayer race uses this imported circuit/)).toBeTruthy();
   expect(readContent).not.toHaveBeenCalled();
 });
 

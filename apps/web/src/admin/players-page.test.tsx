@@ -15,6 +15,35 @@ import {
   update,
 } from "./controls.test-support";
 beforeEach(() => setupControls());
+it("opens and closes entry through receipted player commands and shows private history", async () => {
+  setupControls({ ...playingFixture, admission: { open: true, history: [] } });
+  await mountControls(<PlayersPage />);
+  fireEvent.click(screen.getByRole("button", { name: "Close joining" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "close-joining" }),
+    ),
+  );
+  update({
+    ...playingFixture,
+    admission: { open: false, history: [{ open: false, at: 1_700_000_000_000 }] },
+  });
+  expect(screen.getByText(/Closed by host/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Open joining" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "open-joining" }),
+    ),
+  );
+});
+
+it("does not guess entry status when the host projection is unavailable", async () => {
+  await mountControls(<PlayersPage />);
+  expect(
+    (screen.getByRole("button", { name: "Open joining" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+});
 async function select() {
   await mountControls(<PlayersPage />);
   fireEvent.click(screen.getByRole("button", { name: `Select Amina, ${playerId}` }));

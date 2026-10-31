@@ -64,6 +64,8 @@ export function GuestPage({
   const [busy, setBusy] = useState(false);
   const [checkingSession, setCheckingSession] = useState(!rehearsalSession);
   const joinRequest = useRef<{ payload: string; requestId: string } | null>(null);
+  const transferRequest = useRef<{ payload: string; requestId: string } | null>(null);
+  const [sessionGeneration, setSessionGeneration] = useState(0);
   const [selectedId, setSelectedId] = useState<string>();
   const [pending, setPending] = useState(false);
   const [rejection, setRejection] = useState<string>();
@@ -264,7 +266,7 @@ export function GuestPage({
       socketRef.current = null;
       socket.close();
     };
-  }, [gameId, playerId, rehearsalCredential]);
+  }, [gameId, playerId, rehearsalCredential, sessionGeneration]);
 
   useEffect(() => {
     function onLeave(event: BeforeUnloadEvent) {
@@ -301,9 +303,13 @@ export function GuestPage({
       requestId: joinRequest.current.requestId,
     }).catch(() => ({
       error: "We couldn’t join the room. Check your connection and try again.",
+      uncertain: true,
     }));
     setBusy(false);
     if ("error" in joined) {
+      // A refused attempt is finished. A later tap must be able to join after
+      // the host reopens entry; uncertain network retries keep the same receipt.
+      if (joined.uncertain === false) joinRequest.current = null;
       if (joined.error.toLowerCase().includes("nickname")) {
         setNicknameError(joined.error);
       } else {
@@ -320,21 +326,42 @@ export function GuestPage({
 
   async function onRedeem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!session) {
+    if (busy || checkingSession) return;
+    const joinCode = session?.joinCode ?? roomCodeFromQuery(linked ?? code);
+    if (!joinCode) {
+      setNotice("Enter the room’s join code before using your private transfer code.");
       return;
     }
+    const codeToRedeem = transferCode.trim().toUpperCase();
+    const payload = JSON.stringify([joinCode, codeToRedeem]);
+    if (transferRequest.current?.payload !== payload)
+      transferRequest.current = { payload, requestId: crypto.randomUUID() };
     setBusy(true);
     const redeemed = await redeemTransfer({
-      joinCode: session.joinCode,
-      code: transferCode,
-      requestId: crypto.randomUUID(),
-    });
+      joinCode,
+      code: codeToRedeem,
+      requestId: transferRequest.current.requestId,
+    }).catch(() => ({
+      error:
+        "We couldn’t confirm the phone transfer. Check your connection and try again.",
+      uncertain: true,
+    }));
     setBusy(false);
     if ("error" in redeemed) {
+      if (redeemed.uncertain === false) transferRequest.current = null;
       setNotice(redeemed.error);
       return;
     }
+    transferRequest.current = null;
+    setTransferCode("");
+    setSnapshot(undefined);
+    setPending(false);
+    pendingRequest.current = null;
+    inFlight.current = false;
     setSession(redeemed);
+    // Recovery may keep both IDs. Replace the existing socket after the cookie
+    // changes, so the recovered phone authenticates with its new credential.
+    setSessionGeneration((generation) => generation + 1);
     setNotice(`You are ${redeemed.nickname} on this phone.`);
   }
 
@@ -479,6 +506,14 @@ export function GuestPage({
             {busy ? "Joining…" : "Join"}
           </Button>
         </form>
+        <div className="mt-5">
+          <TransferPhone
+            busy={busy || checkingSession}
+            code={transferCode}
+            onCode={setTransferCode}
+            onSubmit={(event) => void onRedeem(event)}
+          />
+        </div>
         <div className="mt-5">
           <Dialog
             title="About this game"

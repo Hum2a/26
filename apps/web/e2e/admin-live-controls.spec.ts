@@ -23,6 +23,19 @@ test("live desk and player tools keep actions deliberate and private across devi
   const guest = await guestContext.newPage();
   await guest.goto(`/j/${code}`);
   await guest.getByLabel("Nickname").fill("Amina");
+  await page.getByRole("link", { name: "Players", exact: true }).click();
+  await page.getByRole("button", { name: "Close joining", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Open joining", exact: true }),
+  ).toBeEnabled();
+  await guest.getByRole("button", { name: "Join", exact: true }).click();
+  await expect(
+    guest.getByText("The host has closed joining. Ask them to reopen it."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Open joining", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Close joining", exact: true }),
+  ).toBeEnabled();
   await guest.getByRole("button", { name: "Join", exact: true }).click();
   await expect(guest.getByRole("heading", { name: "In the lobby" })).toBeVisible();
   const stage = await context.newPage();
@@ -73,7 +86,29 @@ test("live desk and player tools keep actions deliberate and private across devi
   await expect(
     page.getByRole("heading", { name: "Private recovery code" }),
   ).toBeVisible();
+  const recoveryCode = (
+    await page.locator(".admin-private-code .admin-side-code").innerText()
+  ).trim();
   await page.getByRole("button", { name: "Hide code" }).click();
+  await page.getByRole("button", { name: "Close joining", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Open joining", exact: true }),
+  ).toBeEnabled();
+  const recoveredContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+  });
+  const recovered = await recoveredContext.newPage();
+  await recovered.goto(`/j/${code}`);
+  await recovered.getByRole("button", { name: "Changed phones?" }).click();
+  await recovered.getByLabel("Transfer code").fill(transferCode);
+  await recovered.getByRole("button", { name: "Use this phone" }).click();
+  await expect(recovered.getByText(/already been used|not valid/)).toBeVisible();
+  await recovered.getByLabel("Transfer code").fill(recoveryCode);
+  await recovered.getByRole("button", { name: "Use this phone" }).click();
+  await expect(recovered.getByRole("heading", { name: "In the lobby" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Select Mina,/ })).toHaveCount(1);
+  await recovered.reload();
+  await expect(recovered.getByRole("heading", { name: "In the lobby" })).toBeVisible();
 
   await page.getByRole("button", { name: "Score", exact: true }).click();
   await expect(page.getByRole("button", { name: "Review score change" })).toBeVisible();
@@ -162,8 +197,11 @@ test("live desk and player tools keep actions deliberate and private across devi
   ).toBeVisible();
   const publicText = stageFrames.join("\n");
   expect(publicText).not.toContain("adminPlayers");
+  expect(publicText).not.toContain('"admission"');
   expect(publicText).not.toContain("Private operator correction");
   expect(publicText).not.toContain(transferCode);
+  expect(publicText).not.toContain(recoveryCode);
   expect(publicText).not.toContain("presenterNotes");
   await guestContext.close();
+  await recoveredContext.close();
 });

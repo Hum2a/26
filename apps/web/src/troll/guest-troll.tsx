@@ -1,5 +1,6 @@
 import { withClientApiKey } from "../api/client-key";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import type { LobbySnapshot } from "@26/shared";
 import { uploadVoiceClip } from "../media/media-transfer";
 import { VoiceTake } from "../media/voice-take";
@@ -146,7 +147,9 @@ function TrollOverlay({
     );
   }
   if (isScreenTroll(effect.kind)) {
-    return (
+    // Escape the phone scroll area's stacking context: the answer dock must
+    // never cover an incoming effect's escape controls.
+    return createPortal(
       <ScreenTroll
         kind={effect.kind}
         label={effect.assetLabel}
@@ -155,7 +158,8 @@ function TrollOverlay({
         from={sender}
         seed={seedFrom(effect.effectId)}
         others={others}
-      />
+      />,
+      document.body,
     );
   }
   return (

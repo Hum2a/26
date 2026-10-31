@@ -76,9 +76,9 @@ export const adminFeatures: readonly AdminFeature[] = [
     scope: "global",
     path: "kart",
     summary:
-      "The kart engine, adaptive graphics, turbo tiers, course features and multiplayer notes.",
+      "Create a kart-only lobby, drive the real engine and inspect phone/stage layouts and course features.",
     rehearsal:
-      "Drive the real engine; compare Auto/High/Low and rehearse 16/21-player graphics inside Course set-up, plus boosts, ramps and gliding.",
+      "Create a kart-only lobby and join from a private second tab, or drive solo and compare graphics, boosts, ramps and gliding.",
     owns: ["apps/web/src/kart"],
   },
   {
@@ -125,8 +125,10 @@ export const adminFeatures: readonly AdminFeature[] = [
     label: "Players",
     scope: "room",
     path: "players",
-    summary: "Rename, swap, kick, recover, adjust scores and move phones.",
-    rehearsal: "Join from a second browser tab to try each player action.",
+    summary:
+      "Open or close joining, rename, remove, recover, adjust scores and move phones.",
+    rehearsal:
+      "Close joining, try the join link in a private browser, reopen it and join mid-question; try recovery and phone transfer with that player.",
     owns: ["apps/api/src/credentials"],
     status: (snapshot) =>
       `${snapshot.players.length} players · ${snapshot.connections?.guests ?? 0} phones connected`,

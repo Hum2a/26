@@ -21,7 +21,7 @@
     "@26/emails": "0.0.0"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "1.2.3",
+    "@cloudflare/vitest-plugin": "1.4.11",
     "typescript": "6.0.3",
     "vitest": "4.1.11",
     "wrangler": "4.136.3"

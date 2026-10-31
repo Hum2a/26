@@ -28,6 +28,7 @@ export function LiveConsole() {
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const locked = busy || connection !== "open" || command.retryable;
   const phase = snapshot.phase;
+  const kartLobby = Boolean(snapshot.kartLobby);
   const playing = phase !== "lobby" && phase !== "podium";
   const canHide = revealPhases.has(phase);
   const context = `${phase}:${snapshot.play?.question.id ?? "lobby"}`;
@@ -43,8 +44,12 @@ export function LiveConsole() {
           : phase === "facts"
             ? "Skip to the podium?"
             : phase === "final"
-              ? "Finish the quiz?"
-              : "Finish after this question?",
+              ? kartLobby
+                ? "Show the podium?"
+                : "Finish the quiz?"
+              : kartLobby
+                ? "Finish after this race?"
+                : "Finish after this question?",
       detail:
         action === "skip"
           ? "The server will skip the current question. Guests will move to the next step; this cannot be undone from this screen."
@@ -59,8 +64,12 @@ export function LiveConsole() {
           : phase === "facts"
             ? "Skip to the podium"
             : phase === "final"
-              ? "Finish quiz"
-              : "Finish after this question",
+              ? kartLobby
+                ? "Show podium"
+                : "Finish quiz"
+              : kartLobby
+                ? "Finish after this race"
+                : "Finish after this question",
     });
   }
   useEffect(() => {
@@ -137,7 +146,9 @@ export function LiveConsole() {
       : primary === "resume"
         ? "Resume"
         : primary === "finish"
-          ? "Finish quiz"
+          ? kartLobby
+            ? "Show podium"
+            : "Finish quiz"
           : phase === "facts"
             ? onLastFact
               ? "Show the podium"
@@ -170,18 +181,32 @@ export function LiveConsole() {
       ) : (
         <p className="admin-connection">Connected to the lobby.</p>
       )}
+      {kartLobby ? (
+        <section className="admin-current" aria-label="Kart lobby details">
+          <h2>Kart-only lobby</h2>
+          <p>Mario circuit · one lap · three-minute limit · up to 80 racers.</p>
+          <p>
+            Created {new Date(snapshot.kartLobby!.createdAt).toLocaleString("en-GB")}.
+            The starting grid freezes when you start. Late arrivals watch this race;
+            create a fresh kart lobby for another race.
+          </p>
+        </section>
+      ) : null}
       <div className="admin-live-actions" aria-label="Live actions">
         {phase === "lobby" ? (
           <Button
             disabled={locked}
             onClick={() =>
-              void execute({ action: "start-birthday" }, "Start birthday game")
+              void execute(
+                { action: kartLobby ? "start-kart" : "start-birthday" },
+                kartLobby ? "Start kart race" : "Start birthday game",
+              )
             }
           >
-            Start birthday game
+            {kartLobby ? "Start kart race" : "Start birthday game"}
           </Button>
         ) : null}
-        {import.meta.env.DEV && phase === "lobby" ? (
+        {import.meta.env.DEV && phase === "lobby" && !kartLobby ? (
           <Button
             variant="secondary"
             disabled={locked}
@@ -195,7 +220,7 @@ export function LiveConsole() {
             Start local kart rehearsal
           </Button>
         ) : null}
-        {phase !== "podium" ? (
+        {phase !== "podium" && !(kartLobby && phase === "lobby") ? (
           <Button
             variant={primary === "start" ? "secondary" : "primary"}
             disabled={locked}
@@ -207,9 +232,9 @@ export function LiveConsole() {
           >
             {primaryLabel}
           </Button>
-        ) : (
-          <p>The quiz is complete.</p>
-        )}
+        ) : phase === "podium" ? (
+          <p>{kartLobby ? "The race is complete." : "The quiz is complete."}</p>
+        ) : null}
         {playing && !snapshot.paused ? (
           <Button
             variant="secondary"
@@ -219,7 +244,7 @@ export function LiveConsole() {
             Pause
           </Button>
         ) : null}
-        {phase === "lobby" ? (
+        {phase === "lobby" && !kartLobby ? (
           <Button
             variant="secondary"
             disabled={locked}

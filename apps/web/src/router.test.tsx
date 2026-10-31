@@ -2,13 +2,17 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { appRoutes } from "./routes";
-import { joinLobby, resumeGuest } from "./live/room-api";
+import { joinLobby, redeemTransfer, resumeGuest } from "./live/room-api";
 import { openRoomSocket } from "./live/room-socket";
 
 vi.mock("./admin/admin-api", () => ({
   fetchAdminSession: vi.fn(async () => ({ signedIn: false })),
 }));
-vi.mock("./live/room-api", () => ({ resumeGuest: vi.fn(), joinLobby: vi.fn() }));
+vi.mock("./live/room-api", () => ({
+  resumeGuest: vi.fn(),
+  joinLobby: vi.fn(),
+  redeemTransfer: vi.fn(),
+}));
 vi.mock("./live/room-socket", () => ({
   openRoomSocket: vi.fn(() => ({ close: vi.fn() })),
 }));
@@ -43,6 +47,7 @@ async function mount(path: string) {
 beforeEach(() => {
   vi.mocked(resumeGuest).mockReset().mockResolvedValue(undefined);
   vi.mocked(joinLobby).mockReset();
+  vi.mocked(redeemTransfer).mockReset();
   vi.mocked(openRoomSocket).mockClear();
   localStorage.clear();
 });
@@ -78,6 +83,87 @@ it("recovers a guest on /play even with a conflicting QR room", async () => {
   expect(joinLobby).not.toHaveBeenCalled();
   expect(openRoomSocket).toHaveBeenCalledWith(
     expect.objectContaining({ gameId: "ABCDEFGH", role: "guest" }),
+  );
+});
+
+it("starts a fresh attempt after a definite refusal when joining reopens", async () => {
+  vi.mocked(joinLobby).mockResolvedValue({
+    error: "The host has closed joining.",
+    uncertain: false,
+  });
+  await mount("/join");
+  await waitFor(() =>
+    expect(
+      (screen.getByRole("button", { name: "Join" }) as HTMLButtonElement).disabled,
+    ).toBe(false),
+  );
+  fireEvent.change(screen.getByLabelText("Join code"), { target: { value: "ABCDEF" } });
+  fireEvent.change(screen.getByLabelText("Nickname"), { target: { value: "Amina" } });
+  fireEvent.click(screen.getByRole("button", { name: "Join" }));
+  await screen.findByText("The host has closed joining.");
+  const first = vi.mocked(joinLobby).mock.calls[0]![0].requestId;
+  fireEvent.click(screen.getByRole("button", { name: "Join" }));
+  await waitFor(() => expect(joinLobby).toHaveBeenCalledTimes(2));
+  expect(vi.mocked(joinLobby).mock.calls[1]![0].requestId).not.toBe(first);
+});
+
+const recoveredSession = {
+  gameId: "ABCDEFGH",
+  playerId: "player-1",
+  nickname: "Amina",
+  joinCode: "ABCDEF",
+  stateVersion: 3,
+};
+
+it("lets an unjoined phone recover a player without creating another identity", async () => {
+  vi.mocked(redeemTransfer).mockResolvedValue(recoveredSession);
+  await mount("/j/ABCDEF");
+  fireEvent.click(await screen.findByRole("button", { name: "Changed phones?" }));
+  fireEvent.change(screen.getByLabelText("Transfer code"), {
+    target: { value: "recover1" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Use this phone" }));
+  await waitFor(() =>
+    expect(redeemTransfer).toHaveBeenCalledWith(
+      expect.objectContaining({ joinCode: "ABCDEF", code: "RECOVER1" }),
+    ),
+  );
+  await waitFor(() =>
+    expect(openRoomSocket).toHaveBeenCalledWith(
+      expect.objectContaining({ gameId: "ABCDEFGH", role: "guest" }),
+    ),
+  );
+  expect(joinLobby).not.toHaveBeenCalled();
+});
+
+it("replaces the socket when recovery keeps the same player identity", async () => {
+  vi.mocked(resumeGuest).mockResolvedValue(recoveredSession);
+  vi.mocked(redeemTransfer).mockResolvedValue(recoveredSession);
+  await mount("/play");
+  await waitFor(() => expect(openRoomSocket).toHaveBeenCalledTimes(1));
+  const oldSocket = vi.mocked(openRoomSocket).mock.results[0]!.value;
+  fireEvent.click(screen.getByRole("button", { name: "Changed phones?" }));
+  fireEvent.change(screen.getByLabelText("Transfer code"), {
+    target: { value: "RECOVER1" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Use this phone" }));
+  await waitFor(() => expect(openRoomSocket).toHaveBeenCalledTimes(2));
+  expect(oldSocket.close).toHaveBeenCalled();
+});
+
+it("keeps the transfer request after an uncertain response and releases its controls", async () => {
+  vi.mocked(redeemTransfer).mockRejectedValue(new Error("offline"));
+  await mount("/j/ABCDEF");
+  fireEvent.click(await screen.findByRole("button", { name: "Changed phones?" }));
+  fireEvent.change(screen.getByLabelText("Transfer code"), {
+    target: { value: "RECOVER1" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Use this phone" }));
+  await screen.findByText(/We couldn’t confirm the phone transfer/);
+  fireEvent.click(screen.getByRole("button", { name: "Use this phone" }));
+  await waitFor(() => expect(redeemTransfer).toHaveBeenCalledTimes(2));
+  expect(vi.mocked(redeemTransfer).mock.calls[1]![0]).toEqual(
+    vi.mocked(redeemTransfer).mock.calls[0]![0],
   );
 });
 

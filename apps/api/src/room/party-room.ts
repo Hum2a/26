@@ -12,6 +12,8 @@ import {
   readKart,
 } from "../questions/kart.ts";
 import { readRoundState } from "../questions/round-state.ts";
+import { readAdmission } from "./admission.ts";
+import { assertKartLobbyAction, freezeKartLobby, readKartLobby } from "./kart-lobby.ts";
 import { writeRoundState } from "../questions/round-state.ts";
 import { freezeBirthdayOrder } from "../questions/birthday-order.ts";
 import { DurableObject } from "cloudflare:workers";
@@ -377,6 +379,7 @@ export class PartyRoom extends DurableObject<Env> {
     gameId: string;
     joinCode: string;
     now: string;
+    kind?: "party" | "kart";
   }): Promise<LobbyBootstrap> {
     const gameId = input.gameId.toUpperCase();
     const joinCode = input.joinCode.toUpperCase();
@@ -385,6 +388,9 @@ export class PartyRoom extends DurableObject<Env> {
       return this.toBootstrap(existing);
     }
     const now = new Date(input.now);
+    if (input.kind !== undefined && input.kind !== "party" && input.kind !== "kart")
+      throw new Error("Choose a valid lobby type.");
+    const kartScript = input.kind === "kart" ? await freezeKartLobby() : undefined;
     const control = await this.prepareCredential("control", now);
     const presentation = await this.prepareCredential("presentation", now);
     const digest = await payloadDigest({ gameId });
@@ -399,10 +405,21 @@ export class PartyRoom extends DurableObject<Env> {
           ) VALUES (?, ?, 'lobby', ?, ?, 1, ?)`,
           gameId,
           joinCode,
-          pinnedQuestionSetVersion,
+          kartScript?.version ?? pinnedQuestionSetVersion,
           pinnedScoringVersion,
           input.now,
         );
+        if (kartScript) {
+          writeRoundState(
+            this.ctx.storage.sql,
+            "__pack",
+            "birthday-script",
+            kartScript,
+          );
+          writeRoundState(this.ctx.storage.sql, "__room", "kart-lobby", {
+            createdAt: now.getTime(),
+          });
+        }
         insertCredential(this.ctx.storage.sql, {
           id: control.credentialId,
           principal: "control",
@@ -476,6 +493,15 @@ export class PartyRoom extends DurableObject<Env> {
         const replay = this.readReceipt("join", input.requestId);
         if (replay) {
           result = this.replay(replay, digest);
+          return;
+        }
+        if (!readAdmission(this.ctx.storage.sql).open) {
+          result = {
+            ok: false,
+            error: "conflict",
+            message: "The host has closed joining. Ask them to reopen it.",
+          };
+          this.writeReceipt("join", input.requestId, digest, result);
           return;
         }
         const taken = this.ctx.storage.sql
@@ -638,6 +664,11 @@ export class PartyRoom extends DurableObject<Env> {
         return;
       }
       this.ctx.storage.sql.exec(
+        `UPDATE transfer SET consumed_at = ? WHERE player_id = ? AND consumed_at IS NULL`,
+        input.now,
+        input.playerId,
+      );
+      this.ctx.storage.sql.exec(
         `INSERT INTO transfer (code_hash, player_id, expires_at, consumed_at) VALUES (?, ?, ?, NULL)`,
         codeHash,
         input.playerId,
@@ -698,7 +729,18 @@ export class PartyRoom extends DurableObject<Env> {
       error: "invalid",
       message: transferInvalidMessage,
     };
+    let redeemedNew = false;
     this.ctx.storage.transactionSync(() => {
+      const replay = this.readReceipt("transfer", input.requestId);
+      if (replay) {
+        result = this.replay(replay, digest);
+        return;
+      }
+      const active = this.readPlayer(playerId);
+      if (!active || active.revoked_at) {
+        result = { ok: false, error: "invalid", message: transferInvalidMessage };
+        return;
+      }
       const current = this.ctx.storage.sql
         .exec<{ consumed_at: string | null; expires_at: string }>(
           `SELECT consumed_at, expires_at FROM transfer WHERE code_hash = ?`,
@@ -745,9 +787,10 @@ export class PartyRoom extends DurableObject<Env> {
         stateVersion: room?.state_version ?? 0,
       };
       this.writeReceipt("transfer", input.requestId, digest, result);
+      redeemedNew = true;
       this.writeAudit("transfer_redeemed", playerId, input.now, { playerId });
     });
-    if (result.ok) {
+    if (result.ok && redeemedNew) {
       this.closePlayerSockets(playerId, movedSessionMessage);
     }
     return result;
@@ -1480,7 +1523,7 @@ export class PartyRoom extends DurableObject<Env> {
         ...(retried !== undefined ? { retried } : {}),
       }),
     );
-    if (result.ok && input.action === "kick" && input.playerId) {
+    if (result.ok && appliedNew && input.action === "kick" && input.playerId) {
       this.closePlayerSockets(input.playerId, removedSessionMessage);
     }
     if (
@@ -2493,6 +2536,7 @@ export class PartyRoom extends DurableObject<Env> {
           result = this.replay<PhaseCommandResult>(again, digest);
           return;
         }
+        assertKartLobbyAction(sql, String(payload.action));
         if (
           readRehearsal(sql) &&
           ["start-demo", "start-birthday", "start-kart-rehearsal"].includes(
@@ -3645,6 +3689,8 @@ export class PartyRoom extends DurableObject<Env> {
                   [])
                 : [],
             adjustments: recentAdjustments(this.ctx.storage.sql),
+            admission: readAdmission(this.ctx.storage.sql),
+            kartLobby: readKartLobby(this.ctx.storage.sql),
             adminPlayers: adminPlayerRows(
               this.ctx.storage.sql,
               new Set(

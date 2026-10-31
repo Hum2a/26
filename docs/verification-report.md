@@ -142,3 +142,57 @@ Test results for this change on the development machine:
 - The staging Durable Object under a real 75-guest burst. Repeat the latency, error, reconnect, and timer-lateness figures there.
 - Remote Neon export and Resend delivery, once credentials exist. Local adapters already cover a failed export and an uncertain send.
 - Party questions, the party sting, and question media are still the illustrative pack.
+
+## Player control and late entry, 30 October 2026
+
+- Final `npm run test:unit -- -- --maxWorkers=1`: **99 files, 401 tests passed**
+  (235 seconds), including fresh-phone recovery, same-identity socket replacement,
+  definitive refusal retries, uncertain transfer retries and request timeouts.
+- Final `npm run typecheck` and targeted ESLint on all changed source/test files
+  passed. Formatting checks and `git diff --check` passed.
+- The real Worker runtime passed the first four player-control cases: entry
+  persistence and private projection, reconnect/transfer while closed, transfer
+  revocation and score-preserving recovery, and authorisation/replay for both entry
+  commands. This is partial evidence, not a passing room suite.
+- Two later filtered real-runtime runs passed the recovered-phone/removal replay
+  case and reveal-time late-join/pause/reconnect case, one selected test each.
+  Unselected cases were excluded by the diagnostic filter and are not passes.
+- The nickname-collision rollback test stalls in the native runtime. A separate
+  native SQLite constraint probe and an existing constraint test also stall.
+  The exact machine/runtime cause remains unresolved. Tests were retained without
+  disabling cases or weakening assertions. The compatible Cloudflare test plugin update
+  to 1.4.11 resolves the previous test-import stall; production Wrangler is unchanged.
+- The final connected player-control browser rehearsal passed: close → refused
+  fresh join → reopen → successful retry, rename/score adjustment, removal,
+  fresh-phone private recovery while entry is closed, reload and stage privacy.
+  It also passed viewport checks from 320px to 1920px. A prior attempt timed out
+  waiting for the rename acknowledgement; the retained assertion passed on rerun
+  without a timeout increase or a test bypass.
+- The quiz browser run exercised the late join through pause/resume and accepted
+  answers, then exposed a real layout issue: the answer dock intercepted the
+  cracked-screen Dismiss control. Live guest screen effects now render outside the
+  scroll stacking context with a portal. Its placement, escape dispatch and
+  cleanup regression plus the existing screen-effect cases passed **11 tests**.
+  The final separate three-phone quiz run passed in **1.4 minutes**, through all
+  mixed rounds and the podium. Its helper was updated for real fact-advance labels,
+  fact-content changes within one phase and the exact podium heading, with a
+  15-second bound on command-response waits. Both targeted browser rehearsals
+  therefore passed on their final runs; the full Playwright suite was not run.
+- No deployment, physical-phone test or venue rehearsal was performed for this
+  change. See `docs/event-runbook.md` for the entry and private recovery drill.
+
+## Kart-only lobbies, 31 October 2026
+
+- Full unit suite: **99 files / 403 tests passed** (286.55 seconds).
+- New real room suite: **3 tests passed**, covering durable creation/replay,
+  unchanged birthday order, private mode metadata, authorised start/refusal/replay,
+  late spectators and direct podium. Alternate quiz/rehearsal starts are guarded.
+- The connected `kart-lobby.spec.ts` browser flow passed in **59.0 seconds**:
+  create → join phone/stage → kart-only start → late spectator → pause/resume and
+  reload → results → podium → saved room overview. Control visibility and overflow
+  were checked at 320, 390, 430 and 844×390px with reduced motion. The loaded Admin
+  screenshot at 1440px was visually inspected.
+- Root typecheck, targeted lint, formatting and `git diff --check` passed.
+- No deployment or new full-room load/physical venue rehearsal ran. These focused
+  room tests do not establish a full API-suite pass; the earlier native rollback
+  limitation remains. Another kart race uses a fresh lobby.
