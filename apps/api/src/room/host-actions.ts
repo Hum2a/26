@@ -28,6 +28,7 @@ import { syncWall } from "../wall/queue.ts";
 import { excludeAuthor, featureCandidate, includeAuthor } from "../questions/vote.ts";
 import {
   hideClosedMessage,
+  demoScoringVersion,
   mediaMissingMessage,
   maxTransfers,
   namesClosedMessage,
@@ -48,6 +49,9 @@ import { createSqlStore } from "./sql-store.ts";
 import { changeKartCourse } from "../questions/kart.ts";
 import { changePhotoBias } from "../media/photo-bias.ts";
 import { setBotCount } from "../developer/bots.ts";
+import { changeAdmission } from "./admission.ts";
+import { assertKartLobbyAction, readKartLobby } from "./kart-lobby.ts";
+import { startRound } from "./lifecycle.ts";
 
 const shownPhases = new Set(["reveal", "scores", "final", "podium"]);
 
@@ -77,6 +81,41 @@ export function applyHostAction(
   sql: SqlStorage,
   input: HostActionInput,
 ): { transferCode?: string; released?: number } {
+  assertKartLobbyAction(sql, input.action);
+  if (input.action === "start-kart") {
+    const room = createSqlStore(sql).readRoom();
+    const script = room.questionScript;
+    if (
+      !readKartLobby(sql) ||
+      room.phase !== "lobby" ||
+      !script ||
+      script.version !== room.questionSetVersion ||
+      script.questions.length !== 1 ||
+      script.questions[0]?.kind !== "kart" ||
+      !Number.isSafeInteger(input.nowMs) ||
+      input.nowMs < 0
+    )
+      throw new Error("Open a fresh kart-only lobby before starting a race.");
+    sql.exec(
+      "UPDATE room SET opening = 'done', scoring_version = ?",
+      demoScoringVersion,
+    );
+    startRound(
+      createGameStore(sql),
+      input.nowMs,
+      {
+        ...multipleChoicePlugin(),
+        questionCount: 1,
+        collectWindows: [script.questions[0].collectMs],
+      },
+      crypto.randomUUID(),
+    );
+    return {};
+  }
+  if (input.action === "open-joining" || input.action === "close-joining") {
+    changeAdmission(sql, input.action === "open-joining", input.nowMs);
+    return {};
+  }
   if (input.action === "developer-configure") {
     configureRehearsal(
       sql,

@@ -106,6 +106,16 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     const body = await readJson(c.req.raw);
     const requestId = readRequestId(body);
     const rehearsalValue = field(body, "rehearsal");
+    const kind = field(body, "kind") ?? "party";
+    if (
+      (kind !== "party" && kind !== "kart") ||
+      (kind === "kart" && rehearsalValue !== undefined)
+    )
+      return roomFailure(
+        400,
+        "invalid",
+        "Choose either a party, a kart lobby or a rehearsal.",
+      );
     const rehearsal =
       rehearsalValue === undefined
         ? undefined
@@ -117,8 +127,10 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     }
     const created = await codes(c.env).createLobby({
       requestId,
+      kind,
       digest: await payloadDigest({
         action: "create",
+        ...(kind === "kart" ? { kind } : {}),
         ...(rehearsal?.success ? { rehearsal: JSON.stringify(rehearsal.data) } : {}),
       }),
       now: new Date().toISOString(),
@@ -366,6 +378,7 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "developer-bots",
       "start",
       "start-birthday",
+      "start-kart",
       "start-kart-rehearsal",
       "kart-course-on",
       "kart-course-off",
@@ -383,6 +396,8 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "rename",
       "swap",
       "kick",
+      "open-joining",
+      "close-joining",
       "recover",
       "adjust",
       "include",
@@ -848,6 +863,7 @@ function readHostDetails(
       ? { ok: true, fields: { rehearsalConfig: config.data } }
       : { ok: false, message: "Choose valid rehearsal settings." };
   }
+  if (action === "start-kart") return { ok: true, fields: {} };
   if (action === "developer-jump") {
     const index = z
       .number()
@@ -872,6 +888,9 @@ function readHostDetails(
       : { ok: false, message: "Choose a whole bot count from 0 to 100." };
   }
   if (action === "photo-bias-on" || action === "photo-bias-off") {
+    return { ok: true, fields: {} };
+  }
+  if (action === "open-joining" || action === "close-joining") {
     return { ok: true, fields: {} };
   }
   const needsPlayer = [

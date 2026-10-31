@@ -13,6 +13,7 @@ import { createSqlStore } from "../room/sql-store.ts";
 import { queueFinalExport } from "../archive/schedule.ts";
 import { purgeDetailedTelemetry } from "../device/store.ts";
 import { funFactTotal } from "../stats/fun-source.ts";
+import { readKartLobby } from "../room/kart-lobby.ts";
 import { syncWall } from "../wall/queue.ts";
 import { demoQuestionSetVersion, liveSampleSize } from "../room/limits.ts";
 import {
@@ -225,6 +226,7 @@ export function createGameStore(sql: SqlStorage): GameStore {
       enterRehearsalPhase(sql, gameStore, now);
     },
     nextPhaseOverride(room) {
+      if (room.phase === "final" && readKartLobby(sql)) return "podium";
       if (room.phase === "final" && funFactTotal(sql) > 0) {
         return "facts";
       }
@@ -234,7 +236,7 @@ export function createGameStore(sql: SqlStorage): GameStore {
         : undefined;
     },
     funFactCount() {
-      return funFactTotal(sql);
+      return readKartLobby(sql) ? 0 : funFactTotal(sql);
     },
     nextQuestionIndex(room) {
       if (room.questionCount <= 0) {

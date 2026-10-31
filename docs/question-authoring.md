@@ -179,4 +179,7 @@ Admin → Question packs → Running order offers drag handles, keyboard-accessi
 
 The default order includes completed catalogue questions with kart last. In a fresh room’s Live controls, choose **Start birthday game**. The server validates the saved order and freezes the full private question script under `birthday-r<revision>-<content hash>`. Subsequent order or catalogue changes do not alter that game, including after eviction. The catalogue id `birthday-draft` remains unavailable as a directly playable version; the explicit birthday start creates the immutable room version. The illustrative demo is still separate.
 
-For a short connected rehearsal, save an order containing only `kart-sprint`, create a fresh lobby, join from a second tab or phone and start the birthday game. Restore the intended order afterwards. There is no guest account or new CMS.
+For a race without the birthday quiz, choose **Admin → Kart → Create kart lobby**.
+Join from a second tab or phone, connect the stage and use **Start kart race** in
+Live controls. This freezes just the existing `kart-sprint` without changing the
+birthday running order. There is no guest account or new CMS.

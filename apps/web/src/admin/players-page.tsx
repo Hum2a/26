@@ -53,6 +53,7 @@ export function PlayersPage() {
         </LinkButton>
       </header>
       <CommandFeedback scope="players" />
+      <JoiningControls />
       {connection !== "open" ? (
         <p role="status" className="admin-inline-warning">
           Reconnecting. Player actions are unavailable until connected.
@@ -126,6 +127,66 @@ export function PlayersPage() {
           </section>
         )}
       </div>
+    </section>
+  );
+}
+
+function JoiningControls() {
+  const { snapshot, connection, busy, command, execute } = useAdminRoom();
+  const admission = snapshot.admission;
+  const locked = busy || connection !== "open" || command.retryable || !admission;
+  return (
+    <section className="admin-task-section" aria-label="Joining controls">
+      <h2>New players</h2>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.p
+          key={String(admission?.open)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.12, ease: "easeOut" }}
+          role="status"
+        >
+          {admission
+            ? admission.open
+              ? "Joining is open, including mid-game."
+              : "Joining is closed. Existing players can still reconnect."
+            : "Joining status unavailable. Reconnect to load the controls."}
+        </motion.p>
+      </AnimatePresence>
+      <p>
+        Late arrivals start at zero and can answer an open ordinary question. A vote,
+        duel or kart race already frozen keeps its participants; they join the next
+        eligible round.
+      </p>
+      <Button
+        variant="secondary"
+        disabled={locked}
+        onClick={() =>
+          void execute(
+            { action: admission?.open ? "close-joining" : "open-joining" },
+            admission?.open ? "Close joining" : "Open joining",
+            "players",
+          )
+        }
+      >
+        {admission?.open ? "Close joining" : "Open joining"}
+      </Button>
+      <p>
+        To rehearse: close entry, try the room’s join link in a private browser, reopen
+        entry and join during a question. Reconnecting and private phone-transfer codes
+        keep working while entry is closed.
+      </p>
+      <h3>Recent joining changes</h3>
+      <ul>
+        {admission?.history.map((entry, index) => (
+          <li key={`${entry.at}:${index}`}>
+            {entry.open ? "Opened" : "Closed"} by host ·{" "}
+            {new Date(entry.at).toLocaleString("en-GB")}
+          </li>
+        ))}
+      </ul>
+      {!admission?.history.length ? <p>No joining changes recorded.</p> : null}
     </section>
   );
 }

@@ -36,6 +36,28 @@ Guests open the site, enter the join code and a nickname, and keep that tab. The
 
 Humza reads the nickname cloud. Press Reveal names, or press `N` while the phase is lobby and the cursor is not in a field, when Baseer is ready for the names to be public.
 
+In the room’s **Players** page, use **Close joining** to stop new registrations or
+**Open joining** to admit late arrivals. Entry is open by default, including during
+the game. Closing entry does not stop existing guests reconnecting, answering, or
+redeeming a private phone-transfer/recovery code. The page records the latest 20
+entry changes privately. A refused join needs a fresh attempt after reopening.
+
+Late arrivals start at zero; there are no automatic catch-up points. They can
+answer an ordinary question while its answer window is open. Votes, duels and
+kart races that have frozen their participants keep that set; late arrivals wait
+for their next eligible round. Pause the game if someone needs time to settle in.
+
+Removal revokes that player’s session and all unused transfer codes. A new transfer
+code replaces older unused codes. Recovery preserves the player ID, answers and
+score and requires its new private code. If another active player has taken the
+nickname, rename that active player first. While joining is open, a removed person
+can register a fresh identity; close joining to prevent fresh registrations.
+The game deliberately has no account or device-fingerprint ban.
+
+Rehearse in an isolated room: join in a private browser during an open question,
+close entry, check a fresh browser cannot join, refresh the existing player, then
+reopen entry. Try removal and recovery, and confirm an older transfer code fails.
+
 ## Controls
 
 Buttons on `/admin` are the source of truth. Shortcuts work in that tab when focus is not in a text field, and they ignore Ctrl, Alt, and Meta.
@@ -57,6 +79,13 @@ Hide covers the stage. Cancel effect and Hide media remove a cue or a photo from
 ## A missing phone
 
 Use Recover on that player. Read the one-time transfer code to them. They enter it on the new phone. The old cookie stops working. Do not create a second room for one guest. Do not put the transfer code on the projector.
+
+For an active guest changing devices, use **Phones → Transfer**. Use **Recover**
+for a removed player. On the replacement phone, open the room’s join link and
+choose **Changed phones?**, then enter the private code. They do not need to join
+with a new nickname first, and this still works while joining is closed. The same
+phone can use its recovery code too; its connection is replaced with the restored
+session. If a response is lost, retry the same code before requesting another one.
 
 If the phone only lost Wi-Fi, ask them to reload the same tab. The guest cookie is the seat. The answer already stored stays stored.
 
@@ -146,3 +175,20 @@ These checks cannot be completed from the development machine:
 - A results email to the configured test recipient. No test recipient is configured, and no message has been sent.
 - A 75-guest pass on staging. The existing figure is from the local emulator only.
 - `npm run load:realtime` against staging conditions, and the venue Wi-Fi drill above.
+
+## Run just the kart race
+
+1. Open **Admin → Kart → Create kart lobby**. Rooms also links to this page.
+2. Share the normal guest join link/code from Live controls and connect the stage.
+   Use a private second browser tab as your phone to rehearse without guests.
+3. When the racers are in, choose **Start kart race**, then advance the get-ready
+   and prompt beats. It uses the real Mario circuit, one lap and three minutes.
+4. Use the existing Pause/Resume, course switches and Players tools as needed.
+   The grid freezes on start: late arrivals can watch but cannot enter that race.
+5. Advance through race results to the podium. Kart-only rooms skip birthday
+   phone facts. Create a fresh kart lobby for another race; its scores start fresh.
+
+This does not edit the birthday running order or release a question pack. Creating
+or opening a room selects it for this browser, as usual. A failed creation can be
+retried with the same request; avoid creating another room just because a reply
+was lost. The feature has not been deployed merely by completing local checks.

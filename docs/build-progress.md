@@ -3845,3 +3845,214 @@ below. No deployment, new dependency or paid resource.
 - **Exact next stage:** user-led rehearsal on staging or production. Retry the
   retained Worker/browser checks only when the user wants testing resumed and
   the local environment is healthy. No further automatic stage is started.
+
+## 30 October 2026 — player control and late-entry hardening
+
+- **Scope:** user requested stronger player control and reliable late/mid-game
+  joining. Existing ordinary-question late joining, vote/duel participant freezes,
+  reconnection, rename/removal/recovery and score tools are retained.
+- **Added:** receipted `open-joining` / `close-joining` host commands in the existing
+  route and room action flow; `room/admission.ts` stores the setting and a bounded
+  20-change history in the existing round-state store. Existing rooms default to
+  open. The optional validated `admission` projection is control-only.
+- **Admin:** Players shows the live entry setting, history, reversible controls,
+  late-player scoring rules and a private-browser rehearsal drill. Registry copy,
+  data inventory and event runbook document the behaviour.
+- **Recovery fixes:** removal consumes unused phone-transfer codes; issuing a new
+  code supersedes older unused codes. Redemption rechecks the player and receipt
+  inside its transaction. Recovery refuses nickname collisions with an actionable
+  message. A replayed removal does not disconnect a subsequently recovered phone;
+  replayed transfer work does not repeat socket replacement.
+- **Decisions:** closing joining affects fresh registrations only. Existing
+  reconnects and private transfers/recovery stay available. Late arrivals start
+  at zero and use the remaining ordinary-question answer window. Existing frozen
+  votes, duels and kart races retain their participants. While entry remains open,
+  a removed person can register a fresh random identity; this is not an account or
+  device-fingerprint ban. Close entry to stop fresh registrations.
+- **Join retry fix:** the phone starts a new request after a definite refusal,
+  so reopening entry works without changing nickname or reloading. Uncertain
+  network/server outcomes retain the same request ID. Join requests time out
+  after 12 seconds. Added guest-session API, router and connected-browser
+  regressions alongside the existing cross-device admin flow.
+- **Verified so far:** Players/registry tests passed **2 files / 12 tests** with
+  `npm run test:unit -w @26/web -- src/admin/players-page.test.tsx src/admin/features.test.ts --maxWorkers=1 --pool=forks`.
+  Guest-session API checks passed **1 file / 5 tests**, including definitive versus
+  uncertain refusals and timeout, with the same flags and `src/live/guest-session.test.ts`.
+  Final root `npm run typecheck` passed, including the standalone kart project,
+  after the join retry changes. `git diff --check` and final targeted ESLint on all
+  changed source/test files passed.
+- **Runtime limitation:** broader runs on Node 26 stalled without completing.
+  A Node 24 full-suite retry (with its supported storage flag) hit the existing
+  router's 30-second dynamic-import setup timeout; tests in that file were not
+  executed, and the remaining run did not finish. No test was intentionally
+  skipped or disabled. Cloudflare room tests did not finish initialisation on
+  either runtime. Those runs were stopped and are not passes. New Worker tests
+  cover entry control, persistence/replay/refusal, private projections,
+  reconnect/transfer while closed, stale transfer revocation, nickname collisions,
+  removal replay after recovery and reveal-time late joining through pause/restart.
+  No completed check is claimed here yet.
+- **Manual verification:** browser, physical-phone and venue checks have not run
+  for this change. No deployment or remote resource change is authorised by it.
+- **Initial hand-off status:** implementation complete, with verification still
+  incomplete at that point. The continuation below supersedes these initial
+  check results and next steps.
+
+### 30 October continuation — verification and recovery fixes
+
+- The retained router regression passed **8 tests**. The initial full web rerun
+  passed **98 files / 395 tests** using
+  `npm run test:unit -- -- --maxWorkers=1 --pool=forks` (176 seconds).
+- Inspection then found two gaps in the existing phone recovery UI: a fresh phone
+  could not reach the transfer form before joining, and recovering the same
+  identity did not restart its closed socket. The join page now offers the real
+  transfer form without creating a new player, and successful redemption replaces
+  the existing connection even when both IDs remain unchanged.
+- Transfer requests now have the same 12-second bound and certain/uncertain retry
+  distinction as joining. Network failures release the controls and retain the
+  request ID. Confirmed refusals allow a fresh attempt. Tests cover fresh-phone
+  redemption, same-identity reconnection, lost responses and timeout.
+- Browser regressions now exercise a fresh phone recovering while entry is closed,
+  an invalidated older code, reconnecting after recovery and a late arrival during
+  a paused question who can answer after resume. The event runbook explains the
+  actual entry point: room join link → Changed phones? → private code.
+- The browser rehearsal exposed an existing stacking bug: the phone's answer dock
+  intercepted taps on a cracked-screen troll's Dismiss button. Live guest screen
+  effects now use React's existing portal API to escape the scroll stacking
+  context. Standalone/admin screen previews keep their existing renderer. A new
+  `troll/guest-troll.test.tsx` checks placement, escape dispatch and unmount cleanup;
+  it and the existing screen-effect tests passed **2 files / 11 tests**.
+- **Final unit checks:** `npm run test:unit -- -- --maxWorkers=1` passed
+  **99 files / 401 tests** in 235 seconds after the recovery and troll-overlay
+  changes (the previous run passed 98 files / 400 tests). The focused
+  router and guest-session run passed **2 files / 18 tests**. Final
+  `npm run typecheck`, targeted ESLint on every changed source/test file and
+  `git diff --check` passed. On this Windows machine npm commands were invoked
+  with `npm.cmd --script-shell=cmd.exe` because PowerShell startup stalled.
+- **Room test dependency:** pinned `@cloudflare/vitest-plugin` **1.4.11**, compatible
+  with the existing Vitest 4.1.11, and retained its lockfile. Its new esbuild and
+  workerd script versions are explicitly allowlisted. Production Wrangler and
+  deployment configuration are unchanged. This resolves the earlier import
+  stall: the real room tests now start.
+- **Partial room evidence:** the first four player-control cases passed under the
+  real runtime: admission persistence/replay, reconnection/transfer while closed,
+  code revocation and score-preserving recovery, and authorisation/replay for both
+  entry commands. The nickname-collision refusal stalls when the storage
+  transaction rolls back. A pre-existing native SQLite constraint test also
+  stalls. An isolated native SQLite exception probe reproduces the stall without
+  game imports; a Windows stack-trace-helper probe stalls too. This suggests a
+  machine/runtime problem, but does not establish its exact cause. The full room
+  suite is **not passed**. No test was disabled or weakened. Temporary diagnostic
+  fixtures and source copies were removed; they are not feature verification.
+- Filtered real-runtime checks subsequently passed the retained recovery/removal
+  replay case (**1 selected test**) and reveal-time late-join/pause/reconnect case
+  (**1 selected test**). Unselected cases in those diagnostic runs are not counted
+  as passes. The nickname-collision rollback limitation remains.
+- **Browser verification:** installed Playwright's missing Chromium headless shell.
+  The connected admin flow successfully closed entry, refused a fresh join,
+  reopened entry and accepted a retry. The quiz also exercised the late join and
+  accepted answers through the mixed rounds. After the overlay fix it passed the
+  troll dismissal and reached closing facts. Its helper still expected “Advance”
+  during facts; it now uses the real “Next fact” / “Show the podium” controls and
+  checks changed fact content as well as ordinary phase changes. The final
+  `admin-live-controls.spec.ts` browser rehearsal passed, including private recovery
+  on a fresh phone while joining is closed, reload, exactly one recovered player,
+  stage privacy, pause/reload and viewport checks at 320/390/768/1280/1920px. The
+  390px Players screenshot was visually inspected. The final separate
+  `quiz.spec.ts` run passed in **1.4 minutes**, including the late player, mixed
+  rounds, troll dismissal, reload and podium. The helper now selects the exact
+  podium heading (avoiding ambiguous text matches) and bounds each command-response
+  wait to 15 seconds. Both retained targeted browser tests passed on their final
+  runs with `playwright.dev.config.ts --workers=1 --reporter=line`; this is not a
+  claim that the entire Playwright suite ran. No assertion or test was disabled.
+- **Status:** implementation, full unit suite, typecheck, targeted lint/format and
+  both targeted connected browser rehearsals pass. Full Worker-suite verification
+  remains incomplete because of the native nickname-collision rollback stall.
+  No deployment or remote resource changes were made.
+- **Exact next stage:** rerun the retained nickname-collision refusal and full
+  Worker suite in a healthy native runtime; rehearse Admin → room → Players with
+  physical phones and the venue projector/Wi-Fi. Do not deploy automatically.
+
+## 31 October 2026 — kart-only lobbies
+
+- **Request:** create a new lobby that plays just the existing Mario kart race.
+- **Implementation:** `POST /api/rooms` accepts validated `kind: "kart"`; the
+  registry persists it in the existing pending/completed creation receipt and
+  refuses cross-kind reuse. `room/kart-lobby.ts` freezes only the existing
+  `kart-sprint`, using a content-derived `kart-birthday-r0-…` room version. The
+  saved birthday order and question files are unchanged. The existing room
+  bootstrap transaction writes both the private script and mode timestamp before
+  returning credentials. Old rooms/receipts default to ordinary party behaviour.
+- **Manage:** `start-kart` runs through the existing host-command flow, validates
+  the frozen script and lobby state again in the domain function, and uses the
+  existing scheduler, socket, physics, scores and archive. Kart-only rooms refuse
+  alternate quiz/rehearsal starts and go from final straight to podium, skipping
+  the phone-facts interlude. No new race engine, state store or scheduler exists.
+- **Admin:** Kart has Create kart lobby; Rooms links to it. New lobbies open Live
+  controls with the normal code, a Start kart race button and private mode/time
+  details. Overview retains those details after reopening. The registry entry
+  explains creation and rehearsal. Existing solo, phone/stage previews, pause,
+  course switches and player controls remain available.
+- **Decisions:** one existing imported circuit, one lap, three-minute limit,
+  up to 80 frozen racers. Late arrivals watch; another race uses a fresh lobby.
+  This is a real deployed-capable mode, separate from the local ring rehearsal.
+  Rehearse with a private second tab and the normal stage. No deployment is
+  authorised or performed by this request.
+- **Tests added:** `apps/api/test/kart-lobby.spec.ts` (creation persistence,
+  replay, unchanged order, host-only metadata, authorised start/refusal/replay,
+  late arrivals and direct podium); `apps/web/e2e/kart-lobby.spec.ts` (real admin,
+  phone and stage flow); Kart page and Live console component regressions.
+- **Verified:** final `npm run test:unit -- -- --maxWorkers=1` passed **99 files /
+  403 tests** in 286.55 seconds. Focused Admin/registry checks passed **3 files /
+  19 tests**. Final `npm run test -w @26/api -- test/kart-lobby.spec.ts
+--project=room --maxWorkers=1 --no-isolate --disableConsoleIntercept
+--reporter=verbose` passed **1 file / 3 tests** after the central mode guard,
+  including refusal of alternate pack/rehearsal starts. Root typecheck, targeted
+  ESLint on every changed feature source/test, Prettier checks and
+  `git diff --check` passed. Commands used `npm.cmd --script-shell=cmd.exe` on this
+  Windows machine.
+- **Browser:** `playwright test apps/web/e2e/kart-lobby.spec.ts
+--config=playwright.dev.config.ts --workers=1 --reporter=line` passed **1 test /
+  59.0 seconds** on the final run. It covers real creation, the kart-only start,
+  persisted mode after reload, phone controls, frozen late arrivals, pause/resume,
+  phone reload, direct podium and host-only metadata. The first attempt had an
+  ambiguous spectator-text selector; the assertion now targets the real phone
+  status. Responsive assertions wait for the actual start control at 320/390/430px
+  and 844×390 landscape. The loaded 1440px Admin screenshot was visually inspected.
+  No assertion was disabled or weakened, and no timeout was increased to obtain a
+  pass.
+- **Status and limits:** feature complete locally. No deployment, physical-phone,
+  venue Wi-Fi, projector or new 80-player load test was performed. This selected
+  Worker run is not a full API-suite pass; the earlier native rollback limitation
+  remains recorded above. The mode intentionally runs one race per fresh lobby.
+- **Exact next stage:** user-led rehearsal with real phones and the venue stage;
+  any deployment needs a separate user instruction. Do not automatically begin
+  another build stage.
+
+## 31 October 2026 — requested merge and staging/production release
+
+- **Authorisation:** user explicitly requested merging the completed work, updating
+  the default branch and deploying staging and production. The repository's
+  default branch is `master`; no `main` exists. GitHub and a fresh fetch confirmed
+  `master` matched `origin/master` at `74f4065` before this release.
+- **Scope:** player admission/recovery hardening and kart-only lobbies from the
+  preceding stages. Changes are isolated on
+  `codex/kart-lobbies-and-player-recovery` before merging to `master`.
+- **Preflight:** the pinned Wrangler login includes the configured personal
+  account; both target Workers already list all 11 required secret names. This
+  release needs no new database schema, Durable Object migration or secret sync.
+  Existing deploy scripts build for each environment, scan artifacts, validate
+  Worker name/domain/target and upload the application and API together.
+- **Checks:** the preceding 403-test unit pass, typecheck, three kart-lobby room
+  cases and connected browser rehearsals remain the feature evidence. Release
+  support tests passed **12/12**. No protected/secret path is staged.
+- **Existing repository-wide failures:** `npm run lint` reported **5 errors / 23
+  warnings**, with errors in unchanged `stage/wall/stage-wall.tsx`,
+  `wall/guest-wall.tsx` and `packages/shared/src/wall.ts`; `git diff --quiet HEAD`
+  confirms those files are unchanged. `npm run format:check` reported **101
+  unchanged files**. Changed-file lint/format checks pass. These are not full
+  repository passes, and no rules or unrelated files were changed to hide them.
+- **Status:** merge, push, environment builds, deployments and live checks are
+  in progress. The full API-suite/native rollback limitation recorded above is
+  not claimed resolved by this release.
+- **Exact next stage:** merge and push the reviewed changes, deploy staging and
+  check it, then deploy production and record actual versions/health results.

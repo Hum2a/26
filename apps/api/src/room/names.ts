@@ -215,6 +215,12 @@ export function markKicked(sql: SqlStorage, playerId: string, now: string): bool
     return false;
   }
   sql.exec(`UPDATE player SET revoked_at = ? WHERE player_id = ?`, now, playerId);
+  // A removed player's old transfer codes must never become valid on recovery.
+  sql.exec(
+    `UPDATE transfer SET consumed_at = ? WHERE player_id = ? AND consumed_at IS NULL`,
+    now,
+    playerId,
+  );
   sql.exec(
     `UPDATE credential SET revoked_at = ? WHERE player_id = ? AND revoked_at IS NULL`,
     now,
@@ -237,6 +243,18 @@ export function markRecovered(sql: SqlStorage, playerId: string): boolean {
     .toArray()[0];
   if (!player?.revoked_at) {
     return false;
+  }
+  const collision = sql
+    .exec(
+      `SELECT player_id FROM player WHERE revoked_at IS NULL AND nickname_key =
+     (SELECT nickname_key FROM player WHERE player_id = ?)`,
+      playerId,
+    )
+    .toArray()[0];
+  if (collision) {
+    throw new Error(
+      "That nickname is now in use. Rename the active player before recovering this one.",
+    );
   }
   sql.exec(`UPDATE player SET revoked_at = NULL WHERE player_id = ?`, playerId);
   return true;

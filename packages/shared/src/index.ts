@@ -904,7 +904,12 @@ export const trollKinds = [
 export const trollKindSchema = z.enum(trollKinds);
 export type TrollKindName = (typeof trollKinds)[number];
 
-/** Public lobby view. Verifiers, transfer codes, and admin details are absent. */
+/** Control-only metadata for a deliberately created kart lobby. */
+export const kartLobbySchema = z
+  .object({ createdAt: z.number().int().nonnegative() })
+  .strict();
+
+/** Audience projections omit private operator fields for guests and stage. */
 export const lobbySnapshotSchema = z
   .object({
     developerTools: developerToolsSchema.optional(),
@@ -923,6 +928,16 @@ export const lobbySnapshotSchema = z
     scoringVersion: contentVersionSchema,
     players: z.array(lobbyPlayerSchema),
     // Private operator projection. Never present on stage or guest snapshots.
+    kartLobby: kartLobbySchema.optional(),
+    admission: z
+      .object({
+        open: z.boolean(),
+        history: z
+          .array(z.object({ open: z.boolean(), at: z.number().nonnegative() }).strict())
+          .max(20),
+      })
+      .strict()
+      .optional(),
     adminPlayers: z
       .array(
         z

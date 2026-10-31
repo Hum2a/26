@@ -2,6 +2,12 @@ import type { RoomPhaseName } from "@26/shared";
 import type { PlayAction } from "../live/room-api";
 
 export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
+  if (action === "start-kart")
+    return "The kart race has started. The starting grid is frozen.";
+  if (action === "open-joining")
+    return "New players can join, including during the game.";
+  if (action === "close-joining")
+    return "Joining is closed. Existing players can still reconnect and transfer phones.";
   if (action === "developer-configure") return "Rehearsal settings saved.";
   if (action === "developer-run")
     return "Automatic rehearsal started. Keep this tab open for bot traffic.";

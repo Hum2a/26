@@ -6,6 +6,70 @@ import { payloadDigest } from "../src/room/digest.ts";
 import { answerDuplicateMessage, answerUnknownMessage } from "../src/room/limits.ts";
 
 describe("illustrative multiple choice", () => {
+  it("lets a guest arriving at reveal play the next question, including reconnecting through a pause", async () => {
+    const created = await createRoom();
+    const stub = room(created.gameId);
+    await stub.startDemo({
+      ...control(created),
+      requestId: crypto.randomUUID(),
+      nowMs: Date.now(),
+    });
+    await untilPhase(stub, created, "reveal");
+    const joined = await stub.joinPlayer({
+      nickname: "Late guest",
+      requestId: crypto.randomUUID(),
+      now: new Date().toISOString(),
+    });
+    if (!joined.ok) throw new Error(joined.message);
+    expect(
+      (await stub.snapshotFor("control")).adminPlayers?.find(
+        (p) => p.playerId === joined.playerId,
+      )?.points,
+    ).toBe(0);
+    await untilPhase(stub, created, "collect");
+    expect(
+      (
+        await stub.pauseRound({
+          ...control(created),
+          requestId: crypto.randomUUID(),
+          nowMs: Date.now(),
+        })
+      ).ok,
+    ).toBe(true);
+    const socket = await connect(stub, created.gameId, guestCookie(joined));
+    await nextMatching(socket, (m) => m.kind === "snapshot");
+    expect((await stub.snapshotFor("guest", joined.playerId)).paused).toBe(true);
+    expect(
+      (
+        await stub.resumeRound({
+          ...control(created),
+          requestId: crypto.randomUUID(),
+          nowMs: Date.now(),
+        })
+      ).ok,
+    ).toBe(true);
+    const view = await stub.snapshotFor("guest", joined.playerId);
+    if (view.play?.question.kind !== "choice")
+      throw new Error("Expected the next choice question");
+    const requestId = crypto.randomUUID();
+    socket.send(
+      JSON.stringify({
+        kind: "command",
+        name: "answer",
+        requestId,
+        optionId: view.play.question.options[0]!.id,
+      }),
+    );
+    expect(
+      await nextMatching(socket, (m) => m.kind === "ack" && m.requestId === requestId),
+    ).toMatchObject({ accepted: true });
+    socket.close();
+    await evictDurableObject(stub);
+    expect(
+      (await stub.snapshotFor("guest", joined.playerId)).play?.selfAnswer?.kind,
+    ).toBe("choice");
+  });
+
   it("persists an answer before the acknowledgement and scores the reveal once", async () => {
     const created = await createRoom();
     const stub = room(created.gameId);

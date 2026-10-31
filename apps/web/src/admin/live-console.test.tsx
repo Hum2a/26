@@ -21,6 +21,30 @@ import {
 } from "./controls.test-support";
 beforeEach(() => setupControls());
 
+it("starts only the frozen race in a kart lobby and blocks its controls offline", async () => {
+  setupControls({ ...roomFixture, kartLobby: { createdAt: 1000 } });
+  await mountControls(<LiveConsole />);
+  expect(screen.queryByRole("button", { name: "Start birthday game" })).toBeNull();
+  expect(
+    screen.queryByRole("button", { name: "Start the illustrative demo" }),
+  ).toBeNull();
+  expect(
+    screen.queryByRole("button", { name: "Start local kart rehearsal" }),
+  ).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Start kart race" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "start-kart" }),
+    ),
+  );
+  await screen.findByText("The kart race has started. The starting grid is frozen.");
+  act(() => socket().onConnection("closed"));
+  expect(
+    (screen.getByRole("button", { name: "Start kart race" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+});
+
 it("starts the saved birthday script from the lobby", async () => {
   setupControls(roomFixture);
   await mountControls(<LiveConsole />);

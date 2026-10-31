@@ -20,6 +20,7 @@ import { clientApiHeaders } from "../api/client-key.ts";
 export async function createLobby(
   requestId: string,
   rehearsal?: RehearsalConfig,
+  kind?: "kart",
 ): Promise<LobbyCreated | { error: string }> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 30_000);
@@ -28,7 +29,11 @@ export async function createLobby(
       method: "POST",
       credentials: "same-origin",
       headers: clientApiHeaders({ "content-type": "application/json" }),
-      body: JSON.stringify({ requestId, ...(rehearsal ? { rehearsal } : {}) }),
+      body: JSON.stringify({
+        requestId,
+        ...(rehearsal ? { rehearsal } : {}),
+        ...(kind ? { kind } : {}),
+      }),
       signal: controller.signal,
     });
     return await read(response, lobbyCreatedSchema);
@@ -73,14 +78,27 @@ export async function joinLobby(input: {
   code: string;
   nickname: string;
   requestId: string;
-}): Promise<GuestSession | { error: string }> {
-  const response = await fetch("/api/rooms/join", {
-    method: "POST",
-    credentials: "same-origin",
-    headers: clientApiHeaders({ "content-type": "application/json" }),
-    body: JSON.stringify(input),
-  });
-  return read(response, guestSessionSchema);
+}): Promise<GuestSession | { error: string; uncertain?: boolean }> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 12_000);
+  try {
+    const response = await fetch("/api/rooms/join", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: clientApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify(input),
+      signal: controller.signal,
+    });
+    const result = await read(response, guestSessionSchema);
+    return "error" in result
+      ? {
+          ...result,
+          uncertain: response.ok || response.status >= 500 || response.status === 408,
+        }
+      : result;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 export async function resumeGuest(): Promise<GuestSession | undefined> {
@@ -135,6 +153,7 @@ export type PlayAction =
   | "developer-scenario"
   | "developer-bots"
   | "start-birthday"
+  | "start-kart"
   | "start-kart-rehearsal"
   | "kart-course-on"
   | "kart-course-off"
@@ -153,6 +172,8 @@ export type PlayAction =
   | "rename"
   | "swap"
   | "kick"
+  | "open-joining"
+  | "close-joining"
   | "recover"
   | "adjust"
   | "include"
@@ -305,14 +326,27 @@ export async function redeemTransfer(input: {
   joinCode: string;
   code: string;
   requestId: string;
-}): Promise<GuestSession | { error: string }> {
-  const response = await fetch("/api/rooms/transfer/redeem", {
-    method: "POST",
-    credentials: "same-origin",
-    headers: clientApiHeaders({ "content-type": "application/json" }),
-    body: JSON.stringify(input),
-  });
-  return read(response, guestSessionSchema);
+}): Promise<GuestSession | { error: string; uncertain?: boolean }> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 12_000);
+  try {
+    const response = await fetch("/api/rooms/transfer/redeem", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: clientApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify(input),
+      signal: controller.signal,
+    });
+    const result = await read(response, guestSessionSchema);
+    return "error" in result
+      ? {
+          ...result,
+          uncertain: response.ok || response.status >= 500 || response.status === 408,
+        }
+      : result;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 async function read<T>(

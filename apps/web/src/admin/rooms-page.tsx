@@ -92,6 +92,9 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
         <Button disabled={busy || loading} onClick={() => void create()}>
           {busy ? "Working…" : "Create a lobby"}
         </Button>
+        <LinkButton variant="secondary" to="/admin/kart?view=multiplayer">
+          Kart-only lobby
+        </LinkButton>
         <Button
           variant="secondary"
           disabled={loading || busy}
@@ -300,6 +303,20 @@ export function RoomOverview() {
           : "Reconnecting. Room details may be out of date; live controls are unavailable until connected."}
       </p>
       <EntryNotice message={notice} />
+      {snapshot.kartLobby ? (
+        <section className="admin-current" aria-label="Kart lobby details">
+          <h2>Kart-only lobby</h2>
+          <p>Mario circuit · one lap · three-minute limit · up to 80 racers.</p>
+          <p>
+            Created {new Date(snapshot.kartLobby.createdAt).toLocaleString("en-GB")}.
+            The race and results use this room’s frozen script.
+          </p>
+          <p>
+            Open Live controls to start, pause or end the race. Join from a private
+            second tab to rehearse. Late arrivals watch once the grid is frozen.
+          </p>
+        </section>
+      ) : null}
       <div className="admin-current">
         <p>Guests join with this code</p>
         <p className="admin-room-code" aria-label={`Join code ${snapshot.joinCode}`}>

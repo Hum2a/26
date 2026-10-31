@@ -6,6 +6,14 @@ What 26 stores, where it is stored, and how long it is kept. This describes the 
 
 There are three stores: +
 
+Joining control (30 October 2026): the existing room `round_state` table stores
+`__room` / `admission`: an open/closed flag and the latest 20 host changes
+(`open`, server timestamp `at`). Existing rooms default to open. It is returned
+only in control snapshots, never guest/stage snapshots, and follows room storage
+retention. Joining commands use the existing durable receipts. Removal consumes
+unused transfer codes; issuing another code consumes previous unused codes for
+that player. Existing transfer records and receipts retain their normal lifetime.
+
 - **Room database.** One SQLite database per room, inside the room's Durable Object. It holds everything during the live game.
 - **Neon Postgres.** It holds the published results archive, email delivery, and admin sign-in. It is outside the live guest path.
 - **Cloudflare R2.** It holds photo and voice files. The room database only keeps references to them.
@@ -257,3 +265,20 @@ Each started birthday room stores its frozen private question script in existing
 - Explicit local browser checks (`LOCAL_DATABASE_ID=browser-checks`, local serve
   without a deployment target) use temporary Worker storage as well as temporary
   auth. Normal development keeps persistent storage; remote data is unaffected.
+
+## Kart-only lobby mode
+
+- Creation accepts `kind: "kart"` on the existing authenticated room endpoint.
+  The existing registry creation receipt stores the chosen kind, including while
+  bootstrap is pending. Reusing the request for a different kind is refused.
+  Old receipts without a kind retain ordinary-party behaviour.
+- The existing room `round_state` stores `__room/kart-lobby` with the creation
+  timestamp and `__pack/birthday-script` with the frozen, private kart question.
+  Only that room's version is selected; the saved birthday running order is not
+  written. No new table, external service or player identity is introduced.
+- The validated optional `kartLobby` creation timestamp is control-only. Guests
+  and stage get the existing public kart projection, never the script or host
+  metadata. Start, pause, advance, course switches and results reuse existing
+  receipts, scheduler, score ledger and room retention. These are real rooms:
+  the normal final archive path runs at podium, unlike dedicated developer
+  rehearsals.

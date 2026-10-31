@@ -13,8 +13,8 @@ type CreateResult = LobbyCreated & {
 };
 
 type StoredCreate =
-  | { pending: true; gameId: string; joinCode: string }
-  | ({ pending: false } & CreateResult);
+  | { pending: true; gameId: string; joinCode: string; kind?: "party" | "kart" }
+  | ({ pending: false; kind?: "party" | "kart" } & CreateResult);
 
 /**
  * One SQLite object, addressed only as getByName("codes").
@@ -125,13 +125,19 @@ export class RoomCodeRegistry extends DurableObject<Env> {
     requestId: string;
     digest: string;
     now: string;
+    kind?: "party" | "kart";
   }): Promise<
     | { ok: true; result: CreateResult }
-    | { ok: false; error: "digest_mismatch" | "busy"; message: string }
+    | { ok: false; error: "digest_mismatch" | "busy" | "invalid"; message: string }
   > {
+    if (input.kind !== undefined && input.kind !== "party" && input.kind !== "kart")
+      return { ok: false, error: "invalid", message: "Choose a valid lobby type." };
     const prior = this.readCreate(input.requestId);
     if (prior) {
-      if (prior.digest !== input.digest) {
+      if (
+        prior.digest !== input.digest ||
+        (prior.stored.kind ?? "party") !== (input.kind ?? "party")
+      ) {
         return { ok: false, error: "digest_mismatch", message: digestMismatchMessage };
       }
       if (prior.stored.pending) {
@@ -145,6 +151,7 @@ export class RoomCodeRegistry extends DurableObject<Env> {
       pending: true,
       gameId: allocated.gameId,
       joinCode: allocated.joinCode,
+      kind: input.kind ?? "party",
     };
     this.ctx.storage.sql.exec(
       `INSERT INTO receipt (principal, request_id, payload_digest, result_json)
@@ -205,6 +212,7 @@ export class RoomCodeRegistry extends DurableObject<Env> {
       gameId: pending.gameId,
       joinCode: pending.joinCode,
       now,
+      kind: pending.kind ?? "party",
     });
     const result: CreateResult = {
       ...lobbyCreatedSchema.parse({
@@ -220,7 +228,7 @@ export class RoomCodeRegistry extends DurableObject<Env> {
     };
     this.ctx.storage.sql.exec(
       `UPDATE receipt SET result_json = ? WHERE principal = 'admin' AND request_id = ?`,
-      JSON.stringify({ pending: false, ...result }),
+      JSON.stringify({ pending: false, kind: pending.kind ?? "party", ...result }),
       requestId,
     );
     return { ok: true, result };
