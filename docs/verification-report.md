@@ -196,3 +196,28 @@ Test results for this change on the development machine:
 - No deployment or new full-room load/physical venue rehearsal ran. These focused
   room tests do not establish a full API-suite pass; the earlier native rollback
   limitation remains. Another kart race uses a fresh lobby.
+
+## Staging and production release, 31 October 2026
+
+Source commit `087122b` merges kart-only lobbies and player-control hardening into
+the repository's default branch, `master`. It was pushed before either release.
+
+| Target     | Worker version                         | Public origin                    |
+| ---------- | -------------------------------------- | -------------------------------- |
+| Staging    | `7fc3c509-19bd-4010-a572-2886f6c0e5d8` | https://26-staging.humza.website |
+| Production | `930e1efb-2019-4827-b36f-ca319c404c0e` | https://26.humza.website         |
+
+Both normal deployment scripts passed their environment builds, artifact scans,
+content preflights and generated target assertions. No migration or secret sync
+was needed. Health returned 200 / `ok: true` with the correct environment on both
+sites. Admin HTML, the new entry assets and the new kart/player control chunks
+returned 200. A fresh browser on each deployed site rendered the sign-in form
+and received a successful signed-out session response using the deployed client.
+No sign-in email was sent and no remote rehearsal game was created.
+
+Release support tests passed 12/12. Repository-wide lint still reports five
+errors and 23 warnings, with errors in unchanged wall files. The full format
+check still reports 101 unchanged files. Changed-file lint/format, the 403-test
+unit suite and selected Worker/browser checks above passed; the full API suite
+was not established. GitHub CI did not start because of the account's billing or
+spending limit ([release run](https://github.com/Hum2a/26/actions/runs/41193270942)).

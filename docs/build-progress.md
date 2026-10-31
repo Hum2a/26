@@ -4051,8 +4051,34 @@ below. No deployment, new dependency or paid resource.
   confirms those files are unchanged. `npm run format:check` reported **101
   unchanged files**. Changed-file lint/format checks pass. These are not full
   repository passes, and no rules or unrelated files were changed to hide them.
-- **Status:** merge, push, environment builds, deployments and live checks are
-  in progress. The full API-suite/native rollback limitation recorded above is
-  not claimed resolved by this release.
-- **Exact next stage:** merge and push the reviewed changes, deploy staging and
-  check it, then deploy production and record actual versions/health results.
+- **Merged and pushed:** feature commit `fcd5d9a`, merge commit `087122b` on
+  `master`, pushed normally to `origin/master`. The working tree was clean before
+  both environment builds. Remote `master` was checked against the deployed source.
+- **Deployed:** `npm run deploy:staging` then `npm run deploy:prod` both completed
+  successfully using the existing pinned Wrangler 4.136.3. Each rebuilt its
+  environment, stripped the generated secret file, passed the artifact scan,
+  content preflight and generated target/name/domain assertions, then uploaded
+  the Worker and web assets. Existing chunk/PGlite and unfinished draft notices
+  remain. No database migration, secret sync or unrelated resource change ran.
+  - Staging: `7fc3c509-19bd-4010-a572-2886f6c0e5d8` at
+    https://26-staging.humza.website.
+  - Production: `930e1efb-2019-4827-b36f-ca319c404c0e` at
+    https://26.humza.website.
+- **Live checks:** both `/api/health` endpoints returned HTTP 200, `ok: true`, the
+  correct environment and existing app version `0.0.5`. Both `/admin` pages returned
+  200 and their newly built entry assets. The deployed kart creation, kart start
+  and player admission chunks returned 200 with their new controls present.
+  Isolated, read-only browser checks on both sites displayed the administrator
+  email field and received HTTP 200 / `signedIn: false` from `/api/admin/session`,
+  verifying deployed client/API compatibility without sending email or creating
+  remote game data. The test browser was closed.
+- **CI limitation:** GitHub did not start the release commit's Check job because
+  recent account payments failed or the spending limit needs increasing. This
+  is not a CI pass: https://github.com/Hum2a/26/actions/runs/41193270942. Existing
+  repository lint/format failures and the full API-suite/native rollback
+  limitation above remain unresolved; no checks were weakened.
+- **Status:** requested code merged, pushed, deployed to staging and production,
+  and checked live. This final release record is a documentation-only follow-up
+  on `master`; the deployed application source is merge commit `087122b`.
+- **Exact next stage:** user-led authenticated kart/player-control and physical
+  venue rehearsal. No further build or deployment is automatically started.
