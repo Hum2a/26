@@ -4237,7 +4237,44 @@ below. No deployment, new dependency or paid resource.
   two polish browser cases from the preceding stage remain valid on this source.
   Release-support tests passed 12/12. The earlier live-flow failures and existing
   repository-wide lint/format limitations remain; they are not green checks.
-- **Git authentication:** fetching succeeds, but GitHub CLI is signed out and
-  the non-interactive push check cannot authenticate. Sign-in was requested
-  while local preparation and authorised Cloudflare work continue. Actual push,
-  merge and deployment outcomes will be recorded below.
+- **Git:** the initial push check could not authenticate. The user restored
+  GitHub sign-in, after which normal authenticated pushes succeeded. Feature
+  commit `fd6581606939183a13702b708ddb663d4b7ecc14` is on local/remote
+  `codex/party-presentation`; merge commit
+  `afbdb054aa9383f28f6d870e0f7b03e34d215fbc` is on local/remote `master`.
+  Fresh GitHub metadata and `git ls-remote --symref` confirm `master` remains
+  the default. Local and remote master matched with no divergence and the
+  working tree was clean before both environment builds. No force push ran.
+- **Deployment:** `npm run deploy:staging` then `npm run deploy:prod` succeeded.
+  Each rebuilt its environment, removed the generated secret file, passed the
+  693-file artifact scan and content preflights, checked its generated
+  Worker/domain/target, and uploaded the Worker plus 48 changed assets. Existing
+  bundle/PGlite, secret-name configuration and draft-content notices remain.
+  No migration, secret sync, new resource or unrelated project change ran.
+  - Staging: `a446d37d-348d-4840-836d-2a2f5662909f` at
+    https://26-staging.humza.website.
+  - Production: `e26889f2-8c8a-4bb8-ad3e-47155bc88801` at
+    https://26.humza.website.
+- **Live verification:** both health endpoints returned HTTP 200, `ok: true`,
+  their correct environment and the existing app version `0.0.5`. Isolated
+  Chromium sessions on both sites verified administrator sign-in fields,
+  HTTP 200 / `signedIn: false` session reads, enabled guest nickname fields,
+  projector setup, and the new recovery screen at 390px with no horizontal
+  overflow or page errors. The deployed scoreboard module returned HTTP 200
+  and contained its new navigation. Screenshots are under
+  `.codex/previews/release`; the verification browser was closed. These checks
+  sent no live emails, created no remote room and changed no live game data.
+- **CI:** GitHub's Check workflow ran this time: dependency installation and
+  typechecking passed, then lint failed with the same **5 errors / 23 warnings**
+  in unchanged wall files. `git diff --quiet bdd863b master` for
+  `stage/wall/stage-wall.tsx`, `wall/guest-wall.tsx` and shared `wall.ts` confirms
+  they were not changed by this release. Subsequent CI format/test/build/e2e
+  steps did not run. This is not a green CI result:
+  https://github.com/Hum2a/26/actions/runs/41339028000.
+- **Status:** requested presentation/polish code committed, pushed, merged,
+  synced and deployed to both environments, with live read-only checks passed.
+  This final deployment record is a documentation-only follow-up on `master`;
+  the deployed application source is merge commit `afbdb05`. Existing CI and
+  the earlier full live-flow/native Worker limitations remain unresolved.
+- **Exact next stage:** resolve those recorded failures and rehearse on venue
+  devices. No further work or deployment starts automatically.
