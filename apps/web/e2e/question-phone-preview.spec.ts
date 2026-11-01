@@ -24,6 +24,10 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
   browser,
 }) => {
   test.setTimeout(180_000);
+  async function openRehearsal() {
+    const toggle = page.getByRole("button", { name: /Phone and stage rehearsal/ });
+    if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  }
   const sockets: string[] = [];
   page.on("websocket", (socket) => {
     if (new URL(socket.url()).pathname.startsWith("/ws/")) sockets.push(socket.url());
@@ -40,6 +44,7 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
     .first()
     .click();
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.getByRole("button", { name: "Question catalogue", exact: true }).click();
   await expect(page.getByLabel("Search questions")).toBeVisible();
   await page.getByLabel("Search questions").fill("pokemon");
   await page.locator('[data-question-id="favourite-pokemon"]').click();
@@ -55,6 +60,7 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
   );
   await page.getByLabel("Search questions").fill("");
   await page.locator('[data-question-id="favourite-pokemon"]').click();
+  await openRehearsal();
   const stage = page.frameLocator('iframe[title="Big-screen preview"]');
   await expect(stage.getByRole("heading", { name: "Answers are open" })).toBeVisible();
   await expect(stage.getByText("Mudkip", { exact: true })).toBeVisible();
@@ -126,8 +132,10 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
     fullPage: true,
   });
   await page.locator('[data-question-id="favourite-genre"]').click();
+  await openRehearsal();
   await expect(phone.locator(".design-phone")).toBeVisible();
   await page.locator('[data-question-id="christianity-branches"]').click();
+  await openRehearsal();
   await expect(phone.getByText(/requested interaction is not implemented/)).toHaveCount(
     0,
   );
@@ -135,6 +143,7 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
     phone.getByRole("button", { name: "muggletonians", exact: true }),
   ).toBeEnabled();
   await page.locator('[data-question-id="inflation-freddo"]').click();
+  await openRehearsal();
   await expect(phone.getByRole("slider", { name: "Estimate" })).toBeVisible();
   await expect(phone.getByText(/typically 20p in 2012/)).toBeVisible();
   await expect(stage.locator(".stage-prompt")).toContainText(/Freddo/i);

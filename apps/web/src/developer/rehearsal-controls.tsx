@@ -1,3 +1,4 @@
+import { useActivityToasts } from "./use-activity-toasts";
 import { motion } from "motion/react";
 import { useState } from "react";
 import {
@@ -6,12 +7,14 @@ import {
   type RehearsalConfig,
 } from "@26/shared";
 import { useAdminRoom } from "../admin/room-provider";
-import { Button } from "../ui/primitives";
+import { Button, Disclosure } from "../ui/primitives";
 import { RehearsalFields, RehearsalSetup } from "./rehearsal-setup";
 
 export function RehearsalControls() {
   const { snapshot, execute, busy, blocked, connection, command } = useAdminRoom();
   const rehearsal = snapshot.developerTools?.rehearsal;
+  const [notifications, setNotifications] = useState(true);
+  useActivityToasts(rehearsal?.events, notifications);
   const [index, setIndex] = useState(0),
     [filter, setFilter] = useState("all");
   const [config, setConfig] = useState<{ base: string; value: RehearsalConfig }>();
@@ -32,7 +35,10 @@ export function RehearsalControls() {
     void execute({ action }, action, "developer");
   return (
     <>
-      <section className="skin-panel min-w-0 p-4 space-y-3" aria-label="Rehearsal controls">
+      <section
+        className="skin-panel min-w-0 p-4 space-y-3"
+        aria-label="Rehearsal controls"
+      >
         <h2>Isolated rehearsal</h2>
         <p>
           Runner: {rehearsal.runner}. {rehearsal.reason}
@@ -113,7 +119,10 @@ export function RehearsalControls() {
           Apply rehearsal settings
         </Button>
       </section>
-      <section className="skin-panel min-w-0 p-4 space-y-3" aria-label="Failure scenarios">
+      <section
+        className="skin-panel min-w-0 p-4 space-y-3"
+        aria-label="Failure scenarios"
+      >
         <h2>Try a failure</h2>
         <p>
           Connections recover automatically after five seconds. A deadline burst uses
@@ -176,50 +185,61 @@ export function RehearsalControls() {
           a countable submission remain waiting.
         </p>
       </section>
-      <section className="skin-panel min-w-0 p-4 space-y-3" aria-label="Rehearsal timeline">
-        <h2>Live event timeline</h2>
-        <label>
-          Show events{" "}
-          <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-            {[
-              "all",
-              "host",
-              "phase",
-              "connection",
-              "answer",
-              "scenario",
-              "check",
-              "refused",
-            ].map((kind) => (
-              <option key={kind}>{kind}</option>
-            ))}
-          </select>
-        </label>
+      <section
+        className="skin-panel min-w-0 p-4 space-y-3"
+        aria-label="Rehearsal timeline"
+      >
+        <h2>Live activity</h2>
         <p>
-          Latest 200 events. Reports include this history and current checks. Answer
-          bodies, credentials and answer keys are excluded.
+          New activity appears as grouped notifications. The full history stays here.
         </p>
-        <ol className="max-h-96 overflow-y-auto space-y-2">
-          {rehearsal.events
-            .filter(
-              (event) =>
-                filter === "all" || event.kind === filter || event.status === filter,
-            )
-            .map((event) => (
-              <motion.li
-                key={event.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-              >
-                <time dateTime={new Date(event.at).toISOString()}>
-                  {new Date(event.at).toLocaleTimeString("en-GB")}
-                </time>{" "}
-                · {event.actor} · {event.detail} · {event.status} · {event.phase}
-                {event.questionId ? ` / ${event.questionId}` : ""}
-              </motion.li>
-            ))}
-        </ol>
+        <Button variant="secondary" onClick={() => setNotifications((value) => !value)}>
+          {notifications ? "Pause live notifications" : "Resume live notifications"}
+        </Button>
+        <Disclosure title="Event history">
+          <label>
+            Show events{" "}
+            <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+              {[
+                "all",
+                "host",
+                "phase",
+                "connection",
+                "answer",
+                "scenario",
+                "check",
+                "refused",
+              ].map((kind) => (
+                <option key={kind}>{kind}</option>
+              ))}
+            </select>
+          </label>
+          <p>
+            Latest 200 events. Reports include this history and current checks. Answer
+            bodies, credentials and answer keys are excluded.
+          </p>
+          <ol className="max-h-96 overflow-y-auto space-y-2">
+            {rehearsal.events
+              .filter(
+                (event) =>
+                  filter === "all" || event.kind === filter || event.status === filter,
+              )
+              .map((event) => (
+                <motion.li
+                  key={event.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                >
+                  <time dateTime={new Date(event.at).toISOString()}>
+                    {new Date(event.at).toLocaleTimeString("en-GB")}
+                  </time>{" "}
+                  · {event.actor} · {event.detail} · {event.status} · {event.phase}
+                  {event.questionId ? ` / ${event.questionId}` : ""}
+                </motion.li>
+              ))}
+          </ol>
+        </Disclosure>
       </section>
     </>
   );

@@ -19,9 +19,9 @@ export function PhaseTransition({
         key={phase}
         data-phase={phase}
         data-phase-motion={reduce ? "fade" : "eased"}
-        initial={{ opacity: 0.96 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.12, ease: [0.2, 0, 0, 1] }}
+        initial={{ opacity: 0.96, y: reduce ? 0 : 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: reduce ? 0.12 : 0.24, ease: [0.2, 0, 0, 1] }}
       >
         {children}
       </motion.div>

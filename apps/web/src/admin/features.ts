@@ -216,7 +216,8 @@ export const adminFeatures: readonly AdminFeature[] = [
     scope: "global",
     path: "settings",
     summary: "Your administrator session and this browser's theme.",
-    rehearsal: "Switch themes with ?theme=… to preview them.",
+    rehearsal:
+      "Switch themes in the header, then try the real 100-player scoreboard and notification preview in Account & appearance.",
     owns: ["apps/api/src/auth", "apps/web/src/theme"],
   },
 ];

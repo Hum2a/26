@@ -113,6 +113,7 @@ function ResultsDetail({ gameId }: { gameId: string }) {
         <EntryNotice message={notice || result.error} />
         <motion.div
           className="results-body"
+          aria-busy={result.loading}
           key={result.data?.state ?? "checking"}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -181,7 +182,10 @@ function ResultsDetail({ gameId }: { gameId: string }) {
               </section>
             </>
           ) : (
-            <section className="results-intro">
+            <section
+              className="results-intro results-empty skin-panel"
+              aria-live="polite"
+            >
               <h2>
                 {!valid
                   ? "Check this address"
@@ -195,9 +199,11 @@ function ResultsDetail({ gameId }: { gameId: string }) {
               <p>
                 {!valid
                   ? "Open the results link shared for your game."
-                  : result.data?.state === "preparing"
-                    ? "This game has finished. Its shareable archive is not available yet. It may still be preparing; check again shortly."
-                    : "This game may still be running, or the archive could not be loaded. Check the game link and try again."}
+                  : result.loading
+                    ? "Finding the shared results for this game."
+                    : result.data?.state === "preparing"
+                      ? "This game has finished. Its shareable archive is not available yet. It may still be preparing; check again shortly."
+                      : "This game may still be running, or the archive could not be loaded. Check the game link and try again."}
               </p>
               {valid ? (
                 <Button

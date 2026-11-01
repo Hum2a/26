@@ -8,7 +8,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import { Link, type LinkProps } from "react-router";
 
 const focusRing =
@@ -84,26 +84,38 @@ export function Panel({
   children: ReactNode;
   display?: "phone" | "stage";
 }) {
+  const reduced = useReducedMotion();
   const heading =
     display === "stage"
       ? "font-display text-5xl leading-none text-highlight"
       : "font-display text-3xl text-highlight";
   return (
-    <section className="skin-panel border border-line bg-surface px-5 py-5">
+    <motion.section
+      className="skin-panel border border-line bg-surface px-5 py-5"
+      initial={{ opacity: reduced ? 0.9 : 0.75 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: reduced ? 0.12 : 0.24, ease: [0.2, 0, 0, 1] }}
+    >
       <h2 className={heading}>{title}</h2>
       <div className="mt-3 text-lg leading-relaxed">{children}</div>
-    </section>
+    </motion.section>
   );
 }
 
 export function StatusMessage({ children }: { children: ReactNode }) {
+  const reduced = useReducedMotion();
   return (
-    <p
+    <motion.p
+      initial={{ opacity: 0.75 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: reduced ? 0.12 : 0.2, ease: [0.2, 0, 0, 1] }}
       role="status"
       className="skin-status bg-highlight px-4 py-3 text-lg leading-snug font-bold text-highlight-foreground"
     >
       {children}
-    </p>
+    </motion.p>
   );
 }
 
@@ -246,9 +258,12 @@ export function ConfirmDialog({
 export function Disclosure({
   title,
   children,
+  keepMounted = false,
 }: {
   title: string;
   children: ReactNode;
+  /** Preserve unfinished form fields, without loading closed previews by default. */
+  keepMounted?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -263,21 +278,50 @@ export function Disclosure({
       >
         {title} {open ? "−" : "+"}
       </Button>
-      <AnimatePresence initial={false}>
-        {open ? (
-          <motion.div
-            id={id}
-            key="contents"
-            initial={{ opacity: 0, height: reduced ? "auto" : 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: reduced ? "auto" : 0 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-            className="admin-disclosure-content"
-          >
-            {children}
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      {keepMounted ? (
+        <DisclosureContent id={id} reduced={reduced} open={open} persistent>
+          {children}
+        </DisclosureContent>
+      ) : (
+        <AnimatePresence initial={false}>
+          {open ? (
+            <DisclosureContent id={id} reduced={reduced} open key="contents">
+              {children}
+            </DisclosureContent>
+          ) : null}
+        </AnimatePresence>
+      )}
     </div>
+  );
+}
+
+function DisclosureContent({
+  id,
+  reduced,
+  open,
+  persistent = false,
+  children,
+}: {
+  id: string;
+  reduced: boolean | null;
+  open: boolean;
+  persistent?: boolean;
+  children: ReactNode;
+}) {
+  const present = useIsPresent();
+  const active = open && present;
+  return (
+    <motion.div
+      id={id}
+      inert={!active}
+      aria-hidden={!active || undefined}
+      initial={persistent ? false : { opacity: 0, height: reduced ? "auto" : 0 }}
+      animate={{ opacity: active ? 1 : 0, height: active ? "auto" : 0 }}
+      exit={{ opacity: 0, height: reduced ? "auto" : 0 }}
+      transition={{ duration: reduced ? 0.12 : 0.18, ease: "easeOut" }}
+      className="admin-disclosure-content"
+    >
+      {children}
+    </motion.div>
   );
 }

@@ -85,6 +85,7 @@ test("creates an isolated automatic rehearsal with a real phone, question reset 
     .first()
     .click();
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.getByRole("button", { name: /Rehearse without guests/ }).click();
   await page.getByLabel("Rehearsal bot count").fill("4");
   await page.getByLabel("Pause at each reveal").check();
   await page.getByLabel("Setup name").fill("Browser rehearsal");

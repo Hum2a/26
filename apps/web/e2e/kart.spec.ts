@@ -334,30 +334,16 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
   expect(latest?.play?.kart?.elapsedMs).toBe(paused);
   await expect(stage.locator("[data-map-player]")).toHaveCount(participantCount);
   if (participantCount === 50) {
-    // A pause may catch any carousel page; return to the first field group explicitly.
-    const fieldHeading = stage.locator(".kart-field-heading h4");
-    for (
-      let attempt = 0;
-      attempt < 9 && (await fieldHeading.textContent()) !== "The field · 6–10";
-      attempt++
-    ) {
-      await stage.getByRole("button", { name: "Next drivers" }).click();
-    }
-    await expect(
-      stage.getByRole("heading", { name: "The field · 6–10" }),
-    ).toBeVisible();
-    for (let i = 0; i < 8; i++)
-      await stage.getByRole("button", { name: "Next drivers" }).click();
-    await expect(
-      stage.getByRole("heading", { name: "The field · 46–50" }),
-    ).toBeVisible();
-    await expect(
-      stage.getByRole("list", { name: "Rest of the race field" }),
-    ).toContainText("Stand-in 50");
+    for (let i = 0; i < 4; i++)
+      await stage.getByRole("button", { name: "Next players" }).click();
+    await expect(stage.getByText("41–50 of 50")).toBeVisible();
+    await expect(stage.getByRole("list", { name: "Race leaders" })).toContainText(
+      "Stand-in 50",
+    );
   }
   expect(
     await stage
-      .locator(".kart-leaderboard")
+      .getByRole("complementary", { name: "Race leaderboard" })
       .evaluate((board) => board.getBoundingClientRect().bottom <= innerHeight),
   ).toBe(true);
   await stage.screenshot({

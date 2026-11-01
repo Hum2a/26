@@ -4082,3 +4082,162 @@ below. No deployment, new dependency or paid resource.
   on `master`; the deployed application source is merge commit `087122b`.
 - **Exact next stage:** user-led authenticated kart/player-control and physical
   venue rehearsal. No further build or deployment is automatically started.
+
+## 31 October 2026 — whole-party presentation refresh
+
+- **Scope:** the user confirmed phones, projector, kart, results and rehearsal
+  feedback. Work is on `codex/party-presentation`; no deployment of this design
+  is performed by this request.
+- **Design:** shared palette-aware gradients, softened edges, quieter status
+  plates, refined answer selection, dock, fields, panels and native dialogs.
+  Existing themes retain their palettes and skins. MotionConfig honours reduced
+  motion. Entrances do not delay actions, outgoing phone phases remain disabled,
+  exiting name reactions are inert, and closing dialogs ignore pointer input.
+  Authoritative projector headings switch immediately at opacity 0.96 or above.
+- **Scoreboards:** `ui/scoreboard` renders server order, ties and points without
+  calculating scores. Ten rows appear initially; Previous, Next and Top 10 reach
+  everyone, with a live range and boundary states. Stable rows ease between
+  positions and NumberFlow animates point changes. Layout measurements follow
+  place/page changes rather than every race progress tick. Exiting rows are
+  clipped to prevent temporary horizontal overflow when resizing. Kart browsing
+  stays on the chosen page instead of cycling while someone reads. Quiz score
+  phases have their own composition; results use the same shared board.
+- **Notifications:** pinned Sonner 2.0.8 after checking its current official
+  getting-started, toast, toaster and styling documentation. Motion layout/presence
+  and NumberFlow docs were also checked. Only authenticated Admin mounts the
+  toaster. Existing rehearsal receipts are deduplicated and batched for 900ms,
+  with at most three groups per burst and refusals prioritised. History does not
+  replay on entry; exit cancels pending messages. Live notifications can be
+  paused, and the full filtered Event history remains available. Persistent
+  command errors and downloadable reports remain.
+- **Admin rehearsal:** Account & appearance renders the actual scoreboard with
+  100 labelled sample players, score changes and notification controls. The
+  registry describes this rehearsal. No new room, score engine, socket,
+  scheduler, host command, snapshot field or persisted data was introduced.
+- **Tests:** new scoreboard navigation/ties/shrinking population/empty cases,
+  50-driver manual browsing, notification aggregation/deduplication/history
+  suppression/refusal priority/cleanup, and real Admin rehearsal controls.
+  Existing command coverage opens the retained timeline. Browser coverage uses
+  a real 50-player lobby plus responsive/reduced-motion appearance previews.
+  Existing question-preview coverage now opens the current catalogue and
+  rehearsal disclosure; interaction and privacy assertions are retained.
+- **Final checks:** `npm run test:unit` passed **102 files / 410 tests** on the
+  final unchanged source (124.65 seconds). `npm run typecheck` passed, including
+  kart-solo. `npm run build` passed: web/Worker/kart builds, generated-secret
+  removal, a 693-file artifact scan and both content preflights. Existing large
+  bundle/PGlite and unfinished birthday-draft notices remain. Changed-file
+  ESLint has no errors and two pre-existing Fast Refresh warnings in
+  stage-play/admin-shell. Changed-file Prettier and `git diff --check` passed.
+  Commands used `npm.cmd --script-shell=cmd.exe` on Windows.
+- **Browser evidence:** kart-only creation/phone/stage flow and both question
+  preview cases passed, including answering, accepted, paused and get-ready
+  states and 320/390/430px widths. The appearance rehearsal passed these widths
+  and short landscape under normal/reduced motion. A 50-player map/board layout
+  run passed at 1080p and 720p. Inspected phone, board and projector screenshots
+  are under `.codex/previews/party-design` and `question-experience`.
+  The final focused appearance run passed **1 test / 57.0 seconds**, including
+  the resize fix and a light-theme notification/scoreboard screenshot. The
+  updated question-preview pair and kart-only flow also passed in the broader
+  selected runs. This does not convert the failures below into a full pass.
+- **Unresolved browser checks:** the stricter 50-player run stalls awaiting the
+  host pause receipt, including an isolated run. The existing full quiz test
+  timed out waiting for an advance HTTP response; the full driving test reached
+  DNF before its expected disabled accelerator. These are failed runs, not a
+  full e2e pass. No assertion was skipped, removed or given a longer timeout to
+  hide them. No server scheduling behaviour was changed for this visual task.
+  Existing repository-wide lint/format and native Worker/SQLite limitations
+  remain recorded above. Real venue/projector/Wi-Fi checks remain unperformed.
+- **Status:** design implemented and build/unit/type checks green locally.
+  Preview via `npm run dev` → `/admin/settings` → the real scoreboard and toast
+  rehearsal. This change is not merged or deployed; live-flow verification is
+  incomplete as described above.
+- **Exact next stage:** resolve the recorded live-command/browser failures
+  before a release, then rehearse with real devices. No next stage or deployment
+  starts automatically.
+
+## 1 November 2026 — app review and further polish
+
+- **Scope:** continued the requested visual/interaction audit on the existing
+  `codex/party-presentation` branch. Reviewed the loaded guest entry, projector
+  setup, Admin home, missing-page, results and guest-link dialog in Chromium.
+  Changes build on the preceding design; nothing was merged or deployed.
+- **Admin entry:** normal room actions now precede the rehearsal form. Home and
+  Rooms offer “Rehearse without guests” as a folded section. Its real form stays
+  mounted while folded, retaining unfinished settings and uncertain creation
+  requests rather than silently resetting them. Other disclosures still mount
+  previews only when opened. Closing panels become inert and leave the
+  accessibility tree immediately, while their visual exit eases away.
+- **Sharing:** the existing guest QR dialog and the phone's join-code view offer
+  a selectable, read-only guest link and Copy guest link. `ui/clipboard.ts` wraps
+  the browser API; `ui/copy-button.tsx` announces success only after the browser
+  confirms writing. Denial leaves the selectable URL and an honest fallback
+  message. Projector QR codes retain their existing read-only presentation,
+  without extra inputs or copy controls. No clipboard reads ship in the app.
+- **Recovery and results:** the missing-page screen now uses the real party
+  frame, a clear 404 and working join/home links, replacing the development
+  shell and placeholder Results destination. Results loading has its own calm
+  message, busy state and styled panel; it no longer suggests an archive failure
+  while a reply is still pending. Invalid/preparing/unavailable states remain
+  distinct, and retry behaviour is unchanged.
+- **Scoreboard:** after the population shrinks, a clamped page is retained so
+  adding players again does not unexpectedly jump back to an old page. Server
+  ordering, ties, points and all game commands remain unchanged.
+- **Files and interfaces:** extended shared `Disclosure` with opt-in
+  `keepMounted`, and `JoinMark` with opt-in `allowCopy`. Added clipboard/copy
+  primitives, missing-page/disclosure/join-mark tests and `e2e/polish.spec.ts`;
+  extended Rooms/results/scoreboard tests. The existing developer rehearsal
+  browser test now opens the new folded section before editing settings. No
+  new route, feature folder, host command, data field or persistence was added;
+  existing Admin coverage/ownership remains intact.
+- **References:** checked the current official Motion AnimatePresence and
+  reduced-motion documentation, and MDN Clipboard.writeText documentation.
+  No additional dependency or competing component kit was introduced.
+- **Verified:** `npm run test:unit` passed **105 files / 418 tests** in 224.35s.
+  `npm run typecheck` passed, including kart-solo. `npm run build` passed the
+  web/Worker/kart builds, generated-secret removal, 693-file artifact scan and
+  content preflights. Existing bundle/PGlite and incomplete-draft notices remain.
+  ESLint and Prettier checks on this pass's changed files passed. Commands used
+  `npm.cmd --script-shell=cmd.exe` on Windows.
+- **Browser verification:** `playwright test apps/web/e2e/polish.spec.ts
+--config=playwright.dev.config.ts --workers=1 --reporter=line` passed **2 tests
+  / 1.3 minutes**. It checks 320/390/430px and short landscape recovery screens,
+  reduced motion, completed entrances and no horizontal overflow; an explicitly
+  intercepted archive reply distinguishes loading from preparing. The real
+  local authenticated room flow checks room-action placement, retained folded
+  edits, exact clipboard URL and the QR dialog at phone widths. Clipboard reads
+  occur only in that test after it has written its own local guest URL.
+- **Manual review:** inspected the refreshed Admin home, loaded 390px recovery
+  page and 320px share dialog screenshots under `.codex/previews/polish`.
+  The initial audit caught a duplicate rehearsal form during implementation;
+  it was removed and the final complete suite verifies a single folded form.
+  Tests wait for completed entrance opacity before screenshots.
+- **Status and limits:** polish complete locally. Try `npm run dev`, then
+  Admin → Rooms → open a room → Show guest QR code, or visit an unknown address
+  for the recovery screen. Clipboard permission refusal is covered by component
+  tests; browser verification used Chromium. Physical phones/venue checks and
+  the previous 50-player pause, quiz-advance and full-driving failures remain
+  outside this pass's verified flows. No failing check was skipped or weakened.
+- **Exact next stage:** resolve the previously recorded live-flow release
+  blockers, then rehearse on venue devices before requesting a release.
+  No next stage or deployment starts automatically.
+
+## 1 November 2026 — requested presentation release
+
+- **Authorisation:** the user explicitly requested committing, pushing, syncing,
+  merging and deploying both environments after the remaining live-flow
+  limitations were reported. Those limitations are still recorded above;
+  this release does not claim to resolve them.
+- **Preflight:** a fresh fetch confirms `master` is the remote default and is
+  unchanged at `bdd863b`. The presentation branch contains only web UI,
+  dependency-lock and documentation changes; no schema migration, Worker
+  migration or new secret is required. Wrangler access is valid for this
+  project's configured personal account, and both Workers have all 11 required
+  secret names. No secret values were opened or changed.
+- **Checks:** the final 418-test unit pass, root typecheck, production build and
+  two polish browser cases from the preceding stage remain valid on this source.
+  Release-support tests passed 12/12. The earlier live-flow failures and existing
+  repository-wide lint/format limitations remain; they are not green checks.
+- **Git authentication:** fetching succeeds, but GitHub CLI is signed out and
+  the non-interactive push check cannot authenticate. Sign-in was requested
+  while local preparation and authorised Cloudflare work continue. Actual push,
+  merge and deployment outcomes will be recorded below.

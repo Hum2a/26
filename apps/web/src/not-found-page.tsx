@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { SurfaceFrame } from "./ui/surface-frame";
+import { EntryFrame, EntryHeading } from "./ui/entry-frame";
+import { LinkButton } from "./ui/primitives";
 
 export function NotFoundPage() {
   useEffect(() => {
@@ -7,11 +8,22 @@ export function NotFoundPage() {
   }, []);
 
   return (
-    <SurfaceFrame
-      title="Not found"
-      lede="This address is not one of the party screens."
-    >
-      <p className="text-lg">Use Guest, Stage, Admin, or Results.</p>
-    </SurfaceFrame>
+    <EntryFrame>
+      <section className="skin-panel entry-recovery">
+        <span className="entry-recovery-number" aria-hidden="true">
+          404
+        </span>
+        <EntryHeading eyebrow="A wrong turn" title="That page isn’t here.">
+          This link may be old or incomplete. You can still join with the code on the
+          stage.
+        </EntryHeading>
+        <div className="grid gap-3">
+          <LinkButton to="/join">Join the room</LinkButton>
+          <LinkButton variant="secondary" to="/">
+            Back to the party
+          </LinkButton>
+        </div>
+      </section>
+    </EntryFrame>
   );
 }

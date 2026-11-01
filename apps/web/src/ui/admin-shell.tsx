@@ -1,3 +1,4 @@
+import { ActivityToaster } from "./activity-toaster";
 import { NavLink, useLocation } from "react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -40,6 +41,7 @@ export function AdminShell({
         </NavLink>
       }
     >
+      <ActivityToaster />
       <div className="admin-workspace">
         <aside className="admin-sidebar">
           <p className="entry-eyebrow">Running the night</p>
@@ -76,7 +78,11 @@ export function AdminShell({
               ) : (
                 <>
                   {roomFeatures.map((feature) => (
-                    <span key={feature.id} className="admin-nav-disabled" aria-disabled="true">
+                    <span
+                      key={feature.id}
+                      className="admin-nav-disabled"
+                      aria-disabled="true"
+                    >
                       {feature.label}
                     </span>
                   ))}
@@ -117,7 +123,9 @@ export function AdminShell({
 export function useSelectedRoom(
   roomPath: string | undefined,
 ): { gameId: string; label: string } | null {
-  const [selected, setSelected] = useState<{ gameId: string; label: string } | null>(null);
+  const [selected, setSelected] = useState<{ gameId: string; label: string } | null>(
+    null,
+  );
   useEffect(() => {
     if (roomPath) {
       return;
@@ -135,7 +143,10 @@ export function useSelectedRoom(
     };
   }, [roomPath]);
   if (roomPath) {
-    return { gameId: roomPath, label: selected?.gameId === roomPath ? selected.label : roomPath };
+    return {
+      gameId: roomPath,
+      label: selected?.gameId === roomPath ? selected.label : roomPath,
+    };
   }
   return selected;
 }
@@ -150,6 +161,7 @@ function currentFeature(
     : pathname.replace(/^\/admin/, "");
   const segment = rest.replace(/^\//, "").split("/")[0] ?? "";
   return adminFeatures.find(
-    (feature) => feature.scope === (roomPath ? "room" : "global") && feature.path === segment,
+    (feature) =>
+      feature.scope === (roomPath ? "room" : "global") && feature.path === segment,
   );
 }

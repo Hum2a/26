@@ -58,6 +58,7 @@ it("sends each rehearsal control through validated host commands and shows diagn
     </>,
   );
   expect(screen.getByText("No duplicate scores", { exact: false })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: /Event history/ }));
   expect(screen.getByText("Entered collect", { exact: false })).toBeTruthy();
   for (const [label, expected] of [
     ["Pause automatic show", { action: "developer-stop" }],

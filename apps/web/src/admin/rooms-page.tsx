@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { adminFeatures, featurePath, roomFeatures } from "./features";
 import type { AdminRoomList, LobbySnapshot } from "@26/shared";
-import { Button, ConfirmDialog, Dialog, LinkButton } from "../ui/primitives";
+import {
+  Button,
+  ConfirmDialog,
+  Dialog,
+  Disclosure,
+  LinkButton,
+} from "../ui/primitives";
 import { JoinMark } from "../lobby/join-mark";
 import { EntryNotice } from "../ui/entry-frame";
 import { createLobby, seedSampleRoom } from "../live/room-api";
@@ -87,7 +93,6 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
         Pick up where you left off, or open a fresh lobby for the guests. Creating or
         switching rooms selects one room for this browser, including its stage access.
       </p>
-      <RehearsalSetup />
       <div className="admin-actions">
         <Button disabled={busy || loading} onClick={() => void create()}>
           {busy ? "Working…" : "Create a lobby"}
@@ -156,6 +161,9 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
           </ul>
         </>
       ) : null}
+      <Disclosure title="Rehearse without guests" keepMounted>
+        <RehearsalSetup />
+      </Disclosure>
       {overview ? <EverythingGrid roomId={current?.gameId ?? null} /> : null}
       {overview ? (
         <LinkButton variant="secondary" to="/admin/rooms">
@@ -338,7 +346,7 @@ export function RoomOverview() {
             triggerVariant="secondary"
           >
             <p>Guests can scan this code or copy the link below.</p>
-            <JoinMark code={snapshot.joinCode} />
+            <JoinMark code={snapshot.joinCode} allowCopy />
           </Dialog>
         </div>
       </div>

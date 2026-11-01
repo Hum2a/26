@@ -1,0 +1,273 @@
+/* Shared party chrome. Every colour still belongs to the selected palette. */
+.activity-toast[data-sonner-toast][data-styled="true"] .activity-toast-description {
+  color: var(--muted);
+}
+.activity-toast[data-sonner-toast][data-styled="true"] .activity-toast-close {
+  background: var(--surface);
+  color: var(--foreground);
+  border-color: var(--line);
+}
+html[data-theme="26-basic"] .skin-ground {
+  background:
+    radial-gradient(
+      ellipse at 85% 0%,
+      color-mix(in srgb, var(--accent) 8%, transparent),
+      transparent 48%
+    ),
+    radial-gradient(
+      ellipse at 0% 100%,
+      color-mix(in srgb, var(--highlight) 5%, transparent),
+      transparent 55%
+    );
+}
+.entry-bar,
+.phone-bar {
+  background: color-mix(in srgb, var(--background) 95%, transparent);
+}
+.entry-bar,
+.phone-bar,
+.entry-footer,
+.projector-footer {
+  border-color: color-mix(in srgb, var(--line) 65%, transparent);
+}
+html[data-finish="solid"] .skin-panel,
+.admin-current,
+.admin-feature-card {
+  background-image: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--foreground) 3%, transparent),
+    transparent 55%
+  );
+  border-color: color-mix(in srgb, var(--line) 75%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent),
+    0 16px 48px color-mix(in srgb, var(--background) 20%, transparent);
+}
+html[data-finish="solid"] .skin-control {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--foreground) 6%, transparent),
+    transparent
+  );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+.skin-control,
+.skin-field,
+.option-button,
+.stage-option {
+  transition:
+    background-color 0.2s var(--ease-party),
+    border-color 0.2s var(--ease-party),
+    color 0.2s var(--ease-party),
+    box-shadow 0.24s var(--ease-party),
+    opacity 0.18s var(--ease-party),
+    transform 0.18s var(--ease-party);
+}
+.skin-field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.skin-status {
+  border: 1px solid color-mix(in srgb, var(--highlight) 24%, var(--line));
+  background: color-mix(in srgb, var(--highlight) 8%, var(--background));
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 400;
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--highlight) 70%, transparent);
+}
+.phone-bar {
+  padding-block: 0.9rem;
+}
+.phone-dock:not(:empty) {
+  border-top-color: color-mix(in srgb, var(--line) 65%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 55%, var(--background)),
+    var(--background)
+  );
+}
+.question-direction {
+  color: var(--muted);
+}
+.question-direction > p {
+  color: var(--foreground);
+}
+.question-progress {
+  border-radius: 999px;
+  border-color: color-mix(in srgb, var(--line) 70%, transparent);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  padding: 0.4rem 0.75rem;
+}
+.question-choice-grid .option-button {
+  border-width: 1px;
+  border-color: color-mix(in srgb, var(--line) 85%, transparent);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--foreground) 3%, var(--surface)),
+    color-mix(in srgb, var(--surface) 65%, var(--background))
+  );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+.question-choice-grid .option-button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--accent) 18%, var(--surface)),
+    var(--surface)
+  );
+  color: var(--foreground);
+  box-shadow:
+    inset 0 0 0 1px var(--accent),
+    0 5px 22px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.question-choice-mark {
+  border-radius: 50%;
+  border-color: color-mix(in srgb, var(--line) 70%, transparent);
+  background: color-mix(in srgb, var(--background) 40%, transparent);
+}
+.question-choice-grid .option-button[aria-pressed="true"] .question-choice-mark {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: transparent;
+}
+.stage-option {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--surface) 94%, var(--foreground)),
+    var(--surface)
+  );
+  border-color: color-mix(in srgb, var(--line) 65%, transparent);
+}
+.stage-presentation .skin-panel:has(.scoreboard) {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+.stage-presentation .skin-panel:has(.scoreboard) > h2 {
+  font-size: clamp(2rem, 3vw, 3.5rem);
+  margin-bottom: 0.75rem;
+}
+.stage-presentation .skin-panel:has(.scoreboard) > div {
+  margin-top: 0;
+}
+.stage-presentation .scoreboard {
+  max-width: 76rem;
+  margin-inline: auto;
+}
+.projector-code {
+  letter-spacing: 0.03em;
+}
+.projector-invitation .skin-panel,
+.projector-names li {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+.results-podium-place {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--highlight) 7%, var(--surface)),
+    var(--background)
+  );
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  border-radius: var(--radius-panel);
+}
+.kart-race-board {
+  min-width: 0;
+  align-self: start;
+}
+.kart-race-board .scoreboard {
+  margin: 0;
+}
+.kart-race-heading {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.85rem;
+}
+.kart-viewport {
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  box-shadow: 0 18px 60px color-mix(in srgb, var(--background) 35%, transparent);
+}
+.kart-pedal {
+  border-width: 1px;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+.kart-finish-card {
+  border-width: 1px;
+  background: linear-gradient(
+    130deg,
+    color-mix(in srgb, var(--accent) 12%, var(--surface)),
+    var(--surface)
+  );
+}
+dialog {
+  opacity: 0;
+  transform: translateY(8px) scale(0.99);
+  transition:
+    opacity 0.18s var(--ease-party),
+    transform 0.22s var(--ease-party),
+    display 0.22s allow-discrete,
+    overlay 0.22s allow-discrete;
+}
+dialog:not([open]) {
+  pointer-events: none;
+}
+dialog[open] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  box-shadow: 0 30px 100px color-mix(in srgb, var(--background) 55%, transparent);
+}
+dialog::backdrop {
+  opacity: 0;
+  transition:
+    opacity 0.2s var(--ease-party),
+    display 0.2s allow-discrete,
+    overlay 0.2s allow-discrete;
+}
+dialog[open]::backdrop {
+  opacity: 1;
+}
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skin-control,
+  .skin-field {
+    animation: party-control-enter 0.22s var(--ease-party) both;
+  }
+}
+@keyframes party-control-enter {
+  from {
+    opacity: 0.72;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  dialog,
+  dialog[open] {
+    transform: none;
+    transition:
+      opacity 0.12s ease,
+      display 0.12s allow-discrete,
+      overlay 0.12s allow-discrete;
+  }
+  .skin-control,
+  .skin-field,
+  .skin-panel,
+  .skin-status,
+  .option-button,
+  .stage-option {
+    animation: none;
+    transition:
+      opacity 0.12s ease,
+      background-color 0.12s ease,
+      border-color 0.12s ease,
+      color 0.12s ease;
+  }
+}
