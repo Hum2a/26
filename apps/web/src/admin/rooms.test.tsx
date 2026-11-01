@@ -22,6 +22,24 @@ function mount() {
     </MemoryRouter>,
   );
 }
+it("puts room actions first and keeps rehearsal edits while folding them away", async () => {
+  mount();
+  await screen.findByText("Your first room starts here.");
+  expect(screen.queryByRole("spinbutton", { name: "Rehearsal bot count" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: /Rehearse without guests/ }));
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Rehearsal bot count" }), {
+    target: { value: "25" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: /Rehearse without guests/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Rehearse without guests/ }));
+  expect(
+    (
+      screen.getByRole("spinbutton", {
+        name: "Rehearsal bot count",
+      }) as HTMLInputElement
+    ).value,
+  ).toBe("25");
+});
 it("shows an honest empty registry and retries service failure", async () => {
   vi.mocked(listRooms).mockResolvedValueOnce({ error: "Unavailable", status: 503 });
   mount();

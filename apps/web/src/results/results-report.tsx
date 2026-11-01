@@ -1,18 +1,21 @@
+import { motion, useReducedMotion } from "motion/react";
 import type { PublicResults } from "@26/shared";
 import { MediaPreview } from "../ui/media-preview";
 import { FunFactReport } from "../play/fun-fact";
+import { Scoreboard } from "../ui/scoreboard";
 type Standings = NonNullable<PublicResults["standings"]>;
 export function StandingsList({ standings }: { standings: Standings }) {
   return standings.length ? (
-    <ol className="results-standings">
-      {standings.map((row, index) => (
-        <li key={index}>
-          <span className="results-position">{row.position}</span>
-          <span>{row.nickname}</span>
-          <strong>{row.points} points</strong>
-        </li>
-      ))}
-    </ol>
+    <Scoreboard
+      title="Every point counted"
+      label="Final standings"
+      entries={standings.map((row) => ({
+        id: row.nickname,
+        name: row.nickname,
+        place: row.position,
+        points: row.points,
+      }))}
+    />
   ) : (
     <p>No guest standings were stored for this game.</p>
   );
@@ -25,11 +28,19 @@ export function ResultsReport({
   published: PublicResults;
 }) {
   const standings = published.standings ?? [];
+  const reduced = useReducedMotion();
   return (
     <>
       <section className="results-podium" aria-label="Podium">
         {standings.slice(0, 3).map((row, index) => (
-          <article
+          <motion.article
+            initial={{ opacity: 0, y: reduced ? 0 : 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: reduced ? 0.12 : 0.35,
+              delay: reduced ? 0 : index * 0.07,
+              ease: [0.2, 0, 0, 1],
+            }}
             key={index}
             className={`results-podium-place results-podium-place-${row.position}`}
           >
@@ -39,7 +50,7 @@ export function ResultsReport({
               {row.points}
               <small>points</small>
             </p>
-          </article>
+          </motion.article>
         ))}
       </section>
       <div className="results-report-grid">

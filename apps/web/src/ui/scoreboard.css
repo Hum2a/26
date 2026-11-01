@@ -1,0 +1,354 @@
+.scoreboard {
+  min-width: 0;
+  padding: clamp(1rem, 2.1vw, 2rem);
+  border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
+  border-radius: var(--radius-panel);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--surface) 88%, var(--foreground) 2%),
+    color-mix(in srgb, var(--background) 94%, var(--surface))
+  );
+  box-shadow:
+    0 20px 60px color-mix(in srgb, var(--background) 28%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--foreground) 6%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+.scoreboard-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.scoreboard-eyebrow {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.45rem;
+}
+.scoreboard-heading h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.8vw, 2.7rem);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+.scoreboard-population {
+  display: grid;
+  text-align: right;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.scoreboard-population small {
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-top: 0.35rem;
+}
+.scoreboard-caption {
+  margin-top: 0.65rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.scoreboard-columns,
+.scoreboard-row {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+.scoreboard-columns {
+  margin-top: 1.4rem;
+  padding: 0 0.75rem 0.65rem;
+  color: var(--muted);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.scoreboard-columns > :last-child {
+  text-align: right;
+}
+.scoreboard-rows {
+  position: relative;
+  overflow: clip;
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.scoreboard-row {
+  min-height: 3.15rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-panel) * 0.45);
+  background: color-mix(in srgb, var(--surface) 28%, transparent);
+}
+.scoreboard-row[data-podium="1"] {
+  border-color: color-mix(in srgb, var(--highlight) 26%, transparent);
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--highlight) 12%, var(--background)),
+    color-mix(in srgb, var(--surface) 50%, transparent)
+  );
+}
+.scoreboard-row[data-podium="2"],
+.scoreboard-row[data-podium="3"] {
+  background: color-mix(in srgb, var(--foreground) 4%, var(--surface));
+}
+.scoreboard-place {
+  color: var(--muted);
+  font-size: 0.95em;
+  letter-spacing: -0.04em;
+}
+.scoreboard-row[data-podium="1"] .scoreboard-place {
+  color: var(--highlight);
+}
+.scoreboard-player {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+.scoreboard-player > span {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.scoreboard-player strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 1em;
+}
+.scoreboard-player small {
+  color: var(--muted);
+  font-size: 0.65em;
+}
+.scoreboard-result {
+  text-align: right;
+  display: grid;
+  gap: 0.1rem;
+  white-space: nowrap;
+}
+.scoreboard-result strong {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: end;
+  gap: 0.3em;
+  font-weight: 700;
+  font-size: 1.1em;
+}
+.scoreboard-result small,
+.scoreboard-result > span {
+  font-size: 0.65em;
+  color: var(--muted);
+}
+.scoreboard-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+.scoreboard-navigation p {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.scoreboard-navigation nav {
+  display: flex;
+  gap: 0.35rem;
+}
+.scoreboard-navigation button {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font-size: 0.75rem;
+  background: transparent;
+  transition:
+    background 0.2s var(--ease-party),
+    color 0.2s var(--ease-party),
+    border-color 0.2s var(--ease-party),
+    opacity 0.2s var(--ease-party);
+}
+.scoreboard-navigation button:not(:disabled):hover {
+  background: var(--surface);
+  border-color: var(--muted);
+}
+.scoreboard-navigation button:focus-visible {
+  outline: 2px solid var(--highlight);
+  outline-offset: 3px;
+}
+.scoreboard-navigation button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.scoreboard-empty {
+  padding-block: 2rem;
+  color: var(--muted);
+}
+.stage-presentation .scoreboard {
+  font-size: clamp(1rem, 1.6vw, 1.85rem);
+  line-height: 1.1;
+}
+.stage-presentation .scoreboard-columns,
+.stage-presentation .scoreboard-row {
+  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+}
+.stage-presentation .scoreboard-columns {
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.stage-presentation:has(.scoreboard) .projector-footer {
+  font-size: clamp(1rem, 1.4vw, 1.65rem);
+  padding-top: 0.65rem;
+}
+.stage-presentation .scoreboard-eyebrow,
+.stage-presentation .scoreboard-columns,
+.stage-presentation .scoreboard-navigation p,
+.stage-presentation .scoreboard-navigation button,
+.stage-presentation .scoreboard-population small {
+  font-size: clamp(0.8rem, 1vw, 1.15rem);
+}
+.stage-presentation .scoreboard-row {
+  min-height: clamp(2.7rem, 4.3vh, 3.7rem);
+  padding-block: 0.25rem;
+}
+.scoreboard[data-compact] .scoreboard-heading h2 {
+  font-size: clamp(1.3rem, 2vw, 2.15rem);
+}
+.scoreboard[data-compact] .scoreboard-row {
+  min-height: 2.4rem;
+  padding-block: 0.25rem;
+}
+.scoreboard[data-compact] .scoreboard-columns {
+  margin-top: 0.8rem;
+}
+.scoreboard[data-compact] .scoreboard-navigation {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+}
+.stage-presentation .scoreboard[data-compact] {
+  font-size: clamp(1rem, 1.3vw, 1.5rem);
+  line-height: 1.15;
+}
+.scoreboard[data-compact] .scoreboard-player > span {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.scoreboard[data-compact] .scoreboard-player small {
+  flex: none;
+  white-space: nowrap;
+}
+@media (min-width: 900px) {
+  .stage-presentation .kart-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 1rem 1.5rem;
+    align-items: start;
+  }
+  .stage-presentation .kart-stage-layout {
+    display: contents;
+  }
+  .stage-presentation .kart-race-heading {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .stage-presentation .kart-spectator-viewport {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+  }
+  .stage-presentation .kart-race-board {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+@media (min-width: 900px) and (max-height: 800px) {
+  .stage-safe:has(.scoreboard) {
+    padding-block: max(1rem, 3vh);
+  }
+  .stage-presentation:has(.scoreboard) {
+    gap: 0.75rem;
+    padding-bottom: 0;
+  }
+  .stage-presentation .scoreboard {
+    padding: 0.75rem;
+    font-size: clamp(1rem, 1.5vw, 1.4rem);
+  }
+  .stage-presentation .scoreboard-heading h2 {
+    font-size: 1.75rem;
+  }
+  .stage-presentation .scoreboard-columns {
+    margin-top: 0.65rem;
+    padding-bottom: 0.25rem;
+    font-size: 0.75rem;
+  }
+  .stage-presentation .scoreboard-rows {
+    gap: 0.15rem;
+  }
+  .stage-presentation .scoreboard-row {
+    min-height: 1.8rem;
+    padding-block: 0.1rem;
+  }
+  .stage-presentation .scoreboard-navigation {
+    margin-top: 0.4rem;
+    padding-top: 0.4rem;
+  }
+  .stage-presentation .scoreboard[data-compact] {
+    padding: 0.75rem;
+  }
+  .stage-presentation .scoreboard[data-compact] .scoreboard-heading h2 {
+    font-size: 1.5rem;
+  }
+  .stage-presentation .scoreboard[data-compact] .scoreboard-caption {
+    font-size: 0.75rem;
+    margin-top: 0.35rem;
+  }
+  .stage-presentation .scoreboard[data-compact] .scoreboard-columns {
+    margin-top: 0.4rem;
+    padding-bottom: 0.25rem;
+    font-size: 0.75rem;
+  }
+  .stage-presentation .scoreboard[data-compact] .scoreboard-rows {
+    gap: 0.15rem;
+  }
+  .stage-presentation .scoreboard[data-compact] .scoreboard-row {
+    min-height: 1.7rem;
+    padding-block: 0.1rem;
+  }
+  .stage-presentation .scoreboard[data-compact] .scoreboard-navigation {
+    margin-top: 0.4rem;
+    padding-top: 0.4rem;
+  }
+}
+@media (max-width: 420px) {
+  .scoreboard {
+    padding: 1rem 0.75rem;
+  }
+  .scoreboard-row,
+  .scoreboard-columns {
+    gap: 0.45rem;
+    padding-inline: 0.4rem;
+    grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  }
+  .scoreboard-player {
+    gap: 0.35rem;
+  }
+  .scoreboard-navigation {
+    align-items: start;
+  }
+  .scoreboard-navigation nav {
+    margin-left: auto;
+  }
+  .scoreboard-navigation button span {
+    display: none;
+  }
+}

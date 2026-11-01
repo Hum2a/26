@@ -9,6 +9,7 @@ import { AnswerNames } from "./attributions";
 import { renderPresentation } from "./presentation";
 import { KartDriversProvider } from "../kart/KartDriversProvider";
 import { FunFactStage } from "./fun-fact";
+import { Scoreboard } from "../ui/scoreboard";
 
 function stagePhaseTitle(phase: RoomPhaseName): string {
   switch (phase) {
@@ -60,13 +61,18 @@ export function StagePlay({ snapshot }: { snapshot: LobbySnapshot }) {
     snapshot.phase === "scores" ||
     snapshot.phase === "final" ||
     snapshot.phase === "podium";
-  const custom = leadBoard
-    ? undefined
-    : renderPresentation(play.question.presentation, {
-        surface: "stage",
-        phase: snapshot.phase,
-        play,
-      });
+  if (leadBoard)
+    return (
+      <>
+        <div data-phase={snapshot.phase} hidden />
+        <Standings play={play} title={stagePhaseTitle(snapshot.phase)} />
+      </>
+    );
+  const custom = renderPresentation(play.question.presentation, {
+    surface: "stage",
+    phase: snapshot.phase,
+    play,
+  });
   return (
     <Panel title={stagePhaseTitle(snapshot.phase)} display="stage">
       <div data-phase={snapshot.phase} hidden />
@@ -77,8 +83,7 @@ export function StagePlay({ snapshot }: { snapshot: LobbySnapshot }) {
       ) : null}
       {custom ?? (
         <>
-          {leadBoard ? <Standings play={play} /> : null}
-          <QuestionView play={play} omitBoard={leadBoard} />
+          <QuestionView play={play} omitBoard={false} />
           {play.explanation ? <p className="stage-answer">{play.explanation}</p> : null}
         </>
       )}
@@ -555,18 +560,21 @@ function DuelView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolean 
   );
 }
 
-function Standings({ play }: { play: PlaySnapshot }) {
-  if (!play.standings) {
+function Standings({ play, title }: { play: PlaySnapshot; title?: string }) {
+  if (!play.standings && !title) {
     return null;
   }
   return (
-    <ol className="grid gap-3" aria-label="Scoreboard">
-      {play.standings.map((row) => (
-        <li key={`${row.place}-${row.nickname}`} className="stage-score">
-          {row.place}. {row.nickname} — {row.points}
-        </li>
-      ))}
-    </ol>
+    <Scoreboard
+      title={title ?? "The standings"}
+      label="Scoreboard"
+      entries={(play.standings ?? []).map((row) => ({
+        id: row.nickname,
+        name: row.nickname,
+        place: row.place,
+        points: row.points,
+      }))}
+    />
   );
 }
 

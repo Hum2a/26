@@ -1,3 +1,4 @@
+import { PresentationRehearsal } from "./presentation-rehearsal";
 import { useState } from "react";
 
 import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router";
@@ -108,6 +109,7 @@ export function AdminSettingsPage() {
         Phones and the projector choose their themes independently. Changing this
         browser does not change anyone else’s screen.
       </p>
+      <PresentationRehearsal />
       <Link className="entry-text-link" to="/admin/rooms">
         Back to rooms
       </Link>

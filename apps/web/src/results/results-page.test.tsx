@@ -61,6 +61,16 @@ function mount(path = "/r/ABCDEFGH") {
   render(<RouterProvider router={router} />);
   return router;
 }
+it("shows a calm loading message without suggesting failure before the reply", () => {
+  fetcher.mockReturnValue(new Promise(() => undefined));
+  mount();
+  expect(screen.getByRole("heading", { name: "Checking the archive…" })).toBeTruthy();
+  expect(screen.getByText("Finding the shared results for this game.")).toBeTruthy();
+  expect(screen.queryByText(/archive could not be loaded/)).toBeNull();
+  expect(
+    (screen.getByRole("button", { name: "Check again" }) as HTMLButtonElement).disabled,
+  ).toBe(true);
+});
 it("presents a public podium/report and a separately labelled personal result", async () => {
   mount();
   await screen.findByRole("heading", { name: "What a night." });

@@ -568,7 +568,7 @@ export function GuestPage({
           <div className="grid gap-4">
             {snapshot?.phase === "lobby" ? (
               <div className="grid gap-4">
-                <JoinMark code={snapshot.joinCode} />
+                <JoinMark code={snapshot.joinCode} allowCopy />
                 {snapshot.namesReveal ? (
                   <NameReveal reveal={snapshot.namesReveal} />
                 ) : null}

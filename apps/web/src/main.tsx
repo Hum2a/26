@@ -1,4 +1,5 @@
 import { StrictMode } from "react";
+import { MotionConfig } from "motion/react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
 import { router } from "./router";
@@ -17,6 +18,11 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <MotionConfig
+      reducedMotion="user"
+      transition={{ duration: 0.24, ease: [0.2, 0, 0, 1] }}
+    >
+      <RouterProvider router={router} />
+    </MotionConfig>
   </StrictMode>,
 );
