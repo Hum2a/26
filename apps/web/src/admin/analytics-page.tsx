@@ -13,7 +13,9 @@ export function AnalyticsPage() {
   const eligible = highlights.filter((card) => card.display === "eligible");
   const held = highlights.filter((card) => card.display === "suppressed");
   const history = snapshot.trollHistory ?? [];
-  const trollCounts = countBy(history.filter((item) => item.status !== "refunded").map((item) => item.label));
+  const trollCounts = countBy(
+    history.filter((item) => item.status !== "refunded").map((item) => item.label),
+  );
   const wall = snapshot.wall;
   const wallShown = wall?.recent?.filter((item) => item.status === "shown") ?? [];
   const wallReactions = wallShown.reduce((sum, item) => sum + item.reactions, 0);
@@ -27,21 +29,30 @@ export function AnalyticsPage() {
         </div>
       </header>
       <p>
-        Live totals for this room, and the statistics the stage will show at the podium. Cards
-        update as the game goes on.
+        Live totals for this room, and the statistics the stage will show at the podium.
+        Cards update as the game goes on.
       </p>
 
       <section className="admin-task-section" aria-label="Totals">
         <h2>Totals</h2>
         <dl className="admin-room-facts">
           <Fact label="Players" value={snapshot.players.length} />
-          <Fact label="Phones connected" value={snapshot.connections?.guests ?? "Unavailable"} />
-          <Fact label="Stage screens" value={snapshot.connections?.stage ?? "Unavailable"} />
+          <Fact
+            label="Phones connected"
+            value={snapshot.connections?.guests ?? "Unavailable"}
+          />
+          <Fact
+            label="Stage screens"
+            value={snapshot.connections?.stage ?? "Unavailable"}
+          />
           <Fact label="Question photos and clips" value={snapshot.media.length} />
           <Fact label="Wall photos shown" value={wallShown.length} />
           <Fact label="Wall reactions" value={wallReactions} />
           <Fact label="Wall photos waiting" value={wall?.queue?.length ?? 0} />
-          <Fact label="Trolls sent" value={history.filter((item) => item.status !== "refunded").length} />
+          <Fact
+            label="Trolls sent"
+            value={history.filter((item) => item.status !== "refunded").length}
+          />
         </dl>
       </section>
 
@@ -52,7 +63,10 @@ export function AnalyticsPage() {
         ) : (
           <ul className="admin-card-grid-wide">
             {eligible.map((card) => (
-              <li key={card.id} className="rounded-3xl border border-line bg-surface p-4">
+              <li
+                key={card.id}
+                className="rounded-3xl border border-line bg-surface p-4"
+              >
                 {card.illustrative ? <p className="font-bold">Illustrative</p> : null}
                 <p className="text-lg font-bold">{card.stage}</p>
                 <p>{card.results}</p>
@@ -65,7 +79,10 @@ export function AnalyticsPage() {
       {held.length > 0 ? (
         <section className="admin-task-section" aria-label="Held back">
           <h2>Held back ({held.length})</h2>
-          <p>These groups are too small for a fair percentage, so the stage will not show them.</p>
+          <p>
+            These groups are too small for a fair percentage, so the stage will not show
+            them.
+          </p>
           <ul className="admin-card-grid">
             {held.map((card) => (
               <li key={card.id}>{card.results}</li>
@@ -81,8 +98,12 @@ export function AnalyticsPage() {
             {snapshot.funFactList.cards.map((card, index) => (
               <li
                 key={card.id}
-                aria-current={index === snapshot.funFactList?.index ? "step" : undefined}
-                className={index === snapshot.funFactList?.index ? "font-bold" : undefined}
+                aria-current={
+                  index === snapshot.funFactList?.index ? "step" : undefined
+                }
+                className={
+                  index === snapshot.funFactList?.index ? "font-bold" : undefined
+                }
               >
                 {card.text}
               </li>

@@ -924,6 +924,13 @@ export const lobbySnapshotSchema = z
     remainingMs: z.number().int().nullable(),
     serverNow: z.number().int(),
     stateVersion: z.number().int().nonnegative(),
+    /** Host intent guard; absent from guest and stage projections. */
+    phaseGeneration: z
+      .number()
+      .int()
+      .positive()
+      .max(Number.MAX_SAFE_INTEGER)
+      .optional(),
     questionSetVersion: contentVersionSchema,
     scoringVersion: contentVersionSchema,
     players: z.array(lobbyPlayerSchema),
@@ -1251,6 +1258,8 @@ export const playCommandSchema = z
     transferCode: z.string().optional(),
     released: z.number().int().nonnegative().optional(),
     retried: z.number().int().nonnegative().optional(),
+    /** The room was destroyed; its admin pages should leave it. */
+    destroyed: z.literal(true).optional(),
   })
   .strict();
 

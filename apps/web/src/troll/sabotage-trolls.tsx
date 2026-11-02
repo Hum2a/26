@@ -16,9 +16,9 @@ function inQuestion(element: Element): boolean {
 }
 
 function optionButtons(): HTMLButtonElement[] {
-  return [...document.querySelectorAll<HTMLButtonElement>("button[aria-pressed]")].filter(
-    inQuestion,
-  );
+  return [
+    ...document.querySelectorAll<HTMLButtonElement>("button[aria-pressed]"),
+  ].filter(inQuestion);
 }
 
 type TextControl = HTMLInputElement | HTMLTextAreaElement;
@@ -34,7 +34,8 @@ function textControls(): TextControl[] {
 function isTextControl(target: EventTarget | null): target is TextControl {
   return (
     (target instanceof HTMLTextAreaElement ||
-      (target instanceof HTMLInputElement && (target.type === "text" || target.type === "search"))) &&
+      (target instanceof HTMLInputElement &&
+        (target.type === "text" || target.type === "search"))) &&
     inQuestion(target)
   );
 }
@@ -42,7 +43,9 @@ function isTextControl(target: EventTarget | null): target is TextControl {
 /** Sets a controlled input's value so React sees it as typing. */
 export function setNativeValue(element: TextControl, value: string): void {
   const prototype =
-    element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    element instanceof HTMLTextAreaElement
+      ? HTMLTextAreaElement.prototype
+      : HTMLInputElement.prototype;
   Object.getOwnPropertyDescriptor(prototype, "value")?.set?.call(element, value);
   element.dispatchEvent(new Event("input", { bubbles: true }));
 }
@@ -66,7 +69,9 @@ export function ReshuffledOptions({ label }: { label: string }) {
         const parent = button.parentElement;
         // A lone button in a list item moves as its item.
         const siblings = parent
-          ? [...parent.children].filter((child) => child.matches("button[aria-pressed]"))
+          ? [...parent.children].filter((child) =>
+              child.matches("button[aria-pressed]"),
+            )
           : [];
         const item = siblings.length > 1 || !parent ? button : parent;
         const group = item.parentElement;
@@ -100,8 +105,11 @@ export function pigLatin(text: string): string {
     const match = /^([^aeiou]*)(.*)$/.exec(lower);
     const head = match?.[1] ?? "";
     const rest = match?.[2] ?? "";
-    const latin = head === "" ? `${lower}way` : rest === "" ? `${lower}ay` : `${rest}${head}ay`;
-    return word[0] === word[0]?.toUpperCase() ? latin[0]!.toUpperCase() + latin.slice(1) : latin;
+    const latin =
+      head === "" ? `${lower}way` : rest === "" ? `${lower}ay` : `${rest}${head}ay`;
+    return word[0] === word[0]?.toUpperCase()
+      ? latin[0]!.toUpperCase() + latin.slice(1)
+      : latin;
   });
 }
 
@@ -112,7 +120,11 @@ export function TranslatedOptions({ label }: { label: string }) {
     function translate() {
       for (const button of optionButtons()) {
         const walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT);
-        for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
+        for (
+          let node = walker.nextNode() as Text | null;
+          node;
+          node = walker.nextNode() as Text | null
+        ) {
           const known = originals.get(node);
           if (known && node.nodeValue === known.translated) continue;
           const original = node.nodeValue ?? "";
@@ -144,7 +156,9 @@ export function PossessedSlider({ label }: { label: string }) {
     let direction = 1;
     function drift() {
       if (Math.random() < 0.2) direction = -direction;
-      for (const slider of document.querySelectorAll<HTMLInputElement>('input[type="range"]')) {
+      for (const slider of document.querySelectorAll<HTMLInputElement>(
+        'input[type="range"]',
+      )) {
         if (!inQuestion(slider)) continue;
         if (!touched.has(slider)) {
           touched.set(slider, slider.style.transform);
@@ -153,8 +167,14 @@ export function PossessedSlider({ label }: { label: string }) {
         const min = Number(slider.min || 0);
         const max = Number(slider.max || 100);
         const step = Number(slider.step) || (max - min) / 100;
-        const next = Math.min(max, Math.max(min, Number(slider.value) + direction * step * 2));
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(slider, String(next));
+        const next = Math.min(
+          max,
+          Math.max(min, Number(slider.value) + direction * step * 2),
+        );
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(
+          slider,
+          String(next),
+        );
         slider.dispatchEvent(new Event("input", { bubbles: true }));
         slider.dispatchEvent(new Event("change", { bubbles: true }));
       }
@@ -174,7 +194,12 @@ export function PossessedSlider({ label }: { label: string }) {
 export function ReverseTyping({ label }: { label: string }) {
   useEffect(() => {
     function onBeforeInput(event: InputEvent) {
-      if (event.inputType !== "insertText" || !event.data || !isTextControl(event.target)) return;
+      if (
+        event.inputType !== "insertText" ||
+        !event.data ||
+        !isTextControl(event.target)
+      )
+        return;
       event.preventDefault();
       const element = event.target;
       setNativeValue(element, event.data + element.value);
@@ -266,7 +291,12 @@ export function CharacterLimit({ label }: { label: string }) {
       }
     };
   }, []);
-  return <SabotagePill label={label} text={`✂️ ${sabotageCharacterLimit} characters. Choose wisely.`} />;
+  return (
+    <SabotagePill
+      label={label}
+      text={`✂️ ${sabotageCharacterLimit} characters. Choose wisely.`}
+    />
+  );
 }
 
 /** Random buzzing bursts. */

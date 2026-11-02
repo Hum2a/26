@@ -1,0 +1,393 @@
+/* Shared page heading for the Ranks, Troll and Snap tabs. */
+.phone-tab-head {
+  display: grid;
+  gap: 0.5rem;
+}
+.phone-tab-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 10vw, 3rem);
+  line-height: 1;
+}
+
+.troll-tab {
+  display: grid;
+  gap: 1.1rem;
+}
+.troll-token {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: var(--radius-panel);
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+}
+.troll-token > span {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--foreground) 14%, transparent);
+}
+.troll-token[data-ready] > span {
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+}
+.troll-outgoing {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: var(--radius-panel);
+  border-inline-start: 4px solid var(--hue);
+  padding: 0.6rem 0.9rem;
+  font-weight: 700;
+}
+
+.troll-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.troll-steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  border-top: 3px solid color-mix(in srgb, var(--foreground) 14%, transparent);
+  padding-top: 0.45rem;
+  transition:
+    color 0.2s var(--ease-party),
+    border-color 0.3s var(--ease-party);
+}
+.troll-steps li span {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  font-size: 0.7rem;
+}
+.troll-steps li[data-state="current"] {
+  border-color: var(--accent);
+  color: var(--foreground);
+}
+.troll-steps li[data-state="done"] {
+  border-color: var(--highlight);
+  color: var(--foreground);
+}
+
+.troll-groups,
+.troll-target {
+  display: grid;
+  gap: 1.4rem;
+}
+.troll-group {
+  display: grid;
+  gap: 0.7rem;
+}
+.troll-group h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+.troll-group h2 small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.troll-group-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.8rem;
+  background: var(--hue);
+  color: var(--hue-ink);
+  font-size: 1.2rem;
+  box-shadow: 0 6px 16px -8px var(--hue);
+}
+.troll-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+.troll-card {
+  display: grid;
+  align-content: start;
+  gap: 0.3rem;
+  min-height: 6.5rem;
+  border-radius: var(--radius-panel);
+  padding: 0.75rem;
+  text-align: start;
+  touch-action: manipulation;
+  transition:
+    transform 0.18s var(--ease-party),
+    border-color 0.2s var(--ease-party),
+    background-color 0.2s var(--ease-party),
+    opacity 0.2s var(--ease-party);
+}
+.troll-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--hue) 26%, transparent),
+    transparent 70%
+  );
+}
+.troll-card:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.troll-card[aria-pressed="true"] {
+  border-color: var(--hue);
+  box-shadow:
+    0 0 0 2px var(--hue),
+    var(--glass-shadow);
+}
+.troll-card:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.troll-card:focus-visible,
+.troll-picker-player:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+.troll-card-icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--hue) 85%, transparent);
+  color: var(--hue-ink);
+  font-size: 1.1rem;
+}
+.troll-card-name {
+  font-weight: 800;
+  font-size: 1rem;
+  line-height: 1.15;
+}
+.troll-card-blurb {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.troll-chosen {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: var(--radius-panel);
+  padding: 0.75rem;
+}
+.troll-chosen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--hue) 30%, transparent),
+    transparent 75%
+  );
+}
+
+.troll-picker {
+  display: grid;
+  gap: 0.75rem;
+}
+.troll-picker-token {
+  font-weight: 700;
+  color: var(--muted);
+}
+.troll-picker-search {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+.troll-picker-search input {
+  min-height: 3rem;
+  border: 1px solid var(--glass-edge);
+  background: var(--glass-tint);
+  padding: 0 1rem;
+  font-size: 1.05rem;
+  font-weight: 400;
+}
+.troll-picker-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(9rem, 100%), 1fr));
+  gap: 0.5rem;
+  max-height: 22rem;
+  overflow-y: auto;
+  padding: 0.15rem;
+}
+.troll-picker-player {
+  display: flex;
+  width: 100%;
+  min-height: 3.5rem;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem 0.35rem 0.35rem;
+  font-weight: 700;
+  text-align: start;
+  overflow-wrap: anywhere;
+  transition:
+    transform 0.18s var(--ease-party),
+    box-shadow 0.2s var(--ease-party);
+}
+.troll-picker-player:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.troll-picker-player[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    var(--glass-shadow);
+}
+.troll-picker-player:disabled {
+  opacity: 0.5;
+}
+.troll-picker-empty {
+  color: var(--muted);
+}
+.troll-send {
+  min-height: 3.5rem;
+}
+
+/* A troll that has landed on this phone, pinned under the top bar. */
+.incoming-trolls {
+  position: relative;
+  z-index: 35;
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.5rem 0.75rem 0;
+}
+.incoming-trolls:empty {
+  display: none;
+}
+.incoming-troll {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.4rem 0.75rem;
+  border-radius: var(--radius-panel);
+  border-inline-start: 5px solid var(--hue);
+  padding: 0.8rem 0.9rem;
+}
+.incoming-troll::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--hue) 34%, transparent),
+    transparent 80%
+  );
+}
+.incoming-troll-icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.9rem;
+  background: var(--hue);
+  color: var(--hue-ink);
+  font-size: 1.35rem;
+}
+.incoming-troll-group {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.incoming-troll-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.incoming-troll-from,
+.incoming-troll-note {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.incoming-troll-escape,
+.incoming-troll-note {
+  grid-column: 1 / -1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .troll-card:active:not(:disabled),
+  .troll-picker-player:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* Group filter chips: one group of trolls at a time. */
+.troll-filter {
+  position: sticky;
+  top: -1rem;
+  z-index: 5;
+  display: flex;
+  gap: 0.45rem;
+  margin-inline: -1rem;
+  overflow-x: auto;
+  padding: 0.4rem 1rem;
+  scrollbar-width: none;
+}
+.troll-filter-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  border-radius: 999px;
+  padding: 0 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    background 0.2s var(--ease-party),
+    color 0.2s var(--ease-party),
+    transform 0.16s var(--ease-party);
+}
+.troll-filter-chip small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.troll-filter-chip[aria-pressed="true"] {
+  background: var(--hue);
+  color: var(--hue-ink);
+}
+.troll-filter-chip[aria-pressed="true"] small {
+  color: inherit;
+}
+.troll-filter-chip:active {
+  transform: scale(0.95);
+}
+.troll-filter-chip:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .troll-filter-chip:active {
+    transform: none;
+  }
+}

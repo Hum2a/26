@@ -24,11 +24,20 @@ export function useWallCommands() {
   return {
     locked,
     approve: (post: { postId: string; nickname: string }) =>
-      run({ action: "wall-approve", postId: post.postId }, `Approve ${post.nickname}'s photo`),
+      run(
+        { action: "wall-approve", postId: post.postId },
+        `Approve ${post.nickname}'s photo`,
+      ),
     decline: (post: { postId: string; nickname: string }) =>
-      run({ action: "wall-decline", postId: post.postId }, `Decline ${post.nickname}'s photo`),
+      run(
+        { action: "wall-decline", postId: post.postId },
+        `Decline ${post.nickname}'s photo`,
+      ),
     pull: (post: { postId: string; nickname: string }) =>
-      run({ action: "wall-pull", postId: post.postId }, `Pull ${post.nickname}'s photo`),
+      run(
+        { action: "wall-pull", postId: post.postId },
+        `Pull ${post.nickname}'s photo`,
+      ),
     skip: () => run({ action: "wall-skip" }, "Skip to the next photo"),
     next: () => run({ action: "wall-next" }, "Show the next photo now"),
     settings: (wallSettings: NonNullable<PlayIntent["wallSettings"]>) =>
@@ -85,10 +94,12 @@ export function WallPage() {
         </div>
       </header>
       <p>
-        Guests send photos from their phones. {wall.settings?.moderation === "approve"
+        Guests send photos from their phones.{" "}
+        {wall.settings?.moderation === "approve"
           ? "You approve each one before it reaches the big screen."
           : "Photos go straight to the big screen. Pull anything you don't want."}{" "}
-        Press <kbd>A</kbd> to approve and <kbd>D</kbd> to decline the first waiting photo.
+        Press <kbd>A</kbd> to approve and <kbd>D</kbd> to decline the first waiting
+        photo.
       </p>
       <CommandFeedback scope="wall" />
 
@@ -104,10 +115,17 @@ export function WallPage() {
               size="thumb"
             />
             <div className="flex flex-wrap gap-2">
-              <Button disabled={commands.locked} onClick={() => wall.now && commands.pull(wall.now)}>
+              <Button
+                disabled={commands.locked}
+                onClick={() => wall.now && commands.pull(wall.now)}
+              >
                 Pull it
               </Button>
-              <Button variant="secondary" disabled={commands.locked} onClick={commands.skip}>
+              <Button
+                variant="secondary"
+                disabled={commands.locked}
+                onClick={commands.skip}
+              >
                 Skip
               </Button>
             </div>
@@ -154,7 +172,11 @@ export function WallPage() {
                 {item.nickname}
                 {item.caption ? ` · ${item.caption}` : ""}
               </span>
-              <Button variant="secondary" disabled={commands.locked} onClick={() => commands.decline(item)}>
+              <Button
+                variant="secondary"
+                disabled={commands.locked}
+                onClick={() => commands.decline(item)}
+              >
                 Remove
               </Button>
             </li>
@@ -174,7 +196,9 @@ export function WallPage() {
                 <Button
                   variant="secondary"
                   disabled={commands.locked}
-                  onClick={() => commands.mute(player.playerId, player.nickname, !isMuted)}
+                  onClick={() =>
+                    commands.mute(player.playerId, player.nickname, !isMuted)
+                  }
                 >
                   {isMuted ? "Unmute" : "Mute"}
                 </Button>
@@ -198,13 +222,18 @@ export function WallPage() {
                 />
               ) : (
                 <p>
-                  {item.nickname} · {item.status === "declined" ? "declined" : "removed"}
+                  {item.nickname} ·{" "}
+                  {item.status === "declined" ? "declined" : "removed"}
                 </p>
               )}
               {item.status === "shown" ? (
                 <div className="flex items-center gap-3">
                   <span>{item.reactions} reactions</span>
-                  <Button variant="secondary" disabled={commands.locked} onClick={() => commands.pull(item)}>
+                  <Button
+                    variant="secondary"
+                    disabled={commands.locked}
+                    onClick={() => commands.pull(item)}
+                  >
                     Hide everywhere
                   </Button>
                 </div>
@@ -215,7 +244,9 @@ export function WallPage() {
       </Disclosure>
 
       <Disclosure title="Rehearse: preview every frame">
-        <p>How a photo looks on the big screen in each frame, using a sample picture.</p>
+        <p>
+          How a photo looks on the big screen in each frame, using a sample picture.
+        </p>
         <ul className="admin-card-grid">
           {wallFrames.map((frame) => (
             <li key={frame} className="grid gap-1">
@@ -389,7 +420,8 @@ export function WallQuickPanel() {
     return null;
   }
   const first = wall.queue?.find((item) => item.status === "pending");
-  const pendingCount = wall.queue?.filter((item) => item.status === "pending").length ?? 0;
+  const pendingCount =
+    wall.queue?.filter((item) => item.status === "pending").length ?? 0;
   return (
     <section className="admin-task-section" aria-label="Photo wall">
       <h2>
@@ -406,7 +438,11 @@ export function WallQuickPanel() {
           <Button disabled={commands.locked} onClick={() => commands.approve(first)}>
             Approve
           </Button>
-          <Button variant="secondary" disabled={commands.locked} onClick={() => commands.decline(first)}>
+          <Button
+            variant="secondary"
+            disabled={commands.locked}
+            onClick={() => commands.decline(first)}
+          >
             Decline
           </Button>
         </div>
@@ -414,7 +450,11 @@ export function WallQuickPanel() {
       {wall.now ? (
         <div className="flex flex-wrap items-center gap-3">
           <span>On screen: {wall.now.nickname}</span>
-          <Button variant="secondary" disabled={commands.locked} onClick={() => wall.now && commands.pull(wall.now)}>
+          <Button
+            variant="secondary"
+            disabled={commands.locked}
+            onClick={() => wall.now && commands.pull(wall.now)}
+          >
             Pull it
           </Button>
         </div>

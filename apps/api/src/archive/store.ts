@@ -31,7 +31,9 @@ export function postgresArchive(database: AppDatabase): ArchiveWriter {
   return {
     async write(document) {
       await ready;
-      return database.executor.transaction((query) => insertPublication(query, document));
+      return database.executor.transaction((query) =>
+        insertPublication(query, document),
+      );
     },
     async purgeDeviceDetails(nowMs) {
       await ready;

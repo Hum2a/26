@@ -202,6 +202,7 @@ describe("openRoomSocket liveness", () => {
     vi.stubGlobal("WebSocket", FakeSocket);
   });
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
     vi.unstubAllGlobals();
   });
@@ -340,6 +341,36 @@ describe("openRoomSocket liveness", () => {
     const before = FakeSocket.instances.length;
     window.dispatchEvent(new Event("online"));
     expect(FakeSocket.instances.length).toBe(before + 1);
+    client.close();
+  });
+
+  it("replaces a handshake started offline when the connection returns", () => {
+    const client = open("guest");
+    const pending = FakeSocket.instances[0]!;
+    window.dispatchEvent(new Event("pageshow"));
+    expect(FakeSocket.instances).toHaveLength(1);
+    const visibility = vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+    window.dispatchEvent(new Event("online"));
+    expect(pending.closed).not.toBeNull();
+    expect(FakeSocket.instances).toHaveLength(2);
+    visibility.mockRestore();
+    client.close();
+  });
+
+  it("closes immediately on signal loss and replays the same pending intent when online", () => {
+    const client = open("guest");
+    const first = FakeSocket.instances[0]!;
+    first.open();
+    client.submitKartRecovery!("race");
+    const command = first.sent.find((value) => value.includes('"kart-recover"'))!;
+    window.dispatchEvent(new Event("offline"));
+    expect(first.closed).not.toBeNull();
+    vi.advanceTimersByTime(30_000);
+    expect(FakeSocket.instances).toHaveLength(1);
+    window.dispatchEvent(new Event("online"));
+    const next = FakeSocket.instances[1]!;
+    next.open();
+    expect(next.sent).toContain(command);
     client.close();
   });
 });

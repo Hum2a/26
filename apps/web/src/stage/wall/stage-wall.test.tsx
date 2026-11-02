@@ -17,7 +17,14 @@ const now: NonNullable<Wall["now"]> = {
 };
 
 function wall(overrides: Partial<Wall> = {}): Wall {
-  return { enabled: true, placement: "breaks", now: null, waiting: 0, next: null, ...overrides };
+  return {
+    enabled: true,
+    placement: "breaks",
+    now: null,
+    waiting: 0,
+    next: null,
+    ...overrides,
+  };
 }
 
 describe("projector photo wall", () => {
@@ -36,7 +43,11 @@ describe("projector photo wall", () => {
 
   it("uses the corner during a question when the host chose corner placement", () => {
     render(
-      <StageWall wall={wall({ now, placement: "corner", waiting: 2 })} gameId="ROOM" phase="collect" />,
+      <StageWall
+        wall={wall({ now, placement: "corner", waiting: 2 })}
+        gameId="ROOM"
+        phase="collect"
+      />,
     );
     expect(screen.queryByRole("region", { name: /Photo wall/ })).toBeNull();
     expect(screen.getByRole("img", { name: /a photo from Amina/ })).toBeTruthy();
@@ -60,7 +71,38 @@ describe("projector photo wall", () => {
         }
       },
     );
-    render(<StageWall wall={wall({ next: { mediaId: id(9) } })} gameId="ROOM" phase="lobby" />);
-    expect(created.map((image) => image.src)).toEqual([`/api/rooms/ROOM/media/${id(9)}`]);
+    render(
+      <StageWall
+        wall={wall({ next: { mediaId: id(9) } })}
+        gameId="ROOM"
+        phase="lobby"
+      />,
+    );
+    expect(created.map((image) => image.src)).toEqual([
+      `/api/rooms/ROOM/media/${id(9)}`,
+    ]);
+  });
+  it("only adds new reaction deltas, without replaying unchanged snapshots", () => {
+    const view = render(
+      <StageWall
+        wall={wall({ now: { ...now, reactions: [] } })}
+        gameId="ROOM"
+        phase="scores"
+      />,
+    );
+    const update = (count: number) =>
+      view.rerender(
+        <StageWall
+          wall={wall({ now: { ...now, reactions: [{ reaction: "fire", count }] } })}
+          gameId="ROOM"
+          phase="scores"
+        />,
+      );
+    update(2);
+    expect(document.querySelectorAll(".wall-floater")).toHaveLength(2);
+    update(2);
+    expect(document.querySelectorAll(".wall-floater")).toHaveLength(2);
+    update(3);
+    expect(document.querySelectorAll(".wall-floater")).toHaveLength(3);
   });
 });

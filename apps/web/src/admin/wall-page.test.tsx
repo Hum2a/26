@@ -6,7 +6,12 @@ vi.mock("../live/room-api", () => ({ playRoom: vi.fn(), issueTransfer: vi.fn() }
 import type { LobbySnapshot } from "@26/shared";
 import { playRoom } from "../live/room-api";
 import { WallPage } from "./wall-page";
-import { mountControls, playerId, playingFixture, setupControls } from "./controls.test-support";
+import {
+  mountControls,
+  playerId,
+  playingFixture,
+  setupControls,
+} from "./controls.test-support";
 
 const id = (n: number) => `00000000-0000-4000-8000-0000000000a${n}`;
 
@@ -82,7 +87,9 @@ it("pulls the photo on screen and changes settings", async () => {
   await mountControls(<WallPage />);
   fireEvent.click(screen.getByRole("button", { name: "Pull it" }));
   await waitFor(() =>
-    expect(sent()).toContainEqual(expect.objectContaining({ action: "wall-pull", postId: id(1) })),
+    expect(sent()).toContainEqual(
+      expect.objectContaining({ action: "wall-pull", postId: id(1) }),
+    ),
   );
   fireEvent.click(screen.getByLabelText("Straight to the big screen"));
   await waitFor(() =>
@@ -93,5 +100,7 @@ it("pulls the photo on screen and changes settings", async () => {
       }),
     ),
   );
-  expect(screen.getByRole("button", { name: /Show next now \(1 in the queue\)/ })).toBeTruthy();
+  expect(
+    screen.getByRole("button", { name: /Show next now \(1 in the queue\)/ }),
+  ).toBeTruthy();
 });

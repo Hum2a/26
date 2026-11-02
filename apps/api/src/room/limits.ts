@@ -36,6 +36,8 @@ export const answerRoleMessage = "This screen cannot answer.";
 export const controlMissingMessage = "This screen needs its room session.";
 export const skipClosedMessage = "This question cannot be skipped.";
 export const finishClosedMessage = "This quiz cannot be finished from here.";
+export const endNowClosedMessage = "There is no game running to end.";
+export const roomDestroyedMessage = "The host closed this room.";
 export const finishAfterMessage = "The quiz will finish after this question.";
 export const reactionLimitMessage = "You have used all 10 name votes.";
 export const reactionSelfMessage = "You cannot vote on your own name.";
@@ -114,8 +116,10 @@ export const wallCooldownMs = 45_000;
 export const wallWaitingPerPlayer = 3;
 export const wallQuotaMessage = "You have sent all your photos for tonight.";
 export const wallRoomQuotaMessage = "The photo wall is full for tonight.";
-export const wallCooldownMessage = "Give everyone else a turn. You can send another photo shortly.";
-export const wallWaitingMessage = "You already have photos waiting. Send another once one is shown.";
+export const wallCooldownMessage =
+  "Give everyone else a turn. You can send another photo shortly.";
+export const wallWaitingMessage =
+  "You already have photos waiting. Send another once one is shown.";
 export const wallClosedMessage = "The photo wall is switched off right now.";
 export const wallMutedMessage = "The host has paused your photos.";
 export const wallMediaMessage = "Send that photo again.";

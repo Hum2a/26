@@ -60,6 +60,7 @@ export default defineConfig({
           name: "room",
           include: [
             "test/room.spec.ts",
+            "test/end-destroy.spec.ts",
             "test/player-control.spec.ts",
             "test/developer-room.spec.ts",
             "test/rehearsal-room.spec.ts",

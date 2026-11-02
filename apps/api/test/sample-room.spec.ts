@@ -8,7 +8,12 @@ import { setup, type Stub } from "./wall-support.ts";
 function media(gameId: string) {
   return Array.from({ length: sampleWallPostCount }, () => {
     const mediaId = crypto.randomUUID();
-    return { mediaId, finalKey: acceptedKey(gameId, mediaId), contentType: "image/png", byteLength: 1024 };
+    return {
+      mediaId,
+      finalKey: acceptedKey(gameId, mediaId),
+      contentType: "image/png",
+      byteLength: 1024,
+    };
   });
 }
 

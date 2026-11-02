@@ -194,9 +194,12 @@ export type PlayAction =
   | "hide-media"
   | "retry-archive"
   | "release-stuck-media"
-  | "retry-delivery";
+  | "retry-delivery"
+  | "end-now"
+  | "destroy";
 
 export type PlayIntent = {
+  expectedPhaseGeneration?: number;
   rehearsalConfig?: RehearsalConfig;
   questionIndex?: number;
   scenario?: "disconnect" | "late-join" | "deadline-burst" | "host-loss";
@@ -214,6 +217,8 @@ export type PlayIntent = {
   mediaId?: string;
   trollKind?: string;
   postId?: string;
+  /** Destroy only: the join code the host typed to confirm. */
+  confirmCode?: string;
   wallSettings?: {
     enabled?: boolean;
     moderation?: "approve" | "direct";

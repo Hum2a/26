@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { LobbySnapshot } from "@26/shared";
 import { Wordmark } from "../theme/wordmark";
 import { SkinMotif } from "../theme/skin-motif";
+import { LiquidGround } from "../ui/liquid-ground";
 import { Button } from "../ui/primitives";
 import { JoinMark } from "../lobby/join-mark";
 import { NameCloud, NameReveal } from "../lobby/name-cloud";
@@ -63,6 +64,7 @@ export function StagePresentation({
     <SafeArea dev={false}>
       <StageFullscreen controls={false} onExit={onSetup}>
         <div className="skin-ground" aria-hidden="true">
+          <LiquidGround />
           <SkinMotif />
         </div>
         <main

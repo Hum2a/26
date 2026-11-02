@@ -17,7 +17,12 @@ function Answer() {
   const [value, setValue] = useState("");
   return (
     <>
-      <input type="text" aria-label="Answer" value={value} onChange={(event) => setValue(event.target.value)} />
+      <input
+        type="text"
+        aria-label="Answer"
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+      />
       <p data-testid="state">{value}</p>
     </>
   );

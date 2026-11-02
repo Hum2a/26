@@ -21,14 +21,23 @@ beforeEach(() => {
 });
 
 it("lists every room page from the admin home, linked to the selected room", async () => {
-  vi.mocked(readCurrentRoom).mockResolvedValue({ ...roomFixture, gameId: "ROOMABCD", joinCode: "XYZ123" });
+  vi.mocked(readCurrentRoom).mockResolvedValue({
+    ...roomFixture,
+    gameId: "ROOMABCD",
+    joinCode: "XYZ123",
+  });
   renderAt("/admin");
   const nav = screen.getByRole("navigation", { name: "Admin workspace" });
   await waitFor(() =>
-    expect(nav.querySelector('a[href="/admin/rooms/ROOMABCD/analytics"]')).not.toBeNull(),
+    expect(
+      nav.querySelector('a[href="/admin/rooms/ROOMABCD/analytics"]'),
+    ).not.toBeNull(),
   );
   for (const page of ["analytics", "wall", "trolls", "players", "results", "health"]) {
-    expect(nav.querySelector(`a[href="/admin/rooms/ROOMABCD/${page}"]`), page).not.toBeNull();
+    expect(
+      nav.querySelector(`a[href="/admin/rooms/ROOMABCD/${page}"]`),
+      page,
+    ).not.toBeNull();
   }
   expect(screen.getByText("Room XYZ123")).toBeTruthy();
 });
@@ -38,9 +47,9 @@ it("still shows the room pages with no room selected, and how to get one", async
   renderAt("/admin");
   expect(screen.getByText("Analytics")).toBeTruthy();
   expect(screen.getByText("Photo wall")).toBeTruthy();
-  expect(screen.getByRole("link", { name: "Open a room first →" }).getAttribute("href")).toBe(
-    "/admin/rooms",
-  );
+  expect(
+    screen.getByRole("link", { name: "Open a room first →" }).getAttribute("href"),
+  ).toBe("/admin/rooms");
 });
 
 it("uses the room in the address inside a room, without asking the server", () => {

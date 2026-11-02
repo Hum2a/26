@@ -18,7 +18,11 @@ import { readWallSettings, type WallSettings } from "./store.ts";
  */
 
 /** A pending photo joins the queue. */
-export function approveWallPost(sql: SqlStorage, postId: string | undefined, now: number) {
+export function approveWallPost(
+  sql: SqlStorage,
+  postId: string | undefined,
+  now: number,
+) {
   const post = readPost(sql, postId);
   if (post.status !== "pending") {
     throw new Error(wallDecidedMessage);
@@ -32,7 +36,11 @@ export function approveWallPost(sql: SqlStorage, postId: string | undefined, now
 }
 
 /** A waiting photo is refused. The image is hidden so it cannot be fetched. */
-export function declineWallPost(sql: SqlStorage, postId: string | undefined, now: number) {
+export function declineWallPost(
+  sql: SqlStorage,
+  postId: string | undefined,
+  now: number,
+) {
   const post = readPost(sql, postId);
   if (post.status !== "pending" && post.status !== "queued") {
     throw new Error(wallDecidedMessage);
@@ -47,7 +55,11 @@ export function declineWallPost(sql: SqlStorage, postId: string | undefined, now
  */
 export function pullWallPost(sql: SqlStorage, postId: string | undefined, now: number) {
   const post = readPost(sql, postId);
-  if (post.status !== "showing" && post.status !== "shown" && post.status !== "queued") {
+  if (
+    post.status !== "showing" &&
+    post.status !== "shown" &&
+    post.status !== "queued"
+  ) {
     throw new Error(wallDecidedMessage);
   }
   sql.exec(
@@ -142,7 +154,10 @@ export function declineWaitingFor(sql: SqlStorage, playerId: string) {
 function decline(sql: SqlStorage, postIds: string[]) {
   for (const postId of postIds) {
     const row = sql
-      .exec<{ media_id: string }>(`SELECT media_id FROM wall_post WHERE post_id = ?`, postId)
+      .exec<{ media_id: string }>(
+        `SELECT media_id FROM wall_post WHERE post_id = ?`,
+        postId,
+      )
       .toArray()[0];
     sql.exec(
       `UPDATE wall_post SET status = 'declined', keep = 0, decided_by = 'host' WHERE post_id = ?`,

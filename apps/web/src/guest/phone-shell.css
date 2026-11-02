@@ -16,23 +16,47 @@ html.phone-lock #root {
   padding-bottom: var(--keyboard-inset, 0px);
 }
 
+/* Top bar: mark, live timer, connection and the personal menu. */
 .phone-bar {
   position: relative;
   z-index: 20;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--line);
-  padding: 0.75rem 1.25rem;
+  margin: max(0.5rem, env(safe-area-inset-top)) 0.75rem 0;
+  border-radius: calc(var(--radius-panel) + 0.25rem);
+  padding: 0.4rem 0.6rem 0.4rem 1rem;
+}
+.phone-bar .skin-wordmark {
+  font-size: 1.6rem;
+}
+.phone-bar-timer {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+.phone-bar-end {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: end;
+  gap: 0.5rem;
 }
 
-.phone-scroll {
+/* Pages sit on top of each other; the active one fades and rises in. */
+.phone-pages {
   position: relative;
   z-index: 10;
   display: grid;
   flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.phone-scroll {
+  position: relative;
+  display: grid;
   align-content: start;
   gap: 1rem;
   min-width: 0;
@@ -40,10 +64,31 @@ html.phone-lock #root {
   overflow-x: clip;
   overflow-y: auto;
   overscroll-behavior: none;
-  padding: 1.25rem 1.25rem 1.5rem;
+  padding: 1rem 1rem 1.5rem;
   scroll-padding-bottom: 1.5rem;
 }
 
+.phone-page {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px) scale(0.99);
+  transition:
+    opacity 0.24s var(--ease-party),
+    transform 0.32s var(--spring-ease, var(--ease-party)),
+    visibility 0s linear 0.24s;
+}
+.phone-page[data-active] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 0.24s var(--ease-party),
+    transform 0.32s var(--spring-ease, var(--ease-party)),
+    visibility 0s;
+}
+
+/* The send dock, only on the Play page. */
 .phone-dock:empty {
   display: none;
 }
@@ -53,33 +98,146 @@ html.phone-lock #root {
   z-index: 30;
   display: grid;
   gap: 0.75rem;
-  border-top: 1px solid var(--line);
-  background: var(--background);
-  padding: 0.75rem 1.25rem 1rem;
+  margin: 0 0.75rem 0.5rem;
+  border-radius: calc(var(--radius-panel) + 0.25rem);
+  padding: 0.6rem;
+  transition:
+    opacity 0.2s var(--ease-party),
+    transform 0.24s var(--ease-party);
+}
+.phone-shell[data-tabbed]:not([data-tab="play"]) .phone-dock:not(:empty) {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 5.5rem;
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
 }
 
 .phone-dock > button {
   width: 100%;
+  min-height: 3.5rem;
+  font-size: 1.2rem;
+}
+
+/* Bottom tab bar. */
+.phone-tabbar {
+  position: relative;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin: 0 0.75rem max(0.6rem, env(safe-area-inset-bottom));
+  border-radius: 999px;
+  padding: 0.35rem;
+}
+.phone-tab {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  min-height: 3.5rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.25rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  touch-action: manipulation;
+  transition:
+    color 0.2s var(--ease-party),
+    transform 0.18s var(--ease-party);
+}
+.phone-tab:active {
+  transform: scale(0.94);
+}
+.phone-tab:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+.phone-tab[aria-current="page"] {
+  color: var(--accent-foreground);
+}
+.phone-tab-pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--accent) 92%, white),
+    var(--accent)
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, white 45%, transparent) inset,
+    0 8px 18px -8px var(--accent);
+}
+.phone-tab-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  font-size: 1.45rem;
+}
+.phone-tab-badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.7rem;
+  display: grid;
+  place-items: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+  padding: 0 0.3rem;
+  font-size: 0.7rem;
+  line-height: 1;
 }
 
 .phone-shell[data-immersive] .phone-scroll {
-  padding: 0.5rem 1rem 1rem;
-}
-.phone-shell[data-immersive] .phone-bar {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 0.9rem 1rem;
 }
 .phone-shell[data-immersive] .skin-status {
   padding: 0.5rem 0.75rem;
   font-size: 0.9rem;
-}
-.phone-shell[data-immersive] .phone-dock {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 .phone-secondary-tools {
   display: grid;
   gap: 0.75rem;
   border-top: 1px solid var(--line);
   padding-top: 1rem;
+}
+
+/* A short landscape phone needs every pixel for the question. */
+@media (orientation: landscape) and (max-height: 32rem) {
+  .phone-bar {
+    margin-top: 0.25rem;
+    padding-block: 0.2rem;
+  }
+  .phone-tab {
+    min-height: 2.75rem;
+  }
+  .phone-tab-label {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone-page,
+  .phone-page[data-active] {
+    transform: none;
+    transition:
+      opacity 0.15s linear,
+      visibility 0s linear 0.15s;
+  }
+  .phone-page[data-active] {
+    transition:
+      opacity 0.15s linear,
+      visibility 0s;
+  }
+  .phone-tab:active {
+    transform: none;
+  }
 }
 
 @media (max-width: 48rem) {
@@ -94,5 +252,118 @@ html.phone-lock #root {
     overflow-x: clip;
     overflow-y: auto;
     overscroll-behavior: none;
+  }
+}
+
+/* The live clock in the top bar. */
+.phone-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem 0.3rem 0.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.05rem;
+  transition: color 0.2s var(--ease-party);
+}
+.phone-timer-ring {
+  width: 1.75rem;
+  height: 1.75rem;
+  transform: rotate(-90deg);
+}
+.phone-timer-track {
+  fill: none;
+  stroke: color-mix(in srgb, var(--foreground) 16%, transparent);
+  stroke-width: 3;
+}
+.phone-timer-fill {
+  fill: none;
+  stroke: var(--highlight);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition:
+    stroke-dashoffset 0.3s linear,
+    stroke 0.2s var(--ease-party);
+}
+.phone-timer[data-state="urgent"] {
+  color: var(--accent);
+}
+.phone-timer[data-state="urgent"] .phone-timer-fill {
+  stroke: var(--accent);
+}
+.phone-timer:is([data-state="paused"], [data-state="held"]) .phone-timer-fill {
+  stroke: var(--muted);
+}
+
+/* The personal menu behind the avatar. */
+.you-menu {
+  position: relative;
+}
+.you-menu-button {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  padding: 0.15rem;
+  transition: transform 0.18s var(--ease-party);
+}
+.you-menu-button:active {
+  transform: scale(0.92);
+}
+.you-menu-button:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+.you-menu-panel {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  z-index: 60;
+  display: grid;
+  gap: 1rem;
+  width: min(20rem, calc(100vw - 1.5rem));
+  max-height: 75dvh;
+  overflow-y: auto;
+  border-radius: calc(var(--radius-panel) + 0.25rem);
+  padding: 1rem;
+  transform-origin: top right;
+  background: var(--glass-tint-strong);
+}
+.you-menu-who {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.you-menu-name {
+  overflow-wrap: anywhere;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+.you-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-weight: 700;
+}
+
+/* Snap tab. */
+.snap-tab {
+  display: grid;
+  gap: 1.1rem;
+}
+.snap-card {
+  display: grid;
+  gap: 0.9rem;
+  border-radius: calc(var(--radius-panel) + 0.25rem);
+  padding: 1rem;
+}
+.snap-card h2 {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+@media (prefers-reduced-motion: reduce) {
+  .you-menu-button:active {
+    transform: none;
   }
 }

@@ -282,3 +282,9 @@ Each started birthday room stores its frozen private question script in existing
   receipts, scheduler, score ledger and room retention. These are real rooms:
   the normal final archive path runs at podium, unlike dedicated developer
   rehearsals.
+
+## Ending and destroying a room (2 November 2026)
+
+- **End game now** moves a running room straight to the podium. The current question is abandoned unscored; nothing new is stored beyond the existing control receipt and phase history.
+- **Destroy room** needs the room's control credential and the typed join code. The room's Durable Object closes every socket with a "room closed" message, disarms its alarm and deletes all of its SQLite storage (players, answers, scores, credentials, receipts, media records, telemetry). The code registry then deletes the join-code row and keeps one receipt (`principal = 'destroy'`: request id, game id, join code) so a retried request replays. Temporary and accepted R2 objects listed in the room's `media_upload` table are deleted in the background after the response. An archive already exported to Neon is not touched.
+- **Guest standings.** Guest snapshots now carry the leading ten standings (place, nickname, points) while scores are shown, for the phone's Ranks tab. Nothing new is stored. A guest under an active hidden-score troll receives no standings at all.

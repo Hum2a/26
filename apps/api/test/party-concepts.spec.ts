@@ -157,10 +157,23 @@ it("preserves the supplied 30-second scenario, driving list and dial endpoints w
   }
 });
 
-it("rehearses a catalogue larger than 40 while retaining the 40-question live order limit", () => {
-  expect(birthdayPack.catalogue.length).toBeGreaterThan(contentLimits.packMax);
+it("rehearses a catalogue beyond the eighty-question live order limit", () => {
+  const largeCatalogue = {
+    ...birthdayPack,
+    order: [],
+    catalogue: Array.from({ length: 81 }, (_, index) => ({
+      ...byId(ready[0]!),
+      id: `fixture-${index}`,
+    })),
+  };
+  expect(
+    validatePack(largeCatalogue).filter((issue) => issue.level === "error"),
+  ).toEqual([]);
+  for (const question of largeCatalogue.catalogue) {
+    expect(questionPreview(largeCatalogue, question).interactive).toBe(true);
+  }
   for (const q of birthdayPack.catalogue) {
-    const preview = questionPreview(birthdayPack, q);
+    const preview = questionPreview({ ...birthdayPack, order: [] }, q);
     if (preview.question) {
       expect(preview.question).toMatchObject({ id: q.id, index: 1, total: 1 });
       for (const field of [
@@ -182,10 +195,16 @@ it("rehearses a catalogue larger than 40 while retaining the 40-question live or
   });
   const tooLong = {
     ...birthdayPack,
-    order: Array.from({ length: 41 }, () => ready[0]!),
+    ...largeCatalogue,
+    order: largeCatalogue.catalogue.map((question) => question.id),
   };
   expect(validatePack(tooLong).some((i) => i.code === "pack")).toBe(true);
-  expect(contentLimits.packMax).toBe(40);
+  expect(contentLimits.packMax).toBe(80);
+  expect(
+    validatePack({ ...tooLong, order: tooLong.order.slice(0, 80) }).filter(
+      (issue) => issue.level === "error",
+    ),
+  ).toEqual([]);
   expect(
     birthdayPack.catalogue.filter((q) => q.id.startsWith("who-said-it-")).length,
   ).toBe(10);
@@ -211,6 +230,6 @@ it("rehearses a catalogue larger than 40 while retaining the 40-question live or
       )
       .every((q) => q.status === "ready" && missingRequirements(q).length === 0),
   ).toBe(true);
-  expect(birthdayPack.order).toEqual([]);
+  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
   expect(birthdayPack.release).toBe("draft");
 });

@@ -62,12 +62,16 @@ beforeEach(() => setupControls(fixture));
 it("shows podium highlights, the ones held back, and troll totals", async () => {
   await mountControls(<AnalyticsPage />);
   const highlights = screen.getByRole("region", { name: "Podium highlights" });
-  expect(within(highlights).getByText("Most loved photo: Amina's, with 12 reactions.")).toBeTruthy();
+  expect(
+    within(highlights).getByText("Most loved photo: Amina's, with 12 reactions."),
+  ).toBeTruthy();
   const held = screen.getByRole("region", { name: "Held back" });
   expect(within(held).getByText("2 of the 3 iPad players chose it.")).toBeTruthy();
   const trolls = screen.getByRole("region", { name: "Trolls by type" });
   // A refunded troll never ran, so it does not count.
   expect(trolls.textContent).toContain("Confetti cannon: 2");
   expect(trolls.textContent).not.toContain("DVD logo");
-  expect(screen.getByRole("region", { name: "Totals" }).textContent).toContain("Trolls sent2");
+  expect(screen.getByRole("region", { name: "Totals" }).textContent).toContain(
+    "Trolls sent2",
+  );
 });

@@ -87,6 +87,8 @@ import {
   demoQuestionSetVersion,
   demoScoringVersion,
   finishClosedMessage,
+  endNowClosedMessage,
+  roomDestroyedMessage,
   skipClosedMessage,
   playerMissingMessage,
   roomFullMessage,
@@ -102,6 +104,7 @@ import {
   acceptAnswer,
   advance,
   finishGame,
+  endGameNow,
   fixturePlugin,
   notePresence,
   onAlarm,
@@ -1176,7 +1179,13 @@ export class PartyRoom extends DurableObject<Env> {
     secret: string;
     requestId: string;
     nowMs: number;
+    expectedPhaseGeneration?: number;
   }): Promise<PhaseCommandResult> {
+    // Credential verification yields. An alarm can finish this phase while
+    // the host's intent is being checked; that intent must not skip the next.
+    const requestedGeneration = this.ctx.storage.sql
+      .exec<{ phase_generation: number }>("SELECT phase_generation FROM room")
+      .toArray()[0]?.phase_generation;
     const allowed = await this.requireControl(
       input.credentialId,
       input.secret,
@@ -1185,9 +1194,33 @@ export class PartyRoom extends DurableObject<Env> {
     if (!allowed.ok) {
       return allowed;
     }
-    return this.phaseCommand(input.requestId, { action: "advance" }, (sql) => {
-      advance(createGameStore(sql), input.nowMs);
-    });
+    if (
+      input.expectedPhaseGeneration !== undefined &&
+      (!Number.isSafeInteger(input.expectedPhaseGeneration) ||
+        input.expectedPhaseGeneration <= 0)
+    )
+      return {
+        ok: false,
+        error: "invalid",
+        message: "Choose the current phase before advancing.",
+      };
+    return this.phaseCommand(
+      input.requestId,
+      {
+        action: "advance",
+        ...(input.expectedPhaseGeneration === undefined
+          ? {}
+          : { expectedPhaseGeneration: input.expectedPhaseGeneration }),
+      },
+      (sql) => {
+        const store = createGameStore(sql);
+        if (
+          store.readRoom().phaseGeneration ===
+          (input.expectedPhaseGeneration ?? requestedGeneration)
+        )
+          advance(store, input.nowMs);
+      },
+    );
   }
 
   async startBirthday(input: {
@@ -1351,6 +1384,98 @@ export class PartyRoom extends DurableObject<Env> {
         throw new Error(finishClosedMessage);
       }
     });
+  }
+
+  async endNow(input: {
+    credentialId: string;
+    secret: string;
+    requestId: string;
+    nowMs: number;
+  }): Promise<PhaseCommandResult> {
+    const allowed = await this.requireControl(
+      input.credentialId,
+      input.secret,
+      input.nowMs,
+    );
+    if (!allowed.ok) {
+      return allowed;
+    }
+    return this.phaseCommand(input.requestId, { action: "end-now" }, (sql) => {
+      if (!endGameNow(createGameStore(sql), input.nowMs)) {
+        throw new Error(endNowClosedMessage);
+      }
+    });
+  }
+
+  /**
+   * Deletes the whole room: every socket is told and closed, the scheduler is
+   * disarmed and storage is wiped, so later requests find no room. The caller
+   * removes the join code and the stored media keys returned here.
+   */
+  async destroyRoom(input: {
+    credentialId: string;
+    secret: string;
+    requestId: string;
+    nowMs: number;
+    confirmCode: string;
+  }): Promise<
+    | { ok: true; gameId: string; joinCode: string; mediaKeys: string[] }
+    | Extract<PhaseCommandResult, { ok: false }>
+  > {
+    if (!validRequestId(input.requestId)) {
+      return { ok: false, error: "invalid", message: roundStartMessage };
+    }
+    const allowed = await this.requireControl(
+      input.credentialId,
+      input.secret,
+      input.nowMs,
+    );
+    if (!allowed.ok) {
+      return allowed;
+    }
+    const room = this.readRoom();
+    if (!room) {
+      return { ok: false, error: "unauthenticated", message: roomMissingMessage };
+    }
+    if (input.confirmCode.toUpperCase() !== room.join_code.toUpperCase()) {
+      return {
+        ok: false,
+        error: "invalid",
+        message: "That is not this room’s join code. Nothing was destroyed.",
+      };
+    }
+    const mediaKeys = this.ctx.storage.sql
+      .exec<{ temp_key: string; final_key: string | null }>(
+        "SELECT temp_key, final_key FROM media_upload",
+      )
+      .toArray()
+      .flatMap((row) =>
+        row.final_key ? [row.temp_key, row.final_key] : [row.temp_key],
+      );
+    for (const socket of this.ctx.getWebSockets()) {
+      try {
+        this.send(socket, {
+          kind: "replaced",
+          scope: "private",
+          message: roomDestroyedMessage,
+        });
+        socket.close(4000, roomDestroyedMessage);
+      } catch {
+        // A socket that already went away needs no goodbye.
+      }
+    }
+    this.liveDrafts.clear();
+    if (this.draftFlush) clearTimeout(this.draftFlush);
+    // Cancel every job through the one scheduler, which then disarms the alarm.
+    await commitAndArm(this.ctx.storage, (sql) => {
+      sql.exec(
+        "UPDATE schedule_job SET status = 'cancelled', due_at = NULL WHERE status = 'pending'",
+      );
+    });
+    await this.ctx.storage.deleteAll();
+    // Empty tables, not missing ones: later requests read "no room" cleanly.
+    ensurePartySchema(this.ctx.storage.sql);
+    return { ok: true, gameId: room.game_id, joinCode: room.join_code, mediaKeys };
   }
 
   async hostAction(input: {
@@ -3597,7 +3722,7 @@ export class PartyRoom extends DurableObject<Env> {
       selfPlayerId &&
       hidesPersonalScore(this.ctx.storage.sql, selfPlayerId)
     ) {
-      play = { ...play, selfAward: null, selfStanding: null };
+      play = { ...play, selfAward: null, selfStanding: null, standings: null };
     }
     const trolls = trollSnapshot(this.ctx.storage.sql, store, audience, selfPlayerId);
     const highlights =
@@ -3671,6 +3796,7 @@ export class PartyRoom extends DurableObject<Env> {
       wall: wallSnapshot(this.ctx.storage.sql, audience, selfPlayerId, Date.now()),
       ...(audience === "control"
         ? {
+            phaseGeneration: stored.phaseGeneration,
             connections: {
               guests: this.ctx.getWebSockets("guest").length,
               stage: this.ctx.getWebSockets("presentation").length,
@@ -3966,7 +4092,11 @@ export class PartyRoom extends DurableObject<Env> {
       return;
     }
     const fields = new Map(
-      Object.entries(snapshot).map(([key, value]) => [key, JSON.stringify(value)]),
+      // JSON omits optional undefined fields. The patch cache must represent
+      // exactly that wire view, including unsets when an optional field clears.
+      Object.entries(snapshot).flatMap(([key, value]) =>
+        value === undefined ? [] : [[key, JSON.stringify(value)] as const],
+      ),
     );
     const previous = this.views.get(ws);
     this.viewCount += 1;

@@ -4278,3 +4278,105 @@ below. No deployment, new dependency or paid resource.
   the earlier full live-flow/native Worker limitations remain unresolved.
 - **Exact next stage:** resolve those recorded failures and rehearse on venue
   devices. No further work or deployment starts automatically.
+
+## 2 November 2026 — liquid-glass phone app, trolls, ranks and host safety
+
+- **Context:** the user tried the live game and asked for a UI/UX pass: a
+  failing photo upload, more fluid admin, livelier players, phones that fit
+  without scrolling, a phone timer, a clear "answered" state, a question and
+  troll overhaul with distinct trolls, a more interesting leaderboard visible
+  on phones, an app-style phone with bottom tabs, and admin End game / Destroy
+  room. Decisions taken with the user: a **liquid glass** look (they have no
+  attachment to the earlier theme), tabs **Play · Ranks · Troll · Snap**, the
+  previous uncommitted Codex work committed first (`ccbdecc`, 106 files / 426
+  unit tests passing at that point), and one combined pass. Work is on branch
+  `claude/liquid-glass-ui`; nothing was deployed.
+- **Photo upload (root cause, reproduced live):** production `R2_ACCOUNT_ID`
+  holds a Cloudflare API token rather than the 32-character account ID, so the
+  presigned upload host was `<token>.r2.cloudflarestorage.com` and the browser
+  PUT failed with status 0. That URL also exposed part of the token to phones.
+  Code fixes: `presign.ts` treats a malformed account ID as unconfigured (no
+  URL is built; the health report lists it as missing), and
+  `putWithProgress` no longer adds the client API key header or cookies to a
+  cross-origin presigned PUT, which a bucket CORS rule would refuse.
+  **Not fixable in code:** set the real account ID secret, rotate the exposed
+  token, and confirm the bucket CORS rule allows `PUT` with `content-type` from
+  the party origins.
+- **Host safety:** new host commands `end-now` (straight to the podium; the
+  current question is not scored) and `destroy` (typed join code checked again
+  in the room; sockets get a "room closed" message; jobs are cancelled through
+  the scheduler; storage is wiped; the registry drops the join code and keeps a
+  replay receipt; R2 objects are removed in the background). Admin → Live
+  controls has an "End or destroy" section with confirmations; after a destroy
+  the admin returns to Rooms with a notice and phones show "The host closed this
+  room." See `docs/data-inventory.md`.
+- **Phone app shell:** `guest/phone-shell.tsx` keeps one frame with a glass top
+  bar (mark, live timer, connection, avatar menu), stacked pages that ease
+  between tabs, the existing send dock (Play only) and a glass tab bar with a
+  gliding pill and badges. A new beat that needs the phone (intro, prompt,
+  collect, vote, predict) returns to Play; scores badge Ranks; the podium opens
+  Ranks. Theme choice and "Changed phones?" moved into the avatar menu.
+  Snap mounts its camera only while open. The lobby QR is folded under
+  "Invite a friend". The preview frame without tabs is unchanged.
+- **Timer and answer state:** `guest/phone-timer.tsx` reads the existing
+  `usePhaseCountdown` (server deadline and clock offset), with a ring, an
+  urgent last five seconds and Paused/Waiting states. `QuestionExperience` adds
+  a progress pill and an answer banner driven only by the server snapshot
+  (`answerStatus`): Sending… → Locked in with the room's answered count → at the
+  reveal "+N points", "No points this time" or "No answer from you".
+- **Questions:** standard choice tiles are glass, each with its own hue and
+  shape (▲ ◆ ● ■ ★ ⬢) so colour never carries meaning alone; the sent tile is
+  tagged "Your answer", others dim once locked, and the right answer glows at
+  the reveal. The frame fills the phone height so two-to-six short options fit
+  without scrolling; long labels switch to one column and may scroll.
+  Bespoke designs keep their own look inside the frame.
+- **Trolls:** `troll/troll-meta.ts` gives every troll kind a group (Phone
+  chaos, Sabotage, Identity, Points, Big screen), icon and one-line blurb (a
+  `Record` over the shared kinds, so a new kind fails typecheck). The Troll tab
+  is a three-step flow with group filter chips, glass troll cards tinted by
+  group, avatar target chips, then the existing confirmation and command.
+  Incoming non-screen trolls show as group-coloured banners under the top bar
+  on every tab. Screen gags are unchanged.
+- **Ranks and leaderboards:** guest snapshots now include the top ten standings
+  in scored phases (none while a hidden-score troll is active). The Ranks tab
+  shows your place, points, movement and last award, a top-three podium and the
+  rest with bars; it keeps the last standings between rounds and holds the
+  personal recap. The shared scoreboard gains bars relative to the leader,
+  ▲/▼ movement since the last standings and, on the projector scores phase, a
+  top-three podium (rows stay in the list for screen readers).
+- **Players:** `ui/player-avatar.tsx` gives each player a stable hue and
+  initials; rehearsal bots get a dashed robot badge with their number. Lobby
+  names are floating glass bubbles (independent bob per player, still under
+  reduced motion) with compact like/dislike controls, on phone and projector.
+- **Look and admin motion:** `ui/glass.css` (loaded globally) adds the frosted
+  glass surface, option hues mixed from each theme's own palette, and a slowly
+  drifting colour field (`ui/liquid-ground.tsx`) behind phone, stage, entry
+  and admin frames. Reduced motion stops the drift and removes blur. Admin nav
+  has a gliding active pill, room pages ease between routes (outgoing page
+  frozen with `useOutlet`), and cards rise in with a short stagger. The room
+  overview status now reads "Question N of M" (it previously added one to an
+  already 1-based index).
+- **Tests added/changed:** `apps/api/test/end-destroy.spec.ts` (end-now
+  success/refusal/replay, destroy code check/wipe/socket message, registry
+  forget/replay), `media-check.spec.ts` (malformed account ID), `quiz.spec.ts`
+  (guests now receive standings); web `danger-zone.test.tsx`,
+  `media-transfer.test.ts`, `guest/phone-shell.test.tsx`,
+  `guest/ranks-tab.test.tsx`, `guest/phone-timer.test.tsx`,
+  `troll/troll-tab.test.tsx`, `answerStatus` cases, and `router.test.tsx` now
+  opens the avatar menu before "Changed phones?".
+- **Manual verification (local dev, Chromium, 375×812 and 320×640):** joined a
+  local room as a phone with 10 bots, played the illustrative demo through
+  lobby, collect, locked in, reveal and scores, opened every tab, then used End
+  game now and Destroy room from admin and watched the phone and admin react.
+  Live production was only used for the upload diagnosis, in the user's own
+  test room: one real photo send reserved an upload slot whose PUT then failed,
+  so no file was stored.
+- **Verified:** `npm run typecheck` passed. `npm run test:unit` passed **112
+  files / 443 tests**. `npm run test -w @26/api` passed **89 files / 489
+  tests**. Prettier is clean and ESLint reports no errors on the changed files
+  (8 existing-style fast-refresh warnings). Browser checks were local only;
+  physical phones, Safari/iOS glass rendering and the projector at venue size
+  are not yet checked. Nothing is committed on this branch yet.
+- **Exact next stage:** the user reviews the branch locally (or on staging if
+  they ask for a deploy), fixes the production R2 secrets and CORS, then a
+  venue-device rehearsal.

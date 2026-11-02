@@ -38,7 +38,12 @@ import { deadlinePassed } from "../live/server-clock";
 import { usePreloadQuestion } from "../play/preload";
 import { DriverPicker } from "../kart/DriverPicker";
 import type { DriverStyle } from "@26/shared";
-import { PhoneShell } from "./phone-shell";
+import { PhoneShell, type PhoneTab } from "./phone-shell";
+import { PhoneTimer } from "./phone-timer";
+import { RanksTab } from "./ranks-tab";
+import { YouMenu } from "./you-menu";
+import { TrollTab } from "../troll/troll-tab";
+import { ThemePicker } from "../theme/theme-picker";
 import { EntryFrame, EntryHeading, EntryNotice } from "../ui/entry-frame";
 
 export function GuestPage({
@@ -71,6 +76,11 @@ export function GuestPage({
   const [rejection, setRejection] = useState<string>();
   const [snapshotPulse, setSnapshotPulse] = useState(0);
   const [seenOpen, setSeenOpen] = useState(false);
+  const [tab, setTab] = useState<PhoneTab>("play");
+  const [ranksFresh, setRanksFresh] = useState(false);
+  const [replacedNotice, setReplacedNotice] = useState<string>();
+  const [observedAt, setObservedAt] = useState(() => Date.now());
+  const lastBeat = useRef<string | null>(null);
   const socketRef = useRef<ReturnType<typeof openRoomSocket> | null>(null);
   const pendingRequest = useRef<string | null>(null);
   const inFlight = useRef(false);
@@ -177,6 +187,18 @@ export function GuestPage({
         }
         hapticBaseline.current = view;
         setSnapshotPulse((count) => count + 1);
+        setObservedAt(Date.now());
+        // A new beat that needs this phone brings it back to Play.
+        const beat = `${next.play?.question.id ?? "lobby"}/${next.phase}`;
+        if (lastBeat.current !== null && lastBeat.current !== beat) {
+          if (["intro", "prompt", "collect", "vote", "predict"].includes(next.phase)) {
+            setTab("play");
+          }
+          if (next.phase === "scores") setRanksFresh(true);
+          // The final standings are the point of the podium.
+          if (next.phase === "podium") setTab("ranks");
+        }
+        lastBeat.current = beat;
         if (next.phase === "intro" || next.phase === "prompt") {
           setSelectedId(undefined);
           setPending(false);
@@ -252,6 +274,8 @@ export function GuestPage({
         hapticBaseline.current = null;
         setSnapshot(undefined);
         setNotice(message);
+        setReplacedNotice(message);
+        setTab("play");
       },
       onConnection(state) {
         if (state === "open") {
@@ -359,6 +383,7 @@ export function GuestPage({
     pendingRequest.current = null;
     inFlight.current = false;
     setSession(redeemed);
+    setReplacedNotice(undefined);
     // Recovery may keep both IDs. Replace the existing socket after the cookie
     // changes, so the recovered phone authenticates with its new credential.
     setSessionGeneration((generation) => generation + 1);
@@ -453,6 +478,7 @@ export function GuestPage({
   const playing = snapshot !== undefined && snapshot.phase !== "lobby";
   const status = session
     ? phoneStatus({
+        replaced: replacedNotice,
         notice,
         connection,
         playing,
@@ -539,6 +565,17 @@ export function GuestPage({
       </EntryFrame>
     );
 
+  const selfPlayer = snapshot?.players.find(
+    (player) => player.playerId === session.playerId,
+  );
+  const trollReady =
+    snapshot?.trolls.token === "ready" &&
+    (snapshot.play?.question.index ?? 0) >= 2 &&
+    !["final", "facts", "podium"].includes(snapshot.phase);
+  const badges: Partial<Record<PhoneTab, string>> = {};
+  if (trollReady && tab !== "troll") badges.troll = "1";
+  if (ranksFresh && tab !== "ranks") badges.ranks = "!";
+
   return (
     <ControllerRoot>
       <PhoneShell
@@ -547,13 +584,126 @@ export function GuestPage({
         held={reconnecting}
         immersive={Boolean(questionVisible)}
         scrollKey={`${snapshot?.play?.question.id ?? "join"}/${snapshot?.phase ?? "lobby"}`}
+        timer={<PhoneTimer snapshot={snapshot} observedAt={observedAt} />}
+        menu={
+          <YouMenu playerId={session.playerId} nickname={nickname ?? session.nickname}>
+            <div className="you-menu-row">
+              <span>Theme</span>
+              <ThemePicker />
+            </div>
+            {!rehearsalCredential ? (
+              <TransferPhone
+                busy={busy}
+                code={transferCode}
+                onCode={setTransferCode}
+                onSubmit={(event) => void onRedeem(event)}
+              />
+            ) : null}
+          </YouMenu>
+        }
+        overlays={
+          snapshot && snapshot.phase !== "lobby" ? (
+            <GuestTrolls
+              snapshot={snapshot}
+              gameId={session.gameId}
+              selfId={session.playerId}
+              pending={pending}
+              onEscape={onTrollEscape}
+            />
+          ) : null
+        }
+        tabs={{
+          active: tab,
+          onChange: (next) => {
+            setTab(next);
+            if (next === "ranks") setRanksFresh(false);
+          },
+          badges,
+          pages: {
+            ranks: (
+              <>
+                <RanksTab snapshot={snapshot} nickname={nickname ?? session.nickname} />
+                {snapshot?.recap && snapshot.recap.length > 0 ? (
+                  <Panel title="Your recap">
+                    <ul className="grid gap-3">
+                      {snapshot.recap.map((card) => (
+                        <li key={card.id}>
+                          {card.illustrative ? (
+                            <p className="font-bold">Illustrative</p>
+                          ) : null}
+                          <p className="break-words">{card.results}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </Panel>
+                ) : null}
+              </>
+            ),
+            troll: snapshot ? (
+              <TrollTab
+                snapshot={snapshot}
+                gameId={session.gameId}
+                selfId={session.playerId}
+                pending={pending}
+                onSend={onTroll}
+              />
+            ) : null,
+            snap: (
+              <div className="snap-tab">
+                <header className="phone-tab-head">
+                  <p className="entry-eyebrow">Photos and sound</p>
+                  <h1 className="phone-tab-title">Snap</h1>
+                </header>
+                {tab !== "snap" ? null : rehearsalCredential ? (
+                  <p className="text-muted">
+                    Live test phone. Use an ordinary second-browser guest for photos.
+                  </p>
+                ) : (
+                  <>
+                    {snapshot?.wall ? (
+                      <section
+                        className="snap-card glass"
+                        aria-label="Send to the big screen"
+                      >
+                        <h2>Send to the big screen</h2>
+                        <GuestWall
+                          wall={snapshot.wall}
+                          gameId={session.gameId}
+                          selfNickname={selfPlayer?.nickname ?? "You"}
+                          onPost={(post) => socketRef.current?.submitWallPost(post)}
+                          onWithdraw={(postId) =>
+                            socketRef.current?.submitWallWithdraw(postId)
+                          }
+                          onReact={(postId, reaction) =>
+                            socketRef.current?.submitWallReact(postId, reaction)
+                          }
+                        />
+                      </section>
+                    ) : null}
+                    <section
+                      className="snap-card glass"
+                      aria-label="Photos and sound for the game"
+                    >
+                      <h2>Photos &amp; sound for the game</h2>
+                      <GuestMedia gameId={session.gameId} />
+                    </section>
+                  </>
+                )}
+              </div>
+            ),
+          },
+        }}
       >
         {questionVisible ? null : (
           <h1 className="phone-prompt">
-            {snapshot?.phase === "lobby" ? "In the lobby" : "This phone"}
+            {snapshot?.phase === "lobby" ? "You’re in!" : "This phone"}
           </h1>
         )}
-        <StatusMessage>{status}</StatusMessage>
+        {(questionVisible || snapshot?.phase === "lobby") &&
+        !rejection &&
+        connection === "open" ? null : (
+          <StatusMessage>{status}</StatusMessage>
+        )}
         {rehearsalCredential ? (
           <p className="text-sm text-muted">
             Live test phone. Use an ordinary second-browser guest for photos and phone
@@ -568,7 +718,9 @@ export function GuestPage({
           <div className="grid gap-4">
             {snapshot?.phase === "lobby" ? (
               <div className="grid gap-4">
-                <JoinMark code={snapshot.joinCode} allowCopy />
+                <Disclosure title="Invite a friend">
+                  <JoinMark code={snapshot.joinCode} allowCopy />
+                </Disclosure>
                 {snapshot.namesReveal ? (
                   <NameReveal reveal={snapshot.namesReveal} />
                 ) : null}
@@ -583,11 +735,7 @@ export function GuestPage({
                   <DriverPicker
                     gameId={snapshot.gameId}
                     nickname={nickname ?? session.nickname}
-                    driver={
-                      snapshot.players.find(
-                        (player) => player.playerId === session.playerId,
-                      )?.driver
-                    }
+                    driver={selfPlayer?.driver}
                     pending={driverPending}
                     onChoose={onDriver}
                   />
@@ -641,65 +789,6 @@ export function GuestPage({
                 <WaitingNext />
               ) : null}
             </PhaseTransition>
-            {snapshot && snapshot.phase !== "lobby" ? (
-              <>
-                <GuestTrolls
-                  snapshot={snapshot}
-                  gameId={session.gameId}
-                  selfId={session.playerId}
-                  pending={pending}
-                  onSend={onTroll}
-                  onEscape={onTrollEscape}
-                />
-                {!rehearsalCredential ? (
-                  <div className="phone-secondary-tools">
-                    <Disclosure title="Photos & sound">
-                      <GuestMedia gameId={session.gameId} />
-                    </Disclosure>
-                  </div>
-                ) : null}
-              </>
-            ) : null}
-            {snapshot?.wall && !rehearsalCredential ? (
-              <Disclosure title="📸 Send to the big screen">
-                <GuestWall
-                  wall={snapshot.wall}
-                  gameId={session.gameId}
-                  selfNickname={
-                    snapshot.players.find(
-                      (player) => player.playerId === session.playerId,
-                    )?.nickname ?? "You"
-                  }
-                  onPost={(post) => socketRef.current?.submitWallPost(post)}
-                  onWithdraw={(postId) => socketRef.current?.submitWallWithdraw(postId)}
-                  onReact={(postId, reaction) =>
-                    socketRef.current?.submitWallReact(postId, reaction)
-                  }
-                />
-              </Disclosure>
-            ) : null}
-            {snapshot?.recap && snapshot.recap.length > 0 ? (
-              <Panel title="Your recap">
-                <ul className="grid gap-3">
-                  {snapshot.recap.map((card) => (
-                    <li key={card.id}>
-                      {card.illustrative ? (
-                        <p className="font-bold">Illustrative</p>
-                      ) : null}
-                      <p className="break-words">{card.results}</p>
-                    </li>
-                  ))}
-                </ul>
-              </Panel>
-            ) : null}
-            {!rehearsalCredential ? (
-              <TransferPhone
-                busy={busy}
-                code={transferCode}
-                onCode={setTransferCode}
-                onSubmit={(event) => void onRedeem(event)}
-              />
-            ) : null}
           </div>
         </ReconnectBanner>
       </PhoneShell>
@@ -757,6 +846,8 @@ function TransferPhone({
 }
 
 function phoneStatus(input: {
+  /** The room ended this connection on purpose, such as a destroyed room. */
+  replaced?: string;
   notice: string;
   connection: "connecting" | "open" | "closed" | "idle";
   playing: boolean;
@@ -764,6 +855,9 @@ function phoneStatus(input: {
   rejection: string | undefined;
   snapshot: LobbySnapshot | undefined;
 }): string {
+  if (input.replaced) {
+    return input.replaced;
+  }
   if (input.connection === "connecting") {
     return input.playing ? "Reconnecting to the game." : "Reconnecting to the lobby.";
   }

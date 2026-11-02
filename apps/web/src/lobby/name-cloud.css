@@ -1,0 +1,102 @@
+/*
+ * Lobby players as floating glass bubbles. Each bubble bobs on its own clock,
+ * using the separate `translate`/`rotate` properties so it never fights the
+ * enter and layout animation, which use `transform`.
+ */
+.name-cloud {
+  display: flex;
+  max-width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem 0.6rem;
+  padding: 0.5rem 0.25rem 1rem;
+  list-style: none;
+}
+.name-bubble {
+  display: flex;
+  flex-wrap: nowrap;
+  max-width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem 0.3rem 0.3rem;
+  color: var(--name-tone, var(--foreground));
+  animation: name-float var(--float-time, 6s) ease-in-out var(--float-delay, 0s)
+    infinite alternate;
+}
+.name-bubble .player-avatar {
+  --avatar-size: 1.9em;
+}
+.name-bubble-name {
+  max-width: 12em;
+  overflow-wrap: anywhere;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.name-bubble[data-self] {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    var(--glass-shadow);
+}
+.name-bubble[data-bot] {
+  border-style: dashed;
+  border-radius: 0.9rem;
+  opacity: 0.85;
+}
+.name-bubble[data-bot] .name-bubble-name {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.name-bubble-react {
+  display: grid;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  margin-block: -0.35rem;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 1rem;
+  transition:
+    background-color 0.2s var(--ease-party),
+    transform 0.16s var(--ease-party);
+}
+.name-bubble-react:active {
+  transform: scale(0.88);
+}
+.name-bubble-react[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--highlight) 40%, transparent);
+}
+.name-bubble-react:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 1px;
+}
+
+@keyframes name-float {
+  from {
+    translate: 0 -3px;
+    rotate: calc(var(--float-tilt, 1deg) * -1);
+  }
+  to {
+    translate: 0 4px;
+    rotate: var(--float-tilt, 1deg);
+  }
+}
+
+/* The projector's lobby has room for bigger, livelier bubbles. */
+.projector-names .name-cloud {
+  justify-content: flex-start;
+  gap: 1.1rem 1rem;
+}
+.projector-names .name-bubble {
+  padding: 0.4rem 1.4rem 0.4rem 0.4rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .name-bubble {
+    animation: none;
+  }
+  .name-bubble-react:active {
+    transform: none;
+  }
+}

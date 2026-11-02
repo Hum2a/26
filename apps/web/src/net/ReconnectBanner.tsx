@@ -56,39 +56,7 @@ export function ReconnectBanner({
     return () => window.clearTimeout(timer);
   }, [snapshotId]);
 
-  const frame = useRef<HTMLFieldSetElement>(null);
   const banner = disconnected && waiting > 0;
-
-  useEffect(() => {
-    const root = frame.current;
-    if (!root || !disconnected) {
-      return () => {};
-    }
-    const controls = [
-      ...root.querySelectorAll("input, button, textarea, select"),
-    ].filter(
-      (
-        control,
-      ): control is
-        | HTMLInputElement
-        | HTMLButtonElement
-        | HTMLTextAreaElement
-        | HTMLSelectElement =>
-        control instanceof HTMLInputElement ||
-        control instanceof HTMLButtonElement ||
-        control instanceof HTMLTextAreaElement ||
-        control instanceof HTMLSelectElement,
-    );
-    const previous = controls.map((control) => control.disabled);
-    for (const control of controls) {
-      control.disabled = true;
-    }
-    return () => {
-      controls.forEach((control, index) => {
-        control.disabled = previous[index] ?? false;
-      });
-    };
-  }, [disconnected, waiting]);
 
   return (
     <div className="grid gap-3">
@@ -130,11 +98,7 @@ export function ReconnectBanner({
           </AnimatePresence>
         </motion.div>
       ) : null}
-      <fieldset
-        ref={frame}
-        disabled={disconnected}
-        className="m-0 min-w-0 border-0 p-0"
-      >
+      <fieldset disabled={disconnected} className="m-0 min-w-0 border-0 p-0">
         {children}
       </fieldset>
       <AnimatePresence>

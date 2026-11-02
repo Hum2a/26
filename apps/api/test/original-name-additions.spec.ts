@@ -53,7 +53,7 @@ it.each([
       points: 0,
       detail: "missing",
     });
-    expect(birthdayPack.order).not.toContain(authored.id);
+    expect(birthdayPack.order).toContain(authored.id);
   },
 );
 
@@ -74,7 +74,7 @@ it.each([realNameVinDiesel, realNameJamieFoxx])(
 
 it("keeps both additions ready in the unreleased birthday catalogue", () => {
   expect(birthdayPack.release).toBe("draft");
-  expect(birthdayPack.order).toEqual([]);
+  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
   expect(validatePack(birthdayPack).filter((issue) => issue.level === "error")).toEqual(
     [],
   );

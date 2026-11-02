@@ -276,13 +276,18 @@ describe("question authoring", () => {
     );
   });
 
-  it("leaves the birthday catalogue unpinned", () => {
+  it("keeps the birthday catalogue unpinned with its completed default rounds", () => {
     expect(questionPacks.map((pack) => pack.version)).toEqual([
       "demo-2026-09-22",
       "birthday-draft",
     ]);
     expect(birthdayPack.release).toBe("draft");
-    expect(birthdayPack.order).toEqual([]);
+    expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
+    expect(resolveContent(birthdayPack.version)).toEqual({
+      status: "unavailable",
+      version: birthdayPack.version,
+      reason: "draft",
+    });
   });
 
   it("authors polls, threshold outcomes, and typed answers without a correct option", () => {
@@ -459,7 +464,17 @@ describe("question authoring", () => {
     expect(validatePack(birthdayPack).filter((item) => item.level === "error")).toEqual(
       [],
     );
-    expect(birthdayPack.order).toEqual([]);
+    expect(birthdayPack.order.length).toBeGreaterThan(0);
+    for (const id of birthdayPack.order) {
+      const question = birthdayPack.catalogue.find((item) => item.id === id);
+      expect(question?.status).toBe("ready");
+      expect(toPlayable(question!)).toBeDefined();
+    }
+    for (const question of birthdayPack.catalogue.filter(
+      (item) => item.status === "draft",
+    )) {
+      expect(birthdayPack.order).not.toContain(question.id);
+    }
   });
 });
 
@@ -492,12 +507,12 @@ describe("October birthday question additions", () => {
     },
   );
   it.each([commonPassword, christianityBranches])(
-    "plays $id with its real mechanic while leaving the running order alone",
+    "plays $id with its real mechanic in the completed default order",
     (question) => {
       expect(question.status).toBe("ready");
       expect(missingRequirements(question)).toEqual([]);
       expect(toPlayable(question)).toBeDefined();
-      expect(birthdayPack.order).not.toContain(question.id);
+      expect(birthdayPack.order).toContain(question.id);
     },
   );
   it("uses room commonness and the supplied exact answer set without inventing a fixed password", () => {
@@ -544,7 +559,8 @@ describe("October birthday question additions", () => {
     ];
     for (const question of entries) expect(birthdayPack.catalogue).toContain(question);
     expect(birthdayPack.release).toBe("draft");
-    expect(birthdayPack.order).toEqual([]);
+    expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
+    for (const question of entries) expect(birthdayPack.order).toContain(question.id);
     expect(resolveContent("birthday-draft").status).toBe("unavailable");
     expect(resolveContent(demoQuestionSetVersion).status).toBe("playable");
     expect(

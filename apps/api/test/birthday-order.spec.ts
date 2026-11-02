@@ -56,7 +56,7 @@ it("freezes server questions under a deterministic content version without depen
   ).not.toBe(script.version);
 });
 
-it("seeds eighty separate grid slots from descending scores with stable ties and refuses eighty-one", () => {
+it("seeds eighty separate grid slots from descending scores with stable ties and enforces the hundred-player limit", () => {
   const players = Array.from({ length: 80 }, (_, i) => ({
     playerId: `p${i}`,
     name: `Player ${i}`,
@@ -78,11 +78,21 @@ it("seeds eighty separate grid slots from descending scores with stable ties and
     expect(d.distance).toBeLessThan(0);
     expect(clearOfWalls(d.x, d.z, ringWalls, 0.8)).toBe(true);
   }
+  const fullGrid = [
+    ...players,
+    ...Array.from({ length: 20 }, (_, i) => ({
+      playerId: `extra-${i}`,
+      name: `Extra ${i}`,
+    })),
+  ];
+  expect(createKartRace("full", fullGrid, { seedGrid: true }).drivers).toHaveLength(
+    100,
+  );
   expect(() =>
-    createKartRace("too-many", [...players, { playerId: "extra", name: "Extra" }], {
+    createKartRace("too-many", [...fullGrid, { playerId: "extra", name: "Extra" }], {
       seedGrid: true,
     }),
-  ).toThrow(/80/);
+  ).toThrow(/100/);
 });
 
 it("uses eighty road-safe imported grid slots and restores the three-minute cutoff", () => {

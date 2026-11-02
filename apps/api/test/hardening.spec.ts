@@ -236,11 +236,14 @@ describe("failure and access hardening", () => {
       durations: { intro: 60_000, prompt: 90_000 },
     });
     await makeDue(raceRoom);
+    const expectedPhaseGeneration = (await raceRoom.snapshotFor("control"))
+      .phaseGeneration;
     await Promise.all([
       raceRoom.advanceRound({
         ...control(raced),
         requestId: crypto.randomUUID(),
         nowMs: Date.now(),
+        expectedPhaseGeneration,
       }),
       runDurableObjectAlarm(raceRoom),
     ]);
@@ -556,6 +559,8 @@ async function makeDue(stub: ReturnType<typeof room>): Promise<void> {
     state.storage.sql.exec(
       `UPDATE schedule_job SET due_at = 1 WHERE status = 'pending' AND job_type = 'gameplay'`,
     );
-    await state.storage.setAlarm(1);
+    // The harness invokes this alarm explicitly. Keep the runtime from firing
+    // it before the test starts the competing host request.
+    await state.storage.setAlarm(Date.now() + 60_000);
   });
 }

@@ -10,6 +10,7 @@ import { renderPresentation } from "./presentation";
 import { KartDriversProvider } from "../kart/KartDriversProvider";
 import { FunFactStage } from "./fun-fact";
 import { Scoreboard } from "../ui/scoreboard";
+import { PlayerAvatar } from "../ui/player-avatar";
 
 function stagePhaseTitle(phase: RoomPhaseName): string {
   switch (phase) {
@@ -65,7 +66,12 @@ export function StagePlay({ snapshot }: { snapshot: LobbySnapshot }) {
     return (
       <>
         <div data-phase={snapshot.phase} hidden />
-        <Standings play={play} title={stagePhaseTitle(snapshot.phase)} />
+        <Standings
+          play={play}
+          title={stagePhaseTitle(snapshot.phase)}
+          players={snapshot.players}
+          podium
+        />
       </>
     );
   const custom = renderPresentation(play.question.presentation, {
@@ -560,7 +566,17 @@ function DuelView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolean 
   );
 }
 
-function Standings({ play, title }: { play: PlaySnapshot; title?: string }) {
+function Standings({
+  play,
+  title,
+  players = [],
+  podium = false,
+}: {
+  play: PlaySnapshot;
+  title?: string;
+  players?: readonly { playerId: string; nickname: string }[];
+  podium?: boolean;
+}) {
   if (!play.standings && !title) {
     return null;
   }
@@ -568,11 +584,22 @@ function Standings({ play, title }: { play: PlaySnapshot; title?: string }) {
     <Scoreboard
       title={title ?? "The standings"}
       label="Scoreboard"
+      podium={podium}
       entries={(play.standings ?? []).map((row) => ({
         id: row.nickname,
         name: row.nickname,
         place: row.place,
         points: row.points,
+        badge: (
+          <PlayerAvatar
+            playerId={
+              players.find((player) => player.nickname === row.nickname)?.playerId ??
+              row.nickname
+            }
+            nickname={row.nickname}
+            size="sm"
+          />
+        ),
       }))}
     />
   );

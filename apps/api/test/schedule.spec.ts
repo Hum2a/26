@@ -24,6 +24,31 @@ import { commitAndArm, type ScheduleStorage } from "../src/room/scheduler.ts";
 const roundId = "round-1";
 
 describe("phase lifecycle", () => {
+  it.each([180_000, 0])(
+    "uses the first question's %i ms collection window and preserves it across pause",
+    (collectMs) => {
+      const store = lobbyStore();
+      startRound(
+        store,
+        1_000,
+        {
+          ...fixturePlugin({ durations: { intro: 0, prompt: 0, collect: 20_000 } }),
+          collectWindows: [collectMs],
+        },
+        roundId,
+      );
+      advance(store, 1_000);
+      advance(store, 1_000);
+      expect(store.readRoom().phase).toBe("collect");
+      expect(store.readRoom().durations.collect).toBe(collectMs);
+      expect(pendingGameplay(store)?.dueAt).toBe(1_000 + collectMs);
+      pause(store, 1_000);
+      expect(pendingGameplay(store)?.remainingMs).toBe(collectMs);
+      resume(store, 9_000);
+      expect(pendingGameplay(store)?.dueAt).toBe(9_000 + collectMs);
+    },
+  );
+
   it("pauses gameplay deadlines, keeps background work, and resumes the remainder", () => {
     const store = lobbyStore();
     startRound(store, 1_000, fixturePlugin({ durations: { intro: 10_000 } }), roundId);

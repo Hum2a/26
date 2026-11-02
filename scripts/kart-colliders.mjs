@@ -6,6 +6,7 @@ import fs from "node:fs";
 import vm from "node:vm";
 import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
+import { format, resolveConfig } from "prettier";
 const root = new URL("../", import.meta.url);
 const read = (path) => fs.readFileSync(new URL(path, root));
 const context = {
@@ -103,7 +104,14 @@ const output = {
   edges,
 };
 fs.mkdirSync(new URL("packages/shared/src/", root), { recursive: true });
-fs.writeFileSync(new URL("packages/shared/src/kart-circuit.json", root), JSON.stringify({ ...output, road: audit.road, dirt: audit.dirt }));
+const circuitPath = new URL("packages/shared/src/kart-circuit.json", root);
+fs.writeFileSync(
+  circuitPath,
+  await format(JSON.stringify({ ...output, road: audit.road, dirt: audit.dirt }), {
+    ...(await resolveConfig(circuitPath)),
+    parser: "json",
+  }),
+);
 fs.mkdirSync(new URL("apps/kart-solo/src/track/", root), { recursive: true });
 fs.writeFileSync(
   new URL("apps/kart-solo/src/track/colliders.json", root),

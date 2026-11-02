@@ -1,4 +1,9 @@
-import { driverStyles, funFactCap, funFactCardSchema, type FunFactCard } from "@26/shared";
+import {
+  driverStyles,
+  funFactCap,
+  funFactCardSchema,
+  type FunFactCard,
+} from "@26/shared";
 
 /**
  * Fun-fact sentences are calculated before they are worded.
@@ -316,7 +321,9 @@ function localeFacts(
     );
     return facts;
   }
-  const outsiders = strict ? sorted.filter((bucket) => bucket.value !== top.value) : sorted;
+  const outsiders = strict
+    ? sorted.filter((bucket) => bucket.value !== top.value)
+    : sorted;
   const singletons = outsiders.filter((bucket) => bucket.count === 1);
   for (const bucket of outsiders) {
     if (bucket.count < 2) {
@@ -383,7 +390,9 @@ function trollFacts(source: FunFactSource, guests: readonly FunFactGuest[]): Fun
       parts: [],
       memberIds: actors,
       sentence:
-        trolls.length === 1 ? "1 troll was played." : `${trolls.length} trolls were played.`,
+        trolls.length === 1
+          ? "1 troll was played."
+          : `${trolls.length} trolls were played.`,
     }),
   );
   const byLabel = new Map<string, string[]>();
@@ -391,7 +400,8 @@ function trollFacts(source: FunFactSource, guests: readonly FunFactGuest[]): Fun
     byLabel.set(troll.label, [...(byLabel.get(troll.label) ?? []), troll.actorId]);
   }
   const ranked = [...byLabel.entries()].sort(
-    (left, right) => right[1].length - left[1].length || left[0].localeCompare(right[0]),
+    (left, right) =>
+      right[1].length - left[1].length || left[0].localeCompare(right[0]),
   );
   const lead = ranked[0];
   const next = ranked[1];
@@ -512,7 +522,10 @@ function mediaFacts(source: FunFactSource, guests: readonly FunFactGuest[]): Fun
   return facts;
 }
 
-function scoreFact(source: FunFactSource, guests: readonly FunFactGuest[]): FunFact | null {
+function scoreFact(
+  source: FunFactSource,
+  guests: readonly FunFactGuest[],
+): FunFact | null {
   const guestIds = new Set(guests.map((guest) => guest.playerId));
   const ranked = source.standings
     .filter((row) => guestIds.has(row.playerId))
@@ -578,7 +591,10 @@ function group(
         count: memberIds.length,
         memberIds: [...memberIds].sort(),
       }))
-      .sort((left, right) => right.count - left.count || left.value.localeCompare(right.value)),
+      .sort(
+        (left, right) =>
+          right.count - left.count || left.value.localeCompare(right.value),
+      ),
   };
 }
 
@@ -663,7 +679,11 @@ function digitsIn(text: string): number[] {
   return [...text.matchAll(/\d+/g)].map((match) => Number(match[0]));
 }
 
-function nicknameDigits(sentence: string, count: number, percent: number): { label: string; count: number }[] {
+function nicknameDigits(
+  sentence: string,
+  count: number,
+  percent: number,
+): { label: string; count: number }[] {
   const spoken = new Set([count, percent]);
   return digitsIn(sentence)
     .filter((value) => !spoken.has(value))
@@ -720,7 +740,12 @@ function osSentence(
   return `${percent}% ${of(audience)} were on ${value}.`;
 }
 
-function motionSentence(shape: Shape, audience: Audience, count: number, percent: number): string {
+function motionSentence(
+  shape: Shape,
+  audience: Audience,
+  count: number,
+  percent: number,
+): string {
   if (shape === "rare") {
     return `${people(count)} asked for reduced motion.`;
   }
@@ -763,7 +788,12 @@ function pointerSentence(
   return `${percent}% ${of(audience)} were ${action}.`;
 }
 
-function saveDataSentence(shape: Shape, audience: Audience, count: number, percent: number): string {
+function saveDataSentence(
+  shape: Shape,
+  audience: Audience,
+  count: number,
+  percent: number,
+): string {
   if (shape === "rare") {
     return `${people(count)} had data saver on.`;
   }

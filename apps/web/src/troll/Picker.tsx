@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "../ui/primitives";
+import { PlayerAvatar } from "../ui/player-avatar";
 import {
   trollChoices,
   trollPickerLocked,
@@ -29,33 +29,37 @@ export function TrollPicker({
   const choices = trollChoices(players, selfId, query);
 
   return (
-    <div className="grid gap-3">
-      <p className="font-bold">{trollTokenLabel(used)}</p>
-      <label className="grid gap-2 font-bold">
+    <div className="troll-picker">
+      <p className="troll-picker-token">{trollTokenLabel(used)}</p>
+      <label className="troll-picker-search">
         Find a player
         <input
-          className="min-h-12 rounded-2xl border border-line bg-background px-4 text-lg font-normal"
+          className="skin-field"
           value={query}
           disabled={locked}
+          placeholder="Type a name"
           onChange={(event) => setQuery(event.target.value)}
         />
       </label>
-      <ul className="grid max-h-64 gap-2 overflow-y-auto">
+      <ul className="troll-picker-list">
         {choices.map((player) => (
           <li key={player.playerId}>
-            <Button
+            <button
               type="button"
-              className="w-full"
-              variant={selectedId === player.playerId ? "primary" : "secondary"}
+              className="troll-picker-player glass"
               aria-label={`Troll ${player.nickname}`}
               aria-pressed={selectedId === player.playerId}
               disabled={locked}
               onClick={() => onSelect(player.playerId)}
             >
-              {player.nickname}
-            </Button>
+              <PlayerAvatar playerId={player.playerId} nickname={player.nickname} />
+              <span>{player.nickname}</span>
+            </button>
           </li>
         ))}
+        {choices.length === 0 ? (
+          <li className="troll-picker-empty">Nobody matches that name.</li>
+        ) : null}
       </ul>
     </div>
   );

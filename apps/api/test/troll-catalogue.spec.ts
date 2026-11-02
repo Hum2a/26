@@ -95,9 +95,11 @@ describe("troll catalogue", () => {
 
     // Nothing to take from a zero or negative award.
     expect(
-      applyPointTransfers(awards, [{ kind: "steal", actorId: "amina", targetId: "bilal" }], () => null).get(
-        "amina",
-      )?.points,
+      applyPointTransfers(
+        awards,
+        [{ kind: "steal", actorId: "amina", targetId: "bilal" }],
+        () => null,
+      ).get("amina")?.points,
     ).toBe(100);
   });
 
@@ -105,12 +107,18 @@ describe("troll catalogue", () => {
     // This page broke once when a new catalogue field leaked into a strict schema.
     const catalogue = adminTrollCatalogue();
     expect(catalogue.trolls.map((troll) => troll.kind)).toEqual([...trollKinds]);
-    expect(catalogue.trolls.find((troll) => troll.kind === "slider-drift")?.questionKinds).toEqual([
-      "slider",
-    ]);
-    expect(catalogue.trolls.find((troll) => troll.kind === "steal")?.modifier).toBe(true);
-    expect(catalogue.trolls.find((troll) => troll.kind === "double")?.modifier).toBe(true);
-    expect(catalogue.trolls.find((troll) => troll.kind === "confetti")?.modifier).toBe(false);
+    expect(
+      catalogue.trolls.find((troll) => troll.kind === "slider-drift")?.questionKinds,
+    ).toEqual(["slider"]);
+    expect(catalogue.trolls.find((troll) => troll.kind === "steal")?.modifier).toBe(
+      true,
+    );
+    expect(catalogue.trolls.find((troll) => troll.kind === "double")?.modifier).toBe(
+      true,
+    );
+    expect(catalogue.trolls.find((troll) => troll.kind === "confetti")?.modifier).toBe(
+      false,
+    );
   });
 
   it("picks the same sponsor line for the same troll", () => {

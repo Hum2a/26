@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { withClientApiKey } from "../api/client-key";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
@@ -22,18 +22,25 @@ import { serverOffset } from "../live/server-clock";
 
 /** Server time, ticking once a second while `active`. */
 function useServerNow(active: boolean): number {
-  const read = () => Date.now() + (serverOffset() ?? 0);
-  const [now, setNow] = useState(read);
-  useEffect(() => {
-    if (!active) {
-      return;
-    }
-    setNow(read());
-    const timer = window.setInterval(() => setNow(read()), 1_000);
-    return () => window.clearInterval(timer);
-  }, [active]);
-  return now;
+  const [clock] = useState(() => {
+    let now = Date.now();
+    return {
+      read: () => now,
+      subscribe(changed: () => void) {
+        const tick = () => {
+          now = Date.now();
+          changed();
+        };
+        tick();
+        const timer = window.setInterval(tick, 1_000);
+        return () => window.clearInterval(timer);
+      },
+    };
+  });
+  const now = useSyncExternalStore(active ? clock.subscribe : idleClock, clock.read);
+  return now + (serverOffset(now) ?? 0);
 }
+const idleClock = () => () => undefined;
 
 type Wall = NonNullable<LobbySnapshot["wall"]>;
 type Mine = NonNullable<Wall["mine"]>[number];
@@ -127,8 +134,11 @@ function Composer({
     keep: boolean;
   }) => void;
 }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [selection, setSelection] = useState<{ file: File; preview: string } | null>(
+    null,
+  );
+  const file = selection?.file ?? null;
+  const preview = selection?.preview ?? null;
   const [caption, setCaption] = useState("");
   const [frame, setFrame] = useState<WallFrame>("polaroid");
   const [keep, setKeep] = useState(true);
@@ -141,20 +151,14 @@ function Composer({
   const now = useServerNow(cooldownUntil !== null);
 
   useEffect(() => {
-    if (!file) {
-      setPreview(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+    if (selection) return () => URL.revokeObjectURL(selection.preview);
+  }, [selection]);
 
   function choose(next: File | undefined) {
     if (!next) {
       return;
     }
-    setFile(next);
+    setSelection({ file: next, preview: URL.createObjectURL(next) });
     setUploaded(null);
     setError("");
     setSent(false);
@@ -179,7 +183,7 @@ function Composer({
     }
     onPost({ mediaId, caption: caption.trim(), frame, keep });
     setSent(true);
-    setFile(null);
+    setSelection(null);
     setCaption("");
     setUploaded(null);
   }

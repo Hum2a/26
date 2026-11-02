@@ -227,38 +227,68 @@ export function GuestPlay({
           <div
             className="question-choice-grid"
             data-count={play.question.options.length}
+            data-long={
+              play.question.options.some((option) => option.label.length > 22) ||
+              undefined
+            }
           >
             {play.question.options.map((option, index) => {
-              const selected =
-                selectedId === option.id ||
-                (play.selfAnswer?.kind === "choice" &&
-                  play.selfAnswer.optionId === option.id);
+              const sent =
+                play.selfAnswer?.kind === "choice" &&
+                play.selfAnswer.optionId === option.id;
+              const selected = selectedId === option.id || sent;
               const note = choiceNote(choiceReveal, option.id);
+              const locked = Boolean(play.selfAnswer) || pending;
+              const right = choiceReveal?.correctOptionId === option.id;
               return (
                 <motion.div
                   key={option.id}
                   className="question-choice-tile"
-                  initial={{ opacity: 0.5, y: reduce ? 0 : 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.24,
-                    delay: reduce ? 0 : index * 0.035,
-                    ease: "easeOut",
+                  initial={{ opacity: 0, y: reduce ? 0 : 16, scale: reduce ? 1 : 0.96 }}
+                  animate={{
+                    opacity: locked && !selected && !choiceReveal ? 0.45 : 1,
+                    y: 0,
+                    scale: selected && !reduce ? 1.02 : 1,
                   }}
+                  transition={
+                    reduce
+                      ? { duration: 0.15 }
+                      : {
+                          type: "spring",
+                          stiffness: 420,
+                          damping: 30,
+                          delay: index * 0.04,
+                        }
+                  }
                 >
                   <Button
                     key={option.id}
-                    className="option-button"
+                    className="option-button answer-tile"
                     variant={selected ? "primary" : "secondary"}
+                    data-hue={index % 6}
+                    data-state={
+                      right
+                        ? "right"
+                        : sent
+                          ? "sent"
+                          : selected
+                            ? "selected"
+                            : undefined
+                    }
                     aria-pressed={selected}
                     disabled={!open}
                     onClick={() => onSelect(option.id)}
                   >
                     <span className="question-choice-mark" aria-hidden="true">
-                      {String.fromCharCode(65 + index)}
+                      {answerShapes[index % answerShapes.length]}
                     </span>
                     {option.image ? <QuestionOptionImage src={option.image} /> : null}
                     <OptionText text={`${option.label}${note}`} />
+                    {sent && !choiceReveal ? (
+                      <span className="answer-tile-tag" aria-hidden="true">
+                        Your answer
+                      </span>
+                    ) : null}
                   </Button>
                 </motion.div>
               );
@@ -281,6 +311,9 @@ export function GuestPlay({
     </QuestionExperience>
   );
 }
+
+/** One shape per option, so an answer is never told apart by colour alone. */
+const answerShapes = ["▲", "◆", "●", "■", "★", "⬢"] as const;
 
 /** Phone label suffix at the reveal: the right answer, or the room's count and who scored. */
 export function choiceNote(

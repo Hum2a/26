@@ -9,7 +9,8 @@ import {
   type PlayerDevice,
 } from "../src/device/profile.ts";
 
-const iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Version/17.0 Safari/604.1";
+const iphone =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Version/17.0 Safari/604.1";
 const android = "Mozilla/5.0 (Linux; Android 14) Chrome/128.0.0.0 Mobile Safari/537.36";
 
 function device(
@@ -50,9 +51,7 @@ describe("device profile helpers", () => {
 
   it("refuses an odd one out with too few players or no single outlier", () => {
     expect(deviceOddOneOut(room.slice(2), read.family)).toBeNull();
-    expect(
-      deviceOddOneOut([...room, device("Eve", android)], read.family),
-    ).toBeNull();
+    expect(deviceOddOneOut([...room, device("Eve", android)], read.family)).toBeNull();
   });
 
   it("picks extremes, skipping unknowns and refusing ties", () => {
@@ -62,7 +61,11 @@ describe("device profile helpers", () => {
     });
     expect(deviceExtreme(room, read.rttMs, "lowest")?.device.nickname).toBe("Amina");
     expect(
-      deviceExtreme([device("A", iphone, {}, 50), device("B", iphone, {}, 50)], read.rttMs, "highest"),
+      deviceExtreme(
+        [device("A", iphone, {}, 50), device("B", iphone, {}, 50)],
+        read.rttMs,
+        "highest",
+      ),
     ).toBeNull();
     expect(deviceExtreme([], read.rttMs, "highest")).toBeNull();
   });

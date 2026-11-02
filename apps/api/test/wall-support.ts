@@ -7,7 +7,9 @@ import { memoryObjectStore } from "../src/media/store.ts";
 import { payloadDigest } from "../src/room/digest.ts";
 import { readWallPosts } from "../src/wall/store.ts";
 
-/** Shared setup for the photo wall room specs. */export type Stub = ReturnType<typeof env.PARTY_ROOM.getByName>;
+/** Shared setup for the photo wall room specs. */ export type Stub = ReturnType<
+  typeof env.PARTY_ROOM.getByName
+>;
 export type Player = { gameId: string; playerId: string; secret: string };
 
 export async function setup() {
@@ -67,7 +69,9 @@ export async function upload(
     nowMs: Date.now(),
     photo: localJpegPhoto,
   });
-  return done.ok ? { ok: true, mediaId: done.mediaId } : { ok: false, message: done.message };
+  return done.ok
+    ? { ok: true, mediaId: done.mediaId }
+    : { ok: false, message: done.message };
 }
 
 export async function phone(stub: Stub, gameId: string, player: Player) {

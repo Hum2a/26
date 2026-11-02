@@ -55,7 +55,15 @@ const immediate = {
 };
 
 /** Phases where a changed name is seen: questions, reveals and scores. */
-const namePhases = ["intro", "prompt", "collect", "vote", "predict", "reveal", "scores"] as const;
+const namePhases = [
+  "intro",
+  "prompt",
+  "collect",
+  "vote",
+  "predict",
+  "reveal",
+  "scores",
+] as const;
 
 /** Question kinds with option buttons, and with typed answers. */
 const optionKinds = ["choice", "vote", "guess", "duel", "finale", "rank"] as const;
@@ -201,7 +209,12 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
   australia: screenTroll("australia", "Australia mode", "Upside-down phone", 10_000),
   mirror: screenTroll("mirror", "Mirror world", "Mirrored phone", 12_000),
   jelly: screenTroll("jelly", "Jelly phone", "Wobbling phone", 8_000),
-  "comic-sans": screenTroll("comic-sans", "Comic Sans", "Comic Sans everything", 20_000),
+  "comic-sans": screenTroll(
+    "comic-sans",
+    "Comic Sans",
+    "Comic Sans everything",
+    20_000,
+  ),
   "lights-out": screenTroll("lights-out", "Lights out", "Torchlight only", 10_000),
   "bubble-wrap": screenTroll(
     "bubble-wrap",
@@ -238,22 +251,74 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     "Fake recording banner",
     15_000,
   ),
-  "low-battery": screenTroll("low-battery", "1% battery", "Low battery warning", 10_000, "Close"),
+  "low-battery": screenTroll(
+    "low-battery",
+    "1% battery",
+    "Low battery warning",
+    10_000,
+    "Close",
+  ),
   airdrop: screenTroll("airdrop", "AirDrop spam", "Endless AirDrop requests", 12_000),
-  overheating: screenTroll("overheating", "Overheating", "Phone needs to cool down", 7_000),
+  overheating: screenTroll(
+    "overheating",
+    "Overheating",
+    "Phone needs to cool down",
+    7_000,
+  ),
   "answer-viewers": screenTroll(
     "answer-viewers",
     "Fake audience",
     "People watching you answer",
     15_000,
   ),
-  "typing-dots": screenTroll("typing-dots", "Always typing", "Someone is typing…", 20_000),
-  reshuffle: sabotage("reshuffle", "Shuffled answers", "Options keep moving", 12_000, optionKinds),
-  translate: sabotage("translate", "Lost in translation", "Options in Pig Latin", 15_000, optionKinds),
-  "slider-drift": sabotage("slider-drift", "Possessed slider", "Backwards, drifting slider", 12_000, ["slider"]),
-  "reverse-typing": sabotage("reverse-typing", "Reverse typing", "Letters go in backwards", 15_000, textKinds),
-  autocorrect: sabotage("autocorrect", "Autocorrect", "Helpful corrections", 20_000, textKinds),
-  "char-limit": sabotage("char-limit", "Character limit", "Twelve characters only", 20_000, textKinds),
+  "typing-dots": screenTroll(
+    "typing-dots",
+    "Always typing",
+    "Someone is typing…",
+    20_000,
+  ),
+  reshuffle: sabotage(
+    "reshuffle",
+    "Shuffled answers",
+    "Options keep moving",
+    12_000,
+    optionKinds,
+  ),
+  translate: sabotage(
+    "translate",
+    "Lost in translation",
+    "Options in Pig Latin",
+    15_000,
+    optionKinds,
+  ),
+  "slider-drift": sabotage(
+    "slider-drift",
+    "Possessed slider",
+    "Backwards, drifting slider",
+    12_000,
+    ["slider"],
+  ),
+  "reverse-typing": sabotage(
+    "reverse-typing",
+    "Reverse typing",
+    "Letters go in backwards",
+    15_000,
+    textKinds,
+  ),
+  autocorrect: sabotage(
+    "autocorrect",
+    "Autocorrect",
+    "Helpful corrections",
+    20_000,
+    textKinds,
+  ),
+  "char-limit": sabotage(
+    "char-limit",
+    "Character limit",
+    "Twelve characters only",
+    20_000,
+    textKinds,
+  ),
   "temp-nickname": {
     ...screenTroll("temp-nickname", "Silly name", "A new name on every screen", 45_000),
     phases: namePhases,
@@ -298,7 +363,12 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     questionKinds: ["vote"],
   },
   misattributed: {
-    ...screenTroll("misattributed", "Misattributed", "Someone else's answer, in your name", null),
+    ...screenTroll(
+      "misattributed",
+      "Misattributed",
+      "Someone else's answer, in your name",
+      null,
+    ),
     slot: "persistent",
     phases: ["collect", "vote", "predict"],
     announce: "reveal",

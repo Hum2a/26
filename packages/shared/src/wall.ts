@@ -39,7 +39,14 @@ export const wallFrameSchema = z.enum(wallFrames);
  * Phases where a photo would compete with what is on stage: a question, or the
  * host-paced end-of-night facts. `breaks` placement waits through these.
  */
-export const wallQuestionPhases = ["prompt", "predict", "collect", "vote", "reveal", "facts"] as const;
+export const wallQuestionPhases = [
+  "prompt",
+  "predict",
+  "collect",
+  "vote",
+  "reveal",
+  "facts",
+] as const;
 
 /** With more than this many waiting, each photo gets `wallRushShowMs`. */
 export const wallRushQueue = 6;
@@ -81,7 +88,11 @@ export type WallStep = {
  * longest ago (never shown counts as longest), then the oldest approval.
  * Someone with three photos waiting takes turns with everyone else.
  */
-export function nextWall(state: WallQueueState, event: WallEvent, now: number): WallStep {
+export function nextWall(
+  state: WallQueueState,
+  event: WallEvent,
+  now: number,
+): WallStep {
   let showing = state.showing;
   let finished: string | null = null;
   if (showing && (!state.enabled || event !== "tick" || now >= showing.untilAt)) {
@@ -94,7 +105,10 @@ export function nextWall(state: WallQueueState, event: WallEvent, now: number): 
     state.enabled && (event === "force" || state.placement === "corner" || !inQuestion);
   if (!showing && allowed && state.queued.length > 0) {
     const next = pickNext(state.queued, state.lastShownAt)!;
-    const ms = state.queued.length > wallRushQueue ? Math.min(state.showMs, wallRushShowMs) : state.showMs;
+    const ms =
+      state.queued.length > wallRushQueue
+        ? Math.min(state.showMs, wallRushShowMs)
+        : state.showMs;
     showing = { postId: next.postId, playerId: next.playerId, untilAt: now + ms };
     started = next.postId;
   }
@@ -133,7 +147,8 @@ function pickNext(
 ): WallQueueState["queued"][number] | undefined {
   return [...queued].sort(
     (left, right) =>
-      (lastShownAt[left.playerId] ?? -Infinity) - (lastShownAt[right.playerId] ?? -Infinity) ||
+      (lastShownAt[left.playerId] ?? -Infinity) -
+        (lastShownAt[right.playerId] ?? -Infinity) ||
       left.queuedAt - right.queuedAt ||
       left.postId.localeCompare(right.postId),
   )[0];
@@ -157,7 +172,14 @@ const wallPhotoSchema = z
   .strict();
 
 const reactionCountsSchema = z
-  .array(z.object({ reaction: z.enum(wallReactions), count: z.number().int().nonnegative() }).strict())
+  .array(
+    z
+      .object({
+        reaction: z.enum(wallReactions),
+        count: z.number().int().nonnegative(),
+      })
+      .strict(),
+  )
   .max(wallReactions.length);
 
 /**
@@ -181,7 +203,11 @@ export const wallSnapshotSchema = z
     reel: z
       .array(
         z
-          .object({ mediaId: z.uuid(), nickname: z.string().min(1).max(24), frame: wallFrameSchema })
+          .object({
+            mediaId: z.uuid(),
+            nickname: z.string().min(1).max(24),
+            frame: wallFrameSchema,
+          })
           .strict(),
       )
       .max(40)
@@ -247,8 +273,11 @@ export function cleanWallCaption(value: unknown): string | null {
   if (typeof value !== "string") {
     return null;
   }
-  const cleaned = value
-    .replace(/[\u0000-\u001f\u007f]/g, " ")
+  const cleaned = Array.from(value, (character) => {
+    const code = character.charCodeAt(0);
+    return code <= 31 || code === 127 ? " " : character;
+  })
+    .join("")
     .replace(/\s+/g, " ")
     .trim();
   return cleaned.length === 0 ? null : [...cleaned].slice(0, wallCaptionMax).join("");

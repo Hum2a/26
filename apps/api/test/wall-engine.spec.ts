@@ -52,7 +52,11 @@ describe("photo wall queue", () => {
   it("takes turns between players instead of draining one player's photos", () => {
     const step = nextWall(
       state({
-        queued: [post("a2", "amina", 10), post("a3", "amina", 11), post("b1", "bilal", 50)],
+        queued: [
+          post("a2", "amina", 10),
+          post("a3", "amina", 11),
+          post("b1", "bilal", 50),
+        ],
         lastShownAt: { amina: 500 },
       }),
       "tick",
@@ -79,7 +83,12 @@ describe("photo wall queue", () => {
       "tick",
       8_999,
     );
-    expect(early).toEqual({ showing: current, finished: null, started: null, wakeAt: 9_000 });
+    expect(early).toEqual({
+      showing: current,
+      finished: null,
+      started: null,
+      wakeAt: 9_000,
+    });
     const done = nextWall(
       state({ showing: current, queued: [post("b", "bilal", 20)] }),
       "tick",
@@ -98,14 +107,19 @@ describe("photo wall queue", () => {
     }
     const current = { postId: "z", playerId: "zed", untilAt: 9_000 };
     expect(
-      nextWall(state({ phase: "collect", showing: current, queued }), "tick", 5_000).showing,
+      nextWall(state({ phase: "collect", showing: current, queued }), "tick", 5_000)
+        .showing,
     ).toEqual(current);
   });
 
   it("shows during questions in the corner placement", () => {
     expect(
       nextWall(
-        state({ phase: "collect", placement: "corner", queued: [post("a", "amina", 10)] }),
+        state({
+          phase: "collect",
+          placement: "corner",
+          queued: [post("a", "amina", 10)],
+        }),
         "tick",
         1_000,
       ).started,
@@ -119,9 +133,9 @@ describe("photo wall queue", () => {
       finished: "a",
       started: "b",
     });
-    expect(
-      nextWall(state({ phase: "collect", queued }), "force", 2_000).started,
-    ).toBe("b");
+    expect(nextWall(state({ phase: "collect", queued }), "force", 2_000).started).toBe(
+      "b",
+    );
     expect(
       nextWall(state({ enabled: false, showing: current, queued }), "tick", 2_000),
     ).toEqual({ showing: null, finished: "a", started: null, wakeAt: null });

@@ -9,7 +9,10 @@ import { wallNextMediaId } from "./snapshot.ts";
 export function wallMediaViewable(
   sql: SqlStorage,
   mediaId: string,
-  viewer: { role: "control" } | { role: "presentation" } | { role: "guest"; playerId: string },
+  viewer:
+    | { role: "control" }
+    | { role: "presentation" }
+    | { role: "guest"; playerId: string },
 ): boolean {
   if (viewer.role === "control") {
     return true;
@@ -32,5 +35,9 @@ export function wallMediaViewable(
   if (row.status === "showing" || row.status === "shown") {
     return true;
   }
-  return viewer.role === "presentation" && row.status === "queued" && wallNextMediaId(sql) === mediaId;
+  return (
+    viewer.role === "presentation" &&
+    row.status === "queued" &&
+    wallNextMediaId(sql) === mediaId
+  );
 }

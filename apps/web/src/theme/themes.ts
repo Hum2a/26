@@ -1656,11 +1656,7 @@ export const themeCategories = [
   {
     id: "atmosphere",
     name: "Dark and atmospheric",
-    themes: [
-      "midnight-matcha",
-      "petrol-and-peach",
-      "ultraviolet",
-    ],
+    themes: ["midnight-matcha", "petrol-and-peach", "ultraviolet"],
   },
   {
     id: "light",

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./theme/theme-skin.css";
 @import "./ui/party-finish.css";
+@import "./ui/glass.css";
 @import "@fontsource/fraunces/700.css";
 @import "@fontsource/outfit/400.css";
 @import "@fontsource/outfit/700.css";

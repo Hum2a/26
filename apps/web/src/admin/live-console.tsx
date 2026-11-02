@@ -14,6 +14,7 @@ import { CommandFeedback } from "./command-feedback";
 import { WallQuickPanel } from "./wall-page";
 import { RoomExtras } from "./room-extras";
 import { KartCourseControls } from "./kart-course-controls";
+import { DangerZone } from "./danger-zone";
 
 const revealPhases = new Set<RoomPhaseName>(["reveal", "scores", "final", "podium"]);
 type Confirmation = {
@@ -464,6 +465,7 @@ export function LiveConsole() {
           </Link>
         </aside>
       </div>
+      <DangerZone />
       <ConfirmDialog
         open={Boolean(confirmation)}
         title={confirmation?.title ?? "Review action"}

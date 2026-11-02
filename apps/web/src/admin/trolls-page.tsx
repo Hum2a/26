@@ -19,8 +19,8 @@ export function TrollsPage() {
       intro={
         <>
           Every troll guests can send. Each guest gets one, unlocked from the third
-          question. Open a room and choose <strong>Trolls</strong> to switch them on
-          or off for that room.{" "}
+          question. Open a room and choose <strong>Trolls</strong> to switch them on or
+          off for that room.{" "}
           <Link className="entry-text-link" to="/admin/rooms">
             Choose a room
           </Link>
@@ -83,7 +83,8 @@ function TrollHistory({ locked }: { locked: boolean }) {
           {history.map((item) => (
             <li key={item.effectId} className="flex flex-wrap items-center gap-3">
               <span>
-                <strong>{item.actorNickname}</strong> → {item.targetNickname}: {item.label}
+                <strong>{item.actorNickname}</strong> → {item.targetNickname}:{" "}
+                {item.label}
               </span>
               <span className="text-sm">
                 {historyStatus[item.status]} ·{" "}
@@ -131,7 +132,9 @@ function TrollCatalogue({
   const [preview, setPreview] = useState<Troll | null>(null);
   const endPreview = useCallback(() => setPreview(null), []);
   const trolls = report.data?.trolls ?? [];
-  const onCount = switches ? trolls.filter((troll) => switches.isOn(troll.kind)).length : 0;
+  const onCount = switches
+    ? trolls.filter((troll) => switches.isOn(troll.kind)).length
+    : 0;
   return (
     <section className="admin-section">
       <header className="admin-page-heading">
@@ -213,7 +216,9 @@ function TrollCatalogue({
                 <dd>{troll.phases.join(", ")}</dd>
                 <dt>Questions</dt>
                 <dd>
-                  {troll.questionKinds.length > 0 ? troll.questionKinds.join(", ") : "Any"}
+                  {troll.questionKinds.length > 0
+                    ? troll.questionKinds.join(", ")
+                    : "Any"}
                   {troll.modifier ? " · only where the question allows it" : ""}
                 </dd>
               </dl>

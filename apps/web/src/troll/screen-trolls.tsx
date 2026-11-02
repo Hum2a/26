@@ -96,11 +96,20 @@ export function ScreenTroll({
 }: Props) {
   switch (kind) {
     case "invasion":
-      return <ScreenInvasion label={label} from={from} escape={escape} onEscape={onEscape} />;
+      return (
+        <ScreenInvasion label={label} from={from} escape={escape} onEscape={onEscape} />
+      );
     case "call":
       return <CallFromMum label={label} escape={escape} onEscape={onEscape} />;
     case "crack":
-      return <ShatteredScreen label={label} seed={seed} escape={escape} onEscape={onEscape} />;
+      return (
+        <ShatteredScreen
+          label={label}
+          seed={seed}
+          escape={escape}
+          onEscape={onEscape}
+        />
+      );
     case "sponsor":
       return <SponsorCard label={label} />;
     case "screen-recording":
@@ -286,8 +295,8 @@ function FakeCrash({ label }: { label: string }) {
     <div className="troll-cover troll-bsod" role="alert" aria-label={label}>
       <p className="troll-bsod-face">:(</p>
       <p>
-        Your phone ran into a problem and needs to restart. We're just collecting
-        some embarrassing info, and then we'll restart for you.
+        Your phone ran into a problem and needs to restart. We're just collecting some
+        embarrassing info, and then we'll restart for you.
       </p>
       <p>{percent}% complete</p>
       <p className="troll-bsod-code">Stop code: SKILL_ISSUE</p>
@@ -305,7 +314,9 @@ function ForcedUpdate({ label }: { label: string }) {
         <span style={{ width: `${percent}%` }} />
       </div>
       <p>About {2 + tick} minutes remaining…</p>
-      <p className="troll-update-small">Do not turn off your phone. Or answer questions.</p>
+      <p className="troll-update-small">
+        Do not turn off your phone. Or answer questions.
+      </p>
     </div>
   );
 }

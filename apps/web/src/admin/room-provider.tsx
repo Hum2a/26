@@ -8,7 +8,8 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { Outlet, useParams } from "react-router";
+import { useLocation, useNavigate, useOutlet, useParams } from "react-router";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { gameIdSchema, type LobbySnapshot } from "@26/shared";
 import { openRoomSocket } from "../live/room-socket";
 import { Button, LinkButton } from "../ui/primitives";
@@ -74,9 +75,24 @@ export function useAdminRoom() {
 }
 export function AdminRoomRoute() {
   const { gameId = "" } = useParams();
+  const { pathname } = useLocation();
+  const reduced = useReducedMotion();
+  // The element, not <Outlet />, so the outgoing page keeps its content
+  // while it fades out.
+  const page = useOutlet();
   return (
     <AdminRoomProvider key={gameId} gameId={gameId}>
-      <Outlet />
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0, y: reduced ? 0 : 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: reduced ? 0 : -6 }}
+          transition={{ duration: reduced ? 0.12 : 0.22, ease: [0.2, 0, 0, 1] }}
+        >
+          {page}
+        </motion.div>
+      </AnimatePresence>
     </AdminRoomProvider>
   );
 }
@@ -87,6 +103,7 @@ export function AdminRoomProvider({
   gameId: string;
   children: ReactNode;
 }) {
+  const navigate = useNavigate();
   const validGameId = gameIdSchema.safeParse(gameId).success;
   const [snapshot, setSnapshot] = useState<LobbySnapshot>();
   const [failure, setFailure] = useState<RoomFailure | undefined>(() =>
@@ -145,6 +162,13 @@ export function AdminRoomProvider({
         if (!result.uncertain) lastRequest.current = null;
       } else {
         lastRequest.current = null;
+        if ("destroyed" in result && result.destroyed) {
+          void navigate("/admin/rooms", {
+            replace: true,
+            state: { notice: playNotice("destroy", "lobby") },
+          });
+          return;
+        }
         const code = "code" in result ? result.code : result.transferCode;
         if (code && "playerId" in request.command && request.command.playerId)
           setTransfer({
@@ -188,7 +212,11 @@ export function AdminRoomProvider({
   ) {
     // Never replace an uncertain accepted intent with a fresh request id.
     if (lastRequest.current || sending.current) return;
-    await send({ command: value, requestId: crypto.randomUUID(), label, scope });
+    const guarded =
+      value.action === "advance" && snapshot?.phaseGeneration !== undefined
+        ? { ...value, expectedPhaseGeneration: snapshot.phaseGeneration }
+        : value;
+    await send({ command: guarded, requestId: crypto.randomUUID(), label, scope });
   }
   async function retry() {
     if (lastRequest.current) await send(lastRequest.current);

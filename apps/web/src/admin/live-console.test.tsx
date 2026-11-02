@@ -21,6 +21,23 @@ import {
 } from "./controls.test-support";
 beforeEach(() => setupControls());
 
+it("pins an advance and its uncertain retry to the phase the host saw", async () => {
+  setupControls({ ...playingFixture, phaseGeneration: 4 });
+  vi.mocked(playRoom)
+    .mockResolvedValueOnce({ error: "Receipt lost", uncertain: true })
+    .mockResolvedValueOnce(success);
+  await mountControls(<LiveConsole />);
+  fireEvent.click(screen.getByRole("button", { name: "Advance" }));
+  await screen.findByText("Receipt lost");
+  expect(playRoom).toHaveBeenCalledWith(
+    expect.objectContaining({ action: "advance", expectedPhaseGeneration: 4 }),
+  );
+  update({ ...playingFixture, phase: "reveal", phaseGeneration: 5 });
+  fireEvent.click(screen.getByRole("button", { name: "Retry the same action" }));
+  await waitFor(() => expect(playRoom).toHaveBeenCalledTimes(2));
+  expect(vi.mocked(playRoom).mock.calls[1]).toEqual(vi.mocked(playRoom).mock.calls[0]);
+});
+
 it("starts only the frozen race in a kart lobby and blocks its controls offline", async () => {
   setupControls({ ...roomFixture, kartLobby: { createdAt: 1000 } });
   await mountControls(<LiveConsole />);

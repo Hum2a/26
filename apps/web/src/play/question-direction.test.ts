@@ -68,3 +68,28 @@ it("keeps contestants, spectators and late joiners clear about their role", () =
     questionDirection(snapshot("duel", {}, { duel: { role: "late" } }), false),
   ).toBe("You’re watching this round");
 });
+
+it("only calls an answer accepted once the room's snapshot carries it", async () => {
+  const { answerStatus } = await import("./question-direction");
+  expect(answerStatus(snapshot("choice"), false)).toBe("open");
+  expect(answerStatus(snapshot("choice"), true)).toBe("sending");
+  expect(
+    answerStatus(
+      snapshot("choice", {}, { selfAnswer: { kind: "choice", optionId: "a" } }),
+      false,
+    ),
+  ).toBe("accepted");
+  expect(
+    answerStatus(
+      snapshot("wordle", {}, { selfAnswer: { kind: "wordle", status: "playing" } }),
+      false,
+    ),
+  ).toBe("open");
+  expect(
+    answerStatus(
+      snapshot("vote", { phase: "vote" }, { selfBallot: { candidateId: "x" } }),
+      false,
+    ),
+  ).toBe("accepted");
+  expect(answerStatus(snapshot("choice", { phase: "reveal" }), false)).toBe("closed");
+});

@@ -15,7 +15,15 @@ import type { ThemeSkin } from "./skins";
  * Scenes and textures may move slowly; reduced motion stops them. Controls
  * never loop.
  */
-export const deepTypes = ["grotesk", "serif", "mono", "condensed", "rounded", "slab", "italic"] as const;
+export const deepTypes = [
+  "grotesk",
+  "serif",
+  "mono",
+  "condensed",
+  "rounded",
+  "slab",
+  "italic",
+] as const;
 export const deepScenes = [
   "none",
   "spotlights",
@@ -39,7 +47,15 @@ export const deepScenes = [
   "pitch",
   "globe",
 ] as const;
-export const deepTextures = ["none", "grain", "scanlines", "crt", "halftone", "vignette", "holo"] as const;
+export const deepTextures = [
+  "none",
+  "grain",
+  "scanlines",
+  "crt",
+  "halftone",
+  "vignette",
+  "holo",
+] as const;
 export const deepControls = [
   "solid",
   "neon",
@@ -76,7 +92,15 @@ export const deepHeadings = [
   "marquee",
   "underline",
 ] as const;
-export const deepMotions = ["smooth", "snappy", "springy", "floaty", "glitchy", "cinematic", "mechanical"] as const;
+export const deepMotions = [
+  "smooth",
+  "snappy",
+  "springy",
+  "floaty",
+  "glitchy",
+  "cinematic",
+  "mechanical",
+] as const;
 
 export type DeepSkin = {
   type: (typeof deepTypes)[number];

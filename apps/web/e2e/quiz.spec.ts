@@ -116,7 +116,13 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
     "No answer was received.",
   );
   await expect(stage.getByRole("heading", { name: "The reveal" })).toBeVisible();
-  await expect(stage.getByText(/1\. Amina —/)).toBeVisible();
+  await expect(
+    stage
+      .getByRole("list", { name: "Scoreboard", exact: true })
+      .getByRole("listitem")
+      .filter({ hasText: "Amina" })
+      .getByLabel("Place 1", { exact: true }),
+  ).toBeVisible();
 
   await bilal.reload();
   await expect(bilal.locator(".skin-status[role=status]")).toContainText(
@@ -291,6 +297,10 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
 
   await advanceUntil(admin, stage, "who is holding the playlist?");
   await advanceUntil(admin, stage, "Answers are open");
+  await expect(amina.locator("[data-phase-motion]")).toHaveAttribute(
+    "data-phase",
+    "collect",
+  );
   expect(frames.join("\n")).not.toContain("truthNickname");
   await expect(amina.locator(".skin-status[role=status]")).toContainText(
     "Choose a player.",
@@ -299,6 +309,7 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
     .getByRole("textbox", { name: "Find a player", exact: true })
     .and(amina.locator(".skin-field"))
     .fill("Bil");
+  await expect(amina.getByRole("button", { name: "Bilal", exact: true })).toBeEnabled();
   await amina.getByRole("button", { name: "Bilal", exact: true }).click();
   const guessOverflow = await amina.evaluate(
     () =>
@@ -400,12 +411,13 @@ async function advanceUntil(admin: Page, stage: Page, text: string) {
             .getByRole("dialog")
             .getByRole("button", { name: "Finish quiz", exact: true })
             .click();
-        } else
+        } else {
           await admin
             .getByRole("button", {
               name: /^(Advance|Next fact|Show the podium)$/,
             })
             .click();
+        }
       })(),
     ]);
     if (previous === "facts")

@@ -51,13 +51,13 @@ export function AdminShell({
             {globalFeatures
               .filter((feature) => feature.id !== "settings")
               .map((feature) => (
-                <NavLink
+                <AdminNavLink
                   key={feature.id}
                   end={feature.path === "" || feature.path === "rooms"}
                   to={featurePath(feature)}
                 >
                   {feature.label}
-                </NavLink>
+                </AdminNavLink>
               ))}
             {/*
               Room pages are always listed, so they can be found from anywhere.
@@ -67,13 +67,13 @@ export function AdminShell({
               <p>{selectedRoom ? `Room ${selectedRoom.label}` : "Room pages"}</p>
               {selectedRoom ? (
                 roomFeatures.map((feature) => (
-                  <NavLink
+                  <AdminNavLink
                     key={feature.id}
                     end={feature.path === ""}
                     to={featurePath(feature, selectedRoom.gameId)}
                   >
                     {feature.label}
-                  </NavLink>
+                  </AdminNavLink>
                 ))
               ) : (
                 <>
@@ -90,7 +90,7 @@ export function AdminShell({
                 </>
               )}
             </div>
-            <NavLink to="/admin/settings">Account & appearance</NavLink>
+            <AdminNavLink to="/admin/settings">Account & appearance</AdminNavLink>
           </nav>
           <div className="admin-account">{account}</div>
           {/* Set by release.sh, so the host can tell which release is live. */}
@@ -101,11 +101,12 @@ export function AdminShell({
         <div className="admin-content">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={roomPath ?? "workspace"}
-              initial={{ opacity: 0, y: reduced ? 0 : 5 }}
+              // A room keeps one provider and socket; its pages animate inside it.
+              key={roomPath ?? location.pathname}
+              initial={{ opacity: 0, y: reduced ? 0 : 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.16, ease: "easeOut" }}
+              exit={{ opacity: 0, y: reduced ? 0 : -6 }}
+              transition={{ duration: reduced ? 0.12 : 0.22, ease: [0.2, 0, 0, 1] }}
             >
               {children}
             </motion.div>
@@ -113,6 +114,40 @@ export function AdminShell({
         </div>
       </div>
     </EntryFrame>
+  );
+}
+
+/** A sidebar link whose active highlight glides between items. */
+function AdminNavLink({
+  to,
+  end,
+  children,
+}: {
+  to: string;
+  end?: boolean;
+  children: ReactNode;
+}) {
+  const reduced = useReducedMotion();
+  return (
+    <NavLink to={to} end={end}>
+      {({ isActive }) => (
+        <>
+          {isActive ? (
+            <motion.span
+              layoutId="admin-nav-pill"
+              className="admin-nav-pill"
+              aria-hidden="true"
+              transition={
+                reduced
+                  ? { duration: 0.12 }
+                  : { type: "spring", stiffness: 500, damping: 40 }
+              }
+            />
+          ) : null}
+          <span className="admin-nav-label">{children}</span>
+        </>
+      )}
+    </NavLink>
   );
 }
 

@@ -481,6 +481,17 @@ export function ledgerCount(sql: SqlStorage): number {
   return row?.total ?? 0;
 }
 
+/** Guests see the leading places only; the stage and host see everyone. */
+export const guestStandingsLimit = 10;
+
+function audienceStandings(
+  rows: readonly { place: number; nickname: string; points: number }[],
+  audience: "guest" | "stage" | "control",
+): { place: number; nickname: string; points: number }[] {
+  const shown = audience === "guest" ? rows.slice(0, guestStandingsLimit) : rows;
+  return shown.map(({ place, nickname, points }) => ({ place, nickname, points }));
+}
+
 function parsePlay(
   view: object,
   question: { notes?: string; explanation?: string },
@@ -538,14 +549,7 @@ export function projectPlay(
                 players: standings(sql).length,
               }
             : null,
-        standings:
-          audience !== "guest" && scored
-            ? standings(sql).map(({ place, nickname, points }) => ({
-                place,
-                nickname,
-                points,
-              }))
-            : null,
+        standings: scored ? audienceStandings(standings(sql), audience) : null,
       },
       question,
       audience,
@@ -613,14 +617,7 @@ export function projectPlay(
       audience === "guest" && showStanding && selfRow
         ? { place: selfRow.place, points: selfRow.points, players: totals.length }
         : null,
-    standings:
-      audience === "guest" || !showStanding
-        ? null
-        : totals.map((row) => ({
-            place: row.place,
-            nickname: row.nickname,
-            points: row.points,
-          })),
+    standings: showStanding ? audienceStandings(totals, audience) : null,
     liveSample: liveNames(sql, question, room),
     attributions: publicAttributions(sql, question, room),
     ...(audience === "control"
@@ -696,14 +693,7 @@ function projectBallot(
       audience === "guest" && showStanding && selfRow
         ? { place: selfRow.place, points: selfRow.points, players: totals.length }
         : null,
-    standings:
-      audience === "guest" || !showStanding
-        ? null
-        : totals.map((row) => ({
-            place: row.place,
-            nickname: row.nickname,
-            points: row.points,
-          })),
+    standings: showStanding ? audienceStandings(totals, audience) : null,
     attributions: null,
     duel: null,
   };
@@ -731,14 +721,7 @@ function projectDuel(
       audience === "guest" && showStanding && selfRow
         ? { place: selfRow.place, points: selfRow.points, players: totals.length }
         : null,
-    standings:
-      audience === "guest" || !showStanding
-        ? null
-        : totals.map((row) => ({
-            place: row.place,
-            nickname: row.nickname,
-            points: row.points,
-          })),
+    standings: showStanding ? audienceStandings(totals, audience) : null,
     attributions: null,
   };
   return parsePlay(view, question, audience, scored);
@@ -814,14 +797,7 @@ export function projectSpecial(
       audience === "guest" && showStanding && selfRow
         ? { place: selfRow.place, points: selfRow.points, players: totals.length }
         : null,
-    standings:
-      audience === "guest" || !showStanding
-        ? null
-        : totals.map((row) => ({
-            place: row.place,
-            nickname: row.nickname,
-            points: row.points,
-          })),
+    standings: showStanding ? audienceStandings(totals, audience) : null,
     liveSample:
       question.kind === "wordle"
         ? null

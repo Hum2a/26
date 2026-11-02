@@ -1,2 +1,5 @@
+# Keep text checkouts consistent with Prettier and Linux CI on every platform.
+* text=auto eol=lf
+
 # Shell scripts must keep LF endings or bash on Windows (Git Bash) fails on \r.
 *.sh text eol=lf

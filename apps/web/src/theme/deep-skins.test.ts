@@ -7,7 +7,9 @@ import { themes, type ThemeId } from "./themes";
 describe("deep skins", () => {
   it("gives every skinned family a deep layer, and keeps 26 basic plain", () => {
     const families = new Set(
-      (Object.keys(themes) as ThemeId[]).map((id) => skinFor(id).id).filter((id) => id !== "plain"),
+      (Object.keys(themes) as ThemeId[])
+        .map((id) => skinFor(id).id)
+        .filter((id) => id !== "plain"),
     );
     for (const family of families) {
       expect(deepFamilies, family).toContain(family);
@@ -43,7 +45,9 @@ describe("deep skins", () => {
     expect(document.documentElement.dataset.heading).toBe("ransom");
     expect(document.documentElement.dataset.scene).toBe("shards");
     expect(document.querySelectorAll(".deep-texture")).toHaveLength(1);
-    expect(document.querySelector(".deep-texture")?.getAttribute("aria-hidden")).toBe("true");
+    expect(document.querySelector(".deep-texture")?.getAttribute("aria-hidden")).toBe(
+      "true",
+    );
     applyTheme("26-basic");
     expect(document.documentElement.dataset.scene).toBe("none");
     expect(document.documentElement.dataset.texture).toBe("none");

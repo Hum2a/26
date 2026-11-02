@@ -104,6 +104,31 @@ export function GuestKart({
       {race && self && !complete ? (
         <KartDriverView race={race} reducedMotion={Boolean(reduced) || !open} />
       ) : null}
+      {!complete ? (
+        <TouchController
+          disabled={
+            !open ||
+            recoveryPending ||
+            (!rehearsal && (!self || self.status !== "RACING" || race?.ended))
+          }
+          onChange={change}
+        />
+      ) : (
+        <motion.div
+          className="kart-finish-card"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
+          <strong>{self.status === "FINISHED" ? "Chequered flag" : "DNF"}</strong>
+          <p>
+            {self.status === "FINISHED"
+              ? "You made it. Take your hands off the wheel."
+              : "The race time is up. There’s always the next round."}
+          </p>
+          <p>Watch the stage for the results.</p>
+        </motion.div>
+      )}
       {self && !complete ? (
         <div className="kart-telemetry" aria-label="Driving feedback">
           <p className="kart-driving-state" role="status">
@@ -132,31 +157,6 @@ export function GuestKart({
           </div>
         </div>
       ) : null}
-      {!complete ? (
-        <TouchController
-          disabled={
-            !open ||
-            recoveryPending ||
-            (!rehearsal && (!self || self.status !== "RACING" || race?.ended))
-          }
-          onChange={change}
-        />
-      ) : (
-        <motion.div
-          className="kart-finish-card"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-        >
-          <strong>{self.status === "FINISHED" ? "Chequered flag" : "DNF"}</strong>
-          <p>
-            {self.status === "FINISHED"
-              ? "You made it. Take your hands off the wheel."
-              : "The race time is up. There’s always the next round."}
-          </p>
-          <p>Watch the stage for the results.</p>
-        </motion.div>
-      )}
       {race?.powers && self && !complete && onUseItem ? (
         <PowerUpControl
           item={race.powers.selfItem}

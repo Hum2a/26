@@ -23,7 +23,8 @@ for (const [frequency, length] of notes) {
   for (let index = 0; index < count && first + index < samples.length; index += 1) {
     const time = index / rate;
     // Quick attack, exponential decay; brassy with a couple of harmonics.
-    const envelope = Math.min(1, time / 0.012) * Math.exp(-time * (length > 1 ? 1.6 : 7));
+    const envelope =
+      Math.min(1, time / 0.012) * Math.exp(-time * (length > 1 ? 1.6 : 7));
     const tone =
       Math.sin(2 * Math.PI * frequency * time) +
       0.45 * Math.sin(2 * Math.PI * frequency * 2 * time) +
@@ -63,6 +64,10 @@ header.writeUInt16LE(16, 34);
 header.write("data", 36);
 header.writeUInt32LE(pcm.length, 40);
 
-const target = fileURLToPath(new URL("../apps/web/public/assets/demo-sting.wav", import.meta.url));
+const target = fileURLToPath(
+  new URL("../apps/web/public/assets/demo-sting.wav", import.meta.url),
+);
 writeFileSync(target, Buffer.concat([header, pcm]));
-console.log(`Wrote ${target} (${(total).toFixed(2)} s, ${header.length + pcm.length} bytes).`);
+console.log(
+  `Wrote ${target} (${total.toFixed(2)} s, ${header.length + pcm.length} bytes).`,
+);

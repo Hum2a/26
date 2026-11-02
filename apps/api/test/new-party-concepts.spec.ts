@@ -14,6 +14,7 @@ it("saves all eight concepts without inventing a Reddit ending, local post, list
     "property-price-roulette",
   ]) {
     const q = birthdayPack.catalogue.find((q) => q.id === id)!;
+    expect(birthdayPack.order).not.toContain(id);
     expect(q.status).toBe("draft");
     expect(toPlayable(q)).toBeUndefined();
     if (
@@ -47,5 +48,5 @@ it("saves all eight concepts without inventing a Reddit ending, local post, list
   ).toMatchObject({ correctOptionId: "dystopia" });
   expect(validatePack(birthdayPack).filter((i) => i.level === "error")).toEqual([]);
   expect(birthdayPack.release).toBe("draft");
-  expect(birthdayPack.order).toEqual([]);
+  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
 });

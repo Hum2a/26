@@ -1,0 +1,188 @@
+.ranks-tab {
+  display: grid;
+  gap: 1.1rem;
+}
+.ranks-self {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.25rem 1rem;
+  overflow: hidden;
+  border-radius: calc(var(--radius-panel) + 0.25rem);
+  padding: 1.1rem 1.25rem;
+}
+.ranks-self::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    90% 120% at 0% 0%,
+    color-mix(in srgb, var(--accent) 34%, transparent),
+    transparent 70%
+  );
+}
+.ranks-self-place {
+  display: flex;
+  align-items: baseline;
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 18vw, 5rem);
+  line-height: 0.9;
+  color: var(--highlight);
+}
+.ranks-self-hash {
+  font-size: 0.5em;
+  color: var(--muted);
+}
+.ranks-self-place small {
+  margin-inline-start: 0.4rem;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+.ranks-self-points {
+  display: grid;
+  justify-items: end;
+  text-align: end;
+}
+.ranks-self-points strong {
+  font-size: 2rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.ranks-self-points span {
+  color: var(--muted);
+  font-weight: 700;
+}
+.ranks-move,
+.ranks-award {
+  grid-column: 1 / -1;
+  font-weight: 700;
+}
+.ranks-move[data-direction="up"] {
+  color: var(--highlight);
+}
+.ranks-move[data-direction="down"] {
+  color: var(--accent);
+}
+.ranks-award {
+  color: var(--muted);
+}
+.ranks-hidden,
+.ranks-empty {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* A little podium: second, first, third. */
+.ranks-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.5rem;
+}
+.ranks-pillar {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  border-radius: var(--radius-panel) var(--radius-panel) 0.6rem 0.6rem;
+  padding: 0.8rem 0.4rem 0;
+  text-align: center;
+}
+.ranks-pillar strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+.ranks-pillar-points {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.ranks-pillar-step {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  width: 100%;
+  margin-top: 0.25rem;
+  border-radius: 0.6rem 0.6rem 0 0;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--highlight) 75%, transparent),
+    color-mix(in srgb, var(--highlight) 20%, transparent)
+  );
+  color: var(--highlight-foreground);
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+}
+.ranks-pillar[data-place="1"] .ranks-pillar-step {
+  min-height: 5.5rem;
+}
+.ranks-pillar[data-place="2"] .ranks-pillar-step {
+  min-height: 3.75rem;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 55%, transparent),
+    color-mix(in srgb, var(--foreground) 12%, transparent)
+  );
+  color: var(--background);
+}
+.ranks-pillar[data-place="3"] .ranks-pillar-step {
+  min-height: 2.5rem;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--accent) 70%, transparent),
+    color-mix(in srgb, var(--accent) 18%, transparent)
+  );
+  color: var(--accent-foreground);
+}
+.ranks-pillar[data-self],
+.ranks-row[data-self] {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    var(--glass-shadow);
+}
+
+.ranks-list {
+  display: grid;
+  gap: 0.45rem;
+}
+.ranks-row {
+  display: grid;
+  grid-template-columns: 1.6rem auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  overflow: hidden;
+  border-radius: 999px;
+  padding: 0.35rem 1rem 0.35rem 0.6rem;
+  font-weight: 700;
+}
+.ranks-row-place {
+  color: var(--muted);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.ranks-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ranks-row-points {
+  font-variant-numeric: tabular-nums;
+}
+.ranks-row-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: -1;
+  width: var(--share);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--highlight) 6%, transparent),
+    color-mix(in srgb, var(--highlight) 22%, transparent)
+  );
+  transition: width 0.5s var(--ease-party);
+}

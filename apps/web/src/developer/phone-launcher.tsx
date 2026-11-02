@@ -20,7 +20,10 @@ export function PhoneLauncher({
     [stage, setStage] = useState(false);
   const [width, height] = sizes[size];
   return (
-    <section className="skin-panel min-w-0 p-4 space-y-3" aria-label="Real phone launcher">
+    <section
+      className="skin-panel min-w-0 p-4 space-y-3"
+      aria-label="Real phone launcher"
+    >
       <h2>Real phone beside the stage</h2>
       <p>
         A generated test guest uses the real phone screen and live room connection.

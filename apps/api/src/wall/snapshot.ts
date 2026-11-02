@@ -102,7 +102,10 @@ export function wallSnapshot(
       return base;
     }
     const mine = rows.filter((row) => row.player_id === selfPlayerId);
-    const last = mine.reduce((latest, row) => Math.max(latest, row.created_at), -Infinity);
+    const last = mine.reduce(
+      (latest, row) => Math.max(latest, row.created_at),
+      -Infinity,
+    );
     const cooldownUntil = last + wallCooldownMs > now ? last + wallCooldownMs : null;
     return {
       ...base,
@@ -133,7 +136,10 @@ export function wallSnapshot(
       position: position(row.post_id),
     }));
   const recent = rows
-    .filter((row) => row.status === "shown" || row.status === "declined" || row.status === "removed")
+    .filter(
+      (row) =>
+        row.status === "shown" || row.status === "declined" || row.status === "removed",
+    )
     .slice(-30)
     .reverse()
     .map((row) => ({
@@ -190,7 +196,10 @@ function queueOrder(rows: Row[]): string[] {
   const lastShownAt: Record<string, number> = {};
   for (const row of rows) {
     if (row.shown_at !== null) {
-      lastShownAt[row.player_id] = Math.max(lastShownAt[row.player_id] ?? 0, row.shown_at);
+      lastShownAt[row.player_id] = Math.max(
+        lastShownAt[row.player_id] ?? 0,
+        row.shown_at,
+      );
     }
   }
   const showing = rows.find((row) => row.status === "showing");

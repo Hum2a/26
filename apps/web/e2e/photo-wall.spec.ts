@@ -13,8 +13,11 @@ test("a phone sends a wall photo, the host approves it, the room reacts, and pul
 
   await signIn(admin);
   await admin.getByRole("button", { name: "Create a lobby" }).click();
-  await expect(admin.getByRole("heading", { name: "Ready for the room." })).toBeVisible();
-  const joinCode = (await admin.locator(".admin-room-code").textContent())?.trim() ?? "";
+  await expect(
+    admin.getByRole("heading", { name: "Ready for the room." }),
+  ).toBeVisible();
+  const joinCode =
+    (await admin.locator(".admin-room-code").textContent())?.trim() ?? "";
   expect(joinCode).toHaveLength(6);
 
   await stage.goto(`/host?code=${joinCode}`);
@@ -26,7 +29,9 @@ test("a phone sends a wall photo, the host approves it, the room reacts, and pul
 
   // The wall works from the lobby, before the game starts.
   await amina.getByRole("button", { name: /Send to the big screen/ }).click();
-  await amina.getByLabel(/Camera roll/).setInputFiles("apps/web/e2e/fixtures/pixel.png");
+  await amina
+    .getByLabel(/Camera roll/)
+    .setInputFiles("apps/web/e2e/fixtures/pixel.png");
   await amina.getByLabel("Caption").fill("Cake o'clock");
   await amina.getByRole("button", { name: "Tabloid" }).click();
   await amina.getByRole("button", { name: "Send it" }).click();
@@ -59,7 +64,8 @@ test("a phone sends a wall photo, the host approves it, the room reacts, and pul
   await expect(amina.getByText("Taken down")).toBeVisible();
 
   const overflow = await amina.evaluate(
-    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    () =>
+      document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
   );
   expect(overflow).toBe(false);
 
@@ -71,7 +77,10 @@ async function signIn(page: Page) {
   await page.goto("/admin");
   await page.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
   await page.getByRole("button", { name: "Email me a code and link" }).click();
-  await page.getByRole("link", { name: "Open the sign-in confirmation" }).first().click();
+  await page
+    .getByRole("link", { name: "Open the sign-in confirmation" })
+    .first()
+    .click();
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(
     page.getByRole("status").filter({ hasText: "You are signed in as" }),

@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { NavLink } from "react-router";
 import { EXAMPLE_GAME_ID } from "../example-game";
 import { SkinMotif } from "../theme/skin-motif";
+import { LiquidGround } from "./liquid-ground";
 import { ThemePicker } from "../theme/theme-picker";
 import { Wordmark } from "../theme/wordmark";
 
@@ -39,6 +40,7 @@ export function SurfaceFrame({
       className={`surface-frame relative max-w-full overflow-x-clip ${size === "stage" ? "min-h-full" : "min-h-dvh"} bg-background text-foreground`}
     >
       <div className="skin-ground" aria-hidden="true">
+        <LiquidGround />
         <SkinMotif />
       </div>
       <a

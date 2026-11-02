@@ -243,7 +243,12 @@ export function startRound(
     hold: null,
     roundId,
     phases: [...plugin.phases],
-    durations: { ...plugin.durations },
+    durations: {
+      ...plugin.durations,
+      ...(plugin.collectWindows?.[0] === undefined
+        ? {}
+        : { collect: plugin.collectWindows[0] }),
+    },
     fault: null,
     questionIndex: 0,
     questionCount: plugin.questionCount ?? 0,
@@ -360,6 +365,22 @@ export function finishGame(store: GameStore, now: number): boolean {
   }
   store.writeRoom({ ...room, finishAfterRound: true });
   return true;
+}
+
+/**
+ * Ends the quiz at once: the current question is abandoned unscored and the
+ * podium follows, from any phase after the lobby.
+ */
+export function endGameNow(store: GameStore, now: number): boolean {
+  const room = store.readRoom();
+  if (room.phase === "lobby" || room.phase === "podium") {
+    return false;
+  }
+  return moveTo(store, now, "podium", {
+    hold: false,
+    nextQuestion: false,
+    clearPause: true,
+  });
 }
 
 export function notePresence(
