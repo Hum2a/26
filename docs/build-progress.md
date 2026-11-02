@@ -4380,3 +4380,21 @@ below. No deployment, new dependency or paid resource.
 - **Exact next stage:** the user reviews the branch locally (or on staging if
   they ask for a deploy), fixes the production R2 secrets and CORS, then a
   venue-device rehearsal.
+
+## 2 November 2026 — liquid-glass release
+
+- **Authorisation:** the user asked to push, open a PR, merge and deploy.
+- **Git:** `claude/liquid-glass-ui` pushed; PR https://github.com/Hum2a/26/pull/2
+  merged into `master` as merge commit `0710660` (contains `ccbdecc` and
+  `ba2ea5e`). CI was still running at merge time; its result is not recorded
+  here as green.
+- **Staging:** `npm run deploy:staging` succeeded, version
+  `f812fb70-b6d7-4d2e-b57b-4bf3ff8f16e2`. `/api/health` returned `ok: true`,
+  `environment: staging`; `/join` returned 200 and rendered the liquid-glass
+  entry at 375px. No migration, secret change or new resource.
+- **Production:** the session's permission check refused the production
+  deploy, so the user ran `npm run deploy:prod` themselves. Afterwards
+  `/api/health` returned `ok: true`, `environment: production`, `/join`
+  returned 200, and the served bundle contains the new phone tab bar.
+- **Unchanged limitation:** production photo uploads need the real
+  `R2_ACCOUNT_ID`, a rotated token and the bucket CORS rule.
