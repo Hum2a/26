@@ -108,3 +108,27 @@ it("reuses an uncertain create request when retried", async () => {
     vi.mocked(createLobby).mock.calls[1]?.[0],
   );
 });
+
+it("starts a kart-only lobby in one click from admin home", async () => {
+  vi.mocked(createLobby).mockResolvedValue({
+    gameId: "KARTKART",
+    joinCode: "KARTKA",
+  } as Awaited<ReturnType<typeof createLobby>>);
+  render(
+    <MemoryRouter>
+      <Routes>
+        <Route path="/" element={<RoomsPage overview />} />
+        <Route path="/admin/rooms/KARTKART/live" element={<p>Kart lobby live</p>} />
+        <Route path="/kart" element={<p>Solo kart</p>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+  expect(
+    screen
+      .getByRole("link", { name: "practise the circuit solo" })
+      .getAttribute("href"),
+  ).toBe("/kart");
+  fireEvent.click(screen.getByRole("button", { name: "Create kart lobby" }));
+  await screen.findByText("Kart lobby live");
+  expect(vi.mocked(createLobby).mock.calls[0]?.[2]).toBe("kart");
+});

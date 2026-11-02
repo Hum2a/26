@@ -1158,3 +1158,18 @@
     transform: none;
   }
 }
+
+/* Admin Home: start a kart-only night in one click. */
+.admin-kart-night {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+.admin-kart-night > p {
+  color: var(--muted);
+}
+.admin-kart-night a {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

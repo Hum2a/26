@@ -56,3 +56,14 @@ it("offers verified admin and guest sessions a way back", async () => {
     ),
   ).toBe("/play");
 });
+
+it("offers the solo kart circuit without a join code", () => {
+  render(
+    <MemoryRouter>
+      <HomePage />
+    </MemoryRouter>,
+  );
+  expect(
+    screen.getByRole("link", { name: /Practise kart solo/ }).getAttribute("href"),
+  ).toBe("/kart");
+});

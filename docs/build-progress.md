@@ -4398,3 +4398,26 @@ below. No deployment, new dependency or paid resource.
   returned 200, and the served bundle contains the new phone tab bar.
 - **Unchanged limitation:** production photo uploads need the real
   `R2_ACCOUNT_ID`, a rotated token and the bucket CORS rule.
+
+## 2 November 2026 — upload check on production, kart discoverability
+
+- **Uploads verified live:** after the user set and synced the R2 secrets, a
+  throwaway production lobby (`7WU96B`) was created, joined as "Upload test",
+  and a generated 64×64 image went through slot → PUT → finalise via the
+  driver-face path. The upload host was the account's R2 endpoint, the PUT
+  returned 200 and finalise accepted the photo. The bucket CORS rule already
+  allowed `PUT` with `Content-Type` from the party origins. The lobby was then
+  destroyed from Admin → Live controls on production: the admin returned to
+  Rooms with its notice and the phone showed "The host closed this room."
+- **Kart:** the solo circuit already existed at `/kart` (linked only from Admin →
+  Kart) and kart-only lobbies already existed (Admin → Kart → Multiplayer). The
+  public home page now has "Fancy a lap? Practise kart solo", admin Home has a
+  one-click "Create kart lobby" card with a solo link, and the solo page has a
+  "← 26" way back.
+- **Phone closed-room state:** a room that ends a phone's connection on
+  purpose no longer also shows "Reconnecting", and the phone offers "Join
+  another room". The destroy confirmation field has its own accessible name.
+- **Verified:** `npm run typecheck` passed; `npm run test:unit` passed **112
+  files / 446 tests**; Prettier and ESLint clean on the changed files. Local
+  Chromium check of the home page and `/kart` at 375px. Not yet committed or
+  deployed.
