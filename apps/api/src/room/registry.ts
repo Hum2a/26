@@ -111,6 +111,60 @@ export class RoomCodeRegistry extends DurableObject<Env> {
     };
   }
 
+  /**
+   * Drops a destroyed room's join code and keeps a receipt, so a retried
+   * destroy with the same request id is answered as already done.
+   */
+  async forgetRoom(input: {
+    gameId: string;
+    requestId: string;
+  }): Promise<{ gameId: string; joinCode: string | null }> {
+    return this.ctx.storage.transactionSync(() => {
+      const sql = this.ctx.storage.sql;
+      const gameId = input.gameId.toUpperCase();
+      const prior = this.destroyedSync(gameId, input.requestId);
+      if (prior) return prior;
+      const row = sql
+        .exec<{ join_code: string }>(
+          "SELECT join_code FROM code WHERE game_id = ?",
+          gameId,
+        )
+        .toArray()[0];
+      sql.exec("DELETE FROM code WHERE game_id = ?", gameId);
+      const result = { gameId, joinCode: row?.join_code ?? null };
+      sql.exec(
+        "INSERT INTO receipt (principal, request_id, payload_digest, result_json) VALUES ('destroy', ?, ?, ?)",
+        input.requestId,
+        gameId,
+        JSON.stringify(result),
+      );
+      return result;
+    });
+  }
+
+  async destroyedRoom(
+    gameId: string,
+    requestId: string,
+  ): Promise<{ gameId: string; joinCode: string | null } | null> {
+    return this.destroyedSync(gameId.toUpperCase(), requestId);
+  }
+
+  private destroyedSync(
+    gameId: string,
+    requestId: string,
+  ): { gameId: string; joinCode: string | null } | null {
+    const row = this.ctx.storage.sql
+      .exec<{ result_json: string }>(
+        "SELECT result_json FROM receipt WHERE principal = 'destroy' AND request_id = ? AND payload_digest = ?",
+        requestId,
+        gameId,
+      )
+      .toArray()[0];
+    return row
+      ? (JSON.parse(row.result_json) as { gameId: string; joinCode: string | null })
+      : null;
+  }
+
   async resolve(joinCode: string): Promise<{ gameId: string } | null> {
     const row = this.ctx.storage.sql
       .exec<{ game_id: string }>(

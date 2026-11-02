@@ -367,6 +367,22 @@ export function finishGame(store: GameStore, now: number): boolean {
   return true;
 }
 
+/**
+ * Ends the quiz at once: the current question is abandoned unscored and the
+ * podium follows, from any phase after the lobby.
+ */
+export function endGameNow(store: GameStore, now: number): boolean {
+  const room = store.readRoom();
+  if (room.phase === "lobby" || room.phase === "podium") {
+    return false;
+  }
+  return moveTo(store, now, "podium", {
+    hold: false,
+    nextQuestion: false,
+    clearPause: true,
+  });
+}
+
 export function notePresence(
   store: GameStore,
   presence: { controller: boolean; stage: boolean },

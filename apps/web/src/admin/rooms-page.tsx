@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { adminFeatures, featurePath, roomFeatures } from "./features";
 import type { AdminRoomList, LobbySnapshot } from "@26/shared";
 import {
@@ -26,6 +26,8 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
   const [reload, setReload] = useState(0);
   const createId = useRef<string | undefined>(undefined);
   const navigate = useNavigate();
+  const arrival = (useLocation().state as { notice?: unknown } | null)?.notice;
+  const arrivalNotice = typeof arrival === "string" ? arrival : "";
   useEffect(() => {
     let live = true;
     void Promise.all([listRooms(), readCurrentRoom()]).then(([page, selected]) => {
@@ -34,16 +36,16 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
       else {
         setRooms(page.rooms);
         setNext(page.nextCursor);
-        setNotice("");
+        setNotice(arrivalNotice);
       }
-      if (selected && "error" in selected) setNotice(selected.error);
+      if (selected && "error" in selected) setNotice(arrivalNotice || selected.error);
       else setCurrent(selected);
       setLoading(false);
     });
     return () => {
       live = false;
     };
-  }, [reload]);
+  }, [reload, arrivalNotice]);
   async function more() {
     if (!next) return;
     setBusy(true);

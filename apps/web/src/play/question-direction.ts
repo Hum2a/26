@@ -64,3 +64,31 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
         : "Type your answer, then send";
   }
 }
+
+/**
+ * Where this phone's answer stands, from the server's own record only:
+ * "accepted" once the snapshot carries it, "sending" while a request is in
+ * flight, otherwise "open" or "closed". A local selection is never "accepted".
+ */
+export function answerStatus(
+  snapshot: LobbySnapshot,
+  pending: boolean,
+): "open" | "sending" | "accepted" | "closed" {
+  const play = snapshot.play;
+  if (!play) return "closed";
+  if (pending) return "sending";
+  const ballotPhase =
+    snapshot.phase === "vote" ||
+    snapshot.phase === "predict" ||
+    play.question.kind === "guess";
+  const answer = ballotPhase ? play.selfBallot : play.selfAnswer;
+  const stillPlaying =
+    answer !== null &&
+    "kind" in answer &&
+    answer.kind === "wordle" &&
+    answer.status === "playing";
+  if (answer && !stillPlaying) {
+    return "accepted";
+  }
+  return ["collect", "vote", "predict"].includes(snapshot.phase) ? "open" : "closed";
+}

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { SkinMotif } from "../theme/skin-motif";
+import { LiquidGround } from "./liquid-ground";
 import { ThemePicker } from "../theme/theme-picker";
 import { Wordmark } from "../theme/wordmark";
 import "./entry.css";
@@ -25,6 +26,7 @@ export function EntryFrame({
       className={`entry-frame ${wide ? "entry-wide" : ""} ${full ? "entry-full" : ""}`}
     >
       <div className="skin-ground" aria-hidden="true">
+        <LiquidGround />
         <SkinMotif />
       </div>
       <a className="entry-skip" href="#content">

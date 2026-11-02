@@ -20,22 +20,39 @@
   gap: 0.4rem;
 }
 .admin-sidebar nav a {
+  position: relative;
+  isolation: isolate;
   padding: 0.75rem 1rem;
   border-radius: var(--radius-control);
   color: var(--muted);
   text-decoration: none;
   transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
+    background 0.2s var(--ease-party),
+    color 0.2s var(--ease-party),
+    transform 0.18s var(--ease-party);
 }
-.admin-sidebar nav a:hover,
+.admin-sidebar nav a:hover {
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  color: var(--foreground);
+  transform: translateX(2px);
+}
 .admin-sidebar nav a[aria-current="page"] {
-  background: var(--surface);
   color: var(--foreground);
 }
-.admin-sidebar nav a[aria-current="page"] {
-  box-shadow: inset 3px 0 var(--accent);
+/* The active highlight: one glass pill that glides between links. */
+.admin-nav-pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--accent) 30%, var(--surface)),
+    color-mix(in srgb, var(--surface) 70%, transparent)
+  );
+  box-shadow:
+    inset 3px 0 var(--accent),
+    var(--glass-shadow);
 }
 .admin-sidebar a:focus-visible {
   outline: 2px solid var(--highlight);
@@ -1020,4 +1037,124 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(24rem, 1fr));
   gap: 1rem;
+}
+
+/* End the game now / destroy the room. */
+.admin-danger {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1.5rem;
+}
+.admin-danger h2 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+}
+.admin-danger-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
+  gap: 1rem;
+}
+.admin-danger-card {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  padding: 1.2rem;
+  transition:
+    border-color 0.2s var(--ease-party),
+    transform 0.2s var(--ease-party),
+    box-shadow 0.2s var(--ease-party);
+}
+.admin-danger-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -18px color-mix(in srgb, var(--foreground) 60%, transparent);
+}
+.admin-danger-card[data-severe] {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+}
+.admin-danger-card h3 {
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+.admin-danger-card p {
+  color: var(--muted);
+}
+.admin-danger-confirm {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  font-weight: 700;
+}
+.admin-danger-confirm input {
+  min-height: 3rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  padding: 0 1rem;
+  font-size: 1.25rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition: border-color 0.18s var(--ease-party);
+}
+.admin-danger-confirm input[aria-invalid="true"] {
+  border-color: var(--accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-danger-card,
+  .admin-danger-card:hover {
+    transform: none;
+  }
+}
+
+/* Cards and panels rise in, a beat apart, whenever a page opens. */
+@media (prefers-reduced-motion: no-preference) {
+  :is(.admin-feature-grid, .admin-danger-actions, .admin-room-list) > * {
+    animation: admin-rise 0.42s var(--ease-party) both;
+  }
+  :is(.admin-feature-grid, .admin-danger-actions, .admin-room-list) > :nth-child(2) {
+    animation-delay: 40ms;
+  }
+  :is(.admin-feature-grid, .admin-danger-actions, .admin-room-list) > :nth-child(3) {
+    animation-delay: 80ms;
+  }
+  :is(.admin-feature-grid, .admin-danger-actions, .admin-room-list) > :nth-child(4) {
+    animation-delay: 120ms;
+  }
+  :is(.admin-feature-grid, .admin-danger-actions, .admin-room-list)
+    > :nth-child(n + 5) {
+    animation-delay: 160ms;
+  }
+  .admin-feature-card {
+    transition:
+      transform 0.22s var(--ease-party),
+      box-shadow 0.22s var(--ease-party),
+      border-color 0.22s var(--ease-party);
+  }
+  .admin-feature-card:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+    box-shadow: 0 16px 34px -22px color-mix(in srgb, black 80%, transparent);
+  }
+  .admin-live-actions > * {
+    animation: admin-rise 0.34s var(--ease-party) both;
+  }
+}
+@keyframes admin-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar nav a:hover {
+    transform: none;
+  }
 }

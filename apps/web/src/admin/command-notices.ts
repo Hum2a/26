@@ -75,6 +75,12 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "advance" && phase === "podium") {
     return "The podium is up.";
   }
+  if (action === "end-now") {
+    return "The game has ended. The podium is on the stage.";
+  }
+  if (action === "destroy") {
+    return "The room was destroyed. Guests were told it has closed.";
+  }
   if (action === "finish") {
     return phase === "podium"
       ? "The quiz is finished."

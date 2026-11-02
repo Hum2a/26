@@ -52,11 +52,16 @@ export function putWithProgress(
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url);
-    xhr.withCredentials =
+    const sameOrigin =
       new URL(url, window.location.href).origin === window.location.origin;
+    xhr.withCredentials = sameOrigin;
     xhr.setRequestHeader("content-type", contentType);
-    for (const [name, value] of Object.entries(clientApiHeaders())) {
-      xhr.setRequestHeader(name, value);
+    // A presigned bucket URL carries its own signature. Our key header would
+    // only add an unsigned header the bucket's CORS rule refuses.
+    if (sameOrigin) {
+      for (const [name, value] of Object.entries(clientApiHeaders())) {
+        xhr.setRequestHeader(name, value);
+      }
     }
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && event.total > 0) {

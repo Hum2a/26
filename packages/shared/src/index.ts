@@ -1258,6 +1258,8 @@ export const playCommandSchema = z
     transferCode: z.string().optional(),
     released: z.number().int().nonnegative().optional(),
     retried: z.number().int().nonnegative().optional(),
+    /** The room was destroyed; its admin pages should leave it. */
+    destroyed: z.literal(true).optional(),
   })
   .strict();
 

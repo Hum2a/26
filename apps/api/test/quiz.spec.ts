@@ -158,7 +158,10 @@ describe("illustrative multiple choice", () => {
       kind: "choice",
       correctOptionId: "circle",
     });
-    expect(revealed.play?.standings).toBeNull();
+    // Guests see the leading places for their Ranks tab (at most ten).
+    expect(revealed.play?.standings).toEqual([
+      { place: 1, nickname: "Amina", points: revealed.play?.selfStanding?.points },
+    ]);
     expect(revealed.play?.selfStanding?.points).toBeGreaterThan(100);
     const stage = await stub.snapshotFor("stage");
     expect(stage.play?.standings?.[0]?.nickname).toBe("Amina");

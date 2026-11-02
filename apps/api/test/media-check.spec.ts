@@ -138,7 +138,7 @@ describe("media checks", () => {
     const signed = await uploadTarget({
       env: {
         APP_ENV: "production",
-        R2_ACCOUNT_ID: "account",
+        R2_ACCOUNT_ID: "0123456789abcdef0123456789abcdef",
         R2_ACCESS_KEY_ID: "key",
         R2_SECRET_ACCESS_KEY: "secret",
         MEDIA_BUCKET_NAME: "26-humza-media",
@@ -171,6 +171,30 @@ describe("media checks", () => {
       contentType: "image/jpeg",
     });
     expect(blocked).toMatchObject({ ok: false, message: mediaConfigMessage });
+    // An API token in the account-ID secret must not become the upload host.
+    const misfiled = await uploadTarget({
+      env: {
+        APP_ENV: "production",
+        R2_ACCOUNT_ID: "cfat_not-an-account-id",
+        R2_ACCESS_KEY_ID: "key",
+        R2_SECRET_ACCESS_KEY: "secret",
+        MEDIA_BUCKET_NAME: "26-humza-media",
+      },
+      requestUrl: "https://example.com/game",
+      gameId: "ABCDEFGH",
+      uploadId,
+      tempKey: temporaryKey("ABCDEFGH", uploadId),
+      contentType: "image/jpeg",
+    });
+    expect(misfiled).toMatchObject({ ok: false, message: mediaConfigMessage });
+    expect(
+      realBucketReport({
+        APP_ENV: "production",
+        R2_ACCOUNT_ID: "cfat_not-an-account-id",
+        R2_ACCESS_KEY_ID: "key",
+        R2_SECRET_ACCESS_KEY: "secret",
+      }).missing,
+    ).toEqual(["R2_ACCOUNT_ID"]);
     expect(
       realBucketReport({
         APP_ENV: "local",

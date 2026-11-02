@@ -87,6 +87,8 @@ import {
   demoQuestionSetVersion,
   demoScoringVersion,
   finishClosedMessage,
+  endNowClosedMessage,
+  roomDestroyedMessage,
   skipClosedMessage,
   playerMissingMessage,
   roomFullMessage,
@@ -102,6 +104,7 @@ import {
   acceptAnswer,
   advance,
   finishGame,
+  endGameNow,
   fixturePlugin,
   notePresence,
   onAlarm,
@@ -1381,6 +1384,98 @@ export class PartyRoom extends DurableObject<Env> {
         throw new Error(finishClosedMessage);
       }
     });
+  }
+
+  async endNow(input: {
+    credentialId: string;
+    secret: string;
+    requestId: string;
+    nowMs: number;
+  }): Promise<PhaseCommandResult> {
+    const allowed = await this.requireControl(
+      input.credentialId,
+      input.secret,
+      input.nowMs,
+    );
+    if (!allowed.ok) {
+      return allowed;
+    }
+    return this.phaseCommand(input.requestId, { action: "end-now" }, (sql) => {
+      if (!endGameNow(createGameStore(sql), input.nowMs)) {
+        throw new Error(endNowClosedMessage);
+      }
+    });
+  }
+
+  /**
+   * Deletes the whole room: every socket is told and closed, the scheduler is
+   * disarmed and storage is wiped, so later requests find no room. The caller
+   * removes the join code and the stored media keys returned here.
+   */
+  async destroyRoom(input: {
+    credentialId: string;
+    secret: string;
+    requestId: string;
+    nowMs: number;
+    confirmCode: string;
+  }): Promise<
+    | { ok: true; gameId: string; joinCode: string; mediaKeys: string[] }
+    | Extract<PhaseCommandResult, { ok: false }>
+  > {
+    if (!validRequestId(input.requestId)) {
+      return { ok: false, error: "invalid", message: roundStartMessage };
+    }
+    const allowed = await this.requireControl(
+      input.credentialId,
+      input.secret,
+      input.nowMs,
+    );
+    if (!allowed.ok) {
+      return allowed;
+    }
+    const room = this.readRoom();
+    if (!room) {
+      return { ok: false, error: "unauthenticated", message: roomMissingMessage };
+    }
+    if (input.confirmCode.toUpperCase() !== room.join_code.toUpperCase()) {
+      return {
+        ok: false,
+        error: "invalid",
+        message: "That is not this room’s join code. Nothing was destroyed.",
+      };
+    }
+    const mediaKeys = this.ctx.storage.sql
+      .exec<{ temp_key: string; final_key: string | null }>(
+        "SELECT temp_key, final_key FROM media_upload",
+      )
+      .toArray()
+      .flatMap((row) =>
+        row.final_key ? [row.temp_key, row.final_key] : [row.temp_key],
+      );
+    for (const socket of this.ctx.getWebSockets()) {
+      try {
+        this.send(socket, {
+          kind: "replaced",
+          scope: "private",
+          message: roomDestroyedMessage,
+        });
+        socket.close(4000, roomDestroyedMessage);
+      } catch {
+        // A socket that already went away needs no goodbye.
+      }
+    }
+    this.liveDrafts.clear();
+    if (this.draftFlush) clearTimeout(this.draftFlush);
+    // Cancel every job through the one scheduler, which then disarms the alarm.
+    await commitAndArm(this.ctx.storage, (sql) => {
+      sql.exec(
+        "UPDATE schedule_job SET status = 'cancelled', due_at = NULL WHERE status = 'pending'",
+      );
+    });
+    await this.ctx.storage.deleteAll();
+    // Empty tables, not missing ones: later requests read "no room" cleanly.
+    ensurePartySchema(this.ctx.storage.sql);
+    return { ok: true, gameId: room.game_id, joinCode: room.join_code, mediaKeys };
   }
 
   async hostAction(input: {
@@ -3627,7 +3722,7 @@ export class PartyRoom extends DurableObject<Env> {
       selfPlayerId &&
       hidesPersonalScore(this.ctx.storage.sql, selfPlayerId)
     ) {
-      play = { ...play, selfAward: null, selfStanding: null };
+      play = { ...play, selfAward: null, selfStanding: null, standings: null };
     }
     const trolls = trollSnapshot(this.ctx.storage.sql, store, audience, selfPlayerId);
     const highlights =

@@ -2,29 +2,29 @@ import { withClientApiKey } from "../api/client-key";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import type { LobbySnapshot } from "@26/shared";
-import { uploadVoiceClip } from "../media/media-transfer";
-import { VoiceTake } from "../media/voice-take";
-import { Button, Disclosure } from "../ui/primitives";
+import { motion, useReducedMotion } from "motion/react";
+import { Icon } from "@iconify/react/dist/offline";
+import { Button } from "../ui/primitives";
+import { trollGroupOf, trollMeta } from "./troll-meta";
 import { newSelfTroll } from "./applied";
-import { TrollConfirm } from "./Confirm";
-import { TrollPicker } from "./Picker";
 import { VictimToast } from "./VictimToast";
 import { isScreenTroll, ScreenTroll } from "./screen-trolls";
 import { seedFrom, type TrollSender } from "./classic-trolls";
+import "./troll-tab.css";
 
+/** Trolls aimed at this phone. They show above every tab. */
 export function GuestTrolls({
   snapshot,
   gameId,
   selfId,
   pending,
-  onSend,
   onEscape,
 }: {
   snapshot: LobbySnapshot;
   gameId: string;
   selfId: string;
   pending: boolean;
-  onSend: (kind: string, targetId: string, mediaId?: string) => void;
+  onSend?: (kind: string, targetId: string, mediaId?: string) => void;
   onEscape: (effectId: string) => void;
 }) {
   const incoming = snapshot.trolls.active.filter(
@@ -44,7 +44,7 @@ export function GuestTrolls({
     }
   }
   return (
-    <div className="grid gap-4" data-troll="">
+    <div className="incoming-trolls" data-troll="">
       {toast ? (
         <VictimToast
           key={toast.effectId}
@@ -63,15 +63,6 @@ export function GuestTrolls({
           onEscape={onEscape}
         />
       ))}
-      <Disclosure title="Play a troll">
-        <TrollPanel
-          snapshot={snapshot}
-          gameId={gameId}
-          selfId={selfId}
-          pending={pending}
-          onSend={onSend}
-        />
-      </Disclosure>
     </div>
   );
 }
@@ -128,9 +119,17 @@ function TrollOverlay({
   pending: boolean;
   onEscape: (effectId: string) => void;
 }) {
+  const reduce = useReducedMotion();
   if (effect.kind === "yield") {
     return (
-      <div className="grid gap-3" role="status">
+      <div
+        className="incoming-troll glass"
+        data-hue={trollGroupOf("yield").hue}
+        role="status"
+      >
+        <span className="incoming-troll-icon" aria-hidden="true">
+          <Icon icon={trollMeta.yield.icon} />
+        </span>
         <p>
           The send button moves for at most three seconds. The answers stay in place.
         </p>
@@ -162,118 +161,41 @@ function TrollOverlay({
       document.body,
     );
   }
+  const group = trollGroupOf(effect.kind);
+  const meta = trollMeta[effect.kind];
   return (
-    <div className="grid gap-3" role="status" aria-label={effect.assetLabel}>
-      <p className="text-2xl font-bold">{effect.label}</p>
-      <p>{targetLine[effect.kind] ?? effect.assetLabel}</p>
+    <motion.div
+      className="incoming-troll glass"
+      data-hue={group.hue}
+      role="status"
+      aria-label={effect.assetLabel}
+      initial={{ opacity: 0, y: reduce ? 0 : -12, scale: reduce ? 1 : 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={
+        reduce ? { duration: 0.15 } : { type: "spring", stiffness: 420, damping: 30 }
+      }
+    >
+      <span className="incoming-troll-icon" aria-hidden="true">
+        <Icon icon={meta?.icon ?? group.icon} />
+      </span>
+      <div className="grid gap-1">
+        <p className="incoming-troll-group">{group.label}</p>
+        <p className="incoming-troll-title">{effect.label}</p>
+        <p>{targetLine[effect.kind] ?? effect.assetLabel}</p>
+        {sender ? <p className="incoming-troll-from">From {sender.nickname}</p> : null}
+      </div>
       {effect.escape ? (
         <Button
           type="button"
+          className="incoming-troll-escape"
           disabled={pending}
           onClick={() => onEscape(effect.effectId)}
         >
           {effect.escape}
         </Button>
       ) : (
-        <p>This clears on its own.</p>
+        <p className="incoming-troll-note">This clears on its own.</p>
       )}
-    </div>
-  );
-}
-
-function TrollPanel({
-  snapshot,
-  gameId,
-  selfId,
-  pending,
-  onSend,
-}: {
-  snapshot: LobbySnapshot;
-  gameId: string;
-  selfId: string;
-  pending: boolean;
-  onSend: (kind: string, targetId: string, mediaId?: string) => void;
-}) {
-  const [kind, setKind] = useState<string>();
-  const [targetId, setTargetId] = useState<string>();
-  const [clip, setClip] = useState<Blob | null>(null);
-  const [voiceStatus, setVoiceStatus] = useState("");
-  const [confirming, setConfirming] = useState(false);
-  const used = snapshot.trolls.token === "spent";
-  const roundIndex = snapshot.play?.question.index ?? 0;
-  const others = snapshot.players.filter((player) => player.playerId !== selfId);
-  const target = others.find((player) => player.playerId === targetId);
-  const offer = snapshot.trolls.offers.find((item) => item.kind === kind);
-  const ready = snapshot.trolls.token === "ready" && roundIndex >= 2;
-
-  function fire() {
-    if (!kind || !targetId) {
-      return;
-    }
-    setConfirming(false);
-    if (kind === "voice") {
-      if (!clip) {
-        return;
-      }
-      const body = clip;
-      setVoiceStatus("Checking the file.");
-      void uploadVoiceClip(gameId, body, setVoiceStatus).then((mediaId) => {
-        if (mediaId) {
-          onSend(kind, targetId, mediaId);
-        }
-      });
-      return;
-    }
-    onSend(kind, targetId);
-  }
-
-  return (
-    <div className="grid gap-3">
-      <p className="font-bold">Your troll</p>
-      <TrollPicker
-        players={snapshot.players}
-        selfId={selfId}
-        roundIndex={roundIndex}
-        used={used}
-        pending={pending}
-        selectedId={targetId}
-        onSelect={setTargetId}
-      />
-      <div className="grid gap-2">
-        {snapshot.trolls.offers.map((item) => (
-          <Button
-            key={item.kind}
-            type="button"
-            variant={kind === item.kind ? "primary" : "secondary"}
-            aria-pressed={kind === item.kind}
-            disabled={pending || !ready || !item.enabled}
-            onClick={() => setKind(item.kind)}
-          >
-            {item.label}
-          </Button>
-        ))}
-      </div>
-      {kind === "voice" ? (
-        <VoiceTake disabled={pending || !ready} onClip={setClip} />
-      ) : null}
-      {voiceStatus ? <p aria-live="polite">{voiceStatus}</p> : null}
-      <Button
-        type="button"
-        disabled={
-          pending || !ready || !kind || !targetId || (kind === "voice" && !clip)
-        }
-        onClick={() => setConfirming(true)}
-      >
-        {kind === "voice" ? "Send this clip" : "Send troll"}
-      </Button>
-      {confirming && target && offer ? (
-        <TrollConfirm
-          nickname={target.nickname}
-          troll={offer.label}
-          onCancel={() => setConfirming(false)}
-          onConfirm={fire}
-        />
-      ) : null}
-    </div>
+    </motion.div>
   );
 }

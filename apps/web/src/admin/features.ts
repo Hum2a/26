@@ -107,8 +107,10 @@ export const adminFeatures: readonly AdminFeature[] = [
     label: "Live controls",
     scope: "room",
     path: "live",
-    summary: "Start, pause, advance and fix the running game.",
-    rehearsal: "Start the illustrative demo, or the kart rehearsal, with no guests.",
+    summary:
+      "Start, pause, advance and fix the running game, end it early or destroy the room.",
+    rehearsal:
+      "Start the illustrative demo, or the kart rehearsal, with no guests. Try End game now and Destroy room on a throwaway lobby with bots.",
     owns: [
       "apps/api/src/room",
       "apps/web/src/live",
@@ -117,7 +119,7 @@ export const adminFeatures: readonly AdminFeature[] = [
     ],
     status: (snapshot) =>
       snapshot.play
-        ? `Question ${snapshot.play.question.index + 1}`
+        ? `Question ${snapshot.play.question.index} of ${snapshot.play.question.total}`
         : "No question running",
   },
   {

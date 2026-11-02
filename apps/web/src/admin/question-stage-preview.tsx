@@ -5,6 +5,7 @@ import { PhaseTransition } from "../anim/PhaseTransition";
 import { StagePlay } from "../play/stage-play";
 import { SafeArea } from "../stage/SafeArea";
 import { SkinMotif } from "../theme/skin-motif";
+import { LiquidGround } from "../ui/liquid-ground";
 import { Wordmark } from "../theme/wordmark";
 import { Button } from "../ui/primitives";
 import { rehearsalPhase, rehearsalPlay } from "./question-rehearsal";
@@ -56,6 +57,7 @@ export function QuestionStagePreview() {
   return (
     <SafeArea dev={false}>
       <div className="skin-ground" aria-hidden="true">
+        <LiquidGround />
         <SkinMotif />
       </div>
       <main className="stage-presentation" aria-label="Big-screen rehearsal">

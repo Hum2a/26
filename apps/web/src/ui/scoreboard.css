@@ -356,3 +356,140 @@
     display: none;
   }
 }
+
+/* Liquid-glass rows: a bar shows each score against the leader. */
+.scoreboard-row {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.scoreboard-row::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: -1;
+  width: var(--share, 0%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--highlight) 4%, transparent),
+    color-mix(in srgb, var(--highlight) 20%, transparent)
+  );
+  border-radius: inherit;
+  transition: width 0.8s var(--ease-party);
+}
+.scoreboard-move {
+  flex: none;
+  border-radius: 999px;
+  padding: 0.1em 0.45em;
+  font-size: 0.7em;
+  font-weight: 800;
+}
+.scoreboard-move[data-direction="up"] {
+  background: color-mix(in srgb, var(--highlight) 25%, transparent);
+  color: var(--highlight);
+}
+.scoreboard-move[data-direction="down"] {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent);
+}
+/* Raised onto the podium: kept in the list for screen readers only. */
+.scoreboard-row[data-raised] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.scoreboard-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: clamp(0.5rem, 1.5vw, 1.5rem);
+  margin-top: 1.25rem;
+}
+.scoreboard-podium-step {
+  display: grid;
+  justify-items: center;
+  gap: 0.35em;
+  min-width: 0;
+  border-radius: var(--radius-panel) var(--radius-panel) 0.5rem 0.5rem;
+  padding: 1em 0.5em 0;
+  text-align: center;
+}
+.scoreboard-podium-step[data-place="1"] {
+  order: 2;
+}
+.scoreboard-podium-step[data-place="2"] {
+  order: 1;
+}
+.scoreboard-podium-step[data-place="3"] {
+  order: 3;
+}
+.scoreboard-podium-step strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.15em;
+}
+.scoreboard-podium-step .player-avatar {
+  --avatar-size: 3.2em;
+}
+.scoreboard-podium-step[data-place="1"] .player-avatar {
+  --avatar-size: 4.2em;
+  box-shadow:
+    0 0 0 4px var(--highlight),
+    0 0 40px -6px var(--highlight);
+}
+.scoreboard-podium-points {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25em;
+  font-weight: 800;
+}
+.scoreboard-podium-points small {
+  color: var(--muted);
+  font-size: 0.6em;
+}
+.scoreboard-podium-block {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  width: 100%;
+  margin-top: 0.4em;
+  border-radius: 0.5rem 0.5rem 0 0;
+  font-family: var(--font-display);
+  font-size: 2em;
+  min-height: 2.2em;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 45%, transparent),
+    color-mix(in srgb, var(--foreground) 8%, transparent)
+  );
+  color: var(--background);
+}
+.scoreboard-podium-step[data-place="1"] .scoreboard-podium-block {
+  min-height: 3.6em;
+  background: linear-gradient(
+    to bottom,
+    var(--highlight),
+    color-mix(in srgb, var(--highlight) 20%, transparent)
+  );
+  color: var(--highlight-foreground);
+}
+.scoreboard-podium-step[data-place="3"] .scoreboard-podium-block {
+  min-height: 1.6em;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--accent) 80%, transparent),
+    color-mix(in srgb, var(--accent) 15%, transparent)
+  );
+  color: var(--accent-foreground);
+}
+@media (prefers-reduced-motion: reduce) {
+  .scoreboard-row::before {
+    transition: none;
+  }
+}

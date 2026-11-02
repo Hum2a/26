@@ -389,6 +389,8 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "advance",
       "skip",
       "finish",
+      "end-now",
+      "destroy",
       "reveal-names",
       "hide",
       "show",
@@ -444,6 +446,50 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       nowMs: Date.now(),
     };
     const target = room(c.env, gameId.data);
+    if (command === "destroy") {
+      const destroyedReply = jsonData(
+        playCommandSchema.parse({
+          ok: true,
+          phase: "lobby",
+          paused: false,
+          held: false,
+          stateVersion: 0,
+          destroyed: true,
+        }),
+      );
+      const registry = codes(c.env);
+      if (await registry.destroyedRoom(gameId.data, requestId)) {
+        return destroyedReply;
+      }
+      const destroyed = await target.destroyRoom({
+        ...input,
+        confirmCode: details.fields.confirmCode ?? "",
+      });
+      if (!destroyed.ok) {
+        // A wiped room whose code removal was interrupted: finish the removal.
+        if (
+          destroyed.message === roomMissingMessage &&
+          (await registry.hasGame(gameId.data))
+        ) {
+          await registry.forgetRoom({ gameId: gameId.data, requestId });
+          return destroyedReply;
+        }
+        const status = destroyed.error === "invalid" ? 400 : 401;
+        return roomFailure(status, destroyed.error, destroyed.message);
+      }
+      await registry.forgetRoom({ gameId: gameId.data, requestId });
+      if (destroyed.mediaKeys.length > 0) {
+        const bucket = c.env.MEDIA_BUCKET;
+        c.executionCtx.waitUntil(
+          (async () => {
+            for (let start = 0; start < destroyed.mediaKeys.length; start += 1000) {
+              await bucket.delete(destroyed.mediaKeys.slice(start, start + 1000));
+            }
+          })().catch(() => undefined),
+        );
+      }
+      return destroyedReply;
+    }
     const result =
       command === "start-kart-rehearsal"
         ? await target.startKartRehearsal(input)
@@ -464,11 +510,13 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
                     ? await target.skipRound(input)
                     : command === "finish"
                       ? await target.finishRound(input)
-                      : await target.hostAction({
-                          ...input,
-                          action: command,
-                          ...details.fields,
-                        });
+                      : command === "end-now"
+                        ? await target.endNow(input)
+                        : await target.hostAction({
+                            ...input,
+                            action: command,
+                            ...details.fields,
+                          });
     if (!result.ok) {
       const status = result.error === "invalid" ? 400 : 401;
       return roomFailure(status, result.error, result.message);
@@ -858,9 +906,20 @@ function readHostDetails(
         trollKind?: TrollKindName;
         postId?: string;
         wallSettings?: WallSettingsChange;
+        confirmCode?: string;
       };
     }
   | { ok: false; message: string } {
+  if (action === "destroy") {
+    const confirm = joinCodeSchema.safeParse(
+      String(field(body, "confirmCode") ?? "")
+        .trim()
+        .toUpperCase(),
+    );
+    return confirm.success
+      ? { ok: true, fields: { confirmCode: confirm.data } }
+      : { ok: false, message: "Type the room’s join code to destroy it." };
+  }
   if (action === "advance") {
     const generation = z
       .number()

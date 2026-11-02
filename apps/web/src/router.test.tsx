@@ -142,7 +142,9 @@ it("replaces the socket when recovery keeps the same player identity", async () 
   await mount("/play");
   await waitFor(() => expect(openRoomSocket).toHaveBeenCalledTimes(1));
   const oldSocket = vi.mocked(openRoomSocket).mock.results[0]!.value;
-  fireEvent.click(screen.getByRole("button", { name: "Changed phones?" }));
+  // In a game, phone transfer lives in the personal menu behind the avatar.
+  fireEvent.click(screen.getByRole("button", { name: /^You: / }));
+  fireEvent.click(await screen.findByRole("button", { name: "Changed phones?" }));
   fireEvent.change(screen.getByLabelText("Transfer code"), {
     target: { value: "RECOVER1" },
   });
