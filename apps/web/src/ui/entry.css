@@ -324,3 +324,19 @@
 .admin-code-input:disabled {
   opacity: 0.6;
 }
+
+/* A way to the solo circuit from the public home page. */
+.home-kart {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1.25rem;
+}
+.home-kart h2 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+}
+.home-kart p:not(.entry-eyebrow) {
+  color: var(--muted);
+}

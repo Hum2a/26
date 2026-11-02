@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { adminFeatures, featurePath, roomFeatures } from "./features";
+import { KartLobbyCreate } from "./kart-lobby-create";
 import type { AdminRoomList, LobbySnapshot } from "@26/shared";
 import {
   Button,
@@ -166,6 +167,15 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
       <Disclosure title="Rehearse without guests" keepMounted>
         <RehearsalSetup />
       </Disclosure>
+      {overview ? (
+        <div className="admin-kart-night">
+          <KartLobbyCreate />
+          <p>
+            Or <Link to="/kart">practise the circuit solo</Link>, with no room or
+            guests.
+          </p>
+        </div>
+      ) : null}
       {overview ? <EverythingGrid roomId={current?.gameId ?? null} /> : null}
       {overview ? (
         <LinkButton variant="secondary" to="/admin/rooms">

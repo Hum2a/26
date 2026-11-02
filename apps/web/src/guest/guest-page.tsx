@@ -487,7 +487,7 @@ export function GuestPage({
         snapshot,
       })
     : notice;
-  const reconnecting = seenOpen && connection !== "open";
+  const reconnecting = seenOpen && connection !== "open" && !replacedNotice;
   const nickname = session ? liveNickname(snapshot, session) : undefined;
   const questionVisible = playing && snapshot?.play;
 
@@ -709,6 +709,17 @@ export function GuestPage({
             Live test phone. Use an ordinary second-browser guest for photos and phone
             transfer.
           </p>
+        ) : null}
+        {replacedNotice && !rehearsalSession ? (
+          <Button
+            onClick={() => {
+              setReplacedNotice(undefined);
+              setSession(undefined);
+              setNotice("You have not joined a room.");
+            }}
+          >
+            Join another room
+          </Button>
         ) : null}
         <ReconnectBanner
           disconnected={reconnecting}

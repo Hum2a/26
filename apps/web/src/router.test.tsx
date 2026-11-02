@@ -199,3 +199,19 @@ it("recovers from a failed guest session check without disabling joining", async
     (screen.getByRole("button", { name: "Join" }) as HTMLButtonElement).disabled,
   ).toBe(false);
 });
+
+it("tells a phone its room closed, without a reconnecting banner, and lets it rejoin", async () => {
+  vi.mocked(resumeGuest).mockResolvedValue(recoveredSession);
+  await mount("/play");
+  await waitFor(() => expect(openRoomSocket).toHaveBeenCalledTimes(1));
+  const options = vi.mocked(openRoomSocket).mock.calls[0]![0];
+  act(() => {
+    options.onConnection("open");
+    options.onReplaced?.("The host closed this room.");
+    options.onConnection("closed");
+  });
+  expect(await screen.findByText("The host closed this room.")).toBeTruthy();
+  expect(screen.queryByText(/Reconnecting/)).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Join another room" }));
+  expect(await screen.findByRole("heading", { name: "Join the room" })).toBeTruthy();
+});

@@ -112,6 +112,7 @@ export function DangerZone() {
             onChange={(event) => setTyped(event.target.value)}
             autoComplete="off"
             autoCapitalize="characters"
+            aria-label={`Type ${snapshot.joinCode} to confirm`}
             spellCheck={false}
             aria-invalid={typed.length > 0 && !codeMatches}
           />

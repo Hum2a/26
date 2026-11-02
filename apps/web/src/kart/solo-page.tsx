@@ -7,6 +7,9 @@ export function SoloKartPage() {
   }, []);
   return (
     <main className="solo-kart-page">
+      <a className="solo-kart-back glass" href="/">
+        ← 26
+      </a>
       <iframe
         title="Solo kart practice"
         src="/kart-engine/index.html"

@@ -69,6 +69,16 @@ export function HomePage() {
             <p>Got the code? Pick a nickname and you’re in.</p>
             <LinkButton to="/join">Join the party →</LinkButton>
           </div>
+          <div className="home-kart">
+            <div>
+              <p className="entry-eyebrow">While you wait</p>
+              <h2>Fancy a lap?</h2>
+              <p>Drive the 26 Grand Prix on your own. No code needed.</p>
+            </div>
+            <LinkButton to="/kart" variant="secondary">
+              Practise kart solo →
+            </LinkButton>
+          </div>
           <div className="home-admin">
             <p>Running the night?</p>
             <Link className="entry-text-link" to={adminPath}>
