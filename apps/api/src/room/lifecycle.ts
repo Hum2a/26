@@ -243,7 +243,12 @@ export function startRound(
     hold: null,
     roundId,
     phases: [...plugin.phases],
-    durations: { ...plugin.durations },
+    durations: {
+      ...plugin.durations,
+      ...(plugin.collectWindows?.[0] === undefined
+        ? {}
+        : { collect: plugin.collectWindows[0] }),
+    },
     fault: null,
     questionIndex: 0,
     questionCount: plugin.questionCount ?? 0,

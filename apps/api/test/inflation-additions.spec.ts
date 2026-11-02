@@ -36,7 +36,7 @@ it.each([
     expect(publicQuestionSchema.safeParse(preview.question).success).toBe(true);
     for (const field of ["truth", "bands", "notes", "explanation"])
       expect(preview.question).not.toHaveProperty(field);
-    expect(birthdayPack.order).not.toContain(authored.id);
+    expect(birthdayPack.order).toContain(authored.id);
   },
 );
 
@@ -50,7 +50,7 @@ it("defines which dated price guests should estimate, with source limitations", 
   expect(inflationCheeseburger.instructions).toContain("September 2026 menu-guide");
   expect(inflationCheeseburger.notes).toContain("independent fan guide");
   expect(birthdayPack.release).toBe("draft");
-  expect(birthdayPack.order).toEqual([]);
+  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
   expect(validatePack(birthdayPack).filter((issue) => issue.level === "error")).toEqual(
     [],
   );

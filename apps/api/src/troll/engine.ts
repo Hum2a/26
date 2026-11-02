@@ -89,7 +89,10 @@ export function acceptTroll(
   if (!activePlayer(sql, targetId) || !activePlayer(sql, actorId)) {
     return { ok: false, message: trollTargetMessage };
   }
-  if ((kind === "double" || definition.modifier) && !questionAllowsModifier(room, kind)) {
+  if (
+    (kind === "double" || definition.modifier) &&
+    !questionAllowsModifier(room, kind)
+  ) {
     return { ok: false, message: trollModifierMessage };
   }
   if (kind === "typing" && !questionAllowsTyping(room)) {
@@ -459,16 +462,16 @@ export function trollSnapshot(
       ? Object.values(trollDefinitions)
           .filter((definition) => !disabled.includes(definition.kind))
           .map((definition) => ({
-          kind: definition.kind,
-          label: definition.label,
-          enabled:
-            definition.phases.includes(room.phase) &&
-            ((definition.kind !== "double" && !definition.modifier) ||
-              questionAllowsModifier(room, definition.kind)) &&
-            (definition.kind !== "typing" || questionAllowsTyping(room)) &&
-            questionFits(definition, room) &&
-            token === "ready",
-        }))
+            kind: definition.kind,
+            label: definition.label,
+            enabled:
+              definition.phases.includes(room.phase) &&
+              ((definition.kind !== "double" && !definition.modifier) ||
+                questionAllowsModifier(room, definition.kind)) &&
+              (definition.kind !== "typing" || questionAllowsTyping(room)) &&
+              questionFits(definition, room) &&
+              token === "ready",
+          }))
       : [];
   const active = selfPlayerId
     ? readOpen(sql)
@@ -496,7 +499,9 @@ export function trollSnapshot(
               escape: effect.status === "active" ? definition.escape : null,
               assetLabel: definition.assetLabel,
               // Who sent it, for the target's own screen. The stage already announces it.
-              ...(effect.target_id === selfPlayerId ? { fromPlayerId: effect.actor_id } : {}),
+              ...(effect.target_id === selfPlayerId
+                ? { fromPlayerId: effect.actor_id }
+                : {}),
             },
           ];
         })
@@ -645,7 +650,10 @@ function questionAllowsModifier(room: RoomClock, kind: string): boolean {
 }
 
 /** Points-moving trolls that are active for this question, for the reveal. */
-export function activeTransfers(sql: SqlStorage, questionIndex: number): PointTransfer[] {
+export function activeTransfers(
+  sql: SqlStorage,
+  questionIndex: number,
+): PointTransfer[] {
   return sql
     .exec<{ kind: string; actor_id: string; target_id: string }>(
       `SELECT kind, actor_id, target_id FROM troll_effect
@@ -927,21 +935,48 @@ function announceStart(
   if (definition.kind === "fake-exit") {
     const nickname = nicknameOf(sql, targetId) ?? "A player";
     // The stage reads "<label> <asset>.", so the asset must not give the joke away.
-    enqueueCue(sql, store, room, effectId, `${nickname} has left the party.`, "Breaking news", now, {
-      durationMs: 3_500,
-    });
-    enqueueCue(sql, store, room, effectId, `Only joking. ${nickname} is still here.`, "Breaking news", now, {
-      durationMs: 3_000,
-    });
+    enqueueCue(
+      sql,
+      store,
+      room,
+      effectId,
+      `${nickname} has left the party.`,
+      "Breaking news",
+      now,
+      {
+        durationMs: 3_500,
+      },
+    );
+    enqueueCue(
+      sql,
+      store,
+      room,
+      effectId,
+      `Only joking. ${nickname} is still here.`,
+      "Breaking news",
+      now,
+      {
+        durationMs: 3_000,
+      },
+    );
     return;
   }
   if (definition.kind === "zoom-photo") {
     const mediaId = zoomPhotoFor(sql, targetId);
     const nickname = nicknameOf(sql, targetId) ?? "A player";
-    enqueueCue(sql, store, room, effectId, `${nickname}, up close.`, zoomAssetLabel, now, {
-      ...(mediaId ? { mediaId, mediaKind: "photo" as const } : {}),
-      durationMs: 7_000,
-    });
+    enqueueCue(
+      sql,
+      store,
+      room,
+      effectId,
+      `${nickname}, up close.`,
+      zoomAssetLabel,
+      now,
+      {
+        ...(mediaId ? { mediaId, mediaKind: "photo" as const } : {}),
+        durationMs: 7_000,
+      },
+    );
     return;
   }
   if (definition.announce === "now") {
@@ -1141,7 +1176,12 @@ function enqueueTheatreCues(
 }
 
 /** Who the target voted for on this vote question. */
-function publicVoteLine(sql: SqlStorage, room: RoomClock, playerId: string, nickname: string): string {
+function publicVoteLine(
+  sql: SqlStorage,
+  room: RoomClock,
+  playerId: string,
+  nickname: string,
+): string {
   const question = questionFor(room);
   const ballot = sql
     .exec<{ label: string }>(
@@ -1154,7 +1194,9 @@ function publicVoteLine(sql: SqlStorage, room: RoomClock, playerId: string, nick
     )
     .toArray()[0];
   return (
-    ballot ? `${nickname} voted for "${ballot.label}".` : `${nickname} didn't vote. Coward.`
+    ballot
+      ? `${nickname} voted for "${ballot.label}".`
+      : `${nickname} didn't vote. Coward.`
   ).slice(0, 120);
 }
 
@@ -1194,7 +1236,12 @@ function misattributedLine(
 }
 
 /** What the target went with on this choice question. Not judged: the reveal does that. */
-function replayLine(sql: SqlStorage, room: RoomClock, playerId: string, nickname: string): string {
+function replayLine(
+  sql: SqlStorage,
+  room: RoomClock,
+  playerId: string,
+  nickname: string,
+): string {
   const question = questionFor(room);
   const answer = sql
     .exec<{ option_id: string }>(

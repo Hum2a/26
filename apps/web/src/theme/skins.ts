@@ -19,7 +19,7 @@ export const skinGrounds = [
   "ruled",
   "floodlight",
   "foil",
-  "tape"
+  "tape",
 ] as const;
 
 export const skinShapes = [
@@ -28,7 +28,7 @@ export const skinShapes = [
   "chunky",
   "soft",
   "ticket",
-  "cut"
+  "cut",
 ] as const;
 
 export const skinMarks = [
@@ -48,7 +48,7 @@ export const skinMarks = [
   "star",
   "mic",
   "leaf",
-  "plus"
+  "plus",
 ] as const;
 
 export const skinFinishes = [
@@ -57,7 +57,7 @@ export const skinFinishes = [
   "cartoon",
   "realistic",
   "minimal",
-  "extravagant"
+  "extravagant",
 ] as const;
 
 export const skinMotifs = ["none", "crest", "scatter", "bleed"] as const;
@@ -70,7 +70,7 @@ export const motifIcons = [
   "mic",
   "star",
   "utensils",
-  "mask"
+  "mask",
 ] as const;
 
 export type SkinGround = (typeof skinGrounds)[number];
@@ -162,7 +162,7 @@ const skinned = {
       "persona-1-origins",
       "persona-2-innocent-birthday",
       "persona-3-portable-pink-route",
-      "my-hero-academia-plus-ultra"
+      "my-hero-academia-plus-ultra",
     ],
     {
       id: "slash",
@@ -197,7 +197,7 @@ const skinned = {
       "humza-os",
       "birthday-exe",
       "scarlet-nexus-brain-drive",
-      "usual-table-laptop-open"
+      "usual-table-laptop-open",
     ],
     { id: "crt", ground: "grid", shape: "chunky", mark: "terminal", finish: "minimal" },
   ),
@@ -210,7 +210,7 @@ const skinned = {
       "midnight-matcha",
       "pistachio-party",
       "peach-please",
-      "lavender-menace"
+      "lavender-menace",
     ],
     { id: "paper", ground: "split", shape: "soft", mark: "cup", finish: "realistic" },
   ),
@@ -220,7 +220,7 @@ const skinned = {
       "yung-gravy-gravy-boat",
       "ultraviolet",
       "rum-and-coke",
-      "petrol-and-peach"
+      "petrol-and-peach",
     ],
     {
       id: "club",
@@ -238,11 +238,7 @@ const skinned = {
     finish: "extravagant",
   }),
   ...family(
-    [
-      "mchumza-birthday-meal",
-      "amazon-out-for-delivery",
-      "501-fun-maximum-fun"
-    ],
+    ["mchumza-birthday-meal", "amazon-out-for-delivery", "501-fun-maximum-fun"],
     { id: "service", ground: "tiles", shape: "ticket", mark: "spoon", finish: "solid" },
   ),
   ...family(["corestream-risk-accepted"], {
@@ -252,7 +248,7 @@ const skinned = {
     mark: "stamp",
     finish: "solid",
   }),
-  ...family([ "retro-future"], {
+  ...family(["retro-future"], {
     id: "sunset",
     ground: "sunset",
     shape: "cut",
@@ -265,7 +261,7 @@ const skinned = {
       "main-character",
       "the-humza-show",
       "humza-according-to-everyone",
-      "21-november"
+      "21-november",
     ],
     {
       id: "show",
@@ -291,7 +287,7 @@ const skinned = {
       "november-nights",
       "humza-after-hours",
       "pokemon-gengar-hours",
-      "final-fantasy-vii-mako"
+      "final-fantasy-vii-mako",
     ],
     { id: "glow", ground: "glow", shape: "soft", mark: "mask", finish: "glass" },
   ),
@@ -306,7 +302,7 @@ const skinned = {
       "poolside-2000",
       "final-fantasy-crystal-prelude",
       "dragon-ball-capsule-corp",
-      "bunny-girl-senpai-after-school"
+      "bunny-girl-senpai-after-school",
     ],
     {
       id: "horizon",
@@ -323,7 +319,7 @@ const skinned = {
       "wallington-grammar-school-arc",
       "greenshaw-next-chapter",
       "portsmouth-student-save-file",
-      "the-humza-archives"
+      "the-humza-archives",
     ],
     { id: "ruled", ground: "ruled", shape: "chunky", mark: "numeral", finish: "solid" },
   ),
@@ -333,7 +329,7 @@ const skinned = {
       "stamford-bridge-on-the-clock",
       "twickenham-under-the-floodlights",
       "queens-centre-court",
-      "goodwood-all-access"
+      "goodwood-all-access",
     ],
     {
       id: "floodlight",
@@ -351,7 +347,7 @@ const skinned = {
       "steal-the-spotlight",
       "quarter-life-deluxe",
       "dragon-ball-birthday-saiyan",
-      "humza-studio"
+      "humza-studio",
     ],
     {
       id: "foil",
@@ -369,7 +365,7 @@ const skinned = {
       "keijo-absolutely-necessary",
       "friendly-sabotage",
       "plot-twist",
-      "final-answer"
+      "final-answer",
     ],
     { id: "tape", ground: "tape", shape: "sharp", mark: "numeral", finish: "cartoon" },
   ),

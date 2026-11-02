@@ -1176,7 +1176,13 @@ export class PartyRoom extends DurableObject<Env> {
     secret: string;
     requestId: string;
     nowMs: number;
+    expectedPhaseGeneration?: number;
   }): Promise<PhaseCommandResult> {
+    // Credential verification yields. An alarm can finish this phase while
+    // the host's intent is being checked; that intent must not skip the next.
+    const requestedGeneration = this.ctx.storage.sql
+      .exec<{ phase_generation: number }>("SELECT phase_generation FROM room")
+      .toArray()[0]?.phase_generation;
     const allowed = await this.requireControl(
       input.credentialId,
       input.secret,
@@ -1185,9 +1191,33 @@ export class PartyRoom extends DurableObject<Env> {
     if (!allowed.ok) {
       return allowed;
     }
-    return this.phaseCommand(input.requestId, { action: "advance" }, (sql) => {
-      advance(createGameStore(sql), input.nowMs);
-    });
+    if (
+      input.expectedPhaseGeneration !== undefined &&
+      (!Number.isSafeInteger(input.expectedPhaseGeneration) ||
+        input.expectedPhaseGeneration <= 0)
+    )
+      return {
+        ok: false,
+        error: "invalid",
+        message: "Choose the current phase before advancing.",
+      };
+    return this.phaseCommand(
+      input.requestId,
+      {
+        action: "advance",
+        ...(input.expectedPhaseGeneration === undefined
+          ? {}
+          : { expectedPhaseGeneration: input.expectedPhaseGeneration }),
+      },
+      (sql) => {
+        const store = createGameStore(sql);
+        if (
+          store.readRoom().phaseGeneration ===
+          (input.expectedPhaseGeneration ?? requestedGeneration)
+        )
+          advance(store, input.nowMs);
+      },
+    );
   }
 
   async startBirthday(input: {
@@ -3671,6 +3701,7 @@ export class PartyRoom extends DurableObject<Env> {
       wall: wallSnapshot(this.ctx.storage.sql, audience, selfPlayerId, Date.now()),
       ...(audience === "control"
         ? {
+            phaseGeneration: stored.phaseGeneration,
             connections: {
               guests: this.ctx.getWebSockets("guest").length,
               stage: this.ctx.getWebSockets("presentation").length,
@@ -3966,7 +3997,11 @@ export class PartyRoom extends DurableObject<Env> {
       return;
     }
     const fields = new Map(
-      Object.entries(snapshot).map(([key, value]) => [key, JSON.stringify(value)]),
+      // JSON omits optional undefined fields. The patch cache must represent
+      // exactly that wire view, including unsets when an optional field clears.
+      Object.entries(snapshot).flatMap(([key, value]) =>
+        value === undefined ? [] : [[key, JSON.stringify(value)] as const],
+      ),
     );
     const previous = this.views.get(ws);
     this.viewCount += 1;

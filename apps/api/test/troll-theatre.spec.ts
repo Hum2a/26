@@ -29,15 +29,24 @@ async function heldTroll(stub: Stub, kind: string, actorId: string, targetId: st
 async function enter(stub: Stub, phase: string) {
   await runInDurableObject(stub, (_instance, state) => {
     state.storage.sql.exec(`UPDATE room SET phase = ?`, phase);
-    settleTrolls(state.storage.sql, createSqlStore(state.storage.sql).readRoom(), Date.now());
+    settleTrolls(
+      state.storage.sql,
+      createSqlStore(state.storage.sql).readRoom(),
+      Date.now(),
+    );
   });
 }
 
 const status = (stub: Stub, effectId: string) =>
-  runInDurableObject(stub, (_instance, state) =>
-    state.storage.sql
-      .exec<{ status: string }>(`SELECT status FROM troll_effect WHERE effect_id = ?`, effectId)
-      .toArray()[0]?.status,
+  runInDurableObject(
+    stub,
+    (_instance, state) =>
+      state.storage.sql
+        .exec<{ status: string }>(
+          `SELECT status FROM troll_effect WHERE effect_id = ?`,
+          effectId,
+        )
+        .toArray()[0]?.status,
   );
 
 it("calls for a speech at the scores, once", async () => {
@@ -71,7 +80,9 @@ it("zooms only into photos the stage may show", async () => {
   const { gameId, stub, join } = await setup();
   const amina = await join("Amina");
   const zoom = () =>
-    runInDurableObject(stub, (_instance, state) => zoomPhotoFor(state.storage.sql, amina.playerId));
+    runInDurableObject(stub, (_instance, state) =>
+      zoomPhotoFor(state.storage.sql, amina.playerId),
+    );
   expect(await zoom()).toBeNull();
 
   const photo = await upload(stub, amina);

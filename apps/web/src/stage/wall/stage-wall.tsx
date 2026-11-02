@@ -1,5 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useEffect, useState } from "react";
+import {
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+} from "motion/react";
+import { animate } from "motion";
 import { wallQuestionPhases, type LobbySnapshot, type WallReaction } from "@26/shared";
 import { FramedPhoto, reactionEmoji } from "../../wall/framed-photo";
 import { serverOffset } from "../../live/server-clock";
@@ -74,7 +80,20 @@ export function StageWall({
 
 function Spotlight({ now, src }: { now: Now; src: string }) {
   const reduce = useReducedMotion();
-  const remaining = Math.max(0, now.untilAt - (Date.now() + (serverOffset() ?? 0)));
+  const meter = useMotionValue(1);
+  useEffect(() => {
+    if (reduce) return;
+    const localNow = Date.now();
+    const remaining = Math.max(
+      0,
+      now.untilAt - (localNow + (serverOffset(localNow) ?? 0)),
+    );
+    const animation = animate(meter, 0, {
+      duration: remaining / 1_000,
+      ease: "linear",
+    });
+    return () => animation.stop();
+  }, [now.untilAt, meter, reduce]);
   return (
     <motion.section
       className="wall-stage"
@@ -125,9 +144,7 @@ function Spotlight({ now, src }: { now: Now; src: string }) {
       <motion.div
         className="wall-stage-meter"
         aria-hidden="true"
-        initial={{ scaleX: 1 }}
-        animate={{ scaleX: 0 }}
-        transition={{ duration: remaining / 1_000, ease: "linear" }}
+        style={{ scaleX: reduce ? 1 : meter }}
       />
     </motion.section>
   );
@@ -137,28 +154,39 @@ type Floater = { id: number; reaction: WallReaction; left: number };
 
 /** Floating emoji for each new reaction, plus running totals. */
 function Reactions({ now, reduce }: { now: Now; reduce: boolean }) {
-  const seen = useRef<Map<WallReaction, number>>(new Map());
-  const nextId = useRef(0);
-  const [floaters, setFloaters] = useState<Floater[]>([]);
-  useEffect(() => {
+  const [animation, setAnimation] = useState<{
+    reactions: Now["reactions"] | null;
+    reduce: boolean;
+    nextId: number;
+    floaters: Floater[];
+  }>({ reactions: null, reduce, nextId: 0, floaters: [] });
+  if (animation.reactions !== now.reactions || animation.reduce !== reduce) {
+    const seen = new Map(
+      animation.reactions?.map((item) => [item.reaction, item.count]),
+    );
+    let nextId = animation.nextId;
     const added: Floater[] = [];
     for (const { reaction, count } of now.reactions) {
-      const before = seen.current.get(reaction) ?? 0;
+      const before = seen.get(reaction) ?? 0;
       for (let index = 0; index < Math.min(6, count - before); index += 1) {
-        added.push({ id: nextId.current++, reaction, left: 8 + Math.random() * 84 });
+        const id = nextId++;
+        added.push({ id, reaction, left: 8 + ((id * 37) % 85) });
       }
-      seen.current.set(reaction, count);
+      seen.set(reaction, count);
     }
-    if (added.length > 0 && !reduce) {
-      setFloaters((current) => [...current, ...added].slice(-40));
-    }
-  }, [now.reactions, reduce]);
+    setAnimation({
+      reactions: now.reactions,
+      reduce,
+      nextId,
+      floaters: reduce ? [] : [...animation.floaters, ...added].slice(-40),
+    });
+  }
   return (
     <>
       {reduce ? null : (
         <div className="wall-floaters" aria-hidden="true">
           <AnimatePresence>
-            {floaters.map((floater) => (
+            {animation.floaters.map((floater) => (
               <motion.span
                 key={floater.id}
                 className="wall-floater"
@@ -167,9 +195,10 @@ function Reactions({ now, reduce }: { now: Now; reduce: boolean }) {
                 animate={{ y: "-90vh", opacity: 0, scale: 1.3 }}
                 transition={{ duration: 2.4, ease: "easeOut" }}
                 onAnimationComplete={() =>
-                  setFloaters((current) =>
-                    current.filter((item) => item.id !== floater.id),
-                  )
+                  setAnimation((current) => ({
+                    ...current,
+                    floaters: current.floaters.filter((item) => item.id !== floater.id),
+                  }))
                 }
               >
                 {reactionEmoji[floater.reaction]}

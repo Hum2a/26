@@ -37,17 +37,32 @@ it("counts reactions only for the photo on screen, with a cap per guest", async 
 
   // Not on screen yet.
   expect(
-    (await bilalPhone.send({ name: "wall-react", postId: post.postId, reaction: "fire" }))
-      .accepted,
+    (
+      await bilalPhone.send({
+        name: "wall-react",
+        postId: post.postId,
+        reaction: "fire",
+      })
+    ).accepted,
   ).toBe(false);
   await host("wall-approve", { postId: post.postId });
   expect(
-    (await bilalPhone.send({ name: "wall-react", postId: post.postId, reaction: "fire" }))
-      .accepted,
+    (
+      await bilalPhone.send({
+        name: "wall-react",
+        postId: post.postId,
+        reaction: "fire",
+      })
+    ).accepted,
   ).toBe(true);
   expect(
-    (await bilalPhone.send({ name: "wall-react", postId: post.postId, reaction: "party" }))
-      .accepted,
+    (
+      await bilalPhone.send({
+        name: "wall-react",
+        postId: post.postId,
+        reaction: "party",
+      })
+    ).accepted,
   ).toBe(false);
   const stage = (await stub.snapshotFor("stage")).wall;
   expect(stage?.now?.reactions).toEqual([{ reaction: "fire", count: 1 }]);

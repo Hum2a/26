@@ -319,9 +319,25 @@ export function openRoomSocket(options: {
     }
   }
 
-  /** Back from sleep, a locked screen or no signal: try at once, not after the backoff. */
-  function onWake() {
-    if (stopped || (typeof document !== "undefined" && document.hidden)) {
+  /** Release controls immediately when the browser reports signal loss. */
+  function onOffline() {
+    if (stopped) return;
+    clearTimer();
+    clearHeartbeat();
+    const previous = socket;
+    socket = undefined;
+    if (previous) {
+      detach(previous);
+      previous.close();
+    }
+    options.onConnection("closed");
+  }
+
+  function onWake(event: Event) {
+    if (
+      stopped ||
+      (typeof document !== "undefined" && document.hidden && event.type !== "online")
+    ) {
       return;
     }
     if (socket && socket.readyState === WebSocket.OPEN) {
@@ -336,7 +352,11 @@ export function openRoomSocket(options: {
       }, wakeProbeMs);
       return;
     }
-    if (socket && socket.readyState === WebSocket.CONNECTING) {
+    if (
+      socket &&
+      socket.readyState === WebSocket.CONNECTING &&
+      event.type !== "online"
+    ) {
       return;
     }
     reconnectNow();
@@ -792,12 +812,14 @@ export function openRoomSocket(options: {
       return;
     }
     window.removeEventListener("online", onWake);
+    window.removeEventListener("offline", onOffline);
     window.removeEventListener("pageshow", onWake);
     document.removeEventListener("visibilitychange", onWake);
   }
 
   if (typeof window !== "undefined") {
     window.addEventListener("online", onWake);
+    window.addEventListener("offline", onOffline);
     window.addEventListener("pageshow", onWake);
     document.addEventListener("visibilitychange", onWake);
   }

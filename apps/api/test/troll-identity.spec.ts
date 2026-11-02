@@ -25,18 +25,28 @@ async function startTroll(stub: Stub, kind: string, actorId: string, targetId: s
 
 async function end(stub: Stub, effectId: string) {
   await runInDurableObject(stub, (_instance, state) => {
-    state.storage.sql.exec(`UPDATE troll_effect SET status = 'expired' WHERE effect_id = ?`, effectId);
+    state.storage.sql.exec(
+      `UPDATE troll_effect SET status = 'expired' WHERE effect_id = ?`,
+      effectId,
+    );
   });
 }
 
 const nameOn = async (stub: Stub, playerId: string) =>
-  (await stub.snapshotFor("stage")).players.find((player) => player.playerId === playerId)?.nickname;
+  (await stub.snapshotFor("stage")).players.find(
+    (player) => player.playerId === playerId,
+  )?.nickname;
 
 it("shows a silly name on every screen while it runs, then the real name", async () => {
   const { stub, join } = await setup();
   const amina = await join("Amina");
   const bilal = await join("Bilal");
-  const effectId = await startTroll(stub, "temp-nickname", bilal.playerId, amina.playerId);
+  const effectId = await startTroll(
+    stub,
+    "temp-nickname",
+    bilal.playerId,
+    amina.playerId,
+  );
   expect(await nameOn(stub, amina.playerId)).toBe(sillyNameFor(effectId));
   expect(await nameOn(stub, bilal.playerId)).toBe("Bilal");
   await end(stub, effectId);

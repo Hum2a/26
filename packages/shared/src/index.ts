@@ -924,6 +924,13 @@ export const lobbySnapshotSchema = z
     remainingMs: z.number().int().nullable(),
     serverNow: z.number().int(),
     stateVersion: z.number().int().nonnegative(),
+    /** Host intent guard; absent from guest and stage projections. */
+    phaseGeneration: z
+      .number()
+      .int()
+      .positive()
+      .max(Number.MAX_SAFE_INTEGER)
+      .optional(),
     questionSetVersion: contentVersionSchema,
     scoringVersion: contentVersionSchema,
     players: z.array(lobbyPlayerSchema),

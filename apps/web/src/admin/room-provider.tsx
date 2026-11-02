@@ -188,7 +188,11 @@ export function AdminRoomProvider({
   ) {
     // Never replace an uncertain accepted intent with a fresh request id.
     if (lastRequest.current || sending.current) return;
-    await send({ command: value, requestId: crypto.randomUUID(), label, scope });
+    const guarded =
+      value.action === "advance" && snapshot?.phaseGeneration !== undefined
+        ? { ...value, expectedPhaseGeneration: snapshot.phaseGeneration }
+        : value;
+    await send({ command: guarded, requestId: crypto.randomUUID(), label, scope });
   }
   async function retry() {
     if (lastRequest.current) await send(lastRequest.current);

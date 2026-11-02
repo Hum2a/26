@@ -114,8 +114,10 @@ export const wallCooldownMs = 45_000;
 export const wallWaitingPerPlayer = 3;
 export const wallQuotaMessage = "You have sent all your photos for tonight.";
 export const wallRoomQuotaMessage = "The photo wall is full for tonight.";
-export const wallCooldownMessage = "Give everyone else a turn. You can send another photo shortly.";
-export const wallWaitingMessage = "You already have photos waiting. Send another once one is shown.";
+export const wallCooldownMessage =
+  "Give everyone else a turn. You can send another photo shortly.";
+export const wallWaitingMessage =
+  "You already have photos waiting. Send another once one is shown.";
 export const wallClosedMessage = "The photo wall is switched off right now.";
 export const wallMutedMessage = "The host has paused your photos.";
 export const wallMediaMessage = "Send that photo again.";

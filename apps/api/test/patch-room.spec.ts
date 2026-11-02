@@ -67,6 +67,84 @@ function withoutClock(snapshot: Record<string, unknown>) {
   return rest;
 }
 
+it("keeps an ordinary host live when optional snapshot fields are undefined", async () => {
+  const { room, stub } = await setup();
+  const response = await stub.fetch(
+    new Request(
+      withClientApiQuery(`http://example.com/ws/${room.gameId}?role=control&patches=1`),
+      {
+        headers: {
+          Upgrade: "websocket",
+          Connection: "Upgrade",
+          Origin: "http://example.com",
+          Cookie: `26_room_control=${room.control.credentialId}.${room.control.secret}`,
+        },
+      },
+    ),
+  );
+  const socket = response.webSocket!;
+  socket.accept();
+  const inbox: Message[] = [];
+  socket.addEventListener("message", (event) => {
+    inbox.push(JSON.parse(String(event.data)) as Message);
+  });
+  try {
+    await expect
+      .poll(() => inbox.some((message) => message.kind === "snapshot"))
+      .toBe(true);
+    const first = inbox.find((message) => message.kind === "snapshot")!;
+    let view = first.snapshot as Record<string, unknown>;
+    let viewId = first.view;
+    expect(view).not.toHaveProperty("kartLobby");
+    expect(view.phaseGeneration).toEqual(expect.any(Number));
+    for (const audience of ["stage", "guest"] as const)
+      expect(await stub.snapshotFor(audience)).not.toHaveProperty("phaseGeneration");
+    await join(stub, "Amina");
+    await expect
+      .poll(() =>
+        inbox.some(
+          (message) =>
+            message.kind === "patch" &&
+            (message.set as { players?: unknown[] }).players?.length === 1,
+        ),
+      )
+      .toBe(true);
+    expect(
+      (
+        await stub.startDemo({
+          ...room.control,
+          requestId: crypto.randomUUID(),
+          nowMs: Date.now(),
+        })
+      ).ok,
+    ).toBe(true);
+    await expect
+      .poll(() =>
+        inbox.some(
+          (message) =>
+            (message.set as { phase?: string } | undefined)?.phase === "intro" ||
+            (message.snapshot as { phase?: string } | undefined)?.phase === "intro",
+        ),
+      )
+      .toBe(true);
+    for (const message of inbox.slice(inbox.indexOf(first) + 1)) {
+      if (message.kind === "patch") {
+        expect(message.base).toBe(viewId);
+        view = apply(view, message);
+        viewId = message.view;
+      } else if (message.kind === "snapshot") {
+        view = message.snapshot as Record<string, unknown>;
+        viewId = message.view;
+      }
+    }
+    expect(withoutClock(view)).toEqual(
+      withoutClock(JSON.parse(JSON.stringify(await stub.snapshotFor("control")))),
+    );
+  } finally {
+    socket.close();
+  }
+});
+
 it("sends patches that rebuild the same view as a full snapshot, and resumes after a reconnect", async () => {
   const { room, stub } = await setup();
   const amina = await join(stub, "Amina");

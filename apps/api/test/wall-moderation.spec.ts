@@ -104,8 +104,11 @@ it("skips to the next photo and forces one during a question", async () => {
 it("changes only the settings given and rejects bad values", async () => {
   const { gameId, stub, join, host } = await setup();
   expect(
-    (await host("wall-settings", { wallSettings: { moderation: "direct", showMs: 12_000 } }))
-      .ok,
+    (
+      await host("wall-settings", {
+        wallSettings: { moderation: "direct", showMs: 12_000 },
+      })
+    ).ok,
   ).toBe(true);
   const settings = await runInDurableObject(stub, (_instance, state) =>
     readWallSettings(state.storage.sql),
@@ -142,9 +145,15 @@ it("mutes a guest, declines their waiting photos, and unmutes them", async () =>
 
   expect((await host("wall-unmute", { playerId: amina.playerId })).ok).toBe(true);
   // Unmuting does not reset the cooldown from the photo just sent.
-  expect(await upload(stub, amina)).toEqual({ ok: false, message: wallCooldownMessage });
+  expect(await upload(stub, amina)).toEqual({
+    ok: false,
+    message: wallCooldownMessage,
+  });
   await runInDurableObject(stub, (_instance, state) => {
-    state.storage.sql.exec(`UPDATE wall_post SET created_at = created_at - ?`, wallCooldownMs + 1_000);
+    state.storage.sql.exec(
+      `UPDATE wall_post SET created_at = created_at - ?`,
+      wallCooldownMs + 1_000,
+    );
   });
   expect((await upload(stub, amina)).ok).toBe(true);
 });

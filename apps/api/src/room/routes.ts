@@ -456,7 +456,10 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
               : command === "resume"
                 ? await target.resumeRound(input)
                 : command === "advance"
-                  ? await target.advanceRound(input)
+                  ? await target.advanceRound({
+                      ...input,
+                      expectedPhaseGeneration: details.fields.expectedPhaseGeneration,
+                    })
                   : command === "skip"
                     ? await target.skipRound(input)
                     : command === "finish"
@@ -839,6 +842,7 @@ function readHostDetails(
   | {
       ok: true;
       fields: {
+        expectedPhaseGeneration?: number;
         rehearsalConfig?: unknown;
         questionIndex?: number;
         scenario?: unknown;
@@ -857,6 +861,18 @@ function readHostDetails(
       };
     }
   | { ok: false; message: string } {
+  if (action === "advance") {
+    const generation = z
+      .number()
+      .int()
+      .positive()
+      .max(Number.MAX_SAFE_INTEGER)
+      .optional()
+      .safeParse(field(body, "expectedPhaseGeneration"));
+    return generation.success
+      ? { ok: true, fields: { expectedPhaseGeneration: generation.data } }
+      : { ok: false, message: "Choose the current phase before advancing." };
+  }
   if (action === "developer-configure") {
     const config = rehearsalConfigSchema.safeParse(field(body, "rehearsalConfig"));
     return config.success

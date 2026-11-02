@@ -4,7 +4,14 @@ import { isScreenTroll, ScreenTroll } from "./screen-trolls";
 
 describe("screen trolls", () => {
   it("knows which kinds the phone draws", () => {
-    for (const kind of ["bubble-wrap", "call", "invasion", "crack", "sponsor", "airdrop"]) {
+    for (const kind of [
+      "bubble-wrap",
+      "call",
+      "invasion",
+      "crack",
+      "sponsor",
+      "airdrop",
+    ]) {
       expect(isScreenTroll(kind), kind).toBe(true);
     }
     expect(isScreenTroll("yield")).toBe(false);
@@ -42,14 +49,26 @@ describe("screen trolls", () => {
     try {
       const declined = vi.fn();
       const view = render(
-        <ScreenTroll kind="call" label="Incoming call" escape="Decline" onEscape={declined} />,
+        <ScreenTroll
+          kind="call"
+          label="Incoming call"
+          escape="Decline"
+          onEscape={declined}
+        />,
       );
       fireEvent.click(screen.getByRole("button", { name: "Decline" }));
       expect(declined).toHaveBeenCalledTimes(1);
       view.unmount();
 
       const ended = vi.fn();
-      render(<ScreenTroll kind="call" label="Incoming call" escape="Decline" onEscape={ended} />);
+      render(
+        <ScreenTroll
+          kind="call"
+          label="Incoming call"
+          escape="Decline"
+          onEscape={ended}
+        />,
+      );
       fireEvent.click(screen.getByRole("button", { name: "Answer" }));
       expect(screen.getByText("Hello? Hello? Can you hear me?")).toBeTruthy();
       expect(ended).not.toHaveBeenCalled();
@@ -96,7 +115,9 @@ describe("screen trolls", () => {
   it("tells the target they have left, then that it was a joke", () => {
     vi.useFakeTimers();
     try {
-      render(<ScreenTroll kind="fake-exit" label="You have left the party" escape={null} />);
+      render(
+        <ScreenTroll kind="fake-exit" label="You have left the party" escape={null} />,
+      );
       expect(screen.getByText("You have left the party")).toBeTruthy();
       act(() => {
         vi.advanceTimersByTime(3_600);
@@ -110,9 +131,18 @@ describe("screen trolls", () => {
   it("draws a shattered screen that can be dismissed", () => {
     const onEscape = vi.fn();
     render(
-      <ScreenTroll kind="crack" label="Shattered screen" escape="Dismiss" onEscape={onEscape} seed={7} />,
+      <ScreenTroll
+        kind="crack"
+        label="Shattered screen"
+        escape="Dismiss"
+        onEscape={onEscape}
+        seed={7}
+      />,
     );
-    expect(screen.getByRole("status", { name: "Shattered screen" }).querySelectorAll("path").length).toBeGreaterThan(9);
+    expect(
+      screen.getByRole("status", { name: "Shattered screen" }).querySelectorAll("path")
+        .length,
+    ).toBeGreaterThan(9);
     fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
     expect(onEscape).toHaveBeenCalledTimes(1);
   });
@@ -120,7 +150,12 @@ describe("screen trolls", () => {
   it("escapes bubble wrap once every bubble is popped", () => {
     const onEscape = vi.fn();
     render(
-      <ScreenTroll kind="bubble-wrap" label="Pop" escape="Pop them all" onEscape={onEscape} />,
+      <ScreenTroll
+        kind="bubble-wrap"
+        label="Pop"
+        escape="Pop them all"
+        onEscape={onEscape}
+      />,
     );
     for (const bubble of screen.getAllByRole("button", { name: "Pop bubble" })) {
       fireEvent.click(bubble);
@@ -131,7 +166,12 @@ describe("screen trolls", () => {
   it("moves the captcha until the last attempt", () => {
     const onEscape = vi.fn();
     render(
-      <ScreenTroll kind="captcha" label="Captcha" escape="I'm not a robot" onEscape={onEscape} />,
+      <ScreenTroll
+        kind="captcha"
+        label="Captcha"
+        escape="I'm not a robot"
+        onEscape={onEscape}
+      />,
     );
     for (let attempt = 0; attempt < 4; attempt += 1) {
       fireEvent.click(screen.getByRole("button", { name: /not a robot/ }));
@@ -142,9 +182,15 @@ describe("screen trolls", () => {
   });
 
   it("warps the page only while mounted", () => {
-    const view = render(<ScreenTroll kind="australia" label="Australia" escape={null} />);
-    expect(document.documentElement.classList.contains("troll-page-australia")).toBe(true);
+    const view = render(
+      <ScreenTroll kind="australia" label="Australia" escape={null} />,
+    );
+    expect(document.documentElement.classList.contains("troll-page-australia")).toBe(
+      true,
+    );
     view.unmount();
-    expect(document.documentElement.classList.contains("troll-page-australia")).toBe(false);
+    expect(document.documentElement.classList.contains("troll-page-australia")).toBe(
+      false,
+    );
   });
 });

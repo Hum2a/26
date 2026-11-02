@@ -72,13 +72,13 @@ describe("Glyph birthday Wordle", () => {
     expect(JSON.stringify(board)).not.toContain("VULGY");
     expect(reduceWordle(board, "VULGY", rules, 2).ok).toBe(false);
   });
-  it("readies the existing question without releasing or ordering it; public projections omit the target", () => {
+  it("readies the existing question without releasing the catalogue; public projections omit the target", () => {
     const playable = toPlayable(completeAWordle);
     if (playable?.kind !== "wordle") throw new Error("Wordle is ready");
     expect(playable.collectMs).toBe(120_000);
     expect(playable.points).toBe(100);
     expect(birthdayPack.release).toBe("draft");
-    expect(birthdayPack.order).not.toContain(playable.id);
+    expect(birthdayPack.order).toContain(playable.id);
     expect(JSON.stringify(publicWordleQuestion(playable, 1, 1))).not.toContain("VULGY");
     const preview = questionPreview(birthdayPack, completeAWordle);
     expect(preview.interactive).toBe(true);

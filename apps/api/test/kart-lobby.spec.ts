@@ -92,7 +92,12 @@ it("authorises and replays the race start, freezes late arrivals and ends withou
       nowMs: now + n * 100,
     });
     expect(advanced.ok).toBe(true);
-    phases.push((await room.snapshotFor("stage")).phase);
+    const snapshot = await room.snapshotFor("stage");
+    phases.push(snapshot.phase);
+    if (snapshot.phase === "collect") {
+      expect(snapshot.deadlineAt).toBe(now + n * 100 + 180_000);
+      expect(snapshot.play?.kart?.elapsedMs).toBe(0);
+    }
   }
   expect(phases).toEqual(["prompt", "collect", "reveal", "scores", "final", "podium"]);
   expect((await room.snapshotFor("stage")).play?.kart?.participantCount).toBe(1);

@@ -89,7 +89,7 @@ it("makes dated inflation questions ready with reachable exact scoring answers",
     expect(preview.question).not.toHaveProperty("truth");
     expect(preview.question).not.toHaveProperty("bands");
     expect(preview.question).not.toHaveProperty("explanation");
-    expect(birthdayPack.order).not.toContain(authored.id);
+    expect(birthdayPack.order).toContain(authored.id);
   }
   expect(inflationFreddo.instructions).toContain("typically 20p in 2012");
   expect(inflationFreddo.instructions).toContain("Tesco on 20 October 2026");

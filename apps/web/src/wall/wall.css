@@ -12,7 +12,8 @@
   padding: 0.7em 0.7em 1em;
   background: var(--wall-paper);
   color: var(--wall-ink);
-  box-shadow: 0 1.2em 2.4em color-mix(in oklab, var(--color-background) 40%, transparent);
+  box-shadow: 0 1.2em 2.4em
+    color-mix(in oklab, var(--color-background) 40%, transparent);
   font-size: 1rem;
   max-width: 100%;
 }
@@ -163,7 +164,8 @@
 /* Museum: gilt frame and a gallery label. */
 .wall-frame--museum {
   padding: 1.4em;
-  border: 0.7em solid color-mix(in oklab, var(--color-highlight) 75%, var(--color-foreground));
+  border: 0.7em solid
+    color-mix(in oklab, var(--color-highlight) 75%, var(--color-foreground));
   outline: 0.15em solid var(--color-line);
 }
 
@@ -224,7 +226,9 @@
   font-weight: 700;
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.2s ease, scale 0.15s ease;
+  transition:
+    border-color 0.2s ease,
+    scale 0.15s ease;
 }
 
 .wall-sources label:active {
@@ -258,7 +262,10 @@
   background: var(--color-surface);
   color: var(--color-surface-foreground);
   font-weight: 700;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .wall-chip[aria-pressed="true"] {
@@ -328,7 +335,9 @@
   border: 2px solid var(--color-line);
   background: var(--color-surface);
   font-size: 1.8rem;
-  transition: scale 0.12s ease, border-color 0.2s ease;
+  transition:
+    scale 0.12s ease,
+    border-color 0.2s ease;
 }
 
 .wall-reaction:active {

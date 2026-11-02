@@ -108,7 +108,9 @@ function readRoom(sql: SqlStorage): RoomClock {
     finishAfterRound: row.finish_after === 1,
     funFactIndex: row.fun_fact_index,
     questionSetVersion: row.question_set_version,
-    ...(row.question_script_json ? { questionScript: JSON.parse(row.question_script_json) } : {}),
+    ...(row.question_script_json
+      ? { questionScript: JSON.parse(row.question_script_json) }
+      : {}),
   };
 }
 

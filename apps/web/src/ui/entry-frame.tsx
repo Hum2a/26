@@ -21,7 +21,9 @@ export function EntryFrame({
 }) {
   const reduced = useReducedMotion();
   return (
-    <div className={`entry-frame ${wide ? "entry-wide" : ""} ${full ? "entry-full" : ""}`}>
+    <div
+      className={`entry-frame ${wide ? "entry-wide" : ""} ${full ? "entry-full" : ""}`}
+    >
       <div className="skin-ground" aria-hidden="true">
         <SkinMotif />
       </div>

@@ -184,11 +184,14 @@ describe("archive database", () => {
     expect(projected).not.toContain(amina);
     const aminaResults = toPersonalResults((await writer.readPersonal(id, amina))!);
     expect(aminaResults.funFacts[0]?.appliesToYou).toBe(true);
-    expect(toPersonalResults((await writer.readPersonal(id, bea))!).funFacts[0]?.appliesToYou).toBe(
-      false,
-    );
+    expect(
+      toPersonalResults((await writer.readPersonal(id, bea))!).funFacts[0]
+        ?.appliesToYou,
+    ).toBe(false);
     await writer.purgeDeviceDetails(Date.now());
-    expect((await writer.readPublic(id))?.funFacts[0]?.text).toBe("1 person used Firefox.");
+    expect((await writer.readPublic(id))?.funFacts[0]?.text).toBe(
+      "1 person used Firefox.",
+    );
     const version = await database.executor.query(
       `SELECT version FROM archive_schema WHERE id = 1`,
     );

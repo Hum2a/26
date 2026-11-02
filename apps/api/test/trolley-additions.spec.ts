@@ -53,7 +53,7 @@ it.each([trolleyYourMum, trolleyMamdaniAfrica, trolleyFreddoMultiverse])(
     });
     for (const field of ["correctOption", "correctOptionId", "notes", "explanation"])
       expect(preview.question).not.toHaveProperty(field);
-    expect(birthdayPack.order).not.toContain(authored.id);
+    expect(birthdayPack.order).toContain(authored.id);
   },
 );
 
@@ -75,7 +75,7 @@ it("keeps the requested match-ups and explicit pull/leave consequences", () => {
     });
   }
   expect(birthdayPack.release).toBe("draft");
-  expect(birthdayPack.order).toEqual([]);
+  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
   expect(validatePack(birthdayPack).filter((issue) => issue.level === "error")).toEqual(
     [],
   );

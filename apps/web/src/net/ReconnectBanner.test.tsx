@@ -27,7 +27,7 @@ describe("ReconnectBanner", () => {
       vi.advanceTimersByTime(1);
     });
     expect(screen.getByText("Reconnecting…")).toBeTruthy();
-    expect((screen.getByLabelText("Answer") as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByLabelText("Answer").matches(":disabled")).toBe(true);
 
     rerender(
       <ReconnectBanner disconnected={false} snapshotId={1}>
@@ -37,6 +37,30 @@ describe("ReconnectBanner", () => {
     expect(screen.queryByText("Reconnecting…")).toBeNull();
     expect(screen.getByText("Back in ✓")).toBeTruthy();
     expect((screen.getByLabelText("Answer") as HTMLInputElement).disabled).toBe(false);
+  });
+
+  it("restores controls whose own disabled state changed during a disconnection", () => {
+    const view = render(
+      <ReconnectBanner disconnected={false} snapshotId={0}>
+        <button disabled={false}>Drive</button>
+      </ReconnectBanner>,
+    );
+    view.rerender(
+      <ReconnectBanner disconnected snapshotId={0}>
+        <button disabled>Drive</button>
+      </ReconnectBanner>,
+    );
+    expect(screen.getByRole("button", { name: "Drive" }).matches(":disabled")).toBe(
+      true,
+    );
+    view.rerender(
+      <ReconnectBanner disconnected={false} snapshotId={1}>
+        <button disabled={false}>Drive</button>
+      </ReconnectBanner>,
+    );
+    expect(screen.getByRole("button", { name: "Drive" }).matches(":disabled")).toBe(
+      false,
+    );
   });
 
   it("tells the guest to check the signal at 10s and offers a manual retry at 30s", () => {

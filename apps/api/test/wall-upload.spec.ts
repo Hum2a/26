@@ -12,7 +12,15 @@ import {
   wallWaitingMessage,
 } from "../src/room/limits.ts";
 import { wallMediaViewable } from "../src/wall/access.ts";
-import { phone, posts, setup, upload, wallSettings, type Player, type Stub } from "./wall-support.ts";
+import {
+  phone,
+  posts,
+  setup,
+  upload,
+  wallSettings,
+  type Player,
+  type Stub,
+} from "./wall-support.ts";
 
 /** Moves this player's latest post back past the cooldown. */
 async function ageLatestPost(stub: Stub, playerId: string) {
@@ -74,12 +82,18 @@ it("rejects bad frames and photos the guest does not own", async () => {
   const socket = await phone(stub, gameId, amina);
 
   expect(
-    await socket.send({ name: "wall-post", mediaId: aminaPhoto.mediaId, frame: "glitter" }),
+    await socket.send({
+      name: "wall-post",
+      mediaId: aminaPhoto.mediaId,
+      frame: "glitter",
+    }),
   ).toEqual({ accepted: false, error: wallFrameMessage });
-  expect(await socket.send({ name: "wall-post", mediaId: bilalPhoto.mediaId })).toEqual({
-    accepted: false,
-    error: wallMediaMessage,
-  });
+  expect(await socket.send({ name: "wall-post", mediaId: bilalPhoto.mediaId })).toEqual(
+    {
+      accepted: false,
+      error: wallMediaMessage,
+    },
+  );
   expect(await socket.send({ name: "wall-post", mediaId: "not-a-uuid" })).toEqual({
     accepted: false,
     error: wallMediaMessage,
@@ -168,13 +182,17 @@ it("lets only the owner withdraw, and a withdrawn photo cannot be fetched", asyn
   const [post] = await posts(stub, amina.playerId);
   if (!post) throw new Error("no post");
 
-  expect(await bilalPhone.send({ name: "wall-withdraw", postId: post.postId })).toEqual({
-    accepted: false,
-    error: wallPostMissingMessage,
-  });
-  expect(await aminaPhone.send({ name: "wall-withdraw", postId: post.postId })).toEqual({
-    accepted: true,
-  });
+  expect(await bilalPhone.send({ name: "wall-withdraw", postId: post.postId })).toEqual(
+    {
+      accepted: false,
+      error: wallPostMissingMessage,
+    },
+  );
+  expect(await aminaPhone.send({ name: "wall-withdraw", postId: post.postId })).toEqual(
+    {
+      accepted: true,
+    },
+  );
   expect((await posts(stub, amina.playerId))[0]).toMatchObject({
     status: "removed",
     keep: false,
@@ -185,10 +203,12 @@ it("lets only the owner withdraw, and a withdrawn photo cannot be fetched", asyn
     guest: { playerId: amina.playerId, secret: amina.secret },
   });
   expect(read.ok).toBe(false);
-  expect(await aminaPhone.send({ name: "wall-withdraw", postId: post.postId })).toEqual({
-    accepted: false,
-    error: wallPostMissingMessage,
-  });
+  expect(await aminaPhone.send({ name: "wall-withdraw", postId: post.postId })).toEqual(
+    {
+      accepted: false,
+      error: wallPostMissingMessage,
+    },
+  );
   aminaPhone.socket.close();
   bilalPhone.socket.close();
 });
@@ -203,4 +223,3 @@ it("refuses new photos while the wall is off or the guest is muted", async () =>
   await wallSettings(stub, {});
   expect((await upload(stub, amina)).ok).toBe(true);
 });
-

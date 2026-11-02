@@ -9,6 +9,43 @@ import { withClientApiQuery } from "./client-api-key.ts";
 import { payloadDigest } from "../src/room/digest.ts";
 
 describe("durable phase alarms", () => {
+  it("receipts a stale host advance once and rejects invalid phase guards", async () => {
+    const created = await createRoom();
+    const stub = room(created.gameId);
+    const nowMs = Date.now();
+    await stub.startFixture({
+      ...control(created),
+      requestId: crypto.randomUUID(),
+      nowMs,
+      durations: { intro: 60_000, prompt: 60_000 },
+    });
+    const expectedPhaseGeneration = (await stub.snapshotFor("control")).phaseGeneration;
+    expect(expectedPhaseGeneration).toEqual(expect.any(Number));
+    const command = {
+      ...control(created),
+      requestId: crypto.randomUUID(),
+      nowMs,
+      expectedPhaseGeneration,
+    };
+    const first = await stub.advanceRound(command);
+    expect(first.ok && first.phase).toBe("prompt");
+    await evictDurableObject(stub);
+    expect(await stub.advanceRound(command)).toEqual(first);
+    const stale = { ...command, requestId: crypto.randomUUID() };
+    const receipt = await stub.advanceRound(stale);
+    expect(receipt.ok && receipt.phase).toBe("prompt");
+    expect(await stub.advanceRound(stale)).toEqual(receipt);
+    expect(
+      (
+        await stub.advanceRound({
+          ...command,
+          requestId: crypto.randomUUID(),
+          expectedPhaseGeneration: -1,
+        })
+      ).ok,
+    ).toBe(false);
+    expect((await stub.snapshotFor("stage")).phase).toBe("prompt");
+  });
   it("wakes an idle room from the saved alarm without another guest message", async () => {
     const created = await createRoom();
     const stub = room(created.gameId);

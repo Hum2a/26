@@ -44,7 +44,7 @@ it.each(slugs)(
         deadlineAt: 21000,
       }).points,
     ).toBe(100);
-    expect(birthdayPack.order).not.toContain(q.id);
+    expect(birthdayPack.order).toContain(q.id);
     const preview = questionPreview(birthdayPack, q);
     expect(preview.interactive).toBe(true);
     expect(preview.limitation).toBeNull();
@@ -79,5 +79,5 @@ it("uses sourced excerpts while retaining stable ids, question count and release
   ).toHaveLength(10);
   expect(validatePack(birthdayPack).filter((i) => i.level === "error")).toEqual([]);
   expect(birthdayPack.release).toBe("draft");
-  expect(birthdayPack.order).toEqual([]);
+  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
 });

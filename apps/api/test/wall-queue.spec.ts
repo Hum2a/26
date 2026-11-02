@@ -2,7 +2,15 @@ import { runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
 import { wallAdvancePayload } from "../src/room/lifecycle.ts";
 import { syncWall } from "../src/wall/queue.ts";
-import { phone, posts, setup, upload, wallSettings, type Player, type Stub } from "./wall-support.ts";
+import {
+  phone,
+  posts,
+  setup,
+  upload,
+  wallSettings,
+  type Player,
+  type Stub,
+} from "./wall-support.ts";
 
 async function send(stub: Stub, gameId: string, player: Player) {
   const photo = await upload(stub, player);
@@ -17,13 +25,15 @@ async function send(stub: Stub, gameId: string, player: Player) {
 }
 
 function advanceJob(stub: Stub) {
-  return runInDurableObject(stub, (_instance, state) =>
-    state.storage.sql
-      .exec<{ status: string; due_at: number | null }>(
-        `SELECT status, due_at FROM schedule_job WHERE job_id = ?`,
-        wallAdvancePayload,
-      )
-      .toArray()[0] ?? null,
+  return runInDurableObject(
+    stub,
+    (_instance, state) =>
+      state.storage.sql
+        .exec<{ status: string; due_at: number | null }>(
+          `SELECT status, due_at FROM schedule_job WHERE job_id = ?`,
+          wallAdvancePayload,
+        )
+        .toArray()[0] ?? null,
   );
 }
 
@@ -35,7 +45,10 @@ function advanceJob(stub: Stub) {
 async function timeUp(stub: Stub) {
   await runInDurableObject(stub, async (_instance, state) => {
     const past = Date.now() - 1;
-    state.storage.sql.exec(`UPDATE wall_post SET until_at = ? WHERE status = 'showing'`, past);
+    state.storage.sql.exec(
+      `UPDATE wall_post SET until_at = ? WHERE status = 'showing'`,
+      past,
+    );
     state.storage.sql.exec(
       `UPDATE schedule_job SET due_at = ? WHERE job_id = ? AND status = 'pending'`,
       past,

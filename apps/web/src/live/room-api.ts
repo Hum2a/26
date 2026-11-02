@@ -197,6 +197,7 @@ export type PlayAction =
   | "retry-delivery";
 
 export type PlayIntent = {
+  expectedPhaseGeneration?: number;
   rehearsalConfig?: RehearsalConfig;
   questionIndex?: number;
   scenario?: "disconnect" | "late-join" | "deadline-burst" | "host-loss";

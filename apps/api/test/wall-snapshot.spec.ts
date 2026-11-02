@@ -41,9 +41,17 @@ it("shows a pending photo only to the host and its owner", async () => {
 
   const host = (await stub.snapshotFor("control")).wall;
   expect(host?.queue).toEqual([
-    expect.objectContaining({ postId: post.postId, status: "pending", nickname: "Amina" }),
+    expect.objectContaining({
+      postId: post.postId,
+      status: "pending",
+      nickname: "Amina",
+    }),
   ]);
-  expect(host?.settings).toEqual({ moderation: "approve", showMs: 8_000, captions: true });
+  expect(host?.settings).toEqual({
+    moderation: "approve",
+    showMs: 8_000,
+    captions: true,
+  });
 });
 
 it("gives the stage the photo on screen and the next one to preload, with queue positions", async () => {
@@ -74,7 +82,10 @@ it("gives the stage the photo on screen and the next one to preload, with queue 
   expect(chenView?.now?.nickname).toBe("Amina");
 
   const control = (await stub.snapshotFor("control")).wall;
-  expect(control?.queue?.map((item) => item.postId)).toEqual([second.postId, third.postId]);
+  expect(control?.queue?.map((item) => item.postId)).toEqual([
+    second.postId,
+    third.postId,
+  ]);
   expect(control?.queue?.map((item) => item.position)).toEqual([1, 2]);
 });
 
@@ -83,7 +94,9 @@ it("sends troll history to the host only", async () => {
   const amina = await join("Amina");
   expect((await stub.snapshotFor("control")).trollHistory).toEqual([]);
   expect((await stub.snapshotFor("stage")).trollHistory).toBeUndefined();
-  expect((await stub.snapshotFor("guest", amina.playerId)).trollHistory).toBeUndefined();
+  expect(
+    (await stub.snapshotFor("guest", amina.playerId)).trollHistory,
+  ).toBeUndefined();
 });
 
 it("leaves captions off the stage when the host turns them off", async () => {

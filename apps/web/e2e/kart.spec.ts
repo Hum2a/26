@@ -157,14 +157,23 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
   await expect.poll(() => latest?.phase).toBe("intro");
   async function advance() {
     const before = latest?.phase;
+    const factIndex = latest?.funFact?.index;
     if (before === "final") {
       await admin.getByRole("button", { name: "Finish quiz", exact: true }).click();
       await admin
         .getByRole("dialog")
         .getByRole("button", { name: "Finish quiz", exact: true })
         .click();
-    } else await admin.getByRole("button", { name: "Advance", exact: true }).click();
-    await expect.poll(() => latest?.phase, { timeout: 20_000 }).not.toBe(before);
+    } else if (before === "facts")
+      await admin
+        .getByRole("button", { name: /^(Next fact|Show the podium)$/ })
+        .click();
+    else await admin.getByRole("button", { name: "Advance", exact: true }).click();
+    if (before === "facts")
+      await expect
+        .poll(() => `${latest?.phase}:${latest?.funFact?.index}`, { timeout: 20_000 })
+        .not.toBe(`${before}:${factIndex}`);
+    else await expect.poll(() => latest?.phase, { timeout: 20_000 }).not.toBe(before);
   }
   for (let i = 0; i < 5; i++) await advance();
   await expect.poll(() => latest?.play?.question.kind).toBe("kart");
@@ -394,6 +403,7 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
   await driver.reload();
   await expect.poll(() => latest?.play?.selfAward).toBe(100);
   for (let i = 0; i < 3; i++) await advance();
+  for (let i = 0; i < 40 && latest?.phase === "facts"; i++) await advance();
   await expect.poll(() => latest?.phase).toBe("podium");
   expect(errors).toEqual([]);
   await Promise.all([host.close(), phone.close(), spectator.close()]);

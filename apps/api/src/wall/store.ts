@@ -66,7 +66,9 @@ export function readWallSettings(sql: SqlStorage): WallSettings {
       show_ms: number;
       captions: number;
       muted_json: string;
-    }>(`SELECT enabled, moderation, placement, show_ms, captions, muted_json FROM wall_setting`)
+    }>(
+      `SELECT enabled, moderation, placement, show_ms, captions, muted_json FROM wall_setting`,
+    )
     .toArray()[0];
   if (!row) {
     return defaultWallSettings;
@@ -155,7 +157,8 @@ export function createWallPost(
     return { ok: false, message: blocked };
   }
   const settings = readWallSettings(sql);
-  const status: WallPostStatus = settings.moderation === "direct" ? "queued" : "pending";
+  const status: WallPostStatus =
+    settings.moderation === "direct" ? "queued" : "pending";
   sql.exec(
     `INSERT INTO wall_post (
        post_id, media_id, player_id, caption, frame, keep, status,

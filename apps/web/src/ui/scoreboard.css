@@ -194,8 +194,12 @@
   color: var(--muted);
 }
 .stage-presentation .scoreboard {
+  --number-flow-mask-height: 0.08em;
   font-size: clamp(1rem, 1.6vw, 1.85rem);
   line-height: 1.1;
+}
+.stage-presentation:has(.scoreboard) {
+  padding-bottom: 0;
 }
 .stage-presentation .scoreboard-columns,
 .stage-presentation .scoreboard-row {

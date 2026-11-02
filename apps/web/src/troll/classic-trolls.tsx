@@ -65,7 +65,11 @@ export function ScreenInvasion({
       )}
       <p className="troll-flood-caption">{nickname} was here</p>
       {escape ? (
-        <button type="button" className="troll-cover-button" onClick={() => onEscape?.()}>
+        <button
+          type="button"
+          className="troll-cover-button"
+          onClick={() => onEscape?.()}
+        >
           {escape}
         </button>
       ) : null}
@@ -117,7 +121,9 @@ export function CallFromMum({
         M
       </div>
       <p className="troll-call-name">Mum</p>
-      <p className="troll-call-meta">{answered ? "00:0" + Math.min(9, line * 2) : "mobile · calling…"}</p>
+      <p className="troll-call-meta">
+        {answered ? "00:0" + Math.min(9, line * 2) : "mobile · calling…"}
+      </p>
       {answered ? (
         <div className="troll-call-transcript" aria-live="polite">
           {callLines.slice(0, line + 1).map((text) => (
@@ -216,7 +222,11 @@ export function ShatteredScreen({
         ))}
       </svg>
       {escape ? (
-        <button type="button" className="troll-cover-button" onClick={() => onEscape?.()}>
+        <button
+          type="button"
+          className="troll-cover-button"
+          onClick={() => onEscape?.()}
+        >
           {escape}
         </button>
       ) : null}

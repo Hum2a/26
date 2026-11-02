@@ -7,7 +7,11 @@ import {
   type StatsSource,
 } from "../src/stats/aggregate.ts";
 
-const guest = (playerId: string, nickname: string, extra: Partial<StatsPlayer> = {}): StatsPlayer => ({
+const guest = (
+  playerId: string,
+  nickname: string,
+  extra: Partial<StatsPlayer> = {},
+): StatsPlayer => ({
   playerId,
   nickname,
   clientClass: "guest",
@@ -23,7 +27,11 @@ function source(wallPhotos: StatsSource["wallPhotos"]): StatsSource {
     sourceRevision: 1,
     illustrative: false,
     complete: true,
-    players: [guest("a", "Amina"), guest("b", "Bilal"), guest("h", "Host", { clientClass: "host" })],
+    players: [
+      guest("a", "Amina"),
+      guest("b", "Bilal"),
+      guest("h", "Host", { clientClass: "host" }),
+    ],
     questions: [],
     answers: [],
     trolls: [],
@@ -34,7 +42,8 @@ function source(wallPhotos: StatsSource["wallPhotos"]): StatsSource {
   };
 }
 
-const loved = (input: StatsSource) => aggregateFacts(input).filter((fact) => fact.metric === "wall-loved");
+const loved = (input: StatsSource) =>
+  aggregateFacts(input).filter((fact) => fact.metric === "wall-loved");
 
 describe("most loved photo", () => {
   it("names the photo with the most reactions on the podium cards", () => {

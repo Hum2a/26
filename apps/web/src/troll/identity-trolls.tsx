@@ -33,7 +33,10 @@ export function FakeExit({ label }: { label: string }) {
 export function FakeLastPlace({ label, others }: { label: string; others: string[] }) {
   const reduce = useReducedMotion();
   const above = others.slice(0, 4);
-  const rows = [...above.map((name) => ({ name, you: false })), { name: "You", you: true }];
+  const rows = [
+    ...above.map((name) => ({ name, you: false })),
+    { name: "You", you: true },
+  ];
   return (
     <div className="troll-cover troll-last" role="alert" aria-label={label}>
       <p className="troll-cover-title">Current standings</p>

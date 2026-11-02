@@ -19,13 +19,21 @@ export type SampleMedia = {
 };
 
 const devices = {
-  iphone: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1",
-  android: "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
-  desktop: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+  iphone:
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1",
+  android:
+    "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+  desktop:
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
 } as const;
 
 /** Twelve guests: enough in each device group for the 5-player comparisons. */
-const guests: { nickname: string; device: keyof typeof devices; dark: boolean; points: number[] }[] = [
+const guests: {
+  nickname: string;
+  device: keyof typeof devices;
+  dark: boolean;
+  points: number[];
+}[] = [
   { nickname: "Amina", device: "iphone", dark: true, points: [100, 80, 120] },
   { nickname: "Bilal", device: "android", dark: true, points: [60, 100, 40] },
   { nickname: "Chen", device: "iphone", dark: false, points: [100, 100, 100] },
@@ -56,7 +64,13 @@ const trolls: [number, number, string, "expired" | "cancelled" | "refunded"][] =
 ];
 
 /** [guest index, caption, frame, status, reactions as emoji:count]. */
-const wallPosts: [number, string | null, string, "shown" | "queued" | "pending", Record<string, number>][] = [
+const wallPosts: [
+  number,
+  string | null,
+  string,
+  "shown" | "queued" | "pending",
+  Record<string, number>,
+][] = [
   [0, "Happy birthday Humza!", "birthday", "shown", { fire: 9, love: 6, clap: 3 }],
   [4, "Caught in the act", "wanted", "shown", { laugh: 4, skull: 2 }],
   [7, "The best one yet", "polaroid", "shown", { love: 2 }],
@@ -68,10 +82,17 @@ const wallPosts: [number, string | null, string, "shown" | "queued" | "pending",
 
 export const sampleWallPostCount = wallPosts.length;
 
-export function seedSampleRoom(sql: SqlStorage, media: readonly SampleMedia[], now: number): number {
-  const existing = sql
-    .exec<{ total: number }>(`SELECT COUNT(*) AS total FROM player WHERE revoked_at IS NULL`)
-    .toArray()[0]?.total ?? 0;
+export function seedSampleRoom(
+  sql: SqlStorage,
+  media: readonly SampleMedia[],
+  now: number,
+): number {
+  const existing =
+    sql
+      .exec<{ total: number }>(
+        `SELECT COUNT(*) AS total FROM player WHERE revoked_at IS NULL`,
+      )
+      .toArray()[0]?.total ?? 0;
   if (existing > 0) {
     throw new Error(sampleRoomBusyMessage);
   }
@@ -93,8 +114,14 @@ export function seedSampleRoom(sql: SqlStorage, media: readonly SampleMedia[], n
       playerId,
       {
         userAgent: devices[guest.device],
-        screen: guest.device === "desktop" ? { width: 1920, height: 1080 } : { width: 393, height: 852 },
-        viewport: guest.device === "desktop" ? { width: 1536, height: 864 } : { width: 393, height: 760 },
+        screen:
+          guest.device === "desktop"
+            ? { width: 1920, height: 1080 }
+            : { width: 393, height: 852 },
+        viewport:
+          guest.device === "desktop"
+            ? { width: 1536, height: 864 }
+            : { width: 393, height: 760 },
         pixelRatio: guest.device === "desktop" ? 1.25 : 3,
         colorScheme: guest.dark ? "dark" : "light",
         reducedMotion: "no-preference",
@@ -137,7 +164,9 @@ export function seedSampleRoom(sql: SqlStorage, media: readonly SampleMedia[], n
       index % 3,
       index === 6 ? 1 : 0,
       index === 6 ? 2 : 0,
-      index === 6 ? "Sample: Cannot read properties of undefined (reading 'value')" : null,
+      index === 6
+        ? "Sample: Cannot read properties of undefined (reading 'value')"
+        : null,
       index === 6 ? new Date(now - 5 * 60_000).toISOString() : null,
     );
   });

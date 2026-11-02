@@ -133,7 +133,7 @@ it("persists password matches, scores ties once and freezes the result across ev
     expect(
       sql.exec<{ version: number }>("SELECT version FROM schema_meta").toArray()[0]
         ?.version,
-    ).toBe(14);
+    ).toBe(15);
     sql.exec(
       "UPDATE player SET revoked_at = ? WHERE player_id = ?",
       new Date().toISOString(),

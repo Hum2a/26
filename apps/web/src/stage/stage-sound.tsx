@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { entertainmentCueDecision, trollZoomCueLabel, type LobbySnapshot } from "@26/shared";
+import {
+  entertainmentCueDecision,
+  trollZoomCueLabel,
+  type LobbySnapshot,
+} from "@26/shared";
 import { withClientApiKey } from "../api/client-key.ts";
 import { stageShow } from "./audio";
 

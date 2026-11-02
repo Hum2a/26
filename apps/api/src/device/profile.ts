@@ -85,7 +85,10 @@ export function deviceOddOneOut(
   if (counts.size !== 2) {
     return null;
   }
-  const [[a, aCount], [b, bCount]] = [...counts] as [[string, number], [string, number]];
+  const [[a, aCount], [b, bCount]] = [...counts] as [
+    [string, number],
+    [string, number],
+  ];
   const odd = aCount === 1 ? a : bCount === 1 ? b : null;
   if (odd === null || aCount === bCount) {
     return null;
@@ -111,7 +114,10 @@ export function deviceTally(
   }
   return [...groups]
     .map(([value, nicknames]) => ({ value, count: nicknames.length, nicknames }))
-    .sort((left, right) => right.count - left.count || left.value.localeCompare(right.value));
+    .sort(
+      (left, right) =>
+        right.count - left.count || left.value.localeCompare(right.value),
+    );
 }
 
 /** Ready-made readers so easter eggs do not dig through the report shape. */
@@ -140,7 +146,9 @@ export const read = {
   language: (device: PlayerDevice) => device.report.locale.languages[0] ?? null,
   networkQuality: (device: PlayerDevice) => device.report.network.quality,
   saveData: (device: PlayerDevice) =>
-    device.report.network.saveData === null ? null : String(device.report.network.saveData),
+    device.report.network.saveData === null
+      ? null
+      : String(device.report.network.saveData),
   rttMs: (device: PlayerDevice) => device.connection?.medianRttMs ?? null,
   reconnects: (device: PlayerDevice) => device.connection?.reconnects ?? null,
 };

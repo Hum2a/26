@@ -52,14 +52,19 @@ describe("fun facts", () => {
     const firefox = card(selected.cards, "fun:browser:firefox");
     expect(firefox.text).toBe("1 person used Firefox.");
     expect(firefox.text.includes("Amina")).toBe(false);
-    expect(selected.facts.find((fact) => fact.id === firefox.id)?.memberIds).toEqual(["fox"]);
+    expect(selected.facts.find((fact) => fact.id === firefox.id)?.memberIds).toEqual([
+      "fox",
+    ]);
     expect(selected.cards.some((item) => item.id === "fun:browser:chrome")).toBe(true);
     expect(covered(selected)).toBe(true);
   });
 
   it("emits nothing for a device split smaller than three known guests", () => {
     const selected = selectFunFacts(
-      source([guest("a", "Amina", { colorScheme: "dark" }), guest("b", "Bilal", { colorScheme: "dark" })]),
+      source([
+        guest("a", "Amina", { colorScheme: "dark" }),
+        guest("b", "Bilal", { colorScheme: "dark" }),
+      ]),
     );
     expect(selected.cards).toEqual([]);
   });
@@ -126,7 +131,12 @@ describe("fun facts", () => {
     expect(
       selectFunFacts(
         source(
-          [guest("sam", "Sam"), guest("mia", "Mia"), guest("ali", "Ali"), guest("bea", "Bea")],
+          [
+            guest("sam", "Sam"),
+            guest("mia", "Mia"),
+            guest("ali", "Ali"),
+            guest("bea", "Bea"),
+          ],
           {
             likes: [
               { voterId: "mia", targetId: "sam" },
@@ -140,7 +150,12 @@ describe("fun facts", () => {
     ).toBe(false);
     const selected = selectFunFacts(
       source(
-        [guest("sam", "Sam"), guest("mia", "Mia"), guest("ali", "Ali"), guest("bea", "Bea")],
+        [
+          guest("sam", "Sam"),
+          guest("mia", "Mia"),
+          guest("ali", "Ali"),
+          guest("bea", "Bea"),
+        ],
         {
           likes: [
             { voterId: "mia", targetId: "sam" },
@@ -152,7 +167,9 @@ describe("fun facts", () => {
       ),
     );
     expect(card(selected.cards, "fun:like").text).toBe("Sam's nickname got 3 likes.");
-    expect(selected.facts.find((fact) => fact.id === "fun:like")?.memberIds).toEqual(["sam"]);
+    expect(selected.facts.find((fact) => fact.id === "fun:like")?.memberIds).toEqual([
+      "sam",
+    ]);
     expect(covered(selected)).toBe(true);
   });
 
@@ -251,7 +268,10 @@ describe("fun facts", () => {
           { actorId: "c", label: "Screen invasion" },
           { actorId: "d", label: "Call from Mum" },
         ],
-        media: Array.from({ length: 6 }, () => ({ playerId: "a", kind: "photo" as const })),
+        media: Array.from({ length: 6 }, () => ({
+          playerId: "a",
+          kind: "photo" as const,
+        })),
         likes: [
           { voterId: "b", targetId: "a" },
           { voterId: "c", targetId: "a" },
@@ -262,9 +282,9 @@ describe("fun facts", () => {
     expect(card(selected.cards, "fun:troll:screen-invasion").text).toBe(
       "The favourite troll was Screen invasion, sent 3 times.",
     );
-    expect(selected.cards.some((item) => item.text.toLowerCase().includes("dislike"))).toBe(
-      false,
-    );
+    expect(
+      selected.cards.some((item) => item.text.toLowerCase().includes("dislike")),
+    ).toBe(false);
     expect(card(selected.cards, "fun:media:photo").text).toBe("6 photos made it in.");
     expect(card(selected.cards, "fun:driver:bandit").text).toBe(
       "1 person chose the Bandit driver.",
@@ -273,18 +293,26 @@ describe("fun facts", () => {
   });
 });
 
-function covered(selected: { facts: FunFact[]; cards: { id: string; text: string }[] }): boolean {
+function covered(selected: {
+  facts: FunFact[];
+  cards: { id: string; text: string }[];
+}): boolean {
   return selected.cards.every((item) => {
     const fact = selected.facts.find((row) => row.id === item.id);
     if (!fact) {
       return false;
     }
     const allowed = new Set(funFactFigures(fact));
-    return [...item.text.matchAll(/\d+/g)].every((match) => allowed.has(Number(match[0])));
+    return [...item.text.matchAll(/\d+/g)].every((match) =>
+      allowed.has(Number(match[0])),
+    );
   });
 }
 
-function card(cards: { id: string; text: string }[], id: string): { id: string; text: string } {
+function card(
+  cards: { id: string; text: string }[],
+  id: string,
+): { id: string; text: string } {
   const found = cards.find((item) => item.id === id);
   if (!found) {
     throw new Error(`Missing card ${id}.`);

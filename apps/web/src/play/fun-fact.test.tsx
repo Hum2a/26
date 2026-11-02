@@ -22,9 +22,9 @@ it("shows one stage sentence and the count, not the question", () => {
       }
     />,
   );
-  expect(screen.getByRole("region", { name: "From your phones" }).textContent).toContain(
-    "1 person used Firefox.",
-  );
+  expect(
+    screen.getByRole("region", { name: "From your phones" }).textContent,
+  ).toContain("1 person used Firefox.");
   expect(screen.getByText("1 of 10")).toBeTruthy();
   expect(screen.queryByText("A secret question?")).toBeNull();
 });
