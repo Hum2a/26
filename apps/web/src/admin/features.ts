@@ -169,7 +169,8 @@ export const adminFeatures: readonly AdminFeature[] = [
     scope: "room",
     path: "trolls",
     summary: "Switch trolls on or off and see every troll sent.",
-    rehearsal: "Preview each phone gag; send one between two tabs.",
+    rehearsal:
+      "Preview each phone gag; for points, identity and big-screen trolls, open “Rehearse this troll” to see the target banner and step through a bot test with a second tab.",
     owns: ["apps/api/src/troll", "apps/web/src/troll"],
     status: (snapshot) =>
       `${snapshot.trollHistory?.length ?? 0} sent · ${snapshot.trolls.disabled?.length ?? 0} switched off`,

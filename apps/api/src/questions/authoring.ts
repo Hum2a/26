@@ -288,6 +288,7 @@ export function guessQuestion(
     selfVote?: "forbidden" | "allowed";
     scoring?: "named" | "majority" | "none";
     truth?: Answer<string | null>;
+    selfVoteBonus?: "double";
   },
 ): AuthoredGuess {
   const scoring = input.scoring ?? ordinaryDefaults.guessScoring;
@@ -301,6 +302,7 @@ export function guessQuestion(
       tie: ordinaryDefaults.tie,
       scoring,
       lateJoin: ordinaryDefaults.lateJoin,
+      ...(input.selfVoteBonus ? { selfVoteBonus: input.selfVoteBonus } : {}),
       truth:
         input.truth ??
         (scoring === "named" ? { missing: missingPerson } : { known: null }),
@@ -524,6 +526,7 @@ export function toPlayable(
       scoring: question.scoring,
       lateJoin: question.lateJoin,
       truthNickname: question.truth.known,
+      ...(question.selfVoteBonus ? { selfVoteBonus: question.selfVoteBonus } : {}),
     };
     return playable;
   }

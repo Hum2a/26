@@ -35,7 +35,8 @@ export function settleChoice(
       optionIds: [...outcome.optionIds],
       met: null,
     };
-  if (outcome.kind === "poll") {
+  // Push your luck is scored from bail times in `push-luck.ts`, not by option.
+  if (outcome.kind === "poll" || outcome.kind === "push") {
     return { outcome: "poll", everyone: false, optionIds: [], met: null };
   }
   const picked = answers.filter((optionId) => optionId === outcome.optionId).length;

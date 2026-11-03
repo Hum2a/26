@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import type { AdminTrolls } from "@26/shared";
-import { Button } from "../ui/primitives";
+import { Button, Disclosure } from "../ui/primitives";
+import { TrollRehearsal } from "./troll-rehearsal";
 import { EntryNotice } from "../ui/entry-frame";
 import { isScreenTroll, ScreenTroll } from "../troll/screen-trolls";
 import { CommandFeedback } from "./command-feedback";
@@ -230,7 +231,11 @@ function TrollCatalogue({
                 >
                   Preview on this screen
                 </Button>
-              ) : null}
+              ) : (
+                <Disclosure title="Rehearse this troll">
+                  <TrollRehearsal troll={troll} />
+                </Disclosure>
+              )}
             </article>
           );
         })}

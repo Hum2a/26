@@ -1,3 +1,4 @@
+import { assertPushOutcome, pushBailOptionId } from "./push-luck.ts";
 import { contentLimits, questionOptionImageSchema } from "@26/shared";
 import { implementedTrollKinds } from "../troll/catalogue.ts";
 import { toPlayable } from "./authoring.ts";
@@ -388,6 +389,7 @@ function outcomeIssues(question: {
   options: { id: string }[];
   points: number;
   speedBonus: { maxPoints: number } | null;
+  collectMs?: number;
 }): ContentIssue[] {
   const outcome = question.outcome;
   if (outcome.kind === "correct") {
@@ -421,6 +423,29 @@ function outcomeIssues(question: {
             `${question.id} needs a unique non-empty answer set from its options.`,
           ),
         ];
+  if (outcome.kind === "push") {
+    if (!ids.has(pushBailOptionId)) {
+      return [
+        issue(
+          "error",
+          "choice",
+          `${question.id} push-your-luck needs a "bail" option.`,
+        ),
+      ];
+    }
+    try {
+      assertPushOutcome(outcome, question.collectMs ?? 0);
+    } catch (error) {
+      return [
+        issue(
+          "error",
+          "choice",
+          `${question.id}: ${error instanceof Error ? error.message : "invalid push-your-luck round"}`,
+        ),
+      ];
+    }
+    return [];
+  }
   const named = [
     outcome.optionId,
     ...(outcome.met === "everyone" ? [] : outcome.met),

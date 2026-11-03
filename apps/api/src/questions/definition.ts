@@ -64,8 +64,19 @@ type AuthorFields = {
  * when more than `above` (0 to 1) of the answers pick `optionId`, `met` scores;
  * otherwise `otherwise` scores. `everyone` means every guest who answered.
  */
+/** Push your luck: see `push-luck.ts`. The Raid point is drawn per room. */
+export type PushOutcome = {
+  kind: "push";
+  lines: readonly string[];
+  lineMs: number;
+  banks: readonly number[];
+  /** Possible Raid points, drawn evenly: after this many lines, or `null` for none. */
+  raidAfter: readonly (number | null)[];
+};
+
 export type ChoiceOutcome =
   | { kind: "correct" }
+  | PushOutcome
   | { kind: "poll" }
   | { kind: "multiple"; optionIds: readonly string[] }
   | {
@@ -145,6 +156,11 @@ export type GuessBody = {
   tie: "shared";
   scoring: "named" | "majority" | "none";
   lateJoin: "ineligible";
+  /**
+   * `double`: a voter who picked themselves scores twice the points when they
+   * are also the room's pick. Majority scoring with self-votes allowed only.
+   */
+  selfVoteBonus?: "double";
 };
 
 type DuelScale = {

@@ -362,6 +362,17 @@ const winnerSchema = z
   })
   .strict();
 
+/** The public side of a push-your-luck round. The Raid point stays on the server. */
+export const pushPublicSchema = z
+  .object({
+    lines: z.array(z.string().min(1).max(120)).min(2).max(8),
+    lineMs: z.number().int().min(2_000).max(15_000),
+    banks: z.array(z.number().int().nonnegative().max(1000)).min(2).max(8),
+    /** The answering window; line n shows from n × lineMs after it opens. */
+    windowMs: z.number().int().positive().max(contentLimits.collectMaxMs),
+  })
+  .strict();
+
 export const publicQuestionSchema = z.discriminatedUnion("kind", [
   z
     .object({
@@ -385,9 +396,11 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
       kind: z.literal("choice"),
       options: z.array(publicChoiceSchema).min(2).max(contentLimits.pollOptionMax),
       /** Absent for an ordinary question with one right option. */
-      outcome: z.enum(["poll", "threshold", "multiple"]).optional(),
+      outcome: z.enum(["poll", "threshold", "multiple", "push"]).optional(),
+      /** Push-your-luck: the lines, their pace and the bank after each. Never the Raid. */
+      push: pushPublicSchema.optional(),
       speedBonus: z.boolean(),
-      modifiers: z.array(z.literal("double")).max(1),
+      modifiers: z.array(z.enum(["double", "steal", "robin-hood", "share"])).max(4),
       suppressSpeedBonus: z.boolean(),
     })
     .strict(),
@@ -517,6 +530,8 @@ const selfAnswerSchema = z
       .object({
         kind: z.literal("choice"),
         optionId: publicOptionIdSchema,
+        /** Push-your-luck: the line showing when the room received the bail. */
+        pushLine: z.number().int().nonnegative().max(7).optional(),
       })
       .strict(),
     z
@@ -613,7 +628,9 @@ const revealSchema = z
         /** Null for a poll or a threshold outcome. */
         correctOptionId: publicOptionIdSchema.nullable(),
         correctOptionIds: z.array(publicOptionIdSchema).max(6).optional(),
-        outcome: z.enum(["poll", "threshold", "multiple"]).optional(),
+        outcome: z.enum(["poll", "threshold", "multiple", "push"]).optional(),
+        /** Push-your-luck: lines shown before the Raid, or null if it never came. */
+        raidAfter: z.number().int().positive().max(8).nullable().optional(),
         tally: z
           .array(
             z

@@ -6,13 +6,23 @@ import { finalise, putWithProgress, requestSlot } from "./media-transfer";
 import { recordWav } from "./wav";
 import { compactJpeg, isHeic } from "./photo-prepare";
 
-export function GuestMedia({ gameId }: { gameId: string }) {
+export function GuestMedia({
+  gameId,
+  active = true,
+}: {
+  gameId: string;
+  /** False while the Snap tab is hidden, so the camera is not left running. */
+  active?: boolean;
+}) {
   const [voiceStatus, setVoiceStatus] = useState("Record up to 3 seconds.");
   const [voiceBusy, setVoiceBusy] = useState(false);
 
   return (
     <div className="grid min-w-0 gap-4" data-media="">
-      <CaptureFlow upload={(file, setStatus) => sendPhoto(gameId, file, setStatus)} />
+      <CaptureFlow
+        active={active}
+        upload={(file, setStatus) => sendPhoto(gameId, file, setStatus)}
+      />
       <div className="grid gap-3">
         <Button
           type="button"

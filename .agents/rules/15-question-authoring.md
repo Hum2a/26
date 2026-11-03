@@ -22,7 +22,7 @@ Recognise:
 For a new idea:
 
 1. Read the birthday manifest, `authoring.ts`, `defaults.ts`, and any related question.
-2. Choose an existing mechanic when it fits: choice (with a correct, poll, or threshold outcome), typed, wordle, slider, rank, vote, guess, duel, or finale.
+2. Choose an existing mechanic when it fits: choice (with a correct, poll, threshold or push-your-luck outcome), typed, wordle, slider, rank, vote, guess, duel, or finale.
 3. Create `apps/api/src/questions/packs/birthday/<id>.ts` with the matching helper. The id and filename are a stable slug, with no running-order number.
 4. Apply defaults from `defaults.ts` for ordinary settings the user did not specify.
 5. Keep the user's wording. Record a material assumption in the question file only when it changes the mechanic.

@@ -223,7 +223,6 @@ it("rehearses a catalogue beyond the eighty-question live order limit", () => {
             "apology-video-auction",
             "nextdoor-paranoia",
             "group-chat-figurine",
-            "defend-indefensible",
             "cursed-search-history",
             "property-price-roulette",
           ].includes(q.id),

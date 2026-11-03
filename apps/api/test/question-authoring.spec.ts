@@ -557,7 +557,8 @@ describe("October birthday question additions", () => {
       howItalianIsHumza,
       christianityBranches,
     ];
-    for (const question of entries) expect(birthdayPack.catalogue).toContain(question);
+    const ids = birthdayPack.catalogue.map((question) => question.id);
+    for (const question of entries) expect(ids).toContain(question.id);
     expect(birthdayPack.release).toBe("draft");
     expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
     for (const question of entries) expect(birthdayPack.order).toContain(question.id);

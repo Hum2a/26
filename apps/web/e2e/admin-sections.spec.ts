@@ -34,8 +34,10 @@ test("media, health, content and results have real private workflows and respons
   await page.getByRole("button", { name: "Start the illustrative demo" }).click();
   await page.getByRole("button", { name: "Pause", exact: true }).click();
   const phone = phones[0]!.page;
-  await phone.getByRole("button", { name: /Photos & sound/ }).click();
-  await phone.getByLabel("Photo").setInputFiles("apps/web/e2e/fixtures/pixel.png");
+  await phone.getByRole("button", { name: "Snap", exact: true }).click();
+  await phone
+    .getByLabel("Photo", { exact: true })
+    .setInputFiles("apps/web/e2e/fixtures/pixel.png");
   await phone.getByRole("button", { name: "Send", exact: true }).click();
   await expect(phone.getByText("Photo accepted.")).toBeVisible();
   await page.getByRole("link", { name: "Media", exact: true }).click();

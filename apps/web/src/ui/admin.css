@@ -1173,3 +1173,24 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Guided rehearsal for trolls without a full-screen preview. */
+.admin-troll-rehearsal {
+  display: grid;
+  gap: 0.75rem;
+}
+.admin-troll-rehearsal-phone {
+  max-width: 22rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-panel);
+  padding: 0.25rem 0 0.75rem;
+}
+.admin-troll-rehearsal-steps {
+  display: grid;
+  gap: 0.4rem;
+  padding-inline-start: 1.25rem;
+  list-style: decimal;
+}
+.admin-troll-rehearsal-note {
+  color: var(--muted);
+}

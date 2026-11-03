@@ -26,10 +26,12 @@ test("a phone sends a photo, the stage shows it, and hiding stops later access",
   await expect(stage.getByRole("heading", { name: "In the lobby" })).toBeVisible();
   await join(amina, joinCode, "Amina");
   await admin.getByRole("button", { name: "Start the illustrative demo" }).click();
-  await amina.getByRole("button", { name: /Photos & sound/ }).click();
-  await expect(amina.getByLabel("Photo")).toBeVisible();
+  await amina.getByRole("button", { name: "Snap", exact: true }).click();
+  await expect(amina.getByLabel("Photo", { exact: true })).toBeVisible();
 
-  await amina.getByLabel("Photo").setInputFiles("apps/web/e2e/fixtures/snap.heic");
+  await amina
+    .getByLabel("Photo", { exact: true })
+    .setInputFiles("apps/web/e2e/fixtures/snap.heic");
   await amina.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
     amina.getByText(
@@ -53,7 +55,9 @@ test("a phone sends a photo, the stage shows it, and hiding stops later access",
       response.ok()
     );
   });
-  await amina.getByLabel("Photo").setInputFiles("apps/web/e2e/fixtures/pixel.png");
+  await amina
+    .getByLabel("Photo", { exact: true })
+    .setInputFiles("apps/web/e2e/fixtures/pixel.png");
   await amina.getByRole("button", { name: "Send", exact: true }).click();
   await expect(amina.getByText("Photo accepted.")).toBeVisible();
   const image = await shown;

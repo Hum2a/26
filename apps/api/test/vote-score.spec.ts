@@ -42,6 +42,36 @@ describe("room-wide vote and guess scoring", () => {
     expect(awards[0]?.points).toBe(60);
   });
 
+  it("doubles a self-vote only when the room also picks that voter", () => {
+    const candidates = [
+      { id: "card-amina", ownerId: "amina" },
+      { id: "card-bilal", ownerId: "bilal" },
+    ];
+    const ballots = [
+      { playerId: "amina", candidateId: "card-amina" },
+      { playerId: "bilal", candidateId: "card-bilal" },
+      { playerId: "chen", candidateId: "card-amina" },
+    ];
+    expect(
+      awardsForBallot({
+        points: 100,
+        mode: "voters",
+        winners: ["card-amina"],
+        candidates,
+        ballots,
+        playerIds: ["amina", "bilal", "chen"],
+        selfVoteMultiplier: 2,
+      }),
+    ).toEqual([
+      { playerId: "amina", points: 200, detail: "self-vote" },
+      { playerId: "bilal", points: 0, detail: "miss" },
+      { playerId: "chen", points: 100, detail: "win" },
+    ]);
+    expect(() =>
+      assertGuessQuestion({ ...who, scoring: "named", selfVoteBonus: "double" }),
+    ).toThrow("A double self-vote bonus needs majority scoring");
+  });
+
   it("scores a named guess without using the majority", () => {
     const winners = winningIds({
       scoring: "named",

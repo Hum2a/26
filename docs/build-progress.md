@@ -4419,5 +4419,67 @@ below. No deployment, new dependency or paid resource.
   another room". The destroy confirmation field has its own accessible name.
 - **Verified:** `npm run typecheck` passed; `npm run test:unit` passed **112
   files / 446 tests**; Prettier and ESLint clean on the changed files. Local
-  Chromium check of the home page and `/kart` at 375px. Not yet committed or
-  deployed.
+  Chromium check of the home page and `/kart` at 375px.
+- **Released (correction, 3 November):** this was later committed as
+  `1445bd7`, merged through PR #3 as `b2aebeb`, deployed to staging (version
+  `4fb34a7e-8e46-41de-a584-43a3c9aa5256`) by Claude and to production by the
+  user, whose live bundle was then checked for the new kart and phone strings.
+
+## 3 November 2026 — review follow-ups: recovery, rounds, trolls, rehearsals
+
+- **Context:** a review listed eight open items. Decisions from the user: points
+  trolls on every scored choice question; figurine self-vote doubles only when
+  the room also picks you; Cursed search uses the proposed numbers; "Defend the
+  indefensible" is dropped.
+- **Deployment recovery:** every top-level route now has `ui/route-error.tsx`
+  as its error screen. A tab left open across a deployment ("Failed to fetch
+  dynamically imported module" and similar) reloads itself once (guarded for
+  30 s in session storage), then offers Reload; other failures show a calm
+  screen with no developer detail. `vite:preloadError` uses the same guard.
+- **Rounds:** `defend-indefensible` removed from the catalogue, tests and
+  content notes. `group-chat-figurine` is ready with `selfVoteBonus: "double"`
+  (ballot scorer awards ×2 with detail `self-vote`; validated to need majority
+  scoring and self-votes). `cursed-search-history` is ready on a new choice
+  outcome, `push` (`questions/push-luck.ts`): lines every 6 s, the Raid drawn
+  from after line 2/3/4/never and stored in `round_state` when answering opens,
+  bails scored from the room's receipt time, banks 100/250/450/700, the Raid
+  revealed only at the reveal. Phones and the projector share
+  `play/guest-push.tsx` (BAIL in the dock; the projector shows bail counts).
+  Both rounds are ready but **not in the running order** until the user says.
+  The four content drafts (Reddit tribunal, Ferrier estate, Nextdoor,
+  property price) still need the user's material.
+- **Points trolls:** the birthday manifest adds `steal`, `robin-hood` and
+  `share` to every scored choice (`outcome: correct`) without its own
+  modifiers; the demo pack is unchanged. The public question schema only
+  allowed `"double"`, which would have failed projection for these questions;
+  it now accepts all four modifiers.
+- **Troll rehearsals:** each troll without a full-screen preview has "Rehearse
+  this troll" in Admin → Trolls: the real incoming banner from sample data and
+  guided steps for a live check with bots and a second tab.
+- **Phone tabs:** the phone returns to Play only when answers open (not at the
+  get-ready beat), and Snap stays mounted once opened with the camera released
+  while hidden, so an upload or voice clip in progress keeps its state. The
+  in-question status line is shown again (it carries per-guest wording the
+  flows rely on).
+- **Tests:** API `points-trolls`, `push-luck`, `push-luck-room` (real room:
+  Raid frozen before bails, bail banked, holder settled), self-vote scoring;
+  web `route-error`, `guest-push`, `troll-rehearsal`, `stage-podium`. E2E specs
+  updated for the tabbed phone (Troll/Snap tabs, exact Photo label, new send
+  label).
+- **Verified:** `npm run typecheck` passed; ESLint 0 errors / 27 warnings;
+  `npm run test:unit` **116 files / 455 tests**; `npm run test -w @26/api`
+  **92 files / 497 tests** (before the last web-only changes); content check
+  passed with the four content drafts listed.
+- **E2E (local dev, Chromium):** `kart.spec` and `admin-live-controls.spec`
+  passed. `quiz.spec` now runs through troll and guess steps with the new UI
+  and stops at the final advance to the podium; the podium itself renders in
+  a unit test, so the cause is not identified. `media.spec` and
+  `admin-sections.spec` fail at "Photo accepted." on the local upload; an A/B
+  with the previous upload-header code fails identically, so it is not caused
+  by that change; cause not identified. `photo-wall.spec` fails at the second
+  phone's join on clean `master` too (both phones share a browser context).
+  These are not passing checks.
+- **Still outstanding:** the four content drafts; adding the two ready rounds
+  to the order; the e2e failures above; physical phones (iOS Safari, Android),
+  locking/reconnection, permissions, projector and venue Wi-Fi rehearsal.
+  Not committed or deployed.
