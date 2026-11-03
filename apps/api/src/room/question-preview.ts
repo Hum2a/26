@@ -42,6 +42,16 @@ export function questionPreview(
         modifiers: q.modifiers ?? [],
         suppressSpeedBonus: Boolean(q.suppressSpeedBonus),
         ...(q.outcome.kind !== "correct" ? { outcome: q.outcome.kind } : {}),
+        ...(q.outcome.kind === "push"
+          ? {
+              push: {
+                lines: [...q.outcome.lines],
+                lineMs: q.outcome.lineMs,
+                banks: [...q.outcome.banks],
+                windowMs: q.collectMs,
+              },
+            }
+          : {}),
       };
       break;
     case "wordle":

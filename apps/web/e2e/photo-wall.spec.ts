@@ -28,7 +28,7 @@ test("a phone sends a wall photo, the host approves it, the room reacts, and pul
   await join(bilal, joinCode, "Bilal");
 
   // The wall works from the lobby, before the game starts.
-  await amina.getByRole("button", { name: /Send to the big screen/ }).click();
+  await amina.getByRole("button", { name: "Snap", exact: true }).click();
   await amina
     .getByLabel(/Camera roll/)
     .setInputFiles("apps/web/e2e/fixtures/pixel.png");
@@ -52,7 +52,7 @@ test("a phone sends a wall photo, the host approves it, the room reacts, and pul
   await expect(stage.getByText("THE DAILY 26 · EXCLUSIVE")).toBeVisible();
   await expect(amina.getByText("On screen now!")).toBeVisible();
 
-  await bilal.getByRole("button", { name: /Send to the big screen/ }).click();
+  await bilal.getByRole("button", { name: "Snap", exact: true }).click();
   await bilal.getByRole("button", { name: "Fire" }).click();
   await expect(stage.getByLabel("Reactions")).toContainText("1");
 

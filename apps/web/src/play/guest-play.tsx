@@ -15,6 +15,7 @@ import { GuestRank } from "./guest-rank";
 import { GuestSlider } from "./guest-slider";
 import { Glyph } from "./designs/glyph";
 import { GuestText } from "./guest-text";
+import { GuestPush } from "./guest-push";
 import { renderPresentation } from "./presentation";
 import { QuestionExperience } from "./question-experience";
 import { motion, useReducedMotion } from "motion/react";
@@ -39,8 +40,14 @@ export function GuestPlay({
   kartRecoveryPending,
   kartRecoveryNotice,
   connected,
+  observedAt,
+  onChoose,
 }: {
   snapshot: LobbySnapshot;
+  /** When this snapshot arrived, for screens that follow the room's clock. */
+  observedAt?: number;
+  /** Sends one option at once, without a separate selection step. */
+  onChoose?: (optionId: string) => void;
   onKartInput?: (input: KartInput) => void;
   onKartRecover?: (raceId: string) => void;
   onKartUseItem?: (raceId: string) => void;
@@ -110,6 +117,20 @@ export function GuestPlay({
       onText,
     },
   };
+  if (play.question.kind === "choice" && play.question.push) {
+    return (
+      <QuestionExperience snapshot={snapshot} pending={pending}>
+        <GuestPush
+          snapshot={snapshot}
+          push={play.question.push}
+          observedAt={observedAt ?? snapshot.serverNow}
+          open={open}
+          pending={pending}
+          onBail={() => (onChoose ? onChoose("bail") : onSelect("bail"))}
+        />
+      </QuestionExperience>
+    );
+  }
   const custom =
     renderPresentation(play.question.presentation, presentationProps) ??
     (play.question.kind === "wordle" ? Glyph(presentationProps) : undefined);

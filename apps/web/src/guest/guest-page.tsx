@@ -78,6 +78,9 @@ export function GuestPage({
   const [seenOpen, setSeenOpen] = useState(false);
   const [tab, setTab] = useState<PhoneTab>("play");
   const [ranksFresh, setRanksFresh] = useState(false);
+  // Snap stays mounted once opened, so an upload in progress keeps its state.
+  const [snapVisited, setSnapVisited] = useState(false);
+  if (tab === "snap" && !snapVisited) setSnapVisited(true);
   const [replacedNotice, setReplacedNotice] = useState<string>();
   const [observedAt, setObservedAt] = useState(() => Date.now());
   const lastBeat = useRef<string | null>(null);
@@ -191,7 +194,9 @@ export function GuestPage({
         // A new beat that needs this phone brings it back to Play.
         const beat = `${next.play?.question.id ?? "lobby"}/${next.phase}`;
         if (lastBeat.current !== null && lastBeat.current !== beat) {
-          if (["intro", "prompt", "collect", "vote", "predict"].includes(next.phase)) {
+          // Only when answers open, so a guest mid-upload is not pulled away
+          // by the get-ready beat.
+          if (["collect", "vote", "predict"].includes(next.phase)) {
             setTab("play");
           }
           if (next.phase === "scores") setRanksFresh(true);
@@ -421,6 +426,14 @@ export function GuestPage({
       return;
     }
     pendingRequest.current = socketRef.current?.submitAnswer(selectedId) ?? null;
+  }
+
+  function onChoose(optionId: string) {
+    if (!beginSend(true)) {
+      return;
+    }
+    setSelectedId(optionId);
+    pendingRequest.current = socketRef.current?.submitAnswer(optionId) ?? null;
   }
 
   function onEstimate(value: number) {
@@ -654,7 +667,7 @@ export function GuestPage({
                   <p className="entry-eyebrow">Photos and sound</p>
                   <h1 className="phone-tab-title">Snap</h1>
                 </header>
-                {tab !== "snap" ? null : rehearsalCredential ? (
+                {!snapVisited ? null : rehearsalCredential ? (
                   <p className="text-muted">
                     Live test phone. Use an ordinary second-browser guest for photos.
                   </p>
@@ -685,7 +698,7 @@ export function GuestPage({
                       aria-label="Photos and sound for the game"
                     >
                       <h2>Photos &amp; sound for the game</h2>
-                      <GuestMedia gameId={session.gameId} />
+                      <GuestMedia gameId={session.gameId} active={tab === "snap"} />
                     </section>
                   </>
                 )}
@@ -696,14 +709,10 @@ export function GuestPage({
       >
         {questionVisible ? null : (
           <h1 className="phone-prompt">
-            {snapshot?.phase === "lobby" ? "You’re in!" : "This phone"}
+            {snapshot?.phase === "lobby" ? "In the lobby" : "This phone"}
           </h1>
         )}
-        {(questionVisible || snapshot?.phase === "lobby") &&
-        !rejection &&
-        connection === "open" ? null : (
-          <StatusMessage>{status}</StatusMessage>
-        )}
+        <StatusMessage>{status}</StatusMessage>
         {rehearsalCredential ? (
           <p className="text-sm text-muted">
             Live test phone. Use an ordinary second-browser guest for photos and phone
@@ -785,6 +794,8 @@ export function GuestPage({
                   pending={pending}
                   onSelect={setSelectedId}
                   onSubmit={onSubmit}
+                  onChoose={onChoose}
+                  observedAt={observedAt}
                   onEstimate={onEstimate}
                   onRank={onRank}
                   onText={onText}

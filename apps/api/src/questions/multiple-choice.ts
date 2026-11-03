@@ -1,3 +1,10 @@
+import {
+  freezeRaid,
+  pushBailOptionId,
+  pushLineAt,
+  pushPoints,
+  readRaid,
+} from "./push-luck.ts";
 import { enterKart, tickKart, kartScores, projectKart } from "./kart.ts";
 import { enterRehearsalPhase, tickRehearsal } from "../developer/rehearsal.ts";
 import { playSnapshotSchema, type PlaySnapshot } from "@26/shared";
@@ -213,6 +220,14 @@ export function createGameStore(sql: SqlStorage): GameStore {
       }
       if (
         current.questionCount > 0 &&
+        question?.kind === "choice" &&
+        question.outcome.kind === "push" &&
+        current.phase === "collect"
+      ) {
+        freezeRaid(sql, question);
+      }
+      if (
+        current.questionCount > 0 &&
         (question?.kind === "duel" || question?.kind === "finale") &&
         current.phase === "intro"
       ) {
@@ -396,7 +411,29 @@ export function recordRevealScores(
     [...answers.values()].map((row) => row.option_id),
   );
   const awards = new Map<string, { points: number; detail: string }>();
-  for (const player of players) {
+  if (question.outcome.kind === "push") {
+    const outcome = question.outcome;
+    const raidAfter = readRaid(sql, question.id) ?? null;
+    for (const player of players) {
+      const answer = answers.get(player.player_id);
+      awards.set(
+        player.player_id,
+        pushPoints(
+          outcome,
+          answer
+            ? {
+                optionId: answer.option_id,
+                receivedAt: answer.received_at,
+                deadlineAt: answer.deadline_at,
+              }
+            : undefined,
+          raidAfter,
+          question.collectMs,
+        ),
+      );
+    }
+  }
+  for (const player of question.outcome.kind === "push" ? [] : players) {
     const answer = answers.get(player.player_id);
     awards.set(
       player.player_id,
@@ -573,8 +610,9 @@ export function projectPlay(
     .toArray()[0];
   const self = selfPlayerId
     ? sql
-        .exec<{ option_id: string }>(
-          `SELECT option_id FROM choice_answer WHERE player_id = ? AND question_id = ?`,
+        .exec<{ option_id: string; received_at: number; deadline_at: number }>(
+          `SELECT option_id, received_at, deadline_at FROM choice_answer
+           WHERE player_id = ? AND question_id = ?`,
           selfPlayerId,
           question.id,
         )
@@ -598,6 +636,16 @@ export function projectPlay(
       ...(question.outcome.kind === "correct"
         ? {}
         : { outcome: question.outcome.kind }),
+      ...(question.outcome.kind === "push"
+        ? {
+            push: {
+              lines: [...question.outcome.lines],
+              lineMs: question.outcome.lineMs,
+              banks: [...question.outcome.banks],
+              windowMs: question.collectMs,
+            },
+          }
+        : {}),
       speedBonus: question.speedBonus !== null,
       modifiers: [...(question.modifiers ?? [])],
       suppressSpeedBonus: question.suppressSpeedBonus === true,
@@ -606,7 +654,20 @@ export function projectPlay(
     selfAnswer: self
       ? question.outcome.kind === "multiple"
         ? { kind: "multiple" as const, optionIds: self.option_id.split(",") }
-        : { kind: "choice" as const, optionId: self.option_id }
+        : {
+            kind: "choice" as const,
+            optionId: self.option_id,
+            ...(question.outcome.kind === "push" && self.option_id === pushBailOptionId
+              ? {
+                  pushLine: pushLineAt(
+                    question.outcome,
+                    self.received_at,
+                    self.deadline_at,
+                    question.collectMs,
+                  ),
+                }
+              : {}),
+          }
       : null,
     selfBallot: null,
     ballot: null,
@@ -650,6 +711,25 @@ function choiceReveal(sql: SqlStorage, question: ChoiceQuestion) {
     };
   if (question.outcome.kind === "correct") {
     return { kind: "choice" as const, correctOptionId: question.correctOptionId };
+  }
+  if (question.outcome.kind === "push") {
+    const bails = sql
+      .exec<{ total: number }>(
+        `SELECT COUNT(*) AS total FROM choice_answer
+         JOIN player ON player.player_id = choice_answer.player_id
+         WHERE choice_answer.question_id = ? AND choice_answer.option_id = ?
+           AND player.revoked_at IS NULL`,
+        question.id,
+        pushBailOptionId,
+      )
+      .toArray()[0]?.total;
+    return {
+      kind: "choice" as const,
+      correctOptionId: null,
+      outcome: "push" as const,
+      raidAfter: readRaid(sql, question.id) ?? null,
+      tally: [{ optionId: pushBailOptionId, count: bails ?? 0 }],
+    };
   }
   const answers = sql
     .exec<{ option_id: string }>(

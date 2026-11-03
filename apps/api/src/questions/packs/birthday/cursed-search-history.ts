@@ -15,17 +15,20 @@ export const cursedSearchHistory = choiceQuestion({
       label: "Keep going",
     },
   ],
+  collectMs: 30_000,
+  speedBonus: null,
   outcome: {
-    kind: "poll",
+    kind: "push",
+    lines: [
+      "how to clean mechanical keyboard",
+      "is it illegal to keep a pigeon in a studio flat",
+      "can police track incognito mode router logs",
+      "how to fake your own death in Surrey",
+    ],
+    lineMs: 6_000,
+    banks: [100, 250, 450, 700],
+    raidAfter: [2, 3, 4, null],
   },
-  requirements: [
-    {
-      code: "truth",
-      name: "push-your-luck",
-      detail:
-        "Implement server-owned escalating lines, a frozen random raid point, per-player bail receipts and the banked-point scoring rule.",
-    },
-  ],
   notes:
-    "Supplied sequence: how to clean mechanical keyboard; is it illegal to keep a pigeon in a studio flat; can police track incognito mode router logs; how to fake your own death in Surrey. Fictional escalating game text only. Raid probability, line timing and points per line were not supplied. Disabled poll-shaped draft, not playable push-your-luck.",
+    "Fictional escalating game text only. Numbers agreed with the user on 2 November 2026: a line every 6 seconds; the Raid follows line 2, 3 or 4, or never (one in four each), drawn when answering opens; banks 100 / 250 / 450 / 700. Bail before the Raid keeps the bank for the line showing; caught by the Raid scores 0; no Raid means everyone still in keeps 700.",
 });

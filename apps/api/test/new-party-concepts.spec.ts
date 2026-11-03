@@ -1,29 +1,28 @@
 import { expect, it } from "vitest";
 import { birthdayPack } from "../src/questions/packs/birthday/manifest.ts";
 import { toPlayable } from "../src/questions/authoring.ts";
-import { questionPreview } from "../src/room/question-preview.ts";
 import { validatePack } from "../src/questions/validate.ts";
 
 it("saves all eight concepts without inventing a Reddit ending, local post, listing or special mechanic", () => {
   for (const id of [
     "tribunal-reddit",
     "nextdoor-paranoia",
-    "group-chat-figurine",
-    "defend-indefensible",
-    "cursed-search-history",
     "property-price-roulette",
   ]) {
     const q = birthdayPack.catalogue.find((q) => q.id === id)!;
     expect(birthdayPack.order).not.toContain(id);
     expect(q.status).toBe("draft");
     expect(toPlayable(q)).toBeUndefined();
-    if (
-      ["group-chat-figurine", "defend-indefensible", "cursed-search-history"].includes(
-        id,
-      )
-    )
-      expect(questionPreview(birthdayPack, q).interactive).toBe(false);
   }
+  const figurine = birthdayPack.catalogue.find((q) => q.id === "group-chat-figurine")!;
+  expect(figurine.status).toBe("ready");
+  expect(birthdayPack.order).not.toContain("group-chat-figurine");
+  expect(toPlayable(figurine)).toMatchObject({
+    kind: "guess",
+    scoring: "majority",
+    selfVote: "allowed",
+    selfVoteBonus: "double",
+  });
   expect(birthdayPack.catalogue.filter((q) => q.id.startsWith("council-")).length).toBe(
     5,
   );

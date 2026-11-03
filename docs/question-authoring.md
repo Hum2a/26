@@ -46,6 +46,7 @@ Helpers live in `apps/api/src/questions/authoring.ts`. Defaults live only in `ap
 | Pick one option                         | `choiceQuestion`                                            | `choice` |
 | Vote with no right answer               | `choiceQuestion` with `outcome: { kind: "poll" }`           | `choice` |
 | The room's split decides who scores     | `choiceQuestion` with `outcome: { kind: "threshold", ... }` | `choice` |
+| Push your luck: bail before a Raid      | `choiceQuestion` with `outcome: { kind: "push", ... }`      | `choice` |
 | Solve a five-letter word in six guesses | `wordleQuestion`                                            | `wordle` |
 | Drive a one-lap sprint                  | `kartQuestion`                                              | `kart`   |
 | Type a short answer                     | `typedQuestion`                                             | `typed`  |
@@ -61,6 +62,10 @@ A choice option may include `image: "/assets/questions/<question-id>/<option-id>
 For a quotation A/B round, use a choice with `presentation: "who-said-it"` and put the quote in its public `prompt`. Keep the ordinary 200-character prompt limit; do not silently shorten a quotation. A factual “who said it” needs an exact source and verified attribution. Keep unsourced lines as drafts with a `quote-source` requirement and a missing `verified-attribution` answer; preserve a supplied answer only in private notes until verified. Their phone rehearsal labels the quote and attribution unverified. Explicitly authorised parody needs clear fictional framing, without attributing invented statements to real people. The design bench uses invented stand-ins, never a real answer key.
 
 A threshold outcome names an option, a share, and who scores either way. `{ kind: "threshold", optionId: "blue", above: 0.5, met: "everyone", otherwise: ["red"] }` means: if more than half of the answers are blue, everyone who answered scores; otherwise only red scores. A guest with no answer never scores.
+
+A push outcome lists `lines` (two to eight), `lineMs` between them, a rising `banks` value for each line, and `raidAfter`, the possible Raid points drawn evenly (`null` means no Raid). It needs a `bail` option, `speedBonus: null`, and a `collectMs` long enough for every line. The Raid is drawn and stored when answering opens and is only shown at the reveal. A bail keeps the bank for the line showing when the room received it, if the Raid had not hit; anyone still in when the Raid hits scores 0; with no Raid, everyone still in keeps the last bank. See `cursed-search-history.ts`.
+
+A guess can set `selfVoteBonus: "double"` with majority scoring and self-votes allowed: a voter who picked themselves scores double when they are also the room's pick.
 
 A typed question lists its accepted spellings. The first is shown at the reveal. Matching ignores case, accents, punctuation, hyphens and spacing, and forgives a small typo: none up to 4 letters, one up to 9, two beyond that. Wrong answers stay off the stage.
 

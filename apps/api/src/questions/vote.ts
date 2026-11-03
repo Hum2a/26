@@ -133,6 +133,16 @@ export function assertVoteQuestion(question: VoteQuestion): void {
 }
 
 export function assertGuessQuestion(question: GuessQuestion): void {
+  if (
+    question.selfVoteBonus !== undefined &&
+    (question.selfVoteBonus !== "double" ||
+      question.scoring !== "majority" ||
+      question.selfVote !== "allowed")
+  ) {
+    throw new Error(
+      "A double self-vote bonus needs majority scoring with self-votes allowed.",
+    );
+  }
   if (question.tie !== "shared") {
     throw new Error("Tied winners each receive this question's points.");
   }
@@ -204,6 +214,8 @@ export function awardsForBallot(input: {
   candidates: readonly { id: string; ownerId: string | null }[];
   ballots: readonly { playerId: string; candidateId: string }[];
   playerIds: readonly string[];
+  /** Points multiplier for a voter whose own card is a winner they voted for. */
+  selfVoteMultiplier?: number;
 }): { playerId: string; points: number; detail: string }[] {
   const winnerSet = new Set(input.winners);
   return input.playerIds.map((playerId) => {
@@ -231,10 +243,25 @@ export function awardsForBallot(input: {
     ) {
       return { playerId, points: 0, detail: "missing" };
     }
+    const ownCard =
+      input.mode === "voters" &&
+      input.candidates.some(
+        (candidate) =>
+          candidate.ownerId === playerId &&
+          candidate.id ===
+            input.ballots.find((ballot) => ballot.playerId === playerId)?.candidateId,
+      );
+    const multiplier = won && ownCard ? (input.selfVoteMultiplier ?? 1) : 1;
     return {
       playerId,
-      points: won ? input.points : 0,
-      detail: won ? (winnerSet.size > 1 ? "tie" : "win") : "miss",
+      points: won ? input.points * multiplier : 0,
+      detail: won
+        ? multiplier > 1
+          ? "self-vote"
+          : winnerSet.size > 1
+            ? "tie"
+            : "win"
+        : "miss",
     };
   });
 }
@@ -674,6 +701,8 @@ export function scoreBallotQuestion(
       candidateId: ballot.candidate_id,
     })),
     playerIds: players,
+    selfVoteMultiplier:
+      question.kind === "guess" && question.selfVoteBonus === "double" ? 2 : 1,
   });
   for (const award of awards) {
     sql.exec(

@@ -61,6 +61,7 @@ export default defineConfig({
           include: [
             "test/room.spec.ts",
             "test/end-destroy.spec.ts",
+            "test/push-luck-room.spec.ts",
             "test/player-control.spec.ts",
             "test/developer-room.spec.ts",
             "test/rehearsal-room.spec.ts",
@@ -138,6 +139,8 @@ export default defineConfig({
             "test/wall-engine.spec.ts",
             "test/wall-loved.spec.ts",
             "test/troll-catalogue.spec.ts",
+            "test/points-trolls.spec.ts",
+            "test/push-luck.spec.ts",
             "test/stats.spec.ts",
             "test/fun-facts.spec.ts",
             "test/archive.spec.ts",

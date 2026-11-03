@@ -11,7 +11,14 @@ export type PhotoUpload = (
 
 type Shot = { file: File; url: string };
 
-export function CaptureFlow({ upload }: { upload: PhotoUpload }) {
+export function CaptureFlow({
+  upload,
+  active = true,
+}: {
+  upload: PhotoUpload;
+  /** False while the page is out of view: the camera is released, state kept. */
+  active?: boolean;
+}) {
   const [shot, setShot] = useState<Shot | null>(null);
   const [mode, setMode] = useState<"live" | "preview" | "sending" | "sent" | "failed">(
     "live",
@@ -21,7 +28,7 @@ export function CaptureFlow({ upload }: { upload: PhotoUpload }) {
   const streamRef = useRef<MediaStream | null>(null);
   const sending = useRef(false);
   const holding = mode === "live" || mode === "preview";
-  const camera = useCamera(holding);
+  const camera = useCamera(holding && active);
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   useEffect(() => {

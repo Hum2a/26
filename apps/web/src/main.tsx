@@ -5,10 +5,12 @@ import { RouterProvider } from "react-router";
 import { router } from "./router";
 import { installTheme } from "./theme/install";
 import { installErrorReporter } from "./device/error-reporter";
+import { installStaleBuildRecovery } from "./ui/stale-build";
 import "./index.css";
 
 installTheme();
 installErrorReporter();
+installStaleBuildRecovery();
 
 const root = document.querySelector("#root");
 

@@ -10,6 +10,7 @@ import { renderPresentation } from "./presentation";
 import { KartDriversProvider } from "../kart/KartDriversProvider";
 import { FunFactStage } from "./fun-fact";
 import { Scoreboard } from "../ui/scoreboard";
+import { GuestPush } from "./guest-push";
 import { PlayerAvatar } from "../ui/player-avatar";
 
 function stagePhaseTitle(phase: RoomPhaseName): string {
@@ -39,7 +40,14 @@ function stagePhaseTitle(phase: RoomPhaseName): string {
   }
 }
 
-export function StagePlay({ snapshot }: { snapshot: LobbySnapshot }) {
+export function StagePlay({
+  snapshot,
+  observedAt,
+}: {
+  snapshot: LobbySnapshot;
+  /** When this snapshot arrived, for screens that follow the room's clock. */
+  observedAt?: number;
+}) {
   if (snapshot.phase === "facts" && snapshot.funFact) {
     return <FunFactStage fact={snapshot.funFact} />;
   }
@@ -74,6 +82,20 @@ export function StagePlay({ snapshot }: { snapshot: LobbySnapshot }) {
         />
       </>
     );
+  if (play.question.kind === "choice" && play.question.push) {
+    return (
+      <Panel title={stagePhaseTitle(snapshot.phase)} display="stage">
+        <div data-phase={snapshot.phase} hidden />
+        <h2 className="stage-question">{play.question.prompt}</h2>
+        <GuestPush
+          snapshot={snapshot}
+          push={play.question.push}
+          observedAt={observedAt ?? snapshot.serverNow}
+          stage
+        />
+      </Panel>
+    );
+  }
   const custom = renderPresentation(play.question.presentation, {
     surface: "stage",
     phase: snapshot.phase,

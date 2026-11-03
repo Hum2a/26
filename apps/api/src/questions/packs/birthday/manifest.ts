@@ -7,7 +7,6 @@ import { councilBlackbirdLeys } from "./council-blackbird-leys.ts";
 import { apologyVideoAuction } from "./apology-video-auction.ts";
 import { nextdoorParanoia } from "./nextdoor-paranoia.ts";
 import { groupChatFigurine } from "./group-chat-figurine.ts";
-import { defendIndefensible } from "./defend-indefensible.ts";
 import { cursedSearchHistory } from "./cursed-search-history.ts";
 import { propertyPriceRoulette } from "./property-price-roulette.ts";
 import { kartSprint } from "./kart-sprint.ts";
@@ -134,7 +133,7 @@ export const birthdayPack: QuestionPack = {
     "dial-british-politics",
     "kart-sprint",
   ],
-  catalogue: [
+  catalogue: withPointsTrolls([
     tribunalReddit,
     councilBroadwaterFarm,
     councilRedoubtNewBabylon,
@@ -144,7 +143,6 @@ export const birthdayPack: QuestionPack = {
     apologyVideoAuction,
     nextdoorParanoia,
     groupChatFigurine,
-    defendIndefensible,
     cursedSearchHistory,
     propertyPriceRoulette,
 
@@ -199,5 +197,23 @@ export const birthdayPack: QuestionPack = {
     dialPopCulture,
     dialLondonGeography,
     dialBritishPolitics,
-  ],
+  ]),
 };
+
+/**
+ * The points trolls (Steal, Robin Hood, Shared score) are allowed on every
+ * scored choice question, chosen by the user on 2 November 2026. A question
+ * that names its own `modifiers` keeps them; polls and threshold choices are
+ * left alone because they have no right answer to settle against.
+ */
+function withPointsTrolls(
+  catalogue: QuestionPack["catalogue"],
+): QuestionPack["catalogue"] {
+  return catalogue.map((question) =>
+    question.kind === "choice" &&
+    question.outcome.kind === "correct" &&
+    question.modifiers === undefined
+      ? { ...question, modifiers: ["steal", "robin-hood", "share"] as const }
+      : question,
+  );
+}

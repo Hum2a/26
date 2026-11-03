@@ -1,6 +1,7 @@
 import { Navigate, useSearchParams, type RouteObject } from "react-router";
 import { HomePage } from "./home/home-page";
 import { NotFoundPage } from "./not-found-page";
+import { RouteError } from "./ui/route-error";
 
 function HomeEntry() {
   const [params] = useSearchParams();
@@ -205,7 +206,10 @@ const routes: RouteObject[] = [
 ];
 
 // Initial lazy routes wait on the existing document before their real frame loads.
+// A failed load (such as a tab left open across a deployment) gets a friendly
+// recovery screen rather than the router's developer error page.
 export const appRoutes: RouteObject[] = routes.map((route) => ({
   HydrateFallback: () => null,
+  ErrorBoundary: RouteError,
   ...route,
 }));

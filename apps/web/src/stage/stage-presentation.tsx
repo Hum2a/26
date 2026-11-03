@@ -133,7 +133,7 @@ export function StagePresentation({
           ) : (
             <>
               <PhaseTransition phase={snapshot.phase} stage>
-                <StagePlay snapshot={snapshot} />
+                <StagePlay snapshot={snapshot} observedAt={observedAt} />
               </PhaseTransition>
               {collecting && snapshot.play && snapshot.play.question.kind !== "kart" ? (
                 <WaitingLine
