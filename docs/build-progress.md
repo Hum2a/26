@@ -4992,3 +4992,8 @@ Launched SEQUENTIAL root-only full rerun phase4-serial-full-unit.log, no browser
 ## Drop tracked ignored check output — 2026-11-04
 
 `.gitignore` now ignores all of `artifacts/`. `npm run git:drop-ignored` removes tracked paths that the ignore file covers and leaves the working copies on disk. It untracked `artifacts/kart-browser-checks/.last-run.json`; the file is still on disk and the index removal is staged, not committed. `node --experimental-strip-types --test scripts/git-drop-ignored.test.ts` passed 2 tests. `npm run agents:sync` copied the instruction into `AGENTS.md` and `GEMINI.md`. A second run of the command finds nothing left to drop.
+
+
+## Local setup command — 2026-11-04
+
+`npm run setup` installs dependencies, syncs environment files, generates a missing local client API key, copies agent instructions, generates Worker types, installs Playwright Chromium, then migrates and seeds the local database. It does not deploy, upload secrets, or replace an existing local key. `node --experimental-strip-types --test scripts/setup.test.ts` is the check for the step list. The full command was not run against this checkout.

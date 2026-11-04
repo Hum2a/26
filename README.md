@@ -37,8 +37,11 @@ The product requirements are in [docs/party-game-plan.md](docs/party-game-plan.m
 
 ```bash
 npm install
+npm run setup
 npm run dev
 ```
+
+`npm run setup` prepares this machine. It installs dependencies, creates the gitignored environment files, generates a local client API key when one is missing, copies agent instructions, generates Worker types, installs Playwright Chromium, then migrates and seeds the local database. An existing local key is left unchanged. Staging and production files only gain missing keys. The command does not deploy or upload secrets.
 
 Open http://localhost:5173
 
