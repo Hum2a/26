@@ -590,7 +590,7 @@ export function GuestPage({
   if (ranksFresh && tab !== "ranks") badges.ranks = "!";
 
   return (
-    <ControllerRoot>
+    <ControllerRoot allowLandscape={snapshot?.play?.question.kind === "kart"}>
       <PhoneShell
         nickname={nickname}
         connection={connection}
