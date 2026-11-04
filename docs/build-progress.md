@@ -4997,3 +4997,8 @@ Launched SEQUENTIAL root-only full rerun phase4-serial-full-unit.log, no browser
 ## Local setup command — 2026-11-04
 
 `npm run setup` installs dependencies, syncs environment files, generates a missing local client API key, copies agent instructions, generates Worker types, installs Playwright Chromium, then migrates and seeds the local database. It does not deploy, upload secrets, or replace an existing local key. `node --experimental-strip-types --test scripts/setup.test.ts` is the check for the step list. The full command was not run against this checkout.
+
+
+## Sync deleted GitHub branches — 2026-11-04
+
+`npm run git:sync` fetches every remote with prune, then deletes local branches whose upstream is gone. The checked-out branch, `master`, `main`, and branches that were never pushed stay. Unmerged branches stay unless `--force` is passed. The command was not run against this checkout. `node --experimental-strip-types --test scripts/git-sync.test.ts` passed 2 tests.
