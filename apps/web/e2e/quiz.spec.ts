@@ -400,29 +400,34 @@ async function advanceUntil(admin: Page, stage: Page, text: string) {
     const phase = stage.locator("[data-phase-motion]");
     const previous = (await phase.getAttribute("data-phase")) ?? "";
     const previousContent = await phase.innerText();
-    await Promise.all([
-      admin.waitForResponse(
-        (response) =>
-          response.url().includes("/api/rooms/play") && response.status() === 200,
-        { timeout: 15_000 },
-      ),
-      (async () => {
-        const finish = admin.getByRole("button", { name: "Finish quiz", exact: true });
-        if (await finish.isVisible()) {
-          await finish.click();
-          await admin
-            .getByRole("dialog")
-            .getByRole("button", { name: "Finish quiz", exact: true })
-            .click();
-        } else {
+    try {
+      await Promise.all([
+        admin.waitForResponse(
+          (response) =>
+            response.url().includes("/api/rooms/play") && response.status() === 200,
+          { timeout: 15_000 },
+        ),
+        (async () => {
           await admin
             .getByRole("button", {
-              name: /^(Advance|Next fact|Show the podium)$/,
+              name: /^(Advance|Next fact|Show the podium|Finish quiz|Show podium)$/,
             })
+            .first()
             .click();
-        }
-      })(),
-    ]);
+          const confirmation = admin.getByRole("dialog");
+          if (await confirmation.isVisible()) {
+            await confirmation
+              .getByRole("button", { name: /^(Finish quiz|Show podium)$/, exact: true })
+              .click();
+          }
+        })(),
+      ]);
+    } catch (error) {
+      // A server alarm may reach the target while the outgoing host control leaves.
+      // Accept that path only when the real stage has rendered the exact target.
+      if (await target.isVisible()) return;
+      throw error;
+    }
     if (previous === "facts")
       await expect(phase).not.toHaveText(previousContent, { timeout: 5_000 });
     else

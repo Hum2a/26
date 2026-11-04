@@ -61,3 +61,51 @@ export function importedSurfaceAt(
   }
   return dirt ? "dirt" : "unsupported";
 }
+
+/** Visual ground only: the same baked triangles/index, no collision or scoring change.
+ * The solo model is translated 1.6m below the connected model.
+ */
+export function importedGroundAt(x: number, z: number, space: "solo" | "connected") {
+  const offset = space === "connected" ? 1.6 : 0;
+  let dirt: { y: number; normal: [number, number, number] } | undefined;
+  for (const {
+    triangle: [a, b, c],
+    road,
+  } of surfaceIndex().get(`${Math.floor(x / 8)}:${Math.floor(z / 8)}`) ?? []) {
+    if (!a || !b || !c) continue;
+    const ux = b[0]! - a[0]!,
+      uz = b[1]! - a[1]!,
+      uy = b[2]! - a[2]!;
+    const vx = c[0]! - a[0]!,
+      vz = c[1]! - a[1]!,
+      vy = c[2]! - a[2]!;
+    const det = ux * vz - uz * vx;
+    if (Math.abs(det) < 1e-8) continue;
+    const tx = x - a[0]!,
+      tz = z - a[1]!;
+    const u = (tx * vz - tz * vx) / det,
+      v = (ux * tz - uz * tx) / det;
+    if (u < -1e-6 || v < -1e-6 || u + v > 1 + 1e-6) continue;
+    const nx = uz * vy - uy * vz,
+      ny = det,
+      nz = uy * vx - ux * vy;
+    const sign = ny < 0 ? -1 : 1,
+      length = Math.hypot(nx, ny, nz);
+    const ground = {
+      y: a[2]! + u * uy + v * vy + offset,
+      normal: [(nx * sign) / length, (ny * sign) / length, (nz * sign) / length] as [
+        number,
+        number,
+        number,
+      ],
+    };
+    if (road) return ground;
+    dirt = ground;
+  }
+  if (dirt) return dirt;
+  // Existing start-grid seam has no road triangle. Explicit flat visual fallback,
+  // matching its existing surface bridge; not claimed as measured mesh height.
+  if (x >= -12 && x <= 14 && z >= -34 && z <= -28)
+    return { y: -1.6 + offset, normal: [0, 1, 0] as [number, number, number] };
+  return undefined;
+}

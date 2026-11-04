@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { KartCompletion, KartRaceView } from "@26/shared";
-import { KartMap } from "./KartMap";
+import { KartStageView } from "./KartStageView";
 import { KartLeaderboard } from "./KartLeaderboard";
 import "./kart.css";
 
@@ -57,12 +57,8 @@ export default function KartGameWrapper({
         ) : null}
       </div>
       <div className="kart-stage-layout">
-        <div className="kart-viewport kart-spectator-viewport">
-          <KartMap race={race} />
-          <div className="kart-map-summary">
-            <strong>{race.participants.length}</strong>
-            <span>drivers · one lap</span>
-          </div>
+        <div className="kart-stage-view">
+          <KartStageView race={race} paused={paused} />
           {paused ? <p className="kart-paused">PAUSED</p> : null}
         </div>
         <KartLeaderboard key={race.raceId} race={race} paused={paused} />

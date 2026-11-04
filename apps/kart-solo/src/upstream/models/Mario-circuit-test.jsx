@@ -9,11 +9,12 @@ import { useGLTF } from "@react-three/drei";
 import { useEffect } from "react";
 import { useGameStore } from "../store";
 import { useRef } from "react";
+import { kartAssetPaths } from "@26/shared";
 
 export function Track(props) {
   const { nodes, materials, scene } = useGLTF(
-    import.meta.env.BASE_URL + "models/mario-circuit-test-transformed.glb",
-    import.meta.env.BASE_URL + "draco/",
+    kartAssetPaths.circuit,
+    kartAssetPaths.draco,
   );
   const trackRef = useRef(null);
 

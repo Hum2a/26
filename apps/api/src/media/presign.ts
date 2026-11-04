@@ -17,6 +17,15 @@ export async function uploadTarget(input: {
   tempKey: string;
   contentType: string;
 }): Promise<{ ok: true; uploadUrl: string } | { ok: false; message: string }> {
+  // The local R2 binding is emulated. A remote PUT would write to a different
+  // bucket from the one finalisation reads, even when real credentials exist.
+  if (isLocalApp(input.env.APP_ENV)) {
+    const url = new URL(
+      `/api/rooms/${input.gameId}/media/temporary/${input.uploadId}`,
+      input.requestUrl,
+    );
+    return { ok: true, uploadUrl: url.toString() };
+  }
   const account = accountId(input.env.R2_ACCOUNT_ID);
   const accessKey = filled(input.env.R2_ACCESS_KEY_ID);
   const secret = filled(input.env.R2_SECRET_ACCESS_KEY);
@@ -40,13 +49,6 @@ export async function uploadTarget(input: {
       { aws: { signQuery: true } },
     );
     return { ok: true, uploadUrl: signed.url };
-  }
-  if (isLocalApp(input.env.APP_ENV)) {
-    const url = new URL(
-      `/api/rooms/${input.gameId}/media/temporary/${input.uploadId}`,
-      input.requestUrl,
-    );
-    return { ok: true, uploadUrl: url.toString() };
   }
   return { ok: false, message: mediaConfigMessage };
 }

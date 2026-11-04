@@ -1,3 +1,4 @@
+import { usePrefersReducedMotion } from "../anim/use-reduced-motion";
 import { AnimatePresence, motion } from "motion/react";
 import { memo, useEffect, useId, useRef, useState } from "react";
 import { activeThemeId, applyTheme } from "./install";
@@ -456,18 +457,3 @@ export const ThemePicker = memo(function ThemePicker() {
     </div>
   );
 });
-
-function usePrefersReducedMotion() {
-  const [reduce, setReduce] = useState(
-    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-  );
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    function onChange() {
-      setReduce(media.matches);
-    }
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  }, []);
-  return reduce;
-}

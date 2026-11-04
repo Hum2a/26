@@ -1,0 +1,1182 @@
+{
+  "recordedAt": "2026-11-03T23:37:00Z",
+  "environment": "Local workerd, Node 22, no concurrent test suites during load comparison",
+  "durationMs": 20000,
+  "active": {
+    "result": "1 file / 1 test passed; 73.84s total",
+    "results": [
+      {
+        "environment": "cloudflare vitest local durable object, not production",
+        "guests": 50,
+        "trackId": "mario-circuit-v1",
+        "inputHz": 10,
+        "answerAckMs": null,
+        "race": {
+          "seconds": 20,
+          "stageKartUpdates": 54,
+          "stageKartUpdatesPerSecond": 2.7,
+          "stageGapMs": {
+            "p50": 260,
+            "p95": 863,
+            "max": 1058
+          },
+          "stageKBPerSecond": 77,
+          "controlKBPerSecond": 77,
+          "guestGapMs": {
+            "p50": 260,
+            "p95": 862,
+            "max": 1059
+          },
+          "guestKBPerSecondMean": 5.56,
+          "fullSnapshotsToGuests": 0
+        },
+        "server": {
+          "windowMs": 10000,
+          "series": [
+            {
+              "name": "broadcast:all",
+              "total": 9,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:facilitators",
+              "total": 10,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:kart",
+              "total": 54,
+              "totalBytes": 0,
+              "windowCount": 32,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:public",
+              "total": 65,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:statistics",
+              "total": 59,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "in",
+              "total": 9300,
+              "totalBytes": 1891900,
+              "windowCount": 4613,
+              "windowBytes": 940839
+            },
+            {
+              "name": "out:kart",
+              "total": 2808,
+              "totalBytes": 8842098,
+              "windowCount": 1664,
+              "windowBytes": 5256355
+            },
+            {
+              "name": "out:patch",
+              "total": 156,
+              "totalBytes": 216231,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "out:snapshot",
+              "total": 52,
+              "totalBytes": 553364,
+              "windowCount": 0,
+              "windowBytes": 0
+            }
+          ]
+        }
+      },
+      {
+        "environment": "cloudflare vitest local durable object, not production",
+        "guests": 80,
+        "trackId": "mario-circuit-v1",
+        "inputHz": 10,
+        "answerAckMs": null,
+        "race": {
+          "seconds": 20,
+          "stageKartUpdates": 19,
+          "stageKartUpdatesPerSecond": 0.9,
+          "stageGapMs": {
+            "p50": 917,
+            "p95": 2103,
+            "max": 2103
+          },
+          "stageKBPerSecond": 42.8,
+          "controlKBPerSecond": 42.8,
+          "guestGapMs": {
+            "p50": 918,
+            "p95": 2104,
+            "max": 2105
+          },
+          "guestKBPerSecondMean": 1.96,
+          "fullSnapshotsToGuests": 0
+        },
+        "server": {
+          "windowMs": 10000,
+          "series": [
+            {
+              "name": "broadcast:all",
+              "total": 12,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:facilitators",
+              "total": 17,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:kart",
+              "total": 19,
+              "totalBytes": 0,
+              "windowCount": 4,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:public",
+              "total": 93,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:statistics",
+              "total": 89,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "in",
+              "total": 15040,
+              "totalBytes": 3059680,
+              "windowCount": 6458,
+              "windowBytes": 1317432
+            },
+            {
+              "name": "out:kart",
+              "total": 1558,
+              "totalBytes": 4957190,
+              "windowCount": 328,
+              "windowBytes": 1051091
+            },
+            {
+              "name": "out:patch",
+              "total": 168,
+              "totalBytes": 328927,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "out:snapshot",
+              "total": 82,
+              "totalBytes": 1352968,
+              "windowCount": 0,
+              "windowBytes": 0
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "idle": {
+    "result": "1 file / 1 test passed; 63.39s total",
+    "results": [
+      {
+        "environment": "cloudflare vitest local durable object, not production",
+        "guests": 50,
+        "trackId": "mario-circuit-v1",
+        "inputHz": 0,
+        "answerAckMs": null,
+        "race": {
+          "seconds": 20,
+          "stageKartUpdates": 89,
+          "stageKartUpdatesPerSecond": 4.4,
+          "stageGapMs": {
+            "p50": 224,
+            "p95": 235,
+            "max": 237
+          },
+          "stageKBPerSecond": 120.6,
+          "controlKBPerSecond": 120.6,
+          "guestGapMs": {
+            "p50": 224,
+            "p95": 234,
+            "max": 253
+          },
+          "guestKBPerSecondMean": 9.01,
+          "fullSnapshotsToGuests": 0
+        },
+        "server": {
+          "windowMs": 10000,
+          "series": [
+            {
+              "name": "broadcast:all",
+              "total": 9,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:facilitators",
+              "total": 8,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:kart",
+              "total": 89,
+              "totalBytes": 0,
+              "windowCount": 44,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:public",
+              "total": 65,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:statistics",
+              "total": 60,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "out:kart",
+              "total": 4628,
+              "totalBytes": 14169415,
+              "windowCount": 2288,
+              "windowBytes": 7007572
+            },
+            {
+              "name": "out:patch",
+              "total": 156,
+              "totalBytes": 216159,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "out:snapshot",
+              "total": 52,
+              "totalBytes": 553366,
+              "windowCount": 0,
+              "windowBytes": 0
+            }
+          ]
+        }
+      },
+      {
+        "environment": "cloudflare vitest local durable object, not production",
+        "guests": 80,
+        "trackId": "mario-circuit-v1",
+        "inputHz": 0,
+        "answerAckMs": null,
+        "race": {
+          "seconds": 20,
+          "stageKartUpdates": 89,
+          "stageKartUpdatesPerSecond": 4.4,
+          "stageGapMs": {
+            "p50": 223,
+            "p95": 233,
+            "max": 241
+          },
+          "stageKBPerSecond": 191.7,
+          "controlKBPerSecond": 191.7,
+          "guestGapMs": {
+            "p50": 223,
+            "p95": 234,
+            "max": 242
+          },
+          "guestKBPerSecondMean": 9.05,
+          "fullSnapshotsToGuests": 0
+        },
+        "server": {
+          "windowMs": 10000,
+          "series": [
+            {
+              "name": "broadcast:all",
+              "total": 12,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:facilitators",
+              "total": 17,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:kart",
+              "total": 89,
+              "totalBytes": 0,
+              "windowCount": 42,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:public",
+              "total": 94,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:statistics",
+              "total": 89,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "out:kart",
+              "total": 7298,
+              "totalBytes": 22673560,
+              "windowCount": 3444,
+              "windowBytes": 10702398
+            },
+            {
+              "name": "out:patch",
+              "total": 245,
+              "totalBytes": 344334,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "out:snapshot",
+              "total": 82,
+              "totalBytes": 1352965,
+              "windowCount": 0,
+              "windowBytes": 0
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "pureSimulation": [
+    {
+      "racers": 50,
+      "inputHz": 0,
+      "wallMs": 247,
+      "processCpuMs": 406
+    },
+    {
+      "racers": 50,
+      "inputHz": 10,
+      "wallMs": 430,
+      "processCpuMs": 657
+    },
+    {
+      "racers": 80,
+      "inputHz": 0,
+      "wallMs": 280,
+      "processCpuMs": 327
+    },
+    {
+      "racers": 80,
+      "inputHz": 10,
+      "wallMs": 603,
+      "processCpuMs": 626
+    }
+  ],
+  "limitations": "20-second local samples and a single Node simulation run; not production capacity, billed Worker CPU, GPU or physical-device evidence.",
+  "neutral": {
+    "result": "1 file / 1 test passed; 87.74s total, 54.22s tests",
+    "results": [
+      {
+        "environment": "cloudflare vitest local durable object, not production",
+        "guests": 50,
+        "trackId": "mario-circuit-v1",
+        "inputHz": 10,
+        "controls": "neutral",
+        "answerAckMs": null,
+        "race": {
+          "seconds": 20,
+          "stageKartUpdates": 71,
+          "stageKartUpdatesPerSecond": 3.5,
+          "stageGapMs": {
+            "p50": 223,
+            "p95": 552,
+            "max": 1121
+          },
+          "stageKBPerSecond": 96.3,
+          "controlKBPerSecond": 96.3,
+          "guestGapMs": {
+            "p50": 223,
+            "p95": 552,
+            "max": 1121
+          },
+          "guestKBPerSecondMean": 7.2,
+          "fullSnapshotsToGuests": 0
+        },
+        "server": {
+          "windowMs": 10000,
+          "series": [
+            {
+              "name": "broadcast:all",
+              "total": 11,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:facilitators",
+              "total": 12,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:kart",
+              "total": 71,
+              "totalBytes": 0,
+              "windowCount": 20,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:public",
+              "total": 65,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:statistics",
+              "total": 59,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "in",
+              "total": 9300,
+              "totalBytes": 1873300,
+              "windowCount": 3850,
+              "windowBytes": 777700
+            },
+            {
+              "name": "out:kart",
+              "total": 3692,
+              "totalBytes": 11307437,
+              "windowCount": 1040,
+              "windowBytes": 3187260
+            },
+            {
+              "name": "out:patch",
+              "total": 156,
+              "totalBytes": 216231,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "out:snapshot",
+              "total": 52,
+              "totalBytes": 553364,
+              "windowCount": 0,
+              "windowBytes": 0
+            }
+          ]
+        }
+      },
+      {
+        "environment": "cloudflare vitest local durable object, not production",
+        "guests": 80,
+        "trackId": "mario-circuit-v1",
+        "inputHz": 10,
+        "controls": "neutral",
+        "answerAckMs": null,
+        "race": {
+          "seconds": 20,
+          "stageKartUpdates": 9,
+          "stageKartUpdatesPerSecond": 0.4,
+          "stageGapMs": {
+            "p50": 1298,
+            "p95": 6323,
+            "max": 6323
+          },
+          "stageKBPerSecond": 19.4,
+          "controlKBPerSecond": 19.4,
+          "guestGapMs": {
+            "p50": 1300,
+            "p95": 6323,
+            "max": 6324
+          },
+          "guestKBPerSecondMean": 0.92,
+          "fullSnapshotsToGuests": 0
+        },
+        "server": {
+          "windowMs": 10000,
+          "series": [
+            {
+              "name": "broadcast:all",
+              "total": 14,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:facilitators",
+              "total": 25,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:kart",
+              "total": 9,
+              "totalBytes": 0,
+              "windowCount": 1,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:public",
+              "total": 95,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:statistics",
+              "total": 90,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "in",
+              "total": 14640,
+              "totalBytes": 2948800,
+              "windowCount": 5945,
+              "windowBytes": 1200890
+            },
+            {
+              "name": "out:kart",
+              "total": 738,
+              "totalBytes": 2292209,
+              "windowCount": 82,
+              "windowBytes": 254897
+            },
+            {
+              "name": "out:patch",
+              "total": 246,
+              "totalBytes": 344385,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "out:snapshot",
+              "total": 82,
+              "totalBytes": 1352966,
+              "windowCount": 0,
+              "windowBytes": 0
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "postRosterCacheNeutral": {
+    "result": "1 file / 1 test passed; 73.97s total / 46.57s tests",
+    "results": [
+      {
+        "environment": "cloudflare vitest local durable object, not production",
+        "guests": 50,
+        "trackId": "mario-circuit-v1",
+        "inputHz": 10,
+        "controls": "neutral",
+        "answerAckMs": null,
+        "race": {
+          "seconds": 20,
+          "stageKartUpdates": 85,
+          "stageKartUpdatesPerSecond": 4.2,
+          "stageGapMs": {
+            "p50": 221,
+            "p95": 308,
+            "max": 452
+          },
+          "stageKBPerSecond": 115.3,
+          "controlKBPerSecond": 115.3,
+          "guestGapMs": {
+            "p50": 221,
+            "p95": 308,
+            "max": 452
+          },
+          "guestKBPerSecondMean": 8.62,
+          "fullSnapshotsToGuests": 0
+        },
+        "server": {
+          "windowMs": 10000,
+          "series": [
+            {
+              "name": "broadcast:all",
+              "total": 9,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:facilitators",
+              "total": 10,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:kart",
+              "total": 85,
+              "totalBytes": 0,
+              "windowCount": 42,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:public",
+              "total": 64,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:statistics",
+              "total": 59,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "in",
+              "total": 9100,
+              "totalBytes": 1832900,
+              "windowCount": 4451,
+              "windowBytes": 898851
+            },
+            {
+              "name": "out:kart",
+              "total": 4420,
+              "totalBytes": 13538468,
+              "windowCount": 2184,
+              "windowBytes": 6693096
+            },
+            {
+              "name": "out:patch",
+              "total": 155,
+              "totalBytes": 216026,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "out:snapshot",
+              "total": 52,
+              "totalBytes": 553365,
+              "windowCount": 0,
+              "windowBytes": 0
+            }
+          ]
+        }
+      },
+      {
+        "environment": "cloudflare vitest local durable object, not production",
+        "guests": 80,
+        "trackId": "mario-circuit-v1",
+        "inputHz": 10,
+        "controls": "neutral",
+        "answerAckMs": null,
+        "race": {
+          "seconds": 20,
+          "stageKartUpdates": 35,
+          "stageKartUpdatesPerSecond": 1.7,
+          "stageGapMs": {
+            "p50": 404,
+            "p95": 2820,
+            "max": 3275
+          },
+          "stageKBPerSecond": 75.4,
+          "controlKBPerSecond": 75.4,
+          "guestGapMs": {
+            "p50": 403,
+            "p95": 2820,
+            "max": 3276
+          },
+          "guestKBPerSecondMean": 3.57,
+          "fullSnapshotsToGuests": 0
+        },
+        "server": {
+          "windowMs": 10000,
+          "series": [
+            {
+              "name": "broadcast:all",
+              "total": 11,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:facilitators",
+              "total": 15,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "broadcast:kart",
+              "total": 35,
+              "totalBytes": 0,
+              "windowCount": 3,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:public",
+              "total": 93,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "build:statistics",
+              "total": 89,
+              "totalBytes": 0,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "in",
+              "total": 15120,
+              "totalBytes": 3045760,
+              "windowCount": 5654,
+              "windowBytes": 1142108
+            },
+            {
+              "name": "out:kart",
+              "total": 2870,
+              "totalBytes": 8917934,
+              "windowCount": 246,
+              "windowBytes": 764937
+            },
+            {
+              "name": "out:patch",
+              "total": 167,
+              "totalBytes": 332358,
+              "windowCount": 0,
+              "windowBytes": 0
+            },
+            {
+              "name": "out:snapshot",
+              "total": 82,
+              "totalBytes": 1352967,
+              "windowCount": 0,
+              "windowBytes": 0
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "postRosterCacheDriving": [
+    {
+      "environment": "cloudflare vitest local durable object, not production",
+      "guests": 50,
+      "trackId": "mario-circuit-v1",
+      "inputHz": 10,
+      "controls": "driving",
+      "answerAckMs": null,
+      "race": {
+        "seconds": 20,
+        "movingRacers": 50,
+        "stageKartUpdates": 92,
+        "stageKartUpdatesPerSecond": 4.6,
+        "stageGapMs": {
+          "p50": 215,
+          "p95": 236,
+          "max": 250
+        },
+        "stageKBPerSecond": 131.4,
+        "controlKBPerSecond": 131.4,
+        "guestGapMs": {
+          "p50": 215,
+          "p95": 237,
+          "max": 250
+        },
+        "guestKBPerSecondMean": 9.47,
+        "fullSnapshotsToGuests": 0
+      },
+      "server": {
+        "windowMs": 10000,
+        "series": [
+          {
+            "name": "broadcast:all",
+            "total": 8,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "broadcast:facilitators",
+            "total": 8,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "broadcast:kart",
+            "total": 92,
+            "totalBytes": 0,
+            "windowCount": 46,
+            "windowBytes": 0
+          },
+          {
+            "name": "build:public",
+            "total": 63,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "build:statistics",
+            "total": 59,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "in",
+            "total": 9200,
+            "totalBytes": 1871500,
+            "windowCount": 4603,
+            "windowBytes": 938709
+          },
+          {
+            "name": "out:kart",
+            "total": 4784,
+            "totalBytes": 15076800,
+            "windowCount": 2392,
+            "windowBytes": 7556355
+          },
+          {
+            "name": "out:patch",
+            "total": 105,
+            "totalBytes": 206152,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "out:snapshot",
+            "total": 52,
+            "totalBytes": 553365,
+            "windowCount": 0,
+            "windowBytes": 0
+          }
+        ]
+      }
+    },
+    {
+      "environment": "cloudflare vitest local durable object, not production",
+      "guests": 80,
+      "trackId": "mario-circuit-v1",
+      "inputHz": 10,
+      "controls": "driving",
+      "answerAckMs": null,
+      "race": {
+        "seconds": 20,
+        "movingRacers": 80,
+        "stageKartUpdates": 41,
+        "stageKartUpdatesPerSecond": 2,
+        "stageGapMs": {
+          "p50": 320,
+          "p95": 982,
+          "max": 1057
+        },
+        "stageKBPerSecond": 92.6,
+        "controlKBPerSecond": 92.6,
+        "guestGapMs": {
+          "p50": 320,
+          "p95": 983,
+          "max": 1057
+        },
+        "guestKBPerSecondMean": 4.23,
+        "fullSnapshotsToGuests": 0
+      },
+      "server": {
+        "windowMs": 10000,
+        "series": [
+          {
+            "name": "broadcast:all",
+            "total": 11,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "broadcast:facilitators",
+            "total": 16,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "broadcast:kart",
+            "total": 41,
+            "totalBytes": 0,
+            "windowCount": 11,
+            "windowBytes": 0
+          },
+          {
+            "name": "build:public",
+            "total": 93,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "build:statistics",
+            "total": 89,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "in",
+            "total": 15040,
+            "totalBytes": 3059680,
+            "windowCount": 7607,
+            "windowBytes": 1551421
+          },
+          {
+            "name": "out:kart",
+            "total": 3362,
+            "totalBytes": 10718659,
+            "windowCount": 902,
+            "windowBytes": 2890037
+          },
+          {
+            "name": "out:patch",
+            "total": 167,
+            "totalBytes": 328794,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "out:snapshot",
+            "total": 82,
+            "totalBytes": 1352967,
+            "windowCount": 0,
+            "windowBytes": 0
+          }
+        ]
+      }
+    }
+  ],
+  "postClockHintDriving": [
+    {
+      "environment": "cloudflare vitest local durable object, not production",
+      "guests": 50,
+      "trackId": "mario-circuit-v1",
+      "inputHz": 10,
+      "controls": "driving",
+      "answerAckMs": null,
+      "race": {
+        "seconds": 20,
+        "movingRacers": 50,
+        "stageKartUpdates": 91,
+        "stageKartUpdatesPerSecond": 4.5,
+        "stageGapMs": {
+          "p50": 216,
+          "p95": 244,
+          "max": 281
+        },
+        "stageKBPerSecond": 130,
+        "controlKBPerSecond": 130,
+        "guestGapMs": {
+          "p50": 215,
+          "p95": 245,
+          "max": 283
+        },
+        "guestKBPerSecondMean": 9.37,
+        "fullSnapshotsToGuests": 0
+      },
+      "server": {
+        "windowMs": 10000,
+        "series": [
+          {
+            "name": "broadcast:all",
+            "total": 9,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "broadcast:facilitators",
+            "total": 9,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "broadcast:kart",
+            "total": 91,
+            "totalBytes": 0,
+            "windowCount": 45,
+            "windowBytes": 0
+          },
+          {
+            "name": "build:public",
+            "total": 65,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "build:statistics",
+            "total": 59,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "in",
+            "total": 9150,
+            "totalBytes": 1861300,
+            "windowCount": 4600,
+            "windowBytes": 938050
+          },
+          {
+            "name": "out:kart",
+            "total": 4732,
+            "totalBytes": 14916643,
+            "windowCount": 2340,
+            "windowBytes": 7393431
+          },
+          {
+            "name": "out:patch",
+            "total": 156,
+            "totalBytes": 216231,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "out:snapshot",
+            "total": 52,
+            "totalBytes": 553364,
+            "windowCount": 0,
+            "windowBytes": 0
+          }
+        ]
+      }
+    },
+    {
+      "environment": "cloudflare vitest local durable object, not production",
+      "guests": 80,
+      "trackId": "mario-circuit-v1",
+      "inputHz": 10,
+      "controls": "driving",
+      "answerAckMs": null,
+      "race": {
+        "seconds": 20,
+        "movingRacers": 80,
+        "stageKartUpdates": 36,
+        "stageKartUpdatesPerSecond": 1.8,
+        "stageGapMs": {
+          "p50": 421,
+          "p95": 1026,
+          "max": 1054
+        },
+        "stageKBPerSecond": 81.4,
+        "controlKBPerSecond": 81.4,
+        "guestGapMs": {
+          "p50": 421,
+          "p95": 1026,
+          "max": 1054
+        },
+        "guestKBPerSecondMean": 3.72,
+        "fullSnapshotsToGuests": 0
+      },
+      "server": {
+        "windowMs": 10000,
+        "series": [
+          {
+            "name": "broadcast:all",
+            "total": 11,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "broadcast:facilitators",
+            "total": 16,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "broadcast:kart",
+            "total": 36,
+            "totalBytes": 0,
+            "windowCount": 9,
+            "windowBytes": 0
+          },
+          {
+            "name": "build:public",
+            "total": 93,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "build:statistics",
+            "total": 89,
+            "totalBytes": 0,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "in",
+            "total": 15120,
+            "totalBytes": 3076000,
+            "windowCount": 6924,
+            "windowBytes": 1412496
+          },
+          {
+            "name": "out:kart",
+            "total": 2952,
+            "totalBytes": 9418203,
+            "windowCount": 738,
+            "windowBytes": 2364873
+          },
+          {
+            "name": "out:patch",
+            "total": 165,
+            "totalBytes": 332092,
+            "windowCount": 0,
+            "windowBytes": 0
+          },
+          {
+            "name": "out:snapshot",
+            "total": 82,
+            "totalBytes": 1352965,
+            "windowCount": 0,
+            "windowBytes": 0
+          }
+        ]
+      }
+    }
+  ]
+}

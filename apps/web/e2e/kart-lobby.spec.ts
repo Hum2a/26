@@ -60,9 +60,17 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   await phone.getByLabel("Nickname").fill("Amina");
   await phone.getByRole("button", { name: "Join", exact: true }).click();
   await expect(phone.getByRole("heading", { name: "In the lobby" })).toBeVisible();
+  const rivalContext = await browser.newContext({
+    viewport: { width: 430, height: 844 },
+  });
+  const rival = await rivalContext.newPage();
+  await rival.goto(`/j/${code}`);
+  await rival.getByLabel("Nickname").fill("Chen");
+  await rival.getByRole("button", { name: "Join", exact: true }).click();
+  await expect(rival.getByRole("heading", { name: "In the lobby" })).toBeVisible();
   const stage = await page.context().newPage();
   const publicFrames: string[] = [];
-  for (const screen of [phone, stage])
+  for (const screen of [phone, rival, stage])
     screen.on("websocket", (socket) =>
       socket.on("framereceived", (frame) => publicFrames.push(String(frame.payload))),
     );
@@ -88,7 +96,36 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   await advance("prompt");
   await advance("collect");
   await expect(phone.getByRole("button", { name: "Accelerate" })).toBeEnabled();
-  await expect(stage.locator("[data-map-player]")).toHaveCount(1);
+  await expect(stage.locator("[data-map-player]")).toHaveCount(2);
+  await expect(rival.getByRole("button", { name: "Accelerate" })).toBeEnabled();
+  await phone.getByRole("button", { name: "Accelerate" }).click({ delay: 500 });
+  await rival.getByRole("button", { name: "Accelerate" }).click({ delay: 500 });
+  await expect
+    .poll(() => {
+      const moving = new Set<string>();
+      for (const frame of publicFrames) {
+        if (!frame.startsWith("{")) continue;
+        const packet = JSON.parse(frame) as {
+          kind?: string;
+          kart?: { participants?: { name: string; speed: number }[] };
+        };
+        if (packet.kind === "kart") {
+          for (const driver of packet.kart?.participants ?? []) {
+            if (driver.speed > 0) moving.add(driver.name);
+          }
+        }
+      }
+      return moving.has("Amina") && moving.has("Chen");
+    })
+    .toBe(true);
+  await stage.screenshot({
+    path: ".codex/previews/kart/kart-circuit-two-racers.png",
+    fullPage: true,
+  });
+  await phone.screenshot({
+    path: ".codex/previews/kart/kart-phone-racing.png",
+    fullPage: true,
+  });
   const late = await lateContext.newPage();
   await late.goto(`/j/${code}`);
   await late.getByLabel("Nickname").fill("Bilal");
@@ -96,7 +133,7 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   await expect(late.locator(".skin-status[role=status]")).toHaveText(
     "You’re watching this race. Join the next round.",
   );
-  await expect(stage.locator("[data-map-player]")).toHaveCount(1);
+  await expect(stage.locator("[data-map-player]")).toHaveCount(2);
   await page.getByRole("button", { name: "Pause", exact: true }).click();
   await expect(phone.getByRole("button", { name: "Accelerate" })).toBeDisabled();
   await phone.reload();
@@ -114,6 +151,10 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   await expect(
     stage.getByRole("heading", { name: "Podium", exact: true }),
   ).toBeVisible();
+  await stage.screenshot({
+    path: ".codex/previews/kart/kart-podium-two-racers.png",
+    fullPage: true,
+  });
   expect(publicFrames.join("\n")).not.toContain('"kartLobby"');
   expect(publicFrames.join("\n")).not.toContain('"birthday-script"');
   await page.goto(liveUrl.replace(/\/live$/, ""));
@@ -122,4 +163,5 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   ).toBeVisible();
   await phoneContext.close();
   await lateContext.close();
+  await rivalContext.close();
 });

@@ -1,0 +1,180 @@
+{
+  "version": "kart-assets-v1",
+  "assets": [
+    {
+      "id": "kart-model",
+      "path": "/kart-engine/models/kart.glb",
+      "kind": "model",
+      "bytes": 911904,
+      "sha256": "a46534917b07f4585669d26968d7a59c5d0e517fc665f128884462646ec9fd1f",
+      "source": "https://github.com/Nathan-Richard-21/mario-kart-js/tree/0f7a4305981206193c5efba64bc90755e6e85773/public/models",
+      "notice": "/kart-engine/THIRD_PARTY_NOTICES.md",
+      "usage": "Solo kart",
+      "replacement": "retained",
+      "textures": [
+        {
+          "id": "0",
+          "mimeType": "image/png",
+          "bytes": 403980,
+          "sha256": "0fb21931db8a9a4740068911d8c540696f599c194a24d46bc53f74b98b15ba0f"
+        },
+        {
+          "id": "1",
+          "mimeType": "image/png",
+          "bytes": 1824,
+          "sha256": "50404dbe23c52221140d5278db1a87d610a425015aeef6108d1e040c168b2886"
+        },
+        {
+          "id": "2",
+          "mimeType": "image/png",
+          "bytes": 56480,
+          "sha256": "46e7026666fa79fd999add9b9dda1a4c5365fd47eec78f8a7f71df6843e8faf4"
+        },
+        {
+          "id": "3",
+          "mimeType": "image/png",
+          "bytes": 320284,
+          "sha256": "a2c57f039602c67ad7038b9874f83e801fb56b595bb11ccef0887fd9ecb44a4a"
+        },
+        {
+          "id": "4",
+          "mimeType": "image/png",
+          "bytes": 34364,
+          "sha256": "ce1dc566510c214342cf32868bb7b9df0607d20472ccd5208a3cde7114017499"
+        },
+        {
+          "id": "5",
+          "mimeType": "image/png",
+          "bytes": 18380,
+          "sha256": "9fbfba116dacf6ce9d48a8a335070db2328ed58d3137123815628bdc80c2582c"
+        },
+        {
+          "id": "6",
+          "mimeType": "image/png",
+          "bytes": 42340,
+          "sha256": "2729472adde63ab0081299253815453fc25f1e874e0d241634e706ee14558be6"
+        }
+      ]
+    },
+    {
+      "id": "circuit-model",
+      "path": "/kart-engine/models/mario-circuit-test-transformed.glb",
+      "kind": "model",
+      "bytes": 1808888,
+      "sha256": "4fc464ce325ec1fa765ea9bd11be7eafc474ed33ee2219b261f429ca19ba6bf9",
+      "source": "https://github.com/Nathan-Richard-21/mario-kart-js/tree/0f7a4305981206193c5efba64bc90755e6e85773/public/models",
+      "notice": "/kart-engine/THIRD_PARTY_NOTICES.md",
+      "usage": "Solo and connected imported circuit",
+      "replacement": "retained",
+      "textures": [
+        {
+          "id": "Image_3",
+          "mimeType": "image/webp",
+          "bytes": 88,
+          "sha256": "d24c914b7abacd4bd66c1c9496239aa0ae1a60fbf10a1171a531fce5d5e817e6"
+        },
+        {
+          "id": "Image_5",
+          "mimeType": "image/webp",
+          "bytes": 1486,
+          "sha256": "6f7041a4293ca16ec7f5641852b80b844947b7b67ae81d04f91d0bcb5c85f7ae"
+        },
+        {
+          "id": "Image_4",
+          "mimeType": "image/webp",
+          "bytes": 18326,
+          "sha256": "e87732d063a4736dc349770c54099dd3eb568595806af45b6ab93540eb530365"
+        },
+        {
+          "id": "Image_6",
+          "mimeType": "image/webp",
+          "bytes": 964,
+          "sha256": "af103002ba9b9586d4a63f7e904be579f7bdae9e671f91e026082e06aa28d211"
+        },
+        {
+          "id": "Image_0",
+          "mimeType": "image/webp",
+          "bytes": 106,
+          "sha256": "89519ba6a5487c7d622b36bb6632d6f2830aab9c5dba14b1e0001003ee36a096"
+        },
+        {
+          "id": "Image_2",
+          "mimeType": "image/webp",
+          "bytes": 108,
+          "sha256": "e21781b1effaa8a2a43463fc25722c371ec7803bb5c4675ae52bc453e215e007"
+        },
+        {
+          "id": "Image_7",
+          "mimeType": "image/webp",
+          "bytes": 2110,
+          "sha256": "df7a670943b87d1c8c318e782dcd25fe8cc72da47877c5f1195e4ae3fa51fd8b"
+        },
+        {
+          "id": "Image_8",
+          "mimeType": "image/webp",
+          "bytes": 1018,
+          "sha256": "0bab96c6f48033be4ac75a80798ad08c9ea93f19b25c5115172abdfbe75403ea"
+        },
+        {
+          "id": "Image_9",
+          "mimeType": "image/webp",
+          "bytes": 90,
+          "sha256": "0f3080a212d5b72debf8d1ccba2e88c3fa05a39c719c255667778a1e919a830e"
+        },
+        {
+          "id": "Image_10",
+          "mimeType": "image/webp",
+          "bytes": 190,
+          "sha256": "53ec13d2d4b56ee60ddfd08062648f4970adad47089ea83ae40728c147d20c5c"
+        },
+        {
+          "id": "Image_1",
+          "mimeType": "image/webp",
+          "bytes": 74,
+          "sha256": "a010047dbedfdc1dea862db199eba80e6f74b1a660c00887fb4c79e18da7b8ea"
+        }
+      ]
+    },
+    {
+      "id": "draco-wrapper",
+      "path": "/kart-engine/draco/draco_wasm_wrapper.js",
+      "kind": "decoder",
+      "bytes": 58456,
+      "sha256": "8bb2952d2ba7d67e1414f8df819410cb0434a666be53f671fff75f68843d76f6",
+      "source": "https://github.com/google/draco",
+      "notice": "/kart-engine/draco/LICENSE",
+      "usage": "Local Draco decoding",
+      "replacement": "retained",
+      "textures": []
+    },
+    {
+      "id": "draco-wasm",
+      "path": "/kart-engine/draco/draco_decoder.wasm",
+      "kind": "decoder",
+      "bytes": 192420,
+      "sha256": "a680d927bed9cb864ddbd63521868891af2bfbe755092761b4837487618df8ac",
+      "source": "https://github.com/google/draco",
+      "notice": "/kart-engine/draco/LICENSE",
+      "usage": "Local Draco decoding",
+      "replacement": "retained",
+      "textures": []
+    },
+    {
+      "id": "draco-js",
+      "path": "/kart-engine/draco/draco_decoder.js",
+      "kind": "decoder",
+      "bytes": 512465,
+      "sha256": "8625489da79a805f4f2a7d511c3e52d8b4085608a9d2a4d5f4f9de5db0aea04f",
+      "source": "https://github.com/google/draco",
+      "notice": "/kart-engine/draco/LICENSE",
+      "usage": "Draco JavaScript fallback",
+      "replacement": "retained",
+      "textures": []
+    }
+  ],
+  "audio": [],
+  "fallback": {
+    "connected": "map",
+    "solo": "retry"
+  }
+}

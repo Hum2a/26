@@ -1,5 +1,26 @@
 import { expect, it } from "vitest";
-import { driftPose, driftSparks, driftStrength } from "./drift-effects";
+import {
+  driftPose,
+  driftSparks,
+  driftStrength,
+  driftEffectDescription,
+} from "./drift-effects";
+it("retains bounded renderer-neutral legacy output after switching away from new effects", () => {
+  for (const reduced of [false, true])
+    for (const boost of [false, true]) {
+      const snapshot = driftEffectDescription(1000, 1, 1, boost, reduced);
+      expect(JSON.parse(JSON.stringify(snapshot))).toEqual(snapshot);
+      expect(snapshot.points).toHaveLength(reduced ? 2 : 8);
+      expect(
+        snapshot.points.every((point) => Object.values(point).every(Number.isFinite)),
+      ).toBe(true);
+      expect(
+        driftEffectDescription(1000, 0, 1, boost, reduced).points.every(
+          (p) => p.scale === 0,
+        ),
+      ).toBe(true);
+    }
+});
 it("poses opposite slides symmetrically and bounds body yaw", () => {
   expect(driftPose(0, 20, -8, true, 1)).toBeCloseTo(-driftPose(0, 20, 8, true, -1));
   expect(Math.abs(driftPose(0, 0, 50, true, -1))).toBeLessThanOrEqual(0.45);

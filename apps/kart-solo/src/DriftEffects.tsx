@@ -8,14 +8,34 @@ import {
   AdditiveBlending,
   Vector3,
 } from "three";
-import { driftSparks, driftStrength } from "../../web/src/kart/drift-effects";
+import {
+  driftEffectDescription,
+  driftStrength,
+} from "../../web/src/kart/drift-effects";
 import { themes, DEFAULT_THEME_ID } from "../../web/src/theme/themes";
 import { useGameStore } from "./upstream/store.js";
 import type { DrivingBody } from "@26/shared";
 import { useGraphicsTier } from "../../web/src/kart/graphics-preferences";
 import { graphicsProfiles } from "../../web/src/kart/graphics";
+import { SoloVfx } from "./SoloVfx";
+import { SoloLook } from "./SoloLook";
 
 export function DriftEffects({ body }: { body: { current: DrivingBody } }) {
+  const preset = useGameStore((state) => state.soloVfxPreset);
+  const look = useGameStore((state) => state.soloLookPreset);
+  return (
+    <>
+      {look ? <SoloLook body={body} preset={look} /> : null}
+      {preset ? (
+        <SoloVfx body={body} preset={preset} />
+      ) : (
+        <LegacyDriftEffects body={body} />
+      )}
+    </>
+  );
+}
+
+function LegacyDriftEffects({ body }: { body: { current: DrivingBody } }) {
   const tier = useGraphicsTier();
   const mesh = useRef<InstancedMesh>(null);
   const dummy = useRef(new Object3D());
@@ -39,14 +59,17 @@ export function DriftEffects({ body }: { body: { current: DrivingBody } }) {
     const active = !paused && (d.wasDrifting || d.boostMs > 0);
     strength.current = driftStrength(strength.current, active, dt);
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const particles = driftSparks(
+    const particles = driftEffectDescription(
       time.current,
       strength.current,
       d.driftMs / 2400,
       d.boostMs > 0,
       reduced,
-    ).filter((_, index) => index % graphicsProfiles[tier].sparkStride === 0);
-    mesh.current.count = reduced || tier !== "high" ? particles.length : 40;
+    ).points.filter((_, index) => index % graphicsProfiles[tier].sparkStride === 0);
+    mesh.current.count =
+      reduced || !graphicsProfiles[tier].trailLimit
+        ? particles.length
+        : particles.length + graphicsProfiles[tier].trailLimit;
     particles.forEach((p, i) => {
       const object = dummy.current;
       object.position.set(p.x, -1.1 + p.y, p.z);
@@ -66,7 +89,7 @@ export function DriftEffects({ body }: { body: { current: DrivingBody } }) {
     emission.current += seconds;
     while (emission.current >= 0.025) {
       emission.current -= 0.025;
-      if (!active || reduced || tier !== "high") continue;
+      if (!active || reduced || !graphicsProfiles[tier].trailLimit) continue;
       for (const side of [-1, 1]) {
         const trail = trails.current[cursor.current++ % trails.current.length]!;
         trail.position.set(side * 0.83, -1.05, 0.8);
@@ -75,7 +98,7 @@ export function DriftEffects({ body }: { body: { current: DrivingBody } }) {
         trail.power = 0.6 + Math.min(1, d.driftMs / 2400);
       }
     }
-    if (!reduced && tier === "high")
+    if (!reduced && graphicsProfiles[tier].trailLimit > 0)
       trails.current.forEach((trail, i) => {
         const object = dummy.current;
         object.position.copy(trail.position);

@@ -12,8 +12,9 @@ coverage/
 playwright-report/
 test-results/
 blob-report/
-artifacts/browser-checks/
-artifacts/vite-auth/
+
+# Local check output: Playwright reports, probe logs, screenshots, Miniflare storage.
+artifacts/
 *.tsbuildinfo
 .vite/
 .data/
@@ -32,6 +33,3 @@ node_modules/
 
 # Generated standalone kart bundle; rebuilt before web dev/build.
 apps/web/public/kart-engine/
-
-# Regenerable collision audit output.
-artifacts/kart/

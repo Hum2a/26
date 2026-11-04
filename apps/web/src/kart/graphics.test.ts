@@ -1,5 +1,43 @@
 import { expect, it } from "vitest";
-import { createFrameProbe, graphicsTier } from "./graphics";
+import { createFrameProbe, graphicsTier, safeGraphicsProfile } from "./graphics";
+
+it("caps graphics by actual capabilities and refuses unusable WebGL without changing manual preference", () => {
+  expect(
+    safeGraphicsProfile("high", {
+      webgl: true,
+      maxTextureSize: 1024,
+      pixelRatioLimit: 3,
+    }),
+  ).toMatchObject({ tier: "low", pixelRatio: 0.75 });
+  expect(
+    safeGraphicsProfile("high", {
+      webgl: true,
+      maxTextureSize: 4096,
+      pixelRatioLimit: 1,
+    }),
+  ).toMatchObject({ tier: "high", pixelRatio: 1 });
+  expect(
+    safeGraphicsProfile("low", {
+      webgl: true,
+      maxTextureSize: 4096,
+      pixelRatioLimit: NaN,
+    })?.pixelRatio,
+  ).toBe(0.75);
+  expect(
+    safeGraphicsProfile("high", {
+      webgl: false,
+      maxTextureSize: 4096,
+      pixelRatioLimit: 2,
+    }),
+  ).toBeNull();
+  expect(
+    safeGraphicsProfile("high", {
+      webgl: true,
+      maxTextureSize: NaN,
+      pixelRatioLimit: 2,
+    }),
+  ).toBeNull();
+});
 
 it("scales automatically at 16 and 21 racers and keeps manual choices", () => {
   expect(graphicsTier("auto", 15, "smooth")).toBe("high");

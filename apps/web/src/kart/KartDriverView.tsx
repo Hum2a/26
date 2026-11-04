@@ -3,14 +3,18 @@ import type { KartRaceView } from "@26/shared";
 import { KartMap } from "./KartMap";
 import { GraphicsControls } from "./graphics-controls";
 import { useKartGraphics } from "./graphics-preferences";
+import { liveKartVfxPreset } from "./live-vfx";
+import "./kart.css";
 const KartCanvas = lazy(() => import("./KartCanvas"));
 
 export function KartDriverView({
   race,
   reducedMotion,
+  paused = false,
 }: {
   race: KartRaceView;
   reducedMotion: boolean;
+  paused?: boolean;
 }) {
   const [map, setMap] = useState(false);
   const graphics = useKartGraphics(race.participantCount ?? race.participants.length);
@@ -29,7 +33,11 @@ export function KartDriverView({
             <KartCanvas
               race={race}
               mobile
-              reducedMotion={reducedMotion}
+              reducedMotion={
+                reducedMotion || (paused && race.effectsEnabled === undefined)
+              }
+              paused={paused}
+              vfxPreset={liveKartVfxPreset(race.effectsEnabled)}
               followPlayerId={race.selfPlayerId}
               graphicsTier={graphics.tier}
               onFrameHealth={graphics.onHealth}

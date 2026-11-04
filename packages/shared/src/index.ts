@@ -3,8 +3,20 @@ import { lobbyDriverSchema } from "./kart-driver.ts";
 export * from "./kart.ts";
 export * from "./kart-driver.ts";
 export * from "./kart-driving.ts";
+export * from "./kart-assets.ts";
+export * from "./kart-events.ts";
+export * from "./kart-nearby.ts";
 export * from "./rate-limit.ts";
 import { z } from "zod";
+export const kartRehearsalBeatSchema = z.enum(["grid", "turn", "boost", "finish"]);
+export const kartRehearsalSchema = z
+  .object({
+    label: z.literal("Stand-in drivers — isolated rendering rehearsal"),
+    phone: kartRaceSchema,
+    stage: kartRaceSchema,
+  })
+  .strict();
+
 import { developerToolsSchema } from "./developer.ts";
 export * from "./developer.ts";
 import { wordleBoardSchema } from "./wordle.ts";
@@ -1094,6 +1106,39 @@ export const lobbySnapshotSchema = z
       })
       .strict(),
     /** Control only: every troll sent this game, newest first. */
+    kartStageHistory: z
+      .array(
+        z
+          .object({
+            atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+            mode: z.enum(["map", "overview", "follow", "director"]),
+          })
+          .strict(),
+      )
+      .max(20)
+      .optional(),
+    kartOpponentHistory: z
+      .array(
+        z
+          .object({
+            atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+            enabled: z.boolean(),
+          })
+          .strict(),
+      )
+      .max(20)
+      .optional(),
+    kartEffectsHistory: z
+      .array(
+        z
+          .object({
+            atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+            enabled: z.boolean(),
+          })
+          .strict(),
+      )
+      .max(20)
+      .optional(),
     kartCourseHistory: z
       .array(
         z
@@ -1497,3 +1542,6 @@ export function remainingUntil(
 
 export * from "./kart-powers.ts";
 export * from "./kart-course.ts";
+export * from "./kart-spectator.ts";
+export * from "./kart-vfx.ts";
+export * from "./kart-look.ts";

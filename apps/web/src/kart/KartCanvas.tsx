@@ -1,18 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import type { KartRaceView } from "@26/shared";
+import type { KartRaceView, KartVfxPreset } from "@26/shared";
+import { importedRoute } from "../../../../packages/shared/src/kart-route";
 import { createCircuit } from "./circuit";
-import { kartCameraPose } from "./presentation";
+import { kartCameraPose, boostCameraAmount } from "./presentation";
+import { vfxRehearsalRace, type VfxScript } from "./vfx-rehearsal";
+import type { VfxCounts } from "./vfx-budget";
+import { neutralKartLook, type KartLookPreset } from "@26/shared";
+import { createNativeKartLook, type KartLookStats } from "./look-renderer";
 import { driverFaceUrl } from "./driver-face";
 import { useKartDrivers, type KartDrivers } from "./drivers-context";
 import {
   createFrameProbe,
-  graphicsProfiles,
+  safeGraphicsProfile,
   type GraphicsTier,
   type FrameHealth,
 } from "./graphics";
 
-/** Interpolates public poses only. Phone rendering is bounded to its own kart. */
+/** Interpolates public poses only; phone rendering is bounded to self plus nearby racers. */
 export default function KartCanvas({
   race,
   mobile,
@@ -20,6 +25,13 @@ export default function KartCanvas({
   followPlayerId,
   graphicsTier = "balanced",
   onFrameHealth,
+  spectator = false,
+  vfxPreset,
+  paused = false,
+  onVfxStats,
+  vfxRehearsal,
+  lookPreset,
+  onLookStats,
 }: {
   race: KartRaceView;
   mobile: boolean;
@@ -27,7 +39,22 @@ export default function KartCanvas({
   followPlayerId?: string;
   graphicsTier?: GraphicsTier;
   onFrameHealth?: (health: FrameHealth) => void;
+  spectator?: boolean;
+  vfxPreset?: KartVfxPreset;
+  paused?: boolean;
+  onVfxStats?: (stats: VfxCounts) => void;
+  vfxRehearsal?: { script: VfxScript; run: number };
+  lookPreset?: KartLookPreset;
+  onLookStats?: (stats: KartLookStats) => void;
 }) {
+  const focusPlayerId = spectator ? undefined : followPlayerId;
+  const perspective = Boolean(followPlayerId);
+  const following = useRef(followPlayerId);
+  const effects = useRef({ preset: vfxPreset, paused, rehearsal: vfxRehearsal });
+  const lookConfig = useRef({ preset: lookPreset, report: onLookStats });
+  useEffect(() => {
+    lookConfig.current = { preset: lookPreset, report: onLookStats };
+  }, [lookPreset, onLookStats]);
   const mount = useRef<HTMLDivElement>(null);
   const live = useRef(race),
     reduced = useRef(reducedMotion);
@@ -35,17 +62,27 @@ export default function KartCanvas({
   const liveDrivers = useRef(drivers);
   const [revision, setRevision] = useState(0);
   const [failed, setFailed] = useState(false);
+  const [vehicleState, setVehicleState] = useState<
+    "idle" | "loading" | "ready" | "failed"
+  >("idle");
+  const [assetState, setAssetState] = useState<"loading" | "ready" | "failed">(
+    "loading",
+  );
   const quality = useRef(graphicsTier);
   const report = useRef(onFrameHealth);
+  const vfxReport = useRef(onVfxStats);
   useEffect(() => {
     quality.current = graphicsTier;
     report.current = onFrameHealth;
-  }, [graphicsTier, onFrameHealth]);
+    vfxReport.current = onVfxStats;
+  }, [graphicsTier, onFrameHealth, onVfxStats]);
   useEffect(() => {
+    following.current = followPlayerId;
+    effects.current = { preset: vfxPreset, paused, rehearsal: vfxRehearsal };
     live.current = race;
     reduced.current = reducedMotion;
     liveDrivers.current = drivers;
-  }, [race, reducedMotion, drivers]);
+  }, [race, reducedMotion, drivers, followPlayerId, vfxPreset, paused, vfxRehearsal]);
   useEffect(() => {
     const root = mount.current;
     if (!root) return;
@@ -71,19 +108,26 @@ export default function KartCanvas({
         retry.remove();
       };
     }
-    renderer.setPixelRatio(
-      Math.min(
-        window.devicePixelRatio || 1,
-        graphicsProfiles[quality.current].pixelRatio,
-      ),
-    );
+    const chooseProfile = () =>
+      safeGraphicsProfile(quality.current, {
+        webgl: true,
+        maxTextureSize: renderer.capabilities.maxTextureSize,
+        pixelRatioLimit: window.devicePixelRatio,
+      });
+    const initialProfile = chooseProfile();
+    if (!initialProfile) {
+      renderer.dispose();
+      setFailed(true);
+      return;
+    }
+    let profile = initialProfile;
+    renderer.setPixelRatio(profile.pixelRatio);
     renderer.shadowMap.enabled = false;
     root.append(renderer.domElement);
     renderer.domElement.setAttribute(
       "aria-label",
-      followPlayerId ? "Your driving view" : "Live kart circuit",
+      focusPlayerId ? "Your driving view" : "Live kart circuit",
     );
-    if (followPlayerId) renderer.domElement.dataset.playerId = followPlayerId;
     const colour = (role: string) => {
       const probe = document.createElement("span");
       probe.style.color = `var(--${role})`;
@@ -92,6 +136,7 @@ export default function KartCanvas({
       probe.remove();
       return value;
     };
+    let dirty = true;
     const circuit = createCircuit(
       {
         ground: colour("background"),
@@ -102,20 +147,56 @@ export default function KartCanvas({
         muted: colour("muted"),
       },
       mobile,
-      followPlayerId,
+      focusPlayerId,
       race.trackId,
       () => setFailed(true),
+      (state) => {
+        dirty = true;
+        setAssetState(state);
+      },
+      8,
+      (state) => {
+        dirty = true;
+        setVehicleState(state);
+      },
+      () => {
+        dirty = true;
+      },
     );
-    const camera = followPlayerId
+    const camera = perspective
       ? new THREE.PerspectiveCamera(65, 1, 0.1, 1000)
       : new THREE.OrthographicCamera(-64, 64, 64, -64, 0.1, 500);
-    camera.position.set(0, 112, 72);
-    camera.lookAt(0, 0, -3);
-    let dirty = true,
-      lastFrame = 0,
+    const route =
+      race.trackId === "mario-circuit-v1"
+        ? importedRoute
+        : [
+            [-63, -63],
+            [63, 63],
+          ];
+    const xs = route.map((point) => point[0]!);
+    const zs = route.map((point) => point[1]!);
+    const centreX = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const centreZ = (Math.min(...zs) + Math.max(...zs)) / 2;
+    const extent = Math.max(
+      63,
+      (Math.max(...xs) - Math.min(...xs)) * 0.6,
+      (Math.max(...zs) - Math.min(...zs)) * 0.6,
+    );
+    camera.position.set(centreX, extent * 2, centreZ + 0.01);
+    camera.lookAt(centreX, 0, centreZ);
+    let lastFrame = 0,
       lastSnapshot: KartRaceView | undefined,
       lastDrivers: KartDrivers | undefined;
     let lastQuality = quality.current;
+    let lastEffects = effects.current;
+    let lastLook = lookConfig.current;
+    let look: ReturnType<typeof createNativeKartLook> | undefined;
+    let configuredLook: KartLookPreset | undefined;
+    let lastLookReport = 0;
+    let boost = 0;
+    let lastVfxReport = 0;
+    let sampleTime = 0,
+      sampleKey = "";
     const probe = createFrameProbe();
     const resize = new ResizeObserver(() => {
       const width = Math.max(1, root.clientWidth),
@@ -124,9 +205,9 @@ export default function KartCanvas({
       renderer.setSize(width, height, false);
       if (camera instanceof THREE.PerspectiveCamera) camera.aspect = aspect;
       else {
-        camera.left = -63 * Math.max(1, aspect);
+        camera.left = -extent * Math.max(1, aspect);
         camera.right = -camera.left;
-        camera.top = 63 * Math.max(1, 1 / aspect);
+        camera.top = extent * Math.max(1, 1 / aspect);
         camera.bottom = -camera.top;
       }
       camera.updateProjectionMatrix();
@@ -135,8 +216,20 @@ export default function KartCanvas({
     resize.observe(root);
     const frame = (now: number) => {
       if (document.hidden) return;
+      let forceStats = false;
+      if (lastEffects !== effects.current) {
+        lastEffects = effects.current;
+        dirty = true;
+        forceStats = true;
+      }
+      if (lastLook !== lookConfig.current) {
+        lastLook = lookConfig.current;
+        dirty = true;
+        forceStats = true;
+      }
       if (
         !reduced.current &&
+        !effects.current.paused &&
         live.current.participants.some((driver) => driver.status === "RACING")
       ) {
         const health = probe.sample(now);
@@ -144,12 +237,8 @@ export default function KartCanvas({
       }
       if (lastQuality !== quality.current) {
         lastQuality = quality.current;
-        renderer.setPixelRatio(
-          Math.min(
-            window.devicePixelRatio || 1,
-            graphicsProfiles[lastQuality].pixelRatio,
-          ),
-        );
+        profile = chooseProfile() ?? profile;
+        renderer.setPixelRatio(profile.pixelRatio);
         renderer.setSize(
           Math.max(1, root.clientWidth),
           Math.max(1, root.clientHeight),
@@ -167,19 +256,139 @@ export default function KartCanvas({
         dirty = true;
       }
       if (reduced.current && lastSnapshot === live.current && !dirty) return;
+      const rehearsal = effects.current.rehearsal;
+      const key = rehearsal ? `${rehearsal.script}:${rehearsal.run}` : "";
+      if (sampleKey !== key) {
+        sampleKey = key;
+        sampleTime = 0;
+      } else if (rehearsal && !effects.current.paused && !reduced.current)
+        sampleTime = Math.min(
+          10_000,
+          sampleTime + Math.max(0, Math.min(0.1, delta)) * 1000,
+        );
+      const displayRace = rehearsal
+        ? vfxRehearsalRace(live.current, rehearsal.script, sampleTime, rehearsal.run)
+        : live.current;
       circuit.update(
-        live.current,
-        delta,
+        displayRace,
+        effects.current.paused ? 0 : delta,
         reduced.current,
-        graphicsProfiles[quality.current].sparkStride,
+        profile.sparkStride,
+        profile.sparkLimit,
+        profile.nearbyLimit,
+        profile.tier !== "low",
+        effects.current.preset
+          ? {
+              preset: effects.current.preset,
+              paused: effects.current.paused,
+              tier: profile.tier,
+            }
+          : undefined,
       );
-      const pose = followPlayerId ? circuit.pose(followPlayerId) : undefined;
+      const stats = circuit.renderStats();
+      renderer.domElement.dataset.playerId = following.current ?? "";
+      renderer.domElement.dataset.karts = String(stats.drivers);
+      renderer.domElement.dataset.vehicleDetail = stats.detailed
+        ? "detailed"
+        : "simple";
+      const pose = following.current ? circuit.pose(following.current) : undefined;
       if (pose) {
-        const framing = kartCameraPose(pose, reduced.current);
+        const driver = displayRace.participants.find(
+          (driver) => driver.playerId === following.current,
+        );
+        boost = boostCameraAmount(
+          boost,
+          Boolean(driver?.boostRemainingMs),
+          delta,
+          reduced.current,
+        );
+        const framing = kartCameraPose(pose, reduced.current, boost);
         camera.position.set(...framing.position);
         camera.lookAt(...framing.target);
+        if (camera instanceof THREE.PerspectiveCamera) {
+          camera.fov = 65 + boost * 6;
+          camera.updateProjectionMatrix();
+        }
       }
-      renderer.render(circuit.scene, camera);
+      circuit.renderVfx(camera);
+      const effectStats = circuit.vfxStats();
+      renderer.domElement.dataset.vfxParticles = String(effectStats.particles);
+      renderer.domElement.dataset.vfxSkids = String(effectStats.skids);
+      renderer.domElement.dataset.vfxDust = String(effectStats.byKind?.dust ?? 0);
+      renderer.domElement.dataset.vfxSparks = String(effectStats.byKind?.spark ?? 0);
+      renderer.domElement.dataset.vfxConfetti = String(
+        effectStats.byKind?.confetti ?? 0,
+      );
+      renderer.domElement.dataset.vfxSampleMs = String(displayRace.elapsedMs);
+      renderer.domElement.dataset.vfxPaused = String(effects.current.paused);
+      if (lookConfig.current.preset && !look)
+        look = createNativeKartLook(THREE, renderer, {
+          ground: colour("background"),
+          road: colour("surface"),
+          accent: colour("accent"),
+          highlight: colour("highlight"),
+          muted: colour("muted"),
+          ink: colour("foreground"),
+        });
+      if (look && configuredLook !== lookConfig.current.preset) {
+        configuredLook = lookConfig.current.preset;
+        look.configure(configuredLook ?? neutralKartLook);
+      }
+      if (look)
+        look.render(circuit.scene, camera, profile.tier, {
+          dt: delta,
+          paused: effects.current.paused,
+          reducedMotion: reduced.current,
+          focus: pose ? [pose.x, pose.height ?? 0, pose.z] : [centreX, 0, centreZ],
+        });
+      else renderer.render(circuit.scene, camera);
+      if (look && lookConfig.current.report) {
+        const lookStats = {
+          ...look.stats(),
+          calls: renderer.info.render.calls,
+          triangles: renderer.info.render.triangles,
+          geometries: renderer.info.memory.geometries,
+          textures: renderer.info.memory.textures,
+        };
+        renderer.domElement.dataset.lookActive = String(lookStats.active);
+        renderer.domElement.dataset.lookBuffers = String(lookStats.buffers);
+        renderer.domElement.dataset.lookPasses = String(lookStats.passes);
+        renderer.domElement.dataset.lookWidth = String(lookStats.width);
+        renderer.domElement.dataset.lookHeight = String(lookStats.height);
+        renderer.domElement.dataset.lookSky = String(
+          lookStats.environment?.sky ?? false,
+        );
+        renderer.domElement.dataset.lookReflection = String(
+          lookStats.environment?.reflection ?? false,
+        );
+        renderer.domElement.dataset.lookShadows = String(
+          lookStats.environment?.shadows ?? false,
+        );
+        renderer.domElement.dataset.lookShadowSize = String(
+          lookStats.environment?.shadowSize ?? 0,
+        );
+        if (!lastLookReport || forceStats || now - lastLookReport >= 500) {
+          lookConfig.current.report(lookStats);
+          lastLookReport = now;
+        }
+      }
+      // Local admin opt-in only: never add renderer diagnostics to room snapshots.
+      if (vfxReport.current) {
+        const resources = {
+          calls: renderer.info.render.calls,
+          triangles: renderer.info.render.triangles,
+          geometries: renderer.info.memory.geometries,
+          textures: renderer.info.memory.textures,
+        };
+        renderer.domElement.dataset.vfxCalls = String(resources.calls);
+        renderer.domElement.dataset.vfxTriangles = String(resources.triangles);
+        renderer.domElement.dataset.vfxGeometries = String(resources.geometries);
+        renderer.domElement.dataset.vfxTextures = String(resources.textures);
+        if (!lastVfxReport || forceStats || now - lastVfxReport >= 500) {
+          vfxReport.current({ ...effectStats, resources });
+          lastVfxReport = now;
+        }
+      }
       lastSnapshot = live.current;
       dirty = false;
     };
@@ -193,6 +402,7 @@ export default function KartCanvas({
       setRevision((value) => value + 1);
     };
     const visibility = () => {
+      circuit.resetVfx();
       probe.reset();
       lastFrame = 0;
       dirty = true;
@@ -215,14 +425,43 @@ export default function KartCanvas({
       renderer.domElement.removeEventListener("webglcontextlost", lost);
       renderer.domElement.removeEventListener("webglcontextrestored", restored);
       renderer.setAnimationLoop(null);
+      look?.dispose();
       circuit.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [mobile, followPlayerId, race.raceId, race.trackId, revision]);
+  }, [
+    mobile,
+    focusPlayerId,
+    perspective,
+    spectator,
+    race.raceId,
+    race.trackId,
+    revision,
+  ]);
   return (
     <div className="kart-canvas-root">
       <div ref={mount} className="kart-canvas-mount" />
+      {vehicleState === "loading" ? (
+        <p role="status">Loading detailed karts… Simple karts remain available.</p>
+      ) : null}
+      {vehicleState === "failed" ? (
+        <p role="status">
+          Detailed karts unavailable. Using simple karts.{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setVehicleState("idle");
+              setRevision((value) => value + 1);
+            }}
+          >
+            Retry detailed karts
+          </button>
+        </p>
+      ) : null}
+      {assetState === "loading" && !failed ? (
+        <p role="status">Loading circuit model… Race timing follows the room.</p>
+      ) : null}
       {failed ? (
         <div className="kart-canvas-recovery" role="status">
           <p>The circuit was interrupted. Race timing and the leaderboard continue.</p>

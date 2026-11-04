@@ -151,30 +151,55 @@ Run this against a local or staging room before guests arrive. Use one nickname 
 2. In development, run `window.__26.dropSockets()` in a phone or stage tab's console. The tab should reconnect without a reload and keep its answer. The helper does not exist in a production build.
 3. On the venue Wi-Fi, join ten real phones, switch the access point off for 20 seconds and back on. Every phone should return without a reload. Note anything else here.
 
-## Still needed before the party
+## Readiness and remaining content
 
-From Humza, before the demo pack is replaced:
+The birthday catalogue has a 56-round default running order, frozen separately for
+each room when **Start birthday game** is used. The illustrative demo remains a
+separate rehearsal. Review the saved running order in **Admin → Question packs**;
+do not assume a change there alters a game that has already started.
 
-- The real question list, running order, and the answer or scoring rule for each.
-- How long each answer and vote stays open.
-- Which rounds allow double or nothing, and which stay unscored.
-- Whether long vote rounds show every answer or a shortlist.
-- The party sting, and any face or caption art. The file in the repo is a short illustrative tone.
-- Photos or voice the questions themselves need.
-- Which comparison cards Baseer should read.
+Four rounds remain drafts by the host's decision on 3 November 2026:
 
-Until those exist, present the illustrative pack and the printed exports.
+| Round                   | Material needed                                                        |
+| ----------------------- | ---------------------------------------------------------------------- |
+| Reddit tribunal         | Original thread, exact title, outcome, top comment and answer          |
+| Ferrier estate          | Verified estate name and confirmed category                            |
+| Nextdoor paranoia       | Genuine post or screenshot and confirmed explanation                   |
+| Property price roulette | Dated listing, authorised image, rent, agent wording and numeric scale |
 
-These checks cannot be completed from the development machine:
+Figurine and Cursed Search History are ready in the catalogue and can be rehearsed
+from their question pages. Add them explicitly to the saved order when wanted.
+The spoken debate round has been dropped. Steal, Robin Hood and Shared score are
+permitted on scored birthday choice questions; polls and other mechanics retain
+their existing restrictions. Each guest gets one troll, from question two.
 
-- A physical phone joining over the venue Wi-Fi.
-- The projector or an HDMI output, including type size from the back of the room.
-- Start show on the venue browser after a full refresh.
-- A photo and a voice note from a guest phone into the deployed bucket.
-- Staging admin login, a full mixed game, recovery, export, and results on the deployed URL.
-- A results email to the configured test recipient. No test recipient is configured, and no message has been sent.
-- A 75-guest pass on staging. The existing figure is from the local emulator only.
-- `npm run load:realtime` against staging conditions, and the venue Wi-Fi drill above.
+## Physical-device and venue sign-off
+
+Use a fresh rehearsal room, with Baseer presenting and Humza on Live controls.
+Record date, device/browser, room, result and any issue for each check. An unchecked
+item is unverified; desktop browser automation does not establish a physical pass.
+
+- [ ] iPhone Safari and Android Chrome: join by QR, answer, select another tab,
+      return to Play as answering opens, and see a server-accepted answer.
+- [ ] Lock each phone during collection, unlock, reconnect and confirm its saved
+      answer and score. Repeat with Wi-Fi off/on and a switch to mobile data.
+- [ ] Recover onto a second device using the host's transfer flow. Confirm one
+      player and one score, with the old phone no longer able to answer.
+- [ ] Deny camera and microphone permission; questions remain usable. Then allow
+      them and send a photo and a short voice clip. Check moderation and hiding.
+- [ ] Check large text, short landscape screens, safe areas, reduced motion and
+      optional audio on both devices. Keep the answer and send action reachable.
+- [ ] Complete quiz → kart → final scores → phone facts → podium. Check controller
+      responsiveness on both phones and stage readability from the back of the room.
+- [ ] Check the actual projector, HDMI, fullscreen, sound output and fallback Wi-Fi.
+- [ ] Open archived results and private recaps; download the score summary. Verify
+      results email only to an explicitly chosen test address, then check delivery.
+- [ ] Run the venue reconnect drill and intended guest-count load rehearsal. Local
+      emulator load figures do not establish venue or deployed capacity.
+
+No physical-device, venue, deployed email or deployed load pass is implied by this
+checklist. Use local rehearsals first; deployments and remote test sends require
+separate instructions.
 
 ## Run just the kart race
 

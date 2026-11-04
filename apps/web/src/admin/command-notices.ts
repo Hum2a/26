@@ -25,6 +25,16 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "start-birthday")
     return "The birthday game has started with its saved running order.";
   if (action === "kart-course-on") return "Floor boosts, ramps and sweepers are on.";
+  if (action === "kart-opponents-on") return "Nearby racers are visible on phones.";
+  if (action === "kart-effects-on") return "New kart effects are on.";
+  if (action === "kart-effects-off") return "Kart decoration is off.";
+  if (action === "kart-opponents-off") return "Nearby racers are hidden on phones.";
+  if (action === "kart-stage-map") return "Stage returned to the full-field map.";
+  if (action === "kart-stage-overview") return "Stage is showing the 3D overview.";
+  if (action === "kart-stage-follow")
+    return "Stage is following the leading active racer.";
+  if (action === "kart-stage-director")
+    return "Stage director is following the leading active racers.";
   if (action === "kart-course-off")
     return "Course features are off. Airborne karts have landed.";
   if (action === "start") {

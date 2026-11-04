@@ -5,6 +5,7 @@ import { Button } from "../ui/primitives";
 import { CaptureFlow } from "../photo/CaptureFlow";
 import { sendFacePhoto } from "../media/face-upload";
 import { DriverBadge, DriverEmblem } from "./DriverBadge";
+import { SoloPracticeFrame } from "./SoloPracticeFrame";
 
 /**
  * Lobby choice of kart driver. The style saves at once; a face photo is
@@ -25,6 +26,7 @@ export function DriverPicker({
 }) {
   const reduced = useReducedMotion();
   const [taking, setTaking] = useState(false);
+  const [practice, setPractice] = useState(false);
   const style = driver?.style ?? "racer";
   const face = driver?.faceMediaId ?? null;
 
@@ -67,6 +69,29 @@ export function DriverPicker({
           </label>
         ))}
       </fieldset>
+      <Button
+        variant="secondary"
+        aria-expanded={practice}
+        onClick={() => setPractice((value) => !value)}
+      >
+        {practice ? "Close practice" : "Practise with my driver"}
+      </Button>
+      <AnimatePresence initial={false}>
+        {practice ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <p>
+              Solo practice uses your chosen driver and visible photo. No room controls
+              or party points.
+            </p>
+            <SoloPracticeFrame gameId={gameId} driver={driver} />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <div className="driver-picker-face">
         <h3>Your face on the driver</h3>

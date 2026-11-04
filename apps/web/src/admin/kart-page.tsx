@@ -7,10 +7,20 @@ import { readContent } from "./sections-api";
 import { useSection } from "./use-section";
 import "./kart-page.css";
 import { KartLobbyCreate } from "./kart-lobby-create";
+import { KartAssetsPanel } from "./kart-assets-panel";
+import { KartVehicleRehearsal } from "./kart-vehicle-rehearsal";
+import { KartStageRehearsal } from "./kart-stage-rehearsal";
+import { VfxBench } from "./vfx-bench";
+import { EnvironmentBench } from "./environment-bench";
 
 const views = [
   ["drive", "Drive"],
   ["layouts", "Phone & stage"],
+  ["files", "Files & limits"],
+  ["vehicles", "Vehicles"],
+  ["stage", "Stage views"],
+  ["effects", "Effects"],
+  ["look", "Look"],
   ["multiplayer", "Multiplayer"],
 ] as const;
 
@@ -82,6 +92,27 @@ export function AdminKartPage() {
             </section>
           ) : view === "layouts" ? (
             <KartLayouts />
+          ) : view === "vehicles" ? (
+            <KartVehicleRehearsal />
+          ) : view === "stage" ? (
+            <KartStageRehearsal />
+          ) : view === "effects" ? (
+            <VfxBench />
+          ) : view === "look" ? (
+            <EnvironmentBench />
+          ) : view === "files" ? (
+            <section
+              className="admin-kart-pane"
+              aria-label="Files and rendering rehearsal"
+            >
+              <KartAssetsPanel />
+              <iframe
+                className="admin-kart-drive-frame"
+                title="Solo kart practice"
+                src="/kart-engine/index.html"
+                allow="fullscreen"
+              />
+            </section>
           ) : (
             <section className="admin-kart-pane" aria-label="Multiplayer rehearsal">
               <h2>Race with phones</h2>

@@ -405,9 +405,28 @@ export function DeveloperPage() {
       </section>
       <section className="skin-panel p-4 space-y-3" aria-label="Rehearsal shortcuts">
         <h2>Run the show from here</h2>
+        <p>
+          Run the show here to keep the bot fleet on this page. Leaving Developer tools
+          stops its connections.
+        </p>
         <div className="admin-actions">
+          {snapshot.kartLobby ? (
+            <Button
+              disabled={locked || !!rehearsal || snapshot.phase !== "lobby"}
+              onClick={() =>
+                void execute({ action: "start-kart" }, "Start kart race", "developer")
+              }
+            >
+              Start kart race
+            </Button>
+          ) : null}
           <Button
-            disabled={locked || !!rehearsal || snapshot.phase !== "lobby"}
+            disabled={
+              locked ||
+              !!rehearsal ||
+              !!snapshot.kartLobby ||
+              snapshot.phase !== "lobby"
+            }
             onClick={() =>
               void execute({ action: "start" }, "Start illustrative demo", "developer")
             }
@@ -416,7 +435,12 @@ export function DeveloperPage() {
           </Button>
           <Button
             variant="secondary"
-            disabled={locked || !!rehearsal || snapshot.phase !== "lobby"}
+            disabled={
+              locked ||
+              !!rehearsal ||
+              !!snapshot.kartLobby ||
+              snapshot.phase !== "lobby"
+            }
             onClick={() =>
               void execute(
                 { action: "start-birthday" },

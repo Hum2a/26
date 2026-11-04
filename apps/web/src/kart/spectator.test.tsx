@@ -2,6 +2,29 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { createKartRace, projectKartRace } from "@26/shared";
 import KartGameWrapper from "./KartGameWrapper";
+vi.mock("./KartCanvas", () => ({
+  default: ({
+    followPlayerId,
+    spectator,
+    vfxPreset,
+    paused,
+  }: {
+    followPlayerId?: string;
+    spectator?: boolean;
+    vfxPreset?: { enabled: boolean };
+    paused?: boolean;
+  }) => (
+    <div
+      data-testid="stage-renderer"
+      data-follow={followPlayerId}
+      data-spectator={String(spectator)}
+      data-effects={vfxPreset === undefined ? "legacy" : String(vfxPreset.enabled)}
+      data-paused={String(paused)}
+    >
+      Real canvas adapter boundary
+    </div>
+  ),
+}));
 afterEach(() => vi.restoreAllMocks());
 const fullRoom = () =>
   projectKartRace(
@@ -15,6 +38,40 @@ const fullRoom = () =>
     null,
     100,
   );
+it("passes the public effects switch and accepted pause to the stage renderer without diagnostics", async () => {
+  const race = fullRoom();
+  race.spectator = { mode: "overview", revision: 1 };
+  const view = render(<KartGameWrapper race={race} />);
+  const canvas = await screen.findByTestId("stage-renderer");
+  expect(canvas.getAttribute("data-effects")).toBe("legacy");
+  view.rerender(<KartGameWrapper race={{ ...race, effectsEnabled: true }} paused />);
+  expect(canvas.getAttribute("data-effects")).toBe("true");
+  expect(canvas.getAttribute("data-paused")).toBe("true");
+  view.rerender(<KartGameWrapper race={{ ...race, effectsEnabled: false }} />);
+  expect(canvas.getAttribute("data-effects")).toBe("false");
+});
+
+it("opts into server-selected 3D, returns to the whole map immediately and honours a later host selection", async () => {
+  const race = fullRoom();
+  race.spectator = { mode: "follow", followPlayerId: "p17", revision: 1 };
+  const view = render(<KartGameWrapper race={race} />);
+  const renderer = await screen.findByTestId("stage-renderer");
+  expect(renderer.getAttribute("data-follow")).toBe("p17");
+  expect(renderer.getAttribute("data-spectator")).toBe("true");
+  fireEvent.click(screen.getByRole("button", { name: "Return to full-field map" }));
+  expect(screen.queryByTestId("stage-renderer")).toBeNull();
+  expect(document.querySelectorAll("[data-map-player]")).toHaveLength(50);
+  view.rerender(
+    <KartGameWrapper
+      race={{ ...race, spectator: { ...race.spectator, revision: 2 } }}
+    />,
+  );
+  await screen.findByTestId("stage-renderer");
+  view.rerender(
+    <KartGameWrapper race={{ ...race, spectator: { mode: "map", revision: 3 } }} />,
+  );
+  expect(screen.queryByTestId("stage-renderer")).toBeNull();
+});
 it("shows all 50 positions without overlapping labels or a WebGL dependency", () => {
   render(<KartGameWrapper race={fullRoom()} />);
   const map = screen.getByRole("img", { name: "Live race map: 50 drivers" });

@@ -1,0 +1,2107 @@
+{
+  "schemaVersion": 1,
+  "inspectedOn": "2026-11-03",
+  "scope": "Pinned original repository and imported fork; source inspection and metadata inventory, not a browser gameplay certification.",
+  "localReferences": [
+    "docs/kart-minigame.md",
+    "apps/kart-solo/UPSTREAM.md",
+    "THIRD_PARTY_NOTICES.md",
+    "packages/shared/src/kart.ts",
+    "packages/shared/src/kart-driving.ts",
+    "packages/shared/src/kart-powers.ts",
+    "apps/api/src/questions/kart.ts",
+    "apps/web/src/kart/circuit.ts",
+    "apps/web/src/admin/kart-page.tsx"
+  ],
+  "repositories": [
+    {
+      "repository": "mustache-dev/Mario-Kart-3.js",
+      "revision": "83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7",
+      "branch": "main",
+      "treeTruncated": false,
+      "downloadedTextFiles": [
+        "README.md",
+        "package.json",
+        "src/App.jsx",
+        "src/ColorGradingEffect.jsx",
+        "src/Composer.jsx",
+        "src/LoadingScreen.jsx",
+        "src/PlayerController.jsx",
+        "src/PlayroomStarter.jsx",
+        "src/TrackScene.jsx",
+        "src/WebGPUCanvas.jsx",
+        "src/constants.js",
+        "src/hooks/useTouchScreen.js",
+        "src/index.css",
+        "src/main.jsx",
+        "src/misc/EnvironmentSphere.jsx",
+        "src/misc/Lighting.jsx",
+        "src/misc/fragment.glsl",
+        "src/misc/vertex.glsl",
+        "src/mobile/Buttons.jsx",
+        "src/mobile/JoystickComponent.jsx",
+        "src/mobile/MobileControls.jsx",
+        "src/models/Kart.jsx",
+        "src/models/KartDust.jsx",
+        "src/models/Mario-circuit-test.jsx",
+        "src/models/Wheels.jsx",
+        "src/models/Witch.jsx",
+        "src/particles/Dust.jsx",
+        "src/particles/drift/Skate/Skate.jsx",
+        "src/particles/drift/Skate/fragment.glsl",
+        "src/particles/drift/Skate/vertex.glsl",
+        "src/particles/drift/Skid.jsx",
+        "src/particles/drift/Spark.jsx",
+        "src/particles/drift/flames/Flames.jsx",
+        "src/particles/drift/flames/fragment.glsl",
+        "src/particles/drift/flames/vertex.glsl",
+        "src/particles/drift/glow/Glow.jsx",
+        "src/particles/drift/glow/fragment.glsl",
+        "src/particles/drift/glow/vertex.glsl",
+        "src/particles/sparks/Sparks.jsx",
+        "src/particles/sparks/Trails.jsx",
+        "src/particles/sparks/fragment.glsl",
+        "src/particles/sparks/vertex.glsl",
+        "src/playroomStore.js",
+        "src/store.js",
+        "src/utils/KartCollision.js",
+        "src/wawa-vfx/VFXBuilder.tsx",
+        "src/wawa-vfx/VFXEmitter.tsx",
+        "src/wawa-vfx/VFXParticles.tsx",
+        "src/wawa-vfx/VFXStore.ts",
+        "src/wawa-vfx/easings.ts",
+        "src/wawa-vfx/types.ts",
+        "vite.config.js"
+      ],
+      "files": [
+        {
+          "path": ".gitignore",
+          "type": "blob",
+          "gitSha": "a547bf36d8d11a4f89c59c144f24795749086dd1",
+          "bytes": 253,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "README.md",
+          "type": "blob",
+          "gitSha": "bc49f015a0cb23cd5111a74b674ae0e582db9fa9",
+          "bytes": 1805,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "bun.lockb",
+          "type": "blob",
+          "gitSha": "159f1ede433e5f509bb0e79f45ff8f349e28cc59",
+          "bytes": 278230,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "eslint.config.js",
+          "type": "blob",
+          "gitSha": "ec2b712d301e7ddeca8327fc4b967069cc82047b",
+          "bytes": 844,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "index.html",
+          "type": "blob",
+          "gitSha": "7ccedeb39c6fcfbda401ae1dfa3817e5db8a6ed1",
+          "bytes": 652,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "package.json",
+          "type": "blob",
+          "gitSha": "fec083316f7e5a868c1201a96edf4c8a2f39923b",
+          "bytes": 1170,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "public/favicon.ico",
+          "type": "blob",
+          "gitSha": "05184315684683dd89af1d90b50b8540345a27ed",
+          "bytes": 1636606,
+          "coverageGroup": "branding-and-support-assets"
+        },
+        {
+          "path": "public/fonts/mario_kart_f2.ttf",
+          "type": "blob",
+          "gitSha": "72f36980aa388519824b241c369db01fa8e4886b",
+          "bytes": 18968,
+          "coverageGroup": "branding-and-support-assets"
+        },
+        {
+          "path": "public/gradient.jpg",
+          "type": "blob",
+          "gitSha": "d5fac0b874bed9116664fbd95bbacfe26392f60f",
+          "bytes": 56231,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/gradient.jpg",
+            "hashKind": "git-blob-sha1",
+            "hash": "d5fac0b874bed9116664fbd95bbacfe26392f60f",
+            "bytes": 56231,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/icon.webp",
+          "type": "blob",
+          "gitSha": "d3f93ec589d12a2c2f371817b0653476a7721a5a",
+          "bytes": 843396,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/icon.webp",
+            "hashKind": "git-blob-sha1",
+            "hash": "d3f93ec589d12a2c2f371817b0653476a7721a5a",
+            "bytes": 843396,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/kart-transformed.glb",
+          "type": "blob",
+          "gitSha": "5e60346725abe9186195465314ef54c2089449d8",
+          "bytes": 176408,
+          "coverageGroup": "vehicle-and-track-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/kart-transformed.glb",
+            "hashKind": "git-blob-sha1",
+            "hash": "5e60346725abe9186195465314ef54c2089449d8",
+            "bytes": 176408,
+            "usage": "vehicle-and-track-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/models/kart.glb",
+          "type": "blob",
+          "gitSha": "f35a89fd2fe4a0ae8b10a54c8340f8647f1402d1",
+          "bytes": 911904,
+          "coverageGroup": "vehicle-and-track-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/models/kart.glb",
+            "hashKind": "git-blob-sha1",
+            "hash": "f35a89fd2fe4a0ae8b10a54c8340f8647f1402d1",
+            "bytes": 911904,
+            "usage": "Installed models/kart.glb",
+            "replacement": "retained-installed",
+            "installedSha256": "a46534917b07f4585669d26968d7a59c5d0e517fc665f128884462646ec9fd1f",
+            "installedPath": "apps/kart-solo/public/models/kart.glb"
+          }
+        },
+        {
+          "path": "public/models/mario-circuit-test-transformed.glb",
+          "type": "blob",
+          "gitSha": "b98edcd95f4e1ce4f23da1b023f8e89acfa44b77",
+          "bytes": 1808888,
+          "coverageGroup": "vehicle-and-track-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/models/mario-circuit-test-transformed.glb",
+            "hashKind": "git-blob-sha1",
+            "hash": "b98edcd95f4e1ce4f23da1b023f8e89acfa44b77",
+            "bytes": 1808888,
+            "usage": "Installed models/mario-circuit-test-transformed.glb",
+            "replacement": "retained-installed",
+            "installedSha256": "4fc464ce325ec1fa765ea9bd11be7eafc474ed33ee2219b261f429ca19ba6bf9",
+            "installedPath": "apps/kart-solo/public/models/mario-circuit-test-transformed.glb"
+          }
+        },
+        {
+          "path": "public/models/track-transformed.glb",
+          "type": "blob",
+          "gitSha": "a8fa36852395c711b5a869edaee229a2051cdc22",
+          "bytes": 1797320,
+          "coverageGroup": "vehicle-and-track-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/models/track-transformed.glb",
+            "hashKind": "git-blob-sha1",
+            "hash": "a8fa36852395c711b5a869edaee229a2051cdc22",
+            "bytes": 1797320,
+            "usage": "vehicle-and-track-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/models/wheel-transformed.glb",
+          "type": "blob",
+          "gitSha": "97383ec489b554b771c361917605c382c5814cfc",
+          "bytes": 26700,
+          "coverageGroup": "vehicle-and-track-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/models/wheel-transformed.glb",
+            "hashKind": "git-blob-sha1",
+            "hash": "97383ec489b554b771c361917605c382c5814cfc",
+            "bytes": 26700,
+            "usage": "vehicle-and-track-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/models/wheel.glb",
+          "type": "blob",
+          "gitSha": "e4a6268a04acd73068fdf5cfa2df02c7bae0f76b",
+          "bytes": 328660,
+          "coverageGroup": "vehicle-and-track-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/models/wheel.glb",
+            "hashKind": "git-blob-sha1",
+            "hash": "e4a6268a04acd73068fdf5cfa2df02c7bae0f76b",
+            "bytes": 328660,
+            "usage": "vehicle-and-track-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/models/witch-transformed.glb",
+          "type": "blob",
+          "gitSha": "6cb5d003d7a975eed5c9b63b51be2c5ec69d573a",
+          "bytes": 1223788,
+          "coverageGroup": "vehicle-and-track-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/models/witch-transformed.glb",
+            "hashKind": "git-blob-sha1",
+            "hash": "6cb5d003d7a975eed5c9b63b51be2c5ec69d573a",
+            "bytes": 1223788,
+            "usage": "vehicle-and-track-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/models/witch.glb",
+          "type": "blob",
+          "gitSha": "791703cbe8dc80e2cd3c975bf44e2e14f35ccd3a",
+          "bytes": 10720488,
+          "coverageGroup": "vehicle-and-track-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/models/witch.glb",
+            "hashKind": "git-blob-sha1",
+            "hash": "791703cbe8dc80e2cd3c975bf44e2e14f35ccd3a",
+            "bytes": 10720488,
+            "usage": "vehicle-and-track-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/snes.webp",
+          "type": "blob",
+          "gitSha": "ca14d839ce1683af2a3eccafa46d82f3861dff9b",
+          "bytes": 476668,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/snes.webp",
+            "hashKind": "git-blob-sha1",
+            "hash": "ca14d839ce1683af2a3eccafa46d82f3861dff9b",
+            "bytes": 476668,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/lensDirt.jpg",
+          "type": "blob",
+          "gitSha": "89388814d46c479e69bddfbbccccde620ae65f96",
+          "bytes": 14377,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/textures/lensDirt.jpg",
+            "hashKind": "git-blob-sha1",
+            "hash": "89388814d46c479e69bddfbbccccde620ae65f96",
+            "bytes": 14377,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/noise.png",
+          "type": "blob",
+          "gitSha": "0452a61f5fc4a9de9512eb3adb903fcc871aceb6",
+          "bytes": 1900637,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/textures/noise.png",
+            "hashKind": "git-blob-sha1",
+            "hash": "0452a61f5fc4a9de9512eb3adb903fcc871aceb6",
+            "bytes": 1900637,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/normal.jpg",
+          "type": "blob",
+          "gitSha": "f5702ce5596ecb2629b3cfa3ab47834d9f17a25b",
+          "bytes": 967365,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/textures/normal.jpg",
+            "hashKind": "git-blob-sha1",
+            "hash": "f5702ce5596ecb2629b3cfa3ab47834d9f17a25b",
+            "bytes": 967365,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/particles/alpha.png",
+          "type": "blob",
+          "gitSha": "119c92fdfa01f2b3691d3c03fae5dbb718a0a413",
+          "bytes": 2985,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/textures/particles/alpha.png",
+            "hashKind": "git-blob-sha1",
+            "hash": "119c92fdfa01f2b3691d3c03fae5dbb718a0a413",
+            "bytes": 2985,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/particles/smoke.png",
+          "type": "blob",
+          "gitSha": "74a269511f36ff73a8908fcda4217f8bc6442c57",
+          "bytes": 97568,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/textures/particles/smoke.png",
+            "hashKind": "git-blob-sha1",
+            "hash": "74a269511f36ff73a8908fcda4217f8bc6442c57",
+            "bytes": 97568,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/particles/spark.png",
+          "type": "blob",
+          "gitSha": "6c46a55e0037deae099dab42139b1deb052bde80",
+          "bytes": 160710,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/textures/particles/spark.png",
+            "hashKind": "git-blob-sha1",
+            "hash": "6c46a55e0037deae099dab42139b1deb052bde80",
+            "bytes": 160710,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/sun.png",
+          "type": "blob",
+          "gitSha": "306bdaeb8b33b79b258815a7ff70917e8d6049dc",
+          "bytes": 1898368,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/textures/sun.png",
+            "hashKind": "git-blob-sha1",
+            "hash": "306bdaeb8b33b79b258815a7ff70917e8d6049dc",
+            "bytes": 1898368,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/unnamed.jpg",
+          "type": "blob",
+          "gitSha": "7263aea4b7525809c2f946ad2b8dfb6c2c7055a3",
+          "bytes": 47445,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/unnamed.jpg",
+            "hashKind": "git-blob-sha1",
+            "hash": "7263aea4b7525809c2f946ad2b8dfb6c2c7055a3",
+            "bytes": 47445,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/vite.svg",
+          "type": "blob",
+          "gitSha": "e7b8dfb1b2a60bd50538bec9f876511b9cac21e3",
+          "bytes": 1497,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/public/vite.svg",
+            "hashKind": "git-blob-sha1",
+            "hash": "e7b8dfb1b2a60bd50538bec9f876511b9cac21e3",
+            "bytes": 1497,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "src/App.jsx",
+          "type": "blob",
+          "gitSha": "31a9c598a852702a3ad8b08cd033491cdd89beac",
+          "bytes": 2972,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "src/ColorGradingEffect.jsx",
+          "type": "blob",
+          "gitSha": "907ac2e6bca462ba27cf8c3027c6390f2d324c22",
+          "bytes": 16784,
+          "coverageGroup": "postprocessing"
+        },
+        {
+          "path": "src/Composer.jsx",
+          "type": "blob",
+          "gitSha": "8c96c5730147c1e03be58885deab13cc02c636b6",
+          "bytes": 605,
+          "coverageGroup": "postprocessing"
+        },
+        {
+          "path": "src/LoadingScreen.jsx",
+          "type": "blob",
+          "gitSha": "00e44731eb5b51a89e30eca261fd604028d728cc",
+          "bytes": 2044,
+          "coverageGroup": "loading"
+        },
+        {
+          "path": "src/PlayerController.jsx",
+          "type": "blob",
+          "gitSha": "fa53c2548b27be96d28f50e609ba2244766c9c1c",
+          "bytes": 14568,
+          "coverageGroup": "driving-adaptation"
+        },
+        {
+          "path": "src/PlayroomStarter.jsx",
+          "type": "blob",
+          "gitSha": "26fe737caef5c58284b42815a75a3683f712e94a",
+          "bytes": 2435,
+          "coverageGroup": "network-adaptation"
+        },
+        {
+          "path": "src/TrackScene.jsx",
+          "type": "blob",
+          "gitSha": "d93419e9fd5356be376dfaa4fa3092fd776b8368",
+          "bytes": 401,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "src/WebGPUCanvas.jsx",
+          "type": "blob",
+          "gitSha": "0a3770de909530d6dcc858d0d53c208fd345dcd7",
+          "bytes": 532,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "src/assets/react.svg",
+          "type": "blob",
+          "gitSha": "6c87de9bb3358469122cc991d5cf578927246184",
+          "bytes": 4126,
+          "coverageGroup": "application-build-style-and-notices",
+          "assetInventory": {
+            "source": "https://github.com/mustache-dev/Mario-Kart-3.js/blob/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7/src/assets/react.svg",
+            "hashKind": "git-blob-sha1",
+            "hash": "6c87de9bb3358469122cc991d5cf578927246184",
+            "bytes": 4126,
+            "usage": "application-build-style-and-notices",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "src/constants.js",
+          "type": "blob",
+          "gitSha": "92066d26fe7e7014ca305c57330fab6ca3c3e240",
+          "bytes": 787,
+          "coverageGroup": "driving-adaptation"
+        },
+        {
+          "path": "src/hooks/useTouchScreen.js",
+          "type": "blob",
+          "gitSha": "82a52e27aa6d4c1e5594c5a58adf61c3b9addb07",
+          "bytes": 533,
+          "coverageGroup": "input-controls"
+        },
+        {
+          "path": "src/index.css",
+          "type": "blob",
+          "gitSha": "817fe6098d91e64d1aad1ad7ab6084212d72677b",
+          "bytes": 4553,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "src/main.jsx",
+          "type": "blob",
+          "gitSha": "dfbcae58a3f1a44af3184a7592d5bec33d39ce65",
+          "bytes": 548,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "src/misc/EnvironmentSphere.jsx",
+          "type": "blob",
+          "gitSha": "f28f105709d2e97726db5d371db4bf3e2f01d013",
+          "bytes": 1382,
+          "coverageGroup": "lighting-and-environment"
+        },
+        {
+          "path": "src/misc/Lighting.jsx",
+          "type": "blob",
+          "gitSha": "735328c5e9befe874d9681f460a8f061fdbb53f0",
+          "bytes": 1963,
+          "coverageGroup": "lighting-and-environment"
+        },
+        {
+          "path": "src/misc/fragment.glsl",
+          "type": "blob",
+          "gitSha": "3f6ead6795cbf8a66beed14f9acda7b33d204d7f",
+          "bytes": 493,
+          "coverageGroup": "lighting-and-environment"
+        },
+        {
+          "path": "src/misc/vertex.glsl",
+          "type": "blob",
+          "gitSha": "7be6a39ca99a74ca6ff6d8bd15e906f86da337b3",
+          "bytes": 225,
+          "coverageGroup": "lighting-and-environment"
+        },
+        {
+          "path": "src/mobile/Buttons.jsx",
+          "type": "blob",
+          "gitSha": "aeb2416b2fca0f035b760388b0d34284057149e3",
+          "bytes": 789,
+          "coverageGroup": "input-controls"
+        },
+        {
+          "path": "src/mobile/JoystickComponent.jsx",
+          "type": "blob",
+          "gitSha": "8104166736da412832ce9547eea8d01c933b81bc",
+          "bytes": 624,
+          "coverageGroup": "input-controls"
+        },
+        {
+          "path": "src/mobile/MobileControls.jsx",
+          "type": "blob",
+          "gitSha": "4151bd9e282259267663c166a4064818863c0204",
+          "bytes": 487,
+          "coverageGroup": "input-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/LICENSE",
+          "type": "blob",
+          "gitSha": "edbe1857aa68b1bb3923c23751fcf92753375878",
+          "bytes": 1061,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/README.md",
+          "type": "blob",
+          "gitSha": "3b95ac5385aaa27f586252bbeaef913d3fef458c",
+          "bytes": 3321,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/Joystick.d.ts",
+          "type": "blob",
+          "gitSha": "c4b75d785dfe169b6f53318718016ffd4f5f583e",
+          "bytes": 3146,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/Joystick.js",
+          "type": "blob",
+          "gitSha": "fcbaff10f0907c8c1342638e73cee2f40426b350",
+          "bytes": 14011,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/Joystick.js.map",
+          "type": "blob",
+          "gitSha": "5be3dd6bc0bc8390e71bdd351b0784205e8fdf37",
+          "bytes": 9719,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/enums/shape.enum.d.ts",
+          "type": "blob",
+          "gitSha": "234d8def3bb22c8aafe58320065ce62835338b19",
+          "bytes": 125,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/enums/shape.enum.js",
+          "type": "blob",
+          "gitSha": "ebc73c1ca96f859f68bd118525357580613602a5",
+          "bytes": 425,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/enums/shape.enum.js.map",
+          "type": "blob",
+          "gitSha": "7f018265cc1a9fb6ba61da4961f82e0dea036d88",
+          "bytes": 274,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/index.d.ts",
+          "type": "blob",
+          "gitSha": "3aca8e59b63514885695b4454412dce26da1f0e6",
+          "bytes": 91,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/index.js",
+          "type": "blob",
+          "gitSha": "3796ab53f2d87dc7afb5edf325b79ebd241b8d8a",
+          "bytes": 495,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/index.js.map",
+          "type": "blob",
+          "gitSha": "7040c55434be9ff713b772149529322f9450a51e",
+          "bytes": 177,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/shapes/shape.bounds.factory.d.ts",
+          "type": "blob",
+          "gitSha": "dd8303bbdcaa842e91751029660e11dbe7b2cea7",
+          "bytes": 316,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/shapes/shape.bounds.factory.js",
+          "type": "blob",
+          "gitSha": "f44ce7f1860464e4f098cf8c230a70f75f4c3e29",
+          "bytes": 1669,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/shapes/shape.bounds.factory.js.map",
+          "type": "blob",
+          "gitSha": "ae34e58dcd4f53f7760e76c4572af091dc82b7c9",
+          "bytes": 1469,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/shapes/shape.factory.d.ts",
+          "type": "blob",
+          "gitSha": "d0569f58771606304e42fdee4f85790d50a031b6",
+          "bytes": 159,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/shapes/shape.factory.js",
+          "type": "blob",
+          "gitSha": "6bfe4035b352ca9475f51d802782abd5db6ce156",
+          "bytes": 578,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/shapes/shape.factory.js.map",
+          "type": "blob",
+          "gitSha": "1ade31850598e71dfb3986e8c363e248d138e00b",
+          "bytes": 423,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/package.json",
+          "type": "blob",
+          "gitSha": "640ecd1e130545fffce84fd2402eb1be56e65dff",
+          "bytes": 1915,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/src/Joystick.tsx",
+          "type": "blob",
+          "gitSha": "b78a009c7f4d5621252a6aef75ad569816889f10",
+          "bytes": 13396,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/src/enums/shape.enum.ts",
+          "type": "blob",
+          "gitSha": "ed69312a19b91ec8ccea483bcd8fae3de5206bb2",
+          "bytes": 117,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/src/index.tsx",
+          "type": "blob",
+          "gitSha": "18d33fa00f2cdf12c168946ae12b802854c51b97",
+          "bytes": 90,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/src/shapes/shape.bounds.factory.ts",
+          "type": "blob",
+          "gitSha": "720b967327a09fd83f79b32d2a58987f3b4b661d",
+          "bytes": 1450,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/src/shapes/shape.factory.ts",
+          "type": "blob",
+          "gitSha": "2c27158006f80e7895ec10b227cb61e50cc44cde",
+          "bytes": 395,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/models/Kart.jsx",
+          "type": "blob",
+          "gitSha": "71a336b3004ffc31b32f9bdfdd7da035f333460e",
+          "bytes": 14408,
+          "coverageGroup": "vehicles-and-track-rendering"
+        },
+        {
+          "path": "src/models/KartDust.jsx",
+          "type": "blob",
+          "gitSha": "077677af634d69722fe1c026a3f4e51c0570c890",
+          "bytes": 819,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/models/Mario-circuit-test.jsx",
+          "type": "blob",
+          "gitSha": "305476ec833ddbad4db491ef9a7b08e6ea8fdf2f",
+          "bytes": 2294,
+          "coverageGroup": "vehicles-and-track-rendering"
+        },
+        {
+          "path": "src/models/Wheels.jsx",
+          "type": "blob",
+          "gitSha": "5190a28e88eda8f37dff46127c0e861bbd736394",
+          "bytes": 9991,
+          "coverageGroup": "vehicles-and-track-rendering"
+        },
+        {
+          "path": "src/models/Witch.jsx",
+          "type": "blob",
+          "gitSha": "3abbc2b42d68d7c6e4ef6291a98d64f6d0395706",
+          "bytes": 8644,
+          "coverageGroup": "vehicles-and-track-rendering"
+        },
+        {
+          "path": "src/particles/Dust.jsx",
+          "type": "blob",
+          "gitSha": "d33ec46c0c21a7d46940d0d78ae12cbd81987b94",
+          "bytes": 1309,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/Skate/Skate.jsx",
+          "type": "blob",
+          "gitSha": "95ab1e1029a175954e6f66b0dc853f6828440ee0",
+          "bytes": 1290,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/Skate/fragment.glsl",
+          "type": "blob",
+          "gitSha": "44329c334533682318784f612bd773c65e6f9671",
+          "bytes": 791,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/Skate/vertex.glsl",
+          "type": "blob",
+          "gitSha": "e57ed8b4e5b723a0b179cd1303189769caa482e8",
+          "bytes": 698,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/Skid.jsx",
+          "type": "blob",
+          "gitSha": "63efb72dd0204c5cd0350fe07f24ccfbb4710f69",
+          "bytes": 2651,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/Spark.jsx",
+          "type": "blob",
+          "gitSha": "8e62e34ce5ef10d9043f9ef6ffad577a66ed680f",
+          "bytes": 1818,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/flames/Flames.jsx",
+          "type": "blob",
+          "gitSha": "adafcee459543dcf323c59ac3c9e5dfbe4d3df88",
+          "bytes": 3696,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/flames/fragment.glsl",
+          "type": "blob",
+          "gitSha": "82b34345bfd7b7c06dadb84533622575b78cf425",
+          "bytes": 929,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/flames/vertex.glsl",
+          "type": "blob",
+          "gitSha": "67b7d6ab7be92181dc25030b335395df49a92935",
+          "bytes": 1416,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/glow/Glow.jsx",
+          "type": "blob",
+          "gitSha": "8cd40b7e638af77e6bb7ff601a97b2df97d77df7",
+          "bytes": 2414,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/glow/fragment.glsl",
+          "type": "blob",
+          "gitSha": "241d68161168ea5c133216dbd94d7b2d121eef50",
+          "bytes": 590,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/glow/vertex.glsl",
+          "type": "blob",
+          "gitSha": "eb00ee108388ba5289231645baccc56022df289b",
+          "bytes": 1201,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/sparks/Sparks.jsx",
+          "type": "blob",
+          "gitSha": "981b6f42fdd2c3f88ef60794ea9101cbdae42f13",
+          "bytes": 3124,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/sparks/Trails.jsx",
+          "type": "blob",
+          "gitSha": "66d97d34baf168a49677dbf474fbcedb5e5e7854",
+          "bytes": 2741,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/sparks/fragment.glsl",
+          "type": "blob",
+          "gitSha": "0d27d1c319287e1dbc169bc66485f6ebb456c62f",
+          "bytes": 513,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/sparks/vertex.glsl",
+          "type": "blob",
+          "gitSha": "4ed28b7140092782af5f9c25fc2128f214a155c5",
+          "bytes": 1057,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/playroomStore.js",
+          "type": "blob",
+          "gitSha": "9f650ec5b9de37520f5bf9d15f6650c7f0f087e6",
+          "bytes": 330,
+          "coverageGroup": "network-adaptation"
+        },
+        {
+          "path": "src/store.js",
+          "type": "blob",
+          "gitSha": "6ec91fd51e9aa40a5ae8bedeed33aa4656b62d42",
+          "bytes": 1422,
+          "coverageGroup": "state-adaptation"
+        },
+        {
+          "path": "src/utils/KartCollision.js",
+          "type": "blob",
+          "gitSha": "4c9923653d1b6e8f4a091685a4d7c994f39b4b1a",
+          "bytes": 8715,
+          "coverageGroup": "collision"
+        },
+        {
+          "path": "src/wawa-vfx/VFXBuilder.tsx",
+          "type": "blob",
+          "gitSha": "8f87faa202ddfc38209ce06c4f6871c40b9fb8f0",
+          "bytes": 4574,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/wawa-vfx/VFXEmitter.tsx",
+          "type": "blob",
+          "gitSha": "12199f38fef5f1135ad3e31c303823865d18c6a6",
+          "bytes": 6428,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/wawa-vfx/VFXParticles.tsx",
+          "type": "blob",
+          "gitSha": "632df09a28eeb069bf078f8f7af6f228e7ad3f86",
+          "bytes": 16139,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/wawa-vfx/VFXStore.ts",
+          "type": "blob",
+          "gitSha": "8190e63e33a28db7d1e631f4001ac756191d0b46",
+          "bytes": 1391,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/wawa-vfx/easings.ts",
+          "type": "blob",
+          "gitSha": "e3b4c2d17eeba86ddb706e7f7dc59ab5d593cbe7",
+          "bytes": 7325,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/wawa-vfx/types.ts",
+          "type": "blob",
+          "gitSha": "2d72ea99dc6e138cc47f56707b175a097b328254",
+          "bytes": 1904,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "vite.config.js",
+          "type": "blob",
+          "gitSha": "adca354e9b5ac7ef93987a4a595b8e1d9dbd1cc1",
+          "bytes": 727,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "wawa-vfx",
+          "type": "commit",
+          "gitSha": "0ecd0e775da8dfd2587e44206dbc3e00db3c6f9e",
+          "coverageGroup": "vfx-submodule-provenance"
+        }
+      ]
+    },
+    {
+      "repository": "Nathan-Richard-21/mario-kart-js",
+      "revision": "0f7a4305981206193c5efba64bc90755e6e85773",
+      "treeTruncated": false,
+      "downloadedTextFiles": [
+        "README.md",
+        "src/App.jsx",
+        "src/ColorGradingEffect.jsx",
+        "src/Composer.jsx",
+        "src/Controls.css",
+        "src/Controls.jsx",
+        "src/GameReadyCheck.jsx",
+        "src/GameUI.css",
+        "src/GameUI.jsx",
+        "src/HomePage.css",
+        "src/HomePage.jsx",
+        "src/LoadingScreen.jsx",
+        "src/PlayerController.jsx",
+        "src/TrackScene.jsx",
+        "src/WebEvolution.css",
+        "src/WebEvolution.jsx",
+        "src/WebGPUCanvas.jsx",
+        "src/constants.js",
+        "src/gameManager.js",
+        "src/hooks/useTouchScreen.js",
+        "src/index.css",
+        "src/main.jsx",
+        "src/misc/EnvironmentSphere.jsx",
+        "src/misc/Lighting.jsx",
+        "src/misc/fragment.glsl",
+        "src/misc/vertex.glsl",
+        "src/mobile/Buttons.jsx",
+        "src/mobile/JoystickComponent.jsx",
+        "src/mobile/MobileControls.jsx",
+        "src/models/Kart.jsx",
+        "src/models/KartDust.jsx",
+        "src/models/Mario-circuit-test.jsx",
+        "src/particles/Dust.jsx",
+        "src/particles/drift/Skate/Skate.jsx",
+        "src/particles/drift/Skate/fragment.glsl",
+        "src/particles/drift/Skate/vertex.glsl",
+        "src/particles/drift/Skid.jsx",
+        "src/particles/drift/Spark.jsx",
+        "src/particles/drift/flames/Flames.jsx",
+        "src/particles/drift/flames/fragment.glsl",
+        "src/particles/drift/flames/vertex.glsl",
+        "src/particles/drift/glow/Glow.jsx",
+        "src/particles/drift/glow/fragment.glsl",
+        "src/particles/drift/glow/vertex.glsl",
+        "src/particles/sparks/Sparks.jsx",
+        "src/particles/sparks/Trails.jsx",
+        "src/particles/sparks/fragment.glsl",
+        "src/particles/sparks/vertex.glsl",
+        "src/store.js",
+        "src/wawa-vfx/VFXBuilder.tsx",
+        "src/wawa-vfx/VFXEmitter.tsx",
+        "src/wawa-vfx/VFXParticles.tsx",
+        "src/wawa-vfx/VFXStore.ts",
+        "src/wawa-vfx/easings.ts",
+        "src/wawa-vfx/types.ts",
+        "vite.config.js"
+      ],
+      "files": [
+        {
+          "path": ".gitignore",
+          "type": "blob",
+          "gitSha": "a547bf36d8d11a4f89c59c144f24795749086dd1",
+          "bytes": 253,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "README.md",
+          "type": "blob",
+          "gitSha": "09749e029e0489886dc5e62412cbfab677a48af1",
+          "bytes": 3620,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "bun.lockb",
+          "type": "blob",
+          "gitSha": "a5dedd10fd59d3670554fb27757c765c376553a5",
+          "bytes": 274441,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "eslint.config.js",
+          "type": "blob",
+          "gitSha": "ec2b712d301e7ddeca8327fc4b967069cc82047b",
+          "bytes": 844,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "index.html",
+          "type": "blob",
+          "gitSha": "7ccedeb39c6fcfbda401ae1dfa3817e5db8a6ed1",
+          "bytes": 652,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "package-lock.json",
+          "type": "blob",
+          "gitSha": "0535c8c38ca0b4f848bfff689c0fa264951b1b39",
+          "bytes": 315995,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "package.json",
+          "type": "blob",
+          "gitSha": "77fe4feb06afd269e1f5a58c56716285a5dd5e88",
+          "bytes": 1140,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "public/favicon.ico",
+          "type": "blob",
+          "gitSha": "05184315684683dd89af1d90b50b8540345a27ed",
+          "bytes": 1636606,
+          "coverageGroup": "branding-and-support-assets"
+        },
+        {
+          "path": "public/fonts/mario_kart_f2.ttf",
+          "type": "blob",
+          "gitSha": "72f36980aa388519824b241c369db01fa8e4886b",
+          "bytes": 18968,
+          "coverageGroup": "branding-and-support-assets"
+        },
+        {
+          "path": "public/gradient.jpg",
+          "type": "blob",
+          "gitSha": "d5fac0b874bed9116664fbd95bbacfe26392f60f",
+          "bytes": 56231,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/gradient.jpg",
+            "hashKind": "git-blob-sha1",
+            "hash": "d5fac0b874bed9116664fbd95bbacfe26392f60f",
+            "bytes": 56231,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/icon.webp",
+          "type": "blob",
+          "gitSha": "d3f93ec589d12a2c2f371817b0653476a7721a5a",
+          "bytes": 843396,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/icon.webp",
+            "hashKind": "git-blob-sha1",
+            "hash": "d3f93ec589d12a2c2f371817b0653476a7721a5a",
+            "bytes": 843396,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/images/942808-2560x1600-desktop-hd-mario-kart-wallpaper-photo.jpg",
+          "type": "blob",
+          "gitSha": "89f0a9aeae3796db106d73712649d60f614cd0c5",
+          "bytes": 371302,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/images/942808-2560x1600-desktop-hd-mario-kart-wallpaper-photo.jpg",
+            "hashKind": "git-blob-sha1",
+            "hash": "89f0a9aeae3796db106d73712649d60f614cd0c5",
+            "bytes": 371302,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/images/mario-kart-8-arcade-racing_1920x1200.jpg",
+          "type": "blob",
+          "gitSha": "62244af65b98e032371283bc10214f4f16c6ca6c",
+          "bytes": 415718,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/images/mario-kart-8-arcade-racing_1920x1200.jpg",
+            "hashKind": "git-blob-sha1",
+            "hash": "62244af65b98e032371283bc10214f4f16c6ca6c",
+            "bytes": 415718,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/images/mario-kart-tour.jpg",
+          "type": "blob",
+          "gitSha": "eaae2683f26f38c1ab0b6db3d04d2cf3356f3e45",
+          "bytes": 320345,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/images/mario-kart-tour.jpg",
+            "hashKind": "git-blob-sha1",
+            "hash": "eaae2683f26f38c1ab0b6db3d04d2cf3356f3e45",
+            "bytes": 320345,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/images/mario-kart-world-artwork-01-1280x1024-1.jpg",
+          "type": "blob",
+          "gitSha": "39b8dda78b05e59e32c151646488b2374012ffaa",
+          "bytes": 1612118,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/images/mario-kart-world-artwork-01-1280x1024-1.jpg",
+            "hashKind": "git-blob-sha1",
+            "hash": "39b8dda78b05e59e32c151646488b2374012ffaa",
+            "bytes": 1612118,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/images/mario-kart.avif",
+          "type": "blob",
+          "gitSha": "42a6099500b682b261b33ea3149fbdd02f51d52a",
+          "bytes": 88454,
+          "coverageGroup": "branding-and-support-assets"
+        },
+        {
+          "path": "public/images/mariokart.jpg",
+          "type": "blob",
+          "gitSha": "31aa97da3181799d6cadd0486e354fdf45ea93c7",
+          "bytes": 95732,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/images/mariokart.jpg",
+            "hashKind": "git-blob-sha1",
+            "hash": "31aa97da3181799d6cadd0486e354fdf45ea93c7",
+            "bytes": 95732,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/kart-transformed.glb",
+          "type": "blob",
+          "gitSha": "5e60346725abe9186195465314ef54c2089449d8",
+          "bytes": 176408,
+          "coverageGroup": "vehicle-and-track-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/kart-transformed.glb",
+            "hashKind": "git-blob-sha1",
+            "hash": "5e60346725abe9186195465314ef54c2089449d8",
+            "bytes": 176408,
+            "usage": "vehicle-and-track-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/models/kart.glb",
+          "type": "blob",
+          "gitSha": "f35a89fd2fe4a0ae8b10a54c8340f8647f1402d1",
+          "bytes": 911904,
+          "coverageGroup": "vehicle-and-track-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/models/kart.glb",
+            "hashKind": "git-blob-sha1",
+            "hash": "f35a89fd2fe4a0ae8b10a54c8340f8647f1402d1",
+            "bytes": 911904,
+            "usage": "Installed models/kart.glb",
+            "replacement": "retained-installed",
+            "installedSha256": "a46534917b07f4585669d26968d7a59c5d0e517fc665f128884462646ec9fd1f",
+            "installedPath": "apps/kart-solo/public/models/kart.glb"
+          }
+        },
+        {
+          "path": "public/models/mario-circuit-test-transformed.glb",
+          "type": "blob",
+          "gitSha": "b98edcd95f4e1ce4f23da1b023f8e89acfa44b77",
+          "bytes": 1808888,
+          "coverageGroup": "vehicle-and-track-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/models/mario-circuit-test-transformed.glb",
+            "hashKind": "git-blob-sha1",
+            "hash": "b98edcd95f4e1ce4f23da1b023f8e89acfa44b77",
+            "bytes": 1808888,
+            "usage": "Installed models/mario-circuit-test-transformed.glb",
+            "replacement": "retained-installed",
+            "installedSha256": "4fc464ce325ec1fa765ea9bd11be7eafc474ed33ee2219b261f429ca19ba6bf9",
+            "installedPath": "apps/kart-solo/public/models/mario-circuit-test-transformed.glb"
+          }
+        },
+        {
+          "path": "public/models/track-transformed.glb",
+          "type": "blob",
+          "gitSha": "a8fa36852395c711b5a869edaee229a2051cdc22",
+          "bytes": 1797320,
+          "coverageGroup": "vehicle-and-track-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/models/track-transformed.glb",
+            "hashKind": "git-blob-sha1",
+            "hash": "a8fa36852395c711b5a869edaee229a2051cdc22",
+            "bytes": 1797320,
+            "usage": "vehicle-and-track-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/music/Mario Kart Wii OST.mp3",
+          "type": "blob",
+          "gitSha": "f8c640d958a79cac130d8dc42d335afda0ae7c68",
+          "bytes": 2267983,
+          "coverageGroup": "audio-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/music/Mario Kart Wii OST.mp3",
+            "hashKind": "git-blob-sha1",
+            "hash": "f8c640d958a79cac130d8dc42d335afda0ae7c68",
+            "bytes": 2267983,
+            "usage": "audio-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/music/game-over.wav",
+          "type": "blob",
+          "gitSha": "047b030fbb167d74517f7141c9ce9c258c3dd9c3",
+          "bytes": 990152,
+          "coverageGroup": "audio-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/music/game-over.wav",
+            "hashKind": "git-blob-sha1",
+            "hash": "047b030fbb167d74517f7141c9ce9c258c3dd9c3",
+            "bytes": 990152,
+            "usage": "audio-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/music/level-completed.wav",
+          "type": "blob",
+          "gitSha": "b62f38c32c987a5f603d8e3bdf4f15f18b45de68",
+          "bytes": 624896,
+          "coverageGroup": "audio-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/music/level-completed.wav",
+            "hashKind": "git-blob-sha1",
+            "hash": "b62f38c32c987a5f603d8e3bdf4f15f18b45de68",
+            "bytes": 624896,
+            "usage": "audio-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/snes.webp",
+          "type": "blob",
+          "gitSha": "ca14d839ce1683af2a3eccafa46d82f3861dff9b",
+          "bytes": 476668,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/snes.webp",
+            "hashKind": "git-blob-sha1",
+            "hash": "ca14d839ce1683af2a3eccafa46d82f3861dff9b",
+            "bytes": 476668,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/lensDirt.jpg",
+          "type": "blob",
+          "gitSha": "89388814d46c479e69bddfbbccccde620ae65f96",
+          "bytes": 14377,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/textures/lensDirt.jpg",
+            "hashKind": "git-blob-sha1",
+            "hash": "89388814d46c479e69bddfbbccccde620ae65f96",
+            "bytes": 14377,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/noise.png",
+          "type": "blob",
+          "gitSha": "0452a61f5fc4a9de9512eb3adb903fcc871aceb6",
+          "bytes": 1900637,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/textures/noise.png",
+            "hashKind": "git-blob-sha1",
+            "hash": "0452a61f5fc4a9de9512eb3adb903fcc871aceb6",
+            "bytes": 1900637,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/normal.jpg",
+          "type": "blob",
+          "gitSha": "f5702ce5596ecb2629b3cfa3ab47834d9f17a25b",
+          "bytes": 967365,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/textures/normal.jpg",
+            "hashKind": "git-blob-sha1",
+            "hash": "f5702ce5596ecb2629b3cfa3ab47834d9f17a25b",
+            "bytes": 967365,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/particles/alpha.png",
+          "type": "blob",
+          "gitSha": "119c92fdfa01f2b3691d3c03fae5dbb718a0a413",
+          "bytes": 2985,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/textures/particles/alpha.png",
+            "hashKind": "git-blob-sha1",
+            "hash": "119c92fdfa01f2b3691d3c03fae5dbb718a0a413",
+            "bytes": 2985,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/particles/smoke.png",
+          "type": "blob",
+          "gitSha": "74a269511f36ff73a8908fcda4217f8bc6442c57",
+          "bytes": 97568,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/textures/particles/smoke.png",
+            "hashKind": "git-blob-sha1",
+            "hash": "74a269511f36ff73a8908fcda4217f8bc6442c57",
+            "bytes": 97568,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/particles/spark.png",
+          "type": "blob",
+          "gitSha": "6c46a55e0037deae099dab42139b1deb052bde80",
+          "bytes": 160710,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/textures/particles/spark.png",
+            "hashKind": "git-blob-sha1",
+            "hash": "6c46a55e0037deae099dab42139b1deb052bde80",
+            "bytes": 160710,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/textures/sun.png",
+          "type": "blob",
+          "gitSha": "306bdaeb8b33b79b258815a7ff70917e8d6049dc",
+          "bytes": 1898368,
+          "coverageGroup": "effects-and-environment-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/textures/sun.png",
+            "hashKind": "git-blob-sha1",
+            "hash": "306bdaeb8b33b79b258815a7ff70917e8d6049dc",
+            "bytes": 1898368,
+            "usage": "effects-and-environment-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/unnamed.jpg",
+          "type": "blob",
+          "gitSha": "7263aea4b7525809c2f946ad2b8dfb6c2c7055a3",
+          "bytes": 47445,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/unnamed.jpg",
+            "hashKind": "git-blob-sha1",
+            "hash": "7263aea4b7525809c2f946ad2b8dfb6c2c7055a3",
+            "bytes": 47445,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "public/vite.svg",
+          "type": "blob",
+          "gitSha": "e7b8dfb1b2a60bd50538bec9f876511b9cac21e3",
+          "bytes": 1497,
+          "coverageGroup": "branding-and-support-assets",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/public/vite.svg",
+            "hashKind": "git-blob-sha1",
+            "hash": "e7b8dfb1b2a60bd50538bec9f876511b9cac21e3",
+            "bytes": 1497,
+            "usage": "branding-and-support-assets",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "src/App.jsx",
+          "type": "blob",
+          "gitSha": "bf9a4f54a02856ef03a0704df8448bb72d43608d",
+          "bytes": 4150,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "src/ColorGradingEffect.jsx",
+          "type": "blob",
+          "gitSha": "907ac2e6bca462ba27cf8c3027c6390f2d324c22",
+          "bytes": 16784,
+          "coverageGroup": "postprocessing"
+        },
+        {
+          "path": "src/Composer.jsx",
+          "type": "blob",
+          "gitSha": "be0a3a61406b541501dc0fee742d077f593f0adb",
+          "bytes": 604,
+          "coverageGroup": "postprocessing"
+        },
+        {
+          "path": "src/Controls.css",
+          "type": "blob",
+          "gitSha": "acb74e119ae678d71d28c760e954b1880eba2dff",
+          "bytes": 4089,
+          "coverageGroup": "input-controls"
+        },
+        {
+          "path": "src/Controls.jsx",
+          "type": "blob",
+          "gitSha": "11f024db6ffb08c075ebd87c2f3c5d49cd2a03d8",
+          "bytes": 5068,
+          "coverageGroup": "input-controls"
+        },
+        {
+          "path": "src/GameReadyCheck.jsx",
+          "type": "blob",
+          "gitSha": "690cbbcbe4efc6df9697106b8ac122b4cca45055",
+          "bytes": 936,
+          "coverageGroup": "race-mode-hud-countdown"
+        },
+        {
+          "path": "src/GameUI.css",
+          "type": "blob",
+          "gitSha": "75a0093cd997525d6d8e37736b63c83a6ef4d90b",
+          "bytes": 4326,
+          "coverageGroup": "race-mode-hud-countdown"
+        },
+        {
+          "path": "src/GameUI.jsx",
+          "type": "blob",
+          "gitSha": "2d53c04420556915225bf351061dfbdf94a203c8",
+          "bytes": 4305,
+          "coverageGroup": "race-mode-hud-countdown"
+        },
+        {
+          "path": "src/HomePage.css",
+          "type": "blob",
+          "gitSha": "fe52c74f5013a888c1645bd465b5c3d0fdfc3f66",
+          "bytes": 18898,
+          "coverageGroup": "mode-selection-and-marketing-adaptation"
+        },
+        {
+          "path": "src/HomePage.jsx",
+          "type": "blob",
+          "gitSha": "45926166a2776f2ec593edc1831fda0ed4e94992",
+          "bytes": 19607,
+          "coverageGroup": "mode-selection-and-marketing-adaptation"
+        },
+        {
+          "path": "src/LoadingScreen.jsx",
+          "type": "blob",
+          "gitSha": "9059f291ed271ffc99ef86517810d4b79a67e3b2",
+          "bytes": 5107,
+          "coverageGroup": "loading"
+        },
+        {
+          "path": "src/PlayerController.jsx",
+          "type": "blob",
+          "gitSha": "9e0dd878982ec068f8801d3bf4598e13d0977c3e",
+          "bytes": 11632,
+          "coverageGroup": "driving-adaptation"
+        },
+        {
+          "path": "src/TrackScene.jsx",
+          "type": "blob",
+          "gitSha": "b019ae01ff3eaba076a0110e72c7867426b0d9cc",
+          "bytes": 393,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "src/WebEvolution.css",
+          "type": "blob",
+          "gitSha": "33a102afa6b46aa3a990afc3610b802eaea622ab",
+          "bytes": 9294,
+          "coverageGroup": "mode-selection-and-marketing-adaptation"
+        },
+        {
+          "path": "src/WebEvolution.jsx",
+          "type": "blob",
+          "gitSha": "8e1ecf4b19f64e06c00680d0cf9ee20a362cbeb3",
+          "bytes": 9535,
+          "coverageGroup": "mode-selection-and-marketing-adaptation"
+        },
+        {
+          "path": "src/WebGPUCanvas.jsx",
+          "type": "blob",
+          "gitSha": "0a3770de909530d6dcc858d0d53c208fd345dcd7",
+          "bytes": 532,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "src/assets/react.svg",
+          "type": "blob",
+          "gitSha": "6c87de9bb3358469122cc991d5cf578927246184",
+          "bytes": 4126,
+          "coverageGroup": "application-build-style-and-notices",
+          "assetInventory": {
+            "source": "https://github.com/Nathan-Richard-21/mario-kart-js/blob/0f7a4305981206193c5efba64bc90755e6e85773/src/assets/react.svg",
+            "hashKind": "git-blob-sha1",
+            "hash": "6c87de9bb3358469122cc991d5cf578927246184",
+            "bytes": 4126,
+            "usage": "application-build-style-and-notices",
+            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+          }
+        },
+        {
+          "path": "src/constants.js",
+          "type": "blob",
+          "gitSha": "b4fde1188e8280600836c44693c977e5d4e935c9",
+          "bytes": 855,
+          "coverageGroup": "driving-adaptation"
+        },
+        {
+          "path": "src/gameManager.js",
+          "type": "blob",
+          "gitSha": "e82e4403aefc37d2ff38325cece39e55e1939905",
+          "bytes": 7474,
+          "coverageGroup": "race-mode-hud-countdown"
+        },
+        {
+          "path": "src/hooks/useTouchScreen.js",
+          "type": "blob",
+          "gitSha": "82a52e27aa6d4c1e5594c5a58adf61c3b9addb07",
+          "bytes": 533,
+          "coverageGroup": "input-controls"
+        },
+        {
+          "path": "src/index.css",
+          "type": "blob",
+          "gitSha": "eed5e9eab150163c6dcfbc34cc4f36585a1e2d72",
+          "bytes": 6058,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "src/main.jsx",
+          "type": "blob",
+          "gitSha": "868d80647cfe09ceaebe4fc8533df36ffb356df6",
+          "bytes": 3398,
+          "coverageGroup": "application-build-style-and-notices"
+        },
+        {
+          "path": "src/misc/EnvironmentSphere.jsx",
+          "type": "blob",
+          "gitSha": "f28f105709d2e97726db5d371db4bf3e2f01d013",
+          "bytes": 1382,
+          "coverageGroup": "lighting-and-environment"
+        },
+        {
+          "path": "src/misc/Lighting.jsx",
+          "type": "blob",
+          "gitSha": "735328c5e9befe874d9681f460a8f061fdbb53f0",
+          "bytes": 1963,
+          "coverageGroup": "lighting-and-environment"
+        },
+        {
+          "path": "src/misc/fragment.glsl",
+          "type": "blob",
+          "gitSha": "3f6ead6795cbf8a66beed14f9acda7b33d204d7f",
+          "bytes": 493,
+          "coverageGroup": "lighting-and-environment"
+        },
+        {
+          "path": "src/misc/vertex.glsl",
+          "type": "blob",
+          "gitSha": "7be6a39ca99a74ca6ff6d8bd15e906f86da337b3",
+          "bytes": 225,
+          "coverageGroup": "lighting-and-environment"
+        },
+        {
+          "path": "src/mobile/Buttons.jsx",
+          "type": "blob",
+          "gitSha": "aeb2416b2fca0f035b760388b0d34284057149e3",
+          "bytes": 789,
+          "coverageGroup": "input-controls"
+        },
+        {
+          "path": "src/mobile/JoystickComponent.jsx",
+          "type": "blob",
+          "gitSha": "8104166736da412832ce9547eea8d01c933b81bc",
+          "bytes": 624,
+          "coverageGroup": "input-controls"
+        },
+        {
+          "path": "src/mobile/MobileControls.jsx",
+          "type": "blob",
+          "gitSha": "4151bd9e282259267663c166a4064818863c0204",
+          "bytes": 487,
+          "coverageGroup": "input-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/LICENSE",
+          "type": "blob",
+          "gitSha": "edbe1857aa68b1bb3923c23751fcf92753375878",
+          "bytes": 1061,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/README.md",
+          "type": "blob",
+          "gitSha": "3b95ac5385aaa27f586252bbeaef913d3fef458c",
+          "bytes": 3321,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/Joystick.d.ts",
+          "type": "blob",
+          "gitSha": "c4b75d785dfe169b6f53318718016ffd4f5f583e",
+          "bytes": 3146,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/Joystick.js",
+          "type": "blob",
+          "gitSha": "fcbaff10f0907c8c1342638e73cee2f40426b350",
+          "bytes": 14011,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/Joystick.js.map",
+          "type": "blob",
+          "gitSha": "5be3dd6bc0bc8390e71bdd351b0784205e8fdf37",
+          "bytes": 9719,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/enums/shape.enum.d.ts",
+          "type": "blob",
+          "gitSha": "234d8def3bb22c8aafe58320065ce62835338b19",
+          "bytes": 125,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/enums/shape.enum.js",
+          "type": "blob",
+          "gitSha": "ebc73c1ca96f859f68bd118525357580613602a5",
+          "bytes": 425,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/enums/shape.enum.js.map",
+          "type": "blob",
+          "gitSha": "7f018265cc1a9fb6ba61da4961f82e0dea036d88",
+          "bytes": 274,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/index.d.ts",
+          "type": "blob",
+          "gitSha": "3aca8e59b63514885695b4454412dce26da1f0e6",
+          "bytes": 91,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/index.js",
+          "type": "blob",
+          "gitSha": "3796ab53f2d87dc7afb5edf325b79ebd241b8d8a",
+          "bytes": 495,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/index.js.map",
+          "type": "blob",
+          "gitSha": "7040c55434be9ff713b772149529322f9450a51e",
+          "bytes": 177,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/shapes/shape.bounds.factory.d.ts",
+          "type": "blob",
+          "gitSha": "dd8303bbdcaa842e91751029660e11dbe7b2cea7",
+          "bytes": 316,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/shapes/shape.bounds.factory.js",
+          "type": "blob",
+          "gitSha": "f44ce7f1860464e4f098cf8c230a70f75f4c3e29",
+          "bytes": 1669,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/shapes/shape.bounds.factory.js.map",
+          "type": "blob",
+          "gitSha": "ae34e58dcd4f53f7760e76c4572af091dc82b7c9",
+          "bytes": 1469,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/shapes/shape.factory.d.ts",
+          "type": "blob",
+          "gitSha": "d0569f58771606304e42fdee4f85790d50a031b6",
+          "bytes": 159,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/shapes/shape.factory.js",
+          "type": "blob",
+          "gitSha": "6bfe4035b352ca9475f51d802782abd5db6ce156",
+          "bytes": 578,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/build/lib/shapes/shape.factory.js.map",
+          "type": "blob",
+          "gitSha": "1ade31850598e71dfb3986e8c363e248d138e00b",
+          "bytes": 423,
+          "coverageGroup": "third-party-generated-joystick-distribution"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/package.json",
+          "type": "blob",
+          "gitSha": "640ecd1e130545fffce84fd2402eb1be56e65dff",
+          "bytes": 1915,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/src/Joystick.tsx",
+          "type": "blob",
+          "gitSha": "b78a009c7f4d5621252a6aef75ad569816889f10",
+          "bytes": 13396,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/src/enums/shape.enum.ts",
+          "type": "blob",
+          "gitSha": "ed69312a19b91ec8ccea483bcd8fae3de5206bb2",
+          "bytes": 117,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/src/index.tsx",
+          "type": "blob",
+          "gitSha": "18d33fa00f2cdf12c168946ae12b802854c51b97",
+          "bytes": 90,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/src/shapes/shape.bounds.factory.ts",
+          "type": "blob",
+          "gitSha": "720b967327a09fd83f79b32d2a58987f3b4b661d",
+          "bytes": 1450,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/mobile/react-joystick-component/src/shapes/shape.factory.ts",
+          "type": "blob",
+          "gitSha": "2c27158006f80e7895ec10b227cb61e50cc44cde",
+          "bytes": 395,
+          "coverageGroup": "third-party-joystick-controls"
+        },
+        {
+          "path": "src/models/Kart.jsx",
+          "type": "blob",
+          "gitSha": "eca31abd5a6303719a7870db3d0a9b403a2a14b6",
+          "bytes": 14376,
+          "coverageGroup": "vehicles-and-track-rendering"
+        },
+        {
+          "path": "src/models/KartDust.jsx",
+          "type": "blob",
+          "gitSha": "045b3166563a06b745a774efe490cbdeb25cf174",
+          "bytes": 843,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/models/Mario-circuit-test.jsx",
+          "type": "blob",
+          "gitSha": "91284a399029fd9d63dee1394cfd18b0475b08c6",
+          "bytes": 2178,
+          "coverageGroup": "vehicles-and-track-rendering"
+        },
+        {
+          "path": "src/particles/Dust.jsx",
+          "type": "blob",
+          "gitSha": "1b45f02b8405591d1af7c78b8289e0bbba47cc9d",
+          "bytes": 1320,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/Skate/Skate.jsx",
+          "type": "blob",
+          "gitSha": "587efb749a423e2f093de37d1d485b86ddf85fbe",
+          "bytes": 1264,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/Skate/fragment.glsl",
+          "type": "blob",
+          "gitSha": "44329c334533682318784f612bd773c65e6f9671",
+          "bytes": 791,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/Skate/vertex.glsl",
+          "type": "blob",
+          "gitSha": "e57ed8b4e5b723a0b179cd1303189769caa482e8",
+          "bytes": 698,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/Skid.jsx",
+          "type": "blob",
+          "gitSha": "373658c56a5680cbc33743d6848e293857b299ee",
+          "bytes": 2662,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/Spark.jsx",
+          "type": "blob",
+          "gitSha": "8e62e34ce5ef10d9043f9ef6ffad577a66ed680f",
+          "bytes": 1818,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/flames/Flames.jsx",
+          "type": "blob",
+          "gitSha": "606472abe9a0a0ac851a5a085973f7d29d9faf87",
+          "bytes": 3540,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/flames/fragment.glsl",
+          "type": "blob",
+          "gitSha": "69fbe85b86cd8f7fde8bd44e4cedf0bcb8ff3752",
+          "bytes": 771,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/flames/vertex.glsl",
+          "type": "blob",
+          "gitSha": "ab2c7fc9be94e336b76d3135b62373768c953025",
+          "bytes": 371,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/glow/Glow.jsx",
+          "type": "blob",
+          "gitSha": "46e2bbc22988ed703e3601e01463442645711d78",
+          "bytes": 2436,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/glow/fragment.glsl",
+          "type": "blob",
+          "gitSha": "62d563bcbac7937b81789d8f3ba1fd3d0eb2cefc",
+          "bytes": 590,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/drift/glow/vertex.glsl",
+          "type": "blob",
+          "gitSha": "eb00ee108388ba5289231645baccc56022df289b",
+          "bytes": 1201,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/sparks/Sparks.jsx",
+          "type": "blob",
+          "gitSha": "4e2d7c61585dcb15619c5b4c6dd24f0ae74fd487",
+          "bytes": 3141,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/sparks/Trails.jsx",
+          "type": "blob",
+          "gitSha": "40c753c0a443a7f5df6165fc2018a8c715ee6b10",
+          "bytes": 2739,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/sparks/fragment.glsl",
+          "type": "blob",
+          "gitSha": "27fe16c82aa5a464aedd6a53a897ed6aed7ddbc7",
+          "bytes": 512,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/particles/sparks/vertex.glsl",
+          "type": "blob",
+          "gitSha": "4ed28b7140092782af5f9c25fc2128f214a155c5",
+          "bytes": 1057,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/store.js",
+          "type": "blob",
+          "gitSha": "f8edfa99bbcb2e32b07738b509594bfe04d76e71",
+          "bytes": 1259,
+          "coverageGroup": "state-adaptation"
+        },
+        {
+          "path": "src/wawa-vfx/VFXBuilder.tsx",
+          "type": "blob",
+          "gitSha": "8f87faa202ddfc38209ce06c4f6871c40b9fb8f0",
+          "bytes": 4574,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/wawa-vfx/VFXEmitter.tsx",
+          "type": "blob",
+          "gitSha": "12199f38fef5f1135ad3e31c303823865d18c6a6",
+          "bytes": 6428,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/wawa-vfx/VFXParticles.tsx",
+          "type": "blob",
+          "gitSha": "632df09a28eeb069bf078f8f7af6f228e7ad3f86",
+          "bytes": 16139,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/wawa-vfx/VFXStore.ts",
+          "type": "blob",
+          "gitSha": "8190e63e33a28db7d1e631f4001ac756191d0b46",
+          "bytes": 1391,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/wawa-vfx/easings.ts",
+          "type": "blob",
+          "gitSha": "e3b4c2d17eeba86ddb706e7f7dc59ab5d593cbe7",
+          "bytes": 7325,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "src/wawa-vfx/types.ts",
+          "type": "blob",
+          "gitSha": "2d72ea99dc6e138cc47f56707b175a097b328254",
+          "bytes": 1904,
+          "coverageGroup": "effects"
+        },
+        {
+          "path": "vite.config.js",
+          "type": "blob",
+          "gitSha": "adca354e9b5ac7ef93987a4a595b8e1d9dbd1cc1",
+          "bytes": 727,
+          "coverageGroup": "application-build-style-and-notices"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Binary assets were inventoried by metadata; they were not downloaded or visually inspected for this planning task.",
+    "Vendored joystick source was inspected separately; generated distributions do not create additional game features.",
+    "The root wawa-vfx gitlink is recorded, not claimed as a separately audited repository.",
+    "An upstream README task or dependency is not evidence of wired gameplay."
+  ],
+  "wawaGitlinkProvenance": {
+    "checkedAt": "2026-11-03",
+    "gitlink": "0ecd0e775da8dfd2587e44206dbc3e00db3c6f9e",
+    "repository": "wass08/wawa-vfx",
+    "packageVersion": "1.0.13",
+    "declaredLicence": "MIT",
+    "licenceTextVerifiedAtGitlink": false,
+    "sourceVendored": false,
+    "evidence": [
+      "https://github.com/wass08/wawa-vfx/commit/0ecd0e775da8dfd2587e44206dbc3e00db3c6f9e",
+      "https://raw.githubusercontent.com/wass08/wawa-vfx/0ecd0e775da8dfd2587e44206dbc3e00db3c6f9e/packages/package.json",
+      "https://api.github.com/repos/wass08/wawa-vfx/git/trees/0ecd0e775da8dfd2587e44206dbc3e00db3c6f9e?recursive=1"
+    ],
+    "limitation": "The exact gitlink resolves here and its pinned manifest declares MIT. Its complete tree has no licence file. Three copied blobs are identical and three differ; review those differences and retain an applicable notice before vendoring new source.",
+    "pinnedTreeTruncated": false,
+    "pinnedLicenceFiles": [],
+    "copiedFileComparison": [
+      {
+        "sourcePath": "packages/src/components/vfxs/VFXBuilder.tsx",
+        "sourceGitSha": "8f87faa202ddfc38209ce06c4f6871c40b9fb8f0",
+        "copiedPath": "src/wawa-vfx/VFXBuilder.tsx",
+        "copiedGitSha": "8f87faa202ddfc38209ce06c4f6871c40b9fb8f0",
+        "identicalBlob": true
+      },
+      {
+        "sourcePath": "packages/src/components/vfxs/VFXEmitter.tsx",
+        "sourceGitSha": "70ac7130c9c4a8811e07cc9aa7402c48301291d4",
+        "copiedPath": "src/wawa-vfx/VFXEmitter.tsx",
+        "copiedGitSha": "12199f38fef5f1135ad3e31c303823865d18c6a6",
+        "identicalBlob": false
+      },
+      {
+        "sourcePath": "packages/src/components/vfxs/VFXParticles.tsx",
+        "sourceGitSha": "2a1453d54a41c21ef0cbdac796eb74ec1b1d7fa5",
+        "copiedPath": "src/wawa-vfx/VFXParticles.tsx",
+        "copiedGitSha": "632df09a28eeb069bf078f8f7af6f228e7ad3f86",
+        "identicalBlob": false
+      },
+      {
+        "sourcePath": "packages/src/components/vfxs/VFXStore.ts",
+        "sourceGitSha": "8190e63e33a28db7d1e631f4001ac756191d0b46",
+        "copiedPath": "src/wawa-vfx/VFXStore.ts",
+        "copiedGitSha": "8190e63e33a28db7d1e631f4001ac756191d0b46",
+        "identicalBlob": true
+      },
+      {
+        "sourcePath": "packages/src/components/vfxs/easings.ts",
+        "sourceGitSha": "e3b4c2d17eeba86ddb706e7f7dc59ab5d593cbe7",
+        "copiedPath": "src/wawa-vfx/easings.ts",
+        "copiedGitSha": "e3b4c2d17eeba86ddb706e7f7dc59ab5d593cbe7",
+        "identicalBlob": true
+      },
+      {
+        "sourcePath": "packages/src/components/vfxs/types.ts",
+        "sourceGitSha": "524683e786a15416f9a62efb30c00acb91966c5e",
+        "copiedPath": "src/wawa-vfx/types.ts",
+        "copiedGitSha": "2d72ea99dc6e138cc47f56707b175a097b328254",
+        "identicalBlob": false
+      }
+    ],
+    "phase1Disposition": "No new Wawa source or dependency will be vendored. Use the audited implementation as a capability reference and extend the existing original bounded instanced-effect adapters with original code. This avoids relying on an unverified licence text and avoids importing its parallel Zustand store. Original retained model/decoder notices remain applicable.",
+    "dispositionRecordedOn": "2026-11-04"
+  },
+  "assetInventorySummary": {
+    "recordedOn": "2026-11-04",
+    "entries": 46,
+    "distinctGitBlobs": 29,
+    "scope": "Media entries across both pinned source trees, not installed assets; retained installed files separately have SHA-256 hashes and embedded texture metadata."
+  }
+}

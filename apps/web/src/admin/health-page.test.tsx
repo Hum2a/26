@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { RoomDiagnostics } from "@26/shared";
+import { createKartRace, projectKartRace, type RoomDiagnostics } from "@26/shared";
 vi.mock("./rooms-api", () => ({ readAdminRoom: vi.fn() }));
 vi.mock("../live/room-socket", () => ({ openRoomSocket: vi.fn() }));
 vi.mock("../live/room-api", () => ({ playRoom: vi.fn(), issueTransfer: vi.fn() }));
@@ -8,7 +8,7 @@ vi.mock("./sections-api", () => ({ readSection: vi.fn() }));
 import { readSection } from "./sections-api";
 import { playRoom } from "../live/room-api";
 import { HealthPage } from "./health-page";
-import { mountControls, setupControls } from "./controls.test-support";
+import { mountControls, setupControls, playingFixture } from "./controls.test-support";
 export const healthFixture: RoomDiagnostics = {
   gameId: "ABCDEFGH",
   phase: "collect",
@@ -50,6 +50,26 @@ export const healthFixture: RoomDiagnostics = {
 beforeEach(() => {
   setupControls();
   vi.mocked(readSection).mockResolvedValue(healthFixture);
+});
+it("shows accepted kart event history without claiming guest GPU readiness", async () => {
+  const race = createKartRace("health", [{ playerId: "p", name: "Driver" }]);
+  race.elapsedMs = 1000;
+  race.ended = true;
+  race.drivers[0]!.status = "DNF";
+  setupControls({
+    ...playingFixture,
+    play: { ...playingFixture.play!, kart: projectKartRace(race, null, 100) },
+  });
+  vi.mocked(readSection).mockResolvedValue(healthFixture);
+  await mountControls(<HealthPage />);
+  expect(await screen.findByText("Contract 1 · kart-assets-v1")).toBeTruthy();
+  expect(screen.getByText(/p · DNF · 1000 ms · event/)).toBeTruthy();
+  expect(
+    screen
+      .getByRole("link", { name: "Check assets and rehearse rendering →" })
+      .getAttribute("href"),
+  ).toBe("/admin/kart");
+  expect(screen.getByText(/not GPU or asset-readiness measurements/)).toBeTruthy();
 });
 it("distinguishes unavailable delivery counts and shows scoped failure details", async () => {
   await mountControls(<HealthPage />);

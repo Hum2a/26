@@ -6,10 +6,13 @@ test("a phone sends a wall photo, the host approves it, the room reacts, and pul
   test.setTimeout(150_000);
   const host = await browser.newContext();
   const phones = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const secondPhone = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+  });
   const admin = await host.newPage();
   const stage = await host.newPage();
   const amina = await phones.newPage();
-  const bilal = await phones.newPage();
+  const bilal = await secondPhone.newPage();
 
   await signIn(admin);
   await admin.getByRole("button", { name: "Create a lobby" }).click();
@@ -71,6 +74,7 @@ test("a phone sends a wall photo, the host approves it, the room reacts, and pul
 
   await host.close();
   await phones.close();
+  await secondPhone.close();
 });
 
 async function signIn(page: Page) {

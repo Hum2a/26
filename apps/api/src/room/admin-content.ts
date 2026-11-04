@@ -1,4 +1,5 @@
 import {
+  kartAssetManifest,
   adminContentSchema,
   adminTrollsSchema,
   type AdminContent,
@@ -12,6 +13,7 @@ import { authFailure, jsonData } from "../auth/http.ts";
 import { missingRequirements } from "../questions/definition.ts";
 import { questionPacks } from "../questions/registry.ts";
 import { rejectUnlessRoomCreator } from "./access.ts";
+import { kartPreview } from "./kart-preview.ts";
 import { adminQuestion } from "./admin-question.ts";
 import { previewWordle, readWordlePreviewBody } from "./wordle-preview.ts";
 import { questionPreview } from "./question-preview.ts";
@@ -192,6 +194,19 @@ export function registerAdminContentRoutes(app: Hono<{ Bindings: Env }>) {
       question,
     );
     return detail ? jsonData(detail) : authFailure("invalid", 500);
+  });
+  app.get("/api/admin/kart-preview", async (c) => {
+    const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
+    if (rejected) return rejected;
+    try {
+      return jsonData(kartPreview(c.req.query("beat") ?? "grid"));
+    } catch {
+      return authFailure("invalid", 400);
+    }
+  });
+  app.get("/api/admin/kart-assets", async (c) => {
+    const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
+    return rejected ?? jsonData(kartAssetManifest);
   });
   app.get("/api/admin/trolls", async (c) => {
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);

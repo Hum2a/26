@@ -61,12 +61,16 @@ test("media, health, content and results have real private workflows and respons
     page.getByRole("heading", { name: "Scheduler", exact: true }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Question packs", exact: true }).click();
+  await page.getByRole("button", { name: /Pack details/ }).click();
   await expect(
     page.getByRole("heading", { name: "birthday-draft", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText(/Preparation only/)).toBeVisible();
+  await expect(page.getByText(/Incomplete drafts cannot be included/)).toBeVisible();
   await expect(
-    page.getByRole("button", { name: /Start|Publish|Save|Release/ }),
+    page.getByRole("button", { name: "Save running order", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: /^(Start|Publish|Release)/ }),
   ).toHaveCount(0);
   await page.goto(`${room}/live`);
   await page.getByRole("button", { name: "Resume", exact: true }).click();
@@ -78,32 +82,24 @@ test("media, health, content and results have real private workflows and respons
     .getByRole("dialog")
     .getByRole("button", { name: "Finish after this question", exact: true })
     .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   for (
     let step = 0;
-    step < 12 &&
+    step < 40 &&
     !(await page.getByText("The quiz is complete.", { exact: true }).isVisible());
     step++
   ) {
-    const finish = page.getByRole("button", { name: "Finish quiz", exact: true });
-    if (await finish.isVisible()) {
-      try {
-        await finish.click({ timeout: 2_000 });
-      } catch (error) {
-        // The authoritative final-phase alarm can reach the podium while clicking.
-        // Accept that outcome only after observing the completed game.
-        if (await page.getByText("The quiz is complete.", { exact: true }).isVisible())
-          break;
-        throw error;
-      }
-      await page
-        .getByRole("dialog")
-        .getByRole("button", { name: "Finish quiz", exact: true })
-        .click();
-    } else await page.getByRole("button", { name: "Advance", exact: true }).click();
+    await page
+      .getByRole("button", {
+        name: /^(Advance|Next fact|Show the podium)$/,
+      })
+      .first()
+      .click();
     await expect(page.locator(".admin-command-feedback[aria-busy=true]")).toHaveCount(
       0,
     );
   }
+  await expect(page.getByText("The quiz is complete.", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Results", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Final standings", exact: true }),
@@ -144,10 +140,12 @@ test("media, health, content and results have real private workflows and respons
       ).toHaveCount(0);
       await expect(page.locator(".entry-main")).toHaveCSS("opacity", "1");
       if (name === "health") await expect(page.getByText(/Last checked/)).toBeVisible();
-      if (name === "content")
+      if (name === "content") {
+        await page.getByRole("button", { name: /Pack details/ }).click();
         await expect(
           page.getByRole("heading", { name: "birthday-draft", exact: true }),
         ).toBeVisible();
+      }
       if (name === "media")
         await expect(page.getByText("Hidden · preview unavailable")).toBeVisible();
       await checkLayout(page, width, name!);

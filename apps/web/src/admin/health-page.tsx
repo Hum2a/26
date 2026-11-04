@@ -49,6 +49,35 @@ export function HealthPage() {
       </p>
       <CommandFeedback scope="health" />
       <EntryNotice message={report.error} />
+      {snapshot.play?.kart ? (
+        <section className="admin-task-section" aria-label="Kart presentation health">
+          <h2>Kart presentation</h2>
+          <p>
+            {snapshot.play.kart.presentation?.events.length ?? 0} recent presentation
+            events (maximum 32). Race standings retain all drivers.
+          </p>
+          <p>
+            {snapshot.play.kart.presentation
+              ? `Contract ${snapshot.play.kart.presentation.version} · ${snapshot.play.kart.presentation.assetVersion}`
+              : "No finish event batch yet. Older snapshots remain supported."}
+          </p>
+          <p>
+            These are accepted race outcomes, not GPU or asset-readiness measurements
+            from guest phones.
+          </p>
+          <ol>
+            {snapshot.play.kart.presentation?.events.map((event) => (
+              <li key={event.eventId}>
+                {event.playerId} · {event.status} · {event.atMs} ms · event{" "}
+                {event.eventId}
+              </li>
+            ))}
+          </ol>
+          <Link className="entry-text-link" to="/admin/kart">
+            Check assets and rehearse rendering →
+          </Link>
+        </section>
+      ) : null}
       <p role="status">
         {report.loading
           ? "Checking room health…"

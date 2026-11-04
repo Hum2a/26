@@ -9,6 +9,7 @@ import {
 import {
   createFrameProbe,
   graphicsProfiles,
+  safeGraphicsProfile,
   type FrameHealth,
 } from "../../web/src/kart/graphics";
 import { Bvh, useProgress } from "@react-three/drei";
@@ -20,6 +21,7 @@ import {
 } from "../../web/src/theme/themes";
 import { TrackItems } from "./TrackItems";
 import { Course } from "./Course";
+import { PracticePresentation } from "./PracticePresentation";
 import { DriftGauge } from "../../web/src/kart/DriftGauge";
 import {
   defaultCourseSettings,
@@ -40,14 +42,18 @@ document.head.append(themeStyle);
 
 function Ready() {
   const camera = useThree((state) => state.camera);
+  const lookReady = useGameStore(
+    (state) => !state.soloLookPreset || state.soloLookReady,
+  );
   useEffect(() => {
     camera.position.set(0, 2, 5);
     camera.lookAt(0, -2, -9);
-    useGameStore.setState({
-      soloStarted: true,
-      soloPaused: useGameStore.getState().soloPaused || document.hidden,
-    });
-  }, [camera]);
+    if (lookReady)
+      useGameStore.setState({
+        soloStarted: true,
+        soloPaused: useGameStore.getState().soloPaused || document.hidden,
+      });
+  }, [camera, lookReady]);
   return null;
 }
 
@@ -192,6 +198,17 @@ function SoloPowerInventory() {
 function SoloGame() {
   const [graphicsPlayers, setGraphicsPlayers] = useState(1);
   const graphics = useKartGraphics(graphicsPlayers);
+  const [maxTextureSize, setMaxTextureSize] = useState<number | null>(null);
+  // Fiber retains its existing supersampling policy; capability limits can still
+  // reduce both scene detail and pixel ratio without changing the user's choice.
+  const profile =
+    maxTextureSize === null
+      ? { tier: graphics.tier, ...graphicsProfiles[graphics.tier] }
+      : safeGraphicsProfile(graphics.tier, {
+          webgl: true,
+          maxTextureSize,
+          pixelRatioLimit: graphicsProfiles[graphics.tier].pixelRatio,
+        });
   const [mounted, setMounted] = useState(false);
   const [lost, setLost] = useState(false);
   const paused = useGameStore((state) => state.soloPaused);
@@ -223,7 +240,7 @@ function SoloGame() {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   };
   return (
-    <GraphicsTierContext value={graphics.tier}>
+    <GraphicsTierContext value={profile?.tier ?? "low"}>
       <main className="solo-game" data-ready={ready} aria-label="Solo kart practice">
         <div className="solo-world">
           {mounted ? (
@@ -232,13 +249,25 @@ function SoloGame() {
                 <Recovery />
               ) : (
                 <Canvas
-                  dpr={graphicsProfiles[graphics.tier].pixelRatio}
+                  dpr={profile?.pixelRatio ?? graphicsProfiles.low.pixelRatio}
                   shadows={false}
                   frameloop={paused && ready ? "demand" : "always"}
                   camera={{ position: [0, 2, 5], far: 2500, fov: 65 }}
                   gl={{ antialias: false, alpha: false, powerPreference: "low-power" }}
                   fallback={<Recovery />}
                   onCreated={({ camera, gl }) => {
+                    const limit = gl.capabilities.maxTextureSize;
+                    setMaxTextureSize(limit);
+                    if (
+                      !safeGraphicsProfile(graphics.tier, {
+                        webgl: true,
+                        maxTextureSize: limit,
+                        pixelRatioLimit: graphicsProfiles[graphics.tier].pixelRatio,
+                      })
+                    ) {
+                      pause();
+                      setLost(true);
+                    }
                     camera.layers.enable(1);
                     gl.domElement.setAttribute(
                       "aria-label",
@@ -345,6 +374,9 @@ function SoloGame() {
             </>
           }
         />
+        {profile && profile.tier !== graphics.tier ? (
+          <p role="status">Graphics limited to Low on this screen.</p>
+        ) : null}
         {ready && !lost ? (
           <>
             <Telemetry />
@@ -398,8 +430,9 @@ function SoloCourseSettings({ graphics }: { graphics: ReactNode }) {
       </button>
       <div className="solo-course-options" aria-hidden={!open} inert={!open}>
         <div>
+          <PracticePresentation />
           {graphics}
-          <p>Changes reset the kart and pause practice.</p>
+          <p>Course changes reset the kart and pause practice.</p>
           {(
             [
               ["boosts", "Floor boosts"],

@@ -176,7 +176,7 @@ A phone design receives the phone's `open`, `pending`, `selectedId`, and the sel
 
 The Question packs phone preview is an isolated controller layout rehearsal, labelled with no running race. For a real multi-device rehearsal, use a fresh local lobby and Admin → Live controls → Start local kart rehearsal. That explicit development start is rejected in staging/production. Full contracts, engine provenance, scoring, rendering limits and the quiz/race/podium sequence are in [kart-minigame.md](kart-minigame.md). `kart-sprint` is the final round in the default birthday order.
 
-The Tribunal/chaos ideas are recorded in [content/tribunal-and-chaos.md](content/tribunal-and-chaos.md). A real Reddit/community/listing round needs its genuine source and answer. Self-vote multipliers, live spoken debates and push-your-luck raids remain explicit unsupported drafts; ordinary polls or text ballots must not be presented as those finished mechanics.
+The Tribunal/chaos ideas are recorded in [content/tribunal-and-chaos.md](content/tribunal-and-chaos.md). A real Reddit/community/listing round needs its genuine source and answer. The figurine self-vote bonus and Cursed Search History push-your-luck round are implemented and ready in the catalogue, outside the running order. The spoken-debate round was dropped. Reddit tribunal, Ferrier estate, Nextdoor and property price stay explicit drafts until their genuine sources, answers and assets are supplied.
 
 ## Arrange and start the birthday pack
 

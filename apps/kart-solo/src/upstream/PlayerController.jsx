@@ -3,6 +3,8 @@
 import { DriftEffects } from "../DriftEffects";
 import { themes, DEFAULT_THEME_ID } from "../../../web/src/theme/themes";
 import { driftPose } from "../../../web/src/kart/drift-effects";
+import { kartVehiclePose } from "../../../web/src/kart/presentation";
+import { vehiclePose } from "../../../web/src/kart/vehicle-pose";
 import { Kart } from "./models/Kart";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
@@ -52,9 +54,10 @@ export const PlayerController = () => {
   const speedRef = useRef(0),
     driftDirection = useRef(0),
     driftPower = useRef(0);
+  const vehicleMotion = useRef({ speed: 0, turnRate: 0, travel: 0 });
+  const lastRendered = useRef(null);
   const jumpOffset = useRef(0),
-    backWheelOffset = useRef({ left: 0, right: 0 }),
-    inputTurn = useRef(0);
+    backWheelOffset = useRef({ left: 0, right: 0 });
   const ray = useRef(new Raycaster()),
     meshes = useRef([]);
   const { scene } = useThree();
@@ -218,18 +221,30 @@ export const PlayerController = () => {
       player = playerRef.current;
     const alpha = accumulator.current / 20,
       old = previous.current;
-    player.position.set(
-      old.x + (d.x - old.x) * alpha,
-      (old.height ?? 0) + ((d.height ?? 0) - (old.height ?? 0)) * alpha,
-      old.z + (d.z - old.z) * alpha,
-    );
     const turn = Math.atan2(
       Math.sin(d.heading - old.heading),
       Math.cos(d.heading - old.heading),
     );
-    player.rotation.y = -(old.heading + turn * alpha) - Math.PI / 2;
+    const renderPose = kartVehiclePose({
+      x: old.x + (d.x - old.x) * alpha,
+      z: old.z + (d.z - old.z) * alpha,
+      height: (old.height ?? 0) + ((d.height ?? 0) - (old.height ?? 0)) * alpha,
+      heading: old.heading + turn * alpha,
+    });
+    player.position.set(...renderPose.position);
+    player.rotation.y = -renderPose.heading - Math.PI / 2;
     speedRef.current = d.vx * Math.cos(d.heading) + d.vz * Math.sin(d.heading);
-    inputTurn.current = -d.turn * 0.1;
+    const oldPose = lastRendered.current;
+    if (oldPose) {
+      const dx = renderPose.position[0] - oldPose[0],
+        dz = renderPose.position[2] - oldPose[2];
+      if (Math.hypot(dx, dz) < 8)
+        vehicleMotion.current.travel +=
+          dx * Math.cos(renderPose.heading) + dz * Math.sin(renderPose.heading);
+    }
+    lastRendered.current = renderPose.position;
+    vehicleMotion.current.speed = speedRef.current;
+    vehicleMotion.current.turnRate = d.turn;
     driftDirection.current = d.wasDrifting
       ? -(d.driftSide || Math.sign(d.turn)) * 0.6
       : 0;
@@ -241,11 +256,13 @@ export const PlayerController = () => {
     jumpOffset.current = reduced ? 0 : Math.sin((hop.current / 250) * Math.PI) * 0.5;
     const easing = 1 - Math.exp(-10 * Math.min(delta, 0.1));
     const pose = driftPose(d.heading, d.vx, d.vz, d.wasDrifting, d.driftSide || 0);
+    const chassis = vehiclePose(vehicleMotion.current, reduced, {
+      wheelBase: 1.4,
+      wheelRadius: 0.2892,
+    });
     kartRef.current.rotation.y +=
       ((reduced ? 0 : -pose) - kartRef.current.rotation.y) * easing;
-    kartRef.current.rotation.z +=
-      ((reduced ? 0 : driftDirection.current * 0.035) - kartRef.current.rotation.z) *
-      easing;
+    kartRef.current.rotation.z += (chassis.roll - kartRef.current.rotation.z) * easing;
     cameraGroupRef.current.position.x +=
       ((reduced ? 0 : driftDirection.current * 0.7) -
         cameraGroupRef.current.position.x) *
@@ -294,7 +311,7 @@ export const PlayerController = () => {
           driftPower={driftPower}
           jumpOffset={jumpOffset}
           backWheelOffset={backWheelOffset}
-          inputTurn={inputTurn}
+          vehicleMotion={vehicleMotion}
         />
         <group ref={cameraLookAtRef} position={[0, -0.5, -9]} />
       </group>

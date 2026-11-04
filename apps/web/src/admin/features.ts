@@ -32,7 +32,7 @@ export const adminFeatures: readonly AdminFeature[] = [
     summary:
       "Run isolated shows with 100 bots, question controls, real phones, failure scenarios and checks.",
     rehearsal:
-      "Create a saved rehearsal setup, run the show with ten bots, repeat a question, disconnect bots and inspect the timeline.",
+      "Create a saved rehearsal setup, run the show with ten bots, repeat a question, disconnect bots and inspect the timeline. In a kart lobby, start and advance the race here to keep the bot fleet connected.",
     owns: ["apps/api/src/developer", "apps/web/src/developer"],
     status: (snapshot) =>
       `${snapshot.developerTools?.bots.length ?? 0} bots · ${snapshot.connections?.guests ?? 0} guest connections`,
@@ -76,9 +76,9 @@ export const adminFeatures: readonly AdminFeature[] = [
     scope: "global",
     path: "kart",
     summary:
-      "Create a kart-only lobby, drive the real engine and inspect phone/stage layouts and course features.",
+      "Check kart files, rehearse vehicles, stage cameras, effects and the early Look bench, create a kart-only lobby and drive the real engine.",
     rehearsal:
-      "Create a kart-only lobby and join from a private second tab, or drive solo and compare graphics, boosts, ramps and gliding.",
+      "Rehearse 80 stand-ins in real phone/stage renderers, drivers/faces in solo and finite moving effects plus isolated grading/light previews with validated presets and local resource counts; verify downloads, or create a kart lobby and join from a private second tab.",
     owns: ["apps/web/src/kart"],
   },
   {

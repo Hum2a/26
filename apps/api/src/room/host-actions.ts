@@ -46,7 +46,12 @@ import {
   swapNicknames,
 } from "./names.ts";
 import { createSqlStore } from "./sql-store.ts";
-import { changeKartCourse } from "../questions/kart.ts";
+import {
+  changeKartCourse,
+  changeKartOpponents,
+  changeKartEffects,
+  changeKartStage,
+} from "../questions/kart.ts";
 import { changePhotoBias } from "../media/photo-bias.ts";
 import { setBotCount } from "../developer/bots.ts";
 import { changeAdmission } from "./admission.ts";
@@ -160,6 +165,28 @@ export function applyHostAction(
   }
   if (input.action === "photo-bias-on" || input.action === "photo-bias-off") {
     changePhotoBias(sql, input.action === "photo-bias-on", input.nowMs);
+    return {};
+  }
+  if (input.action === "kart-opponents-on" || input.action === "kart-opponents-off") {
+    changeKartOpponents(sql, input.action === "kart-opponents-on", input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (input.action === "kart-effects-on" || input.action === "kart-effects-off") {
+    changeKartEffects(sql, input.action === "kart-effects-on", input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (
+    [
+      "kart-stage-map",
+      "kart-stage-overview",
+      "kart-stage-follow",
+      "kart-stage-director",
+    ].includes(input.action)
+  ) {
+    changeKartStage(sql, input.action.slice("kart-stage-".length), input.nowMs);
+    touch(sql);
     return {};
   }
   if (input.action === "kart-course-on" || input.action === "kart-course-off") {

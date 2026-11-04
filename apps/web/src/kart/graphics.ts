@@ -13,10 +13,51 @@ export function graphicsTier(
 }
 
 export const graphicsProfiles = {
-  high: { pixelRatio: 1.5, sparkStride: 1 },
-  balanced: { pixelRatio: 1, sparkStride: 2 },
-  low: { pixelRatio: 0.75, sparkStride: 4 },
+  high: {
+    pixelRatio: 1.5,
+    sparkStride: 1,
+    sparkLimit: 640,
+    trailLimit: 32,
+    nearbyLimit: 8,
+  },
+  balanced: {
+    pixelRatio: 1,
+    sparkStride: 2,
+    sparkLimit: 320,
+    trailLimit: 0,
+    nearbyLimit: 4,
+  },
+  low: {
+    pixelRatio: 0.75,
+    sparkStride: 4,
+    sparkLimit: 128,
+    trailLimit: 0,
+    nearbyLimit: 2,
+  },
 } as const;
+
+/** Local capability limits can lower decoration; they never alter race state. */
+export function safeGraphicsProfile(
+  tier: GraphicsTier,
+  capabilities: { webgl: boolean; maxTextureSize: number; pixelRatioLimit: number },
+) {
+  if (
+    !capabilities.webgl ||
+    !Number.isFinite(capabilities.maxTextureSize) ||
+    capabilities.maxTextureSize < 512
+  )
+    return null;
+  const effective = capabilities.maxTextureSize < 2048 ? "low" : tier;
+  const ratio =
+    Number.isFinite(capabilities.pixelRatioLimit) && capabilities.pixelRatioLimit > 0
+      ? capabilities.pixelRatioLimit
+      : 1;
+  return {
+    tier: effective,
+    ...graphicsProfiles[effective],
+    pixelRatio: Math.min(ratio, graphicsProfiles[effective].pixelRatio),
+  };
+}
 
 /** Actual visible frame cadence, not a device model or GPU fingerprint. */
 export function createFrameProbe() {

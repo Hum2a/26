@@ -21,7 +21,27 @@ test("solo collects a track box, uses its item and resets the inventory", async 
     name: /^Use (Turbo|Bubble shield|Oil slick)$/,
   });
   await expect(item).toBeEnabled({ timeout: 20000 });
+  const collected = await item.textContent();
+  const distance = async () =>
+    Number.parseInt(
+      (await game.getByLabel("Distance from start").textContent()) ?? "NaN",
+    );
+  // All three boxes are on the first 56m. Being stopped alone does not
+  // prevent an immediate pickup from an uncollected box under the kart.
+  await expect.poll(distance).toBeGreaterThan(62);
   await page.keyboard.up("ArrowUp");
+  // Recover beyond the box lane; prove recovery keeps this exact item.
+  await game.getByRole("button", { name: "Back to track", exact: true }).click();
+  await expect
+    .poll(async () =>
+      Number.parseInt(
+        (await game.getByLabel("Speed", { exact: true }).textContent()) ?? "NaN",
+      ),
+    )
+    .toBe(0);
+  await expect.poll(distance).toBeGreaterThan(60);
+  await expect(item).toBeEnabled();
+  await expect(item).toHaveText(collected!);
   await item.click();
   await expect(
     game.getByText(/^(Power-up used|Shield active — blocks one slick)$/),

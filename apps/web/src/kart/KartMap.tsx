@@ -55,7 +55,12 @@ export function KartMap({
   const reduced = useReducedMotion();
   const faces = useKartDrivers();
   const drivers = personal
-    ? race.participants.filter((driver) => driver.playerId === race.selfPlayerId)
+    ? [
+        ...race.participants.filter((driver) => driver.playerId === race.selfPlayerId),
+        ...(race.nearby ?? [])
+          .filter((driver) => driver.playerId !== race.selfPlayerId)
+          .slice(0, 8),
+      ]
     : race.participants;
   const leaders = new Map(
     race.leaderboard.slice(0, 3).map((row, i) => [row.playerId, i]),
@@ -215,7 +220,11 @@ export function KartMap({
             className="kart-map-dot"
             data-finished={driver.status === "FINISHED"}
           />
-          {personal || leaders.has(driver.playerId) ? (
+          {(
+            personal
+              ? driver.playerId === race.selfPlayerId
+              : leaders.has(driver.playerId)
+          ) ? (
             <>
               <circle r="3.5" className="kart-map-leader-ring" />
               <MapFace

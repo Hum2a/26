@@ -3,9 +3,20 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { ringBounds, ringCourse, soloCourse, courseFeaturePose } from "@26/shared";
 import type { KartRaceView } from "@26/shared";
-import { driftSparks, driftStrength } from "./drift-effects";
+import { driftEffectDescription, driftStrength } from "./drift-effects";
 import { smoothKartPose, type KartPose } from "./presentation";
 import { createDriverRig } from "./driver-rig";
+import { kartAssetPaths } from "@26/shared";
+import { vehiclePose } from "./vehicle-pose";
+import { createVehicleRig } from "./vehicle-model";
+import { createKartVfxPool, type VfxActor } from "./vfx-budget";
+import { createNativeKartVfx } from "./vfx-renderer";
+import type { KartVfxPreset, KartVfxKind } from "@26/shared";
+import {
+  importedSurfaceAt,
+  importedGroundAt,
+} from "../../../../packages/shared/src/kart-track";
+import type { GraphicsTier } from "./graphics";
 
 type Palette = Record<
   "ground" | "road" | "accent" | "highlight" | "ink" | "muted",
@@ -19,6 +30,10 @@ export function createCircuit(
   focusPlayerId?: string,
   trackId = "party-ring-v1",
   onAssetError?: () => void,
+  onAssetState?: (state: "loading" | "ready" | "failed") => void,
+  nearbyCapacity = 0,
+  onVehicleState?: (state: "loading" | "ready" | "failed") => void,
+  onVisualChange?: () => void,
 ) {
   const imported = trackId === "mario-circuit-v1";
   const course = imported ? soloCourse : ringCourse;
@@ -26,9 +41,14 @@ export function createCircuit(
   const venue = new THREE.Group();
   venue.visible = !imported;
   let target: THREE.Object3D = venue;
-  const capacity = focusPlayerId ? 1 : 80;
+  const neighbourCapacity = Math.max(0, Math.min(8, Math.floor(nearbyCapacity) || 0));
+  const capacity = focusPlayerId ? 1 + neighbourCapacity : 80;
   const { ground, road, accent, highlight, ink, muted } = palette;
   const scene = new THREE.Scene();
+  let vfxPool: ReturnType<typeof createKartVfxPool> | undefined;
+  let vfx: ReturnType<typeof createNativeKartVfx> | undefined;
+  let vfxPreset: KartVfxPreset | undefined;
+  let vfxActive = false;
   scene.background = ground;
   scene.add(venue);
   scene.add(new THREE.HemisphereLight(ink, ground, 2));
@@ -54,29 +74,74 @@ export function createCircuit(
     text = mat(ink),
     dark = mat(ground),
     quiet = mat(muted);
-  const releaseModel = (root: THREE.Object3D) =>
+  const releaseModel = (root: THREE.Object3D) => {
+    const released = new Set<THREE.BufferGeometry | THREE.Material | THREE.Texture>();
     root.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return;
-      object.geometry.dispose();
+      if (!released.has(object.geometry)) {
+        object.geometry.dispose();
+        released.add(object.geometry);
+      }
       for (const material of Array.isArray(object.material)
         ? object.material
         : [object.material]) {
+        if (released.has(material)) continue;
         for (const value of Object.values(material))
-          if (value instanceof THREE.Texture) {
+          if (value instanceof THREE.Texture && !released.has(value)) {
             const bitmap = value.source.data;
             if (bitmap && typeof bitmap.close === "function") bitmap.close();
             value.dispose();
+            released.add(value);
           }
         material.dispose();
+        released.add(material);
       }
     });
+  };
+  let vehicle: ReturnType<typeof createVehicleRig> | undefined;
+  let vehicleSource: THREE.Object3D | undefined;
+  let vehicleDecoder: DRACOLoader | undefined;
+  let vehicleRequested = false;
+  let detailedVisible = false;
+  function ensureVehicle() {
+    if (!imported || vehicleRequested || disposed) return;
+    vehicleRequested = true;
+    onVehicleState?.("loading");
+    vehicleDecoder = new DRACOLoader()
+      .setDecoderPath(kartAssetPaths.draco)
+      .setWorkerLimit(1);
+    new GLTFLoader().setDRACOLoader(vehicleDecoder).load(
+      kartAssetPaths.kart,
+      (gltf) => {
+        vehicleDecoder?.dispose();
+        if (disposed) {
+          releaseModel(gltf.scene);
+          return;
+        }
+        try {
+          vehicle = createVehicleRig(gltf.scene, scene, capacity);
+          vehicleSource = gltf.scene;
+          onVehicleState?.("ready");
+        } catch {
+          releaseModel(gltf.scene);
+          onVehicleState?.("failed");
+        }
+      },
+      undefined,
+      () => {
+        vehicleDecoder?.dispose();
+        if (!disposed) onVehicleState?.("failed");
+      },
+    );
+  }
   let model: THREE.Object3D | undefined;
   const draco = imported
-    ? new DRACOLoader().setDecoderPath("/kart-engine/draco/").setWorkerLimit(1)
+    ? new DRACOLoader().setDecoderPath(kartAssetPaths.draco).setWorkerLimit(1)
     : undefined;
+  onAssetState?.(imported ? "loading" : "ready");
   if (draco)
     new GLTFLoader().setDRACOLoader(draco).load(
-      "/kart-engine/models/mario-circuit-test-transformed.glb",
+      kartAssetPaths.circuit,
       (gltf) => {
         if (disposed) {
           releaseModel(gltf.scene);
@@ -86,11 +151,14 @@ export function createCircuit(
         model.position.set(155, -26.4, 15);
         model.scale.setScalar(0.08);
         scene.add(model);
+        onAssetState?.("ready");
         draco.dispose();
       },
       undefined,
       () => {
         draco.dispose();
+        if (disposed) return;
+        onAssetState?.("failed");
         onAssetError?.();
       },
     );
@@ -130,7 +198,7 @@ export function createCircuit(
     sz = 1,
   ) => {
     transform.position.set(x, y, z);
-    transform.rotation.set(0, yaw, 0);
+    transform.rotation.set(0, yaw, 0, "XYZ");
     transform.scale.set(sx, sy, sz);
     transform.updateMatrix();
     value.setMatrixAt(i, transform.matrix);
@@ -253,6 +321,7 @@ export function createCircuit(
   }
   // Each kart's driver. The old helmet sphere stays unused: its geometry is shared below.
   const rig = createDriverRig({
+    onChange: onVisualChange,
     scene,
     capacity,
     geo,
@@ -302,6 +371,7 @@ export function createCircuit(
   let effectTime = 0,
     effectRaceId: string | undefined;
   const poses = new Map<string, KartPose>();
+  const travel = new Map<string, number>();
   const featurePoses = new Map<string, { x: number; z: number }>();
   const labels = new Map<string, THREE.Sprite>();
   function label(driver: KartRaceView["participants"][number]) {
@@ -332,9 +402,33 @@ export function createCircuit(
     labels.set(driver.playerId, sprite);
     return sprite;
   }
-  function update(race: KartRaceView, dt: number, reduced: boolean, sparkStride = 1) {
+  function update(
+    race: KartRaceView,
+    dt: number,
+    reduced: boolean,
+    sparkStride = 1,
+    sparkLimit = capacity * 8,
+    nearbyLimit = 0,
+    detailed = true,
+    effects?: { preset: KartVfxPreset; tier: GraphicsTier; paused: boolean },
+  ) {
+    vfxActive = Boolean(effects);
+    if (effects && !vfxPool) vfxPool = createKartVfxPool();
+    if (effects && vfxPreset !== effects.preset) {
+      vfxPool!.configure(effects.preset);
+      vfxPreset = effects.preset;
+    }
+    if (effects && !vfx)
+      vfx = createNativeKartVfx(THREE, scene, { accent, highlight, muted, ink });
+    if (detailed) ensureVehicle();
+    detailedVisible = detailed && Boolean(vehicle);
+    const sparkBudget = Number.isFinite(sparkLimit)
+      ? Math.max(0, Math.min(capacity * 8, Math.floor(sparkLimit)))
+      : 0;
     if (effectRaceId !== race.raceId) {
       emission.clear();
+      poses.clear();
+      travel.clear();
       featurePoses.clear();
       effectTime = 0;
       effectRaceId = race.raceId;
@@ -342,26 +436,61 @@ export function createCircuit(
     let sparkCount = 0,
       shieldCount = 0;
     effectTime += Math.max(0, Math.min(0.1, dt));
+    const self = race.participants.find((driver) => driver.playerId === focusPlayerId);
+    const neighbours = (race.nearby ?? [])
+      .filter(
+        (driver, i, all) =>
+          driver.playerId !== focusPlayerId &&
+          all.findIndex((other) => other.playerId === driver.playerId) === i,
+      )
+      .slice(0, Math.max(0, Math.min(neighbourCapacity, Math.floor(nearbyLimit) || 0)));
     const drivers = (
-      focusPlayerId
-        ? race.participants.filter((driver) => driver.playerId === focusPlayerId)
-        : race.participants
+      focusPlayerId ? (self ? [self, ...neighbours] : []) : race.participants
     ).slice(0, capacity);
+    const present = new Set(drivers.map((driver) => driver.playerId));
+    for (const id of poses.keys())
+      if (!present.has(id)) {
+        poses.delete(id);
+        travel.delete(id);
+        emission.delete(id);
+      }
     rig.begin(dt);
     for (let i = 0; i < drivers.length; i++) {
       const driver = drivers[i]!,
-        pose = smoothKartPose(
-          poses.get(driver.playerId) ?? driver,
-          driver,
-          dt,
-          reduced,
-        );
+        previous = poses.get(driver.playerId),
+        pose = smoothKartPose(previous ?? driver, driver, dt, reduced);
       poses.set(driver.playerId, pose);
       const height = pose.height ?? 0;
       const { x, z, heading } = pose,
         c = Math.cos(heading),
         s = Math.sin(heading);
+      const moved = previous ? Math.hypot(x - previous.x, z - previous.z) : 0;
+      const distance =
+        moved < 8 && previous ? (x - previous.x) * c + (z - previous.z) * s : 0;
+      const along = (moved < 8 ? (travel.get(driver.playerId) ?? 0) : 0) + distance;
+      travel.set(driver.playerId, along);
+      const yaw =
+        previous && moved < 8 && dt > 0
+          ? Math.atan2(
+              Math.sin(heading - previous.heading),
+              Math.cos(heading - previous.heading),
+            ) / dt
+          : 0;
+      const chassis = vehiclePose(
+        { speed: driver.speed, turnRate: driver.turnRate ?? yaw, travel: along },
+        reduced,
+      );
+      if (detailedVisible)
+        vehicle?.place(
+          i,
+          pose,
+          { speed: driver.speed, turnRate: driver.turnRate ?? yaw, travel: along },
+          reduced,
+        );
       place(bodies, i, x, 0.6 + height, z, -heading);
+      transform.rotation.set(chassis.roll, -heading, 0, "YXZ");
+      transform.updateMatrix();
+      bodies.setMatrixAt(i, transform.matrix);
       place(noses, i, x + c * 1.25, 0.5 + height, z + s * 1.25, -heading);
       // The seat is now a backrest behind the driver.
       place(seats, i, x - c * 0.78, 1.05 + height, z - s * 0.78, -heading, 0.5, 1, 1.1);
@@ -370,7 +499,12 @@ export function createCircuit(
         driver.playerId,
         driver.number - 1,
         pose,
-        { status: driver.status, drifting: driver.drifting, elapsedMs: race.elapsedMs },
+        {
+          status: driver.status,
+          drifting: driver.drifting,
+          elapsedMs: race.elapsedMs,
+          turnRate: driver.turnRate,
+        },
         driver.number % 2 ? accent : highlight,
         driver.number % 2 ? highlight : accent,
         dt,
@@ -387,6 +521,14 @@ export function createCircuit(
           z + s * localX + c * localZ,
           -heading,
         );
+        transform.rotation.set(
+          0,
+          -heading + (j >= 2 ? chassis.steering : 0),
+          chassis.wheelRotation,
+          "YXZ",
+        );
+        transform.updateMatrix();
+        wheels.setMatrixAt(i * 4 + j, transform.matrix);
       }
       if (
         race.powers?.effects.some(
@@ -398,15 +540,16 @@ export function createCircuit(
         driver.status === "RACING" && (driver.drifting || driver.boostRemainingMs > 0);
       const strength = driftStrength(emission.get(driver.playerId) ?? 0, active, dt);
       emission.set(driver.playerId, strength);
-      if (strength > 0.01) {
+      if (strength > 0.01 && !effects) {
         const charged = driver.boostRemainingMs > 0 || driver.driftCharge >= 1;
-        for (const spark of driftSparks(
+        for (const spark of driftEffectDescription(
           effectTime + i * 0.17,
           strength,
           (driver.driftChargeMs ?? driver.driftCharge * 700) / 2400,
           driver.boostRemainingMs > 0,
           reduced,
-        ).filter((_, index) => index % sparkStride === 0)) {
+        ).points.filter((_, index) => index % sparkStride === 0)) {
+          if (sparkCount >= sparkBudget) break;
           place(
             sparks,
             sparkCount,
@@ -427,11 +570,49 @@ export function createCircuit(
       if (sprite) sprite.position.set(x, 3.8 + height, z);
     }
     for (const value of [bodies, noses, seats]) {
-      value.count = drivers.length;
+      value.count = detailedVisible ? 0 : drivers.length;
       value.instanceMatrix.needsUpdate = true;
     }
     rig.end(new Set(drivers.map((driver) => driver.playerId)));
-    wheels.count = drivers.length * 4;
+    if (effects)
+      vfxPool!.update({
+        raceId: race.raceId,
+        elapsedMs: race.elapsedMs,
+        dt,
+        tier: effects.tier,
+        paused: effects.paused,
+        reducedMotion: reduced,
+        presentation: race.presentation,
+        actors: drivers.map((driver) => {
+          const pose = poses.get(driver.playerId)!;
+          const ground = imported
+            ? importedGroundAt(pose.x, pose.z, "connected")
+            : undefined;
+          return {
+            playerId: driver.playerId,
+            contact: driver.contact,
+            number: driver.number,
+            x: pose.x,
+            y: (ground?.y ?? 0) + (pose.height ?? 0),
+            clearance: pose.height ?? 0,
+            groundNormal: ground?.normal,
+            z: pose.z,
+            heading: pose.heading,
+            speed: driver.speed,
+            drifting: driver.drifting,
+            boosting: driver.boostRemainingMs > 0,
+            charge: driver.driftLevel ?? driver.driftCharge * 3,
+            status: driver.status,
+            surface: imported
+              ? importedSurfaceAt(pose.x, pose.z)
+              : Math.abs(Math.hypot(pose.x, pose.z) - 42) > 8
+                ? "dirt"
+                : "road",
+          } satisfies VfxActor;
+        }),
+      });
+    wheels.count = detailedVisible ? 0 : drivers.length * 4;
+    vehicle?.end(detailedVisible ? drivers.length : 0);
     wheels.instanceMatrix.needsUpdate = true;
     let gliderCount = 0;
     for (const driver of drivers) {
@@ -523,12 +704,37 @@ export function createCircuit(
   return {
     scene,
     update,
+    renderVfx(camera: THREE.Camera) {
+      if (vfxPreset)
+        vfx?.render(
+          vfxActive ? vfxPool!.view() : { particles: [], skids: [] },
+          camera,
+          vfxPreset,
+        );
+    },
+    vfxStats: () =>
+      vfxPool?.stats() ?? {
+        particles: 0,
+        skids: 0,
+        actors: 0,
+        capacity: { particles: 0, skids: 0 },
+        byKind: {} as Partial<Record<KartVfxKind, number>>,
+      },
+    resetVfx() {
+      vfxPool?.reset();
+    },
     pose: (playerId: string) => poses.get(playerId),
     setDrivers: rig.setDrivers,
     driverCounts: rig.counts,
+    renderStats: () => ({ drivers: poses.size, detailed: detailedVisible }),
     dispose() {
       disposed = true;
+      vfxPool?.dispose();
+      vfx?.dispose();
       draco?.dispose();
+      vehicleDecoder?.dispose();
+      vehicle?.dispose();
+      if (vehicleSource) releaseModel(vehicleSource);
       if (model) releaseModel(model);
       rig.dispose();
       geometries.forEach((g) => g.dispose());
@@ -537,6 +743,7 @@ export function createCircuit(
       instances.forEach((i) => i.dispose());
       emission.clear();
       poses.clear();
+      travel.clear();
       featurePoses.clear();
       labels.clear();
       scene.clear();

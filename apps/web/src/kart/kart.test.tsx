@@ -18,14 +18,20 @@ vi.mock("./KartCanvas", () => ({
   default: ({
     followPlayerId,
     mobile,
+    vfxPreset,
+    paused,
   }: {
     followPlayerId?: string;
     mobile: boolean;
+    vfxPreset?: { enabled: boolean };
+    paused?: boolean;
   }) => (
     <div
       data-testid="driving-renderer"
       data-player={followPlayerId}
       data-mobile={String(mobile)}
+      data-effects={vfxPreset === undefined ? "legacy" : String(vfxPreset.enabled)}
+      data-paused={String(paused)}
     >
       Stand-in WebGL renderer
     </div>
@@ -222,6 +228,36 @@ it("shows server-confirmed drift and wrong-way feedback, and replaces pedals wit
   expect(screen.getByText("28.00s")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Accelerate" })).toBeNull();
   expect(screen.getByText("Watch the stage for the results.")).toBeTruthy();
+});
+
+it("passes the public effects switch and authoritative pause separately into the phone renderer", async () => {
+  const race = projectKartRace(
+    createKartRace("effects", [{ playerId: "mine", name: "Amina" }]),
+    "mine",
+    100,
+  );
+  const snapshot = {
+    phase: "collect",
+    paused: false,
+    held: false,
+    play: { kart: race },
+  } as unknown as LobbySnapshot;
+  const view = render(<GuestKart snapshot={snapshot} />);
+  const canvas = await screen.findByTestId("driving-renderer");
+  expect(canvas.getAttribute("data-effects")).toBe("legacy");
+  for (const enabled of [true, false]) {
+    view.rerender(
+      <GuestKart
+        snapshot={{
+          ...snapshot,
+          play: { ...snapshot.play!, kart: { ...race, effectsEnabled: enabled } },
+        }}
+      />,
+    );
+    expect(canvas.getAttribute("data-effects")).toBe(String(enabled));
+  }
+  view.rerender(<GuestKart snapshot={{ ...snapshot, paused: true }} />);
+  expect(canvas.getAttribute("data-paused")).toBe("true");
 });
 
 it("gives the phone its own driving view and a map option without changing input authority", async () => {

@@ -1,8 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { RouteError } from "./route-error";
 import { isStaleBuildError, reloadForNewBuild } from "./stale-build";
+
+afterEach(() => vi.restoreAllMocks());
 
 beforeEach(() => {
   sessionStorage.clear();
@@ -70,3 +72,16 @@ it("keeps other failures calm and without developer detail", async () => {
   ).toBeTruthy();
   expect(screen.queryByText(/private/)).toBeNull();
 });
+
+it.each(["getItem", "setItem"] as const)(
+  "keeps recovery manual if session storage %s is refused",
+  (method) => {
+    vi.spyOn(Storage.prototype, method).mockImplementation(() => {
+      throw new DOMException("Storage refused", "SecurityError");
+    });
+    const reload = vi.fn();
+    expect(reloadForNewBuild(1000, reload)).toBe(false);
+    expect(reloadForNewBuild(2000, reload)).toBe(false);
+    expect(reload).not.toHaveBeenCalled();
+  },
+);

@@ -19,6 +19,13 @@ import {
   type OilSlick,
 } from "./kart-powers.ts";
 import { z } from "zod";
+import { kartPresentationSchema, kartFinishPresentation } from "./kart-events.ts";
+import { selectNearbyNumbers } from "./kart-nearby.ts";
+import {
+  kartSpectatorSchema,
+  kartSpectatorView,
+  type KartStageMode,
+} from "./kart-spectator.ts";
 import {
   clearOfWalls,
   createDrivingBody,
@@ -62,6 +69,8 @@ export const kartDriverSchema = z
     z: z.number().finite(),
     heading: z.number().finite(),
     speed: z.number().finite(),
+    turnRate: z.number().finite().min(-10).max(10).optional(),
+    contact: z.boolean().optional(),
     progress: z.number().min(0).max(1),
     checkpoint: z.number().int().min(0).max(8),
     // Defaults accept older stored/public snapshots during a rolling update.
@@ -91,7 +100,20 @@ export const kartRaceSchema = z
     participantCount: z.number().int().min(0).max(100).optional(),
     powers: kartPowerViewSchema.optional(),
     courseEnabled: z.boolean().optional(),
+    opponentsEnabled: z.boolean().optional(),
+    effectsEnabled: z.boolean().optional(),
+    spectator: kartSpectatorSchema.optional().catch(undefined),
+    // Unsupported cosmetic metadata must not invalidate authoritative driving state.
+    presentation: kartPresentationSchema.optional().catch(undefined),
     participants: z.array(kartDriverSchema).max(100),
+    nearby: z
+      .array(kartDriverSchema)
+      .max(8)
+      .refine(
+        (drivers) => new Set(drivers.map((d) => d.playerId)).size === drivers.length,
+      )
+      .optional()
+      .catch(undefined),
     leaderboard: z
       .array(
         z
@@ -163,6 +185,14 @@ export type KartRace = {
   timeLimitMs?: 45000 | 180000;
   courseEnabled?: boolean;
   courseHistory?: { atMs: number; enabled: boolean }[];
+  opponentsEnabled?: boolean;
+  effectsEnabled?: boolean;
+  effectsHistory?: { atMs: number; enabled: boolean }[];
+  nearbyNumbers?: number[][];
+  opponentHistory?: { atMs: number; enabled: boolean }[];
+  stageMode?: KartStageMode;
+  stageRevision?: number;
+  stageHistory?: { atMs: number; mode: KartStageMode }[];
 };
 
 export function createKartRace(
@@ -304,6 +334,11 @@ function settleRace(race: KartRace, force = false): KartRace {
       d.wasDrifting = false;
     }
   }
+  if (race.opponentsEnabled)
+    race.nearbyNumbers = race.drivers.map((driver, index) =>
+      selectNearbyNumbers(race.drivers, driver.playerId, race.nearbyNumbers?.[index]),
+    );
+  else race.nearbyNumbers = undefined;
   return race;
 }
 
@@ -655,6 +690,19 @@ export function projectKartRace(
   return kartRaceSchema.parse({
     raceId: race.raceId,
     courseEnabled: race.courseEnabled ?? false,
+    ...(race.opponentsEnabled ? { opponentsEnabled: true } : {}),
+    ...(race.effectsEnabled !== undefined
+      ? { effectsEnabled: race.effectsEnabled }
+      : {}),
+    ...(race.stageMode
+      ? {
+          spectator: {
+            ...kartSpectatorView(race.stageMode, race.drivers, race.elapsedMs),
+            revision: race.stageRevision ?? 0,
+          },
+        }
+      : {}),
+    presentation: kartFinishPresentation(race),
     trackId: race.trackId ?? kartTrackId,
     timeLimitMs: race.timeLimitMs ?? kartLimitMs,
     elapsedMs: race.elapsedMs,
@@ -709,6 +757,7 @@ export function projectKartRace(
         driftMs,
         boostMs,
         wasDrifting,
+        turn,
         physics,
       }) => ({
         playerId,
@@ -721,6 +770,8 @@ export function projectKartRace(
         z: round(z, 3),
         heading: round(heading, 3),
         speed: round(speed, 3),
+        turnRate: round(Math.max(-10, Math.min(10, physics?.turn ?? turn)), 3),
+        ...(physics?.contact ? { contact: true } : {}),
         progress,
         checkpoint,
         status,

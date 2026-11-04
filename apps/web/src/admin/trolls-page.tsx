@@ -19,7 +19,7 @@ export function TrollsPage() {
       eyebrow="Catalogue"
       intro={
         <>
-          Every troll guests can send. Each guest gets one, unlocked from the third
+          Every troll guests can send. Each guest gets one, unlocked from the second
           question. Open a room and choose <strong>Trolls</strong> to switch them on or
           off for that room.{" "}
           <Link className="entry-text-link" to="/admin/rooms">

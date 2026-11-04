@@ -1,5 +1,6 @@
 import {
   kartInputSchema,
+  kartStageModeSchema,
   kartLimitMs,
   kartTickMs,
   createKartRace,
@@ -7,6 +8,7 @@ import {
   reduceKartTimeline,
   projectKartRace,
   kartStandings,
+  selectNearbyNumbers,
   type KartRace,
   type KartInput,
   type KartRaceView,
@@ -28,6 +30,73 @@ export const readKart = (sql: SqlStorage, id: string) =>
   readRoundState<KartRace>(sql, id, key);
 const write = (sql: SqlStorage, id: string, race: KartRace) =>
   writeRoundState(sql, id, key, race);
+
+export function changeKartStage(sql: SqlStorage, mode: unknown, now: number) {
+  const selected = kartStageModeSchema.safeParse(mode);
+  if (!selected.success || !Number.isSafeInteger(now) || now < 0)
+    throw new Error("Choose a valid stage view.");
+  const store = createSqlStore(sql);
+  const q = questionFor(store.readRoom());
+  if (
+    q?.kind !== "kart" ||
+    !["intro", "prompt", "collect", "reveal", "scores"].includes(store.readRoom().phase)
+  )
+    throw new Error("Stage views need an open kart round.");
+  const race = catchUp(sql, store, q, now);
+  if (!race) throw new Error("No kart race is available.");
+  race.stageMode = selected.data;
+  race.stageRevision = Math.min(Number.MAX_SAFE_INTEGER, (race.stageRevision ?? 0) + 1);
+  race.stageHistory = [
+    ...(race.stageHistory ?? []),
+    { atMs: now, mode: selected.data },
+  ].slice(-20);
+  write(sql, q.id, race);
+}
+
+export function changeKartEffects(sql: SqlStorage, enabled: boolean, now: number) {
+  if (typeof enabled !== "boolean" || !Number.isSafeInteger(now) || now < 0)
+    throw new Error("Choose a valid effects setting.");
+  const store = createSqlStore(sql),
+    room = store.readRoom(),
+    q = questionFor(room);
+  if (
+    q?.kind !== "kart" ||
+    !(
+      enabled
+        ? ["intro", "collect"]
+        : ["intro", "prompt", "collect", "reveal", "scores"]
+    ).includes(room.phase)
+  )
+    throw new Error("Effects controls need an open kart round.");
+  const race = ["intro", "collect"].includes(room.phase)
+    ? catchUp(sql, store, q, now)
+    : readKart(sql, q.id);
+  if (!race || (enabled && race.ended)) throw new Error("This race has ended.");
+  race.effectsEnabled = enabled;
+  race.effectsHistory = [...(race.effectsHistory ?? []), { atMs: now, enabled }].slice(
+    -20,
+  );
+  write(sql, q.id, race);
+}
+
+export function changeKartOpponents(sql: SqlStorage, enabled: boolean, now: number) {
+  if (typeof enabled !== "boolean" || !Number.isSafeInteger(now) || now < 0)
+    throw new Error("Choose a valid opponent display setting.");
+  const store = createSqlStore(sql);
+  const room = store.readRoom();
+  const q = questionFor(room);
+  if (q?.kind !== "kart" || !["intro", "collect"].includes(room.phase))
+    throw new Error("Opponent controls need an open kart round.");
+  const race = catchUp(sql, store, q, now);
+  if (!race || race.ended) throw new Error("This race has ended.");
+  race.opponentsEnabled = enabled;
+  race.nearbyNumbers = undefined;
+  race.opponentHistory = [
+    ...(race.opponentHistory ?? []),
+    { atMs: now, enabled },
+  ].slice(-20);
+  write(sql, q.id, race);
+}
 
 export function changeKartCourse(sql: SqlStorage, enabled: boolean, now: number) {
   if (typeof enabled !== "boolean" || !Number.isSafeInteger(now) || now < 0)
@@ -521,13 +590,23 @@ export function projectKart(
   };
 }
 
-/** A phone sees its own kart and the top eight plus its own place. */
-function phoneRaceView(
+/** Self stays separate; optional nearby poses carry public fields only. */
+export function phoneRaceView(
   race: KartRace,
   full: KartRaceView,
   selfPlayerId: string,
   lastSequence: number | undefined,
 ): KartRaceView {
+  const index = race.drivers.findIndex((d) => d.playerId === selfPlayerId);
+  const numbers = race.opponentsEnabled
+    ? new Map(
+        selectNearbyNumbers(
+          full.participants,
+          selfPlayerId,
+          race.nearbyNumbers?.[index],
+        ).map((number, order) => [number, order] as const),
+      )
+    : new Map<number, number>();
   return {
     ...full,
     selfPlayerId,
@@ -552,6 +631,11 @@ function phoneRaceView(
       lastSequence ??
       Math.max(0, race.drivers.find((d) => d.playerId === selfPlayerId)?.sequence ?? 0),
     participants: full.participants.filter((d) => d.playerId === selfPlayerId),
+    nearby: race.opponentsEnabled
+      ? full.participants
+          .filter((d) => numbers.has(d.number))
+          .sort((a, b) => numbers.get(a.number)! - numbers.get(b.number)!)
+      : undefined,
     leaderboard: full.leaderboard.filter(
       (d, i) => i < 8 || d.playerId === selfPlayerId,
     ),

@@ -107,6 +107,38 @@ it("runs the existing show commands from the developer page", async () => {
   );
 });
 
+it("starts a kart lobby in the same tab as the fleet and disables other pack starts", async () => {
+  setupControls({
+    ...playingFixture,
+    phase: "lobby",
+    play: null,
+    kartLobby: { createdAt: 1000 },
+  });
+  await mountControls(<DeveloperPage />);
+  expect(
+    (
+      screen.getByRole("button", {
+        name: "Start illustrative demo",
+      }) as HTMLButtonElement
+    ).disabled,
+  ).toBe(true);
+  expect(
+    (screen.getByRole("button", { name: "Start birthday game" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Start kart race" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenLastCalledWith(
+      expect.objectContaining({ action: "start-kart" }),
+    ),
+  );
+  update({ ...playingFixture, kartLobby: { createdAt: 1000 } });
+  expect(
+    (screen.getByRole("button", { name: "Start kart race" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+});
+
 it("opens scoped sessions, configures real traffic, reconnects and closes everything on leaving", async () => {
   setupControls({
     ...playingFixture,

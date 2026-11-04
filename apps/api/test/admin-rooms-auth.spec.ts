@@ -36,6 +36,42 @@ beforeEach(() => {
   vi.mocked(administratorForRequest).mockResolvedValue({ email: "admin@example.test" });
 });
 
+it("serves the versioned kart inventory only to administrators without caching or room side effects", async () => {
+  const path = "https://example.com/api/admin/kart-assets";
+  const response = await app.request(path, {}, bindings);
+  expect(response.status).toBe(200);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(shared.kartAssetManifestSchema.parse(await response.json())).toEqual(
+    shared.kartAssetManifest,
+  );
+  expect(listRooms).not.toHaveBeenCalled();
+  vi.mocked(administratorForRequest).mockResolvedValue(
+    Response.json({ error: "unauthenticated" }, { status: 401 }),
+  );
+  const denied = await app.request(path, {}, bindings);
+  expect(denied.status).toBe(401);
+  expect(await denied.text()).not.toContain("sha256");
+});
+
+it("rehearses real public kart projections with labelled stand-ins and rejects invalid poses or unauthenticated reads", async () => {
+  const path = "https://example.com/api/admin/kart-preview";
+  const response = await app.request(path + "?beat=turn", {}, bindings);
+  expect(response.status).toBe(200);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  const preview = shared.kartRehearsalSchema.parse(await response.json());
+  expect(preview.stage.participants).toHaveLength(80);
+  expect(preview.phone.participants).toHaveLength(1);
+  expect(preview.phone.nearby).toHaveLength(8);
+  expect(preview.phone.participants[0]!.turnRate).toBe(0.5);
+  expect(JSON.stringify(preview)).not.toMatch(/credential|secret|inputUntil|lastSafe/);
+  expect(listRooms).not.toHaveBeenCalled();
+  expect((await app.request(path + "?beat=unknown", {}, bindings)).status).toBe(400);
+  vi.mocked(administratorForRequest).mockResolvedValue(
+    Response.json({ error: "unauthenticated" }, { status: 401 }),
+  );
+  expect((await app.request(path, {}, bindings)).status).toBe(401);
+});
+
 it("checks admin and origin before Wordle rehearsal; returns feedback without the target", async () => {
   const path =
     "https://example.com/api/admin/content/birthday-draft/questions/complete-a-wordle/preview/wordle";

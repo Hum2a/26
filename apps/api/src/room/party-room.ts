@@ -1,3 +1,4 @@
+import { KartIngressCache, type KartIngressClock } from "./kart-ingress.ts";
 import {
   kartRehearsalVersion,
   requirePlayable as requireKartRehearsal,
@@ -369,6 +370,7 @@ export class PartyRoom extends DurableObject<Env> {
   private readonly meter = createRealtimeMeter();
   private database: Promise<AppDatabase> | undefined;
   private kartArrivals = new KartInputBuffer();
+  private kartIngress = new KartIngressCache();
   private rateBuckets = new Map<string, RateBucket>();
   /** The last view each socket holds, and per screen for resume. Memory only. */
   private views = new WeakMap<WebSocket, SentView>();
@@ -514,7 +516,11 @@ export class PartyRoom extends DurableObject<Env> {
           )
           .toArray()[0];
         if (taken) {
-          result = { ok: false, error: "conflict", message: nicknameTakenMessage };
+          result = {
+            ok: false,
+            error: "conflict",
+            message: nicknameTakenMessage,
+          };
           this.writeReceipt("join", input.requestId, digest, result);
           return;
         }
@@ -633,7 +639,11 @@ export class PartyRoom extends DurableObject<Env> {
       return { ok: false, error: "not_found", message: roomMissingMessage };
     }
     if (!validRequestId(input.requestId)) {
-      return { ok: false, error: "invalid", message: "That request was not accepted." };
+      return {
+        ok: false,
+        error: "invalid",
+        message: "That request was not accepted.",
+      };
     }
     const digest = await payloadDigest({ playerId: input.playerId });
     const prior = this.readReceipt("control", input.requestId);
@@ -706,7 +716,11 @@ export class PartyRoom extends DurableObject<Env> {
     }
     const codeHash = await hashCredentialSecret(code);
     const existing = this.ctx.storage.sql
-      .exec<{ player_id: string; expires_at: string; consumed_at: string | null }>(
+      .exec<{
+        player_id: string;
+        expires_at: string;
+        consumed_at: string | null;
+      }>(
         `SELECT player_id, expires_at, consumed_at FROM transfer WHERE code_hash = ?`,
         codeHash,
       )
@@ -741,7 +755,11 @@ export class PartyRoom extends DurableObject<Env> {
       }
       const active = this.readPlayer(playerId);
       if (!active || active.revoked_at) {
-        result = { ok: false, error: "invalid", message: transferInvalidMessage };
+        result = {
+          ok: false,
+          error: "invalid",
+          message: transferInvalidMessage,
+        };
         return;
       }
       const current = this.ctx.storage.sql
@@ -755,7 +773,11 @@ export class PartyRoom extends DurableObject<Env> {
         return;
       }
       if (Date.parse(current.expires_at) <= Date.parse(input.now)) {
-        result = { ok: false, error: "expired", message: transferExpiredMessage };
+        result = {
+          ok: false,
+          error: "expired",
+          message: transferExpiredMessage,
+        };
         return;
       }
       this.ctx.storage.sql.exec(
@@ -851,6 +873,7 @@ export class PartyRoom extends DurableObject<Env> {
         !after.paused &&
         !after.hold;
     });
+    this.refreshKartIngressClock();
     await settleArchive({
       storage: this.ctx.storage,
       env: this.env,
@@ -1435,7 +1458,11 @@ export class PartyRoom extends DurableObject<Env> {
     }
     const room = this.readRoom();
     if (!room) {
-      return { ok: false, error: "unauthenticated", message: roomMissingMessage };
+      return {
+        ok: false,
+        error: "unauthenticated",
+        message: roomMissingMessage,
+      };
     }
     if (input.confirmCode.toUpperCase() !== room.join_code.toUpperCase()) {
       return {
@@ -1475,7 +1502,12 @@ export class PartyRoom extends DurableObject<Env> {
     await this.ctx.storage.deleteAll();
     // Empty tables, not missing ones: later requests read "no room" cleanly.
     ensurePartySchema(this.ctx.storage.sql);
-    return { ok: true, gameId: room.game_id, joinCode: room.join_code, mediaKeys };
+    return {
+      ok: true,
+      gameId: room.game_id,
+      joinCode: room.join_code,
+      mediaKeys,
+    };
   }
 
   async hostAction(input: {
@@ -1763,7 +1795,10 @@ export class PartyRoom extends DurableObject<Env> {
       input.nowMs,
     );
     if (!allowed.ok) return allowed;
-    return { ok: true as const, page: adminMedia(this.ctx.storage.sql, input.before) };
+    return {
+      ok: true as const,
+      page: adminMedia(this.ctx.storage.sql, input.before),
+    };
   }
 
   async diagnostics(input: {
@@ -2091,7 +2126,9 @@ export class PartyRoom extends DurableObject<Env> {
         input.mediaId,
         input.guest
           ? { role: "guest", playerId: input.guest.playerId }
-          : { role: input.credential?.role === "control" ? "control" : "presentation" },
+          : {
+              role: input.credential?.role === "control" ? "control" : "presentation",
+            },
       );
     if (!row || row.hidden || wallHidden) {
       return {
@@ -2130,7 +2167,11 @@ export class PartyRoom extends DurableObject<Env> {
 
   async resumeAdmin(input: { requestId: string; now: string }) {
     if (!this.readRoom())
-      return { ok: false as const, error: "not_found", message: roomMissingMessage };
+      return {
+        ok: false as const,
+        error: "not_found",
+        message: roomMissingMessage,
+      };
     const principal = "admin-resume";
     const digest = await payloadDigest({ action: "resume-admin" });
     const prior = this.readReceipt(principal, input.requestId);
@@ -2150,7 +2191,11 @@ export class PartyRoom extends DurableObject<Env> {
           error: "expired",
           message: "That opening request expired. Try opening the room again.",
         };
-      return { ok: true as const, ...saved, snapshot: this.buildSnapshot("control") };
+      return {
+        ok: true as const,
+        ...saved,
+        snapshot: this.buildSnapshot("control"),
+      };
     }
     const control = await this.prepareCredential("control", new Date(input.now));
     const presentation = await this.prepareCredential(
@@ -2182,7 +2227,11 @@ export class PartyRoom extends DurableObject<Env> {
     const persisted = JSON.parse(
       this.readReceipt(principal, input.requestId)!.resultJson,
     ) as typeof saved;
-    return { ok: true as const, ...persisted, snapshot: this.buildSnapshot("control") };
+    return {
+      ok: true as const,
+      ...persisted,
+      snapshot: this.buildSnapshot("control"),
+    };
   }
 
   async releaseAdmin(input: {
@@ -2311,7 +2360,11 @@ export class PartyRoom extends DurableObject<Env> {
         Number.isFinite(sentAt) &&
         this.allow(`time:${attachment.principalId}`, timeRateLimit)
       ) {
-        const reply = JSON.stringify({ kind: "time", sentAt, serverNow: Date.now() });
+        const reply = JSON.stringify({
+          kind: "time",
+          sentAt,
+          serverNow: Date.now(),
+        });
         this.meter.add("out:time", reply.length, Date.now());
         try {
           ws.send(reply);
@@ -2345,21 +2398,31 @@ export class PartyRoom extends DurableObject<Env> {
       if (attachment.role !== "guest") return;
       // Controls carry no acknowledgement. They are stored, with their arrival
       // time, in one transaction at the start of the next tick.
-      const sql = this.ctx.storage.sql;
-      const room = createSqlStore(sql).readRoom();
-      if (room.phase !== "collect" || room.paused || room.hold) return;
-      const question = questionFor(room);
-      if (question?.kind !== "kart") return;
-      const session = readRoundState<{ raceId: string; players: string[] }>(
-        sql,
-        question.id,
-        "kart-session",
-      );
-      if (!session?.players.includes(attachment.principalId)) return;
       if (
         !early.input ||
         typeof early.input !== "object" ||
-        (early.input as { raceId?: unknown }).raceId !== session.raceId
+        typeof (early.input as { raceId?: unknown }).raceId !== "string"
+      )
+        return;
+      const sql = this.ctx.storage.sql;
+      const clock = this.kartIngress.readClock(() => this.readKartIngressClock());
+      if (
+        !clock ||
+        !this.kartIngress.allows(
+          clock,
+          attachment.principalId,
+          (early.input as { raceId: string }).raceId,
+          () => {
+            const question = questionFor(createSqlStore(sql).readRoom());
+            return question?.kind === "kart"
+              ? readRoundState<{ raceId: string; players: string[] }>(
+                  sql,
+                  question.id,
+                  "kart-session",
+                )
+              : undefined;
+          },
+        )
       )
         return;
       this.kartArrivals.push(attachment.principalId, early.input, Date.now());
@@ -2764,6 +2827,21 @@ export class PartyRoom extends DurableObject<Env> {
     this.send(ws, { kind: "ack", scope: "private", requestId, ...result });
   }
 
+  private readKartIngressClock(): KartIngressClock | undefined {
+    return this.ctx.storage.sql
+      .exec<KartIngressClock>(
+        "SELECT phase, paused, hold, phase_generation, scope_generation, question_index, question_set_version FROM room",
+      )
+      .toArray()[0];
+  }
+
+  private refreshKartIngressClock(): void {
+    const clock = this.readKartIngressClock();
+    this.kartIngress.refreshClock(clock);
+    if (!clock || clock.phase !== "collect" || clock.paused !== 0 || clock.hold)
+      this.kartArrivals.drain();
+  }
+
   private flushKartInputs(sql: SqlStorage): void {
     const arrivals = this.kartArrivals.drain();
     if (!arrivals.length) return;
@@ -2779,13 +2857,21 @@ export class PartyRoom extends DurableObject<Env> {
   ): Promise<{ ok: true } | Extract<PhaseCommandResult, { ok: false }>> {
     const room = this.readRoom();
     if (!room) {
-      return { ok: false, error: "unauthenticated", message: roomMissingMessage };
+      return {
+        ok: false,
+        error: "unauthenticated",
+        message: roomMissingMessage,
+      };
     }
     const record = await createSqliteRoomCredentialDirectory(this.ctx.storage.sql).get(
       credentialId,
     );
     if (!record) {
-      return { ok: false, error: "unauthenticated", message: controlMissingMessage };
+      return {
+        ok: false,
+        error: "unauthenticated",
+        message: controlMissingMessage,
+      };
     }
     const check = await verifyRoomCredential({
       credentialId,
@@ -2817,13 +2903,21 @@ export class PartyRoom extends DurableObject<Env> {
   > {
     const room = this.readRoom();
     if (!room) {
-      return { ok: false, error: "unauthenticated", message: roomMissingMessage };
+      return {
+        ok: false,
+        error: "unauthenticated",
+        message: roomMissingMessage,
+      };
     }
     const record = await createSqliteRoomCredentialDirectory(this.ctx.storage.sql).get(
       credentialId,
     );
     if (!record) {
-      return { ok: false, error: "unauthenticated", message: controlMissingMessage };
+      return {
+        ok: false,
+        error: "unauthenticated",
+        message: controlMissingMessage,
+      };
     }
     const check = await verifyRoomCredential({
       credentialId,
@@ -2895,6 +2989,8 @@ export class PartyRoom extends DurableObject<Env> {
         return;
       }
       changed = true;
+      // Discard controls observed under a hold before presence can release it.
+      this.flushKartInputs(sql);
       notePresence(store, { controller, stage }, Date.now());
     });
     // A phone coming or going changes only the host's connection counts.
@@ -2961,7 +3057,11 @@ export class PartyRoom extends DurableObject<Env> {
       }
       return {
         ok: true,
-        attachment: { role: "guest", principalId: guest.playerId, deliverySeq: 0 },
+        attachment: {
+          role: "guest",
+          principalId: guest.playerId,
+          deliverySeq: 0,
+        },
       };
     }
     if (role === "stage" || role === "control") {
@@ -3013,7 +3113,11 @@ export class PartyRoom extends DurableObject<Env> {
 
   private async verifyGuest(playerId: string, secret: string, now: Date) {
     const row = this.ctx.storage.sql
-      .exec<{ secret_hash: string; expires_at: string; revoked_at: string | null }>(
+      .exec<{
+        secret_hash: string;
+        expires_at: string;
+        revoked_at: string | null;
+      }>(
         `SELECT secret_hash, expires_at, revoked_at FROM credential
          WHERE player_id = ? AND principal = 'guest' AND revoked_at IS NULL
          ORDER BY rowid DESC LIMIT 1`,
@@ -3497,7 +3601,13 @@ export class PartyRoom extends DurableObject<Env> {
     choice: { style: unknown; faceMediaId: unknown },
   ): Promise<void> {
     const reply = (accepted: boolean, error?: string) =>
-      this.send(ws, { kind: "ack", scope: "private", requestId, accepted, error });
+      this.send(ws, {
+        kind: "ack",
+        scope: "private",
+        requestId,
+        accepted,
+        error,
+      });
     if (attachment.role !== "guest") {
       reply(false, answerRoleMessage);
       return;
@@ -3672,9 +3782,11 @@ export class PartyRoom extends DurableObject<Env> {
       });
     const store = createSqlStore(sql);
     const presentation = sql
-      .exec<{ opening: string | null; stage_hidden: number; reveal_nonce: number }>(
-        `SELECT opening, stage_hidden, reveal_nonce FROM room`,
-      )
+      .exec<{
+        opening: string | null;
+        stage_hidden: number;
+        reveal_nonce: number;
+      }>(`SELECT opening, stage_hidden, reveal_nonce FROM room`)
       .toArray()[0];
     if (!statistics) {
       this.meter.add("build:statistics", 0, Date.now());
@@ -3814,6 +3926,20 @@ export class PartyRoom extends DurableObject<Env> {
                 ? (readKart(this.ctx.storage.sql, play.question.id)?.courseHistory ??
                   [])
                 : [],
+            kartOpponentHistory:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.opponentHistory ??
+                  [])
+                : [],
+            kartEffectsHistory:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.effectsHistory ??
+                  [])
+                : [],
+            kartStageHistory:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.stageHistory ?? [])
+                : [],
             adjustments: recentAdjustments(this.ctx.storage.sql),
             admission: readAdmission(this.ctx.storage.sql),
             kartLobby: readKartLobby(this.ctx.storage.sql),
@@ -3863,6 +3989,7 @@ export class PartyRoom extends DurableObject<Env> {
    * once per change. A phase deadline flushes at once.
    */
   private broadcast(urgent = false): void {
+    this.refreshKartIngressClock();
     this.markDirty("all", urgent);
   }
 
@@ -4019,7 +4146,10 @@ export class PartyRoom extends DurableObject<Env> {
     const now = Date.now();
     const previous = this.liveDrafts.get(playerId);
     if (previous && now - previous.shownAt < draftGapMs) {
-      this.liveDrafts.set(playerId, { text: trimmed, shownAt: previous.shownAt });
+      this.liveDrafts.set(playerId, {
+        text: trimmed,
+        shownAt: previous.shownAt,
+      });
       this.scheduleDraftFlush(draftGapMs - (now - previous.shownAt));
       return;
     }
@@ -4130,7 +4260,12 @@ export class PartyRoom extends DurableObject<Env> {
         return;
       }
     }
-    this.send(ws, { kind: "snapshot", scope: "public", snapshot, view: view.id });
+    this.send(ws, {
+      kind: "snapshot",
+      scope: "public",
+      snapshot,
+      view: view.id,
+    });
   }
 
   /** Stage and control sockets stop receiving room data once their credential lapses. */
@@ -4157,7 +4292,12 @@ export class PartyRoom extends DurableObject<Env> {
   private send(
     ws: WebSocket,
     message:
-      | { kind: "snapshot"; scope: "public"; snapshot: LobbySnapshot; view?: string }
+      | {
+          kind: "snapshot";
+          scope: "public";
+          snapshot: LobbySnapshot;
+          view?: string;
+        }
       | {
           kind: "patch";
           scope: "public";
@@ -4486,7 +4626,11 @@ function acceptRoundCommand(
 }
 
 function readCommand(body: unknown):
-  | { requestId: string; name: "kart-recover" | "kart-use-item"; raceId: string }
+  | {
+      requestId: string;
+      name: "kart-recover" | "kart-use-item";
+      raceId: string;
+    }
   | { requestId: string; name: "kart-input"; input: unknown }
   | { requestId: string; name: "snapshot" }
   | { requestId: string; name: "answer"; optionId: string }
@@ -4513,8 +4657,18 @@ function readCommand(body: unknown):
       keep: unknown;
     }
   | { requestId: string; name: "wall-withdraw"; postId: unknown }
-  | { requestId: string; name: "wall-react"; postId: unknown; reaction: unknown }
-  | { requestId: string; name: "react"; targetId: string; reaction: "like" | "dislike" }
+  | {
+      requestId: string;
+      name: "wall-react";
+      postId: unknown;
+      reaction: unknown;
+    }
+  | {
+      requestId: string;
+      name: "react";
+      targetId: string;
+      reaction: "like" | "dislike";
+    }
   | { requestId: string; name: "driver"; style: unknown; faceMediaId: unknown }
   | { requestId: string; name: "device"; reason: string; report: unknown }
   | {
@@ -4543,14 +4697,22 @@ function readCommand(body: unknown):
     return null;
   }
   if (record.name === "kart-input")
-    return { requestId: record.requestId, name: "kart-input", input: record.input };
+    return {
+      requestId: record.requestId,
+      name: "kart-input",
+      input: record.input,
+    };
   if (
     (record.name === "kart-recover" || record.name === "kart-use-item") &&
     typeof record.raceId === "string" &&
     record.raceId.length > 0 &&
     record.raceId.length <= 120
   )
-    return { requestId: record.requestId, name: record.name, raceId: record.raceId };
+    return {
+      requestId: record.requestId,
+      name: record.name,
+      raceId: record.raceId,
+    };
   if (record.name === "snapshot") {
     return { requestId: record.requestId, name: "snapshot" };
   }
@@ -4559,13 +4721,25 @@ function readCommand(body: unknown):
     typeof record.optionId === "string" &&
     /^[a-z0-9-]{1,16}$/.test(record.optionId)
   ) {
-    return { requestId: record.requestId, name: "answer", optionId: record.optionId };
+    return {
+      requestId: record.requestId,
+      name: "answer",
+      optionId: record.optionId,
+    };
   }
   if (record.name === "estimate") {
-    return { requestId: record.requestId, name: "estimate", value: record.value };
+    return {
+      requestId: record.requestId,
+      name: "estimate",
+      value: record.value,
+    };
   }
   if (record.name === "rank") {
-    return { requestId: record.requestId, name: "rank", placements: record.placements };
+    return {
+      requestId: record.requestId,
+      name: "rank",
+      placements: record.placements,
+    };
   }
   if (record.name === "text") {
     return { requestId: record.requestId, name: "text", body: record.body };

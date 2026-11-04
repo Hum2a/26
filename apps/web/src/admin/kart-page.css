@@ -22,3 +22,99 @@
   border-radius: var(--radius-panel);
   background: var(--background);
 }
+
+.admin-kart-asset {
+  animation: kart-asset-entry 150ms ease-out;
+  overflow-wrap: anywhere;
+}
+@keyframes kart-asset-entry {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.admin-kart-vehicle-phone {
+  width: 100%;
+  max-width: 430px;
+  min-width: 0;
+}
+.admin-vfx-viewport {
+  height: clamp(240px, 50svh, 600px);
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+}
+.vfx-bench > label {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.vfx-bench input[type="number"],
+.vfx-bench textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 0.6rem 0.8rem;
+  color: var(--foreground);
+  background: var(--surface);
+  transition:
+    border-color 150ms ease,
+    background 150ms ease;
+}
+.vfx-bench input[type="number"] {
+  max-width: 20rem;
+}
+.vfx-bench input[type="file"] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.vfx-bench textarea {
+  font-family: monospace;
+  min-height: 12rem;
+}
+.vfx-bench input:focus-visible,
+.vfx-bench textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.vfx-bench fieldset {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.5rem;
+  min-width: 0;
+}
+.vfx-bench fieldset label,
+.vfx-bench > label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+}
+.environment-bench .look-controls label {
+  display: grid;
+  gap: 0.4rem;
+  align-content: start;
+}
+.vfx-bench input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+.vfx-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.5rem;
+}
+.vfx-counts > div {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 0.6rem;
+}

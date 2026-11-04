@@ -4482,4 +4482,513 @@ below. No deployment, new dependency or paid resource.
 - **Still outstanding:** the four content drafts; adding the two ready rounds
   to the order; the e2e failures above; physical phones (iOS Safari, Android),
   locking/reconnection, permissions, projector and venue Wi-Fi rehearsal.
-  Not committed or deployed.
+  These follow-ups were committed as `dd167fb` and merged as `b8762e8`.
+  Deployment verification was not recorded in that stage.
+
+## 3 November 2026 — implement review remainder
+
+Status: fixes implemented locally; full regression and connected-browser sign-off
+remain blocked by local runtime startup stalls. This stage is not marked complete.
+
+- Re-read the latest merge (`b8762e8`): deployment recovery, figurine self-vote
+  scoring, Cursed Search History, scored-choice points trolls and guided troll
+  rehearsals were already implemented. The debate round was dropped by the host.
+  The two ready rounds remain outside the order; no live room was changed.
+- Host decision in this chat: keep Reddit tribunal, Ferrier estate, Nextdoor and
+  property price as explicit drafts. No sources, answers or images were invented.
+- Fixed a local media target mismatch: local upload PUTs now always reach the
+  emulated bucket that finalisation reads, even with real-shaped R2 credentials.
+  Staging/production still sign genuine R2 targets and refuse missing credentials.
+  Added `media-check.spec.ts` coverage for both boundaries.
+- Deployment recovery now refuses automatic reload without a writable session
+  storage guard. The real route recovery screen always leaves Reload available;
+  it no longer risks an endless reload loop or a permanently disabled button.
+  `route-error.test.tsx` covers refused storage reads and writes.
+- Corrected Admin → Trolls to say the second question, matching server rules.
+  The photo-wall browser test now uses separate guest contexts. Admin section
+  assertions follow the current editable running order, collapsed pack details,
+  and Next fact / Show the podium controls instead of obsolete UI expectations.
+- Added `npm run smoke:rehearsal`, `playwright.rehearsal.config.ts` and the explicit
+  local-only Worker fixture `apps/api/test/browser/wrangler.jsonc`. This uses
+  ephemeral auth/room/media state, disables remote bindings and refuses a
+  Cloudflare deployment target. Normal development config remains the default.
+  Browser tests run serially because host OTP flows share one allowlisted admin.
+  Evidence output goes to `artifacts/browser-checks`.
+- Made Vitest’s Node 25+ web-storage flag conditional: the installed Node 24 LTS
+  rejects that flag. No assertions, tests or required checks were removed.
+- Updated `docs/question-authoring.md`, `docs/data-inventory.md` and
+  `docs/event-runbook.md`: implemented variants, private Raid persistence, actual
+  draft requirements and a concrete physical-phone/projector sign-off checklist.
+
+Checks and evidence:
+
+- `npm run typecheck`: passed after the initial upload/recovery fixes; not
+  completed again after the later browser-harness configuration changes.
+- `npm run build`: passed, including the existing generated-secret removal,
+  711-file scan and content preflight. Four incomplete content drafts remain
+  reported as expected. The later test-harness/config edits were after this build.
+- API media regression: `npm run test -w @26/api -- --project auth
+test/media-check.spec.ts` passed 1 file / 7 tests.
+- Focused web recovery/admin coverage: `npm run test:unit -- --
+src/ui/route-error.test.tsx src/admin/features.test.ts
+src/admin/troll-rehearsal.test.tsx` passed 3 files / 11 tests.
+- Full unit attempts on Node 26 stalled (one cold router import hit its existing
+  30-second beforeAll timeout); runs were stopped, not counted as passes.
+  Node 24 first rejected unconditional `--no-webstorage`; that configuration bug
+  was fixed. Subsequent complete-suite attempts still stalled at startup.
+- Full API regression was started but stalled during runtime startup and stopped.
+  It is not a full-suite pass; the focused media pass above is separate evidence.
+- Both compiled-preview `smoke` and isolated-development `smoke:rehearsal`
+  selected media/photo-wall/quiz/admin-section runs timed out waiting 120 seconds
+  for the local web server. No game assertions ran in those attempts.
+- Final changed-file ESLint invocation also stalled without a result; it is not
+  counted as passed. Changed files were formatted with the repository Prettier
+  configuration. A final diff check was attempted but also did not finish.
+- No deployment, remote resource creation, remote email send, or live game data
+  change. Physical phones, venue Wi-Fi, HDMI/projector, deployed archive/email and
+  connected load testing remain unverified.
+
+Exact next stage: finish full unit/typecheck/lint and connected quiz/media/wall/
+results browser runs on a working local runtime; fix any resulting assertions,
+then carry out the physical-device checklist with the host. Include the two ready
+rounds in the saved order only when explicitly requested. Four drafts remain out
+until real source material is supplied. No deployment starts automatically.
+
+## 3 November 2026 — review fixes deployed
+
+- **Authorisation:** the user explicitly requested deployment after the preceding
+  implementation report disclosed incomplete full-regression/browser checks.
+- **Source:** deployed `b8762e8` plus the current local review fixes. The working
+  tree remains uncommitted; no commit, push, PR or merge was requested or run.
+- **Staging:** `npm run deploy:staging` passed its environment-specific build,
+  generated-secret removal, 711-file artifact scan, content preflight and target
+  configuration guard. Uploaded 39 changed assets to the existing Worker.
+  Version `5acc36df-ebff-406b-9327-69f36b4f31b8` at
+  https://26-staging.humza.website; served app `/assets/index-CZ6NP4I5.js`.
+- **Production:** `npm run deploy:prod` passed the same release preflights and
+  uploaded 39 changed assets to the existing Worker. Version
+  `e01482cd-5fdd-4a7a-8041-937f06b0f419` at https://26.humza.website;
+  served app `/assets/index-CU21_eC_.js`.
+- **Live verification:** both health endpoints returned HTTP 200, `ok: true`,
+  version `0.0.5` and the correct environment. Both sites served their new
+  main bundle with the updated manual recovery copy and the updated Trolls
+  module with second-question wording. Production `/join`, `/host`, `/admin`
+  and `/kart` returned HTTP 200. These are read-only HTTP/bundle checks, not a
+  complete interactive game or authentication rehearsal.
+- **Scope and limitations:** four content drafts remain excluded. Existing
+  bundle-size, PGlite eval, secret-name configuration and Node shell warnings
+  remain. No migrations, secret sync, new resources, emails or live room changes
+  were performed. Earlier full-regression/browser startup limitations and
+  physical/venue checks remain unresolved; this deployment is not a test pass.
+- **Exact next stage:** complete the pending regression and connected-browser
+  verification, then the physical-device/venue checklist. No further stage or
+  deployment starts automatically.
+
+## 3 November 2026 — complete kart evolution plan (draft)
+
+- **Request:** compare the current minigame with Mario-Kart-3.js and draft a plan
+  to incorporate everything. Planning only; no implementation or deployment
+  starts from this entry. Existing uncommitted review fixes were preserved.
+- **Evidence:** original mustache-dev/Mario-Kart-3.js main at
+  `83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7` and the already imported
+  Nathan-Richard-21/mario-kart-js at `0f7a4305981206193c5efba64bc90755e6e85773`.
+  Inventoried 103 and 113 source/asset/gitlink entries respectively and fetched
+  108 text files across those pinned repositories, plus inspected the upstream
+  joystick source. Binary assets were inventoried, not downloaded or visually
+  verified. The VFX gitlink is recorded, not separately audited.
+- **Deliverables:** `docs/kart-evolution-plan.md` (51 feature dispositions,
+  phases 0–10, source links, architecture, admin coverage, rehearsal/tests,
+  performance targets, decisions and completion gates) and
+  `docs/kart-evolution-source-audit.json` (pinned paths, hashes, sizes, groups).
+  Linked from the documentation index.
+- **Findings:** most driving/course basics already exist; important additions
+  are detailed connected vehicles/nearby opponents, full VFX/environment/look,
+  control parity, complete lap/record/time-trial modes, named roadmap items,
+  audio and scoped installable solo practice. Distinguish active, dormant and
+  wishlist work. The named WebGPU canvas is not an actual WebGPU backend; the
+  fork lap state lacks calls to its start/end-lap helpers in the audited source.
+- **Proposed defaults:** preserve the existing one-lap/three-minute/80-player
+  party race, ghost collisions and scoring; adapt source features through the
+  current room/reducer/renderer boundaries. Item semantics, assets and budget
+  numbers are proposals for implementation, not changes already made.
+- **Validation:** documentation formatting, JSON structure, K01–K51 uniqueness,
+  pinned-source inventory coverage and local Markdown links checked. No unit,
+  typecheck, build, gameplay, physical-device or deployment check was run for
+  this documentation-only draft; earlier runtime limitations remain.
+- **Exact next stage:** review this plan, then explicitly request Phase 0 to
+  settle baseline regressions and measurements. Do not begin implementation
+  or deployment automatically.
+
+## 3 November 2026 — kart evolution Phase 0 started
+
+- **Authorisation:** user approved starting the complete evolution plan and automatic continuation after ordinary usage resets. Created active hourly chat heartbeat `continue-kart-evolution`; it checks usage first, preserves checkpoints, never purchases or spends reset credits, and does not deploy. Local machine/app must remain running. No exact reset trigger is claimed.
+- **Checkpoint:** `docs/kart-evolution-checkpoint.md` records the current phase, evidence, failures and exact next actions. Existing review changes and four deferred content drafts remain intact. Phase 1 has not started.
+- **Baseline harness:** `apps/api/test/realtime-load.spec.ts` and `apps/api/vitest.load.config.ts` accept `LOAD_TRACK=mario-circuit-v1`. This creates the genuine kart-only lobby and starts the authoritative imported circuit. Asserts actual track and frozen participant count, reports track/input rate and null quiz latency when no quiz runs, counts UTF-8 payload bytes and writes each completed size immediately. Existing ring/quiz mode remains the default. No game rules or dependencies changed.
+- **Test setup:** changed web Vitest from threads to process forks after the unchanged router test passed with forks. Corrected `playwright.rehearsal.config.ts` to replace, rather than append to, the inherited preview server. Verified the append behaviour using the actual Playwright defineConfig API.
+- **Verified:** root `npm run typecheck` passed twice, including after the harness/config changes; `git diff --check` passed. Router forks run passed 1 file / 12 tests (70.74s). Focused podium test on temporary npm-exec Node 22 passed 1 file / 1 test (24.28s), without changing pinned dependencies.
+- **Not passed:** thread router cold-import hook timed out; full Node 26 fork suite stalled and was interrupted (worker termination named stage-podium.test.tsx). Selected quiz/media/photo-wall/admin browser runs timed out on server startup, including after correcting the duplicate-server setup; no browser assertions ran. First imported-circuit load attempt failed to start the Cloudflare runner (90.07s, no tests/measurements). An attempted API-workspace typecheck was invalid because that workspace has no such script; root check passed instead. An initial npm-exec --call diagnostic had an npm usage error; direct Node invocation worked.
+- **In flight:** full web unit suite on Node 22 with one worker; imported-circuit 1/16/21/50/80 simulated-racer load repeated on Node 22; focused changed-file ESLint. These are not yet passes.
+- **Manual verification:** no new interactive browser, physical phone, projector, device GPU or production Worker CPU verification. No new deployment, remote resources, remote messages or live room changes.
+- **Exact next stage:** finish the Phase 0 checks, diagnose the remaining local startup stalls without skips or weakened assertions, capture connected imported-circuit lobby-to-podium and baseline evidence. Distinguish simulated local payload/wall time from actual billed CPU and physical rendering. Do not begin Phase 1 until the baseline gate passes.
+
+Phase 0 follow-up evidence in this turn:
+
+- Confirmed imported-circuit matrix now passed via the new portable `npm run load:kart-baseline` launcher on temporary Node 22: 1 file / 1 test, 55.57s total / 34.94s test time. Earlier shell assignment attempts silently used ring defaults; they are not evidence for the imported circuit.
+- Numerical source: `docs/kart-evolution-baseline-data.json`; readable report: `docs/kart-evolution-baseline.md`. Stage cadence at 1/16/21/50/80 racers was 4.5/4.2/4.5/4.3/1.5 updates/s; the 80-racer p95 gap was 1,402ms. Six-second local samples with other checks running, not production capacity or actual Worker CPU. Investigate in an isolated longer run before new visual load.
+- Focused glyph/stage-page Node 22 tests passed 2 files / 9 tests (16.12s). Full Node 22 suite still stalled and was interrupted. Node 22 browser repetition still timed out on server startup; no assertions ran.
+- Changed-file ESLint passed including the launcher and metadata reporter. Final root typecheck repetition stalled and was interrupted; the earlier root passes remain separately recorded. No phase completion or deployment claimed.
+- Next action remains Phase 0, led by isolated load diagnosis and full-suite/browser startup. The hourly heartbeat resumes from the saved checkpoint.
+
+## 3 November 2026 — Phase 0 controlled load diagnosis
+
+- Continued the approved kart plan; Phase 0 remains open and Phase 1 has not started. Preserved earlier review work and the four drafts; no deployment or gameplay change.
+- Extended the portable baseline launcher with extended, idle and neutral modes and corresponding validated Worker-test bindings. Added a pure simulation diagnostic. Readable and raw evidence is in docs/kart-evolution-baseline.md and docs/kart-evolution-load-comparison.json.
+- Two 20-second-per-size runs passed. Driving 50/80 racers yielded 2.7/0.9 stage updates/s and p95 gaps 863/2103ms; idle yielded 4.4/4.4 updates/s and 235/233ms. Pure Node simulation advanced 80 moving racers through 20 seconds in 603ms wall time; this is not Worker CPU. A neutral-message comparison remains pending and is needed before attributing the regression solely to transport.
+- Main TypeScript build found and then passed after fixing the load reporter’s missing TaskMeta declaration. Solo tsc --noEmit also passed. Focused edited-file ESLint and git diff --check passed.
+- Full web unit runs and direct Vite startup stalled and were interrupted. First neutral load attempt failed before tests at Cloudflare runner startup; clean retry pending. No tests were skipped or weakened. An initial solo check used a nonexistent packages/kart-solo working directory; corrected apps/kart-solo check passed.
+- Local memory inspection showed low free memory during broad checks, but causality is unproved. Read-only workspace-process classification is pending; no unrelated processes were stopped.
+- Exact next stage: record the neutral comparison, diagnose the remaining startup/input load issues, finish Phase 0 unit/typecheck/kart/browser gates and the connected lobby-to-podium rehearsal before adding visuals.
+
+Input-path change and completed regression evidence:
+
+- Added phase-scoped KartIngressCache in apps/api/src/room/kart-ingress.ts and used it in PartyRoom. Each control still checks fresh durable phase/pause/hold fields; the frozen roster is read once per scope/phase/question/version. Durable flush validation remains authoritative. No new commands, public fields, persisted data, host controls or game rules; existing Room admin coverage/ownership remains.
+- Added kart-ingress.spec.ts: all 10 cache eligibility/invalidation tests passed. Kart pure tests passed 4 files / 35 tests; kart room/lobby passed 2 files / 12 tests after the change.
+- Full web suite passed 116 files / 457 tests on Node 22 with normal two workers (135.79s). Includes admin feature ownership and kart renderer/controller tests. Earlier 240s outer-process timeout was not counted as a pass; individual test limits were unchanged.
+- Post-cache neutral local sample improved 50/80 racers to 4.2/1.7 stage updates/s, p95 gaps 308/2820ms. Compared with previous neutral 3.5/0.4 and 552/6323ms. Keep the sample and runtime variability limitations; 80-racer capacity is still unresolved.
+- Main TypeScript build, solo typecheck, changed-file lint and whitespace checks passed. Next: the connected browser race and pending quiz/media/wall/admin flows.
+
+Browser progress and corrected rehearsal evidence:
+
+- Isolated server startup is now demonstrated working, not merely pending: admin browser passed its full upload/moderation/private-media, completed-game, private/public results and responsive-layout workflow (1 test, 2.4m). Media and photo-wall cases also passed individually (11.6s / 15.8s).
+- Quiz case passed (2.0m) after correcting completion handling; it retains exact real stage, receipt and privacy assertions. Final-action helpers have since been aligned explicitly with live-console.tsx and are being rechecked.
+- Expanded kart rehearsal to two actual drivers plus a late spectator. Corrected a leftover one-racer expectation and an incorrectly inferred final-button label; final source uses the actual Show podium labels. Added an assertion for positive server-reported speed for both drivers and race/phone/podium screenshots. No game UI or rule change.
+- Long browser checks now run through a local evidence wrapper writing live logs and code/signal completion status. A prior Node REPL call exceeded the tool response ceiling at 300s and reset without a complete result; it is not counted as a pass.
+- Current final corrected admin/kart/quiz run: artifacts/kart-fix-checks/browser-final-check.log/.status.json/.result.json. Main web and focused API checks remain green as recorded above; no deployment performed.
+
+## 3 November 2026 — Phase 0 browser regression and high-density canvas fix
+
+- All 15 existing targeted browser cases passed on their current source across recorded serial subsets: admin, quiz, media, photo wall, two-driver connected kart and ten kart engine/power-up cases. Mixed failed batches remain failed. Latest admin-only rerun: 2.2m total / 1.7m case; quiz 1.8m; kart 29.0s. Two real phone sessions gained positive server speed; late spectator, pause/reconnect/resume, manual podium and privacy passed. Inspected race/phone/podium screenshots; these are Chromium simulations, not physical phones.
+- Power-up case now uses real recovery to stop coasting before consumption, verifies speed zero and held item after recovery, then keeps use/empty/reset assertions. Retry passed 15.4s case / 27.9s total.
+- New kart-render-baseline.spec.ts creates actual local kart rooms with one phone and the existing Developer bot fleet at 1/16/21/50/80, recording bounded RAF/draw-call observations, dimensions, server motion, stage population and errors. No fake renderer/socket/state. Phone switches to the real lightweight map before isolated SVG-stage measurements. Actual local workerd CPU profiling is sampled in a separate window through the rehearsal inspector.
+- Regression proved high-density clipping: canvas client width 538 versus parent 359 at DPR2. Extended the existing canvas 100% width/height CSS rule to kart-canvas-mount. Subsequent real browser checks passed both width/height boundary assertions. No new controls, data or registry ownership; actual admin phone rehearsal uses this renderer/style.
+- Measurement development failures retained: initial pause observations above one racer and final local Worker fetch failure; unsupported a input, then ignored ArrowUp on a focused button corrected to the real held pedal; initial inspector commands timed out until Runtime.enable handshake. Independent inspector handshake returned a real profile. None of these failed/interrupted batches is a complete matrix pass.
+- Current browser-kart-render-v5 run is in flight; final profiling matrix, post-cache driving load and documentation reconciliation remain due. Main 457 web unit tests, 57 focused API tests and both typechecks previously passed after the input-cache change. Current existing e2e lint and whitespace passed; new profiler edit needs final lint. No deployment, remote resources or production-room changes.
+- Exact next stage: finish Phase 0 measurements and checks, then report the gate and remaining physical/production limits. Phase 1 has not started.
+
+## 4 November 2026 — Phase 0 clock-hint batching
+
+- Ordinary usage resumed without spending reset credits. Phase0 remains open; no deployment or new game rules.
+- KartIngressCache now reads phase eligibility once on cold ingress and refreshes after durable room changes and alarm commits, avoiding a SQL read on every continuous control packet. It remains a hint: each durable flush checks current phase/pause/hold, race, roster and revoked players. Disabled hints clear transient arrivals. Presence flushes under the old hold before releasing it, so held controls cannot restart the kart. No new stored/public fields or host commands; existing Room/Kart admin ownership remains.
+- Added cold-clock cache coverage and two Room regressions deliberately retaining a stale hint across pause and controller hold. The first fixture sent an empty requestId and failed to prime ingress; corrected it to a valid UUID. No assertion removed. Current rerun passed4files/27tests (47.42s): ingress11, room11, lobby3, local-proof2. Main tsc-b and changed-file ESLint passed after the change. Solo/full web checks still need their final results.
+- Prior roster-only driving load passed1file/1test63.81s: all50 and all80 racers moved;50=4.6updates/s,p95gap236ms;80=2.0/s,p95982ms. Stored as postRosterCacheDriving in comparison JSON. This predates clock-hint batching and is not its performance result.
+- Bundled browser1/16/21 passed with genuine canvas bounds and pause;50 cleared the corrected held-pedal check but encountered debugger/host latency under traffic. Current profiler starts before race traffic and stops after authoritative pause; method5 explicitly includes warm-up/render windows. A50-only rerun with the new clock hint is in flight in bundled-baseline-50-clock-hint.log. No all5 matrix pass claimed.
+- Fixed high-density canvas dimensions remain verified on High/Balanced/Low at1/16/21. Bundled local preview has an ephemeral proof key shared only across the build/preview pair, using existing session verification. Security TTL and client timeout unchanged. Temporary API tracing removed.
+- Wawa gitlink resolved to wass08/wawa-vfx at exact0ecd0e7. Pinned package1.0.13 declaresMIT; complete pinned tree has no licence file. Three copied blobs identical and three differ. Audit JSON records hashes/evidence; retain licence/copy review before vendoring source.
+- Exact next stage: record current50 result, complete80 and all5 local profiling, rerun the isolated load after clock batching, final full unit/typecheck and documentation reconciliation. Do not label Phase0 complete or begin dependent visual work yet.
+
+4 November verification reconciliation:
+
+- Exact root npm run test:unit passed116files/457tests (165.65s); exact npm run typecheck passed main and solo checks. final-check-results.json records exit0 and no signal for both. Current benchmark/config/Vite lint passed. No stage completion or deployment claimed.
+- Post-clock-hint driving load passed58.06s: all50/80 moved; stage4.5/1.8updates/s,p95gaps244/1026ms. No measured cadence gain over roster-only4.6/2.0;80 remains unresolved.
+- Dedicated performance suite now contains both rendering and profiled projects (10 discoverable cases). All CPU assertions stay in profiled cases; no failing checks removed to make the suite green. Ordinary e2e does not require this special local profiler. New path apps/web/perf/kart-render-baseline.spec.ts.
+- Method7 rendering1/16/21 passed; subsequent50-only diagnostic observed positive human movement, then host POST aborted. Thus debugger overhead alone is not established as the cause. Both benchmark projects remain incomplete/failing. Current checkpoint was rewritten around this exact boundary and next tracing step.
+- Inspected DPR2 phone capture: canvas fills its container. Physical phone/projector and real production capacity remain unverified. No new source vendored; Wawa licence/copy checks stay open.
+
+## 4 November 2026 — Phase 0 local-runtime boundary and current race regression
+
+- Current clock-hint Room source passed the connected two-phone kart browser regression in isolation: 1 case / 48.5s (1.1m total), exit0/no signal in browser-kart-post-clock-isolated.result.json. Includes positive server speeds, late spectator, pause/reload/resume, podium and privacy. First attempt failed the create-lobby URL deadline while lint/typecheck ran concurrently; retained as failed, with no timeout change.
+- Supported local Node/Worker instrumentation showed the50 pause body fully consumed and sent to the runtime within4ms after authentication, but no outer application Worker fetch marker before the12s client abort. Independent health requests failed during load and after bot controls stopped. No demonstrated Room refusal, auth failure or exact upstream root cause. Connection:close trial also failed and was removed. Raw evidence: bundled-50-undici-boundary.log and bundled-50-health-load-boundary.log.
+- Removed all temporary traces from API index/routes and Vite. No production logic, dependency version, proof validity or client/profiler timeout changed. Benchmark method9 retains held-pedal, positive-speed, canvas, error and authoritative-pause checks, and rethrows a motion failure after saving command evidence.
+- Cleanup ESLint and main tsc-b exited0/no signal; exact full unit and root typecheck results remain as recorded above for unchanged Room logic. Baseline report reconciled with explicit historical/current passes and failures.
+- Added a separate local-runtime regression using the actual Developer50-driver fleet and host pause/HTTP health, with no phone/WebGL context. Existing ten renderer/profiler cases are unchanged and remain required. Runtime project is currently running through the same isolated build/preview launcher; its result is pending in runtime-without-webgl.log. No new feature/public data/host command/admin registry entry; this uses existing Developer and Kart views.
+- Phase0 remains open. Exact next: finish the no-WebGL boundary result, verify the new test/config, complete consistent50/80 renderer and WorkerCPU evidence. Phase1 has not started. No deployment or remote changes.
+
+## Superseding finding — 4 November 04:33 UTC
+
+All browser benchmark methods before10 opened a second control tab after starting the Developer fleet. PartyRoom.closeOlder replaces the old control socket; AdminRoomProvider.onReplaced sets blocked=true; DeveloperPage unmounts/closes its fleet. Therefore pre10 results do NOT measure the claimed active bot population. Frozen participant counts are not connected/sending bots. Preserve scratch metrics and failures, but do not use them as active-population rendering/CPU baselines. The local request traces reflect this flawed setup and do not establish load starvation or a specific upstream defect. API Node-load comparison data is independent and remains valid; two-real-phone workflow is unaffected.
+
+Developer tools now reuse the existing start-kart command in the same tab, alongside existing pause/resume/advance. Other pack starts are disabled in kart-only lobbies. Component and registry checks passed2files/9tests22.24s. Method10 uses that sole control page and asserts every expected bot socket actually sent gas, plus the connected fleet count. New runtime-only test uses a separate stage-role map observer, not a second control tab. No new server command/data. Main unit/typecheck and new changed-file lint need a final run after this actual UI change.
+
+Current managed4659 refers to the OLD failed no-WebGL setup (23.3s, no motion, never reached HTTP probe). Current corrected run is runtime-without-webgl-single-control.log; inspect its managed command result first. Reconcile the earlier boundary hypotheses above as superseded.
+
+Final verification for same-tab rehearsal change:
+
+- Exact root npm run test:unit passed116files/458tests164.38s; exact root npm run typecheck passed main and solo. Changed-file ESLint and git diff --check passed. Explicit exit0/no signal; single-control-check-results.json and named logs preserve results.
+- Corrected no-WebGL50 run genuinely observed all50 bot sockets sending gas and positive server movement; only2 kart frames followed, then health/pause failed (180s test). Thus original fleet-lifecycle mistake is fixed, but local preview availability remains unresolved. Diagnostic now catches actual failed requests promptly; that reporting-only edit is lint/typechecked but not browser-rerun. No claim of50/80 capacity or Phase0 completion.
+- Next: minimal external-WebSocket/HTTP reproduction; compare already-locked Vite runtime (Miniflare5.20260921.0-alpha/workerd1.20260921.1) and API-test runtime (5.20261023.3-beta/1.20261023.1), also accounting for API harness using in-runtime RPC rather than preview TCP. Version difference alone proves no cause. No dependency upgrades authorised in Phase0.
+- Original10 baseline cases remain, plus1 standalone runtime case. Pre10 browser active-population claims are invalid; independent API load and current two-phone regression remain valid. No secrets/remote resources/deployments or new app data changed.
+
+## 4 November 2026 — Phase 0 isolated runtime discrimination
+
+- Added an explicit local-only50-WebSocket/10Hz/20s fixture and portable Node probe. Guards refuse staging/production; no game/state/score replacement. No new admin feature/command/data or dependency version. Six exact records retained in docs/kart-evolution-runtime-probe.json.
+- Reproduced a native in-memory alarm crash in the Vite-locked runtime (Promise callback destroyed itself), matching workerd7191. Already-locked newer runtime passed. Old runtime also passed using disk-backed storage, through a Node HTTP/WebSocket bridge, with inspector proxy and with50 transactional SQLite writes per tick. This is diagnostic evidence, not app capacity.
+- Tried isolated disk persistState in the actual50-bot browser check: FAILED55.8s,50 active senders/movement/3 frames, health timeout and pause abort. Reverted the unsuccessful Vite change. Therefore the synthetic crash is not established as the app stall cause. No speculative production fix, deadline extension or skipped assertion.
+- Current root typecheck passed main/solo; helper syntax and whitespace passed. Final helper ESLint passed exit0/no signal (runtime-probe-final-lint.log). Existing458 app unit tests remain unchanged/current.
+- Exact next: compare real Room attachment/auto-response and protocol behaviour in the passing minimal fixture. Phase0 remains open; no Phase1/deployment/remote changes.
+
+## 4 November 2026 — Phase 0 synchronous initialisation regression
+
+- Added isolated attachment, auto-response and empty-barrier modes to the diagnostic fixture; canonical comparison now retains12 cases. On the old runtime, the bridge fails POST/start with an EMPTY asynchronous blockConcurrencyWhile constructor barrier (ECONNRESET), while direct TCP and the already-locked newer runtime pass. Old bridge with identical automatic pong configured synchronously passed95ticks/9550 inputs/500pongs. Native attachments passed97ticks/14700 reads/4900 writes. No dependency upgrade.
+- PartyRoom and RoomCodeRegistry constructors now run their entirely synchronous schema/pong setup directly before returning. No awaited work exists to protect with an async gate. No new schemas/public fields/commands, game rules or authority; existing Room admin coverage applies. Updated Room plumbing README. The real50-bot browser check is pending in runtime-sync-init.log (managed32150); no app fix claimed yet.
+- PartyRoom-only change passed5API files/50tests73.20s (room,kart-room,kart-lobby,phase,ingress). Registry change followed and needs its final regression run. Full unit/typecheck also pending for this implementation stage.
+- Corrected an earlier source interpretation: closeOlder is invoked for guests/projectors, not control sockets. Old population measurements lacked sent-input verification and remain unqualified, but that alone does not prove the fleet closed. Reworded Developer copy to the verified fact: navigating away from Developer tools stops its fleet. Same-page controls and new all-bot input checks remain valid.
+
+## 4 November 2026 — Phase 0 corrected runtime baseline and final regressions
+
+- Supersedes the synchronous-initialisation trial entry: actual app trial failed and all constructor/README changes were reverted. Fixture v1 unread POST bodies confounded barrier/reset conclusions; corrected v2 barrier and combined pong/attachments/SQL pass. No speculative production bootstrap fix remains.
+- Added guarded local browser-test backend selection from the already-locked API runtime, using supported Node22.15+ registerHooks. No dependency versions/lock changes. Ordinary preview remains on its pinned backend; isolated test helper refuses non-rehearsal/non-isolated environments. Guard suite5/5 passed.
+- Complete corrected rendering/profile matrix at1/16/21/50/80 plus runtime50 PASSED11cases/6.1m exit0/no signal; each actual bot input, movement, pause and inspector-profile assertion retained. Canonical JSON records exact samples/profile hashes. RAF and profile sampling are not physical FPS or billed CPU; no production capacity claim.
+- Broad final browser run12/15 passed11.1m exit1. Solo acceleration and intermittent boost release fail; full quiz exceeded240s. Investigating bounded solo DOM/input recordings and quiz timing with original assertions/deadlines. No tests skipped or weakened. Phase0 remains open.
+- Earlier458unit tests/main+solo typecheck/API27 cache tests passed; refresh due after final helpers/caption changes. See checkpoint for active sessions and exact next action. No Phase1, deployment or live remote changes.
+
+- Diagnostic follow-up: full unchanged quiz PASSED2.2m under its original240s limit; broad failed batch remains recorded. Phone default-course trace caught a sweeper clearing drift charge before release. Explicit phone viewport and real Clear track setup passed both unchanged driving scenarios12.3s/17.6s. Promoted setup only; retained all speed/boost/recovery assertions and deadlines plus dedicated hazard/desktop graphics coverage. Final15-case batch running, serial verifier waits for success before all required checks.
+- Reviewed method10 DPR2 phone captures1/21/80: canvas fits. Bottom dock overlaps lower pedal area at initial scroll; recorded for planned HUD refinement, no physical-device sign-off.
+
+## 4 November 2026 — Phase 0 local baseline complete
+
+- Complete11-case real rendering/inspector/runtime matrix passed6.1m, exit0/no signal, for1/16/21/50/80. Explicit guarded local test backend selects already-locked API Miniflare/workerd without dependency upgrade; normal preview's high-load SDK issue remains a documented tooling limitation. Canonical browser data/profile hashes and corrected runtime counterexamples saved. No precise upstream app cause or production capacity claim.
+- Final broad browser run14passed/1failed9.5m: quiz, admin/results, media/wall, connected two-driver race/podium/privacy, graphics/course/drift, mobile layouts and asset recovery pass. Sole old power-up setup failed. Strengthened original power-up test passed separately41.7s/1.6m total, exit0/no signal: all15 scenarios have current pass evidence across runs; failed broad batch remains failed. No assertion/deadline removed, skip or only.
+- Drift setup uses real phone viewport/Clear track controls after trace proved independent sweeper interference; dedicated course/hazard/desktop graphics tests retained. Power-up test adds distance beyond all boxes and exact item retention across recovery before use. No game physics/input/rule change. Temporary diagnostics archived outside discovery.
+- Final exact root unit116files/458tests185.73s; root main+solo typecheck;10API files/88tests52.30s; five-population load1test45.66s; helper guards5/5 (skipped0); changed-file lint/content/whitespace passed. All explicit exit0/no signal; phase0-final-checks.json and named logs preserve evidence. Formatting checked phase files, final documentation reconciled. Content preflight retains four deferred drafts.
+- Final6s load: all racers moving at1/16/21/50/80; stage4.5/4.3/4.5/4.7/2.5updates/s andp95gaps230/242/239/228/536ms; no full guest snapshots during windows. Six-second in-runtime API harness is distinct from browser TCP/20s samples; no performance improvement or smooth80 capacity claim.
+- Reviewed current1/21/80DPR2 phone screenshots: canvas fits; bottom dock overlaps lower pedals in initial view, carried to Phase6 HUD. Physical phones/projector/venue and production budgets remain Phase10 checks. No new product data/public fields/host commands; existing Room/Kart/Developer admin coverage applies.
+- Corrected control-tab eviction and unread-body fixture claims; unsuccessful constructor/disk trials reverted. Wawa provenance locked in audit; resolve notice/differences before new copied source. Preserved unrelated uncommitted work and all four drafts; no deployment/live-room/email/paid-resource changes.
+- Exact next stage: Phase1 versioned contracts/asset manifests/readiness/capability-safe render budgets in existing adapters, plus Admin Kart/Health coverage and required tests. Detailed next actions and limitations in docs/kart-evolution-checkpoint.md. Phase1 has not started; continuation stays enabled for the unfinished full plan.
+
+## 4 November 2026 — Phase 1 foundations in progress
+
+- Added versioned inventory/schema for5 local kart files and18 embedded textures with exact source/hash/usage/retention metadata; no kart audio installed. Both renderer model adapters use shared paths. Node inventory tests check actual original bytes and embedded texture hashes. Authenticated read-only /api/admin/kart-assets uses existing validation/access/no-store path.
+- Admin Kart now has cancellable,30s-bounded file integrity checks, local five-entry history, provenance/fingerprint inspection and actual graphics policy. Downloads are streamed into fixed manifest-sized buffers; no guest readiness or GPU claims. Real circuit rehearsal remains the existing iframe. Health shows public accepted finish-event history. No new host command or product persistence.
+- Added versioned plain vehicle/effect descriptions shared by both isolated Three bundles, capability-limited graphics and scene spark/trail budgets; mandatory items/hazards/karts remain separate. Added bounded optional public finish events with stable eventId, race-scoped reconnect suppression and legacy snapshot support. Private input sequence assertion retained unchanged. No physics/scoring changes.
+- Latest focused checks before final loader/reconnect edge additions: web15files/70tests20.60s and API5files/31tests22.62s passed; main/solo typecheck passed before newest adapters. Earlier red authoring iterations retained in tool history (Node file-test environment, panel presence/matcher, private sequence-name collision, new-test key order); fixed without weakening existing tests.
+- Phase1 OPEN. Next: verify new actual-loading/reconnect edge tests, browser admin hash checks and both real renderers, final root unit/typecheck/lint/content checks, complete provenance/manifest/admin documentation before Phase2. No deployment/live rooms/emails/paid resources; four drafts preserved.
+
+## 4 November 2026 — Phase 1 complete locally
+
+- Shipped shared versioned asset/render/effect contracts and bounded public finish metadata, actual loader state and capability/decorative limits across the two retained renderer adapters. Installed inventory5files/18embedded textures with exact fingerprints; source ledger46media entries/29distinct Git blobs has per-entry disposition. Original-code VFX adaptation chosen; no new Wawa vendoring or dependency upgrades.
+- Admin Kart Files & limits reads authenticated validated metadata, verifies actual downloads with fixed-size streamed buffers, cancels/times out/retries and retains five in-page check summaries. Default Drive stays immediate; rehearsal uses real engine. Health shows accepted bounded public finish history/count/version, never invented guest GPU readiness. Registry/data inventory/docs updated. No new host command/private field/product persistence.
+- Final root unit118files/470tests136.62s; main+solo typecheck; API10files/79tests30.53s; changed-file lint/content/whitespace all passed, explicit exit0/no signal. phase1-compatible-checks.json and logs preserve exact results. Whole-frame unknown-cosmetic-version omission preserves strict timing/private-field checks. Initial Node JSON import failure corrected using required import attributes; failed iterations retained.
+- Browser10cases3.1m passed; final Files & limits rerun21.4s/45.4s total passed. Real5/5 hashes, forced4/5 decoder failure, retry5/5, both real driving paths, layout/recovery and all course controls verified. Reviewed phone capture; detailed diagnostics moved off the default driving view.
+- Final isolated root release build/strip/artifact/content passed20.756s, no deployment. --list discovered11 benchmark cases only, not new performance runs. Formatting phase files checked. Four content drafts unchanged/incomplete as requested.
+- Remaining: ordinary local Vite high-load SDK limitation documented; physical devices/projector/venue/production budgets and old-client release boundary remain later checks. Lower-pedal/dock overlap stays Phase6 work. No live rooms/emails/paid resources/deployment or unrelated changes.
+- Exact next stage: Phase2 detailed vehicles/drivers, bounded nearby opponents, chosen solo driver/face and optional3D spectator cameras, with real Admin Kart/Live rehearsal and required tests before Phase3. Saved exact files/tests/constraints in docs/kart-evolution-checkpoint.md. Continuation remains enabled for the unfinished full plan.
+
+## 4 November 2026 — Phase 2 started, pose foundation only
+
+- Added original pure version1 vehicle pose helper and plan-named vehicle-pose.test.ts. Bounded steering/roll and accepted-travel wheel angle; reduced motion suppresses decoration; non-finite and huge finite input stays safe. No renderer wiring or new runtime behaviour yet, so Phase2 is incomplete and admin integration is still due.
+- Focused test1file/3tests passed1.40s exit0; files formatted. Full root unit/typecheck not rerun for this unwired increment.
+- Next: integrate with existing detailed rig/renderers and Admin Kart, then nearby opponents and stage cameras under approved Phase2 tests/receipts/privacy rules. Current checkpoint preserves exact next actions; no Phase3/deployment/live resources. Ordinary usage nearly exhausted; reset credits untouched.
+
+## 4 November 2026 — Phase2 opponents and connected vehicle adapter in progress
+
+- Server selects max8 nearby public poses with retained-neighbour hysteresis; bounded roster-number selection persists in existing race state. Self and full stage field remain separate. Opponents default off; receipted host on/off commands, private bounded history and existing Live controls added with success/refusal/replay/audience tests. API opponents+room16tests21.54s passed.
+- Connected rendering now bounds self+opponents at9, quality caps8/4/2, removes stale poses, and applies shared wheel/steering/roll. Lazy instanced7-part retained GLB uses native dimensions/shared textures; Low or failed model keeps simple vehicles and retry. No physics/scoring change. Focused web14files64tests16.84s and typecheck passed before newest rehearsal code.
+- Added authenticated sample pose endpoint and real Admin Vehicles viewport/style controls; newest tests/typecheck pending. Phase2 remains open; checkpoint lists active check and exact remaining solo/stage/admin/browser work. No deployments or draft changes.
+
+## Phase2 driver increment 2026-11-04T14:17:36.477Z
+
+Focused web16files73tests21.18s and API3files32tests20.57s passed (phase2-focused-web/api.log). Browser initial2cases passed1.2m (browser-phase2-opponents); reviewed screenshot caught missing kart.css in standalone Vehicles view and ResizeObserver feedback. Fixed import and added real viewport bounds assertion; rerun now browser-phase2-driver (3cases including solo). Do not count this rerun as passed until its result.
+
+Extracted native driver constructor factory, keeping both pinned Three runtimes separate with explicit nominal-type adapter boundary. Solo shares six styles/animation semantics and wheel dimensions/steering/travel helper; current terrain and drift physics retained. Face meshes/textures are capped per visible capacity including during roster rotation, pruned/disposed; test rotates80 through9. Connected camera eases only accepted boost feedback, reduced motion suppresses it. Parent practice adapter validates same-origin handshake, fetches authorised photo with2MB streaming/15s bound and sends only style+Blob; practice accepts no URLs/credentials and revokes local object URLs. Explicit guest practice button; Admin Vehicles local-image sample rehearsal, never uploaded or stored. New tests alongside code.
+
+Latest root main+solo typecheck PASSED; focused web18files71tests21.89s PASSED before newest browser telemetry test instrumentation. Earlier initial nominal Three declaration mismatch corrected at isolated native adapter; no dependency/typecheck weakening. Newest browser/native image run pending. Full phase2 root unit not yet run; phase2 remains incomplete (stage cameras/commands/rehearsal + browser real host toggle still required). Keep all constraints and four drafts.
+
+## Phase2 stage and verification increment 2026-11-04T14:34:20.095Z
+
+Added optional server-selected map/overview/follow-leader/director stage presentation. Director rotates leading3 active public racers by accepted8s slots, frozen-roster tie breaks, safeemptyfallback. No new scheduler/input/score logic. Four receipted host commands validate again in domain; private20-entry stage history and public bounded revision let later host choices resume a locally returned map. Both new opponents/stage commands increment existing room stateVersion; replay does not apply again. Real /admin/kart?view=stage rehearsal shows80 labelledstand-ins with actual KartGameWrapper/KartCanvas; live controls see/manage stage mode/history and map return. Canvas stagefollow keepsfull80, reuses scene when director target changes, whole-track overview derived fromexistingroutebounds; no clientdirectorclock.
+
+API4files38tests29.21s passed, then broader all kart+admin auth12files91tests54.02s passed afterversiontouchassertions. Browser stage2cases1.3m passed:80allmodes/immediatemap, actuallocal2phone hostopponents/camera/pause/map. Main+solo typecheck passed. First rootunit1failed124passed491tests226.77s: adminunit fixtureemptyrace correctlyyieldedoverview, fixedfixture torealstand-in (noassertionweakening). Next root125files492tests164.09s passed.
+
+Final corrections: sample solo iframe must import its own styles (screenshotrevealed300x150 default); addedheightassertion. Solo driver now follows actual native chassis anchor, includingterrain/flight; no newstore. Sharedchassisroll now also usedinsolo. Bounded failed-face fallback and redrawcallback workunderpaused/reducedrenders; ignorelateloadersafterdispose. Photo notice keyed torequest, no synchronous effect-state reset. Changed-fileESLintpassed4.671s/contentpassed0.604s, exit0/nosignal; existingignorewarningsfor2upstreamJSfiles unchanged.
+
+INCOMPLETE pending finalchecks: browser-phase2-final currently5new+existing solo regressioncases; final rootunit/typecheck in phase2-final-*.logs/results. Inspect actualcompletion, screenshotfinalsolo layout/alignment andno runtimeerrors, then local releasebuild/strip/artifact/content ifneeded. Do notmarkphase2completeuntilgreen. Fullplanunfinished; noPhase3beforephase2gate. No deployment/live/resources/draftchanges.
+
+## Phase2 regression corrections 2026-11-04T14:40:59.840Z
+
+Final root unit passed125files492tests198.86s, exit0. Full kart/admin API12files91tests54.02s passed. Local root release build/strip/artifact/content passed59.924s (phase2-build.result.json); benchmark --list only, not new measurements.
+
+Eight-case browser final initially7passed/1failed3.7m: added toolbar driver selector caused real390px Reset kart overlap with Course set-up. Moved selector into existing secondary Course set-up; unchanged regression then reached its no-console-errors assertion and caught determinantAffine errors (7passed/1failed2m, browser-phase2-corrected). Root cause: new native solo driver constructors used pinned176 but hoisted Fiber renderer resolved another Three copy. Added Vite resolve.dedupe for three from solo app root, no dependency upgrades; runtime Scene/Renderer instanceof guard plus browserdataassert176/native true. This is a real bundle compatibility fix, not a suppressed assertion. Browser-phase2-native8cases RUNNING now; inspect exact outcome. Final typecheck28727 and changed-file lint/content36107 running. Rootunit source is unchanged by these last solo/build/e2e changes. Do not call Phase2 complete until browser and final native checks pass. Need local build AFTER final browser closes (avoid mutating practice output while browsers run).
+
+Native solo driver follows chassis anchor height/heading, shared chassis roll, no new render pose store. Sample iframe styles now import at their own boundary; screenshot confirms full usable height. Practice selector lives in secondary set-up to avoid racing control overlap. Four deferred drafts and all prior limitations preserved.
+
+## Phase2 native runtime verification 2026-11-04T14:42:33.265Z
+
+The native bundle fix is verified by the running browser case: actual solo Scene/Renderer match constructors, Three revision176, driverinstance1/photo1 then0. Unchanged solo load/drive/drift/pause/reset/context-loss/no-console-errors regression also PASSED15.7s. Current8case run browser-phase2-native had firstcase cold local admin-session timeout30.1s (Checking administrator session; email not yet rendered), while second/third/auth passed. It ran alongside55s lint/typecheck. Do not extend timeouts, skip or relabel it green. Let run finish, then rerun final8 cases sequentially with no concurrent heavy checks/output builds. Added explicit pageerror assertions to both new suites (including phone/stage pages), preventing visual attributes alone from masking render errors. Final source lint/typecheck currentlygreen before these test-only pageerror assertions; final checks remaining in saved next actions.
+
+## 4 November 2026 — Phase 2 complete locally
+
+- Connected High/Balanced now use the retained detailed kart with shared steering, wheels and chassis roll; Low or failed downloads retain simple vehicles with retry. Server-selected ghost opponents are bounded at eight, four or two visible neighbours by graphics tier. Self remains separate and the stage map retains the full field. Frozen roster numbers and hysteresis stay in the existing race; input cadence, physics and scoring are unchanged.
+- Six driver styles share native rig and animation semantics. Face resources stay within visible capacity, are released when hidden/departed, and fall back after image failure. Solo practice carries only explicit style/image bytes through a validated same-origin adapter. Native driver follows the actual chassis. Practice receives no room credentials, media URLs, socket or score authority.
+- Added reversible stage overview, follow-leader and director modes with immediate full-map return. Server selection uses accepted time, not browser clocks. Existing commands/receipts/state versions carry opponent/camera choices; bounded histories are host-only. Admin Kart Vehicles and Stage views rehearse real components with 80 labelled stand-ins and a local sample image; Live controls manage settings/history. Registry, notices, data inventory and render contracts updated.
+- Final root unit:125 files/492 tests passed198.86s. Main and solo typechecks passed. All kart/admin-auth API:12 files/91 tests passed54.02s. Eight browser cases passed2.0m with pageerror assertions, native Three revision checks, actual host controls, photo clearing, model recovery, phone sizes and the unchanged solo drive/drift/pause/reset regression. Exact logs/results are under artifacts/kart-fix-checks; phase2-summary.json indexes them.
+- Final changed-file lint19.794s/content0.811s passed; existing upstream JSX lint-ignore warnings retained. Final isolated root release build/strip/artifact/content passed25.856s, exit0/no signal/error. Benchmark --list discovered11 cases only; no new measurements or deployment. Formatting and whitespace checked.
+- Failed iterations retained: empty sample fixture corrected, standalone styles and iframe size corrected after screenshot review, phone Reset overlap fixed by moving driver selection into Course set-up, and incompatible Three matrices fixed by deduplicating solo's pinned0.176 runtime. Runtime Scene/Renderer guards and browser assertions now verify the boundary; no dependency upgrades or suppressed assertions. One cold local admin-session timeout was followed by a clean serial8-case run with unchanged timeouts.
+- Physical phones/projector/venue/Worker budgets and old-client release checks remain Phase10; connected pedal/dock layout remains Phase6. The ordinary local SDK high-load limitation and explicit guarded test backend remain documented. No smooth80 certification. Four content drafts and unrelated work preserved; no deployment/live-room/email/paid-resource changes.
+- Exact next stage:Phase3 original bounded drift/exhaust/terrain VFX, corrected skid marks, finite celebrations and real Admin VFX bench, with the plan's required expiry/duplicate/reduced-motion/flight/disposal/export tests. Phase3 has not started. Checkpoint rewritten for a concise handover; prior narrative preserved in phase2-checkpoint-history.md. Continuation remains enabled for the unfinished full plan.
+
+## Phase 3 started — bounded effects foundation and early bench
+
+Phase3 is INCOMPLETE. Added shared strict version1 local-preset schema/export and proposed scene budgets1024/512/128 particles and256/128/64 tyre segments. New scene-owned pure pool has bounded/recycled particles, ground/flight gating, emission/burst modes, lifetime/gravity/fade/size, accepted finish deduplication via existing event cursor, finite start/finish confetti, and endpoint-bounded tyre marks. No global VFX store or gameplay/network/persistence changes. Original procedural neutral alpha atlas and native instanced shader adapter added; no imported Wawa assets/source.
+
+First focused pool1file7tests20.94s passed; next pool/renderer/existing drift3files13tests5.13s passed. Initial typecheck failed only for an unused type import, removed. Newest typecheck and focused bench/circuit/registry tests are running; inspect exact results before claiming passes.
+
+Early Admin Kart Effects tab reads existing authenticated server stand-in poses and renders real circuit/new effects through explicit optional Canvas props. Local controls validate presets before rendering; pause/disable/reset/export/import and actual scene counts. It is labelled work in progress and does NOT enable new effects in live room/solo. Existing race path keeps established sparks; opt-in bench suppresses legacy sparks so budgets do not stack. New resources are lazy and scene-owned. Tests added alongside, browser kart-vfx.spec.ts NOT RUN yet.
+
+Exact next: inspect phase3-bench-unit and phase3-typecheck outputs, fix failures, run isolated browser Effects bench including actual shader errors/pageerrors, then finish shortcomings (moving terrain/skid/impact/start/finish rehearsal scripts, variable trails/anchored flame behaviour, paused/hidden/reduced handling, fair budgets and resource measurements), integrate both native adapters and enable only after full admin/verification. Add required drift-effects extensions, all phase3 tests/full root unit/typecheck/API as needed. No Phase4 until complete. Preserve four drafts, secret/generated exclusions, no deployment/live rooms/emails/paid resources. Source list phase3-files.json.
+
+## Phase 3 early bench verification — 2026-11-04T15:12:58.385Z
+
+Focused pool/renderer/drift/circuit/bench/registry6files30tests9.22s PASSED, main+solo typecheck PASSED. Browser first bench test failed when changing reduced motion after mount: emitted particles kept running. Preserved assertion; extracted existing theme live browser-preference listener into shared anim/use-reduced-motion.ts (useSyncExternalStore), with a listener-change/cleanup test, and reused it in theme chrome and bench. Subsequent browser real shader/mesh/pause/disable/export/import/live-reduced test PASSED15.5s/35.0s total (browser-phase3-bench-motion). No shader/page errors.
+
+Full rootunit129files503tests174.04s PASSED, root main+solo typecheck PASSED, changed-file lint38.988s and content0.725s PASSED. This is verification of the incomplete increment, not Phase3 completion. Latest addition after that check: bench High/Balanced/Low selector and matching counts, plus browser quality assertions and active screenshot. New browser-phase3-bench-quality is RUNNING; inspect result. Focused tests/typecheck/lint need final rerun for quality-only addition.
+
+Pool counters now wrap and emission accumulation is bounded. Canvas clears VFX history on visibility changes so hidden-time events cannot reappear as fresh celebrations. New resources stay lazy/opt-in; existing live and solo still use prior effects. No new host command, gameplay authority, product storage or deployed resource. Phase3 remaining integration/rehearsal/measurement work remains exactly as noted above.
+
+## Phase3 usable bench and wake semantics — 2026-11-04T15:21:43.608Z
+
+Browser quality test PASSED17.8s/37.5s total: Low<=128 particles/self+2, Balanced<=512/self+4, real shader/mesh, pause/disable, validated export/import, dynamic reduced-motion suppression. Screenshot review prompted clearer touch-sized numeric fields and separated effect toggles. Final layout browser PASSED18.7s/34.6s total, including390px no horizontal overflow and44px minimum numeric input. Manual active screenshot reviewed.
+
+Subsequent pure improvement: trailLength now bounds actual world-space wake distance (not just particle scale), while glow/arc/flame positions follow owner sockets and pause freezes them. Gravity tuning affects moving smoke/confetti, with meaningful tests. Pool tests now9 passed3.28s. New browser-phase3-wake-final currently RUNNING for those final cosmetic positions; full root/final type/lint checks to follow. Do not label Phase3 complete.
+
+Exact remaining work: native solo adapter and chosen/preset practice transport; moving dust/terrain/tyre/contact/start/finish replay scripts using actual components; accurate ground alignment and contact socket placement; resource/quality/disposal/theme/hidden/pause checks and measurements. Current early bench is explicitly local-only, new effects not enabled in live/solo. Decide and implement receipted host enable/disable with bounded private history if enabling live room presentation. Preserve legacy reduced-motion sparks until the new adapters/admin gate is complete. Required phase-wide tests and final root unit/typecheck/API/browser verification before Phase4.
+
+## 4 November 2026 — Phase 3 early bench verified; phase remains incomplete
+
+- Final root unit129files505tests PASSED150.14s, exit0. Main+solo typecheck PASSED, exit0. Changed-file lint4.187s/content0.645s PASSED, no signal/error. Final actual browser Effects bench PASSED12.9s/27.8s total, exit0/no signal/error: real shaders, quality caps, native mesh mode, pause/disable, validated export/import, changing reduced motion while mounted,390px no overflow and44px controls. Exact summary and named logs: artifacts/kart-fix-checks/phase3-summary.json.
+- Original bounded per-scene effects and validated local bench are now reviewable under Admin Kart → Effects. World-space trails respect distance; flame/glow/arc anchors follow current pose. Moving smoke/confetti respond to gravity, all particles expire/recycle, accepted event IDs suppress replay, and hidden-tab history is cleared. No external textures/Wawa source, global store, gameplay change or room/solo activation. Screenshot review fixed weak input styling; active viewport and controls reviewed.
+- Phase3 is NOT COMPLETE. No root release build or API suite was rerun for this partial increment; Phase2’s prior results remain historical. No new host fields/actions/API routes/product persistence. New effects are explicitly isolated to the early admin bench.
+- Exact next action: implement the native solo adapter and validated optional preset in existing practice transport/store, retaining pinned176 runtime checks; migrate actual effects entry points to the live reduced-motion adapter. Add replayable moving tyre/terrain/impact/start/finish scripts, accurate ground/socket alignment, theme/hidden/pause/disposal checks and resource measurements. Complete receipted host see/manage/rehearse controls before enabling room effects, and all plan-named tests/full final checks before Phase4. Current shader buffers retain fixed high allocation even on low active budget; do not claim memory/performance certification.
+- Four drafts, unrelated uncommitted work, secrets/generated exclusions and all no-deploy/live-resource/email constraints preserved. Last usage read93% ordinary allowed, two reset credits untouched. Continuation stays enabled for unfinished plan.
+
+## Phase3 practice preset contract — 4 November 2026, 15:52 UTC
+
+Extended the existing strict practice-presentation validator with optional effects: a validated/cloned KartVfxPreset or explicit null reset. Unknown/undefined fields, future versions, nonfinite values and nested/top-level private fields reject the whole message. Existing style/Blob-only messages stay unchanged. The same-origin/source-checked solo receiver stores only the validated preset in existing ephemeral soloVfxPreset (defaultnull), clears it for legacy/reset messages and on cleanup. No new store, socket, score path, URL/credential transfer or rendering activation.
+
+Focused practice validator/frame tests2files4tests PASSED4.38s (phase3-practice-contract.log), main+solo typecheck PASSED (phase3-practice-typecheck.log), changed-file lint3.333s/content0.567s PASSED (phase3-verify.result.json). Files formatted. Full root unit/browser were NOT rerun for this narrow protocol increment; prior505-test and browser passes remain historical to their source. Phase3 stays INCOMPLETE.
+
+Exact next action: extend SoloPracticeFrame’s existing parent handshake with a validated optional preset and avoid re-fetching an unchanged face on every tuning change; then consume soloVfxPreset through a native176 R3F effects adapter using the existing scene-owned pool/factory. Preserve default legacy effects/null and native Scene/Renderer version guard. Add real Admin Effects solo rehearsal and browser coverage proving preset application/reset, bounded counts, pause/reduced-motion, face preservation and no room credentials. Do not expose a solo-effects control until it actually drives this adapter. Remaining moving terrain/skid/contact/event scripts, ground/socket alignment, host controls and resource measurements are still required before Phase3 completion/Phase4. Reset credits untouched; no deployment/live-room/email/paid-resource/draft changes.
+
+
+## Phase3 native solo integration started — 2026-11-04T18:59:59.106Z
+
+Ordinary quota reset1%, reset credits untouched. Parent SoloPracticeFrame now separates bounded authorised-photo loading from presentation sends, retaining one photo Blob per key; style/preset/readiness changes reuse bytes. New test proves one fetch, face preservation and explicit preset reset without room fields. Native SoloVfx uses scene-owned pool and shared original shader factory with solo176 constructors plus Scene/Renderer guard; no Three instances cross bundles. Old DriftEffects is retained as default legacy fallback when no preset. Explicit optional preset selects new adapter; disabled preset draws0, null restores legacy.
+
+Admin Effects has opt-in real solo rehearsal, local sample face, preset/legacy switch and unmount; default practice/live rooms unchanged. New component/browser tests added alongside code. Focused tests and typecheck just launched (phase3-solo-unit/typecheck.log); inspect exact outputs. Browser native/face/tuning/pause/reduced/reset/socket tests NOT RUN yet. Phase3 remains INCOMPLETE; no Phase4/deployment.
+
+
+## Phase3 native solo sender/adapter increment — 2026-11-04T19:04:10.663Z
+
+Parent photo loading is now independent of style/preset/iframe readiness, with one bounded Blob cache. Metadata-only messages omit face to preserve the receiver’s existing object URL and texture; explicit null clears it, and a fresh frame revision resends actual bytes. Same strict validator, origin/source checks, no credentials/URLs/room fields. New unit test proves one photo fetch and no repeated image bytes through style/preset/reset changes.
+
+Native SoloVfx consumes validated preset from the existing solo store, uses native176 constructors/guards and the shared scene-owned pool/masks/shaders, freezes on pause, honours the live reduced-motion adapter and resets hidden history. Null retains/restores LegacyDriftEffects; disabled preset draws0. Admin Effects exposes opt-in real solo rehearsal, local face, legacy toggle and close. Existing practice/live rooms remain default legacy, no authority change.
+
+Focused sender/validator/admin3files7tests PASSED6.45s after metadata-only optimisation; initial6tests84.88s also passed before optimisation. Main+solo typecheck PASSED after both versions. Browser-phase3-solo launched now (2cases) for actual shaders/native176/photo preservation/pause/disable/reduced/legacy/socket and existing bench regression; NOT yet verified. No phase completion/Phase4.
+
+
+## Phase3 moving scripts and accepted contact cue — 2026-11-04T19:14:11.137Z
+
+Native solo browser2cases PASSED2.1m (solo48.1s, existing bench13.2s), actual176 shaders, bounded counts, metadata-only face preservation, pause, disabled preset, dynamic reduced motion, explicit legacy fallback and no room socket.
+
+Added isolated finite moving scripts start/drift/boost/dirt/flight/impact/finish. They transform validated public stand-in data only, use no room/socket/score and zero stand-in points, keep stable terminal timestamps and explicit run IDs for replay. Canvas owns only cosmetic script time, paused/hidden/reduced-safe. Per-kind actual pool counts are available in admin. New optional public contact boolean projects accepted physics contact, no raw inputs; native uses existing body.contact. Pool emits once on a fresh contact edge, suppresses held/historical contact. No collision rule changes. Four focused script/pool/circuit/admin files26tests46.16s passed before latest UI selectors; API event/contact1file4tests5.56s passed; main+solo typecheck passed.
+
+Added actual script pause/dust/flight/contact/finite-finish/replay browser test and admin command checks alongside. New browser-phase3-scripts (3cases) RUNNING; inspect completion. Phase3 remains incomplete, next accurate surface/socket alignment, host switch/history/receipts and resource measurements before full verification/Phase4. No deployment/live-room action/draft changes.
+
+
+## Phase3 scripts and ground alignment increment — 2026-11-04T19:27:25.413Z
+
+Initial moving browser failed at pause (349→449ms): script time advanced after the last displayed frame. Moved advance before render and explicitly observe rendered pause acknowledgement. Second browser passed pause but sparse polling missed the short contact burst. Added circuit integration test and changed finite-event browser observation to requestAnimationFrame. Ground browser all3cases PASSED2.0m: moving drift/dust/flight/contact/two finite finish replays, native176 solo and prior bench. Ground focused4files27tests PASSED16.46s; main+solo typecheck PASSED before host switch increment. Offline GLB audit now retains cosmetic solo-world Y in existing road/dirt triangles; verified every wall edge, every X/Z coordinate and source hash unchanged. Shared-index ground interpolation/upward normals/native offset tests pass. Pool distinguishes world Y from flight clearance; tyre endpoints/renderer align to slope. Start-grid seam explicitly retains approximate flat fallback, not measured geometry.
+
+Host switch increment added, tests RUNNING (phase3-host-unit/api/typecheck.log): optional public effectsEnabled absent=legacy/true=new/false=no decoration; bounded control-only history20, commands through existing receipts/touch/room flow, Live controls enable/off/history and Effects rehearsal link. Guest/stage use existing scene adapter with separate pause and live reduced-motion subscription. API commit/eviction/replay/refusal/privacy and component tests added alongside. Need inspect exact results, resource measurements then full required checks. Phase3 INCOMPLETE; no Phase4/deployment/live-room/draft changes.
+
+
+## Phase3 full integration verification — 2026-11-04T19:36:54.105Z
+
+Main+solo typecheck PASSED (phase3-final-typecheck.log). Root unit132files521tests PASSED166.71s (phase3-full-unit.log). Selected API11files79tests PASSED74.72s (phase3-full-api.log). Real browser6cases PASSED2.6m (browser-phase3-room-resources): 80-driver stage/map modes, local2-phone room host effects on/off, stage pause + dynamic reduced motion/no diagnostics, finite moving scripts, six quality/restart resource runs with equal geometry/texture counts, native176 solo/photo preservation/legacy and existing bench. Local guarded test adapter only; not a live room/deployment.
+
+Final narrow updates after broad start: corrected world-space wake segment heading, start script must show elapsed0 first, observed-start expiration test, actual slope transform/palette role assertions and finished bench copy. Final full unit rerun27243, lint/content27312, typed room auth rerun and resource-only browser with numeric log samples are now RUNNING; no phase-complete claim until all checks/build/format pass. No Phase4.
+
+
+## Phase3 final safety audit — 2026-11-04T19:40:35.103Z
+
+Resource-only browser PASSED1case1.5m (37.5s case), exact samples saved phase3-resources.json:43 geometries and19 textures constant across six restart/quality changes; Low33 calls/119–128particles/60–64marks, Balanced39/348/100, High46/655/180 (static warm-up45calls594particles). These are Chromium local-phone scene counts, not venue/device or 80-racer frame budgets. Final typed room API20tests PASSED41.54s.
+
+Root final rerun exposed new observed-start test failure: implementation hard-coded3 confetti per actor while preset expected12. Fixed code to honour validated burstCount (first4 actors, bounded pool), preserving test. Added skid-history break for unsupported→road gaps. Host off now stays enabled through prompt/reveal/scores and for ended races, without catching up physics outside active phases; on still refuses ended/outside intro/collect. Tests prove ended UI safe-off, reveal command acceptance, invalid phase refusal and no private-history leak/replay. Focused safety unit/API/typecheck and root build now RUNNING (phase3-final-safety-*.log, phase3-final-build.log). Need final root rerun after fix, resource/host browser rerun, lint/content/owned format/whitespace. Phase3 still INCOMPLETE until green.
+
+
+## Kart evolution Phase3 complete locally — 2026-11-04T19:45:56.184Z
+
+Status: COMPLETE LOCALLY; Phase4 next, not started in this wake. K07–K17 now run through the scene-owned native186 connected and native176 solo adapters: dust/exhaust/sparks/glow/arcs/world-space wake/flames/grounded marks/finite celebrations, validated emitter controls and import/export, moving start/drift/boost/dirt/flight/impact/finish scripts, sample photo preservation and explicit legacy fallback. Corrected before-render pause clocks, observed start bursts honour the preset, fresh accepted contact edges, unsupported-ground skid gaps and slope transforms. Offline GLB audit adds cosmetic Y using the existing index; every wall/XZ coordinate and source hash unchanged. No new dependency/source media/Wawa store.
+
+Admin: existing Kart entry, Effects real connected/solo rehearsal, local counts and all tuning/reset/disable/export controls. Live controls persist enable/off with existing receipts, rollback/stateVersion and bounded private history20; on refuses ended/outside active phases, off remains available in prompt/reveal/scores. Optional public flag absent preserves old races; false explicitly removes decoration. Guest/stage receive no history or renderer resource diagnostics. Existing reduced-motion subscription responds live; pause freezes, hidden resets history.
+
+Final commands/results: npm run test:unit PASSED132files524tests231.71s (phase3-release-unit.log); npm run typecheck PASSED main+solo (phase3-final-safety-typecheck.log); selected API11files79tests74.72s plus final room safety20tests20.88s PASSED. Earlier full unit rerun caught fixed start burst=3 while preset=12; code fixed, test retained, final full run green. Final Playwright6cases PASSED2.7m (browser-phase3-final), including80-driver stage/map, actual local2-phone host on/off/pause/reduced, shaders/native176/photo/no-room-socket/legacy, finite replay scripts and repeated quality/resource bounds. Root npm run build PASSED including artifact/content checks; expected four drafts remain incomplete. Owned lint27.258s/content0.543s PASSED, formatting52sources and scoped git diff --check PASSED. No skipped or weakened tests.
+
+Manual verification: inspected actual Effects screenshot; clear tuning controls, visible circuit/stand-ins, no390px overflow, input heights at least44px verified in browser. Final repeated Chromium rehearsal: geometries43/textures19 unchanged; Low33calls128particles60–64marks; Balanced39/372/100; High46/679/180. Exact samples phase3-final-resources.json. Counts include retained scene geometry and are not physical-device,80-racer frame-rate or GPU-byte certification. Existing ordinary Vite native-backend limitation remains; browser harness uses explicit guarded locked local test adapter. No deployment/live-room/email/paid resource/secret inspection; existing dirty work and four deferred drafts preserved.
+
+Remaining: Phase4 K18–K25 Look/environment/lighting/grading with real neutral preset and real Look bench, then Phases5–10. Physical iPhone/Android/projector/venue and20-minute soak remain required in Phase10. Exact next action is at the top of kart-evolution-checkpoint.md. Continue automation remains enabled because the overall plan is unfinished.
+
+
+## Kart Phase4 grading foundation started — 2026-11-04T20:03:00.530Z
+
+Phase4 INCOMPLETE. Strict shared v1 look preset, original linear-light reference/shader and native bounded render-target factory added alongside tests. All named grading controls are wired; neutral bypasses allocation, target capped by actual quality/capability, state restored in finally, source tone mapping retained unless explicitly selected. No new dependencies or external assets. Admin Kart Look tab uses real connected scene and only implemented grading controls, before/after, grades, reset/export/import and local costs. Ordinary/live/solo paths unchanged unless explicit local look prop. Source list phase4-files.json. Native176/environment/shadows/sky/reflections/wind/chromatic/dirt/bloom/AO/tilt-shift and host room actions remain required.
+
+First2files4tests had3pass1failure: resize legitimately calls target.dispose in Three, test now distinguishes resize release and final release. New5-file bench/registry tests and typecheck RUNNING (phase4-bench-*.log); inspect results. Added actual browser pixel neutral restoration/nonneutral/context/Low/reduced/width tests, NOT RUN yet. Save exact verification before proceeding. Phase3 final gate remains132files524tests etc above; no deployment/live room/draft changes.
+
+
+## Phase4 grading verification increment — 2026-11-04T20:06:32.977Z
+
+Focused bench/registry5files17tests PASSED14.52s before latest hue/global tests. Latest focused3files8tests PASSED48.16s (phase4-grade-unit-2.log), main+solo typecheck PASSED (phase4-grade-typecheck-2.log) after fixing literal preview label in the test fixture. CPU tests cover neutral HDR identity, RGB swap, all8 HSL band controls, all global knobs and bounded policy; target test accounts exactly for Three resize disposal and neutral release.
+
+First browser failed by timeout waiting for getByLabel exact Look preset: nested select label text included options in that query, while role accessible name remained correct. Added explicit aria-label to the real preset selector; no timeout raised or assertions removed. Browser-phase4-grade-label now RUNNING. Actual shader/pixel/context verification still pending; inspect result before claiming grade works. Phase4 INCOMPLETE; no environment/solo/live look yet.
+
+
+## Phase4 pixel proof and environment ownership — 2026-11-04T20:21:57.658Z
+
+Actual grading browser PASSED1case40.8s (browser-phase4-grade-framebuffer,23.7s case): nonneutral output changes raw framebuffer hash; neutral restores EXACT hash/dimensions/colour, valid pixels; Low, AgX/global/mixer/HSL, strict import, WebGL loss/recovery, dynamic reduced motion and320/390/430/short landscape checks pass with no shader/page errors/no room sockets. Prior PNG equality failed solely at surrounding rounded frame/edge pixels (central rendered region had0 changed pixels); test now hashes full actual WebGL framebuffer with nonzero-colour assertion and retains screenshot evidence. It does not relax colour equality.
+
+Added capability-clamped High4/Balanced2/Low0 MSAA to avoid degrading antialiasing through the new target; actual MSAA browser verification pending. Added original procedural sky/sun, theme-role environment light, native PMREM reflection ownership, single bounded1024 shadow map/56m camera with snapped follow centre and paused/reduced freeze. Low omits reflections/shadows, off restores source lights/material flags/environment and disposes owned maps. First env ownership unit3files8tests21.37s and main+solo typecheck passed before integration. Now wired to the real Look bench with Daylight, sky/sun/reflection/shadow controls and actual local shadow-map size; latest phase4-env-integrated unit/typecheck RUNNING. Browser with real PMREM/shadows NOT RUN yet; inspect focused results first then run kart-look. Native176/live settings/host actions and optical effects still missing. Phase4 INCOMPLETE; do not begin Phase5. No live room/deploy/draft/secret changes.
+
+
+## Phase4 environment browser and native solo started — 2026-11-04T20:27:07.143Z
+
+Connected environment browser PASSED1case1.1m (49.9s case, browser-phase4-environment): real sky/sun/native PMREM, actual1024 shadow texture, Low disables reflections/shadows, before restores exact full framebuffer source hash, grading/MSAA/AgX/import/context/reduced/viewport checks; no shader/page errors or room socket. Inspected actual daylight/shadow screenshot: racing line/signs/stand-ins stay visible. Integrated focused4files9tests8.61s and main+solo typecheck PASSED before native bridge work.
+
+New native176 SoloLook now takes the existing R3F final render callback at priority1 (official hooks checked), creates resources only in committed effect, configures through the same plain preset/native constructor boundary, uses actual practice pose/ground and restores renderer/source scene on cleanup. No Three instance crosses versions. Existing strict practice message now accepts optional cloned look or null alongside effects/style/metadata-only face; parent preserves cached photo bytes, receiver stores in existing ephemeral store and clears on cleanup. Admin Look has opt-in real solo frame, local sample face, tune/before/legacy/close controls. New sender/validator tests and native browser case added alongside. Focused phase4-solo-unit/typecheck now RUNNING; inspect exact results then actual native browser. Phase4 still INCOMPLETE: optical suite, live host controls and final full gate remain. No deployment/live rooms/draft changes.
+
+
+## Phase4 increment regressions and native boot investigation — 2026-11-04T20:34:52.137Z
+
+Full root unit136files535tests PASSED249.44s (phase4-increment-full-unit.log) before final CSS/lifecycle/narrow scene changes. Main+solo typecheck and focused native9tests7.32s passed. Lint found redundant useCallback(read,[]) compiler rule; fixed by reusing the already stable module read function directly. Content passed1.185s. First native2-case browser failed missing first-frame driver marker and320px overflow; no assertions/timeouts weakened. File input constrained to available width: rerun browser-phase4-native-boot now connected case PASSED, native still missing frame marker with no captured shader/page error. Canvasdata-engine shows actual176, but driver callbacks have not produced markers.
+
+Added explicit local native lifecycle ready/frame diagnostics and failure attribute dump. Look bench now closes connected preview when the real solo frame is open, avoiding two simultaneous expensive HDR/MSAA worlds; hides stale connected costs then. Existing continuous connected render semantics retained (not claiming paused framebuffers are readable after compositing). Actual look parameter changes force immediate cost updates. Browser-phase4-native-single-scene RUNNING; inspect. Native look remains UNVERIFIED. Phase4 incomplete; optical effects/live host settings/full final gate still pending. No deploy/live room/draft changes.
+
+
+## Phase4 native readiness fix checkpoint — 2026-11-04T20:38:16.080Z
+
+Native failure was first-frame readiness: no shader/page errors; failure dump shortly after5s showed genuine176, native=true, face1, Look preset/HDR/reflection true. Practice Ready previously set soloStarted before any render. Added one-shot soloLookReady in existing store and wait for successful NativeLook frame before Ready, keeping loading honest. Browser awaits actual Pause then checks exact native/face markers; no assertion/timeout weakened. Connected Look preview closes while solo open to avoid duplicate expensive scenes. Added local lifecycle diagnostics for investigation. Fixed file input width320 overflow; connected case passed in boot rerun.
+
+Full root increment136files535tests249.44s PASSED before readiness fix; current typecheck PASSED (phase4-ready-typecheck.log). Previous scoped lint/content20.01s/4.456s passed. Browser-phase4-native-ready2cases RUNNING, inspect completion before claiming native works. Exact top-of-checkpoint resume action updated. Optical suite/live host coverage/full final gate remain, Phase4 INCOMPLETE. No deployment/live room/draft changes.
+
+
+## Phase4 native opt-in rehearsal verified — 2026-11-04T20:40:50.768Z
+
+Browser-phase4-native-ready2cases PASSED1.7m: native25.1s, connected45.0s. Actual176 scene/renderer, PMREM/reflection, face1 through metadata-only tuning, before/neutral and explicit legacy restoration all pass; connected framebuffer exact-neutral/context/Low/reduced/width tests pass. First-frame readiness fix is real product behaviour; no longer claims ready before rendering. Removed temporary diagnostic output/lifecycle attributes after proof. No test weakened.
+
+Current increment final regression checks RUNNING: Look+oldVFX6browser, root unit, main+solo typecheck, owned lint/content. See top checkpoint for sessions/logs. Need inspect results and root build after browser; Phase4 remains incomplete (optical suite/live host controls/final full gate). Data inventory/plan status updated honestly. Ordinary quota last92% primary, reset credits untouched; preserve checkpoint before exhaustion. No deploy/live-room/draft changes.
+
+
+## Phase4 current increment cross-checks — 2026-11-04T20:42:37.748Z
+
+Final current-increment Look native+connected cases passed29.6s/52.9s in browser-phase4-increment-regression before old VFX cases. Combined concurrent root/browser load then failed old moving-script wait: sample1783ms after5s wait for2000ms. Root concurrently reports one router test failure (fresh retry after joining reopens,5887ms); complete failure details pending root finish. Do not label final checks green. Earlier136files535tests249.44s root pass and native-ready2browser1.7m remain valid historical evidence. No test assertions/timeouts weakened. Plan: let current checks finish, inspect exact failures, rerun root and browser SEQUENTIALLY to separate load/timing from real regressions, fix code if reproduced. Current lint/content PASSED85.349s/12.824s; main+solo current typecheck passed. Native temporary diagnostics removed. No Phase4 completion.
+
+
+## Phase4 concurrent checks finished with failures — 2026-11-04T20:46:15.068Z
+
+Browser current regression finished5pass/1fail2.9m: new Look native/connected both pass, old VFX resource/native/bench pass; old moving-flight clock wait1783ms vs2000ms failed after5s. Root current full run exited1 without final aggregate: router join retry and glyph feedback tests exceeded timing, then worker termination timed out for designs.test.tsx. No processes from this run remain (read-only process inventory checked; nothing killed). Source/check assertions unchanged.
+
+Launched SEQUENTIAL root-only full rerun phase4-serial-full-unit.log, no browser/build alongside it; inspect returned session next. Then run old/new browser suite alone, then root build. This distinguishes resource contention/import stalls from real regression and never labels failed checks green. Latest typecheck/lint/content pass; Phase4 still incomplete.
+
+
+## Drop tracked ignored check output — 2026-11-04
+
+`.gitignore` now ignores all of `artifacts/`. `npm run git:drop-ignored` removes tracked paths that the ignore file covers and leaves the working copies on disk. It untracked `artifacts/kart-browser-checks/.last-run.json`; the file is still on disk and the index removal is staged, not committed. `node --experimental-strip-types --test scripts/git-drop-ignored.test.ts` passed 2 tests. `npm run agents:sync` copied the instruction into `AGENTS.md` and `GEMINI.md`. A second run of the command finds nothing left to drop.

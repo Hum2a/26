@@ -1,4 +1,5 @@
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { usePrefersReducedMotion } from "../anim/use-reduced-motion";
 import type { LobbySnapshot, KartInput } from "@26/shared";
 import { KartDriverView } from "./KartDriverView";
 import { TouchController } from "./TouchController";
@@ -28,7 +29,7 @@ export function GuestKart({
   recoveryPending?: boolean;
   recoveryNotice?: string;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = usePrefersReducedMotion();
   const race = snapshot.play?.kart;
   const timeLimitMs =
     race?.timeLimitMs ??
@@ -102,7 +103,7 @@ export function GuestKart({
         </div>
       ) : null}
       {race && self && !complete ? (
-        <KartDriverView race={race} reducedMotion={Boolean(reduced) || !open} />
+        <KartDriverView race={race} reducedMotion={reduced} paused={!open} />
       ) : null}
       {!complete ? (
         <TouchController

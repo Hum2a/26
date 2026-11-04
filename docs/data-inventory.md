@@ -288,3 +288,53 @@ Each started birthday room stores its frozen private question script in existing
 - **End game now** moves a running room straight to the podium. The current question is abandoned unscored; nothing new is stored beyond the existing control receipt and phase history.
 - **Destroy room** needs the room's control credential and the typed join code. The room's Durable Object closes every socket with a "room closed" message, disarms its alarm and deletes all of its SQLite storage (players, answers, scores, credentials, receipts, media records, telemetry). The code registry then deletes the join-code row and keeps one receipt (`principal = 'destroy'`: request id, game id, join code) so a retried request replays. Temporary and accepted R2 objects listed in the room's `media_upload` table are deleted in the background after the response. An archive already exported to Neon is not touched.
 - **Guest standings.** Guest snapshots now carry the leading ten standings (place, nickname, points) while scores are shown, for the phone's Ranks tab. Nothing new is stored. A guest under an active hidden-score troll receives no standings at all.
+
+## Review follow-ups (3 November 2026)
+
+- Push-your-luck rounds freeze one private `push-raid` record per question in
+  existing `round_state`: the drawn line count, or null for no Raid. It is
+  inserted before collection opens and follows room retention. Guests and the
+  stage receive lines/banks and their public progress, never the frozen draw
+  before reveal. Bail receipts reuse `choice_answer` with the server receipt
+  time and deadline; score details reuse `score_ledger` (banked, held, raided).
+- The figurine self-vote bonus reuses the existing ballot and score ledger with
+  detail `self-vote`. It adds no identity, telemetry or storage table.
+- Automatic deployment recovery stores only its last reload timestamp in this
+  tab’s session storage. If storage is refused, recovery stays manual.
+- Browser rehearsal uses ephemeral local authentication, rooms and media. It
+  has no deployment routes or remote credentials and is separate from the
+  ordinary development database. Generated browser evidence belongs under
+  `artifacts/browser-checks`.
+
+### Kart presentation foundations (4 November 2026)
+
+Versioned kart asset metadata records project file paths, sizes, SHA-256 fingerprints, source/notice links and embedded texture fingerprints. It contains no player or device data; authenticated Admin Kart reads it through /api/admin/kart-assets. File availability/integrity checks, completion times and the last five check summaries exist only in the current admin page and disappear on navigation. They are not uploaded as guest readiness or persisted.
+
+Public kart snapshots may include a version1 presentation batch of at most32 accepted finish outcomes: cosmetic eventId, playerId, active atMs and FINISHED/DNF status. IDs derive from existing frozen roster numbers and accepted finish times; no new product persistence. Private input counters, control queues, credentials, face media and inventories are absent. A renderer-local race cursor suppresses replayed outcomes on reconnect and rejects unknown presentation versions; it is not gameplay authority.
+
+### Kart visible racers and practice presentation (Phase2, in progress)
+
+The existing durable race optionally stores opponentsEnabled, max8 frozen roster numbers per driver (nearbyNumbers), and a max20-entry opponent-setting history (injected timestamp and boolean). Host commands are receipted through existing room actions. History is control-only; stage and guests never receive it. Self public pose remains separate from at most8 nearby public poses; accepted-motion turnRate is optional and bounded. No raw input, credential, held inventory or score secret is added to these poses.
+
+The authenticated kart-preview endpoint creates labelled public stand-in poses without a room, socket or persistence. Browser practice uses a validated style plus optional PNG/JPEG/WebP Blob up to2MB passed to its same-origin isolated frame. The parent alone fetches authorised guest media; URLs/credentials/media IDs are never sent to the engine. Object URLs, local sample bytes and chosen practice style are memory-only, cleared on replacement/unmount. No upload, new identity, record, database table or shared store is introduced.
+
+Stage presentation additionally stores optional stageMode, a monotonically increasing safe-integer revision and at most 20 injected-time mode changes in the same durable race. History is control-only and follows existing room retention. Public spectator metadata contains only mode, revision and the selected public player ID. Director selection derives from accepted race time and existing public progress; no new scheduler, telemetry stream or gameplay authority is introduced. A device-local map override lasts only in the mounted stage component. Solo driver appearance stays in the existing ephemeral practice store.
+
+### Kart effects and isolated rehearsal (Phase 3)
+
+Validated version 1 presentation presets, imported/exported JSON, scripts and actual renderer counts live only in the mounted Admin Kart Effects page and the opt-in solo frame. No browser persistence or upload. Authenticated preview reads project labelled public stand-ins. Script transforms and cosmetic clocks remain isolated from rooms, scores and physics. Local renderer counts contain draw calls, triangles, geometries and textures; they never enter snapshots or telemetry.
+
+Scene-owned buffers retain at most 80 public actor histories, 1,024 decorative particles and 256 tyre segments, with lower active quality caps. Fixed renderer allocations are unchanged by lower caps. Public accepted contact is an optional boolean, never raw input or hit authority. Existing finite finish-event cursors and observed start edges suppress historical replays. Original neutral alpha masks are generated in memory; no new Wawa source or media is downloaded. Offline audited road/dirt triangles retain cosmetic height alongside their unchanged X/Z, and use the existing index.
+
+The existing durable race additionally holds optional effectsEnabled and at most 20 effectsHistory entries of injected atMs and enabled. History is control-only, follows existing room retention, and is absent from guest/stage snapshots. Public effectsEnabled is optional: absent preserves legacy presentation, true selects the new validated default preset, false suppresses decoration. Host commands use existing authentication, receipts and persistence. Off remains available through the finished round; enabling is limited to an open active race. No new identity, table, score engine, scheduler or socket.
+
+The same-origin practice message accepts an optional validated/cloned preset or null. Metadata-only messages omit face to preserve its object URL/texture; explicit null clears it. The parent caches one bounded authorised/local photo Blob per media key and frame revision, fetches it once and resends bytes only to a new frame or changed photo. Unknown/private fields reject the whole message. Native176 resources stay inside the solo renderer; the existing in-memory store and receiver clear state/URLs on replacement/unmount. Nothing sends credentials, media URLs or room state to practice.
+
+
+### Early local kart Look bench (Phase4 incomplete)
+
+The mounted authenticated Look bench holds a strict version1 presentation preset, before/after selection, optional exported/imported JSON and local pass/target counts. No browser persistence, upload or room changes. Grading parameters include bounded nine-channel mixer, globals, eight HSL bands, theme-role split tones and named renderer tone mapping. Environment parameters are bounded sun/sky/light/reflection/shadow settings. Old grading-only exports normalise to a disabled environment. All palette colours remain theme roles.
+
+Connected scenes own at most one colour target (quality/capability edge cap1024/1536/2048), optional native procedural PMREM reflection and a single1024 shadow target with56m frustum. High/Balanced/Low colour MSAA is capped4/2/0 and by renderer capability. Neutral releases the colour target and restores source lights/environment/material flags; Low omits reflection/shadow allocations. No external sky/environment asset, dependency, telemetry or new identity. Procedural GPU resources are not retained as files.
+
+The same existing practice presentation message additionally accepts an optional validated/cloned look preset or null, preserving the metadata-only face semantics. Parent photo caching remains unchanged; only presentation values and optional bounded Blob enter the frame. Native176 keeps the preset in the existing ephemeral practice store and releases scene-owned resources on unmount. Native176 browser verification passed for the opt-in rehearsal, including reflection, face preservation, before/after and legacy restoration. A one-shot soloLookReady flag keeps practice loading until its first successful look frame. Ordinary practice/live rooms remain legacy. No public snapshot or durable-room look field has been introduced yet.

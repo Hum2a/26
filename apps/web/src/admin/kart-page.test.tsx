@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { beforeEach, expect, it, vi } from "vitest";
-vi.mock("./sections-api", () => ({ readContent: vi.fn() }));
+vi.mock("./sections-api", () => ({ readContent: vi.fn(), readKartAssets: vi.fn() }));
 vi.mock("../live/room-api", () => ({ createLobby: vi.fn() }));
 vi.mock("./phone-preview-panel", () => ({
   PhonePreviewPanel: ({
@@ -16,13 +16,17 @@ vi.mock("./phone-preview-panel", () => ({
     </p>
   ),
 }));
-import { readContent } from "./sections-api";
+import { readContent, readKartAssets } from "./sections-api";
+import { kartAssetManifest } from "@26/shared";
 import { createLobby } from "../live/room-api";
 import { AdminKartPage } from "./kart-page";
 import { AdminShell } from "../ui/admin-shell";
 import { safeAdminReturnTo } from "./admin-return";
 
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(readKartAssets).mockResolvedValue(kartAssetManifest);
+});
 
 it("creates only a kart lobby and reuses the request after uncertain creation", async () => {
   vi.mocked(createLobby).mockResolvedValue({ error: "Connection lost" });
@@ -130,4 +134,16 @@ it("keeps race actions in the existing room controls and explains multiplayer", 
 it("preserves the dedicated page as an allowed sign-in return destination", () => {
   expect(safeAdminReturnTo("/admin/kart")).toBe("/admin/kart");
   expect(safeAdminReturnTo("/admin/kart/unknown")).toBe("/admin");
+});
+
+it("keeps file diagnostics in their own view and rehearses with the real engine", async () => {
+  mount();
+  expect(readKartAssets).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Files & limits" }));
+  await screen.findByText(/kart-assets-v1/);
+  expect(screen.getByTitle("Solo kart practice").getAttribute("src")).toBe(
+    "/kart-engine/index.html",
+  );
+  expect(readKartAssets).toHaveBeenCalledTimes(1);
+  expect(readContent).not.toHaveBeenCalled();
 });

@@ -1,11 +1,19 @@
 import { env } from "cloudflare:test";
+import type { KartRaceView } from "@26/shared";
 import { describe, expect, it } from "vitest";
 import { withClientApiQuery } from "./client-api-key.ts";
 import { payloadDigest } from "../src/room/digest.ts";
 
+declare module "vitest" {
+  interface TaskMeta {
+    realtimeLoad?: Awaited<ReturnType<typeof measure>>[];
+  }
+}
+
 /**
  * Realtime fan-out harness. Run with `npm run load:realtime`.
  * LOAD_SIZES (default 10,25,50,75,100) and LOAD_KART_MS (default 6000) tune it.
+ * LOAD_TRACK=mario-circuit-v1 measures the kart-only imported circuit (no quiz burst).
  * Results print as `LOAD-REALTIME {json}` lines for docs/verification-report.md.
  * This is a local workerd measurement, not production.
  */
@@ -14,17 +22,25 @@ const sizes = (settings.LOAD_SIZES ?? "10,25,50,75,100")
   .split(",")
   .map((value) => Number(value.trim()))
   .filter((value) => Number.isInteger(value) && value > 0 && value <= 100);
+const neutralControls = settings.LOAD_NEUTRAL === "1";
+const importedCircuit = settings.LOAD_TRACK === "mario-circuit-v1";
 const kartMs = positive(settings.LOAD_KART_MS, 6_000);
 // Phone control rate during the race. 0 sends no controls, which isolates the tick cost.
 const inputHz = Math.max(0, Math.min(20, Number(settings.LOAD_INPUT_HZ ?? "10") || 0));
 
 describe("realtime fan-out", () => {
-  it("measures each room size through an answer burst and a live kart race", async () => {
+  it("measures each room size on the selected track and optional quiz burst", async ({
+    task,
+  }) => {
+    expect(sizes.length).toBeGreaterThan(0);
+    expect(["party-ring-v1", "mario-circuit-v1"]).toContain(
+      settings.LOAD_TRACK ?? "party-ring-v1",
+    );
     const results = [];
     for (const size of sizes) {
-      results.push(await measure(size));
-    }
-    for (const result of results) {
+      const result = await measure(size);
+      results.push(result);
+      task.meta.realtimeLoad = [...results];
       console.log(`LOAD-REALTIME ${JSON.stringify(result)}`);
     }
     expect(results.every((result) => result.race.stageKartUpdates > 0)).toBe(true);
@@ -55,23 +71,29 @@ async function measure(size: number) {
     "control",
   );
 
-  const started = await stub.startKartRehearsal({
+  const start = {
     ...credential(created),
     requestId: crypto.randomUUID(),
     nowMs: Date.now(),
-  });
+  };
+  const started = importedCircuit
+    ? await stub.hostAction({ ...start, action: "start-kart" })
+    : await stub.startKartRehearsal(start);
   expect(started.ok).toBe(true);
 
-  await reach(
-    stub,
-    created,
-    (snapshot) =>
-      snapshot.phase === "collect" && snapshot.play?.question.kind !== "kart",
-  );
-  const answerSamples = await Promise.all(
-    guests.map((peer) => peer.command({ name: "answer", optionId: "circle" })),
-  );
-  expect(answerSamples.every((sample) => sample.accepted)).toBe(true);
+  let answerSamples: { ms: number; accepted: boolean }[] = [];
+  if (!importedCircuit) {
+    await reach(
+      stub,
+      created,
+      (snapshot) =>
+        snapshot.phase === "collect" && snapshot.play?.question.kind !== "kart",
+    );
+    answerSamples = await Promise.all(
+      guests.map((peer) => peer.command({ name: "answer", optionId: "circle" })),
+    );
+    expect(answerSamples.every((sample) => sample.accepted)).toBe(true);
+  }
 
   await reach(
     stub,
@@ -79,7 +101,10 @@ async function measure(size: number) {
     (snapshot) =>
       snapshot.phase === "collect" && snapshot.play?.question.kind === "kart",
   );
-  const raceId = (await stub.snapshotFor("stage")).play?.kart?.raceId;
+  const race = (await stub.snapshotFor("stage")).play?.kart;
+  const raceId = race?.raceId;
+  expect(race?.trackId).toBe(importedCircuit ? "mario-circuit-v1" : "party-ring-v1");
+  expect(race?.participantCount).toBe(size);
   expect(raceId).toEqual(expect.any(String));
   for (const peer of [...guests, stage, control]) peer.reset();
 
@@ -97,8 +122,8 @@ async function measure(size: number) {
           input: {
             raceId,
             sequence,
-            steer: index % 3 === 0 ? 0.24 : -0.1,
-            gas: true,
+            steer: neutralControls ? 0 : index % 3 === 0 ? 0.24 : -0.1,
+            gas: !neutralControls,
             brake: false,
             drift: false,
           },
@@ -116,24 +141,34 @@ async function measure(size: number) {
     nowMs: Date.now(),
   });
   if (!diagnostics.ok) throw new Error(diagnostics.message);
+  if (importedCircuit && inputHz > 0 && !neutralControls)
+    expect(stage.movingRacers.size).toBeGreaterThan(0);
+  expect(stage.movingRacers.size).toBeLessThanOrEqual(size);
   const guestBytes = guests.map((peer) => peer.bytes / raceSeconds);
   const guestGaps = guests.flatMap((peer) => gaps(peer.kartAt));
   const summary = {
     environment: "cloudflare vitest local durable object, not production",
     guests: size,
-    answerAckMs: {
-      p50: percentile(
-        answerSamples.map((sample) => sample.ms),
-        50,
-      ),
-      p95: percentile(
-        answerSamples.map((sample) => sample.ms),
-        95,
-      ),
-      max: Math.round(Math.max(...answerSamples.map((sample) => sample.ms))),
-    },
+    trackId: race?.trackId,
+    inputHz,
+    controls: neutralControls ? "neutral" : "driving",
+    answerAckMs:
+      answerSamples.length === 0
+        ? null
+        : {
+            p50: percentile(
+              answerSamples.map((sample) => sample.ms),
+              50,
+            ),
+            p95: percentile(
+              answerSamples.map((sample) => sample.ms),
+              95,
+            ),
+            max: Math.round(Math.max(...answerSamples.map((sample) => sample.ms))),
+          },
     race: {
       seconds: Number(raceSeconds.toFixed(1)),
+      movingRacers: stage.movingRacers.size,
       stageKartUpdates: stage.kartAt.length,
       stageKartUpdatesPerSecond: Number((stage.kartAt.length / raceSeconds).toFixed(1)),
       stageGapMs: spread(gaps(stage.kartAt)),
@@ -177,6 +212,7 @@ type Peer = {
   bytes: number;
   snapshots: number;
   kartAt: number[];
+  movingRacers: Set<string>;
   reset(): void;
   raw(body: Record<string, unknown>): void;
   command(body: Record<string, unknown>): Promise<{ ms: number; accepted: boolean }>;
@@ -214,10 +250,12 @@ async function connect(
     bytes: 0,
     snapshots: 0,
     kartAt: [],
+    movingRacers: new Set(),
     reset() {
       peer.bytes = 0;
       peer.snapshots = 0;
       peer.kartAt = [];
+      peer.movingRacers.clear();
     },
     raw(body) {
       socket.send(JSON.stringify(body));
@@ -239,14 +277,20 @@ async function connect(
   };
   socket.addEventListener("message", (event) => {
     const text = String(event.data);
-    peer.bytes += text.length;
+    peer.bytes += new TextEncoder().encode(text).byteLength;
     if (text === "pong") return;
     const message = JSON.parse(text) as {
       kind?: string;
       requestId?: string;
       accepted?: boolean;
-      snapshot?: { play?: { kart?: unknown } | null };
+      kart?: KartRaceView;
+      snapshot?: { play?: { kart?: KartRaceView } | null };
+      set?: { play?: { kart?: KartRaceView } | null };
     };
+    const observedRace =
+      message.kart ?? message.snapshot?.play?.kart ?? message.set?.play?.kart;
+    for (const driver of observedRace?.participants ?? [])
+      if ((driver.speed ?? 0) > 0) peer.movingRacers.add(driver.playerId);
     if (message.kind === "ack" && message.requestId) {
       waiting.get(message.requestId)?.resolve(message.accepted === true);
       waiting.delete(message.requestId);
@@ -326,7 +370,10 @@ async function join(
 async function createRoom() {
   const created = await env.ROOM_CODE_REGISTRY.getByName("codes").createLobby({
     requestId: crypto.randomUUID(),
-    digest: await payloadDigest({ action: "create" }),
+    ...(importedCircuit ? { kind: "kart" as const } : {}),
+    digest: await payloadDigest(
+      importedCircuit ? { action: "create", kind: "kart" } : { action: "create" },
+    ),
     now: new Date().toISOString(),
   });
   if (!created.ok) throw new Error(created.message);
@@ -334,7 +381,10 @@ async function createRoom() {
 }
 
 function credential(created: Awaited<ReturnType<typeof createRoom>>) {
-  return { credentialId: created.control.credentialId, secret: created.control.secret };
+  return {
+    credentialId: created.control.credentialId,
+    secret: created.control.secret,
+  };
 }
 
 function credentialCookie(

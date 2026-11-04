@@ -1,4 +1,15 @@
 /** Presentation only. Charge and boost come from the existing simulation. */
+export const kartEffectVersion = 1;
+
+/** Renderer-neutral bounded points; both adapters own their own mesh resources. */
+export function driftEffectDescription(...args: Parameters<typeof driftSparks>) {
+  return {
+    version: kartEffectVersion,
+    space: "kart-local" as const,
+    points: driftSparks(...args),
+  };
+}
+
 export function driftPose(
   heading: number,
   vx: number,

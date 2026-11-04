@@ -1,0 +1,859 @@
+{
+  "schemaVersion": 1,
+  "recordedOn": "2026-11-04",
+  "methodVersion": 10,
+  "runtime": {
+    "miniflare": "5.20261023.3-beta",
+    "workerd": "1.20261023.1",
+    "selection": "Already-locked API-test backend through explicit local-only adapter; no dependency changes"
+  },
+  "command": "npm run perf:kart-render",
+  "result": "11 passed (6.1m), exit0/no signal",
+  "limitations": [
+    "Local co-resident headless Chromium, not physical GPU presentation timings",
+    "Inspector samples and duration are not billed Worker CPU",
+    "Ordinary pinned Vite preview runtime remains outside this explicit isolated test adapter"
+  ],
+  "measurements": [
+    {
+      "mode": "rendering",
+      "evidence": "render-baseline-v10-rendering-1.json",
+      "methodVersion": 10,
+      "observedDrivingBotConnections": 0,
+      "motionVerified": true,
+      "configuredHumanSteer": -0.1,
+      "cpuProfileRequested": false,
+      "runtime": "bundled-local-preview",
+      "runtimeVariant": "cloudflare-vitest",
+      "paused": true,
+      "hostPauseResponseMs": 645,
+      "environment": "Local workerd and headless Chromium; co-resident bot fleet; not physical devices or GPU presentation FPS",
+      "population": 1,
+      "botConnections": 0,
+      "configuredBotInputHz": 0,
+      "track": "mario-circuit-v1",
+      "phone": {
+        "seconds": 4.03,
+        "rafFrames": 19,
+        "rafCallbacksPerSecond": 4.7,
+        "rafGapP95Ms": 250,
+        "drawFrames": 19,
+        "drawSubmissionsPerSecond": 4.7,
+        "drawCallsPerFrameMean": 25.3,
+        "contexts": 2,
+        "canvas": {
+          "width": 538,
+          "height": 288,
+          "cssWidth": 359,
+          "cssHeight": 192,
+          "containerWidth": 359,
+          "containerHeight": 192,
+          "viewportWidth": 390
+        },
+        "graphics": "High detail · automatic. Checking performance as you drive."
+      },
+      "stage": {
+        "seconds": 4.01,
+        "rafFrames": 17,
+        "rafCallbacksPerSecond": 4.2,
+        "rafGapP95Ms": 433.3,
+        "drawFrames": 0,
+        "drawSubmissionsPerSecond": 0,
+        "drawCallsPerFrameMean": null,
+        "contexts": 0
+      },
+      "worker": null,
+      "errors": []
+    },
+    {
+      "mode": "rendering",
+      "evidence": "render-baseline-v10-rendering-16.json",
+      "methodVersion": 10,
+      "observedDrivingBotConnections": 15,
+      "motionVerified": true,
+      "configuredHumanSteer": -0.1,
+      "cpuProfileRequested": false,
+      "runtime": "bundled-local-preview",
+      "runtimeVariant": "cloudflare-vitest",
+      "paused": true,
+      "hostPauseResponseMs": 499,
+      "environment": "Local workerd and headless Chromium; co-resident bot fleet; not physical devices or GPU presentation FPS",
+      "population": 16,
+      "botConnections": 15,
+      "configuredBotInputHz": 10,
+      "track": "mario-circuit-v1",
+      "phone": {
+        "seconds": 4.01,
+        "rafFrames": 19,
+        "rafCallbacksPerSecond": 4.7,
+        "rafGapP95Ms": 466.7,
+        "drawFrames": 19,
+        "drawSubmissionsPerSecond": 4.7,
+        "drawCallsPerFrameMean": 25.4,
+        "contexts": 2,
+        "canvas": {
+          "width": 359,
+          "height": 192,
+          "cssWidth": 359,
+          "cssHeight": 192,
+          "containerWidth": 359,
+          "containerHeight": 192,
+          "viewportWidth": 390
+        },
+        "graphics": "Balanced · automatic. Checking performance as you drive."
+      },
+      "stage": {
+        "seconds": 4,
+        "rafFrames": 19,
+        "rafCallbacksPerSecond": 4.7,
+        "rafGapP95Ms": 400,
+        "drawFrames": 0,
+        "drawSubmissionsPerSecond": 0,
+        "drawCallsPerFrameMean": null,
+        "contexts": 0
+      },
+      "worker": null,
+      "errors": []
+    },
+    {
+      "mode": "rendering",
+      "evidence": "render-baseline-v10-rendering-21.json",
+      "methodVersion": 10,
+      "observedDrivingBotConnections": 20,
+      "motionVerified": true,
+      "configuredHumanSteer": -0.1,
+      "cpuProfileRequested": false,
+      "runtime": "bundled-local-preview",
+      "runtimeVariant": "cloudflare-vitest",
+      "paused": true,
+      "hostPauseResponseMs": 327,
+      "environment": "Local workerd and headless Chromium; co-resident bot fleet; not physical devices or GPU presentation FPS",
+      "population": 21,
+      "botConnections": 20,
+      "configuredBotInputHz": 10,
+      "track": "mario-circuit-v1",
+      "phone": {
+        "seconds": 4.03,
+        "rafFrames": 19,
+        "rafCallbacksPerSecond": 4.7,
+        "rafGapP95Ms": 466.7,
+        "drawFrames": 19,
+        "drawSubmissionsPerSecond": 4.7,
+        "drawCallsPerFrameMean": 25.4,
+        "contexts": 3,
+        "canvas": {
+          "width": 269,
+          "height": 144,
+          "cssWidth": 359,
+          "cssHeight": 192,
+          "containerWidth": 359,
+          "containerHeight": 192,
+          "viewportWidth": 390
+        },
+        "graphics": "Low detail · automatic. Checking performance as you drive."
+      },
+      "stage": {
+        "seconds": 4.01,
+        "rafFrames": 19,
+        "rafCallbacksPerSecond": 4.7,
+        "rafGapP95Ms": 350,
+        "drawFrames": 0,
+        "drawSubmissionsPerSecond": 0,
+        "drawCallsPerFrameMean": null,
+        "contexts": 0
+      },
+      "worker": null,
+      "errors": []
+    },
+    {
+      "mode": "rendering",
+      "evidence": "render-baseline-v10-rendering-50.json",
+      "methodVersion": 10,
+      "observedDrivingBotConnections": 49,
+      "motionVerified": true,
+      "configuredHumanSteer": -0.1,
+      "cpuProfileRequested": false,
+      "runtime": "bundled-local-preview",
+      "runtimeVariant": "cloudflare-vitest",
+      "paused": true,
+      "hostPauseResponseMs": 388,
+      "environment": "Local workerd and headless Chromium; co-resident bot fleet; not physical devices or GPU presentation FPS",
+      "population": 50,
+      "botConnections": 49,
+      "configuredBotInputHz": 10,
+      "track": "mario-circuit-v1",
+      "phone": {
+        "seconds": 4,
+        "rafFrames": 18,
+        "rafCallbacksPerSecond": 4.5,
+        "rafGapP95Ms": 250,
+        "drawFrames": 18,
+        "drawSubmissionsPerSecond": 4.5,
+        "drawCallsPerFrameMean": 25.4,
+        "contexts": 2,
+        "canvas": {
+          "width": 269,
+          "height": 144,
+          "cssWidth": 359,
+          "cssHeight": 192,
+          "containerWidth": 359,
+          "containerHeight": 192,
+          "viewportWidth": 390
+        },
+        "graphics": "Low detail · automatic. Checking performance as you drive."
+      },
+      "stage": {
+        "seconds": 4.01,
+        "rafFrames": 18,
+        "rafCallbacksPerSecond": 4.5,
+        "rafGapP95Ms": 433.3,
+        "drawFrames": 0,
+        "drawSubmissionsPerSecond": 0,
+        "drawCallsPerFrameMean": null,
+        "contexts": 0
+      },
+      "worker": null,
+      "errors": []
+    },
+    {
+      "mode": "rendering",
+      "evidence": "render-baseline-v10-rendering-80.json",
+      "methodVersion": 10,
+      "observedDrivingBotConnections": 79,
+      "motionVerified": true,
+      "configuredHumanSteer": -0.1,
+      "cpuProfileRequested": false,
+      "runtime": "bundled-local-preview",
+      "runtimeVariant": "cloudflare-vitest",
+      "paused": true,
+      "hostPauseResponseMs": 378,
+      "environment": "Local workerd and headless Chromium; co-resident bot fleet; not physical devices or GPU presentation FPS",
+      "population": 80,
+      "botConnections": 79,
+      "configuredBotInputHz": 10,
+      "track": "mario-circuit-v1",
+      "phone": {
+        "seconds": 4.01,
+        "rafFrames": 18,
+        "rafCallbacksPerSecond": 4.5,
+        "rafGapP95Ms": 250.1,
+        "drawFrames": 18,
+        "drawSubmissionsPerSecond": 4.5,
+        "drawCallsPerFrameMean": 25.4,
+        "contexts": 3,
+        "canvas": {
+          "width": 269,
+          "height": 144,
+          "cssWidth": 359,
+          "cssHeight": 192,
+          "containerWidth": 359,
+          "containerHeight": 192,
+          "viewportWidth": 390
+        },
+        "graphics": "Low detail · automatic. Checking performance as you drive."
+      },
+      "stage": {
+        "seconds": 4,
+        "rafFrames": 17,
+        "rafCallbacksPerSecond": 4.2,
+        "rafGapP95Ms": 266.7,
+        "drawFrames": 0,
+        "drawSubmissionsPerSecond": 0,
+        "drawCallsPerFrameMean": null,
+        "contexts": 0
+      },
+      "worker": null,
+      "errors": []
+    },
+    {
+      "mode": "profiled",
+      "evidence": "render-baseline-v10-profiled-1.json",
+      "methodVersion": 10,
+      "observedDrivingBotConnections": 0,
+      "motionVerified": true,
+      "configuredHumanSteer": -0.1,
+      "cpuProfileRequested": true,
+      "runtime": "bundled-local-preview",
+      "runtimeVariant": "cloudflare-vitest",
+      "paused": true,
+      "hostPauseResponseMs": 532,
+      "environment": "Local workerd and headless Chromium; co-resident bot fleet; not physical devices or GPU presentation FPS",
+      "population": 1,
+      "botConnections": 0,
+      "configuredBotInputHz": 0,
+      "track": "mario-circuit-v1",
+      "phone": {
+        "seconds": 4,
+        "rafFrames": 19,
+        "rafCallbacksPerSecond": 4.7,
+        "rafGapP95Ms": 249.9,
+        "drawFrames": 19,
+        "drawSubmissionsPerSecond": 4.7,
+        "drawCallsPerFrameMean": 25.4,
+        "contexts": 2,
+        "canvas": {
+          "width": 538,
+          "height": 288,
+          "cssWidth": 359,
+          "cssHeight": 192,
+          "containerWidth": 359,
+          "containerHeight": 192,
+          "viewportWidth": 390
+        },
+        "graphics": "High detail · automatic. Checking performance as you drive."
+      },
+      "stage": {
+        "seconds": 4.01,
+        "rafFrames": 19,
+        "rafCallbacksPerSecond": 4.7,
+        "rafGapP95Ms": 416.6,
+        "drawFrames": 0,
+        "drawSubmissionsPerSecond": 0,
+        "drawCallsPerFrameMean": null,
+        "contexts": 0
+      },
+      "worker": {
+        "durationMs": 22299.394,
+        "samples": 367,
+        "top": [
+          {
+            "function": "(anonymous)",
+            "samples": 108
+          },
+          {
+            "function": "(program)",
+            "samples": 23
+          },
+          {
+            "function": "(idle)",
+            "samples": 12
+          },
+          {
+            "function": "readRoom$1",
+            "samples": 9
+          },
+          {
+            "function": "exec",
+            "samples": 8
+          },
+          {
+            "function": "write",
+            "samples": 8
+          },
+          {
+            "function": "readKartIngressClock",
+            "samples": 7
+          },
+          {
+            "function": "kartFrames",
+            "samples": 7
+          },
+          {
+            "function": "tickKart",
+            "samples": 7
+          },
+          {
+            "function": "readJobs",
+            "samples": 6
+          },
+          {
+            "function": "send",
+            "samples": 6
+          },
+          {
+            "function": "acceptKartInputs",
+            "samples": 6
+          },
+          {
+            "function": "readRoom$1",
+            "samples": 6
+          },
+          {
+            "function": "importedSurfaceAt",
+            "samples": 6
+          },
+          {
+            "function": "stepDriving",
+            "samples": 6
+          }
+        ],
+        "scope": "Local workerd isolate sampling from race start through pause, including warm-up, phone/stage samples and a map-only window; excludes player joins; not production/billed CPU",
+        "profileFile": "artifacts/kart-fix-checks/worker-baseline-1.cpuprofile",
+        "sha256": "e737d85aebb8b2d24ea819ce6614c92ae6aa520fc59ce7b16fd7b2e794a9979a"
+      },
+      "errors": []
+    },
+    {
+      "mode": "profiled",
+      "evidence": "render-baseline-v10-profiled-16.json",
+      "methodVersion": 10,
+      "observedDrivingBotConnections": 15,
+      "motionVerified": true,
+      "configuredHumanSteer": -0.1,
+      "cpuProfileRequested": true,
+      "runtime": "bundled-local-preview",
+      "runtimeVariant": "cloudflare-vitest",
+      "paused": true,
+      "hostPauseResponseMs": 344,
+      "environment": "Local workerd and headless Chromium; co-resident bot fleet; not physical devices or GPU presentation FPS",
+      "population": 16,
+      "botConnections": 15,
+      "configuredBotInputHz": 10,
+      "track": "mario-circuit-v1",
+      "phone": {
+        "seconds": 4.01,
+        "rafFrames": 19,
+        "rafCallbacksPerSecond": 4.7,
+        "rafGapP95Ms": 250.1,
+        "drawFrames": 19,
+        "drawSubmissionsPerSecond": 4.7,
+        "drawCallsPerFrameMean": 25.3,
+        "contexts": 2,
+        "canvas": {
+          "width": 359,
+          "height": 192,
+          "cssWidth": 359,
+          "cssHeight": 192,
+          "containerWidth": 359,
+          "containerHeight": 192,
+          "viewportWidth": 390
+        },
+        "graphics": "Balanced · automatic. Checking performance as you drive."
+      },
+      "stage": {
+        "seconds": 4.01,
+        "rafFrames": 19,
+        "rafCallbacksPerSecond": 4.7,
+        "rafGapP95Ms": 416.7,
+        "drawFrames": 0,
+        "drawSubmissionsPerSecond": 0,
+        "drawCallsPerFrameMean": null,
+        "contexts": 0
+      },
+      "worker": {
+        "durationMs": 20207.243,
+        "samples": 886,
+        "top": [
+          {
+            "function": "(program)",
+            "samples": 148
+          },
+          {
+            "function": "(idle)",
+            "samples": 55
+          },
+          {
+            "function": "(garbage collector)",
+            "samples": 42
+          },
+          {
+            "function": "send",
+            "samples": 33
+          },
+          {
+            "function": "moveWithWalls",
+            "samples": 33
+          },
+          {
+            "function": "writeRoundState",
+            "samples": 33
+          },
+          {
+            "function": "exec",
+            "samples": 28
+          },
+          {
+            "function": "nearbyImportedWalls",
+            "samples": 26
+          },
+          {
+            "function": "importedTrackProgress",
+            "samples": 24
+          },
+          {
+            "function": "importedSurfaceAt",
+            "samples": 19
+          },
+          {
+            "function": "stepDriving",
+            "samples": 19
+          },
+          {
+            "function": "webSocketMessage",
+            "samples": 18
+          },
+          {
+            "function": "intersects",
+            "samples": 18
+          },
+          {
+            "function": "stepCourse",
+            "samples": 16
+          },
+          {
+            "function": "write",
+            "samples": 13
+          }
+        ],
+        "scope": "Local workerd isolate sampling from race start through pause, including warm-up, phone/stage samples and a map-only window; excludes player joins; not production/billed CPU",
+        "profileFile": "artifacts/kart-fix-checks/worker-baseline-16.cpuprofile",
+        "sha256": "4df52de358bfae6addec5fba276052f3d2aea096a1127d7802d4c643937849fc"
+      },
+      "errors": []
+    },
+    {
+      "mode": "profiled",
+      "evidence": "render-baseline-v10-profiled-21.json",
+      "methodVersion": 10,
+      "observedDrivingBotConnections": 20,
+      "motionVerified": true,
+      "configuredHumanSteer": -0.1,
+      "cpuProfileRequested": true,
+      "runtime": "bundled-local-preview",
+      "runtimeVariant": "cloudflare-vitest",
+      "paused": true,
+      "hostPauseResponseMs": 295,
+      "environment": "Local workerd and headless Chromium; co-resident bot fleet; not physical devices or GPU presentation FPS",
+      "population": 21,
+      "botConnections": 20,
+      "configuredBotInputHz": 10,
+      "track": "mario-circuit-v1",
+      "phone": {
+        "seconds": 4.01,
+        "rafFrames": 18,
+        "rafCallbacksPerSecond": 4.5,
+        "rafGapP95Ms": 400,
+        "drawFrames": 18,
+        "drawSubmissionsPerSecond": 4.5,
+        "drawCallsPerFrameMean": 25.3,
+        "contexts": 2,
+        "canvas": {
+          "width": 269,
+          "height": 144,
+          "cssWidth": 359,
+          "cssHeight": 192,
+          "containerWidth": 359,
+          "containerHeight": 192,
+          "viewportWidth": 390
+        },
+        "graphics": "Low detail · automatic. Checking performance as you drive."
+      },
+      "stage": {
+        "seconds": 4,
+        "rafFrames": 19,
+        "rafCallbacksPerSecond": 4.7,
+        "rafGapP95Ms": 466.7,
+        "drawFrames": 0,
+        "drawSubmissionsPerSecond": 0,
+        "drawCallsPerFrameMean": null,
+        "contexts": 0
+      },
+      "worker": {
+        "durationMs": 21569.351,
+        "samples": 1087,
+        "top": [
+          {
+            "function": "(anonymous)",
+            "samples": 142
+          },
+          {
+            "function": "(idle)",
+            "samples": 69
+          },
+          {
+            "function": "(garbage collector)",
+            "samples": 49
+          },
+          {
+            "function": "nearbyImportedWalls",
+            "samples": 41
+          },
+          {
+            "function": "send",
+            "samples": 37
+          },
+          {
+            "function": "exec",
+            "samples": 34
+          },
+          {
+            "function": "moveWithWalls",
+            "samples": 30
+          },
+          {
+            "function": "importedSurfaceAt",
+            "samples": 30
+          },
+          {
+            "function": "stepDriver",
+            "samples": 28
+          },
+          {
+            "function": "importedTrackProgress",
+            "samples": 28
+          },
+          {
+            "function": "(program)",
+            "samples": 24
+          },
+          {
+            "function": "webSocketMessage",
+            "samples": 24
+          },
+          {
+            "function": "exec",
+            "samples": 24
+          },
+          {
+            "function": "stepDriving",
+            "samples": 17
+          },
+          {
+            "function": "attachment",
+            "samples": 16
+          }
+        ],
+        "scope": "Local workerd isolate sampling from race start through pause, including warm-up, phone/stage samples and a map-only window; excludes player joins; not production/billed CPU",
+        "profileFile": "artifacts/kart-fix-checks/worker-baseline-21.cpuprofile",
+        "sha256": "d5a1c010b0d211ecdfbb8fde71911156a016bca8ed950ad5d0cb3b1552816093"
+      },
+      "errors": []
+    },
+    {
+      "mode": "profiled",
+      "evidence": "render-baseline-v10-profiled-50.json",
+      "methodVersion": 10,
+      "observedDrivingBotConnections": 49,
+      "motionVerified": true,
+      "configuredHumanSteer": -0.1,
+      "cpuProfileRequested": true,
+      "runtime": "bundled-local-preview",
+      "runtimeVariant": "cloudflare-vitest",
+      "paused": true,
+      "hostPauseResponseMs": 546,
+      "environment": "Local workerd and headless Chromium; co-resident bot fleet; not physical devices or GPU presentation FPS",
+      "population": 50,
+      "botConnections": 49,
+      "configuredBotInputHz": 10,
+      "track": "mario-circuit-v1",
+      "phone": {
+        "seconds": 4.01,
+        "rafFrames": 18,
+        "rafCallbacksPerSecond": 4.5,
+        "rafGapP95Ms": 316.7,
+        "drawFrames": 18,
+        "drawSubmissionsPerSecond": 4.5,
+        "drawCallsPerFrameMean": 25.4,
+        "contexts": 3,
+        "canvas": {
+          "width": 269,
+          "height": 144,
+          "cssWidth": 359,
+          "cssHeight": 192,
+          "containerWidth": 359,
+          "containerHeight": 192,
+          "viewportWidth": 390
+        },
+        "graphics": "Low detail · automatic. Checking performance as you drive."
+      },
+      "stage": {
+        "seconds": 4,
+        "rafFrames": 16,
+        "rafCallbacksPerSecond": 4,
+        "rafGapP95Ms": 500,
+        "drawFrames": 0,
+        "drawSubmissionsPerSecond": 0,
+        "drawCallsPerFrameMean": null,
+        "contexts": 0
+      },
+      "worker": {
+        "durationMs": 23148.529,
+        "samples": 2459,
+        "top": [
+          {
+            "function": "exec",
+            "samples": 225
+          },
+          {
+            "function": "(anonymous)",
+            "samples": 164
+          },
+          {
+            "function": "(idle)",
+            "samples": 151
+          },
+          {
+            "function": "send",
+            "samples": 105
+          },
+          {
+            "function": "nearbyImportedWalls",
+            "samples": 91
+          },
+          {
+            "function": "importedTrackProgress",
+            "samples": 72
+          },
+          {
+            "function": "exec",
+            "samples": 67
+          },
+          {
+            "function": "moveWithWalls",
+            "samples": 56
+          },
+          {
+            "function": "(program)",
+            "samples": 52
+          },
+          {
+            "function": "(garbage collector)",
+            "samples": 52
+          },
+          {
+            "function": "intersects",
+            "samples": 47
+          },
+          {
+            "function": "stepDriver",
+            "samples": 46
+          },
+          {
+            "function": "importedSurfaceAt",
+            "samples": 46
+          },
+          {
+            "function": "webSocketMessage",
+            "samples": 41
+          },
+          {
+            "function": "stepDriving",
+            "samples": 40
+          }
+        ],
+        "scope": "Local workerd isolate sampling from race start through pause, including warm-up, phone/stage samples and a map-only window; excludes player joins; not production/billed CPU",
+        "profileFile": "artifacts/kart-fix-checks/worker-baseline-50.cpuprofile",
+        "sha256": "4bb298bde29f409c4e7f4be7c7def3721188d97e251a5a1a725ffdf91ea013d3"
+      },
+      "errors": []
+    },
+    {
+      "mode": "profiled",
+      "evidence": "render-baseline-v10-profiled-80.json",
+      "methodVersion": 10,
+      "observedDrivingBotConnections": 79,
+      "motionVerified": true,
+      "configuredHumanSteer": -0.1,
+      "cpuProfileRequested": true,
+      "runtime": "bundled-local-preview",
+      "runtimeVariant": "cloudflare-vitest",
+      "paused": true,
+      "hostPauseResponseMs": 625,
+      "environment": "Local workerd and headless Chromium; co-resident bot fleet; not physical devices or GPU presentation FPS",
+      "population": 80,
+      "botConnections": 79,
+      "configuredBotInputHz": 10,
+      "track": "mario-circuit-v1",
+      "phone": {
+        "seconds": 4,
+        "rafFrames": 16,
+        "rafCallbacksPerSecond": 4,
+        "rafGapP95Ms": 500,
+        "drawFrames": 16,
+        "drawSubmissionsPerSecond": 4,
+        "drawCallsPerFrameMean": 25.4,
+        "contexts": 3,
+        "canvas": {
+          "width": 269,
+          "height": 144,
+          "cssWidth": 359,
+          "cssHeight": 192,
+          "containerWidth": 359,
+          "containerHeight": 192,
+          "viewportWidth": 390
+        },
+        "graphics": "Low detail · automatic. Checking performance as you drive."
+      },
+      "stage": {
+        "seconds": 4.01,
+        "rafFrames": 17,
+        "rafCallbacksPerSecond": 4.2,
+        "rafGapP95Ms": 516.7,
+        "drawFrames": 0,
+        "drawSubmissionsPerSecond": 0,
+        "drawCallsPerFrameMean": null,
+        "contexts": 0
+      },
+      "worker": {
+        "durationMs": 25002.127,
+        "samples": 4037,
+        "top": [
+          {
+            "function": "exec",
+            "samples": 533
+          },
+          {
+            "function": "(anonymous)",
+            "samples": 286
+          },
+          {
+            "function": "(idle)",
+            "samples": 235
+          },
+          {
+            "function": "nearbyImportedWalls",
+            "samples": 160
+          },
+          {
+            "function": "exec",
+            "samples": 141
+          },
+          {
+            "function": "send",
+            "samples": 140
+          },
+          {
+            "function": "standings",
+            "samples": 89
+          },
+          {
+            "function": "importedTrackProgress",
+            "samples": 76
+          },
+          {
+            "function": "moveWithWalls",
+            "samples": 72
+          },
+          {
+            "function": "inst._zod.parse",
+            "samples": 67
+          },
+          {
+            "function": "(garbage collector)",
+            "samples": 64
+          },
+          {
+            "function": "(program)",
+            "samples": 64
+          },
+          {
+            "function": "readRoundState",
+            "samples": 63
+          },
+          {
+            "function": "exec",
+            "samples": 56
+          },
+          {
+            "function": "webSocketMessage",
+            "samples": 53
+          }
+        ],
+        "scope": "Local workerd isolate sampling from race start through pause, including warm-up, phone/stage samples and a map-only window; excludes player joins; not production/billed CPU",
+        "profileFile": "artifacts/kart-fix-checks/worker-baseline-80.cpuprofile",
+        "sha256": "c119050e1af2ec85e888ce18f8d944407cb93fdeb85fd0afff51ecb11a533bcb"
+      },
+      "errors": []
+    }
+  ]
+}

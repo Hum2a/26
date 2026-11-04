@@ -65,7 +65,17 @@ test("real solo engine banks a neutral-steering drift and accelerates on release
   test.setTimeout(90_000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  // Functional driving uses the real phone viewport; desktop High-detail
+  // rendering is measured separately above and in the performance matrix.
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/kart-engine/index.html");
+  // A sweeper at 68m can erase the bank while the browser delivers input.
+  // Isolate drift with the real course controls; hazard tests below retain it.
+  await page.getByText("Course set-up", { exact: true }).click();
+  await page.getByRole("button", { name: "Clear track", exact: true }).click();
+  for (const name of ["Floor boosts", "Ramps and gliding", "Moving sweepers"])
+    await expect(page.getByRole("checkbox", { name })).not.toBeChecked();
+  await page.getByText("Course set-up", { exact: true }).click();
   await page.getByRole("button", { name: "Start driving" }).click();
   await expect(
     page.getByRole("button", { name: "Accelerate", exact: true }),

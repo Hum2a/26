@@ -8,6 +8,20 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 /** Realtime measurements only. `npm test` does not run this; use `npm run load:realtime`. */
 export default defineConfig({
   test: {
+    // workerd console output is not reliably forwarded on Windows; report the
+    // same serialisable measurements from the Node reporter after the test.
+    reporters: [
+      "default",
+      {
+        onTestCaseResult(testCase) {
+          const results = testCase.meta().realtimeLoad;
+          if (Array.isArray(results)) {
+            for (const result of results)
+              console.log(`LOAD-REALTIME ${JSON.stringify(result)}`);
+          }
+        },
+      },
+    ],
     onUnhandledError(error) {
       if ("code" in error && error.code === "ECONNRESET") {
         return false;
@@ -27,6 +41,8 @@ export default defineConfig({
                 LOAD_SIZES: process.env.LOAD_SIZES ?? "10,25,50,75,100",
                 LOAD_KART_MS: process.env.LOAD_KART_MS ?? "6000",
                 LOAD_INPUT_HZ: process.env.LOAD_INPUT_HZ ?? "10",
+                LOAD_TRACK: process.env.LOAD_TRACK ?? "party-ring-v1",
+                LOAD_NEUTRAL: process.env.LOAD_NEUTRAL ?? "0",
               },
             },
           }),

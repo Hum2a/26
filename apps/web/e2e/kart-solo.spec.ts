@@ -13,12 +13,20 @@ test("solo kart loads the real circuit and drives, drifts, pauses and resets wit
     if (response.url().includes("/kart-engine/") && response.ok())
       assets.push(response.url());
   });
+  // Match the actual phone driving surface; desktop render quality has its own test.
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/kart");
   const game = page.frameLocator('iframe[title="Solo kart practice"]');
   await expect(
     game.getByRole("heading", { name: "Your own starting grid." }),
   ).toBeVisible();
   expect(assets.some((url) => url.endsWith("kart.glb"))).toBe(false);
+  // Keep the drift/recovery scenario separate from course hazard interactions.
+  await game.getByText("Course set-up", { exact: true }).click();
+  await game.getByRole("button", { name: "Clear track", exact: true }).click();
+  for (const name of ["Floor boosts", "Ramps and gliding", "Moving sweepers"])
+    await expect(game.getByRole("checkbox", { name })).not.toBeChecked();
+  await game.getByText("Course set-up", { exact: true }).click();
   await game.getByRole("button", { name: "Start driving" }).click();
   await expect(game.getByRole("button", { name: "Pause", exact: true })).toBeVisible({
     timeout: 60_000,

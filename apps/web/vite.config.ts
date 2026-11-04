@@ -26,7 +26,15 @@ import { DEFAULT_THEME_ID, themeDocumentHead } from "./src/theme/themes.ts";
 const clientApiKeyHeader = "x-26-client-key";
 
 const localAuthPrefixes = ["/api/auth", "/api/admin", "/api/dev", "/api/stage"];
-const localAdminProofKey = randomBytes(32).toString("hex");
+const browserChecks = process.env.PARTY_BROWSER_REHEARSAL === "1";
+const browserProofKey = browserChecks ? process.env.PARTY_BROWSER_PROOF_KEY : undefined;
+if (browserProofKey && !/^[a-f0-9]{64}$/.test(browserProofKey)) {
+  throw new Error("Browser rehearsal needs a valid ephemeral proof key.");
+}
+const localAdminProofKey = browserProofKey ?? randomBytes(32).toString("hex");
+if (browserChecks && process.env.CLOUDFLARE_ENV) {
+  throw new Error("Browser rehearsal cannot target a deployed environment.");
+}
 const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 const devVarsPath = fileURLToPath(new URL("../api/.dev.vars", import.meta.url));
 
@@ -154,7 +162,9 @@ function clientApiHeadersForNode(): Record<string, string> {
   return key ? { [clientApiKeyHeader]: key } : {};
 }
 
-type LocalApp = { fetch: (request: Request, env: unknown) => Promise<Response> };
+type LocalApp = {
+  fetch: (request: Request, env: unknown) => Promise<Response>;
+};
 
 let localApp: Promise<LocalApp> | undefined;
 
@@ -370,7 +380,10 @@ export default defineConfig(({ command }) => ({
     react(),
     tailwindcss(),
     cloudflare({
-      configPath: "../api/wrangler.jsonc",
+      configPath: browserChecks
+        ? "../api/test/browser/wrangler.jsonc"
+        : "../api/wrangler.jsonc",
+      remoteBindings: !browserChecks,
       // Browser checks already use temporary local auth. Keep their rooms and
       // alarms isolated too; normal development retains its persistent rooms.
       persistState: !(
@@ -379,8 +392,13 @@ export default defineConfig(({ command }) => ({
         process.env.LOCAL_DATABASE_ID === "browser-checks"
       ),
       config: (current) =>
-        command === "serve" && current.vars?.APP_ENV === "local"
-          ? { vars: { ...current.vars, LOCAL_ADMIN_PROOF_KEY: localAdminProofKey } }
+        (command === "serve" || browserChecks) && current.vars?.APP_ENV === "local"
+          ? {
+              vars: {
+                ...current.vars,
+                LOCAL_ADMIN_PROOF_KEY: localAdminProofKey,
+              },
+            }
           : {},
     }),
   ],
