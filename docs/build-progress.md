@@ -5002,3 +5002,18 @@ Launched SEQUENTIAL root-only full rerun phase4-serial-full-unit.log, no browser
 ## Sync deleted GitHub branches — 2026-11-04
 
 `npm run git:sync` fetches every remote with prune, then deletes local branches whose upstream is gone. The checked-out branch, `master`, `main`, and branches that were never pushed stay. Unmerged branches stay unless `--force` is passed. The command was not run against this checkout. `node --experimental-strip-types --test scripts/git-sync.test.ts` passed 2 tests.
+
+
+## Kart race in landscape on phones — 2026-11-04
+
+**Status:** done for the connected phone race. Branch `kart-mobile-multiplayer`.
+
+- The "Rotate your phone" overlay covered short landscape phones during the kart round, so the race could not be played sideways. `RotateHint` and `ControllerRoot` take `allowLandscape`; the guest page sets it while the current question is the kart round. The quiz keeps the hint.
+- `GuestKart` sets `data-layout="race"` while the guest is actively racing. On short landscape screens (`orientation: landscape` and `max-height: 32rem`) `kart.css` hides the phone bar, tab bar, dock, notice and round header, fills the screen with the driving view, and floats the controls: steering bottom-left, a large A pedal with B and R beside it bottom-right (mirrored by Swap sides), stacked stats top-left, drift state and a slim drift meter top-centre, map/thumb-pad/swap options top-right, Back to track and the power-up on the left. Safe-area insets are respected. The power-up's default hint is marked `data-hint` and hidden in race mode; effects and notices still show. Finishing restores the normal layout and phone chrome.
+- No change to input authority, socket cadence, scoring or server state.
+
+**Checks:** `npx vitest run src/kart src/controller src/guest src/play` in `apps/web` passed 44 files / 195 tests before the new layout test; `src/kart/kart.test.tsx` then passed 13 tests including "marks only an active racer for the full-screen landscape race layout". `RotateHint.test.tsx` adds the allowed-landscape case. `npm run typecheck` passed. A throwaway Playwright probe (not committed) ran a real local two-phone kart lobby at 667×375, 844×390 and 932×430 with the API test database: the canvas fills the viewport, there is no horizontal or vertical overflow, every control is on screen, holding A drives the kart, and no page errors occurred. Screenshots were reviewed manually.
+
+**Not verified:** physical iPhone/Android devices, the notch safe-area on a real device, the thumb-pad steering mode in landscape, and the root `npm run test:unit` / browser suites.
+
+**Next:** race speed and multiplayer smoothness on phones (frame rate, input latency, opponent interpolation), then finish kart-evolution Phase 4.

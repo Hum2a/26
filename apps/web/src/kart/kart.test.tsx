@@ -397,3 +397,32 @@ it("shows the held power-up and waits for server acknowledgement without releasi
       .disabled,
   ).toBe(true);
 });
+
+it("marks only an active racer for the full-screen landscape race layout", () => {
+  const state = createKartRace("layout", [{ playerId: "a", name: "Amina" }]);
+  const race = projectKartRace(state, "a", 100);
+  const snapshot = {
+    phase: "collect",
+    paused: false,
+    held: false,
+    play: { kart: race, selfAward: null },
+  } as unknown as LobbySnapshot;
+  const view = render(<GuestKart snapshot={snapshot} />);
+  const phone = () => screen.getByRole("region", { name: "Sprint controller" });
+  expect(phone().getAttribute("data-layout")).toBe("race");
+  race.participants[0]!.status = "FINISHED";
+  race.participants[0]!.lapTimeMs = 28_000;
+  view.rerender(<GuestKart snapshot={{ ...snapshot }} />);
+  expect(phone().getAttribute("data-layout")).toBeNull();
+  view.rerender(
+    <GuestKart
+      snapshot={
+        {
+          ...snapshot,
+          play: { question: { kind: "kart", timeLimitMs: 180_000 }, selfAward: null },
+        } as unknown as LobbySnapshot
+      }
+    />,
+  );
+  expect(phone().getAttribute("data-layout")).toBeNull();
+});

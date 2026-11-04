@@ -25,7 +25,7 @@ export function PowerUpControl({
       >
         {pending ? "Using…" : item ? "Use " + kartItemNames[item] : "No power-up"}
       </Button>
-      <p role="status">
+      <p role="status" data-hint={effect || notice ? undefined : ""}>
         {effect ||
           notice ||
           (item

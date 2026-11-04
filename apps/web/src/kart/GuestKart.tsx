@@ -55,7 +55,12 @@ export function GuestKart({
             ? "You’re watching this race. Join the next round."
             : "Drive on this screen. Hold A and follow the circuit.";
   return (
-    <section className="kart-phone" aria-label="Sprint controller">
+    <section
+      className="kart-phone"
+      aria-label="Sprint controller"
+      // Short landscape phones turn this into a full-screen driving view.
+      data-layout={race && self && !complete ? "race" : undefined}
+    >
       <header className="kart-phone-heading">
         <p className="kart-eyebrow">
           ONE LAP · {timeLimitMs === 180_000 ? "3 MINUTES" : "45 SECONDS"}
