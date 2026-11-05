@@ -1,3 +1,4 @@
+import { logError } from "./log.ts";
 import { Hono } from "hono";
 import {
   apiErrorSchema,
@@ -6,7 +7,7 @@ import {
   healthResponseSchema,
   liveConnectionNotFoundMessage,
 } from "@26/shared";
-import { authFailure, logAuthFailure } from "./auth/http.ts";
+import { authFailure } from "./auth/http.ts";
 import { registerAuthRoutes } from "./auth/routes";
 import { registerMediaRoutes } from "./media/routes";
 import { registerRoomRoutes } from "./room/routes";
@@ -32,7 +33,8 @@ function jsonNotFound(message: string): Response {
 }
 
 app.onError((error) => {
-  logAuthFailure(error);
+  // Unexpected faults are not auth failures; log them as request errors.
+  logError("request", error);
   return authFailure("invalid", 500);
 });
 
@@ -97,7 +99,7 @@ const worker = {
     try {
       return await app.fetch(request, env, ctx);
     } catch (error) {
-      logAuthFailure(error);
+      logError("request", error);
       return authFailure("invalid", 500);
     }
   },

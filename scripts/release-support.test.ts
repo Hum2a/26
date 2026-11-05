@@ -128,6 +128,11 @@ test("wrangler.jsonc attaches one custom domain per remote Worker", () => {
   assert.equal(config.env.staging.name, "26-humza-website-staging");
   assert.equal(config.env.production.name, "26-humza-website");
   assert.equal(config.env.staging.workers_dev, false);
+  // Workers Logs collect the room's structured error lines.
+  for (const name of ["staging", "production"] as const)
+    assert.deepEqual((config.env[name] as { observability?: unknown }).observability, {
+      enabled: true,
+    });
   assert.equal(config.env.production.workers_dev, false);
   assert.deepEqual(config.env.staging.routes, [
     { pattern: "26-staging.humza.website", custom_domain: true },

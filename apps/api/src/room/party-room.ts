@@ -119,6 +119,10 @@ import {
   type RoomPhase,
 } from "./lifecycle.ts";
 import { applyHostAction, type HostActionInput } from "./host-actions.ts";
+import { logError } from "../log.ts";
+
+/** How soon a failed alarm tries again. */
+export const alarmRetryMs = 2_000;
 import {
   applyReaction,
   cloudRows,
@@ -851,6 +855,34 @@ export class PartyRoom extends DurableObject<Env> {
   override async alarm(): Promise<void> {
     const now = Date.now();
     let raceTickOnly = false;
+    try {
+      await this.runDueJobs(now, (value) => (raceTickOnly = value));
+    } catch (error) {
+      // A failed transaction rolls back its own next alarm. Re-arm so a
+      // transient fault never leaves the room stuck between phases.
+      logError("alarm", error, { retryInMs: alarmRetryMs });
+      await this.ctx.storage.setAlarm(Date.now() + alarmRetryMs);
+      return;
+    }
+    this.refreshKartIngressClock();
+    try {
+      await settleArchive({
+        storage: this.ctx.storage,
+        env: this.env,
+        now,
+        ...(this.archiveWriterOverride ? { writer: this.archiveWriterOverride } : {}),
+      });
+    } catch (error) {
+      // The archive retries on its own schedule; screens must still update.
+      logError("archive", error);
+    }
+    if (!raceTickOnly || !this.broadcastKart()) {
+      this.broadcast(true);
+    }
+  }
+
+  /** Runs every due job in one transaction that also arms the next alarm. */
+  private async runDueJobs(now: number, raceTick: (only: boolean) => void) {
     await commitAndArm(this.ctx.storage, (sql) => {
       this.flushKartInputs(sql);
       const store = createGameStore(sql);
@@ -865,25 +897,16 @@ export class PartyRoom extends DurableObject<Env> {
       onAlarm(store, now);
       const after = store.readRoom();
       // A tick that only moved the race goes out as a kart frame, not a full snapshot.
-      raceTickOnly =
+      raceTick(
         due.length > 0 &&
-        due.every((job) => job.payload === "kart-tick") &&
-        after.phase === "collect" &&
-        after.phaseGeneration === before.phaseGeneration &&
-        after.questionIndex === before.questionIndex &&
-        !after.paused &&
-        !after.hold;
+          due.every((job) => job.payload === "kart-tick") &&
+          after.phase === "collect" &&
+          after.phaseGeneration === before.phaseGeneration &&
+          after.questionIndex === before.questionIndex &&
+          !after.paused &&
+          !after.hold,
+      );
     });
-    this.refreshKartIngressClock();
-    await settleArchive({
-      storage: this.ctx.storage,
-      env: this.env,
-      now,
-      ...(this.archiveWriterOverride ? { writer: this.archiveWriterOverride } : {}),
-    });
-    if (!raceTickOnly || !this.broadcastKart()) {
-      this.broadcast(true);
-    }
   }
 
   /** Tests inject a writer. Production uses the Worker database binding. */
@@ -2635,7 +2658,7 @@ export class PartyRoom extends DurableObject<Env> {
 
   async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
     void ws;
-    void error;
+    logError("socket", error);
   }
 
   readGameplayContext(playerId: string) {

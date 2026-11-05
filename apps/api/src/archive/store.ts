@@ -14,6 +14,8 @@ export type ArchiveWriter = {
   purgeDeviceDetails(nowMs: number): Promise<number>;
   readPublic(gameId: string): Promise<PublicArchive | null>;
   readPersonal(gameId: string, playerId: string): Promise<PersonalArchive | null>;
+  /** Releases the connection a writer opened for one attempt. */
+  close?(): Promise<void>;
 };
 
 /** The database answered, but this process must not keep a connection string or a row dump. */
@@ -29,6 +31,7 @@ export class ArchiveUnavailable extends Error {
 export function postgresArchive(database: AppDatabase): ArchiveWriter {
   const ready = applyArchiveSchema(database);
   return {
+    close: () => database.close(),
     async write(document) {
       await ready;
       return database.executor.transaction((query) =>

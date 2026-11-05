@@ -52,6 +52,7 @@
   ],
   "env": {
     "staging": {
+      "observability": { "enabled": true },
       "name": "26-humza-website-staging",
       "workers_dev": false,
       "routes": [
@@ -96,6 +97,7 @@
       },
     },
     "production": {
+      "observability": { "enabled": true },
       "name": "26-humza-website",
       "workers_dev": false,
       "routes": [

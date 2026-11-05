@@ -169,6 +169,8 @@ export default defineConfig({
             "test/rate-limit.spec.ts",
             "test/database-sharing.spec.ts",
             "test/award-points.spec.ts",
+            "test/log.spec.ts",
+            "test/archive-close.spec.ts",
           ],
           environment: "node",
           hookTimeout: 60_000,

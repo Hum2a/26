@@ -1,6 +1,6 @@
 import { writeRoundState } from "../src/questions/round-state.ts";
 import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { payloadDigest } from "../src/room/digest.ts";
 import { createSqlStore } from "../src/room/sql-store.ts";
 import { createGameStore } from "../src/questions/multiple-choice.ts";
@@ -347,6 +347,31 @@ it("kart-setting outside a race becomes the room default and stays bounded", asy
       changeKartSetting(sql, { key: "frameCap", value: "120" }, now),
     ).toThrow("valid kart setting");
     expect(() => changeKartSetting(sql, { key: "glide", value: "on" }, -1)).toThrow();
+  });
+});
+
+it("a failing alarm re-arms instead of leaving the room stuck", async () => {
+  const { stub } = await setup();
+  await runInDurableObject(stub, async (instance, state) => {
+    const room = instance as unknown as {
+      runDueJobs: () => Promise<void>;
+      alarm: () => Promise<void>;
+    };
+    const original = room.runDueJobs.bind(instance);
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    room.runDueJobs = async () => {
+      throw new Error("transient failure");
+    };
+    await state.storage.deleteAlarm();
+    const before = Date.now();
+    await room.alarm();
+    const next = await state.storage.getAlarm();
+    expect(next).not.toBeNull();
+    expect(next!).toBeGreaterThanOrEqual(before + 1_000);
+    expect(next!).toBeLessThanOrEqual(Date.now() + 3_000);
+    expect(String(errors.mock.calls[0]?.[0])).toContain('"area":"alarm"');
+    errors.mockRestore();
+    room.runDueJobs = original;
   });
 });
 
