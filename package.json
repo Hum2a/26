@@ -35,7 +35,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "github-actions:check": "node --experimental-strip-types scripts/github-actions-check.ts",
-    "test": "npm run test:release && npm run test -w @26/api",
+    "test": "npm run test:release && npm run test:unit && npm run test -w @26/api",
     "smoke": "playwright test",
     "load:realtime": "npm run load:realtime -w @26/api",
     "perf:audit": "node scripts/performance-audit.mjs",
