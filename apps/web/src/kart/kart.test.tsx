@@ -20,11 +20,13 @@ vi.mock("./KartCanvas", () => ({
     mobile,
     vfxPreset,
     paused,
+    prediction,
   }: {
     followPlayerId?: string;
     mobile: boolean;
     vfxPreset?: { enabled: boolean };
     paused?: boolean;
+    prediction?: unknown;
   }) => (
     <div
       data-testid="driving-renderer"
@@ -32,6 +34,7 @@ vi.mock("./KartCanvas", () => ({
       data-mobile={String(mobile)}
       data-effects={vfxPreset === undefined ? "legacy" : String(vfxPreset.enabled)}
       data-paused={String(paused)}
+      data-prediction={prediction ? "on" : "off"}
     >
       Stand-in WebGL renderer
     </div>
@@ -524,4 +527,51 @@ it("sends a control change at once when the room's gap allows, merging rapid cha
   for (let i = 1; i < times.length; i++)
     expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(90);
   view.unmount();
+});
+
+it("follows the host's prediction switch and steering default", async () => {
+  const state = createKartRace("feel", [{ playerId: "a", name: "Amina" }]);
+  const race = projectKartRace(state, "a", 100);
+  const snapshot = {
+    phase: "collect",
+    paused: false,
+    held: false,
+    play: { kart: race, selfAward: null },
+  } as unknown as LobbySnapshot;
+  const view = render(<GuestKart snapshot={snapshot} onInput={vi.fn()} />);
+  const renderer = await screen.findByTestId("driving-renderer");
+  expect(renderer.getAttribute("data-prediction")).toBe("on");
+  view.rerender(
+    <GuestKart
+      snapshot={
+        {
+          ...snapshot,
+          play: { kart: { ...race, settings: { prediction: "off" } }, selfAward: null },
+        } as unknown as LobbySnapshot
+      }
+      onInput={vi.fn()}
+    />,
+  );
+  expect(screen.getByTestId("driving-renderer").getAttribute("data-prediction")).toBe(
+    "off",
+  );
+});
+
+it("starts sideways phones on the slider when the host chooses it, unless the guest picked", () => {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+  const view = render(<TouchController onChange={vi.fn()} steeringDefault="slider" />);
+  expect(screen.getByRole("button", { name: "Use thumb pad" })).toBeTruthy();
+  view.rerender(<TouchController onChange={vi.fn()} steeringDefault="pad-strip" />);
+  expect(screen.getByRole("button", { name: "Use steering slider" })).toBeTruthy();
+  // A guest's own choice wins over later host defaults.
+  fireEvent.click(screen.getByRole("button", { name: "Use steering slider" }));
+  view.rerender(<TouchController onChange={vi.fn()} steeringDefault="pad-absolute" />);
+  expect(screen.getByRole("button", { name: "Use thumb pad" })).toBeTruthy();
 });

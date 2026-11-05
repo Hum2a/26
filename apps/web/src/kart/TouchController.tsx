@@ -12,23 +12,28 @@ const landscape = () =>
 export function TouchController({
   disabled = false,
   onChange,
+  steeringDefault = "pad-strip",
 }: {
   disabled?: boolean;
   onChange: (value: KartControls) => void;
+  /** Host default for phones held sideways; a guest's own choice still wins. */
+  steeringDefault?: "pad-strip" | "slider" | "pad-absolute";
 }) {
   // The native slider needs its small handle grabbed exactly, which is hard
   // mid-race on a phone held sideways; the thumb pad accepts a touch anywhere.
-  const [pad, setPad] = useState(landscape);
+  const padByDefault = () => steeringDefault !== "slider" && landscape();
+  const [pad, setPad] = useState(padByDefault);
   const chosen = useRef(false);
   useEffect(() => {
     const media = window.matchMedia?.(landscapeRace);
     if (!media) return;
     const follow = () => {
-      if (!chosen.current) setPad(media.matches);
+      if (!chosen.current) setPad(steeringDefault !== "slider" && media.matches);
     };
+    follow();
     media.addEventListener("change", follow);
     return () => media.removeEventListener("change", follow);
-  }, []);
+  }, [steeringDefault]);
   const [swapped, setSwapped] = useState(false);
   const [controls, setControls] = useState<KartControls>({ ...kartNeutral });
   const current = useRef<KartControls>({ ...kartNeutral });
@@ -147,6 +152,7 @@ export function TouchController({
             <SteeringPad
               value={controls.steer}
               disabled={disabled}
+              absolute={steeringDefault === "pad-absolute"}
               onChange={(steer) => emit({ steer })}
             />
           ) : (

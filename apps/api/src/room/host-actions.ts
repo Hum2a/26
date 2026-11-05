@@ -50,6 +50,7 @@ import {
   changeKartCourse,
   changeKartOpponents,
   changeKartEffects,
+  changeKartSetting,
   changeKartStage,
 } from "../questions/kart.ts";
 import { changePhotoBias } from "../media/photo-bias.ts";
@@ -63,6 +64,7 @@ const shownPhases = new Set(["reveal", "scores", "final", "podium"]);
 export type HostActionInput = {
   action: string;
   botCount?: number;
+  kartSetting?: unknown;
   rehearsalConfig?: unknown;
   questionIndex?: number;
   scenario?: unknown;
@@ -169,6 +171,11 @@ export function applyHostAction(
   }
   if (input.action === "kart-opponents-on" || input.action === "kart-opponents-off") {
     changeKartOpponents(sql, input.action === "kart-opponents-on", input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (input.action === "kart-setting") {
+    changeKartSetting(sql, input.kartSetting, input.nowMs);
     touch(sql);
     return {};
   }

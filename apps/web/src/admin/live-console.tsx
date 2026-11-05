@@ -14,6 +14,7 @@ import { CommandFeedback } from "./command-feedback";
 import { WallQuickPanel } from "./wall-page";
 import { RoomExtras } from "./room-extras";
 import { KartCourseControls } from "./kart-course-controls";
+import { KartDrivingFeel } from "./kart-driving-feel";
 import { DangerZone } from "./danger-zone";
 
 const revealPhases = new Set<RoomPhaseName>(["reveal", "scores", "final", "podium"]);
@@ -221,6 +222,7 @@ export function LiveConsole() {
           </p>
         </section>
       ) : null}
+      <KartDrivingFeel />
       <div className="admin-live-actions" aria-label="Live actions">
         {phase === "lobby" ? (
           <Button

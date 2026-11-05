@@ -28,6 +28,8 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "kart-opponents-on") return "Nearby racers are visible on phones.";
   if (action === "kart-effects-on") return "New kart effects are on.";
   if (action === "kart-effects-off") return "Kart decoration is off.";
+  if (action === "kart-setting")
+    return "Kart driving setting saved. Phones pick it up straight away.";
   if (action === "kart-opponents-off") return "Nearby racers are hidden on phones.";
   if (action === "kart-stage-map") return "Stage returned to the full-field map.";
   if (action === "kart-stage-overview") return "Stage is showing the 3D overview.";

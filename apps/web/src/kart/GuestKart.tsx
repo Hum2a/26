@@ -8,7 +8,7 @@ import { PowerUpControl } from "./PowerUpControl";
 import { Button } from "../ui/primitives";
 import { DriftGauge } from "./DriftGauge";
 import { useState } from "react";
-import { kartNeutral } from "@26/shared";
+import { kartNeutral, resolveKartSettings } from "@26/shared";
 import { createSelfPrediction } from "./self-prediction";
 
 export function GuestKart({
@@ -48,6 +48,8 @@ export function GuestKart({
   // Draws this phone's kart from its own controls straight away; the room
   // still decides where the kart really is and corrects the drawing.
   const [prediction] = useState(createSelfPrediction);
+  const feel = resolveKartSettings(race?.settings);
+  if (feel.prediction !== "off") prediction.configure(feel.prediction);
   const change = (value: KartControls) => {
     prediction.input(open && !recoveryPending ? value : kartNeutral, performance.now());
     send(value);
@@ -161,7 +163,11 @@ export function GuestKart({
           race={race}
           reducedMotion={reduced}
           paused={!open}
-          prediction={onInput && !recoveryPending ? prediction : undefined}
+          prediction={
+            onInput && !recoveryPending && feel.prediction !== "off"
+              ? prediction
+              : undefined
+          }
         />
       ) : null}
       {!complete ? (
@@ -172,6 +178,7 @@ export function GuestKart({
             (!rehearsal && (!self || self.status !== "RACING" || race?.ended))
           }
           onChange={change}
+          steeringDefault={feel.steering}
         />
       ) : (
         <motion.div

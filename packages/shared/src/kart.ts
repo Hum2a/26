@@ -1,4 +1,9 @@
 import {
+  kartSettingsSchema,
+  type KartSettings,
+  type KartSettingHistory,
+} from "./kart-settings.ts";
+import {
   importedTrackId,
   importedTrackLimitMs,
   importedLapLength,
@@ -102,6 +107,8 @@ export const kartRaceSchema = z
     courseEnabled: z.boolean().optional(),
     opponentsEnabled: z.boolean().optional(),
     effectsEnabled: z.boolean().optional(),
+    // Host driving-feel choices; absent means the defaults in kart-settings.ts.
+    settings: kartSettingsSchema.optional(),
     spectator: kartSpectatorSchema.optional().catch(undefined),
     // Unsupported cosmetic metadata must not invalidate authoritative driving state.
     presentation: kartPresentationSchema.optional().catch(undefined),
@@ -187,6 +194,9 @@ export type KartRace = {
   courseHistory?: { atMs: number; enabled: boolean }[];
   opponentsEnabled?: boolean;
   effectsEnabled?: boolean;
+  /** Host driving-feel choices for phones and the stage; never race rules. */
+  settings?: KartSettings;
+  settingsHistory?: KartSettingHistory;
   effectsHistory?: { atMs: number; enabled: boolean }[];
   nearbyNumbers?: number[][];
   opponentHistory?: { atMs: number; enabled: boolean }[];
@@ -691,6 +701,9 @@ export function projectKartRace(
     raceId: race.raceId,
     courseEnabled: race.courseEnabled ?? false,
     ...(race.opponentsEnabled ? { opponentsEnabled: true } : {}),
+    ...(race.settings && Object.keys(race.settings).length > 0
+      ? { settings: race.settings }
+      : {}),
     ...(race.effectsEnabled !== undefined
       ? { effectsEnabled: race.effectsEnabled }
       : {}),

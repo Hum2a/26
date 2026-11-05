@@ -372,6 +372,7 @@ export function createCircuit(
     effectRaceId: string | undefined;
   const poses = new Map<string, KartPose>();
   let predictedPlayerId: string | undefined;
+  let glideEnabled = true;
   /** When each racer's server pose last changed, on the effect clock. */
   const serverSeen = new Map<
     string,
@@ -428,7 +429,7 @@ export function createCircuit(
       });
       return driver;
     }
-    return reduced
+    return reduced || !glideEnabled
       ? driver
       : extrapolateKartPose(driver, driver.speed, effectTime - seen.at);
   }
@@ -765,6 +766,10 @@ export function createCircuit(
       vfxPool?.reset();
     },
     pose: (playerId: string) => poses.get(playerId),
+    /** Host switch for carrying other karts forward between room frames. */
+    setGlide(enabled: boolean) {
+      glideEnabled = enabled;
+    },
     /** The kart drawn from local prediction, which skips pose smoothing. */
     setPredicted(playerId: string | undefined) {
       predictedPlayerId = playerId;

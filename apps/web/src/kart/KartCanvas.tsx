@@ -8,7 +8,7 @@ import { serverRoundTrip } from "../live/server-clock";
 import { kartCameraPose, boostCameraAmount } from "./presentation";
 import { vfxRehearsalRace, type VfxScript } from "./vfx-rehearsal";
 import type { VfxCounts } from "./vfx-budget";
-import { neutralKartLook, type KartLookPreset } from "@26/shared";
+import { neutralKartLook, resolveKartSettings, type KartLookPreset } from "@26/shared";
 import { createNativeKartLook, type KartLookStats } from "./look-renderer";
 import { driverFaceUrl } from "./driver-face";
 import { useKartDrivers, type KartDrivers } from "./drivers-context";
@@ -255,8 +255,14 @@ export default function KartCanvas({
         );
         dirty = true;
       }
-      // Low keeps the battery-friendly 30 fps; richer tiers draw prediction at 60.
-      const frameMs = profile.tier === "low" ? 1000 / 30 : 1000 / 60;
+      // Host frame cap; "auto" keeps Low at a battery-friendly 30 fps and
+      // draws richer tiers at 60 so prediction looks smooth.
+      const feel = resolveKartSettings(live.current.settings);
+      const frameMs =
+        feel.frameCap === "30" || (feel.frameCap === "auto" && profile.tier === "low")
+          ? 1000 / 30
+          : 1000 / 60;
+      circuit.setGlide(feel.glide !== "off");
       if (mobile && lastFrame && now - lastFrame < frameMs - 1) return;
       const delta = lastFrame ? (now - lastFrame) / 1000 : 1 / 60;
       lastFrame = now;

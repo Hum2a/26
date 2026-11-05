@@ -54,12 +54,14 @@ const neutral: DrivingInput = { steer: 0, gas: false, brake: false, drift: false
 /** Physics step, matching the room's bounded integration. */
 const stepMs = 20;
 /** Never replay or extrapolate further than this; a stall waits for the room. */
-const maxSpanMs = 600;
+const standardSpanMs = 600;
 const historyMs = 3_000;
 /** Beyond this the phone was wrong about more than timing: show the room's pose. */
 const snapDistance = 6;
 /** Visual correction rate per second (about 100 ms to settle). */
-const correctionRate = 12;
+const standardCorrectionRate = 12;
+/** "Conservative": shorter look-ahead and gentler corrections for poor networks. */
+export const conservativePrediction = { correctionRate: 6, maxSpanMs: 300 };
 
 const ringIndex = indexWalls(ringWalls);
 
@@ -93,6 +95,8 @@ const wrap = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
 export type SelfPrediction = ReturnType<typeof createSelfPrediction>;
 
 export function createSelfPrediction() {
+  let maxSpanMs = standardSpanMs;
+  let correctionRate = standardCorrectionRate;
   let inputs: Sample[] = [];
   let raceId: string | undefined;
   let lastElapsed = -1;
@@ -139,6 +143,15 @@ export function createSelfPrediction() {
   }
 
   return {
+    /** Standard or conservative tuning, from the host's driving-feel setting. */
+    configure(mode: "on" | "on-conservative") {
+      maxSpanMs =
+        mode === "on-conservative" ? conservativePrediction.maxSpanMs : standardSpanMs;
+      correctionRate =
+        mode === "on-conservative"
+          ? conservativePrediction.correctionRate
+          : standardCorrectionRate;
+    },
     /** Record this phone's controls as they change. */
     input(value: DrivingInput, now: number) {
       const last = inputs[inputs.length - 1];
@@ -169,7 +182,9 @@ export function createSelfPrediction() {
       if (race.raceId !== raceId) {
         raceId = race.raceId;
         env = environment(race);
-        inputs = [];
+        // Keep the control currently held: controls only report changes, so
+        // a pedal held as the race begins would otherwise be forgotten.
+        inputs = inputs.slice(-1);
         reset();
       }
       if (race.elapsedMs === lastElapsed) return;

@@ -1,11 +1,13 @@
 import { kartRaceSchema } from "./kart.ts";
 import { lobbyDriverSchema } from "./kart-driver.ts";
+import { kartSettingsSchema, kartSettingHistorySchema } from "./kart-settings.ts";
 export * from "./kart.ts";
 export * from "./kart-driver.ts";
 export * from "./kart-driving.ts";
 export * from "./kart-assets.ts";
 export * from "./kart-events.ts";
 export * from "./kart-nearby.ts";
+export * from "./kart-settings.ts";
 export * from "./rate-limit.ts";
 import { z } from "zod";
 export const kartRehearsalBeatSchema = z.enum(["grid", "turn", "boost", "finish"]);
@@ -1139,6 +1141,9 @@ export const lobbySnapshotSchema = z
       )
       .max(20)
       .optional(),
+    /** Control only: driving-feel settings and who changed them when. */
+    kartSettings: kartSettingsSchema.optional(),
+    kartSettingsHistory: kartSettingHistorySchema.optional(),
     kartCourseHistory: z
       .array(
         z

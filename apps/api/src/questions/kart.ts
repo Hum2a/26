@@ -12,6 +12,10 @@ import {
   type KartRace,
   type KartInput,
   type KartRaceView,
+  applyKartSetting,
+  kartSettingChangeSchema,
+  type KartSettings,
+  type KartSettingHistory,
 } from "@26/shared";
 import {
   advance,
@@ -30,6 +34,48 @@ export const readKart = (sql: SqlStorage, id: string) =>
   readRoundState<KartRace>(sql, id, key);
 const write = (sql: SqlStorage, id: string, race: KartRace) =>
   writeRoundState(sql, id, key, race);
+
+type RoomKartSettings = { settings?: KartSettings; history?: KartSettingHistory };
+/** Room-wide defaults; a new race copies them when it is created. */
+export const readRoomKartSettings = (sql: SqlStorage): RoomKartSettings =>
+  readRoundState<RoomKartSettings>(sql, "__kart", "settings") ?? {};
+
+/**
+ * Host driving-feel change. Always becomes the room default for later races;
+ * an open kart round also takes it at once. Rules, timing and points never
+ * depend on these settings.
+ */
+export function changeKartSetting(sql: SqlStorage, change: unknown, now: number) {
+  const parsed = kartSettingChangeSchema.safeParse(change);
+  if (!parsed.success || !Number.isSafeInteger(now) || now < 0)
+    throw new Error("Choose a valid kart setting.");
+  writeRoundState(
+    sql,
+    "__kart",
+    "settings",
+    applyKartSetting(readRoomKartSettings(sql), parsed.data, now),
+  );
+  const store = createSqlStore(sql),
+    room = store.readRoom(),
+    q = questionFor(room);
+  if (
+    q?.kind !== "kart" ||
+    !["intro", "prompt", "collect", "reveal", "scores"].includes(room.phase)
+  )
+    return;
+  const race = ["intro", "collect"].includes(room.phase)
+    ? catchUp(sql, store, q, now)
+    : readKart(sql, q.id);
+  if (!race) return;
+  const next = applyKartSetting(
+    { settings: race.settings, history: race.settingsHistory },
+    parsed.data,
+    now,
+  );
+  race.settings = next.settings;
+  race.settingsHistory = next.history;
+  write(sql, q.id, race);
+}
 
 export function changeKartStage(sql: SqlStorage, mode: unknown, now: number) {
   const selected = kartStageModeSchema.safeParse(mode);
@@ -151,19 +197,19 @@ export function enterKart(
       .exec<{ game_id: string }>("SELECT game_id FROM room")
       .toArray()[0]!.game_id;
     const raceId = `${gameId}:${q.id}:${room.phaseGeneration}`;
-    write(
-      sql,
-      q.id,
-      createKartRace(
-        raceId,
-        players.map((p) => ({
-          playerId: p.player_id,
-          name: p.nickname,
-          points: p.points,
-        })),
-        { seedGrid: true, trackId: q.trackId },
-      ),
+    const race = createKartRace(
+      raceId,
+      players.map((p) => ({
+        playerId: p.player_id,
+        name: p.nickname,
+        points: p.points,
+      })),
+      { seedGrid: true, trackId: q.trackId },
     );
+    // The race starts with the room's chosen driving feel.
+    const defaults = readRoomKartSettings(sql).settings;
+    if (defaults && Object.keys(defaults).length > 0) race.settings = { ...defaults };
+    write(sql, q.id, race);
     writeRoundState(sql, q.id, "kart-session", {
       raceId,
       players: players.map((p) => p.player_id),

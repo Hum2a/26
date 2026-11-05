@@ -13,6 +13,8 @@ import {
   useKartItem,
   releaseKartInputs,
   changeKartEffects,
+  changeKartSetting,
+  readRoomKartSettings,
 } from "../src/questions/kart.ts";
 import { questionFor } from "../src/questions/registry.ts";
 import { kartNeutral, createDrivingBody } from "@26/shared";
@@ -264,6 +266,88 @@ it("bounds private effects history, validates again in the domain and refuses un
   expect((await stub.snapshotFor("control")).kartEffectsHistory).toEqual(
     host.kartEffectsHistory,
   );
+});
+
+it("kart-setting: commits once, survives eviction, reaches phones and stage, keeps history private", async () => {
+  const { stub, now, credential } = await setup();
+  const versionBefore = (await stub.snapshotFor("control")).stateVersion;
+  const command = {
+    ...credential,
+    action: "kart-setting",
+    kartSetting: { key: "prediction", value: "off" },
+    requestId: crypto.randomUUID(),
+    nowMs: now + 10,
+  };
+  const first = await stub.hostAction(command);
+  expect(first.ok).toBe(true);
+  await evictDurableObject(stub);
+  expect(await stub.hostAction(command)).toEqual(first);
+  const host = await stub.snapshotFor("control");
+  expect(host.stateVersion).toBeGreaterThan(versionBefore);
+  expect(host.kartSettings).toEqual({ prediction: "off" });
+  expect(host.kartSettingsHistory).toEqual([
+    { atMs: now + 10, key: "prediction", value: "off" },
+  ]);
+  const phone = await stub.snapshotFor("guest", host.players[0]!.playerId);
+  const stage = await stub.snapshotFor("stage");
+  for (const view of [phone, stage]) {
+    expect(view.play?.kart?.settings).toEqual({ prediction: "off" });
+    expect(view.kartSettingsHistory).toBeUndefined();
+    expect(view.kartSettings).toBeUndefined();
+  }
+  // A second key keeps the first and adds to the history.
+  expect(
+    (
+      await stub.hostAction({
+        ...command,
+        kartSetting: { key: "glide", value: "off" },
+        requestId: crypto.randomUUID(),
+        nowMs: now + 20,
+      })
+    ).ok,
+  ).toBe(true);
+  expect((await stub.snapshotFor("stage")).play?.kart?.settings).toEqual({
+    prediction: "off",
+    glide: "off",
+  });
+  // Invalid values are refused by the room itself.
+  for (const kartSetting of [
+    { key: "prediction", value: "sometimes" },
+    { key: "speed", value: "fast" },
+    "prediction=off",
+  ])
+    expect(
+      (
+        await stub.hostAction({
+          ...command,
+          kartSetting,
+          requestId: crypto.randomUUID(),
+          nowMs: now + 30,
+        })
+      ).ok,
+    ).toBe(false);
+});
+
+it("kart-setting outside a race becomes the room default and stays bounded", async () => {
+  const { stub, now } = await setup();
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    const store = createSqlStore(sql);
+    store.writeRoom({ ...store.readRoom(), phase: "lobby" });
+    changeKartSetting(sql, { key: "frameCap", value: "30" }, now);
+    expect(readRoomKartSettings(sql).settings).toEqual({ frameCap: "30" });
+    for (let i = 0; i < 25; i++)
+      changeKartSetting(
+        sql,
+        { key: "steering", value: i % 2 ? "slider" : "pad-strip" },
+        now + i + 1,
+      );
+    expect(readRoomKartSettings(sql).history).toHaveLength(20);
+    expect(() =>
+      changeKartSetting(sql, { key: "frameCap", value: "120" }, now),
+    ).toThrow("valid kart setting");
+    expect(() => changeKartSetting(sql, { key: "glide", value: "on" }, -1)).toThrow();
+  });
 });
 
 async function setup(names = ["Amina", "Bilal"]) {

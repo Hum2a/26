@@ -108,4 +108,30 @@ describe("self prediction", () => {
     // At most 600 ms of travel, not a minute.
     expect(Math.hypot(stalled.x - start.x, stalled.z - start.z)).toBeLessThan(10);
   });
+
+  it("conservative mode extrapolates less after frames stop", () => {
+    const standard = createSelfPrediction();
+    const conservative = createSelfPrediction();
+    conservative.configure("on-conservative");
+    for (const prediction of [standard, conservative]) {
+      prediction.input(gas, 0);
+      prediction.server(race(1_000), 1_000, 0);
+      prediction.pose(1_000);
+    }
+    const a = standard.pose(60_000)!,
+      b = conservative.pose(60_000)!;
+    const start = self(race(1_000));
+    expect(Math.hypot(b.x - start.x, b.z - start.z)).toBeLessThan(
+      Math.hypot(a.x - start.x, a.z - start.z),
+    );
+  });
+
+  it("keeps a pedal held before the race's first frame", () => {
+    const prediction = createSelfPrediction();
+    prediction.input(gas, 500);
+    prediction.server(race(1_000), 1_000, 0);
+    const start = prediction.pose(1_000)!;
+    const later = prediction.pose(1_400)!;
+    expect(Math.hypot(later.x - start.x, later.z - start.z)).toBeGreaterThan(0.05);
+  });
 });

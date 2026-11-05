@@ -11,6 +11,7 @@ import {
   recoverKart,
   useKartItem,
   readKart,
+  readRoomKartSettings,
 } from "../questions/kart.ts";
 import { readRoundState } from "../questions/round-state.ts";
 import { readAdmission } from "./admission.ts";
@@ -1517,6 +1518,7 @@ export class PartyRoom extends DurableObject<Env> {
     nowMs: number;
     action: string;
     botCount?: number;
+    kartSetting?: unknown;
     rehearsalConfig?: unknown;
     questionIndex?: number;
     scenario?: unknown;
@@ -1572,6 +1574,8 @@ export class PartyRoom extends DurableObject<Env> {
       }
     }
     if (input.botCount !== undefined) payload.botCount = input.botCount;
+    if (input.kartSetting !== undefined)
+      payload.kartSetting = JSON.stringify(input.kartSetting);
     if (input.playerId) {
       payload.playerId = input.playerId;
     }
@@ -1653,6 +1657,7 @@ export class PartyRoom extends DurableObject<Env> {
         const applied = applyHostAction(sql, {
           action: input.action,
           botCount: input.botCount,
+          kartSetting: input.kartSetting,
           rehearsalConfig: input.rehearsalConfig,
           questionIndex: input.questionIndex,
           scenario: input.scenario,
@@ -3936,6 +3941,14 @@ export class PartyRoom extends DurableObject<Env> {
                 ? (readKart(this.ctx.storage.sql, play.question.id)?.effectsHistory ??
                   [])
                 : [],
+            kartSettings:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.settings ??
+                  readRoomKartSettings(this.ctx.storage.sql).settings ??
+                  {})
+                : (readRoomKartSettings(this.ctx.storage.sql).settings ?? {}),
+            kartSettingsHistory:
+              readRoomKartSettings(this.ctx.storage.sql).history ?? [],
             kartStageHistory:
               play?.question.kind === "kart"
                 ? (readKart(this.ctx.storage.sql, play.question.id)?.stageHistory ?? [])
