@@ -231,6 +231,29 @@ describe("slider and ranking rounds", () => {
   });
 });
 
+it("previews the next round for the live desk only", async () => {
+  const created = await createRoom();
+  const stub = room(created.gameId);
+  await stub.startDemo({
+    ...control(created),
+    requestId: crypto.randomUUID(),
+    nowMs: Date.now(),
+  });
+  const joined = await stub.joinPlayer({
+    nickname: "Amina",
+    requestId: crypto.randomUUID(),
+    now: new Date().toISOString(),
+  });
+  if (!joined.ok) throw new Error(joined.message);
+  const host = await stub.snapshotFor("control");
+  expect(host.nextQuestion?.title).toBeTruthy();
+  expect(host.nextQuestion?.title).not.toBe(host.play?.question.prompt);
+  expect((await stub.snapshotFor("stage")).nextQuestion).toBeUndefined();
+  expect(
+    (await stub.snapshotFor("guest", joined.playerId)).nextQuestion,
+  ).toBeUndefined();
+});
+
 function partyOrder() {
   return [
     { itemId: "friends", tierId: "first" },

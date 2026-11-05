@@ -297,3 +297,12 @@ it("counts only connected players in the round line", async () => {
     screen.getByText("1 of 1 connected players answered · 2 in the room"),
   ).toBeTruthy();
 });
+
+it("previews the next round for the operator", async () => {
+  setupControls({
+    ...playingFixture,
+    nextQuestion: { title: "Guess the tab", kind: "slider" },
+  });
+  await mountControls(<LiveConsole />);
+  expect(screen.getByText("Round 1 of 2 · Next: Guess the tab")).toBeTruthy();
+});

@@ -3963,6 +3963,8 @@ export class PartyRoom extends DurableObject<Env> {
       ...(audience === "control"
         ? {
             phaseGeneration: stored.phaseGeneration,
+            // Control only: what follows the current round, for the live desk.
+            nextQuestion: play ? nextQuestionPreview(stored) : null,
             connections: {
               guests: this.ctx.getWebSockets("guest").length,
               stage: this.ctx.getWebSockets("presentation").length,
@@ -4926,4 +4928,10 @@ function roomResponse(status: number, error: string, message: string): Response 
     { error, message },
     { status, headers: { "cache-control": "no-store" } },
   );
+}
+
+/** The round after the current one, as a title and mechanic only. */
+function nextQuestionPreview(room: Parameters<typeof questionFor>[0]) {
+  const next = questionFor({ ...room, questionIndex: room.questionIndex + 1 });
+  return next ? { title: next.title, kind: next.kind } : null;
 }

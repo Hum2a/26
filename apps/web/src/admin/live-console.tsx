@@ -372,6 +372,16 @@ export function LiveConsole() {
                   : "The room is between questions.")}
             </h2>
             {upcomingFact ? <p>Next: {upcomingFact.text}</p> : null}
+            {snapshot.play && phase !== "facts" ? (
+              <p className="admin-next-up">
+                Round {snapshot.play.question.index} of {snapshot.play.question.total}
+                {snapshot.nextQuestion
+                  ? ` · Next: ${snapshot.nextQuestion.title}`
+                  : snapshot.play.question.index >= snapshot.play.question.total
+                    ? " · Last round"
+                    : ""}
+              </p>
+            ) : null}
             {phase === "facts" && snapshot.funFactList && !upcomingFact ? (
               <p>Next: the podium.</p>
             ) : null}

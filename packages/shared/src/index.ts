@@ -1144,6 +1144,12 @@ export const lobbySnapshotSchema = z
       )
       .max(20)
       .optional(),
+    /** Control only: the round after the current one. */
+    nextQuestion: z
+      .object({ title: z.string().max(200), kind: z.string().max(40) })
+      .strict()
+      .nullable()
+      .optional(),
     /** Control only: driving-feel settings and who changed them when. */
     kartSettings: kartSettingsSchema.optional(),
     kartSettingsHistory: kartSettingHistorySchema.optional(),
