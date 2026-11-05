@@ -1,3 +1,4 @@
+import { outboundTimeoutMs } from "../timeout.ts";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -153,7 +154,11 @@ async function openPglite(
 }
 
 function openNeon(connectionString: string): AppDatabase {
-  const pool = new Pool({ connectionString });
+  // A stalled connection attempt fails instead of holding a room alarm.
+  const pool = new Pool({
+    connectionString,
+    connectionTimeoutMillis: outboundTimeoutMs,
+  });
   let ended = false;
   const end = async () => {
     if (ended) {

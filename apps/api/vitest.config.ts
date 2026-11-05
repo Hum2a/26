@@ -173,6 +173,7 @@ export default defineConfig({
             "test/archive-close.spec.ts",
             "test/read-json.spec.ts",
             "test/auth-session-cache.spec.ts",
+            "test/timeout.spec.ts",
           ],
           environment: "node",
           hookTimeout: 60_000,

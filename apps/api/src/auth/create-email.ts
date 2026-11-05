@@ -1,3 +1,4 @@
+import { withTimeout } from "../timeout.ts";
 import { presentBinding, type AuthBindings } from "./bindings.ts";
 import type { AppDatabase } from "./create-database.ts";
 
@@ -91,17 +92,20 @@ function createResendSender(apiKey: string, from: string | undefined): EmailSend
       const resend = new Resend(apiKey);
       const html = await renderPartyEmail(message);
       try {
-        const result = await resend.emails.send(
-          {
-            from,
-            to: message.to,
-            subject: message.subject,
-            text: message.text,
-            html,
-          },
-          message.idempotencyKey
-            ? { idempotencyKey: message.idempotencyKey }
-            : undefined,
+        const result = await withTimeout(
+          resend.emails.send(
+            {
+              from,
+              to: message.to,
+              subject: message.subject,
+              text: message.text,
+              html,
+            },
+            message.idempotencyKey
+              ? { idempotencyKey: message.idempotencyKey }
+              : undefined,
+          ),
+          "Resend",
         );
         if (result.error) {
           throw new Error("Email delivery failed.");
