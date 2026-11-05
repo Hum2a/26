@@ -421,12 +421,11 @@ async function advanceUntil(admin: Page, stage: Page, text: string) {
             })
             .first()
             .click();
-          const confirmation = admin.getByRole("dialog");
-          if (await confirmation.isVisible()) {
-            await confirmation
-              .getByRole("button", { name: /^(Finish quiz|Show podium)$/, exact: true })
-              .click();
-          }
+          // Confirm only the finish/podium dialog; other dialogs stay closed.
+          const confirm = admin
+            .getByRole("dialog")
+            .getByRole("button", { name: /^(Finish quiz|Show podium)$/, exact: true });
+          if (await confirm.isVisible().catch(() => false)) await confirm.click();
         })(),
       ]);
     } catch (error) {
