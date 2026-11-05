@@ -34,6 +34,34 @@ export function LiveConsole() {
   const canHide = revealPhases.has(phase);
   const context = `${phase}:${snapshot.play?.question.id ?? "lobby"}`;
   const countdown = usePhaseCountdown(snapshot, observedAt);
+  /** Starting is one-way, so every start asks first and says what will happen. */
+  function askStart(action: "start-birthday" | "start-kart" | "start") {
+    if (locked) return;
+    const people = snapshot.players?.length ?? 0;
+    const joined = `${people} ${people === 1 ? "player is" : "players are"} in.`;
+    setConfirmation({
+      command: { action },
+      context,
+      title:
+        action === "start-birthday"
+          ? "Start the birthday game?"
+          : action === "start-kart"
+            ? "Start the kart race?"
+            : "Start the illustrative demo instead?",
+      detail:
+        action === "start-birthday"
+          ? `${joined} The running order freezes now and every phone moves to the first question.`
+          : action === "start-kart"
+            ? `${joined} The starting grid freezes now. Anyone who joins later watches this race.`
+            : `${joined} This plays the illustrative demo questions, not the birthday game. Use it only for a rehearsal.`,
+      label:
+        action === "start-birthday"
+          ? "Start birthday game"
+          : action === "start-kart"
+            ? "Start kart race"
+            : "Start the demo",
+    });
+  }
   function ask(action: "skip" | "finish") {
     if (locked) return;
     setConfirmation({
@@ -143,7 +171,7 @@ export function LiveConsole() {
           : "advance";
   const primaryLabel =
     primary === "start"
-      ? "Start the illustrative demo"
+      ? "Start the illustrative demo instead"
       : primary === "resume"
         ? "Resume"
         : primary === "finish"
@@ -197,12 +225,7 @@ export function LiveConsole() {
         {phase === "lobby" ? (
           <Button
             disabled={locked}
-            onClick={() =>
-              void execute(
-                { action: kartLobby ? "start-kart" : "start-birthday" },
-                kartLobby ? "Start kart race" : "Start birthday game",
-              )
-            }
+            onClick={() => askStart(kartLobby ? "start-kart" : "start-birthday")}
           >
             {kartLobby ? "Start kart race" : "Start birthday game"}
           </Button>
@@ -228,7 +251,9 @@ export function LiveConsole() {
             onClick={() =>
               primary === "finish"
                 ? ask("finish")
-                : void execute({ action: primary }, primaryLabel)
+                : primary === "start"
+                  ? askStart("start")
+                  : void execute({ action: primary }, primaryLabel)
             }
           >
             {primaryLabel}

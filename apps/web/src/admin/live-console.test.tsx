@@ -43,12 +43,17 @@ it("starts only the frozen race in a kart lobby and blocks its controls offline"
   await mountControls(<LiveConsole />);
   expect(screen.queryByRole("button", { name: "Start birthday game" })).toBeNull();
   expect(
-    screen.queryByRole("button", { name: "Start the illustrative demo" }),
+    screen.queryByRole("button", { name: "Start the illustrative demo instead" }),
   ).toBeNull();
   expect(
     screen.queryByRole("button", { name: "Start local kart rehearsal" }),
   ).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Start kart race" }));
+  // Starting asks first, naming what freezes.
+  const dialog = await screen.findByRole("dialog");
+  expect(dialog.textContent).toContain("The starting grid freezes now");
+  expect(playRoom).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Start kart race" }));
   await waitFor(() =>
     expect(playRoom).toHaveBeenCalledWith(
       expect.objectContaining({ action: "start-kart" }),
@@ -66,11 +71,28 @@ it("starts the saved birthday script from the lobby", async () => {
   setupControls(roomFixture);
   await mountControls(<LiveConsole />);
   fireEvent.click(screen.getByRole("button", { name: "Start birthday game" }));
+  const dialog = await screen.findByRole("dialog");
+  expect(dialog.textContent).toContain("The running order freezes now");
+  expect(playRoom).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Start birthday game" }));
   await waitFor(() =>
     expect(playRoom).toHaveBeenCalledWith(
       expect.objectContaining({ action: "start-birthday" }),
     ),
   );
+});
+
+it("asks before the demo start and sends nothing when cancelled", async () => {
+  setupControls(roomFixture);
+  await mountControls(<LiveConsole />);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Start the illustrative demo instead" }),
+  );
+  const dialog = await screen.findByRole("dialog");
+  expect(dialog.textContent).toContain("not the birthday game");
+  fireEvent.click(within(dialog).getByRole("button", { name: /Cancel|Close|Keep/ }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(playRoom).not.toHaveBeenCalled();
 });
 
 it("offers lobby actions without misleading phase controls", async () => {
@@ -79,7 +101,7 @@ it("offers lobby actions without misleading phase controls", async () => {
   expect(
     (
       screen.getByRole("button", {
-        name: "Start the illustrative demo",
+        name: "Start the illustrative demo instead",
       }) as HTMLButtonElement
     ).disabled,
   ).toBe(false);

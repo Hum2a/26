@@ -44,7 +44,14 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
     throw new Error("The guest pages did not open.");
   }
 
-  await admin.getByRole("button", { name: "Start the illustrative demo" }).click();
+  await admin
+    .getByRole("button", { name: "Start the illustrative demo instead" })
+    .click();
+
+  await admin
+    .getByRole("dialog")
+    .getByRole("button", { name: "Start the demo", exact: true })
+    .click();
   await expect(admin.getByText("The illustrative demo has started.")).toBeVisible();
   await expect(stage.getByRole("heading", { name: "Get ready" })).toBeVisible();
   await advanceUntil(admin, stage, "Answers are open");

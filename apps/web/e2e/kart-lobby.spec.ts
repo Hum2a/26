@@ -78,6 +78,10 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   await stage.getByRole("button", { name: "Connect room" }).click();
   await stage.getByRole("button", { name: "Present on this screen" }).click();
   await page.getByRole("button", { name: "Start kart race", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Start kart race", exact: true })
+    .click();
   await expect(stage.locator("[data-phase-motion]")).toHaveAttribute(
     "data-phase",
     "intro",

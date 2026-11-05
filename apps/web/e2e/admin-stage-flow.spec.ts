@@ -102,7 +102,13 @@ test("admin controls, phone recovery and the restricted projector work together"
   ).toBeFocused();
   await stage.getByRole("button", { name: "Present on this screen" }).press("Enter");
   await page.goto(`${room}/live`);
-  await page.getByRole("button", { name: "Start the illustrative demo" }).click();
+  await page
+    .getByRole("button", { name: "Start the illustrative demo instead" })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Start the demo", exact: true })
+    .click();
   for (
     let i = 0;
     i < 5 &&

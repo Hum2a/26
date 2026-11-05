@@ -92,6 +92,10 @@ test("local room host controls nearby opponents and stage modes on the existing 
     await stage.getByRole("button", { name: "Connect room" }).click();
     await stage.getByRole("button", { name: "Present on this screen" }).click();
     await page.getByRole("button", { name: "Start kart race", exact: true }).click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Start kart race", exact: true })
+      .click();
     await page.getByRole("button", { name: "Switch new kart effects on" }).click();
     await expect(
       page.getByText("New kart effects are on.", { exact: true }),

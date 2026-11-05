@@ -126,7 +126,7 @@ test("an administrator can open a lobby and a guest can join it", async ({ page 
   await page.getByRole("link", { name: "Return to room" }).click();
   await page.getByRole("link", { name: "Live controls", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Start the illustrative demo" }),
+    page.getByRole("button", { name: "Start the illustrative demo instead" }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Pause", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Advance", exact: true })).toHaveCount(
