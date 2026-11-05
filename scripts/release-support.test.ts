@@ -70,6 +70,15 @@ test("generated config must match the requested Worker name and host", () => {
   );
 });
 
+test("production does not require the test recipient, so results mail reaches guests", () => {
+  assert.ok(
+    requiredWorkerSecrets(wranglerText, "staging").includes("EMAIL_TEST_RECIPIENT"),
+  );
+  const production = requiredWorkerSecrets(wranglerText, "production");
+  assert.ok(!production.includes("EMAIL_TEST_RECIPIENT"));
+  assert.ok(production.includes("RESEND_API_KEY"));
+});
+
 test("only required non-empty secrets are prepared", () => {
   const required = requiredWorkerSecrets(wranglerText, "staging");
   assert.ok(required.includes("DATABASE_URL"));
@@ -126,8 +135,12 @@ test("wrangler.jsonc attaches one custom domain per remote Worker", () => {
   assert.deepEqual(config.env.production.routes, [
     { pattern: "26.humza.website", custom_domain: true },
   ]);
+  // Production needs everything staging does except the test recipient,
+  // which would otherwise limit results mail to one address.
   assert.deepEqual(
-    config.env.staging.secrets?.required,
+    config.env.staging.secrets?.required?.filter(
+      (key) => key !== "EMAIL_TEST_RECIPIENT",
+    ),
     config.env.production.secrets?.required,
   );
 });

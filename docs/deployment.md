@@ -148,7 +148,7 @@ Names only. Prefer `npm run secrets-sync:staging` after filling `apps/api/.dev.v
 
 `CLIENT_API_KEY` must match `VITE_CLIENT_API_KEY` in the matching `.env.{env}` file used at build time. Rotate both together with `npm run client-api-key:rotate -- --env staging`, rebuild, then sync secrets. The SPA embeds the Vite value in the client bundle. This blocks casual direct API access; it is not a hidden server secret.
 
-`EMAIL_TEST_RECIPIENT` is required on staging. Results mail is sent only to that address. Admin sign-in is not limited by it. If the name is unset on staging, results mail throws and does not send. Production sends to the guest address only when this secret is absent. If it is set in production, results mail is limited to it as well.
+`EMAIL_TEST_RECIPIENT` is required on staging. Results mail is sent only to that address. Admin sign-in is not limited by it. If the name is unset on staging, results mail throws and does not send. Production sends to the guest address only when this secret is absent, so production no longer lists it as required (5 November 2026). If it is set in production, results mail is limited to it as well. Production was deployed on 31 October with the secret uploaded; syncing never deletes a secret, so remove it once before the party with `npx wrangler secret delete EMAIL_TEST_RECIPIENT --env production` (from `apps/api`), and confirm with `npx wrangler secret list --env production`.
 
 An empty string in `vars` would replace a secret on the next deploy. Staging and production `vars` therefore contain only `APP_ENV` and `MEDIA_BUCKET_NAME`. Local `vars` still include empty placeholders so local development and type generation stay explicit.
 
