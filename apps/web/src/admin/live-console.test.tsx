@@ -18,6 +18,8 @@ import {
   socket,
   success,
   update,
+  playerId,
+  secondId,
 } from "./controls.test-support";
 beforeEach(() => setupControls());
 
@@ -115,7 +117,9 @@ it("offers lobby actions without misleading phase controls", async () => {
 });
 it("renders server round information and waits for snapshots after pause/resume", async () => {
   await mountControls(<LiveConsole />);
-  expect(screen.getByText("1 submissions · 1 active players")).toBeTruthy();
+  expect(
+    screen.getByText("1 of 1 connected players answered · 1 in the room"),
+  ).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Pause" }));
   await screen.findByText("The quiz is paused.");
   // An HTTP receipt must not replace authoritative socket state.
@@ -267,4 +271,29 @@ it("steps fun facts and shows the next line only on this screen", async () => {
       expect.objectContaining({ action: "advance" }),
     ),
   );
+});
+
+it("counts only connected players in the round line", async () => {
+  setupControls({
+    ...playingFixture,
+    players: [
+      { playerId, nickname: "Amina" },
+      { playerId: secondId, nickname: "Sam" },
+    ],
+    adminPlayers: [
+      ...playingFixture.adminPlayers!,
+      {
+        playerId: secondId,
+        nickname: "Sam",
+        points: 0,
+        connected: false,
+        removed: false,
+        answered: false,
+      },
+    ],
+  });
+  await mountControls(<LiveConsole />);
+  expect(
+    screen.getByText("1 of 1 connected players answered · 2 in the room"),
+  ).toBeTruthy();
 });

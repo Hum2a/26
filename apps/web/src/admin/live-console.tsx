@@ -36,6 +36,10 @@ export function LiveConsole() {
   const canHide = revealPhases.has(phase);
   const context = `${phase}:${snapshot.play?.question.id ?? "lobby"}`;
   const countdown = usePhaseCountdown(snapshot, observedAt);
+  // Players whose phones are connected now; absent or removed players do not count.
+  const connectedPlayers =
+    snapshot.adminPlayers?.filter((player) => player.connected && !player.removed)
+      .length ?? snapshot.players.length;
   /** Starting is one-way, so every start asks first and says what will happen. */
   function askStart(action: "start-birthday" | "start-kart" | "start") {
     if (locked) return;
@@ -210,7 +214,7 @@ export function LiveConsole() {
           Reconnecting. Controls are unavailable until the room is connected.
         </p>
       ) : (
-        <p className="admin-connection">Connected to the lobby.</p>
+        <p className="admin-connection">Connected to the room.</p>
       )}
       {kartLobby ? (
         <section className="admin-current" aria-label="Kart lobby details">
@@ -373,7 +377,7 @@ export function LiveConsole() {
             ) : null}
             <p>
               {snapshot.play
-                ? `${snapshot.play.submissionCount} submissions · ${snapshot.players.length} active players`
+                ? `${snapshot.play.submissionCount} of ${connectedPlayers} connected players answered · ${snapshot.players.length} in the room`
                 : `${snapshot.players.length} guests in the lobby. Share the join code, then start when you are ready.`}
             </p>
             {snapshot.play?.presenterNotes ? (

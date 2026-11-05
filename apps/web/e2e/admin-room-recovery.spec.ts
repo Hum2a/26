@@ -48,7 +48,7 @@ test("recovers a real room after refresh, lost tab storage and a new tab", async
   await expect(tab).toHaveURL(new RegExp(`${room.url}$`));
   await expect(tab.locator(".admin-room-code")).toHaveText(room.joinCode);
   await tab.getByRole("link", { name: "Live controls", exact: true }).click();
-  await expect(tab.getByText("Connected to the lobby.")).toBeVisible();
+  await expect(tab.getByText("Connected to the room.")).toBeVisible();
   await tab.getByRole("link", { name: "Overview", exact: true }).click();
   await expect(tab.locator(".admin-room-code")).toHaveText(room.joinCode);
 });
@@ -61,7 +61,7 @@ test("explicit switching stops stale controls and expired cookies can be renewed
   await signIn(page);
   const first = await create(page);
   await page.getByRole("link", { name: "Live controls", exact: true }).click();
-  await expect(page.getByText("Connected to the lobby.")).toBeVisible();
+  await expect(page.getByText("Connected to the room.")).toBeVisible();
   const tab = await context.newPage();
   await tab.goto("/admin/rooms");
   const second = await create(tab);

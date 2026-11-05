@@ -114,7 +114,7 @@ test("an administrator can open a lobby and a guest can join it", async ({ page 
   );
   await expect(page.getByRole("heading", { name: "In the lobby" })).toBeVisible();
   await expect(page.getByText("Connected", { exact: true })).toBeAttached();
-  await expect(page.getByText("Connected to the lobby.")).toHaveCount(0);
+  await expect(page.getByText("Connected to the room.")).toHaveCount(0);
 
   await page.goto(`/host?code=${joinCode}`);
   await page.getByRole("button", { name: "Connect room" }).click();
