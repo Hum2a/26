@@ -13,7 +13,7 @@ type Memory = {
   self: SelfStanding | null;
   /** Place before the latest change, for the movement arrow. */
   previousPlace: number | null;
-  award: { questionId: string; points: number } | null;
+  award: { questionId: string; points: number | null } | null;
 };
 
 /**
@@ -38,8 +38,11 @@ export function RanksTab({
   });
   const nextStandings = play?.standings ?? null;
   const nextSelf = play?.selfStanding ?? null;
+  // A revealed round with no award could not score (a poll): remember it as
+  // such, so Ranks never repeats the previous round's points.
+  const revealed = snapshot?.phase === "reveal" || snapshot?.phase === "scores";
   const nextAward =
-    play && play.selfAward !== null
+    play && (play.selfAward !== null || (revealed && play.question.kind !== "kart"))
       ? { questionId: play.question.id, points: play.selfAward }
       : null;
   const changed =
@@ -128,9 +131,11 @@ export function RanksTab({
             </AnimatePresence>
             {memory.award ? (
               <p className="ranks-award">
-                {memory.award.points > 0
-                  ? `+${memory.award.points} on the last question`
-                  : "No points on the last question"}
+                {memory.award.points === null
+                  ? "The last round was just for fun"
+                  : memory.award.points > 0
+                    ? `+${memory.award.points} on the last question`
+                    : "No points on the last question"}
               </p>
             ) : null}
           </>

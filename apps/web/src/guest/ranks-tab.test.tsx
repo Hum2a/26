@@ -104,3 +104,30 @@ it("respects a hidden-score troll", () => {
   );
   expect(screen.getByText(/hid your score/)).toBeTruthy();
 });
+
+it("calls a poll just for fun instead of repeating the previous round's points", () => {
+  const view = render(
+    <RanksTab
+      nickname="Amina"
+      snapshot={scored({
+        standings,
+        selfStanding: { place: 2, points: 200, players: 4 },
+        selfAward: 120,
+      })}
+    />,
+  );
+  expect(screen.getByText("+120 on the last question")).toBeTruthy();
+  view.rerender(
+    <RanksTab
+      nickname="Amina"
+      snapshot={scored({
+        standings,
+        selfStanding: { place: 2, points: 200, players: 4 },
+        question: { ...playingFixture.play!.question, id: "poll-round" },
+        selfAward: null,
+      })}
+    />,
+  );
+  expect(screen.getByText("The last round was just for fun")).toBeTruthy();
+  expect(screen.queryByText("+120 on the last question")).toBeNull();
+});
