@@ -1,3 +1,4 @@
+import { estimateRoundMs } from "../questions/runtime.ts";
 import {
   kartAssetManifest,
   adminContentSchema,
@@ -69,6 +70,9 @@ export function adminContent(order?: BirthdayOrder): AdminContent | null {
           mechanic: question.kind,
           presentation: question.presentation,
           status: question.status,
+          estimatedSeconds: Math.round(
+            estimateRoundMs(question as Parameters<typeof estimateRoundMs>[0]) / 1000,
+          ),
           order: (pack.packId === "birthday" && order
             ? order.ids
             : pack.order

@@ -2,7 +2,7 @@
 
 [Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
 
-Baseer presents. Humza operates the administrator screen. Guests play on their own phones. This runbook matches the controls in the current build. The question pack is still the illustrative demo `demo-2026-09-22`. The venue rehearsal, a physical phone, and a projector have not been checked from this environment.
+Baseer presents. Humza operates the administrator screen. Guests play on their own phones. This runbook matches the controls in the current build (updated 5 November 2026). The party plays the birthday running order: **Start birthday game** freezes the saved order into the room. The illustrative demo is for rehearsals only. The venue rehearsal, a physical phone, and a projector have not been checked from this environment; see [Physical-device and venue sign-off](#physical-device-and-venue-sign-off).
 
 <details>
 <summary>On this page</summary>
@@ -16,19 +16,24 @@ Baseer presents. Humza operates the administrator screen. Guests play on their o
 - [Shutdown](#shutdown)
 - [Same-room recovery drill](#same-room-recovery-drill)
 - [Load and reconnect rehearsal](#load-and-reconnect-rehearsal)
-- [Still needed before the party](#still-needed-before-the-party)
+- [Readiness and remaining content](#readiness-and-remaining-content)
+- [Physical-device and venue sign-off](#physical-device-and-venue-sign-off)
+- [Run just the kart race](#run-just-the-kart-race)
 
 </details>
 
 ## Before the room opens
 
-1. Run the local checks in [docs/deployment.md](deployment.md), or open https://26-staging.humza.website only after that environment has actually been deployed.
-2. Sign in at `/admin` with the administrator magic link. Confirm with the Sign in button. Opening the link page does not sign in.
-3. Create the lobby. Leave that admin tab open. It holds the control connection.
-4. Open `/host` on the projector browser and connect it to the same room. The stage cookie is separate from the admin cookie.
-5. On the stage, press Start show once. A refresh asks again. M mutes the stage, and the icon shows that state. Personal diagnostics stay on the admin screen. D shows a small operator count on the stage, and ? lists the stage shortcuts.
-6. Print or save [docs/content/illustrative-answer-key.md](content/illustrative-answer-key.md) and [docs/content/illustrative-running-order.md](content/illustrative-running-order.md) before the night. Those files are the offline question, answer, and presenter script. Refresh them with `npm run content:export` after the real questions replace the demo.
+**The day before (20 November):** production is frozen — `npm run release` refuses production deploys from 20 November until midday 22 November. In the Neon console, switch off autosuspend (scale to zero) on the production branch for the night so host commands never wait for a cold database. Print [docs/content/birthday-answer-key.md](content/birthday-answer-key.md) and [docs/content/birthday-running-order.md](content/birthday-running-order.md); refresh them first with `npm run content:export` if the order changed.
+
+1. Open https://26.humza.website/admin on the control laptop and sign in with the magic link. Confirm with the Sign in button. Opening the link page does not sign in.
+2. **Question packs → Running order:** check the order and the estimated show length. _Suggest a mixed order_ spreads out same-series rounds; review, then save or discard. A started game never changes.
+3. Create the lobby. Leave that admin tab open. It holds the control connection and stays authorised for twelve hours.
+4. **Live controls → Driving feel** (kart round): defaults are prediction on, other karts glide, sideways steering strip, auto frame rate, 3-2-1-GO countdown. If karts rubber-band on the venue Wi-Fi, choose _Conservative_ or _Off_; changes reach phones at once.
+5. Open `/host` on the projector browser and connect it to the same room. The stage cookie is separate from the admin cookie and lasts fourteen hours. Press **Present on this screen**, then F for full screen.
+6. On the stage, press Start show once for sound. M mutes the stage. F requests full screen. Escape returns to projector setup. If full screen drops by accident the show stays up with a short hint; press F. A reload of the projector tab reconnects and keeps presenting. The stage deliberately has no operator readout: diagnostics stay on the admin screen.
 7. Press Refresh room health. Expect phase `lobby`, a control connection, and no failed scheduler jobs.
+8. When everyone is in, press **Start birthday game** and confirm. The confirmation says how many players are in; the running order freezes at that moment. The illustrative demo start is labelled as a rehearsal alternative and also asks first. Developer bots are refused in a room running the birthday game.
 
 ## Joining
 

@@ -34,6 +34,19 @@ export function serverOffset(now = Date.now()): number | undefined {
   return fresh.reduce((best, sample) => (sample.rtt < best.rtt ? sample : best)).offset;
 }
 
+/**
+ * Typical round trip to the room in milliseconds: the median of recent
+ * samples, so one slow or one lucky ping does not swing it. Undefined until
+ * measured.
+ */
+export function serverRoundTrip(now = Date.now()): number | undefined {
+  const fresh = samples
+    .filter((sample) => now - sample.at <= sampleTtlMs)
+    .map((sample) => sample.rtt)
+    .sort((a, b) => a - b);
+  return fresh.length ? fresh[Math.floor(fresh.length / 2)] : undefined;
+}
+
 /** Answer phases whose deadline the phone can check before it sends. */
 const answerPhases = new Set(["collect", "vote", "predict"]);
 

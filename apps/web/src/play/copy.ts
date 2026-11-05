@@ -12,9 +12,11 @@ export function guestRoundCopy(snapshot: LobbySnapshot): string {
   }
   const standing = snapshot.play?.selfStanding;
   if (snapshot.phase === "podium" || snapshot.phase === "final") {
+    const ended =
+      snapshot.mode === "kart" ? "The race is over." : "The quiz has ended.";
     return standing
-      ? `The quiz has ended. You finished ${ordinal(standing.place)} with ${standing.points} points.`
-      : "The quiz has ended.";
+      ? `${ended} You finished ${ordinal(standing.place)} with ${standing.points} points.`
+      : ended;
   }
   if (snapshot.play?.question.kind === "kart") {
     const play = snapshot.play,
@@ -25,7 +27,9 @@ export function guestRoundCopy(snapshot: LobbySnapshot): string {
         ? `Lap finished in ${(driver.lapTimeMs! / 1000).toFixed(2)} seconds. You scored ${play.selfAward ?? 0}.`
         : driver?.status === "DNF"
           ? "Time’s up. DNF — 0 points this race."
-          : "You watched this race. Join the next round.";
+          : snapshot.mode === "kart"
+            ? "You watched this race."
+            : "You watched this race. Join the next round.";
     if (snapshot.phase !== "collect")
       return "Get ready. Your driving view opens on this phone.";
     return driver?.status === "FINISHED"

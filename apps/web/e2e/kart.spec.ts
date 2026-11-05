@@ -249,8 +249,16 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
   await driver.getByRole("button", { name: "Use thumb pad" }).click();
   const thumb = driver.locator(".kart-thumb-pad"),
     padBox = (await thumb.boundingBox())!;
-  await driver.mouse.move(padBox.x + padBox.width * 0.62, padBox.y + padBox.height / 2);
+  // Steering follows thumb travel from where it lands, not the landing point.
+  await driver.mouse.move(padBox.x + padBox.width * 0.4, padBox.y + padBox.height / 2);
   await driver.mouse.down();
+  await driver.mouse.move(
+    padBox.x + padBox.width * 0.4 + 60,
+    padBox.y + padBox.height / 2,
+    {
+      steps: 4,
+    },
+  );
   await expect
     .poll(() => Number((inputs.at(-1) as { steer?: number })?.steer))
     .toBeGreaterThan(0.2);

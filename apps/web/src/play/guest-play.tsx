@@ -86,6 +86,7 @@ export function GuestPlay({
             onRecover={onKartRecover}
             recoveryPending={kartRecoveryPending}
             recoveryNotice={kartRecoveryNotice}
+            observedAt={observedAt}
           />
         </KartDriversProvider>
       </QuestionExperience>

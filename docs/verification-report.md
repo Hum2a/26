@@ -106,6 +106,21 @@ The email and archive tests use injected adapters. They do not call Resend or Ne
 
 `.github/workflows/check.yml` runs those commands on Ubuntu with one Playwright worker. GitHub Actions was not executed for this report.
 
+## 5–6 November 2026 (branch `kart-mobile-multiplayer`)
+
+These supersede the September command results above for the current code. Local only; nothing was deployed.
+
+- `npm run test:unit`: 146 files, 588 tests passed.
+- `npm run typecheck`: passed.
+- API suite (`npm run safe-env -- npm run test -w @26/api`): 106 files, 552 tests passed. This is the first recorded full pass; the September run covered 33 files and 166 tests, and the failures listed below for `archive-room.spec.ts` no longer reproduce.
+- Script tests (`npm run test:release`): passed.
+- `npm run build` (with secret stripping, artifact and content checks): passed.
+- `npx eslint .`: 0 errors, 27 warnings (`react-refresh/only-export-components`, development-only). Five files are not Prettier-formatted (unchanged pre-existing files).
+- Browser (`playwright.dev.config.ts`, local API test database): `quiz.spec` (host, stage and three phones to the podium) now passes; `admin-live-controls`, `admin-sections`, `media`, `photo-wall`, `kart`, `kart-lobby`, `kart-opponents`, `kart-spectator`, `birthday-pack` and `shells` pass. Full-suite results are in [build-progress.md](build-progress.md).
+- Realtime load (`npm run load:realtime`, local emulator, not production): stage race updates 5.0/4.8/4.8/4.7/4.5 per second at 10/25/50/75/100 racers on the ring track (p95 gaps 205–260 ms); 4.7 per second at 80 racers on the Mario circuit (p95 260 ms), up from 2.5 per second (p95 536 ms) recorded on 4 November.
+
+Physical phones, the projector, the venue Wi-Fi, staging and production remain unchecked.
+
 ## Realtime fan-out, 21 October 2026
 
 `npm run load:realtime` joins simulated phones, sends one answer each, then drives a live kart race for 6 seconds with every phone sending 10 controls a second. A stage and a control screen are connected throughout. This is local workerd in one process with the simulated phones, not production.
@@ -221,3 +236,7 @@ check still reports 101 unchanged files. Changed-file lint/format, the 403-test
 unit suite and selected Worker/browser checks above passed; the full API suite
 was not established. GitHub CI did not start because of the account's billing or
 spending limit ([release run](https://github.com/Hum2a/26/actions/runs/41193270942)).
+
+## 6 November 2026: browser suite (partial)
+
+See the "Browser suite wrap-up" entry in [build-progress.md](build-progress.md). Four specs still fail: two are direct API requests without the client key (pre-existing), and two (`developer-tools`, `birthday-assets-prices`) are unverified against `master`. Specs after `email-code` were not run.

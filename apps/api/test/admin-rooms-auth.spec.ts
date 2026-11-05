@@ -146,6 +146,7 @@ it("protects a read-only content projection and excludes answer/reveal fields", 
   for (const pack of content!.packs)
     for (const question of pack.questions) {
       expect(Object.keys(question).sort()).toEqual([
+        "estimatedSeconds",
         "id",
         "mechanic",
         "missing",

@@ -87,6 +87,9 @@ export function GuestPage({
   const socketRef = useRef<ReturnType<typeof openRoomSocket> | null>(null);
   const pendingRequest = useRef<string | null>(null);
   const inFlight = useRef(false);
+  // Trolls travel separately so a troll in flight never blocks an answer.
+  const trollRequest = useRef<string | null>(null);
+  const [trollPending, setTrollPending] = useState(false);
   const reactionRequest = useRef<string | null>(null);
   const driverRequest = useRef<string | null>(null);
   const [driverPending, setDriverPending] = useState(false);
@@ -260,6 +263,14 @@ export function GuestPage({
           }
           return;
         }
+        if (ack.requestId === trollRequest.current) {
+          trollRequest.current = null;
+          setTrollPending(false);
+          if (!ack.accepted) {
+            setRejection(ack.error ?? "That troll was not accepted.");
+          }
+          return;
+        }
         if (ack.requestId !== pendingRequest.current) {
           return;
         }
@@ -273,6 +284,8 @@ export function GuestPage({
         setRejection(undefined);
       },
       onReplaced(message) {
+        trollRequest.current = null;
+        setTrollPending(false);
         kartItemRequest.current = null;
         setKartItemPending(false);
         setKartRecoveryPending(false);
@@ -387,6 +400,8 @@ export function GuestPage({
     setPending(false);
     pendingRequest.current = null;
     inFlight.current = false;
+    trollRequest.current = null;
+    setTrollPending(false);
     setSession(redeemed);
     setReplacedNotice(undefined);
     // Recovery may keep both IDs. Replace the existing socket after the cookie
@@ -457,19 +472,31 @@ export function GuestPage({
     pendingRequest.current = socketRef.current?.submitText(body) ?? null;
   }
 
+  function beginTroll(): boolean {
+    if (trollPending || trollRequest.current) {
+      return false;
+    }
+    setRejection(undefined);
+    return true;
+  }
+
+  function sendTroll(requestId: string | null) {
+    trollRequest.current = requestId;
+    setTrollPending(requestId !== null);
+  }
+
   function onTroll(kind: string, targetId: string, mediaId?: string) {
-    if (!beginSend()) {
+    if (!beginTroll()) {
       return;
     }
-    pendingRequest.current =
-      socketRef.current?.submitTroll(kind, targetId, mediaId) ?? null;
+    sendTroll(socketRef.current?.submitTroll(kind, targetId, mediaId) ?? null);
   }
 
   function onTrollEscape(effectId: string) {
-    if (!beginSend()) {
+    if (!beginTroll()) {
       return;
     }
-    pendingRequest.current = socketRef.current?.submitTrollEscape(effectId) ?? null;
+    sendTroll(socketRef.current?.submitTrollEscape(effectId) ?? null);
   }
 
   function onDuel(value: number) {
@@ -496,6 +523,7 @@ export function GuestPage({
         connection,
         playing,
         pending,
+        trollPending,
         rejection,
         snapshot,
       })
@@ -590,7 +618,11 @@ export function GuestPage({
   if (ranksFresh && tab !== "ranks") badges.ranks = "!";
 
   return (
-    <ControllerRoot>
+    <ControllerRoot
+      allowLandscape={
+        snapshot?.play?.question.kind === "kart" || snapshot?.mode === "kart"
+      }
+    >
       <PhoneShell
         nickname={nickname}
         connection={connection}
@@ -620,7 +652,7 @@ export function GuestPage({
               snapshot={snapshot}
               gameId={session.gameId}
               selfId={session.playerId}
-              pending={pending}
+              pending={trollPending}
               onEscape={onTrollEscape}
             />
           ) : null
@@ -657,7 +689,7 @@ export function GuestPage({
                 snapshot={snapshot}
                 gameId={session.gameId}
                 selfId={session.playerId}
-                pending={pending}
+                pending={trollPending}
                 onSend={onTroll}
               />
             ) : null,
@@ -709,7 +741,11 @@ export function GuestPage({
       >
         {questionVisible ? null : (
           <h1 className="phone-prompt">
-            {snapshot?.phase === "lobby" ? "In the lobby" : "This phone"}
+            {!snapshot
+              ? "Connecting…"
+              : snapshot.phase === "lobby"
+                ? "In the lobby"
+                : "This phone"}
           </h1>
         )}
         <StatusMessage>{status}</StatusMessage>
@@ -744,13 +780,16 @@ export function GuestPage({
                 {snapshot.namesReveal ? (
                   <NameReveal reveal={snapshot.namesReveal} />
                 ) : null}
-                <NameCloud
-                  names={snapshot.cloud}
-                  selfId={session.playerId}
-                  reactions={snapshot.selfReactions}
-                  onReact={onReact}
-                  minRem={0.875}
-                />
+                {/* A kart-only lobby never reveals the name votes, so it does not ask for them. */}
+                {snapshot.mode !== "kart" ? (
+                  <NameCloud
+                    names={snapshot.cloud}
+                    selfId={session.playerId}
+                    reactions={snapshot.selfReactions}
+                    onReact={onReact}
+                    minRem={0.875}
+                  />
+                ) : null}
                 {!rehearsalCredential ? (
                   <DriverPicker
                     gameId={snapshot.gameId}
@@ -804,7 +843,7 @@ export function GuestPage({
                   onDuel={onDuel}
                 />
               ) : (
-                <p>Waiting for the quiz to start.</p>
+                <p>Connecting to the room…</p>
               )}
               {snapshot &&
               guestRoundCopy(snapshot) === "Waiting for the next question." ? (
@@ -874,6 +913,7 @@ function phoneStatus(input: {
   connection: "connecting" | "open" | "closed" | "idle";
   playing: boolean;
   pending: boolean;
+  trollPending?: boolean;
   rejection: string | undefined;
   snapshot: LobbySnapshot | undefined;
 }): string {
@@ -893,6 +933,9 @@ function phoneStatus(input: {
   }
   if (input.pending) {
     return "Sending your answer.";
+  }
+  if (input.trollPending) {
+    return "Sending your troll.";
   }
   if (input.snapshot && input.playing) {
     return guestRoundCopy(input.snapshot);

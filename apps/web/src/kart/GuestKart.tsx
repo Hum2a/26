@@ -1,12 +1,16 @@
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { usePrefersReducedMotion } from "../anim/use-reduced-motion";
-import type { LobbySnapshot, KartInput } from "@26/shared";
+import type { LobbySnapshot, KartInput, KartControls } from "@26/shared";
 import { KartDriverView } from "./KartDriverView";
 import { TouchController } from "./TouchController";
 import { useKartSocket } from "./useKartSocket";
 import { PowerUpControl } from "./PowerUpControl";
 import { Button } from "../ui/primitives";
 import { DriftGauge } from "./DriftGauge";
+import { useState } from "react";
+import { kartNeutral, resolveKartSettings } from "@26/shared";
+import { createSelfPrediction } from "./self-prediction";
+import { KartCountdown } from "./KartCountdown";
 
 export function GuestKart({
   snapshot,
@@ -18,6 +22,7 @@ export function GuestKart({
   itemNotice,
   recoveryPending = false,
   recoveryNotice = "",
+  observedAt,
 }: {
   snapshot: LobbySnapshot;
   connected?: boolean;
@@ -28,6 +33,8 @@ export function GuestKart({
   itemNotice?: string;
   recoveryPending?: boolean;
   recoveryNotice?: string;
+  /** When this snapshot arrived, for the race-start countdown. */
+  observedAt?: number;
 }) {
   const reduced = usePrefersReducedMotion();
   const race = snapshot.play?.kart;
@@ -41,8 +48,39 @@ export function GuestKart({
   const complete = self && self.status !== "RACING";
   const open =
     snapshot.phase === "collect" && !snapshot.paused && !snapshot.held && connected;
-  const change = useKartSocket(race, open && !recoveryPending, onInput);
+  const send = useKartSocket(race, open && !recoveryPending, onInput);
+  // Draws this phone's kart from its own controls straight away; the room
+  // still decides where the kart really is and corrects the drawing.
+  const [prediction] = useState(createSelfPrediction);
+  const feel = resolveKartSettings(race?.settings);
+  if (feel.prediction !== "off") prediction.configure(feel.prediction);
+  const change = (value: KartControls) => {
+    prediction.input(open && !recoveryPending ? value : kartNeutral, performance.now());
+    send(value);
+  };
   const rehearsal = !onInput && !race;
+  // Short landscape phones use these to lay the race out full screen; see kart.css.
+  const layout = !race
+    ? undefined
+    : !self
+      ? "watch"
+      : complete
+        ? "finish"
+        : snapshot.phase === "collect"
+          ? "race"
+          : "grid";
+  // Shown over the full-screen driving view, where the ordinary status line is hidden.
+  const raceNotice = !connected
+    ? "Connection lost — controls released"
+    : snapshot.paused || snapshot.held
+      ? "Paused — controls released"
+      : recoveryPending
+        ? "Returning to the track — controls released"
+        : layout === "grid"
+          ? self?.gridPosition
+            ? `Grid slot ${self.gridPosition}${race?.participantCount ? ` of ${race.participantCount}` : ""} · hold A when the race starts`
+            : "Hold A when the race starts"
+          : "";
   const instruction = !connected
     ? "Connection lost — controls released"
     : snapshot.paused || snapshot.held
@@ -52,10 +90,41 @@ export function GuestKart({
         : snapshot.phase !== "collect" && !rehearsal
           ? "Your driving view opens here. Wait for the race to start."
           : race && !self
-            ? "You’re watching this race. Join the next round."
+            ? snapshot.mode === "kart"
+              ? "You’re watching this race from the side."
+              : "You’re watching this race. Join the next round."
             : "Drive on this screen. Hold A and follow the circuit.";
   return (
-    <section className="kart-phone" aria-label="Sprint controller">
+    <section
+      className="kart-phone"
+      aria-label="Sprint controller"
+      // Short landscape phones turn this into a full-screen driving view.
+      data-layout={layout}
+    >
+      {self && !complete ? (
+        <KartCountdown
+          snapshot={snapshot}
+          observedAt={observedAt ?? snapshot.serverNow}
+          haptics={Boolean(onInput)}
+        />
+      ) : null}
+      {layout === "grid" || layout === "race" ? (
+        <div className="kart-race-status" role="status" aria-live="polite">
+          <AnimatePresence initial={false} mode="wait">
+            {raceNotice ? (
+              <motion.p
+                key={raceNotice}
+                initial={{ opacity: 0, y: reduced ? 0 : -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: reduced ? 0.12 : 0.2, ease: "easeOut" }}
+              >
+                {raceNotice}
+              </motion.p>
+            ) : null}
+          </AnimatePresence>
+        </div>
+      ) : null}
       <header className="kart-phone-heading">
         <p className="kart-eyebrow">
           ONE LAP · {timeLimitMs === 180_000 ? "3 MINUTES" : "45 SECONDS"}
@@ -103,7 +172,16 @@ export function GuestKart({
         </div>
       ) : null}
       {race && self && !complete ? (
-        <KartDriverView race={race} reducedMotion={reduced} paused={!open} />
+        <KartDriverView
+          race={race}
+          reducedMotion={reduced}
+          paused={!open}
+          prediction={
+            onInput && !recoveryPending && feel.prediction !== "off"
+              ? prediction
+              : undefined
+          }
+        />
       ) : null}
       {!complete ? (
         <TouchController
@@ -113,6 +191,7 @@ export function GuestKart({
             (!rehearsal && (!self || self.status !== "RACING" || race?.ended))
           }
           onChange={change}
+          steeringDefault={feel.steering}
         />
       ) : (
         <motion.div
@@ -125,7 +204,9 @@ export function GuestKart({
           <p>
             {self.status === "FINISHED"
               ? "You made it. Take your hands off the wheel."
-              : "The race time is up. There’s always the next round."}
+              : snapshot.mode === "kart"
+                ? "The race time is up. Thanks for driving."
+                : "The race time is up. There’s always the next round."}
           </p>
           <p>Watch the stage for the results.</p>
         </motion.div>

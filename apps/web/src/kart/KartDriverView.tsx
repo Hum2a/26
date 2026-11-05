@@ -4,6 +4,7 @@ import { KartMap } from "./KartMap";
 import { GraphicsControls } from "./graphics-controls";
 import { useKartGraphics } from "./graphics-preferences";
 import { liveKartVfxPreset } from "./live-vfx";
+import type { SelfPrediction } from "./self-prediction";
 import "./kart.css";
 const KartCanvas = lazy(() => import("./KartCanvas"));
 
@@ -11,10 +12,12 @@ export function KartDriverView({
   race,
   reducedMotion,
   paused = false,
+  prediction,
 }: {
   race: KartRaceView;
   reducedMotion: boolean;
   paused?: boolean;
+  prediction?: SelfPrediction;
 }) {
   const [map, setMap] = useState(false);
   const graphics = useKartGraphics(race.participantCount ?? race.participants.length);
@@ -41,6 +44,7 @@ export function KartDriverView({
               followPlayerId={race.selfPlayerId}
               graphicsTier={graphics.tier}
               onFrameHealth={graphics.onHealth}
+              prediction={prediction}
             />
           </Suspense>
         ) : null}

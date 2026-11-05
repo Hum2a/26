@@ -25,7 +25,13 @@ test("a phone sends a photo, the stage shows it, and hiding stops later access",
   await stage.getByRole("button", { name: "Present on this screen" }).click();
   await expect(stage.getByRole("heading", { name: "In the lobby" })).toBeVisible();
   await join(amina, joinCode, "Amina");
-  await admin.getByRole("button", { name: "Start the illustrative demo" }).click();
+  await admin
+    .getByRole("button", { name: "Start the illustrative demo instead" })
+    .click();
+  await admin
+    .getByRole("dialog")
+    .getByRole("button", { name: "Start the demo", exact: true })
+    .click();
   await amina.getByRole("button", { name: "Snap", exact: true }).click();
   await expect(amina.getByLabel("Photo", { exact: true })).toBeVisible();
 

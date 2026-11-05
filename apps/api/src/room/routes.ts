@@ -1,3 +1,4 @@
+import { kartSettingChangeSchema, type KartSettingChange } from "@26/shared";
 import {
   gameIdSchema,
   botCountSchema,
@@ -385,6 +386,7 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "kart-opponents-on",
       "kart-effects-on",
       "kart-effects-off",
+      "kart-setting",
       "kart-opponents-off",
       "kart-stage-map",
       "kart-stage-overview",
@@ -903,6 +905,7 @@ function readHostDetails(
         questionIndex?: number;
         scenario?: unknown;
         botCount?: number;
+        kartSetting?: KartSettingChange;
         playerId?: string;
         otherPlayerId?: string;
         nickname?: string;
@@ -963,6 +966,12 @@ function readHostDetails(
     return scenario.success
       ? { ok: true, fields: { scenario: scenario.data } }
       : { ok: false, message: "Choose a rehearsal scenario." };
+  }
+  if (action === "kart-setting") {
+    const change = kartSettingChangeSchema.safeParse(field(body, "kartSetting"));
+    return change.success
+      ? { ok: true, fields: { kartSetting: change.data } }
+      : { ok: false, message: "Choose a valid kart setting." };
   }
   if (action === "developer-bots") {
     const count = botCountSchema.safeParse(field(body, "botCount"));
@@ -1102,9 +1111,17 @@ function readRequestId(body: unknown): string | undefined {
   return value;
 }
 
-async function readJson(request: Request): Promise<unknown> {
+/** Room API bodies are small commands; anything larger is refused unread. */
+export const maxJsonBodyBytes = 65_536;
+
+export async function readJson(request: Request): Promise<unknown> {
+  const declared = Number(request.headers.get("content-length") ?? 0);
+  if (Number.isFinite(declared) && declared > maxJsonBodyBytes) return undefined;
   try {
-    return await request.json();
+    const text = await request.text();
+    // A chunked body has no declared length, so check what actually arrived.
+    if (text.length > maxJsonBodyBytes) return undefined;
+    return JSON.parse(text);
   } catch {
     return undefined;
   }

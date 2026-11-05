@@ -44,7 +44,14 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
     throw new Error("The guest pages did not open.");
   }
 
-  await admin.getByRole("button", { name: "Start the illustrative demo" }).click();
+  await admin
+    .getByRole("button", { name: "Start the illustrative demo instead" })
+    .click();
+
+  await admin
+    .getByRole("dialog")
+    .getByRole("button", { name: "Start the demo", exact: true })
+    .click();
   await expect(admin.getByText("The illustrative demo has started.")).toBeVisible();
   await expect(stage.getByRole("heading", { name: "Get ready" })).toBeVisible();
   await advanceUntil(admin, stage, "Answers are open");
@@ -414,12 +421,11 @@ async function advanceUntil(admin: Page, stage: Page, text: string) {
             })
             .first()
             .click();
-          const confirmation = admin.getByRole("dialog");
-          if (await confirmation.isVisible()) {
-            await confirmation
-              .getByRole("button", { name: /^(Finish quiz|Show podium)$/, exact: true })
-              .click();
-          }
+          // Confirm only the finish/podium dialog; other dialogs stay closed.
+          const confirm = admin
+            .getByRole("dialog")
+            .getByRole("button", { name: /^(Finish quiz|Show podium)$/, exact: true });
+          if (await confirm.isVisible().catch(() => false)) await confirm.click();
         })(),
       ]);
     } catch (error) {

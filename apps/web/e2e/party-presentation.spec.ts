@@ -104,6 +104,10 @@ test("a real fifty-player kart scoreboard fits the projector and keeps every pla
   await stage.getByRole("button", { name: "Connect room" }).click();
   await stage.getByRole("button", { name: "Present on this screen" }).click();
   await page.getByRole("button", { name: "Start kart race", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Start kart race", exact: true })
+    .click();
   await expect(stage.locator("[data-phase-motion]")).toHaveAttribute(
     "data-phase",
     "intro",

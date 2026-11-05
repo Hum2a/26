@@ -41,6 +41,7 @@ it("creates a durable kart-only lobby once without changing the birthday order",
   for (const audience of ["stage", "guest"] as const) {
     const view = await room.snapshotFor(audience);
     expect(view.kartLobby).toBeUndefined();
+    expect(view.mode).toBe("kart");
     expect(JSON.stringify(view)).not.toContain("birthday-script");
     expect(JSON.stringify(view)).not.toContain("notes");
   }

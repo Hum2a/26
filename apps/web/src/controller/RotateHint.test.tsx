@@ -29,4 +29,10 @@ describe("RotateHint", () => {
     render(<RotateHint />);
     expect(screen.queryByText("Rotate your phone")).toBeNull();
   });
+
+  it("stays hidden in landscape when the round allows it, such as the kart race", () => {
+    mockOrientation(true);
+    render(<RotateHint allowLandscape />);
+    expect(screen.queryByText("Rotate your phone")).toBeNull();
+  });
 });

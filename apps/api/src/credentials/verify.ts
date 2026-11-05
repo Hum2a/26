@@ -2,8 +2,14 @@ import { timingSafeEqual } from "node:crypto";
 import type { RoomCredentialRole } from "@26/shared";
 import type { RoomCredentialRecord } from "./types.ts";
 
-export const controlCredentialTtlMs = 15 * 60 * 1000;
-export const presentationCredentialTtlMs = 8 * 60 * 60 * 1000;
+/**
+ * Room credentials last a whole party night. Every host command also needs a
+ * valid admin session, so the control credential is never the only check.
+ * A 15-minute control credential made host commands fail mid-show until the
+ * room was reopened, which also revoked the live desk's own connection.
+ */
+export const controlCredentialTtlMs = 12 * 60 * 60 * 1000;
+export const presentationCredentialTtlMs = 14 * 60 * 60 * 1000;
 export const guestCredentialTtlMs = 12 * 60 * 60 * 1000;
 
 export function credentialLifetimeMs(role: RoomCredentialRole): number {

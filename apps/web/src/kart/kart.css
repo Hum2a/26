@@ -793,3 +793,335 @@ body:has(.kart-phone) {
   position: absolute;
   inset: 0;
 }
+
+/*
+ * Landscape race mode. While a guest is racing on a short landscape phone the
+ * driving view fills the screen and the controls sit under the thumbs: steering
+ * on one side, pedals on the other. Phone chrome is hidden until the race ends.
+ */
+@media (orientation: landscape) and (max-height: 32rem) {
+  .phone-shell:has(.kart-phone:is([data-layout="race"], [data-layout="grid"]))
+    :is(.phone-bar, .phone-tabbar, .phone-dock, .skin-status, .question-direction) {
+    display: none;
+  }
+  .phone-shell:has(.kart-phone:is([data-layout="race"], [data-layout="grid"]))
+    .phone-scroll {
+    padding: 0;
+    overflow: hidden;
+  }
+  .question-experience:has(.kart-phone:is([data-layout="race"], [data-layout="grid"])) {
+    padding: 0;
+    gap: 0;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) {
+    --race-edge: max(0.6rem, env(safe-area-inset-left), env(safe-area-inset-right));
+    position: relative;
+    display: block;
+    height: 100dvh;
+    padding: 0;
+    overflow: hidden;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    > :is(.kart-phone-heading, p, .kart-help, .kart-result) {
+    display: none;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-driver-view {
+    position: absolute;
+    inset: 0;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-driver-viewport {
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+
+  /* Heads-up display along the top edge. */
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-phone-hud {
+    position: absolute;
+    z-index: 5;
+    top: max(0.5rem, env(safe-area-inset-top));
+    left: var(--race-edge);
+    margin: 0;
+    pointer-events: none;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-phone-hud > div {
+    display: grid;
+    gap: 0.05rem;
+    border-radius: var(--radius-panel);
+    padding: 0.3rem 0.7rem;
+    background: color-mix(in oklab, var(--background) 72%, transparent);
+    font-size: 0.8rem;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-phone-hud
+    :is(p, strong) {
+    margin: 0;
+    white-space: nowrap;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-telemetry {
+    position: absolute;
+    z-index: 5;
+    top: max(0.5rem, env(safe-area-inset-top));
+    left: 50%;
+    width: min(16rem, 34vw);
+    translate: -50% 0;
+    gap: 0.25rem;
+    border-radius: var(--radius-control);
+    padding: 0.3rem 0.6rem;
+    background: color-mix(in oklab, var(--background) 72%, transparent);
+    text-align: center;
+    pointer-events: none;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-driving-state {
+    min-height: 0;
+    font-size: 0.8rem;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-tier-gauge {
+    gap: 0.2rem;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-tier-segment small {
+    display: none;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-tier-gauge output {
+    font-size: 0.7rem;
+    transition: opacity 0.18s var(--ease-party, ease-out);
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-tier-gauge[data-level="0"]
+    output {
+    opacity: 0;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-tier-segment {
+    min-height: 0.45rem;
+    padding: 0;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-telemetry-labels
+    span:first-child {
+    display: none;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-driver-view
+    .kart-view-toggle {
+    top: max(0.5rem, env(safe-area-inset-top));
+    right: var(--race-edge);
+  }
+
+  /* Secondary tools: a quiet column under the heads-up display. */
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-controller-shell {
+    position: static;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-control-options,
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-recovery,
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-power-control {
+    position: absolute;
+    z-index: 5;
+    margin: 0;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-control-options {
+    top: calc(max(0.5rem, env(safe-area-inset-top)) + 3.5rem);
+    right: var(--race-edge);
+    flex-direction: column;
+    align-items: end;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-control-options
+    button {
+    min-height: 2.25rem;
+    background: color-mix(in oklab, var(--surface) 80%, transparent);
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-recovery {
+    top: calc(max(0.5rem, env(safe-area-inset-top)) + 4.4rem);
+    left: var(--race-edge);
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-recovery p:empty {
+    display: none;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-recovery button {
+    min-height: 2.25rem;
+    font-size: 0.75rem;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-power-control {
+    top: calc(max(0.5rem, env(safe-area-inset-top)) + 7.1rem);
+    left: var(--race-edge);
+    display: grid;
+    justify-items: start;
+    gap: 0.2rem;
+    max-width: 34vw;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-power-control
+    button {
+    min-height: 2.5rem;
+    padding-inline: 0.9rem;
+    font-size: 0.85rem;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-power-control p {
+    border-radius: var(--radius-control);
+    padding: 0.15rem 0.5rem;
+    background: color-mix(in oklab, var(--background) 72%, transparent);
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-power-control
+    p[data-hint] {
+    display: none;
+  }
+
+  /* Thumb controls along the bottom edge. */
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-controller {
+    position: absolute;
+    z-index: 6;
+    inset-inline: var(--race-edge);
+    bottom: max(0.6rem, env(safe-area-inset-bottom));
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 0;
+    pointer-events: none;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-controller[data-swapped="true"] {
+    flex-direction: row-reverse;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-controller > * {
+    pointer-events: auto;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-steering {
+    width: min(19rem, 36vw);
+    gap: 0.2rem;
+    border-radius: var(--radius-panel);
+    padding: 0.4rem 0.8rem;
+    background: color-mix(in oklab, var(--background) 60%, transparent);
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-steering label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-steering input {
+    height: 56px;
+  }
+  /* A wide steering strip: touch anywhere, slide left or right. */
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-thumb-pad {
+    width: 100%;
+    height: min(6.5rem, 30dvh);
+    min-height: 4.5rem;
+    max-height: none;
+    aspect-ratio: auto;
+    margin-inline: auto;
+    border-radius: var(--radius-panel);
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-thumb-knob {
+    width: auto;
+    height: 62%;
+    left: calc(50% + var(--steer) * 40%);
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-steering
+    > span[aria-hidden="true"] {
+    display: none;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-pedals {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
+    gap: 0.5rem;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-pedal {
+    min-width: 4.5rem;
+    min-height: 3.5rem;
+    padding: 0.3rem 0.6rem;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-pedal-gas {
+    grid-row: 1 / 3;
+    grid-column: 2;
+    min-width: 6.5rem;
+    min-height: 7.5rem;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-controller[data-swapped="true"]
+    .kart-pedal-gas {
+    grid-column: 1;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-pedal span {
+    font-size: 0.65rem;
+  }
+}
+
+/* Race notices that must stay visible over the full-screen driving view. */
+.kart-race-status {
+  display: none;
+}
+@media (orientation: landscape) and (max-height: 32rem) {
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) > .kart-race-status {
+    position: absolute;
+    z-index: 7;
+    top: calc(max(0.5rem, env(safe-area-inset-top)) + 3.6rem);
+    left: 50%;
+    display: block;
+    width: min(26rem, 60vw);
+    translate: -50% 0;
+    text-align: center;
+    pointer-events: none;
+  }
+  .kart-race-status p {
+    margin: 0;
+    border-radius: var(--radius-control);
+    padding: 0.35rem 0.8rem;
+    background: color-mix(in oklab, var(--background) 82%, transparent);
+    color: var(--foreground);
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+  /* On the grid the notice is the main message, so it sits centre stage. */
+  .kart-phone[data-layout="grid"] > .kart-race-status {
+    top: 50%;
+    translate: -50% -50%;
+  }
+  .kart-phone[data-layout="grid"] > .kart-race-status p {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-panel);
+    padding: 1rem 1.4rem;
+    font-size: 1.15rem;
+  }
+  /* Finished: the result card and the summary side by side, nothing cut off. */
+  .kart-phone[data-layout="finish"] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+  .kart-phone[data-layout="finish"] > .kart-finish-card {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+    align-self: center;
+  }
+}
+
+/* 3-2-1-GO over the race: large, centred, never blocks a touch. */
+.kart-countdown {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.kart-countdown span {
+  grid-area: 1 / 1;
+  min-width: 1.4em;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  padding: 0.05em 0.35em;
+  background: color-mix(in oklab, var(--background) 70%, transparent);
+  color: var(--highlight);
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 22vmin, 11rem);
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+}
+.kart-countdown span[data-beat="GO"] {
+  color: var(--accent);
+}

@@ -13,8 +13,37 @@ type Memory = {
   self: SelfStanding | null;
   /** Place before the latest change, for the movement arrow. */
   previousPlace: number | null;
-  award: { questionId: string; points: number } | null;
+  award: { questionId: string; points: number | null } | null;
 };
+
+const memoryKey = (gameId: string) => `26-ranks-${gameId}`;
+const emptyMemory: Memory = {
+  standings: null,
+  self: null,
+  previousPlace: null,
+  award: null,
+};
+
+/** The last standings this tab saw for a game, so a reload mid-round keeps them. */
+function readMemory(gameId: string | undefined): Memory {
+  if (!gameId) return emptyMemory;
+  try {
+    const raw = sessionStorage.getItem(memoryKey(gameId));
+    return raw
+      ? { ...emptyMemory, ...(JSON.parse(raw) as Partial<Memory>) }
+      : emptyMemory;
+  } catch {
+    return emptyMemory;
+  }
+}
+function writeMemory(gameId: string | undefined, memory: Memory) {
+  if (!gameId) return;
+  try {
+    sessionStorage.setItem(memoryKey(gameId), JSON.stringify(memory));
+  } catch {
+    // Storage can be unavailable; Ranks then fills again at the next scores.
+  }
+}
 
 /**
  * The phone's leaderboard. The room only sends standings while scores are
@@ -30,16 +59,14 @@ export function RanksTab({
 }) {
   const reduce = useReducedMotion();
   const play = snapshot?.play;
-  const [memory, setMemory] = useState<Memory>({
-    standings: null,
-    self: null,
-    previousPlace: null,
-    award: null,
-  });
+  const [memory, setMemory] = useState<Memory>(() => readMemory(snapshot?.gameId));
   const nextStandings = play?.standings ?? null;
   const nextSelf = play?.selfStanding ?? null;
+  // A revealed round with no award could not score (a poll): remember it as
+  // such, so Ranks never repeats the previous round's points.
+  const revealed = snapshot?.phase === "reveal" || snapshot?.phase === "scores";
   const nextAward =
-    play && play.selfAward !== null
+    play && (play.selfAward !== null || (revealed && play.question.kind !== "kart"))
       ? { questionId: play.question.id, points: play.selfAward }
       : null;
   const changed =
@@ -48,7 +75,7 @@ export function RanksTab({
     (nextSelf !== null && JSON.stringify(nextSelf) !== JSON.stringify(memory.self)) ||
     (nextAward !== null && JSON.stringify(nextAward) !== JSON.stringify(memory.award));
   if (changed) {
-    setMemory({
+    const next = {
       standings: nextStandings ?? memory.standings,
       self: nextSelf ?? memory.self,
       previousPlace:
@@ -56,7 +83,9 @@ export function RanksTab({
           ? memory.self.place
           : memory.previousPlace,
       award: nextAward ?? memory.award,
-    });
+    };
+    setMemory(next);
+    writeMemory(snapshot?.gameId, next);
   }
   const hidden = Boolean(
     snapshot?.trolls.active.some(
@@ -82,6 +111,14 @@ export function RanksTab({
         <p className="entry-eyebrow">Leaderboard</p>
         <h1 className="phone-tab-title">Ranks</h1>
       </header>
+      {snapshot?.phase === "podium" ? (
+        <a
+          className="entry-text-link ranks-results-link"
+          href={`/r/${snapshot.gameId}`}
+        >
+          See the full results →
+        </a>
+      ) : null}
       <section className="ranks-self glass" aria-label="Your standing">
         {hidden ? (
           <p className="ranks-hidden">
@@ -128,9 +165,11 @@ export function RanksTab({
             </AnimatePresence>
             {memory.award ? (
               <p className="ranks-award">
-                {memory.award.points > 0
-                  ? `+${memory.award.points} on the last question`
-                  : "No points on the last question"}
+                {memory.award.points === null
+                  ? "The last round was just for fun"
+                  : memory.award.points > 0
+                    ? `+${memory.award.points} on the last question`
+                    : "No points on the last question"}
               </p>
             ) : null}
           </>

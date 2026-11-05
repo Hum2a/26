@@ -31,7 +31,13 @@ test("media, health, content and results have real private workflows and respons
     }),
   );
   await page.getByRole("link", { name: "Live controls", exact: true }).click();
-  await page.getByRole("button", { name: "Start the illustrative demo" }).click();
+  await page
+    .getByRole("button", { name: "Start the illustrative demo instead" })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Start the demo", exact: true })
+    .click();
   await page.getByRole("button", { name: "Pause", exact: true }).click();
   const phone = phones[0]!.page;
   await phone.getByRole("button", { name: "Snap", exact: true }).click();

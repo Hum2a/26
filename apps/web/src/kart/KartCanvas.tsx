@@ -3,10 +3,12 @@ import * as THREE from "three";
 import type { KartRaceView, KartVfxPreset } from "@26/shared";
 import { importedRoute } from "../../../../packages/shared/src/kart-route";
 import { createCircuit } from "./circuit";
+import type { SelfPrediction } from "./self-prediction";
+import { serverRoundTrip } from "../live/server-clock";
 import { kartCameraPose, boostCameraAmount } from "./presentation";
 import { vfxRehearsalRace, type VfxScript } from "./vfx-rehearsal";
 import type { VfxCounts } from "./vfx-budget";
-import { neutralKartLook, type KartLookPreset } from "@26/shared";
+import { neutralKartLook, resolveKartSettings, type KartLookPreset } from "@26/shared";
 import { createNativeKartLook, type KartLookStats } from "./look-renderer";
 import { driverFaceUrl } from "./driver-face";
 import { useKartDrivers, type KartDrivers } from "./drivers-context";
@@ -32,6 +34,7 @@ export default function KartCanvas({
   vfxRehearsal,
   lookPreset,
   onLookStats,
+  prediction,
 }: {
   race: KartRaceView;
   mobile: boolean;
@@ -46,10 +49,16 @@ export default function KartCanvas({
   vfxRehearsal?: { script: VfxScript; run: number };
   lookPreset?: KartLookPreset;
   onLookStats?: (stats: KartLookStats) => void;
+  /** Draws the followed kart from local prediction; the room stays authoritative. */
+  prediction?: SelfPrediction;
 }) {
   const focusPlayerId = spectator ? undefined : followPlayerId;
   const perspective = Boolean(followPlayerId);
   const following = useRef(followPlayerId);
+  const predictor = useRef(prediction);
+  useEffect(() => {
+    predictor.current = prediction;
+  }, [prediction]);
   const effects = useRef({ preset: vfxPreset, paused, rehearsal: vfxRehearsal });
   const lookConfig = useRef({ preset: lookPreset, report: onLookStats });
   useEffect(() => {
@@ -246,7 +255,15 @@ export default function KartCanvas({
         );
         dirty = true;
       }
-      if (mobile && lastFrame && now - lastFrame < 1000 / 30 - 1) return;
+      // Host frame cap; "auto" keeps Low at a battery-friendly 30 fps and
+      // draws richer tiers at 60 so prediction looks smooth.
+      const feel = resolveKartSettings(live.current.settings);
+      const frameMs =
+        feel.frameCap === "30" || (feel.frameCap === "auto" && profile.tier === "low")
+          ? 1000 / 30
+          : 1000 / 60;
+      circuit.setGlide(feel.glide !== "off");
+      if (mobile && lastFrame && now - lastFrame < frameMs - 1) return;
       const delta = lastFrame ? (now - lastFrame) / 1000 : 1 / 60;
       lastFrame = now;
       if (lastDrivers !== liveDrivers.current) {
@@ -266,9 +283,14 @@ export default function KartCanvas({
           10_000,
           sampleTime + Math.max(0, Math.min(0.1, delta)) * 1000,
         );
+      const predicted =
+        !rehearsal && !effects.current.paused && predictor.current && following.current
+          ? predictSelf(predictor.current, live.current, now)
+          : undefined;
+      circuit.setPredicted(predicted ? following.current : undefined);
       const displayRace = rehearsal
         ? vfxRehearsalRace(live.current, rehearsal.script, sampleTime, rehearsal.run)
-        : live.current;
+        : (predicted ?? live.current);
       circuit.update(
         displayRace,
         effects.current.paused ? 0 : delta,
@@ -292,6 +314,10 @@ export default function KartCanvas({
         ? "detailed"
         : "simple";
       const pose = following.current ? circuit.pose(following.current) : undefined;
+      // Drawn position of the followed kart, for browser checks of responsiveness.
+      renderer.domElement.dataset.followPose = pose
+        ? `${pose.x.toFixed(2)},${pose.z.toFixed(2)},${pose.heading.toFixed(3)}`
+        : "";
       if (pose) {
         const driver = displayRace.participants.find(
           (driver) => driver.playerId === following.current,
@@ -478,4 +504,17 @@ export default function KartCanvas({
       ) : null}
     </div>
   );
+}
+
+/** The live race with this phone's own kart drawn where prediction puts it. */
+function predictSelf(prediction: SelfPrediction, race: KartRaceView, now: number) {
+  prediction.server(race, now, serverRoundTrip() ?? 120);
+  const pose = prediction.pose(now);
+  if (!pose) return undefined;
+  return {
+    ...race,
+    participants: race.participants.map((driver) =>
+      driver.playerId === race.selfPlayerId ? { ...driver, ...pose } : driver,
+    ),
+  };
 }

@@ -58,14 +58,16 @@ export function TextField({ label, hint, id, ...props }: TextFieldProps) {
   const hintId = `${fieldId}-hint`;
 
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-2">
       <label htmlFor={fieldId} className="text-lg font-bold">
         {label}
       </label>
       <input
         id={fieldId}
         aria-describedby={hintId}
-        className={`skin-field min-h-12 border border-line bg-background px-4 text-lg text-foreground disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
+        // Without w-full/min-w-0 an input keeps its intrinsic width and
+        // overflows 320px phones.
+        className={`skin-field min-h-12 w-full min-w-0 border border-line bg-background px-4 text-lg text-foreground disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
         {...props}
       />
       <p id={hintId} className="text-base leading-snug text-muted">

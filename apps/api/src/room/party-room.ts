@@ -11,6 +11,7 @@ import {
   recoverKart,
   useKartItem,
   readKart,
+  readRoomKartSettings,
 } from "../questions/kart.ts";
 import { readRoundState } from "../questions/round-state.ts";
 import { readAdmission } from "./admission.ts";
@@ -38,6 +39,7 @@ import {
   newerTabMessage,
   removedSessionMessage,
   nicknameSchema,
+  blockedNickname,
   type GuestSession,
   type KartFrame,
   type LobbySnapshot,
@@ -118,6 +120,12 @@ import {
   type RoomPhase,
 } from "./lifecycle.ts";
 import { applyHostAction, type HostActionInput } from "./host-actions.ts";
+import { logError } from "../log.ts";
+
+/** How soon a failed alarm tries again. */
+export const alarmRetryMs = 2_000;
+/** How often a socket's delivery counter is written to its attachment. */
+export const deliverySeqPersistEvery = 64;
 import {
   applyReaction,
   cloudRows,
@@ -126,7 +134,7 @@ import {
   seedDemoNames,
   voterReactions,
 } from "./names.ts";
-import { commitAndArm } from "./scheduler.ts";
+import { commitAndArm, rearmAfterFailure } from "./scheduler.ts";
 import { ensurePartySchema } from "./schema.ts";
 import { createSqlStore } from "./sql-store.ts";
 import type { Question } from "../questions/definition.ts";
@@ -474,6 +482,14 @@ export class PartyRoom extends DurableObject<Env> {
         ok: false,
         error: "invalid",
         message: "Enter a nickname of 1 to 24 characters.",
+      };
+    }
+    // Names go up on the projector; refuse slurs and explicit terms at the door.
+    if (blockedNickname(nickname.data)) {
+      return {
+        ok: false,
+        error: "invalid",
+        message: "Choose a different nickname. That one cannot go on the big screen.",
       };
     }
     const digest = await payloadDigest({ nickname: nickname.data });
@@ -847,9 +863,43 @@ export class PartyRoom extends DurableObject<Env> {
     return check.ok ? { ok: true } : { ok: false };
   }
 
+  /** In-memory delivery counters; see `send`. */
+  private readonly deliverySeqs = new WeakMap<WebSocket, number>();
+
   override async alarm(): Promise<void> {
     const now = Date.now();
     let raceTickOnly = false;
+    try {
+      await this.runDueJobs(now, (value) => (raceTickOnly = value));
+    } catch (error) {
+      // A failed transaction rolls back its own next alarm. Re-arm so a
+      // transient fault never leaves the room stuck between phases.
+      logError("alarm", error, { retryInMs: alarmRetryMs });
+      await rearmAfterFailure(this.ctx.storage, Date.now() + alarmRetryMs);
+      return;
+    }
+    this.refreshKartIngressClock();
+    // A race tick fires five times a second and never makes an archive job
+    // due (that would be another due job), so it skips the archive's queries.
+    if (!raceTickOnly)
+      try {
+        await settleArchive({
+          storage: this.ctx.storage,
+          env: this.env,
+          now,
+          ...(this.archiveWriterOverride ? { writer: this.archiveWriterOverride } : {}),
+        });
+      } catch (error) {
+        // The archive retries on its own schedule; screens must still update.
+        logError("archive", error);
+      }
+    if (!raceTickOnly || !this.broadcastKart()) {
+      this.broadcast(true);
+    }
+  }
+
+  /** Runs every due job in one transaction that also arms the next alarm. */
+  private async runDueJobs(now: number, raceTick: (only: boolean) => void) {
     await commitAndArm(this.ctx.storage, (sql) => {
       this.flushKartInputs(sql);
       const store = createGameStore(sql);
@@ -864,25 +914,16 @@ export class PartyRoom extends DurableObject<Env> {
       onAlarm(store, now);
       const after = store.readRoom();
       // A tick that only moved the race goes out as a kart frame, not a full snapshot.
-      raceTickOnly =
+      raceTick(
         due.length > 0 &&
-        due.every((job) => job.payload === "kart-tick") &&
-        after.phase === "collect" &&
-        after.phaseGeneration === before.phaseGeneration &&
-        after.questionIndex === before.questionIndex &&
-        !after.paused &&
-        !after.hold;
+          due.every((job) => job.payload === "kart-tick") &&
+          after.phase === "collect" &&
+          after.phaseGeneration === before.phaseGeneration &&
+          after.questionIndex === before.questionIndex &&
+          !after.paused &&
+          !after.hold,
+      );
     });
-    this.refreshKartIngressClock();
-    await settleArchive({
-      storage: this.ctx.storage,
-      env: this.env,
-      now,
-      ...(this.archiveWriterOverride ? { writer: this.archiveWriterOverride } : {}),
-    });
-    if (!raceTickOnly || !this.broadcastKart()) {
-      this.broadcast(true);
-    }
   }
 
   /** Tests inject a writer. Production uses the Worker database binding. */
@@ -1517,6 +1558,7 @@ export class PartyRoom extends DurableObject<Env> {
     nowMs: number;
     action: string;
     botCount?: number;
+    kartSetting?: unknown;
     rehearsalConfig?: unknown;
     questionIndex?: number;
     scenario?: unknown;
@@ -1572,6 +1614,8 @@ export class PartyRoom extends DurableObject<Env> {
       }
     }
     if (input.botCount !== undefined) payload.botCount = input.botCount;
+    if (input.kartSetting !== undefined)
+      payload.kartSetting = JSON.stringify(input.kartSetting);
     if (input.playerId) {
       payload.playerId = input.playerId;
     }
@@ -1653,6 +1697,7 @@ export class PartyRoom extends DurableObject<Env> {
         const applied = applyHostAction(sql, {
           action: input.action,
           botCount: input.botCount,
+          kartSetting: input.kartSetting,
           rehearsalConfig: input.rehearsalConfig,
           questionIndex: input.questionIndex,
           scenario: input.scenario,
@@ -2333,7 +2378,14 @@ export class PartyRoom extends DurableObject<Env> {
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
     const text =
       typeof message === "string" ? message : new TextDecoder().decode(message);
-    const bytes = typeof message === "string" ? text.length : message.byteLength;
+    // A UTF-16 length undercounts accented text and emoji; measure real bytes
+    // whenever the message could be near the limit.
+    const bytes =
+      typeof message !== "string"
+        ? message.byteLength
+        : text.length * 3 <= maxPayloadBytes
+          ? text.length
+          : new TextEncoder().encode(text).byteLength;
     this.meter.add("in", bytes, Date.now());
     if (bytes > maxPayloadBytes) {
       this.send(ws, {
@@ -2630,7 +2682,7 @@ export class PartyRoom extends DurableObject<Env> {
 
   async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
     void ws;
-    void error;
+    logError("socket", error);
   }
 
   readGameplayContext(playerId: string) {
@@ -3893,6 +3945,8 @@ export class PartyRoom extends DurableObject<Env> {
       scoringVersion: room.scoring_version,
       players,
       ...(selfPlayerId ? { selfPlayerId } : {}),
+      // Public: phones and the stage adapt copy and orientation for a kart-only room.
+      ...(readKartLobby(this.ctx.storage.sql) ? { mode: "kart" as const } : {}),
       play,
       cloud: parts.cloud,
       ...(selfPlayerId
@@ -3909,6 +3963,8 @@ export class PartyRoom extends DurableObject<Env> {
       ...(audience === "control"
         ? {
             phaseGeneration: stored.phaseGeneration,
+            // Control only: what follows the current round, for the live desk.
+            nextQuestion: play ? nextQuestionPreview(stored) : null,
             connections: {
               guests: this.ctx.getWebSockets("guest").length,
               stage: this.ctx.getWebSockets("presentation").length,
@@ -3936,6 +3992,14 @@ export class PartyRoom extends DurableObject<Env> {
                 ? (readKart(this.ctx.storage.sql, play.question.id)?.effectsHistory ??
                   [])
                 : [],
+            kartSettings:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.settings ??
+                  readRoomKartSettings(this.ctx.storage.sql).settings ??
+                  {})
+                : (readRoomKartSettings(this.ctx.storage.sql).settings ?? {}),
+            kartSettingsHistory:
+              readRoomKartSettings(this.ctx.storage.sql).history ?? [],
             kartStageHistory:
               play?.question.kind === "kart"
                 ? (readKart(this.ctx.storage.sql, play.question.id)?.stageHistory ?? [])
@@ -4320,11 +4384,19 @@ export class PartyRoom extends DurableObject<Env> {
     if (!attachment) {
       return;
     }
-    const next: SocketAttachment = {
-      ...attachment,
-      deliverySeq: attachment.deliverySeq + 1,
-    };
-    ws.serializeAttachment(next);
+    // Counting in memory: rewriting the attachment on every send cost one
+    // storage write per socket per frame. It is saved every
+    // deliverySeqPersistEvery sends; after hibernation the count resumes past
+    // anything that could have been sent, so it never goes backwards.
+    const counted = this.deliverySeqs.get(ws);
+    const deliverySeq =
+      (counted ??
+        attachment.deliverySeq +
+          (attachment.deliverySeq > 0 ? deliverySeqPersistEvery : 0)) + 1;
+    this.deliverySeqs.set(ws, deliverySeq);
+    const next: SocketAttachment = { ...attachment, deliverySeq };
+    if (counted === undefined || deliverySeq % deliverySeqPersistEvery === 0)
+      ws.serializeAttachment(next);
     const payload =
       message.kind === "ack" && message.error
         ? { ...message, deliverySeq: next.deliverySeq }
@@ -4856,4 +4928,10 @@ function roomResponse(status: number, error: string, message: string): Response 
     { error, message },
     { status, headers: { "cache-control": "no-store" } },
   );
+}
+
+/** The round after the current one, as a title and mechanic only. */
+function nextQuestionPreview(room: Parameters<typeof questionFor>[0]) {
+  const next = questionFor({ ...room, questionIndex: room.questionIndex + 1 });
+  return next ? { title: next.title, kind: next.kind } : null;
 }

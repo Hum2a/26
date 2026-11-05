@@ -35,3 +35,17 @@ export async function commitAndArm(
     await txn.setAlarm(due);
   });
 }
+
+/**
+ * After a failed alarm transaction rolled back (taking its next alarm with
+ * it), wake the room again shortly so a transient fault never strands it.
+ * Pending jobs are untouched; the next alarm simply retries them.
+ */
+export async function rearmAfterFailure(
+  storage: ScheduleStorage,
+  at: number,
+): Promise<void> {
+  await storage.transaction(async (txn) => {
+    await txn.setAlarm(at);
+  });
+}

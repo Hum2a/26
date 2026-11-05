@@ -127,7 +127,13 @@ test("live desk and player tools keep actions deliberate and private across devi
       });
   }
   await page.goto(`${roomUrl}/live`);
-  await page.getByRole("button", { name: "Start the illustrative demo" }).click();
+  await page
+    .getByRole("button", { name: "Start the illustrative demo instead" })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Start the demo", exact: true })
+    .click();
   await expect(page.getByRole("button", { name: "Pause", exact: true })).toBeEnabled();
   await page.getByRole("button", { name: "Pause", exact: true }).click();
   await expect(page.getByRole("button", { name: "Resume", exact: true })).toBeEnabled();

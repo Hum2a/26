@@ -4,6 +4,7 @@ import {
   noteServerTime,
   resetServerClock,
   serverOffset,
+  serverRoundTrip,
 } from "./server-clock";
 
 afterEach(() => resetServerClock());
@@ -29,6 +30,17 @@ describe("server clock", () => {
   it("forgets samples after five minutes", () => {
     noteServerTime(1_000, 6_020, 1_040);
     expect(serverOffset(1_040 + 5 * 60_000 + 1)).toBeUndefined();
+  });
+});
+
+describe("serverRoundTrip", () => {
+  it("is unknown until measured and then takes the median, ignoring one outlier", () => {
+    expect(serverRoundTrip(1_000)).toBeUndefined();
+    noteServerTime(1_000, 6_000, 1_060);
+    noteServerTime(2_000, 7_000, 2_900);
+    noteServerTime(3_000, 8_000, 3_080);
+    expect(serverRoundTrip(3_100)).toBe(80);
+    expect(serverRoundTrip(3_100 + 5 * 60_000)).toBeUndefined();
   });
 });
 

@@ -1,3 +1,4 @@
+import { phaseLabel } from "../live/phase-label";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import type { RoomPhaseName } from "@26/shared";
@@ -14,6 +15,7 @@ import { CommandFeedback } from "./command-feedback";
 import { WallQuickPanel } from "./wall-page";
 import { RoomExtras } from "./room-extras";
 import { KartCourseControls } from "./kart-course-controls";
+import { KartDrivingFeel } from "./kart-driving-feel";
 import { DangerZone } from "./danger-zone";
 
 const revealPhases = new Set<RoomPhaseName>(["reveal", "scores", "final", "podium"]);
@@ -34,6 +36,38 @@ export function LiveConsole() {
   const canHide = revealPhases.has(phase);
   const context = `${phase}:${snapshot.play?.question.id ?? "lobby"}`;
   const countdown = usePhaseCountdown(snapshot, observedAt);
+  // Players whose phones are connected now; absent or removed players do not count.
+  const connectedPlayers =
+    snapshot.adminPlayers?.filter((player) => player.connected && !player.removed)
+      .length ?? snapshot.players.length;
+  /** Starting is one-way, so every start asks first and says what will happen. */
+  function askStart(action: "start-birthday" | "start-kart" | "start") {
+    if (locked) return;
+    const people = snapshot.players?.length ?? 0;
+    const joined = `${people} ${people === 1 ? "player is" : "players are"} in.`;
+    setConfirmation({
+      command: { action },
+      context,
+      title:
+        action === "start-birthday"
+          ? "Start the birthday game?"
+          : action === "start-kart"
+            ? "Start the kart race?"
+            : "Start the illustrative demo instead?",
+      detail:
+        action === "start-birthday"
+          ? `${joined} The running order freezes now and every phone moves to the first question.`
+          : action === "start-kart"
+            ? `${joined} The starting grid freezes now. Anyone who joins later watches this race.`
+            : `${joined} This plays the illustrative demo questions, not the birthday game. Use it only for a rehearsal.`,
+      label:
+        action === "start-birthday"
+          ? "Start birthday game"
+          : action === "start-kart"
+            ? "Start kart race"
+            : "Start the demo",
+    });
+  }
   function ask(action: "skip" | "finish") {
     if (locked) return;
     setConfirmation({
@@ -143,7 +177,7 @@ export function LiveConsole() {
           : "advance";
   const primaryLabel =
     primary === "start"
-      ? "Start the illustrative demo"
+      ? "Start the illustrative demo instead"
       : primary === "resume"
         ? "Resume"
         : primary === "finish"
@@ -180,7 +214,7 @@ export function LiveConsole() {
           Reconnecting. Controls are unavailable until the room is connected.
         </p>
       ) : (
-        <p className="admin-connection">Connected to the lobby.</p>
+        <p className="admin-connection">Connected to the room.</p>
       )}
       {kartLobby ? (
         <section className="admin-current" aria-label="Kart lobby details">
@@ -193,16 +227,12 @@ export function LiveConsole() {
           </p>
         </section>
       ) : null}
+      <KartDrivingFeel />
       <div className="admin-live-actions" aria-label="Live actions">
         {phase === "lobby" ? (
           <Button
             disabled={locked}
-            onClick={() =>
-              void execute(
-                { action: kartLobby ? "start-kart" : "start-birthday" },
-                kartLobby ? "Start kart race" : "Start birthday game",
-              )
-            }
+            onClick={() => askStart(kartLobby ? "start-kart" : "start-birthday")}
           >
             {kartLobby ? "Start kart race" : "Start birthday game"}
           </Button>
@@ -228,7 +258,9 @@ export function LiveConsole() {
             onClick={() =>
               primary === "finish"
                 ? ask("finish")
-                : void execute({ action: primary }, primaryLabel)
+                : primary === "start"
+                  ? askStart("start")
+                  : void execute({ action: primary }, primaryLabel)
             }
           >
             {primaryLabel}
@@ -322,7 +354,7 @@ export function LiveConsole() {
           <section className="admin-round" aria-label="Current question">
             <div className="admin-round-top">
               <p className="entry-eyebrow">
-                {phase}
+                {phaseLabel(phase)}
                 {snapshot.paused ? " · paused" : ""}
                 {snapshot.held ? " · waiting for control" : ""}
               </p>
@@ -340,12 +372,22 @@ export function LiveConsole() {
                   : "The room is between questions.")}
             </h2>
             {upcomingFact ? <p>Next: {upcomingFact.text}</p> : null}
+            {snapshot.play && phase !== "facts" ? (
+              <p className="admin-next-up">
+                Round {snapshot.play.question.index} of {snapshot.play.question.total}
+                {snapshot.nextQuestion
+                  ? ` · Next: ${snapshot.nextQuestion.title}`
+                  : snapshot.play.question.index >= snapshot.play.question.total
+                    ? " · Last round"
+                    : ""}
+              </p>
+            ) : null}
             {phase === "facts" && snapshot.funFactList && !upcomingFact ? (
               <p>Next: the podium.</p>
             ) : null}
             <p>
               {snapshot.play
-                ? `${snapshot.play.submissionCount} submissions · ${snapshot.players.length} active players`
+                ? `${snapshot.play.submissionCount} of ${connectedPlayers} connected players answered · ${snapshot.players.length} in the room`
                 : `${snapshot.players.length} guests in the lobby. Share the join code, then start when you are ready.`}
             </p>
             {snapshot.play?.presenterNotes ? (

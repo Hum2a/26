@@ -673,7 +673,7 @@ export function projectPlay(
     ballot: null,
     duel: null,
     reveal: scored ? choiceReveal(sql, question) : null,
-    selfAward: selfAward(sql, question.id, audience, scored, selfPlayerId),
+    selfAward: selfAward(sql, question, audience, scored, selfPlayerId),
     selfStanding:
       audience === "guest" && showStanding && selfRow
         ? { place: selfRow.place, points: selfRow.points, players: totals.length }
@@ -768,7 +768,7 @@ function projectBallot(
     : undefined;
   const view = {
     ...ballotPlayFields(sql, question, room, audience, selfPlayerId, scored),
-    selfAward: selfAward(sql, question.id, audience, scored, selfPlayerId),
+    selfAward: selfAward(sql, question, audience, scored, selfPlayerId),
     selfStanding:
       audience === "guest" && showStanding && selfRow
         ? { place: selfRow.place, points: selfRow.points, players: totals.length }
@@ -796,7 +796,7 @@ function projectDuel(
     : undefined;
   const view = {
     ...duelPlayFields(sql, question, room, audience, selfPlayerId, scored),
-    selfAward: selfAward(sql, question.id, audience, scored, selfPlayerId),
+    selfAward: selfAward(sql, question, audience, scored, selfPlayerId),
     selfStanding:
       audience === "guest" && showStanding && selfRow
         ? { place: selfRow.place, points: selfRow.points, players: totals.length }
@@ -872,7 +872,7 @@ export function projectSpecial(
           : question.kind === "typed"
             ? typedReveal(sql, question, scored, showNames && scored)
             : rankReveal(sql, question, scored, showNames && scored),
-    selfAward: selfAward(sql, question.id, audience, scored, selfPlayerId),
+    selfAward: selfAward(sql, question, audience, scored, selfPlayerId),
     selfStanding:
       audience === "guest" && showStanding && selfRow
         ? { place: selfRow.place, points: selfRow.points, players: totals.length }
@@ -905,16 +905,32 @@ export function projectSpecial(
   return parsePlay(view, question, audience, scored);
 }
 
+/**
+ * A round that can never award points (a poll, or a round worth nothing) has
+ * no award, so phones say "just for fun" rather than "no points this time".
+ */
+export function awardsPoints(question: {
+  points: number;
+  kind: string;
+  outcome?: { kind: string };
+}): boolean {
+  return (
+    question.points > 0 &&
+    !(question.kind === "choice" && question.outcome?.kind === "poll")
+  );
+}
+
 function selfAward(
   sql: SqlStorage,
-  questionId: string,
+  question: { id: string; points: number; kind: string; outcome?: { kind: string } },
   audience: "guest" | "stage" | "control",
   scored: boolean,
   selfPlayerId?: string,
 ): number | null {
-  if (!scored || audience !== "guest" || !selfPlayerId) {
+  if (!scored || audience !== "guest" || !selfPlayerId || !awardsPoints(question)) {
     return null;
   }
+  const questionId = question.id;
   const row = sql
     .exec<{ points: number }>(
       `SELECT points FROM score_ledger WHERE question_id = ? AND player_id = ?`,

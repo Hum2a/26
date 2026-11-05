@@ -3,14 +3,21 @@ import { useEffect, useState } from "react";
 
 const rotateQuery = "(orientation: landscape) and (max-height: 32rem)";
 
-export function RotateHint() {
-  const [show, setShow] = useState(() => window.matchMedia(rotateQuery).matches);
+/**
+ * Asks guests to turn the phone upright on short landscape screens. A round that
+ * is built for landscape, such as the kart race, sets `allowLandscape`.
+ */
+export function RotateHint({ allowLandscape = false }: { allowLandscape?: boolean }) {
+  const [landscape, setLandscape] = useState(
+    () => window.matchMedia(rotateQuery).matches,
+  );
+  const show = landscape && !allowLandscape;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   useEffect(() => {
     const media = window.matchMedia(rotateQuery);
     function onChange() {
-      setShow(media.matches);
+      setLandscape(media.matches);
     }
     media.addEventListener("change", onChange);
     return () => media.removeEventListener("change", onChange);

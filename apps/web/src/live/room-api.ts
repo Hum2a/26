@@ -160,6 +160,7 @@ export type PlayAction =
   | "kart-opponents-on"
   | "kart-effects-on"
   | "kart-effects-off"
+  | "kart-setting"
   | "kart-opponents-off"
   | "kart-stage-map"
   | "kart-stage-overview"
@@ -212,6 +213,8 @@ export type PlayIntent = {
   questionIndex?: number;
   scenario?: "disconnect" | "late-join" | "deadline-burst" | "host-loss";
   botCount?: number;
+  /** Kart driving-feel change; the room validates the key and value again. */
+  kartSetting?: { key: string; value: string };
   gameId: string;
   action: PlayAction;
   requestId: string;

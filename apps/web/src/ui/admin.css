@@ -497,6 +497,8 @@
 .admin-player-detail {
   min-width: 0;
   display: grid;
+  /* Let children shrink to the panel instead of widening it on small phones. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
   padding: clamp(1rem, 2vw, 2rem);
   border: 1px solid var(--line);
@@ -518,6 +520,14 @@
   border-radius: var(--radius-control);
   padding: 0.5rem;
   background: var(--background);
+}
+/* Fields keep their default intrinsic width otherwise, which overflows 320px phones. */
+.admin-player-detail :is(form, section, div, label) {
+  min-width: 0;
+}
+.admin-player-detail :is(input, textarea, select) {
+  max-width: 100%;
+  min-width: 0;
 }
 .admin-player-id {
   font-size: 0.8rem;

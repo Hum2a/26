@@ -1,11 +1,14 @@
 import { kartRaceSchema } from "./kart.ts";
 import { lobbyDriverSchema } from "./kart-driver.ts";
+import { kartSettingsSchema, kartSettingHistorySchema } from "./kart-settings.ts";
 export * from "./kart.ts";
 export * from "./kart-driver.ts";
 export * from "./kart-driving.ts";
 export * from "./kart-assets.ts";
 export * from "./kart-events.ts";
 export * from "./kart-nearby.ts";
+export * from "./kart-settings.ts";
+export * from "./moderation.ts";
 export * from "./rate-limit.ts";
 import { z } from "zod";
 export const kartRehearsalBeatSchema = z.enum(["grid", "turn", "boost", "finish"]);
@@ -1039,6 +1042,8 @@ export const lobbySnapshotSchema = z
       .strict()
       .nullable(),
     stageHidden: z.boolean(),
+    /** Public. "kart" for a kart-only lobby; absent for an ordinary party room. */
+    mode: z.enum(["party", "kart"]).optional(),
     finishAfterRound: z.boolean(),
     revealNonce: z.number().int().nonnegative(),
     media: z
@@ -1139,6 +1144,15 @@ export const lobbySnapshotSchema = z
       )
       .max(20)
       .optional(),
+    /** Control only: the round after the current one. */
+    nextQuestion: z
+      .object({ title: z.string().max(200), kind: z.string().max(40) })
+      .strict()
+      .nullable()
+      .optional(),
+    /** Control only: driving-feel settings and who changed them when. */
+    kartSettings: kartSettingsSchema.optional(),
+    kartSettingsHistory: kartSettingHistorySchema.optional(),
     kartCourseHistory: z
       .array(
         z

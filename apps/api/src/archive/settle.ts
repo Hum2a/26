@@ -1,3 +1,4 @@
+import { logError } from "../log.ts";
 import { presentBinding } from "../auth/bindings.ts";
 import { openDatabase } from "../auth/create-database.ts";
 import { archiveExportJobId, archiveRetainJobId } from "../room/lifecycle.ts";
@@ -57,16 +58,21 @@ async function settleRetain(input: {
   if (!archiveJobDue(input.storage.sql, archiveRetainJobId, input.now)) {
     return;
   }
+  let opened: ArchiveWriter | undefined;
   try {
-    const writer = input.writer ?? (await archiveWriterFor(input.env, input.storage));
+    const writer =
+      input.writer ?? (opened = await archiveWriterFor(input.env, input.storage));
     await writer.purgeDeviceDetails(input.now);
     await commitAndArm(input.storage, (sql) => {
       markRetainDone(sql);
     });
-  } catch {
+  } catch (error) {
+    logError("archive", error, { step: "retain" });
     await commitAndArm(input.storage, (sql) => {
       markRetainRetry(sql, input.now);
-    }).catch(() => undefined);
+    }).catch((retry) => logError("archive", retry, { step: "retain-retry" }));
+  } finally {
+    await opened?.close?.().catch(() => undefined);
   }
 }
 
@@ -83,6 +89,7 @@ async function settleExport(input: {
   if (!row || row.status !== "pending") {
     return;
   }
+  let opened: ArchiveWriter | undefined;
   try {
     const document = readArchiveDocument(input.storage.sql, {
       revision: row.targetRevision,
@@ -90,14 +97,19 @@ async function settleExport(input: {
       now: input.now,
       includeDevices: row.verifiedRevision === null,
     });
-    const writer = input.writer ?? (await archiveWriterFor(input.env, input.storage));
+    const writer =
+      input.writer ?? (opened = await archiveWriterFor(input.env, input.storage));
     await writer.write(document);
     await commitAndArm(input.storage, (sql) => {
       markArchiveStored(sql, row.targetRevision, input.now);
     });
-  } catch {
+  } catch (error) {
+    logError("archive", error, { step: "export" });
     await commitAndArm(input.storage, (sql) => {
       markArchiveRetry(sql, input.now);
-    }).catch(() => undefined);
+    }).catch((retry) => logError("archive", retry, { step: "export-retry" }));
+  } finally {
+    // Each attempt opens its own connection; release it so retries do not leak.
+    await opened?.close?.().catch(() => undefined);
   }
 }

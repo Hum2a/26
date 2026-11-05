@@ -4,6 +4,12 @@ import { MotionConfig, Reorder, useDragControls, useReducedMotion } from "motion
 import type { AdminContent, BirthdayOrder } from "@26/shared";
 import { Button, Disclosure, TextField } from "../ui/primitives";
 import { saveRunningOrder } from "./sections-api";
+import {
+  formatShowLength,
+  longestRun,
+  suggestMixedOrder,
+  totalSeconds,
+} from "./running-order-plan";
 
 type Pack = AdminContent["packs"][number];
 export function RunningOrder({
@@ -25,6 +31,9 @@ export function RunningOrder({
   } | null>(null);
   const byId = new Map(pack.questions.map((q) => [q.id, q]));
   const dirty = JSON.stringify(ids) !== JSON.stringify(saved.ids);
+  const showSeconds = totalSeconds(ids, (id) => byId.get(id)?.estimatedSeconds);
+  const cluster = longestRun(ids);
+  const mixed = suggestMixedOrder(ids, (id) => byId.get(id)?.mechanic === "kart");
   const available = pack.questions.filter(
     (q) =>
       !ids.includes(q.id) &&
@@ -74,6 +83,12 @@ export function RunningOrder({
             {ids.length} rounds · revision {saved.revision}
             {dirty ? " · Unsaved changes" : " · Saved"}
           </p>
+          <p className="admin-meta">
+            Show length {formatShowLength(showSeconds)} before pauses and chat.
+            {cluster.length >= 3
+              ? ` ${cluster.length} “${cluster.series}” rounds run back to back.`
+              : ""}
+          </p>
         </div>
         <div className="running-order-actions">
           <Button
@@ -86,6 +101,18 @@ export function RunningOrder({
             }}
           >
             Discard changes
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={busy || JSON.stringify(mixed) === JSON.stringify(ids)}
+            onClick={() => {
+              setIds(mixed);
+              setNotice(
+                "Suggested a mixed order: same-series rounds are spread out and the kart race stays last. Review it, then save or discard.",
+              );
+            }}
+          >
+            Suggest a mixed order
           </Button>
           <Button disabled={busy || !dirty || !ids.length} onClick={() => void save()}>
             {busy ? "Saving…" : "Save running order"}

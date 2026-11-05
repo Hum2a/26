@@ -11,7 +11,7 @@ import { createKartRace, projectKartRace, kartNeutral } from "@26/shared";
 import { TouchController } from "./TouchController";
 import { useKartSocket } from "./useKartSocket";
 import { GuestKart } from "./GuestKart";
-import { steerFromPointer } from "./steering";
+import { steerFromPointer, steerFromTravel } from "./steering";
 import type { LobbySnapshot } from "@26/shared";
 import KartGameWrapper from "./KartGameWrapper";
 vi.mock("./KartCanvas", () => ({
@@ -20,11 +20,13 @@ vi.mock("./KartCanvas", () => ({
     mobile,
     vfxPreset,
     paused,
+    prediction,
   }: {
     followPlayerId?: string;
     mobile: boolean;
     vfxPreset?: { enabled: boolean };
     paused?: boolean;
+    prediction?: unknown;
   }) => (
     <div
       data-testid="driving-renderer"
@@ -32,6 +34,7 @@ vi.mock("./KartCanvas", () => ({
       data-mobile={String(mobile)}
       data-effects={vfxPreset === undefined ? "legacy" : String(vfxPreset.enabled)}
       data-paused={String(paused)}
+      data-prediction={prediction ? "on" : "off"}
     >
       Stand-in WebGL renderer
     </div>
@@ -151,12 +154,25 @@ it("delivers each server-confirmed race completion once, including null-time DNF
   expect(complete).toHaveBeenCalledTimes(2);
 });
 
-it("centres the thumb pad, clamps edges, ignores a second steering thumb and releases capture", () => {
+it("steers the thumb pad from where the thumb lands, clamps travel, ignores a second steering thumb and releases capture", () => {
   expect(steerFromPointer(50, 0, 100)).toBe(0);
   expect(steerFromPointer(52, 0, 100)).toBe(0);
   expect(steerFromPointer(-200, 0, 100)).toBe(-1);
   expect(steerFromPointer(300, 0, 100)).toBe(1);
   expect(steerFromPointer(20, 0, 0)).toBe(0);
+  // Travel from the landing point: dead zone, a gentle curve, then full lock.
+  expect(steerFromTravel(0, 300)).toBe(0);
+  expect(steerFromTravel(4, 300)).toBe(0);
+  const half = steerFromTravel(45, 300);
+  expect(half).toBeGreaterThan(0.2);
+  expect(half).toBeLessThan(0.5);
+  expect(steerFromTravel(-45, 300)).toBe(-half);
+  expect(steerFromTravel(90, 300)).toBe(1);
+  expect(steerFromTravel(-900, 300)).toBe(-1);
+  // Narrow pads still need a deliberate 48 px for full lock.
+  expect(steerFromTravel(40, 100)).toBeLessThan(1);
+  expect(steerFromTravel(48, 100)).toBe(1);
+  expect(steerFromTravel(10, 0)).toBe(0);
   class TestPointer extends MouseEvent {
     pointerId: number;
     constructor(type: string, init: PointerEventInit = {}) {
@@ -177,7 +193,10 @@ it("centres the thumb pad, clamps edges, ignores a second steering thumb and rel
     left: 0,
     width: 100,
   } as DOMRect);
+  // Landing off-centre does not jerk the kart; sliding does the steering.
   fireEvent.pointerDown(pad, { pointerId: 1, clientX: 92 });
+  expect(change.mock.lastCall![0].steer).toBe(0);
+  fireEvent.pointerMove(pad, { pointerId: 1, clientX: 192 });
   expect(change.mock.lastCall![0].steer).toBe(1);
   fireEvent.pointerDown(pad, { pointerId: 2, clientX: 0 });
   expect(change.mock.lastCall![0].steer).toBe(1);
@@ -192,6 +211,7 @@ it("centres the thumb pad, clamps edges, ignores a second steering thumb and rel
   view.rerender(<TouchController onChange={change} disabled />);
   view.rerender(<TouchController onChange={change} />);
   fireEvent.pointerDown(pad, { pointerId: 4, clientX: 0 });
+  fireEvent.pointerMove(pad, { pointerId: 4, clientX: -100 });
   expect(change.mock.lastCall![0].steer).toBe(-1);
   fireEvent.click(screen.getByRole("button", { name: "Swap sides" }));
   expect(change).toHaveBeenLastCalledWith(kartNeutral);
@@ -396,4 +416,162 @@ it("shows the held power-up and waits for server acknowledgement without releasi
     (screen.getByRole("button", { name: "Use Bubble shield" }) as HTMLButtonElement)
       .disabled,
   ).toBe(true);
+});
+
+it("lays out each kart state for landscape and keeps race notices visible over the driving view", async () => {
+  const state = createKartRace("layout", [
+    { playerId: "a", name: "Amina" },
+    { playerId: "b", name: "Chen" },
+  ]);
+  const race = projectKartRace(state, "a", 100);
+  race.participants[0]!.gridPosition = 2;
+  race.participantCount = 2;
+  const base = {
+    phase: "intro",
+    paused: false,
+    held: false,
+    play: { kart: race, selfAward: null },
+  } as unknown as LobbySnapshot;
+  const phone = () => screen.getByRole("region", { name: "Sprint controller" });
+  const notice = () => phone().querySelector(".kart-race-status");
+  // Grid: the slot and the instruction stay in the overlay, not in a hidden paragraph.
+  const view = render(<GuestKart snapshot={base} />);
+  expect(phone().getAttribute("data-layout")).toBe("grid");
+  await waitFor(() => expect(notice()?.textContent).toContain("Grid slot 2 of 2"));
+  expect(notice()?.parentElement).toBe(phone());
+  expect(notice()?.tagName).not.toBe("P");
+  // Racing: no notice while driving normally.
+  view.rerender(<GuestKart snapshot={{ ...base, phase: "collect" }} />);
+  expect(phone().getAttribute("data-layout")).toBe("race");
+  await waitFor(() => expect(notice()?.textContent).toBe(""));
+  // Paused, then a lost connection, are announced over the driving view.
+  view.rerender(<GuestKart snapshot={{ ...base, phase: "collect", paused: true }} />);
+  await waitFor(() => expect(notice()?.textContent).toBe("Paused — controls released"));
+  view.rerender(
+    <GuestKart snapshot={{ ...base, phase: "collect" }} connected={false} />,
+  );
+  await waitFor(() =>
+    expect(notice()?.textContent).toBe("Connection lost — controls released"),
+  );
+  view.rerender(<GuestKart snapshot={{ ...base, phase: "collect" }} recoveryPending />);
+  await waitFor(() =>
+    expect(notice()?.textContent).toBe("Returning to the track — controls released"),
+  );
+  // Finished: its own layout, no driving overlay.
+  race.participants[0]!.status = "FINISHED";
+  race.participants[0]!.lapTimeMs = 28_000;
+  view.rerender(<GuestKart snapshot={{ ...base, phase: "collect" }} />);
+  expect(phone().getAttribute("data-layout")).toBe("finish");
+  expect(notice()).toBeNull();
+  // Watching a race this phone is not in.
+  const watching = projectKartRace(state, null, 100);
+  view.rerender(
+    <GuestKart
+      snapshot={
+        {
+          ...base,
+          phase: "collect",
+          play: { kart: watching, selfAward: null },
+        } as unknown as LobbySnapshot
+      }
+    />,
+  );
+  expect(phone().getAttribute("data-layout")).toBe("watch");
+  // No race at all: the ordinary layout.
+  view.rerender(
+    <GuestKart
+      snapshot={
+        {
+          ...base,
+          play: { question: { kind: "kart", timeLimitMs: 180_000 }, selfAward: null },
+        } as unknown as LobbySnapshot
+      }
+    />,
+  );
+  expect(phone().getAttribute("data-layout")).toBeNull();
+});
+
+it("sends a control change at once when the room's gap allows, merging rapid changes", () => {
+  vi.useFakeTimers();
+  const send = vi.fn();
+  const race = projectKartRace(
+    createKartRace("instant", [{ playerId: "guest", name: "Stand-in driver" }]),
+    "guest",
+    100,
+  );
+  const view = renderHook(() => useKartSocket(race, true, send));
+  expect(send).toHaveBeenCalledTimes(1);
+  // Within the 90 ms gap: held back, then sent once with the latest controls.
+  act(() => view.result.current({ ...kartNeutral, gas: true }));
+  act(() => view.result.current({ ...kartNeutral, gas: true, steer: -1 }));
+  expect(send).toHaveBeenCalledTimes(1);
+  act(() => vi.advanceTimersByTime(90));
+  expect(send).toHaveBeenCalledTimes(2);
+  expect(send.mock.lastCall![0]).toMatchObject({ gas: true, steer: -1 });
+  // After the gap: straight away, without waiting for the heartbeat.
+  act(() => vi.advanceTimersByTime(95));
+  const before = send.mock.calls.length;
+  act(() => view.result.current({ ...kartNeutral, brake: true }));
+  expect(send).toHaveBeenCalledTimes(before + 1);
+  expect(send.mock.lastCall![0]).toMatchObject({ brake: true, gas: false });
+  // Unchanged controls are not re-sent outside the heartbeat.
+  act(() => view.result.current({ ...kartNeutral, brake: true }));
+  expect(send).toHaveBeenCalledTimes(before + 1);
+  // Consecutive sends never arrive closer than the room's 80 ms rule.
+  const times: number[] = [];
+  send.mockImplementation(() => times.push(Date.now()));
+  for (let i = 0; i < 20; i++) {
+    act(() => view.result.current({ ...kartNeutral, steer: i % 2 ? 1 : -1 }));
+    act(() => vi.advanceTimersByTime(17));
+  }
+  for (let i = 1; i < times.length; i++)
+    expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(90);
+  view.unmount();
+});
+
+it("follows the host's prediction switch and steering default", async () => {
+  const state = createKartRace("feel", [{ playerId: "a", name: "Amina" }]);
+  const race = projectKartRace(state, "a", 100);
+  const snapshot = {
+    phase: "collect",
+    paused: false,
+    held: false,
+    play: { kart: race, selfAward: null },
+  } as unknown as LobbySnapshot;
+  const view = render(<GuestKart snapshot={snapshot} onInput={vi.fn()} />);
+  const renderer = await screen.findByTestId("driving-renderer");
+  expect(renderer.getAttribute("data-prediction")).toBe("on");
+  view.rerender(
+    <GuestKart
+      snapshot={
+        {
+          ...snapshot,
+          play: { kart: { ...race, settings: { prediction: "off" } }, selfAward: null },
+        } as unknown as LobbySnapshot
+      }
+      onInput={vi.fn()}
+    />,
+  );
+  expect(screen.getByTestId("driving-renderer").getAttribute("data-prediction")).toBe(
+    "off",
+  );
+});
+
+it("starts sideways phones on the slider when the host chooses it, unless the guest picked", () => {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+  const view = render(<TouchController onChange={vi.fn()} steeringDefault="slider" />);
+  expect(screen.getByRole("button", { name: "Use thumb pad" })).toBeTruthy();
+  view.rerender(<TouchController onChange={vi.fn()} steeringDefault="pad-strip" />);
+  expect(screen.getByRole("button", { name: "Use steering slider" })).toBeTruthy();
+  // A guest's own choice wins over later host defaults.
+  fireEvent.click(screen.getByRole("button", { name: "Use steering slider" }));
+  view.rerender(<TouchController onChange={vi.fn()} steeringDefault="pad-absolute" />);
+  expect(screen.getByRole("button", { name: "Use thumb pad" })).toBeTruthy();
 });
