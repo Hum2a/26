@@ -67,3 +67,62 @@ it("lets a phone answer after a long run of drafts, and throttles a burst withou
   expect(refused.length).toBeLessThan(burst.length);
   socket.close();
 });
+
+it("measures socket messages in bytes, so emoji cannot slip past the size limit", async () => {
+  const created = await env.ROOM_CODE_REGISTRY.getByName("codes").createLobby({
+    requestId: crypto.randomUUID(),
+    digest: await payloadDigest({ action: "create" }),
+    now: new Date().toISOString(),
+  });
+  if (!created.ok) throw new Error(created.message);
+  const room = created.result;
+  const stub = env.PARTY_ROOM.getByName(room.gameId);
+  const joined = await stub.joinPlayer({
+    nickname: "Emoji",
+    requestId: crypto.randomUUID(),
+    now: new Date().toISOString(),
+  });
+  if (!joined.ok) throw new Error(joined.message);
+  const response = await stub.fetch(
+    new Request(withClientApiQuery(`http://example.com/ws/${room.gameId}?role=guest`), {
+      headers: {
+        Upgrade: "websocket",
+        Connection: "Upgrade",
+        Origin: "http://example.com",
+        Cookie: `26_guest=${joined.gameId}.${joined.playerId}.${joined.secret}`,
+      },
+    }),
+  );
+  const socket = response.webSocket!;
+  socket.accept();
+  const acks: { requestId: string; error?: string }[] = [];
+  socket.addEventListener("message", (event) => {
+    const message = JSON.parse(String(event.data)) as {
+      kind?: string;
+      requestId?: string;
+      error?: string;
+    };
+    if (message.kind === "ack")
+      acks.push({ requestId: message.requestId ?? "", error: message.error });
+  });
+  // 1,200 emoji: 2,400 UTF-16 units but 4,800 bytes, over the 4,096-byte limit.
+  const text = "😀".repeat(1_200);
+  expect(text.length).toBeLessThan(4_096);
+  socket.send(JSON.stringify({ kind: "command", name: "draft", text }));
+  await expect
+    .poll(() => acks.some((ack) => ack.error === messageLimitMessage), {
+      timeout: 5_000,
+    })
+    .toBe(true);
+  // A small emoji message is still fine.
+  const ok = crypto.randomUUID();
+  socket.send(
+    JSON.stringify({ kind: "command", requestId: ok, name: "snapshot", note: "🙂" }),
+  );
+  await expect
+    .poll(() => acks.some((ack) => ack.requestId === ok && !ack.error), {
+      timeout: 5_000,
+    })
+    .toBe(true);
+  socket.close();
+});

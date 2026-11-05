@@ -2361,7 +2361,14 @@ export class PartyRoom extends DurableObject<Env> {
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
     const text =
       typeof message === "string" ? message : new TextDecoder().decode(message);
-    const bytes = typeof message === "string" ? text.length : message.byteLength;
+    // A UTF-16 length undercounts accented text and emoji; measure real bytes
+    // whenever the message could be near the limit.
+    const bytes =
+      typeof message !== "string"
+        ? message.byteLength
+        : text.length * 3 <= maxPayloadBytes
+          ? text.length
+          : new TextEncoder().encode(text).byteLength;
     this.meter.add("in", bytes, Date.now());
     if (bytes > maxPayloadBytes) {
       this.send(ws, {

@@ -171,6 +171,7 @@ export default defineConfig({
             "test/award-points.spec.ts",
             "test/log.spec.ts",
             "test/archive-close.spec.ts",
+            "test/read-json.spec.ts",
           ],
           environment: "node",
           hookTimeout: 60_000,

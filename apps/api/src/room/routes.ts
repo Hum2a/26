@@ -1111,9 +1111,17 @@ function readRequestId(body: unknown): string | undefined {
   return value;
 }
 
-async function readJson(request: Request): Promise<unknown> {
+/** Room API bodies are small commands; anything larger is refused unread. */
+export const maxJsonBodyBytes = 65_536;
+
+export async function readJson(request: Request): Promise<unknown> {
+  const declared = Number(request.headers.get("content-length") ?? 0);
+  if (Number.isFinite(declared) && declared > maxJsonBodyBytes) return undefined;
   try {
-    return await request.json();
+    const text = await request.text();
+    // A chunked body has no declared length, so check what actually arrived.
+    if (text.length > maxJsonBodyBytes) return undefined;
+    return JSON.parse(text);
   } catch {
     return undefined;
   }
