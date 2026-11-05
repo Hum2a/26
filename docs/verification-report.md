@@ -236,3 +236,7 @@ check still reports 101 unchanged files. Changed-file lint/format, the 403-test
 unit suite and selected Worker/browser checks above passed; the full API suite
 was not established. GitHub CI did not start because of the account's billing or
 spending limit ([release run](https://github.com/Hum2a/26/actions/runs/41193270942)).
+
+## 6 November 2026: browser suite (partial)
+
+See the "Browser suite wrap-up" entry in [build-progress.md](build-progress.md). Four specs still fail: two are direct API requests without the client key (pre-existing), and two (`developer-tools`, `birthday-assets-prices`) are unverified against `master`. Specs after `email-code` were not run.

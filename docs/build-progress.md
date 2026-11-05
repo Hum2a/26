@@ -5088,3 +5088,19 @@ Launched SEQUENTIAL root-only full rerun phase4-serial-full-unit.log, no browser
 
 - 27 `react-refresh/only-export-components` lint warnings: moving exports across 14 files risks regressions for a development-only benefit; post-party clean-up branch.
 - Projector pairing code, vote exclude-in-all-mode, typed-answer moderation, round-media pre-moderation, photo-wall failed-image skip: not started.
+
+## Browser suite wrap-up (6 November 2026)
+
+**Status:** partial. The full dev-config Playwright run (`npm run safe-env -- npx playwright test -c playwright.dev.config.ts`) was stopped after 20 specs because the Vite/Miniflare dev server began returning `fetch failed`, which made later failures unreliable. The five failures seen were then re-run serially.
+
+| Spec                             | Result        | Cause                                                                                                                                                                |
+| -------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `admin-room-recovery.spec.ts`    | Fixed, passes | The QR dialog shows the link in an `<input>`; the test now checks its value.                                                                                         |
+| `admin-question-details.spec.ts` | Fails (403)   | The test calls `/api/admin/content/...` with `page.request` and no client API key header. The route and spec are unchanged from `master`; not caused by this branch. |
+| `draft-polish.spec.ts`           | Fails         | Same direct-request 403 (`data.interactive` undefined).                                                                                                              |
+| `birthday-assets-prices.spec.ts` | Fails         | A card size moved 0.13 px against a 0.1 px tolerance. Unverified whether the branch's CSS changes caused it.                                                         |
+| `developer-tools.spec.ts:74`     | Fails         | The rehearsal timeline never shows "Disconnect 25% of bots". Check against `bots.ts` `liveBirthdayGame` before merging.                                              |
+
+Passing earlier in the same run or individually: quiz, kart, kart-lobby, kart-opponents, kart-spectator, admin-live-controls, admin-sections, admin-stage-flow, birthday-pack, media, photo-wall, shells, email-code. The remaining specs after `email-code` were not run.
+
+**Next:** run the remaining specs on a fresh dev server, and check the developer-tools and asset-size failures against `master`.

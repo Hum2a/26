@@ -35,9 +35,9 @@ test("recovers a real room after refresh, lost tab storage and a new tab", async
     `/j/${room.joinCode}`,
   );
   await page.getByRole("button", { name: "Show guest QR code" }).click();
-  await expect(page.getByRole("dialog", { name: "Guest join link" })).toContainText(
-    `/j/${room.joinCode}`,
-  );
+  await expect(
+    page.getByRole("dialog", { name: "Guest join link" }).getByRole("textbox"),
+  ).toHaveValue(new RegExp(`/j/${room.joinCode}$`));
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await page.evaluate(() => sessionStorage.clear());
   await page.reload();
