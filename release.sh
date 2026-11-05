@@ -45,7 +45,7 @@ for arg in "$@"; do
     --override-freeze) override_freeze=true ;;
     --no-github) github=false ;;
     --v1) allow_v1=true ;;
-    -h|--help) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) echo "Unknown option: $arg" >&2; exit 2 ;;
     *) bump="$arg" ;;
   esac
