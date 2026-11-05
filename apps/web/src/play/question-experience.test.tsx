@@ -40,3 +40,15 @@ it("still reports a scored miss and a win", () => {
   );
   expect(screen.getByText("+120 points")).toBeTruthy();
 });
+
+it("does not promise more rounds after the last question", () => {
+  const last = revealed(0);
+  last.play!.question = { ...last.play!.question, index: 2, total: 2 };
+  render(
+    <QuestionExperience snapshot={last} pending={false}>
+      <p>Round</p>
+    </QuestionExperience>,
+  );
+  expect(screen.getByText(/That was the last one/)).toBeTruthy();
+  expect(screen.queryByText("Plenty more to come.")).toBeNull();
+});
