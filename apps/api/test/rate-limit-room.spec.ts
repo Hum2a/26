@@ -126,3 +126,30 @@ it("measures socket messages in bytes, so emoji cannot slip past the size limit"
     .toBe(true);
   socket.close();
 });
+
+it("refuses a nickname that cannot go on the big screen, before any receipt", async () => {
+  const created = await env.ROOM_CODE_REGISTRY.getByName("codes").createLobby({
+    requestId: crypto.randomUUID(),
+    digest: await payloadDigest({ action: "create" }),
+    now: new Date().toISOString(),
+  });
+  if (!created.ok) throw new Error(created.message);
+  const stub = env.PARTY_ROOM.getByName(created.result.gameId);
+  // ROT13 of a slur, so the test does not spell it out.
+  const blocked = "phag".replace(/[a-z]/g, (c) =>
+    String.fromCharCode(((c.charCodeAt(0) - 97 + 13) % 26) + 97),
+  );
+  const refused = await stub.joinPlayer({
+    nickname: `The ${blocked}`,
+    requestId: crypto.randomUUID(),
+    now: new Date().toISOString(),
+  });
+  expect(refused.ok).toBe(false);
+  if (!refused.ok) expect(refused.message).toContain("different nickname");
+  const fine = await stub.joinPlayer({
+    nickname: "Scunthorpe Steve",
+    requestId: crypto.randomUUID(),
+    now: new Date().toISOString(),
+  });
+  expect(fine.ok).toBe(true);
+});

@@ -39,6 +39,7 @@ import {
   newerTabMessage,
   removedSessionMessage,
   nicknameSchema,
+  blockedNickname,
   type GuestSession,
   type KartFrame,
   type LobbySnapshot,
@@ -481,6 +482,14 @@ export class PartyRoom extends DurableObject<Env> {
         ok: false,
         error: "invalid",
         message: "Enter a nickname of 1 to 24 characters.",
+      };
+    }
+    // Names go up on the projector; refuse slurs and explicit terms at the door.
+    if (blockedNickname(nickname.data)) {
+      return {
+        ok: false,
+        error: "invalid",
+        message: "Choose a different nickname. That one cannot go on the big screen.",
       };
     }
     const digest = await payloadDigest({ nickname: nickname.data });

@@ -8,6 +8,7 @@ export * from "./kart-assets.ts";
 export * from "./kart-events.ts";
 export * from "./kart-nearby.ts";
 export * from "./kart-settings.ts";
+export * from "./moderation.ts";
 export * from "./rate-limit.ts";
 import { z } from "zod";
 export const kartRehearsalBeatSchema = z.enum(["grid", "turn", "boost", "finish"]);
