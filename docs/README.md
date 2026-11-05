@@ -11,6 +11,7 @@
 | I want to…                          | Read this                                                                             |
 | :---------------------------------- | :------------------------------------------------------------------------------------ |
 | Run the app locally                 | [Setup and commands](../README.md#local-app)                                          |
+| Decide what Humza must choose or do | [Decisions for Humza](decisions-for-humza.md)                                         |
 | Present or operate the party        | [Event runbook](event-runbook.md)                                                     |
 | Add or refine a question            | [Question authoring](question-authoring.md)                                           |
 | Prepare content and media           | [Content guide](content-guide.md)                                                     |
