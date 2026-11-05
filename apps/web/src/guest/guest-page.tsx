@@ -741,7 +741,11 @@ export function GuestPage({
       >
         {questionVisible ? null : (
           <h1 className="phone-prompt">
-            {snapshot?.phase === "lobby" ? "In the lobby" : "This phone"}
+            {!snapshot
+              ? "Connecting…"
+              : snapshot.phase === "lobby"
+                ? "In the lobby"
+                : "This phone"}
           </h1>
         )}
         <StatusMessage>{status}</StatusMessage>
@@ -839,7 +843,7 @@ export function GuestPage({
                   onDuel={onDuel}
                 />
               ) : (
-                <p>Waiting for the quiz to start.</p>
+                <p>Connecting to the room…</p>
               )}
               {snapshot &&
               guestRoundCopy(snapshot) === "Waiting for the next question." ? (
