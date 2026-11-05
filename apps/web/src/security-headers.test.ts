@@ -1,12 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
 import { expect, it } from "vitest";
-
-// Web tests run from apps/web; fall back to the repository root.
-const file = ["public/_headers", "apps/web/public/_headers"]
-  .map((candidate) => path.resolve(process.cwd(), candidate))
-  .find((candidate) => existsSync(candidate))!;
-const headers = readFileSync(file, "utf8");
+import headers from "../public/_headers?raw";
 
 function block(path: string): string {
   const start = headers.indexOf(`\n${path}\n`);
