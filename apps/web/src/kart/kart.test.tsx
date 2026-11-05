@@ -11,7 +11,7 @@ import { createKartRace, projectKartRace, kartNeutral } from "@26/shared";
 import { TouchController } from "./TouchController";
 import { useKartSocket } from "./useKartSocket";
 import { GuestKart } from "./GuestKart";
-import { steerFromPointer } from "./steering";
+import { steerFromPointer, steerFromTravel } from "./steering";
 import type { LobbySnapshot } from "@26/shared";
 import KartGameWrapper from "./KartGameWrapper";
 vi.mock("./KartCanvas", () => ({
@@ -151,12 +151,25 @@ it("delivers each server-confirmed race completion once, including null-time DNF
   expect(complete).toHaveBeenCalledTimes(2);
 });
 
-it("centres the thumb pad, clamps edges, ignores a second steering thumb and releases capture", () => {
+it("steers the thumb pad from where the thumb lands, clamps travel, ignores a second steering thumb and releases capture", () => {
   expect(steerFromPointer(50, 0, 100)).toBe(0);
   expect(steerFromPointer(52, 0, 100)).toBe(0);
   expect(steerFromPointer(-200, 0, 100)).toBe(-1);
   expect(steerFromPointer(300, 0, 100)).toBe(1);
   expect(steerFromPointer(20, 0, 0)).toBe(0);
+  // Travel from the landing point: dead zone, a gentle curve, then full lock.
+  expect(steerFromTravel(0, 300)).toBe(0);
+  expect(steerFromTravel(4, 300)).toBe(0);
+  const half = steerFromTravel(45, 300);
+  expect(half).toBeGreaterThan(0.2);
+  expect(half).toBeLessThan(0.5);
+  expect(steerFromTravel(-45, 300)).toBe(-half);
+  expect(steerFromTravel(90, 300)).toBe(1);
+  expect(steerFromTravel(-900, 300)).toBe(-1);
+  // Narrow pads still need a deliberate 48 px for full lock.
+  expect(steerFromTravel(40, 100)).toBeLessThan(1);
+  expect(steerFromTravel(48, 100)).toBe(1);
+  expect(steerFromTravel(10, 0)).toBe(0);
   class TestPointer extends MouseEvent {
     pointerId: number;
     constructor(type: string, init: PointerEventInit = {}) {
@@ -177,7 +190,10 @@ it("centres the thumb pad, clamps edges, ignores a second steering thumb and rel
     left: 0,
     width: 100,
   } as DOMRect);
+  // Landing off-centre does not jerk the kart; sliding does the steering.
   fireEvent.pointerDown(pad, { pointerId: 1, clientX: 92 });
+  expect(change.mock.lastCall![0].steer).toBe(0);
+  fireEvent.pointerMove(pad, { pointerId: 1, clientX: 192 });
   expect(change.mock.lastCall![0].steer).toBe(1);
   fireEvent.pointerDown(pad, { pointerId: 2, clientX: 0 });
   expect(change.mock.lastCall![0].steer).toBe(1);
@@ -192,6 +208,7 @@ it("centres the thumb pad, clamps edges, ignores a second steering thumb and rel
   view.rerender(<TouchController onChange={change} disabled />);
   view.rerender(<TouchController onChange={change} />);
   fireEvent.pointerDown(pad, { pointerId: 4, clientX: 0 });
+  fireEvent.pointerMove(pad, { pointerId: 4, clientX: -100 });
   expect(change.mock.lastCall![0].steer).toBe(-1);
   fireEvent.click(screen.getByRole("button", { name: "Swap sides" }));
   expect(change).toHaveBeenLastCalledWith(kartNeutral);

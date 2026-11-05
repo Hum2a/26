@@ -3,6 +3,11 @@ import { kartNeutral, type KartControls } from "@26/shared";
 import { SteeringPad } from "./SteeringPad";
 import "./kart.css";
 
+/** The full-screen landscape race layout; see kart.css. */
+const landscapeRace = "(orientation: landscape) and (max-height: 32rem)";
+const landscape = () =>
+  typeof window !== "undefined" && Boolean(window.matchMedia?.(landscapeRace).matches);
+
 /** Pointer capture keeps multiple thumbs independent; cancellation never leaves the throttle held. */
 export function TouchController({
   disabled = false,
@@ -11,7 +16,19 @@ export function TouchController({
   disabled?: boolean;
   onChange: (value: KartControls) => void;
 }) {
-  const [pad, setPad] = useState(false);
+  // The native slider needs its small handle grabbed exactly, which is hard
+  // mid-race on a phone held sideways; the thumb pad accepts a touch anywhere.
+  const [pad, setPad] = useState(landscape);
+  const chosen = useRef(false);
+  useEffect(() => {
+    const media = window.matchMedia?.(landscapeRace);
+    if (!media) return;
+    const follow = () => {
+      if (!chosen.current) setPad(media.matches);
+    };
+    media.addEventListener("change", follow);
+    return () => media.removeEventListener("change", follow);
+  }, []);
   const [swapped, setSwapped] = useState(false);
   const [controls, setControls] = useState<KartControls>({ ...kartNeutral });
   const current = useRef<KartControls>({ ...kartNeutral });
@@ -101,6 +118,7 @@ export function TouchController({
           onClick={() => {
             pointers.current.clear();
             emit(kartNeutral);
+            chosen.current = true;
             setPad(!pad);
           }}
         >

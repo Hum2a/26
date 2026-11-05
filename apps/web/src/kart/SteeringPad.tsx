@@ -1,6 +1,6 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 
-import { steerFromPointer } from "./steering";
+import { steerFromTravel } from "./steering";
 
 /** The native slider remains the keyboard/assistive-technology interface to the pad. */
 export function SteeringPad({
@@ -13,6 +13,8 @@ export function SteeringPad({
   onChange: (value: number) => void;
 }) {
   const owner = useRef<number | null>(null);
+  /** Where the steering thumb landed; travel from here steers. */
+  const origin = useRef(0);
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const resetOwner = () => {
@@ -50,13 +52,13 @@ export function SteeringPad({
         owner.current = event.pointerId;
         event.currentTarget.setPointerCapture(event.pointerId);
         input.current?.focus({ preventScroll: true });
-        const box = event.currentTarget.getBoundingClientRect();
-        onChange(steerFromPointer(event.clientX, box.left, box.width));
+        origin.current = event.clientX;
+        onChange(0);
       }}
       onPointerMove={(event) => {
         if (disabled || owner.current !== event.pointerId) return;
         const box = event.currentTarget.getBoundingClientRect();
-        onChange(steerFromPointer(event.clientX, box.left, box.width));
+        onChange(steerFromTravel(event.clientX - origin.current, box.width));
       }}
       onPointerUp={(event) => release(event.pointerId)}
       onPointerCancel={(event) => release(event.pointerId)}

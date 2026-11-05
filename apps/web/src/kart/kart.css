@@ -988,10 +988,23 @@ body:has(.kart-phone) {
   .kart-phone[data-layout="race"] .kart-steering input {
     height: 56px;
   }
+  /* A wide steering strip: touch anywhere, slide left or right. */
   .kart-phone[data-layout="race"] .kart-thumb-pad {
-    max-height: min(9.5rem, 38dvh);
-    min-height: 0;
+    width: 100%;
+    height: min(6.5rem, 30dvh);
+    min-height: 4.5rem;
+    max-height: none;
+    aspect-ratio: auto;
     margin-inline: auto;
+    border-radius: var(--radius-panel);
+  }
+  .kart-phone[data-layout="race"] .kart-thumb-knob {
+    width: auto;
+    height: 62%;
+    left: calc(50% + var(--steer) * 40%);
+  }
+  .kart-phone[data-layout="race"] .kart-steering > span[aria-hidden="true"] {
+    display: none;
   }
   .kart-phone[data-layout="race"] .kart-pedals {
     display: grid;
