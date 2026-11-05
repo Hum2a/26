@@ -174,6 +174,7 @@ export default defineConfig({
             "test/read-json.spec.ts",
             "test/auth-session-cache.spec.ts",
             "test/timeout.spec.ts",
+            "test/credential-lifetime.spec.ts",
           ],
           environment: "node",
           hookTimeout: 60_000,

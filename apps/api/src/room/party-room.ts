@@ -131,7 +131,7 @@ import {
   seedDemoNames,
   voterReactions,
 } from "./names.ts";
-import { commitAndArm } from "./scheduler.ts";
+import { commitAndArm, rearmAfterFailure } from "./scheduler.ts";
 import { ensurePartySchema } from "./schema.ts";
 import { createSqlStore } from "./sql-store.ts";
 import type { Question } from "../questions/definition.ts";
@@ -861,7 +861,7 @@ export class PartyRoom extends DurableObject<Env> {
       // A failed transaction rolls back its own next alarm. Re-arm so a
       // transient fault never leaves the room stuck between phases.
       logError("alarm", error, { retryInMs: alarmRetryMs });
-      await this.ctx.storage.setAlarm(Date.now() + alarmRetryMs);
+      await rearmAfterFailure(this.ctx.storage, Date.now() + alarmRetryMs);
       return;
     }
     this.refreshKartIngressClock();
