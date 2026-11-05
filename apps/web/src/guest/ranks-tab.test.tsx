@@ -150,3 +150,14 @@ it("keeps the last standings across a reload of the same game", () => {
   expect(screen.getByText("Place 2 of 4")).toBeTruthy();
   expect(screen.getByText("+120 on the last question")).toBeTruthy();
 });
+
+it("links to the full results once the podium is up", () => {
+  const view = render(<RanksTab nickname="Amina" snapshot={playingFixture} />);
+  expect(screen.queryByRole("link", { name: /full results/ })).toBeNull();
+  view.rerender(
+    <RanksTab nickname="Amina" snapshot={{ ...playingFixture, phase: "podium" }} />,
+  );
+  expect(screen.getByRole("link", { name: /full results/ }).getAttribute("href")).toBe(
+    `/r/${playingFixture.gameId}`,
+  );
+});

@@ -111,6 +111,14 @@ export function RanksTab({
         <p className="entry-eyebrow">Leaderboard</p>
         <h1 className="phone-tab-title">Ranks</h1>
       </header>
+      {snapshot?.phase === "podium" ? (
+        <a
+          className="entry-text-link ranks-results-link"
+          href={`/r/${snapshot.gameId}`}
+        >
+          See the full results →
+        </a>
+      ) : null}
       <section className="ranks-self glass" aria-label="Your standing">
         {hidden ? (
           <p className="ranks-hidden">
