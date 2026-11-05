@@ -14,6 +14,7 @@ import {
   resolveMigrateEnvironment,
   resolveReleaseTargets,
   workerRelease,
+  inDeployFreeze,
 } from "./release-support.ts";
 
 const wranglerText = readFileSync(
@@ -148,4 +149,12 @@ test("wrangler.jsonc attaches one custom domain per remote Worker", () => {
     ),
     config.env.production.secrets?.required,
   );
+});
+
+test("production deploys are frozen across the party weekend only", () => {
+  assert.equal(inDeployFreeze(Date.parse("2026-11-19T23:59:59Z")), false);
+  assert.equal(inDeployFreeze(Date.parse("2026-11-20T00:00:00Z")), true);
+  assert.equal(inDeployFreeze(Date.parse("2026-11-21T19:30:00Z")), true);
+  assert.equal(inDeployFreeze(Date.parse("2026-11-22T11:59:59Z")), true);
+  assert.equal(inDeployFreeze(Date.parse("2026-11-22T12:00:00Z")), false);
 });

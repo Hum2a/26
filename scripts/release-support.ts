@@ -184,3 +184,16 @@ export function assertGeneratedWorkerConfig(
     );
   }
 }
+
+/**
+ * No production deploys across the party weekend: a deploy restarts every
+ * room and drops every phone's connection. London is on UTC in November.
+ */
+export const deployFreeze = {
+  from: Date.parse("2026-11-20T00:00:00Z"),
+  until: Date.parse("2026-11-22T12:00:00Z"),
+};
+
+export function inDeployFreeze(nowMs: number): boolean {
+  return nowMs >= deployFreeze.from && nowMs < deployFreeze.until;
+}
