@@ -131,3 +131,22 @@ it("calls a poll just for fun instead of repeating the previous round's points",
   expect(screen.getByText("The last round was just for fun")).toBeTruthy();
   expect(screen.queryByText("+120 on the last question")).toBeNull();
 });
+
+it("keeps the last standings across a reload of the same game", () => {
+  sessionStorage.clear();
+  const first = render(
+    <RanksTab
+      nickname="Amina"
+      snapshot={scored({
+        standings,
+        selfStanding: { place: 2, points: 200, players: 4 },
+        selfAward: 120,
+      })}
+    />,
+  );
+  first.unmount();
+  // A reload mid-question: no standings in the snapshot yet.
+  render(<RanksTab nickname="Amina" snapshot={playingFixture} />);
+  expect(screen.getByText("Place 2 of 4")).toBeTruthy();
+  expect(screen.getByText("+120 on the last question")).toBeTruthy();
+});
