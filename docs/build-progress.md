@@ -5017,3 +5017,20 @@ Launched SEQUENTIAL root-only full rerun phase4-serial-full-unit.log, no browser
 **Not verified:** physical iPhone/Android devices, the notch safe-area on a real device, the thumb-pad steering mode in landscape, and the root `npm run test:unit` / browser suites.
 
 **Next:** race speed and multiplayer smoothness on phones (frame rate, input latency, opponent interpolation), then finish kart-evolution Phase 4.
+
+
+## Responsive kart driving on phones — 2026-11-05
+
+**Status:** done. Branch `kart-mobile-multiplayer`.
+
+- **Own-kart prediction.** `apps/web/src/kart/self-prediction.ts` predicts the phone's own kart with the shared physics, anchored to each server frame with a round-trip replay and an easing correction. `KartCanvas` takes an optional `prediction`; `circuit.setPredicted` skips pose smoothing for that kart. `serverRoundTrip()` in `live/server-clock.ts` exposes the median measured round trip. Decision and limits recorded in `docs/kart-minigame.md`. The room remains authoritative; no message format, server cadence or rule changed.
+- **Instant control sends.** `useKartSocket` sends changes straight away within the room's 80 ms arrival rule (90 ms gap), merging rapid changes; the heartbeat is unchanged.
+- **60 fps** phone rendering on Balanced and High; Low stays at 30 fps and auto-quality still falls back to Low.
+- **Steering.** The thumb pad steers from thumb travel since landing (`steerFromTravel`: 6% dead zone, 1.5 power curve, full lock at a third of the pad clamped to 48–90 px). Short landscape screens default to the pad, drawn as a wide strip in race mode, and follow rotation until the player chooses. The slider remains available.
+- **Other racers** are carried forward along their heading for up to 250 ms between frames (`extrapolateKartPose`) so they glide on phones and the projector; reduced motion keeps exact poses.
+
+**Checks:** root `npm run test:unit` passed 137 files / 548 tests. `npm run typecheck` passed. Changed-file ESLint passed. New tests: `self-prediction.test.ts` (7), send timing and gap in `kart.test.tsx`, `serverRoundTrip` in `server-clock.test.ts`, `extrapolateKartPose` in `presentation.test.ts`; the thumb-pad unit test and `e2e/kart.spec.ts` were updated to the travel-based steering with the same assertions on steering direction, second-thumb rejection, cancellation and release. Browser (dev config, local API test database): `kart.spec.ts` 1 passed, `kart-lobby.spec.ts` 1 passed, `kart-opponents.spec.ts` 3 passed, `kart-spectator.spec.ts` 2 passed. A throwaway probe counted rendered frames from pressing Accelerate to the drawn kart moving: 2–4 frames before, 1–2 after. The cloud browser renders WebGL in software at about 6 fps, so this shows the kart now moves on the next frame; it is not a millisecond figure for a phone.
+
+**Not verified:** physical phones and real venue Wi-Fi latency, prediction quality during ramps/flight and oil hits (corrected by the next server frame), battery and heat at 60 fps.
+
+**Next:** kart-evolution Phase 4 (optical suite, live host look controls, full gate), then Phases 5–10.
