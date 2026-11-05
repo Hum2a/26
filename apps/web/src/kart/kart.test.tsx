@@ -415,27 +415,71 @@ it("shows the held power-up and waits for server acknowledgement without releasi
   ).toBe(true);
 });
 
-it("marks only an active racer for the full-screen landscape race layout", () => {
-  const state = createKartRace("layout", [{ playerId: "a", name: "Amina" }]);
+it("lays out each kart state for landscape and keeps race notices visible over the driving view", async () => {
+  const state = createKartRace("layout", [
+    { playerId: "a", name: "Amina" },
+    { playerId: "b", name: "Chen" },
+  ]);
   const race = projectKartRace(state, "a", 100);
-  const snapshot = {
-    phase: "collect",
+  race.participants[0]!.gridPosition = 2;
+  race.participantCount = 2;
+  const base = {
+    phase: "intro",
     paused: false,
     held: false,
     play: { kart: race, selfAward: null },
   } as unknown as LobbySnapshot;
-  const view = render(<GuestKart snapshot={snapshot} />);
   const phone = () => screen.getByRole("region", { name: "Sprint controller" });
+  const notice = () => phone().querySelector(".kart-race-status");
+  // Grid: the slot and the instruction stay in the overlay, not in a hidden paragraph.
+  const view = render(<GuestKart snapshot={base} />);
+  expect(phone().getAttribute("data-layout")).toBe("grid");
+  await waitFor(() => expect(notice()?.textContent).toContain("Grid slot 2 of 2"));
+  expect(notice()?.parentElement).toBe(phone());
+  expect(notice()?.tagName).not.toBe("P");
+  // Racing: no notice while driving normally.
+  view.rerender(<GuestKart snapshot={{ ...base, phase: "collect" }} />);
   expect(phone().getAttribute("data-layout")).toBe("race");
+  await waitFor(() => expect(notice()?.textContent).toBe(""));
+  // Paused, then a lost connection, are announced over the driving view.
+  view.rerender(<GuestKart snapshot={{ ...base, phase: "collect", paused: true }} />);
+  await waitFor(() => expect(notice()?.textContent).toBe("Paused — controls released"));
+  view.rerender(
+    <GuestKart snapshot={{ ...base, phase: "collect" }} connected={false} />,
+  );
+  await waitFor(() =>
+    expect(notice()?.textContent).toBe("Connection lost — controls released"),
+  );
+  view.rerender(<GuestKart snapshot={{ ...base, phase: "collect" }} recoveryPending />);
+  await waitFor(() =>
+    expect(notice()?.textContent).toBe("Returning to the track — controls released"),
+  );
+  // Finished: its own layout, no driving overlay.
   race.participants[0]!.status = "FINISHED";
   race.participants[0]!.lapTimeMs = 28_000;
-  view.rerender(<GuestKart snapshot={{ ...snapshot }} />);
-  expect(phone().getAttribute("data-layout")).toBeNull();
+  view.rerender(<GuestKart snapshot={{ ...base, phase: "collect" }} />);
+  expect(phone().getAttribute("data-layout")).toBe("finish");
+  expect(notice()).toBeNull();
+  // Watching a race this phone is not in.
+  const watching = projectKartRace(state, null, 100);
   view.rerender(
     <GuestKart
       snapshot={
         {
-          ...snapshot,
+          ...base,
+          phase: "collect",
+          play: { kart: watching, selfAward: null },
+        } as unknown as LobbySnapshot
+      }
+    />,
+  );
+  expect(phone().getAttribute("data-layout")).toBe("watch");
+  // No race at all: the ordinary layout.
+  view.rerender(
+    <GuestKart
+      snapshot={
+        {
+          ...base,
           play: { question: { kind: "kart", timeLimitMs: 180_000 }, selfAward: null },
         } as unknown as LobbySnapshot
       }

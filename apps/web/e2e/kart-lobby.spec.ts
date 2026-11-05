@@ -86,6 +86,14 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   await expect(
     page.getByRole("button", { name: "Start kart race", exact: true }),
   ).toHaveCount(0);
+  // Landscape grid: the slot and instruction stay visible over the paused driving view.
+  await phone.setViewportSize({ width: 844, height: 390 });
+  await expect(phone.locator(".kart-phone")).toHaveAttribute("data-layout", "grid");
+  await expect(phone.locator(".kart-race-status")).toContainText(
+    "hold A when the race starts",
+  );
+  await expect(phone.locator(".kart-race-status")).toBeVisible();
+  await phone.setViewportSize({ width: 390, height: 844 });
   async function advance(phase: string) {
     await page.getByRole("button", { name: "Advance", exact: true }).click();
     await expect(stage.locator("[data-phase-motion]")).toHaveAttribute(
@@ -138,6 +146,13 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   await expect(phone.getByRole("button", { name: "Accelerate" })).toBeDisabled();
   await phone.reload();
   await expect(phone.getByRole("button", { name: "Accelerate" })).toBeDisabled();
+  // Landscape keeps the pause visible over the full-screen driving view.
+  await phone.setViewportSize({ width: 844, height: 390 });
+  await expect(phone.locator(".kart-race-status")).toHaveText(
+    "Paused — controls released",
+  );
+  await expect(phone.locator(".kart-race-status")).toBeVisible();
+  await phone.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Resume", exact: true }).click();
   await expect(phone.getByRole("button", { name: "Accelerate" })).toBeEnabled();
   await advance("reveal");

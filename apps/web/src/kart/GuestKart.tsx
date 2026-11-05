@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { usePrefersReducedMotion } from "../anim/use-reduced-motion";
 import type { LobbySnapshot, KartInput, KartControls } from "@26/shared";
 import { KartDriverView } from "./KartDriverView";
@@ -53,6 +53,28 @@ export function GuestKart({
     send(value);
   };
   const rehearsal = !onInput && !race;
+  // Short landscape phones use these to lay the race out full screen; see kart.css.
+  const layout = !race
+    ? undefined
+    : !self
+      ? "watch"
+      : complete
+        ? "finish"
+        : snapshot.phase === "collect"
+          ? "race"
+          : "grid";
+  // Shown over the full-screen driving view, where the ordinary status line is hidden.
+  const raceNotice = !connected
+    ? "Connection lost — controls released"
+    : snapshot.paused || snapshot.held
+      ? "Paused — controls released"
+      : recoveryPending
+        ? "Returning to the track — controls released"
+        : layout === "grid"
+          ? self?.gridPosition
+            ? `Grid slot ${self.gridPosition}${race?.participantCount ? ` of ${race.participantCount}` : ""} · hold A when the race starts`
+            : "Hold A when the race starts"
+          : "";
   const instruction = !connected
     ? "Connection lost — controls released"
     : snapshot.paused || snapshot.held
@@ -69,8 +91,25 @@ export function GuestKart({
       className="kart-phone"
       aria-label="Sprint controller"
       // Short landscape phones turn this into a full-screen driving view.
-      data-layout={race && self && !complete ? "race" : undefined}
+      data-layout={layout}
     >
+      {layout === "grid" || layout === "race" ? (
+        <div className="kart-race-status" role="status" aria-live="polite">
+          <AnimatePresence initial={false} mode="wait">
+            {raceNotice ? (
+              <motion.p
+                key={raceNotice}
+                initial={{ opacity: 0, y: reduced ? 0 : -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: reduced ? 0.12 : 0.2, ease: "easeOut" }}
+              >
+                {raceNotice}
+              </motion.p>
+            ) : null}
+          </AnimatePresence>
+        </div>
+      ) : null}
       <header className="kart-phone-heading">
         <p className="kart-eyebrow">
           ONE LAP · {timeLimitMs === 180_000 ? "3 MINUTES" : "45 SECONDS"}
