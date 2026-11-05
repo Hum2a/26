@@ -8,6 +8,7 @@ import { Glyph } from "./designs/glyph";
 import { AnswerNames } from "./attributions";
 import { renderPresentation } from "./presentation";
 import { KartDriversProvider } from "../kart/KartDriversProvider";
+import { KartCountdown } from "../kart/KartCountdown";
 import { FunFactStage } from "./fun-fact";
 import { Scoreboard } from "../ui/scoreboard";
 import { GuestPush } from "./guest-push";
@@ -64,6 +65,10 @@ export function StagePlay({
         <Suspense fallback={<p>Preparing the race…</p>}>
           <KartGameWrapper race={play.kart} paused={snapshot.paused || snapshot.held} />
         </Suspense>
+        <KartCountdown
+          snapshot={snapshot}
+          observedAt={observedAt ?? snapshot.serverNow}
+        />
       </KartDriversProvider>
     );
   const leadBoard =

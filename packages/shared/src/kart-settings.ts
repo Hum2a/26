@@ -14,6 +14,8 @@ export const kartSettingOptions = {
   steering: ["pad-strip", "slider", "pad-absolute"],
   /** Highest phone frame rate; `auto` uses 60 unless the phone is on Low. */
   frameCap: ["30", "60", "auto"],
+  /** 3-2-1 in the last seconds of the kart prompt, then GO as the race opens. */
+  countdown: ["prompt-tail", "none"],
 } as const;
 
 export type KartSettingKey = keyof typeof kartSettingOptions;
@@ -25,6 +27,7 @@ export const kartSettingsSchema = z
     glide: z.enum(kartSettingOptions.glide).optional(),
     steering: z.enum(kartSettingOptions.steering).optional(),
     frameCap: z.enum(kartSettingOptions.frameCap).optional(),
+    countdown: z.enum(kartSettingOptions.countdown).optional(),
   })
   .strict();
 export type KartSettings = z.infer<typeof kartSettingsSchema>;
@@ -35,6 +38,7 @@ export const kartSettingDefaults: ResolvedKartSettings = {
   glide: "on",
   steering: "pad-strip",
   frameCap: "auto",
+  countdown: "prompt-tail",
 };
 
 /** One host change, validated so the value belongs to its key. */

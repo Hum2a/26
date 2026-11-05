@@ -106,7 +106,17 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
     );
   }
   await advance("prompt");
-  await advance("collect");
+  // The prompt runs out on its own: 3-2-1 on the phone and the stage, then GO.
+  await expect(phone.locator('.kart-countdown [data-beat="1"]')).toBeVisible({
+    timeout: 12_000,
+  });
+  await expect(stage.locator(".kart-countdown [data-beat]")).toHaveCount(1);
+  await expect(stage.locator("[data-phase-motion]")).toHaveAttribute(
+    "data-phase",
+    "collect",
+    { timeout: 5_000 },
+  );
+  await expect(phone.locator('.kart-countdown [data-beat="GO"]')).toBeVisible();
   await expect(phone.getByRole("button", { name: "Accelerate" })).toBeEnabled();
   await expect(stage.locator("[data-map-player]")).toHaveCount(2);
   await expect(rival.getByRole("button", { name: "Accelerate" })).toBeEnabled();

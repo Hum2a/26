@@ -10,6 +10,7 @@ import { DriftGauge } from "./DriftGauge";
 import { useState } from "react";
 import { kartNeutral, resolveKartSettings } from "@26/shared";
 import { createSelfPrediction } from "./self-prediction";
+import { KartCountdown } from "./KartCountdown";
 
 export function GuestKart({
   snapshot,
@@ -21,6 +22,7 @@ export function GuestKart({
   itemNotice,
   recoveryPending = false,
   recoveryNotice = "",
+  observedAt,
 }: {
   snapshot: LobbySnapshot;
   connected?: boolean;
@@ -31,6 +33,8 @@ export function GuestKart({
   itemNotice?: string;
   recoveryPending?: boolean;
   recoveryNotice?: string;
+  /** When this snapshot arrived, for the race-start countdown. */
+  observedAt?: number;
 }) {
   const reduced = usePrefersReducedMotion();
   const race = snapshot.play?.kart;
@@ -95,6 +99,13 @@ export function GuestKart({
       // Short landscape phones turn this into a full-screen driving view.
       data-layout={layout}
     >
+      {self && !complete ? (
+        <KartCountdown
+          snapshot={snapshot}
+          observedAt={observedAt ?? snapshot.serverNow}
+          haptics={Boolean(onInput)}
+        />
+      ) : null}
       {layout === "grid" || layout === "race" ? (
         <div className="kart-race-status" role="status" aria-live="polite">
           <AnimatePresence initial={false} mode="wait">

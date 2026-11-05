@@ -1098,3 +1098,30 @@ body:has(.kart-phone) {
     align-self: center;
   }
 }
+
+/* 3-2-1-GO over the race: large, centred, never blocks a touch. */
+.kart-countdown {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.kart-countdown span {
+  grid-area: 1 / 1;
+  min-width: 1.4em;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  padding: 0.05em 0.35em;
+  background: color-mix(in oklab, var(--background) 70%, transparent);
+  color: var(--highlight);
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 22vmin, 11rem);
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+}
+.kart-countdown span[data-beat="GO"] {
+  color: var(--accent);
+}

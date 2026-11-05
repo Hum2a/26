@@ -20,6 +20,10 @@ const settingLabels: Record<KartSettingKey, { title: string; help: string }> = {
     title: "Sideways steering default",
     help: "What a phone held sideways starts with. Guests can still switch on their phone.",
   },
+  countdown: {
+    title: "Race start countdown",
+    help: "3, 2, 1 on phones and the stage in the last seconds before the race opens, then GO. Timing is unchanged; the room still opens the race.",
+  },
   frameCap: {
     title: "Phone frame rate",
     help: "Highest frame rate on phones. Auto uses 60 unless a phone is on Low graphics.",
@@ -36,6 +40,8 @@ const valueLabels: Record<string, string> = {
   "30": "30 fps",
   "60": "60 fps",
   auto: "Auto",
+  "prompt-tail": "3-2-1-GO",
+  none: "None",
 };
 
 /** Host driving-feel switches. Shown in a kart lobby and during a kart round. */
