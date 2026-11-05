@@ -4,7 +4,7 @@ import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { ringBounds, ringCourse, soloCourse, courseFeaturePose } from "@26/shared";
 import type { KartRaceView } from "@26/shared";
 import { driftEffectDescription, driftStrength } from "./drift-effects";
-import { smoothKartPose, type KartPose } from "./presentation";
+import { extrapolateKartPose, smoothKartPose, type KartPose } from "./presentation";
 import { createDriverRig } from "./driver-rig";
 import { kartAssetPaths } from "@26/shared";
 import { vehiclePose } from "./vehicle-pose";
@@ -372,6 +372,11 @@ export function createCircuit(
     effectRaceId: string | undefined;
   const poses = new Map<string, KartPose>();
   let predictedPlayerId: string | undefined;
+  /** When each racer's server pose last changed, on the effect clock. */
+  const serverSeen = new Map<
+    string,
+    { x: number; z: number; heading: number; at: number }
+  >();
   const travel = new Map<string, number>();
   const featurePoses = new Map<string, { x: number; z: number }>();
   const labels = new Map<string, THREE.Sprite>();
@@ -403,6 +408,30 @@ export function createCircuit(
     labels.set(driver.playerId, sprite);
     return sprite;
   }
+  /** The server pose carried forward since it last changed (not under reduced motion). */
+  function glide(
+    driver: KartPose & { playerId: string; speed: number },
+    reduced: boolean,
+  ) {
+    const seen = serverSeen.get(driver.playerId);
+    if (
+      !seen ||
+      seen.x !== driver.x ||
+      seen.z !== driver.z ||
+      seen.heading !== driver.heading
+    ) {
+      serverSeen.set(driver.playerId, {
+        x: driver.x,
+        z: driver.z,
+        heading: driver.heading,
+        at: effectTime,
+      });
+      return driver;
+    }
+    return reduced
+      ? driver
+      : extrapolateKartPose(driver, driver.speed, effectTime - seen.at);
+  }
   function update(
     race: KartRaceView,
     dt: number,
@@ -429,6 +458,7 @@ export function createCircuit(
     if (effectRaceId !== race.raceId) {
       emission.clear();
       poses.clear();
+      serverSeen.clear();
       travel.clear();
       featurePoses.clear();
       effectTime = 0;
@@ -452,6 +482,7 @@ export function createCircuit(
     for (const id of poses.keys())
       if (!present.has(id)) {
         poses.delete(id);
+        serverSeen.delete(id);
         travel.delete(id);
         emission.delete(id);
       }
@@ -468,7 +499,7 @@ export function createCircuit(
                 heading: driver.heading,
                 ...(driver.height !== undefined ? { height: driver.height } : {}),
               }
-            : smoothKartPose(previous ?? driver, driver, dt, reduced);
+            : smoothKartPose(previous ?? driver, glide(driver, reduced), dt, reduced);
       poses.set(driver.playerId, pose);
       const height = pose.height ?? 0;
       const { x, z, heading } = pose,
@@ -757,6 +788,7 @@ export function createCircuit(
       instances.forEach((i) => i.dispose());
       emission.clear();
       poses.clear();
+      serverSeen.clear();
       travel.clear();
       featurePoses.clear();
       labels.clear();

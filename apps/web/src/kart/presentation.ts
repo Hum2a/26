@@ -74,3 +74,30 @@ export function smoothKartPose(
       : {}),
   };
 }
+
+/** Longest a server pose is carried forward before waiting for the next frame. */
+export const extrapolateLimitSeconds = 0.25;
+
+/**
+ * Carries another racer's last server pose forward along its heading at its
+ * reported speed, for at most a quarter of a second. Server frames arrive five
+ * times a second; without this, karts would ease towards each frame and stall
+ * until the next. Drawing only: the room decides every position.
+ */
+export function extrapolateKartPose(
+  pose: KartPose,
+  speed: number,
+  ageSeconds: number,
+): KartPose {
+  const age = Math.max(
+    0,
+    Math.min(extrapolateLimitSeconds, Number.isFinite(ageSeconds) ? ageSeconds : 0),
+  );
+  const v = Number.isFinite(speed) ? speed : 0;
+  if (!age || !v) return { ...pose };
+  return {
+    ...pose,
+    x: pose.x + Math.cos(pose.heading) * v * age,
+    z: pose.z + Math.sin(pose.heading) * v * age,
+  };
+}
