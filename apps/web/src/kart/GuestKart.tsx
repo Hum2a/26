@@ -90,7 +90,9 @@ export function GuestKart({
         : snapshot.phase !== "collect" && !rehearsal
           ? "Your driving view opens here. Wait for the race to start."
           : race && !self
-            ? "You’re watching this race. Join the next round."
+            ? snapshot.mode === "kart"
+              ? "You’re watching this race from the side."
+              : "You’re watching this race. Join the next round."
             : "Drive on this screen. Hold A and follow the circuit.";
   return (
     <section
@@ -202,7 +204,9 @@ export function GuestKart({
           <p>
             {self.status === "FINISHED"
               ? "You made it. Take your hands off the wheel."
-              : "The race time is up. There’s always the next round."}
+              : snapshot.mode === "kart"
+                ? "The race time is up. Thanks for driving."
+                : "The race time is up. There’s always the next round."}
           </p>
           <p>Watch the stage for the results.</p>
         </motion.div>

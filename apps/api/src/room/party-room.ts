@@ -3898,6 +3898,8 @@ export class PartyRoom extends DurableObject<Env> {
       scoringVersion: room.scoring_version,
       players,
       ...(selfPlayerId ? { selfPlayerId } : {}),
+      // Public: phones and the stage adapt copy and orientation for a kart-only room.
+      ...(readKartLobby(this.ctx.storage.sql) ? { mode: "kart" as const } : {}),
       play,
       cloud: parts.cloud,
       ...(selfPlayerId

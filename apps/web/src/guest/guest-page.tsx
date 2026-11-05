@@ -618,7 +618,11 @@ export function GuestPage({
   if (ranksFresh && tab !== "ranks") badges.ranks = "!";
 
   return (
-    <ControllerRoot allowLandscape={snapshot?.play?.question.kind === "kart"}>
+    <ControllerRoot
+      allowLandscape={
+        snapshot?.play?.question.kind === "kart" || snapshot?.mode === "kart"
+      }
+    >
       <PhoneShell
         nickname={nickname}
         connection={connection}
@@ -772,13 +776,16 @@ export function GuestPage({
                 {snapshot.namesReveal ? (
                   <NameReveal reveal={snapshot.namesReveal} />
                 ) : null}
-                <NameCloud
-                  names={snapshot.cloud}
-                  selfId={session.playerId}
-                  reactions={snapshot.selfReactions}
-                  onReact={onReact}
-                  minRem={0.875}
-                />
+                {/* A kart-only lobby never reveals the name votes, so it does not ask for them. */}
+                {snapshot.mode !== "kart" ? (
+                  <NameCloud
+                    names={snapshot.cloud}
+                    selfId={session.playerId}
+                    reactions={snapshot.selfReactions}
+                    onReact={onReact}
+                    minRem={0.875}
+                  />
+                ) : null}
                 {!rehearsalCredential ? (
                   <DriverPicker
                     gameId={snapshot.gameId}

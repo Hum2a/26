@@ -1041,6 +1041,8 @@ export const lobbySnapshotSchema = z
       .strict()
       .nullable(),
     stageHidden: z.boolean(),
+    /** Public. "kart" for a kart-only lobby; absent for an ordinary party room. */
+    mode: z.enum(["party", "kart"]).optional(),
     finishAfterRound: z.boolean(),
     revealNonce: z.number().int().nonnegative(),
     media: z

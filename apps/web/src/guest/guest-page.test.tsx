@@ -151,3 +151,34 @@ it("reports a refused troll without touching the answer", async () => {
   expect(await screen.findByText("Trolls are closed.")).toBeTruthy();
   expect(socket.submitAnswer).not.toHaveBeenCalled();
 }, 20_000);
+
+it("does not ask for nickname votes in a kart-only lobby", async () => {
+  render(
+    <MemoryRouter>
+      <GuestPage
+        rehearsalSession={{
+          gameId: "ABCDEFGH",
+          playerId,
+          nickname: "Amina",
+          joinCode: "ABCDEF",
+          stateVersion: 2,
+        }}
+        rehearsalCredential={{ playerId, secret: "rehearsal" }}
+      />
+    </MemoryRouter>,
+  );
+  await waitFor(() => expect(openRoomSocket).toHaveBeenCalled());
+  const lobby = {
+    ...ready,
+    phase: "lobby",
+    play: null,
+    cloud: [{ playerId: secondId, nickname: "Sam", likes: 0, dislikes: 0 }],
+  } as unknown as LobbySnapshot;
+  act(() => {
+    options.onConnection("open");
+    options.onSnapshot(lobby);
+  });
+  expect(await screen.findByText("Sam")).toBeTruthy();
+  act(() => options.onSnapshot({ ...lobby, mode: "kart" } as LobbySnapshot));
+  await waitFor(() => expect(screen.queryByText("Sam")).toBeNull());
+}, 20_000);
