@@ -40,6 +40,12 @@ export function resolvePublicOrigin(
   }
 }
 
+/** Seconds a signed session cookie may answer for the database. */
+export const adminSessionCacheSeconds = 120;
+export const adminSessionOptions = {
+  cookieCache: { enabled: true, maxAge: adminSessionCacheSeconds },
+} as const;
+
 export function createAuth(
   env: AuthBindings,
   input: { origin: string; database: AppDatabase; email: EmailSender },
@@ -60,6 +66,11 @@ export function createAuth(
     advanced: { useSecureCookies: true },
     emailAndPassword: { enabled: false },
     rateLimit: { enabled: env.APP_ENV !== "local" },
+    // Host commands check the admin session on every Pause or Advance. A short
+    // signed cookie cache answers most of them without a database round trip,
+    // so a slow Neon start cannot stall the live desk. A revoked session stays
+    // valid for at most this long.
+    session: adminSessionOptions,
     database: input.database.auth,
     databaseHooks: {
       user: {
