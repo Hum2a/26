@@ -123,6 +123,8 @@ import { logError } from "../log.ts";
 
 /** How soon a failed alarm tries again. */
 export const alarmRetryMs = 2_000;
+/** How often a socket's delivery counter is written to its attachment. */
+export const deliverySeqPersistEvery = 64;
 import {
   applyReaction,
   cloudRows,
@@ -852,6 +854,9 @@ export class PartyRoom extends DurableObject<Env> {
     return check.ok ? { ok: true } : { ok: false };
   }
 
+  /** In-memory delivery counters; see `send`. */
+  private readonly deliverySeqs = new WeakMap<WebSocket, number>();
+
   override async alarm(): Promise<void> {
     const now = Date.now();
     let raceTickOnly = false;
@@ -865,17 +870,20 @@ export class PartyRoom extends DurableObject<Env> {
       return;
     }
     this.refreshKartIngressClock();
-    try {
-      await settleArchive({
-        storage: this.ctx.storage,
-        env: this.env,
-        now,
-        ...(this.archiveWriterOverride ? { writer: this.archiveWriterOverride } : {}),
-      });
-    } catch (error) {
-      // The archive retries on its own schedule; screens must still update.
-      logError("archive", error);
-    }
+    // A race tick fires five times a second and never makes an archive job
+    // due (that would be another due job), so it skips the archive's queries.
+    if (!raceTickOnly)
+      try {
+        await settleArchive({
+          storage: this.ctx.storage,
+          env: this.env,
+          now,
+          ...(this.archiveWriterOverride ? { writer: this.archiveWriterOverride } : {}),
+        });
+      } catch (error) {
+        // The archive retries on its own schedule; screens must still update.
+        logError("archive", error);
+      }
     if (!raceTickOnly || !this.broadcastKart()) {
       this.broadcast(true);
     }
@@ -4365,11 +4373,19 @@ export class PartyRoom extends DurableObject<Env> {
     if (!attachment) {
       return;
     }
-    const next: SocketAttachment = {
-      ...attachment,
-      deliverySeq: attachment.deliverySeq + 1,
-    };
-    ws.serializeAttachment(next);
+    // Counting in memory: rewriting the attachment on every send cost one
+    // storage write per socket per frame. It is saved every
+    // deliverySeqPersistEvery sends; after hibernation the count resumes past
+    // anything that could have been sent, so it never goes backwards.
+    const counted = this.deliverySeqs.get(ws);
+    const deliverySeq =
+      (counted ??
+        attachment.deliverySeq +
+          (attachment.deliverySeq > 0 ? deliverySeqPersistEvery : 0)) + 1;
+    this.deliverySeqs.set(ws, deliverySeq);
+    const next: SocketAttachment = { ...attachment, deliverySeq };
+    if (counted === undefined || deliverySeq % deliverySeqPersistEvery === 0)
+      ws.serializeAttachment(next);
     const payload =
       message.kind === "ack" && message.error
         ? { ...message, deliverySeq: next.deliverySeq }

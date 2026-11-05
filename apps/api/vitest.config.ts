@@ -85,6 +85,7 @@ export default defineConfig({
             "test/stats-room.spec.ts",
             "test/fun-facts-room.spec.ts",
             "test/archive-room.spec.ts",
+            "test/delivery-seq.spec.ts",
             "test/results-room.spec.ts",
             "test/hardening.spec.ts",
             "test/load.spec.ts",
