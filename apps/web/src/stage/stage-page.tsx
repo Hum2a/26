@@ -1,3 +1,4 @@
+import { phaseLabel } from "../live/phase-label";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
@@ -16,6 +17,24 @@ import { StageWall } from "./wall/stage-wall";
 import { usePreloadQuestion } from "../play/preload";
 import "./projector.css";
 
+/** Remembers, for this tab only, that it was presenting a room. */
+const presentingKey = "26-stage-presenting";
+function readPresenting(): string | null {
+  try {
+    return sessionStorage.getItem(presentingKey);
+  } catch {
+    return null;
+  }
+}
+function writePresenting(joinCode: string | null) {
+  try {
+    if (joinCode) sessionStorage.setItem(presentingKey, joinCode);
+    else sessionStorage.removeItem(presentingKey);
+  } catch {
+    // Storage can be unavailable; a reload then returns to setup as before.
+  }
+}
+
 export function StagePage() {
   const [params, setParams] = useSearchParams();
   const [code, setCode] = useState(params.get("code") ?? "");
@@ -29,7 +48,12 @@ export function StagePage() {
   const [accessLost, setAccessLost] = useState(false);
   const [connectionAttempt, setConnectionAttempt] = useState(0);
   const [presenting, setPresenting] = useState(false);
+  // Full screen can drop by accident (a browser Escape, a display change).
+  // The show stays on screen with a hint; setup needs a deliberate Escape.
+  const [fullscreenLost, setFullscreenLost] = useState(false);
   const presentButton = useRef<HTMLButtonElement>(null);
+  // After a reload mid-show, reconnect and present again without a setup visit.
+  const resume = useRef(false);
   const wasPresenting = useRef(false);
   const show = useStageShow();
   usePreloadQuestion(snapshot, "stage");
@@ -98,24 +122,41 @@ export function StagePage() {
   }, [rehearsalCode]);
   function setup() {
     setPresenting(false);
+    setFullscreenLost(false);
+    writePresenting(null);
     exitStageFullscreen();
   }
+  useEffect(() => {
+    if (presenting && snapshot?.joinCode) writePresenting(snapshot.joinCode);
+  }, [presenting, snapshot?.joinCode]);
+  useEffect(() => {
+    if (resume.current && connected && snapshot) {
+      resume.current = false;
+      setPresenting(true);
+    }
+  }, [connected, snapshot]);
+  useEffect(() => {
+    if (!fullscreenLost) return;
+    const timer = window.setTimeout(() => setFullscreenLost(false), 8_000);
+    return () => window.clearTimeout(timer);
+  }, [fullscreenLost]);
   useEffect(() => {
     if (!presenting) return;
     let wasFullscreen = Boolean(document.fullscreenElement);
     function changed() {
-      if (document.fullscreenElement) wasFullscreen = true;
-      else if (wasFullscreen) setPresenting(false);
+      if (document.fullscreenElement) {
+        wasFullscreen = true;
+        setFullscreenLost(false);
+      } else if (wasFullscreen) setFullscreenLost(true);
     }
     document.addEventListener("fullscreenchange", changed);
     return () => document.removeEventListener("fullscreenchange", changed);
   }, [presenting]);
-  async function connect(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function connectTo(joinCode: string) {
     if (busy) return;
     setBusy(true);
     try {
-      const found = await lookupStage(code.trim().toUpperCase());
+      const found = await lookupStage(joinCode.trim().toUpperCase());
       if ("error" in found) {
         setNotice(found.error);
         return;
@@ -140,6 +181,21 @@ export function StagePage() {
       setBusy(false);
     }
   }
+  async function connect(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await connectTo(code);
+  }
+  useEffect(() => {
+    const remembered = readPresenting();
+    const linked = params.get("code")?.trim().toUpperCase();
+    if (remembered && linked && remembered === linked && !params.get("rehearsal")) {
+      resume.current = true;
+      const timer = window.setTimeout(() => void connectTo(linked), 0);
+      return () => window.clearTimeout(timer);
+    }
+    // Only on first load: a remembered presentation resumes once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <div className={presenting ? "projector-page is-presenting" : "projector-page"}>
       {presenting && snapshot ? (
@@ -150,6 +206,21 @@ export function StagePage() {
             connected={connected}
             onSetup={setup}
           />
+          <AnimatePresence>
+            {fullscreenLost ? (
+              <motion.p
+                key="fullscreen-hint"
+                className="projector-fullscreen-hint"
+                role="status"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                Full screen closed · F to return · Escape for setup
+              </motion.p>
+            ) : null}
+          </AnimatePresence>
           {snapshot.wall && displayEnabled ? (
             <StageWall
               wall={snapshot.wall}
@@ -206,8 +277,8 @@ export function StagePage() {
                 </Button>
                 {snapshot ? (
                   <p role="status">
-                    {snapshot.joinCode} · {snapshot.phase} · {snapshot.players.length}{" "}
-                    players ·{" "}
+                    {snapshot.joinCode} · {phaseLabel(snapshot.phase)} ·{" "}
+                    {snapshot.players.length} players ·{" "}
                     {connected ? "Connected" : "Waiting for the room connection"}
                   </p>
                 ) : (

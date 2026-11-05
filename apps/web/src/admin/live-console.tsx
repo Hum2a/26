@@ -1,3 +1,4 @@
+import { phaseLabel } from "../live/phase-label";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import type { RoomPhaseName } from "@26/shared";
@@ -349,7 +350,7 @@ export function LiveConsole() {
           <section className="admin-round" aria-label="Current question">
             <div className="admin-round-top">
               <p className="entry-eyebrow">
-                {phase}
+                {phaseLabel(phase)}
                 {snapshot.paused ? " · paused" : ""}
                 {snapshot.held ? " · waiting for control" : ""}
               </p>
