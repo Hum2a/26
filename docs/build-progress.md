@@ -5034,3 +5034,31 @@ Launched SEQUENTIAL root-only full rerun phase4-serial-full-unit.log, no browser
 **Not verified:** physical phones and real venue Wi-Fi latency, prediction quality during ramps/flight and oil hits (corrected by the next server frame), battery and heat at 60 fps.
 
 **Next:** kart-evolution Phase 4 (optical suite, live host look controls, full gate), then Phases 5–10.
+
+
+## Stage A — party-critical correctness — 2026-11-05
+
+**Status:** done on branch `kart-mobile-multiplayer`, except the projector pairing code (A8.6), carried to Stage C. Plan: `/root/.claude/plans/glimmering-knitting-thacker.md` (options-first master plan written for an autonomous run; every choice that would need Humza is a switch).
+
+**What changed**
+- **Landscape kart states** (`7901f38`): `GuestKart` layouts `grid`/`race`/`finish`/`watch`; race notices (grid slot, paused, connection lost, returning) live in `.kart-race-status`, visible over the full-screen view. Fixes a regression from `4075b77` that hid them.
+- **Trolls never block answers** (`586c185`): separate troll request and pending state in `guest/guest-page.tsx`.
+- **Polls are just for fun** (`14388a0`): `awardsPoints()` in `multiple-choice.ts`; `selfAward` is null for rounds that cannot score; phone shows "Just for fun"; Ranks no longer repeats the previous round's points. Adds `npm run safe-env -- <cmd>` (`scripts/test-safe-env.mjs`), which blanks `DATABASE_URL` in `apps/api/.dev.vars` for a command and always restores it.
+- **Live desk misclicks** (`c6659f0`): every start (birthday, kart, demo) confirms; the demo start is labelled as a rehearsal alternative; bots are refused in a room running the birthday script unless it is a rehearsal room (`liveBirthdayGame`).
+- **Kart driving feel** (`d9d49b0`, `7db8d39`): one receipted `kart-setting` host command and `packages/shared/src/kart-settings.ts`; settings `prediction` (off/on/conservative), `glide`, `steering` (strip/slider/fixed-centre pad), `frameCap` (30/60/auto), `countdown` (3-2-1-GO/none). Room default in `round_state` `__kart/settings`, copied into new races; public `race.settings`; control-only 20-entry history; Admin Live controls → Driving feel. Prediction keeps a pedal held as a race begins.
+- **Race countdown** (`7db8d39`): `kart/countdown.ts`, `KartCountdown` on phones and the stage, 3-2-1 over the last three seconds of the prompt then GO, from the room's deadline; no rule change. The versioned in-collect "grid hold" option is deferred to Phase 6 (F6) because it changes race rules and question versions.
+- **Kart-only rooms** (`31a792c`): public `mode: "kart"` on snapshots; landscape lobby, hidden nickname cloud, race wording.
+- **Projector** (`c30ca99`): dropped full screen keeps presenting with a hint (Escape still opens setup); reload mid-show reconnects and presents; setup button fades when idle; plain phase labels (`live/phase-label.ts`). The runbook's D/? stage shortcuts do not exist by design (a test forbids operator diagnostics on the projector); runbook correction is in Stage B.
+- **Server** (`cf4d284`, `49e7071`, `9e17545`, `196fe30`, `a1e6325`, `0bafae6`): production no longer requires `EMAIL_TEST_RECIPIENT` (the secret already on the production Worker must be deleted once — see `docs/deployment.md`); failed alarms re-arm via `scheduler.rearmAfterFailure`; archive failures no longer block broadcasts; redacted JSON logs (`apps/api/src/log.ts`) and Workers Logs enabled for staging/production; archive attempts close their Neon connection; room JSON bodies capped at 64 KB; socket size measured in UTF-8 bytes; Better Auth session cookie cache (2 minutes) so host commands rarely touch Neon; Resend sends and Neon connections time out after 10 s; control credentials last 12 h and projector credentials 14 h (a 15-minute control credential made host commands fail mid-show).
+- **80-racer cost** (`5c16608`): delivery counters kept in memory and saved every 64 sends; race-tick-only alarms skip archive queries.
+
+**Checks (all run, all passed)**
+- Root `npm run test:unit`: 143 files / 573 tests. `npm run typecheck`: passed.
+- Full API suite (`npm run safe-env -- npm run test -w @26/api`): 105 files / 548 tests — the first recorded full pass (the last full run on record was 166 tests in September).
+- Script tests: 29 passed.
+- Browser (dev config, safe env): `kart-lobby.spec` (landscape grid/pause notices, natural 3-2-1-GO countdown on phone and stage), `kart.spec`, `birthday-pack.spec`, `shells.spec` passed. `admin-live-controls.spec` fails on its Players-page horizontal-overflow check and fails identically without these changes (pre-existing, Stage B). `quiz.spec` still stops before the podium (pre-existing, Stage B).
+- Load (`npm run safe-env -- npm run load:realtime -w @26/api`, local emulator, not production): ring track 10/25/50/75/100 racers → stage 5/4.8/4.8/4.7/4.5 updates/s, p95 gap 205/210/210/240/260 ms; Mario circuit 80 racers → 4.7 updates/s, p95 260 ms (previous record 2.5/s, 536 ms).
+
+**Not verified:** physical phones, projector, venue Wi-Fi, staging or production. Nothing was deployed.
+
+**Next:** Stage B — release-candidate tooling for the birthday pack, B7/B8 suite fixes (quiz podium, Players overflow), release-script safety, lint/format clean-up, runbook and docs truth pass.
