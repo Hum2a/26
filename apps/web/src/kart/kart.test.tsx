@@ -426,3 +426,41 @@ it("marks only an active racer for the full-screen landscape race layout", () =>
   );
   expect(phone().getAttribute("data-layout")).toBeNull();
 });
+
+it("sends a control change at once when the room's gap allows, merging rapid changes", () => {
+  vi.useFakeTimers();
+  const send = vi.fn();
+  const race = projectKartRace(
+    createKartRace("instant", [{ playerId: "guest", name: "Stand-in driver" }]),
+    "guest",
+    100,
+  );
+  const view = renderHook(() => useKartSocket(race, true, send));
+  expect(send).toHaveBeenCalledTimes(1);
+  // Within the 90 ms gap: held back, then sent once with the latest controls.
+  act(() => view.result.current({ ...kartNeutral, gas: true }));
+  act(() => view.result.current({ ...kartNeutral, gas: true, steer: -1 }));
+  expect(send).toHaveBeenCalledTimes(1);
+  act(() => vi.advanceTimersByTime(90));
+  expect(send).toHaveBeenCalledTimes(2);
+  expect(send.mock.lastCall![0]).toMatchObject({ gas: true, steer: -1 });
+  // After the gap: straight away, without waiting for the heartbeat.
+  act(() => vi.advanceTimersByTime(95));
+  const before = send.mock.calls.length;
+  act(() => view.result.current({ ...kartNeutral, brake: true }));
+  expect(send).toHaveBeenCalledTimes(before + 1);
+  expect(send.mock.lastCall![0]).toMatchObject({ brake: true, gas: false });
+  // Unchanged controls are not re-sent outside the heartbeat.
+  act(() => view.result.current({ ...kartNeutral, brake: true }));
+  expect(send).toHaveBeenCalledTimes(before + 1);
+  // Consecutive sends never arrive closer than the room's 80 ms rule.
+  const times: number[] = [];
+  send.mockImplementation(() => times.push(Date.now()));
+  for (let i = 0; i < 20; i++) {
+    act(() => view.result.current({ ...kartNeutral, steer: i % 2 ? 1 : -1 }));
+    act(() => vi.advanceTimersByTime(17));
+  }
+  for (let i = 1; i < times.length; i++)
+    expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(90);
+  view.unmount();
+});

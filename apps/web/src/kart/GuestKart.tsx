@@ -1,12 +1,15 @@
 import { motion } from "motion/react";
 import { usePrefersReducedMotion } from "../anim/use-reduced-motion";
-import type { LobbySnapshot, KartInput } from "@26/shared";
+import type { LobbySnapshot, KartInput, KartControls } from "@26/shared";
 import { KartDriverView } from "./KartDriverView";
 import { TouchController } from "./TouchController";
 import { useKartSocket } from "./useKartSocket";
 import { PowerUpControl } from "./PowerUpControl";
 import { Button } from "../ui/primitives";
 import { DriftGauge } from "./DriftGauge";
+import { useState } from "react";
+import { kartNeutral } from "@26/shared";
+import { createSelfPrediction } from "./self-prediction";
 
 export function GuestKart({
   snapshot,
@@ -41,7 +44,14 @@ export function GuestKart({
   const complete = self && self.status !== "RACING";
   const open =
     snapshot.phase === "collect" && !snapshot.paused && !snapshot.held && connected;
-  const change = useKartSocket(race, open && !recoveryPending, onInput);
+  const send = useKartSocket(race, open && !recoveryPending, onInput);
+  // Draws this phone's kart from its own controls straight away; the room
+  // still decides where the kart really is and corrects the drawing.
+  const [prediction] = useState(createSelfPrediction);
+  const change = (value: KartControls) => {
+    prediction.input(open && !recoveryPending ? value : kartNeutral, performance.now());
+    send(value);
+  };
   const rehearsal = !onInput && !race;
   const instruction = !connected
     ? "Connection lost — controls released"
@@ -108,7 +118,12 @@ export function GuestKart({
         </div>
       ) : null}
       {race && self && !complete ? (
-        <KartDriverView race={race} reducedMotion={reduced} paused={!open} />
+        <KartDriverView
+          race={race}
+          reducedMotion={reduced}
+          paused={!open}
+          prediction={onInput && !recoveryPending ? prediction : undefined}
+        />
       ) : null}
       {!complete ? (
         <TouchController

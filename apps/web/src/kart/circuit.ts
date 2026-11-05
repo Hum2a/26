@@ -371,6 +371,7 @@ export function createCircuit(
   let effectTime = 0,
     effectRaceId: string | undefined;
   const poses = new Map<string, KartPose>();
+  let predictedPlayerId: string | undefined;
   const travel = new Map<string, number>();
   const featurePoses = new Map<string, { x: number; z: number }>();
   const labels = new Map<string, THREE.Sprite>();
@@ -458,7 +459,16 @@ export function createCircuit(
     for (let i = 0; i < drivers.length; i++) {
       const driver = drivers[i]!,
         previous = poses.get(driver.playerId),
-        pose = smoothKartPose(previous ?? driver, driver, dt, reduced);
+        // A predicted kart is already smooth; easing it again would add lag.
+        pose =
+          driver.playerId === predictedPlayerId
+            ? {
+                x: driver.x,
+                z: driver.z,
+                heading: driver.heading,
+                ...(driver.height !== undefined ? { height: driver.height } : {}),
+              }
+            : smoothKartPose(previous ?? driver, driver, dt, reduced);
       poses.set(driver.playerId, pose);
       const height = pose.height ?? 0;
       const { x, z, heading } = pose,
@@ -724,6 +734,10 @@ export function createCircuit(
       vfxPool?.reset();
     },
     pose: (playerId: string) => poses.get(playerId),
+    /** The kart drawn from local prediction, which skips pose smoothing. */
+    setPredicted(playerId: string | undefined) {
+      predictedPlayerId = playerId;
+    },
     setDrivers: rig.setDrivers,
     driverCounts: rig.counts,
     renderStats: () => ({ drivers: poses.size, detailed: detailedVisible }),
