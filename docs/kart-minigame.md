@@ -263,3 +263,13 @@ To rehearse without guests, open **Admin → Kart → Drive → Course set-up**.
 then choose High or Low. This exercises the real solo renderer and shared
 policy without inventing live racers. Drive to check frame health on the actual
 device. The control does not reset the kart; course-edit controls still do.
+
+## Expanded kart items — locally verified
+
+Before a race, open **Admin → room → Live controls → Kart items**. Choose the allowed expanded items and save. Empty selection gives no box pickups. **Use original items** restores the existing turbo/shield/oil pool. The current race freezes its choice when collection starts, including during pauses; after racing, changes apply to the next start. Older tabs are explicitly asked to refresh before expanded gameplay.
+
+Treats give the holder a 600ms turbo and drop nothing. Tennis balls bounce, bombs drop behind with a 1.5-second fuse, and homing bolts select an eligible racer ahead. With nobody ahead, homing gives the same small personal boost. Shields absorb one item hit; item use changes driving, never directly steals quiz points.
+
+Live controls show held items by player, active counts and recent accepted item history. **Stop item spawning** stops boxes and new oil/projectile use while retaining held inventory; held boosts/shields still work. **Clear track items** removes current projectiles/oil. **Resume item spawning** reopens pickups and hazards. Use the normal Pause/Resume for the entire race clock. Rehearse without guests in **Admin → Kart → Items sandbox**, including personal Treats, shields, fuses, height, full pools and restore/clear/stop. No room or score is changed by that sandbox. Mandatory hazards stay visible when decorative effects are off or graphics are Low.
+
+No deployment or physical-device certification is implied by this local implementation note.

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { KartCompletion, KartRaceView } from "@26/shared";
 import { KartStageView } from "./KartStageView";
 import { KartLeaderboard } from "./KartLeaderboard";
+import { KartRecapPanel } from "./KartRecapPanel";
 import "./kart.css";
 
 /** Only public, authenticated room snapshots enter the renderer. There is no upstream menu or external service. */
@@ -58,7 +59,21 @@ export default function KartGameWrapper({
       </div>
       <div className="kart-stage-layout">
         <div className="kart-stage-view">
-          <KartStageView race={race} paused={paused} />
+          {race.ended ? (
+            <KartRecapPanel
+              recap={
+                race.presentation && race.presentation.version !== 2
+                  ? race.presentation.recap
+                  : undefined
+              }
+              stage
+              names={Object.fromEntries(
+                race.leaderboard.map((row) => [row.playerId, row.name]),
+              )}
+            />
+          ) : (
+            <KartStageView race={race} paused={paused} />
+          )}
           {paused ? <p className="kart-paused">PAUSED</p> : null}
         </div>
         <KartLeaderboard key={race.raceId} race={race} paused={paused} />

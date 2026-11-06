@@ -3,8 +3,10 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { DrivingBody, KartLookPreset } from "@26/shared";
 import { importedGroundAt } from "../../../packages/shared/src/kart-track";
-import { createNativeKartLook } from "../../web/src/kart/look-renderer";
-import type { EnvironmentFrame } from "../../web/src/kart/look-environment";
+import {
+  createNativeKartLook,
+  type KartLookFrame,
+} from "../../web/src/kart/look-renderer";
 import type { GraphicsTier } from "../../web/src/kart/graphics";
 import { useGraphicsTier } from "../../web/src/kart/graphics-preferences";
 import { themes, DEFAULT_THEME_ID } from "../../web/src/theme/themes";
@@ -15,7 +17,7 @@ type SoloLookRenderer = Omit<ReturnType<typeof createNativeKartLook>, "render"> 
     scene: THREE.Scene,
     camera: THREE.Camera,
     tier: GraphicsTier,
-    frame?: EnvironmentFrame,
+    frame?: KartLookFrame,
   ): void;
 };
 const nativeLook = createNativeKartLook as unknown as (
@@ -69,6 +71,14 @@ export function SoloLook({
         "lookReflection",
         "lookShadows",
         "lookBuffers",
+        "lookDepthTextures",
+        "lookTextureSamples",
+        "lookWind",
+        "lookChromatic",
+        "lookLensDirt",
+        "lookBloom",
+        "lookAo",
+        "lookTiltShift",
       ])
         delete gl.domElement.dataset[key];
     };
@@ -93,6 +103,8 @@ export function SoloLook({
       dt,
       paused: state.soloPaused,
       reducedMotion: reduced,
+      speed: Math.hypot(d.vx, d.vz),
+      boost: d.boostMs > 0 ? 1 : 0,
       focus: [d.x, (ground?.y ?? -1.6) + (d.height ?? 0), d.z],
     });
     const stats = renderer.stats(),
@@ -106,6 +118,19 @@ export function SoloLook({
     canvas.dataset.lookSky = String(stats.environment?.sky ?? false);
     canvas.dataset.lookReflection = String(stats.environment?.reflection ?? false);
     canvas.dataset.lookShadows = String(stats.environment?.shadows ?? false);
+    canvas.dataset.lookDepthTextures = String(stats.depthTextures);
+    canvas.dataset.lookTextureSamples = String(stats.textureSamples);
+    for (const key of [
+      "wind",
+      "chromatic",
+      "lensDirt",
+      "bloom",
+      "ao",
+      "tiltShift",
+    ] as const)
+      canvas.dataset[`look${key[0]!.toUpperCase()}${key.slice(1)}`] = String(
+        stats.optics[key],
+      );
     if (!state.soloLookReady) useGameStore.setState({ soloLookReady: true });
   }, 1);
   return null;

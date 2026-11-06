@@ -17,7 +17,7 @@ export function TrackItems() {
       powers = state.soloPowers;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let count = 0;
-    for (const box of soloItemBoxes) {
+    for (const box of state.soloItemsEnabled ? soloItemBoxes : []) {
       if ((powers.cooldowns[box.id] ?? 0) > now) continue;
       dummy.current.position.set(
         box.x,

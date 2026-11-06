@@ -1,4 +1,10 @@
-import { createKartPowers, kartNeutral, type KartControls } from "@26/shared";
+import {
+  createKartPowers,
+  createKartTrial,
+  kartHandlingSchema,
+  kartNeutral,
+  type KartControls,
+} from "@26/shared";
 import { useGameStore } from "./upstream/store.js";
 
 // This is upstream's ephemeral solo store. No room connection or score submission exists.
@@ -9,6 +15,7 @@ export function pause() {
   useGameStore.setState({ soloPaused: true, soloControls: { ...kartNeutral } });
 }
 export function resume() {
+  if (useGameStore.getState().soloTrial?.finished) return;
   useGameStore.setState({ soloPaused: false, soloControls: { ...kartNeutral } });
 }
 export function recover() {
@@ -24,11 +31,26 @@ export function useItem() {
   }));
 }
 export function reset() {
+  const current = useGameStore.getState();
+  const trial =
+    current.soloMode === "free"
+      ? null
+      : createKartTrial({
+          version: 1,
+          track: "mario-circuit-v1",
+          physics: "arcade-v2",
+          handling: kartHandlingSchema.parse(current.soloHandling),
+          laps: current.soloMode === "trial-3" ? 3 : 1,
+          assists: "none",
+          items: current.soloItemsEnabled,
+          course: current.soloCourseSettings,
+        });
   useGameStore.setState((state: { soloReset: number }) => ({
     soloReset: state.soloReset + 1,
     soloPowers: createKartPowers(),
     soloOils: [],
     soloElapsed: 0,
+    soloTrial: trial,
     soloHeight: 0,
     soloVerticalSpeed: 0,
     soloChargeMs: 0,
@@ -46,5 +68,6 @@ export function reset() {
     soloRecoveryMessage: "",
     soloSurface: "road",
     soloContact: false,
+    soloStunMs: 0,
   }));
 }

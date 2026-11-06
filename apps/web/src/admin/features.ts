@@ -76,9 +76,9 @@ export const adminFeatures: readonly AdminFeature[] = [
     scope: "global",
     path: "kart",
     summary:
-      "Check kart files, rehearse vehicles, stage cameras, effects and the early Look bench, create a kart-only lobby and drive the real engine.",
+      "Check kart files, rehearse race results, starts, time trials, vehicles, controls, collisions, stage cameras, effects and lighting, create a kart-only lobby and drive the real engine.",
     rehearsal:
-      "Rehearse 80 stand-ins in real phone/stage renderers, drivers/faces in solo and finite moving effects plus isolated grading/light previews with validated presets and local resource counts; verify downloads, or create a kart lobby and join from a private second tab.",
+      "Rehearse 80 stand-ins, vehicles, lighting and effects in real renderers; test all input methods and pause/release in Controls. In Collisions compare original slide and arcade bounce with the real swept solver. In Items sandbox launch actual bounded tennis/bomb/homing simulations against parked stand-ins; try shields, airborne/finished targets, fuses, full pools, personal Treats and clear/stop controls without a room; run the finite moving two-racer script through actual driving. Choose and freeze allowed room items before racing, inspect private held slots/history and stop spawning or clear hazards in Live controls. In Tracks & modes inspect installed geometry/mode availability and select any of80 actual starting/recovery slots on both courses, with real maps and optional3D preview. In Race results rehearse accepted splits, recovery, timeout, early end and older race fallbacks on the real phone, stage and host. In Race start rehearse actual loading, interruption, map fallback, retry and disconnected countdown; inspect heading, next sectors and the optional small map with labelled circuit/ring samples. In Time trials rehearse waiting, pause, invalid, assisted and split results, then drive an actual one-/three-lap trial and manage local opt-in records. Choose/freeze handling before a room race, inspect private impact history, or try the same profiles in solo Course set-up.",
     owns: ["apps/web/src/kart"],
   },
   {

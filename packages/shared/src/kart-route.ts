@@ -64,6 +64,20 @@ const offsets = lengths.reduce<number[]>(
   [0],
 );
 export const importedLapLength = offsets.at(-1)!;
+/** Public centreline geometry for navigation only; does not award progress. */
+export function importedTrackPoint(along: number) {
+  if (!Number.isFinite(along)) throw new RangeError("Route distance must be finite");
+  const wrapped = ((along % importedLapLength) + importedLapLength) % importedLapLength;
+  const index = lengths.findIndex((length, i) => wrapped < offsets[i]! + length);
+  const a = importedRoute[index]!,
+    b = importedRoute[index + 1]!;
+  const t = (wrapped - offsets[index]!) / lengths[index]!;
+  return {
+    x: a[0] + (b[0] - a[0]) * t,
+    z: a[1] + (b[1] - a[1]) * t,
+    heading: Math.atan2(b[1] - a[1], b[0] - a[0]),
+  };
+}
 export function importedTrackProgress(x: number, z: number) {
   let best = { distance: Infinity, along: 0, heading: -Math.PI / 2, x: 0, z: 0 };
   for (let i = 0; i < lengths.length; i++) {

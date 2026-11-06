@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
@@ -15,6 +16,8 @@ import {
   resolveReleaseTargets,
   workerRelease,
   inDeployFreeze,
+  assertDeployAllowed,
+  releaseCheckSteps,
 } from "./release-support.ts";
 
 const wranglerText = readFileSync(
@@ -157,4 +160,84 @@ test("production deploys are frozen across the party weekend only", () => {
   assert.equal(inDeployFreeze(Date.parse("2026-11-21T19:30:00Z")), true);
   assert.equal(inDeployFreeze(Date.parse("2026-11-22T11:59:59Z")), true);
   assert.equal(inDeployFreeze(Date.parse("2026-11-22T12:00:00Z")), false);
+});
+
+test("direct production and combined deploys require confirmation before remote work", () => {
+  const options = { dryRun: false, confirmProduction: false, overrideFreeze: false };
+  const beforeParty = Date.parse("2026-11-05T19:00:00Z");
+  assertDeployAllowed(["staging"], options, beforeParty);
+  for (const targets of [["production"], ["staging", "production"]] as const) {
+    assert.throws(
+      () => assertDeployAllowed(targets, options, beforeParty),
+      /confirm-production/,
+    );
+    assertDeployAllowed(targets, { ...options, confirmProduction: true }, beforeParty);
+  }
+});
+
+test("the common production freeze allows an explicit emergency override", () => {
+  const duringParty = Date.parse("2026-11-21T19:00:00Z");
+  const options = { dryRun: false, confirmProduction: true, overrideFreeze: false };
+  assert.throws(
+    () => assertDeployAllowed(["production"], options, duringParty),
+    /frozen/,
+  );
+  assertDeployAllowed(
+    ["production"],
+    { ...options, overrideFreeze: true },
+    duringParty,
+  );
+  assert.throws(
+    () =>
+      assertDeployAllowed(
+        ["production"],
+        { ...options, confirmProduction: false, overrideFreeze: true },
+        duringParty,
+      ),
+    /confirm-production/,
+  );
+});
+
+test("non-deploying packaging dry runs need no production confirmation or freeze override", () => {
+  assertDeployAllowed(
+    ["staging", "production"],
+    { dryRun: true, confirmProduction: false, overrideFreeze: false },
+    Date.parse("2026-11-21T19:00:00Z"),
+  );
+});
+
+test("shared release checks run the normal gates once and opt into isolated API checks", () => {
+  assert.deepEqual(releaseCheckSteps(false), [
+    ["run", "typecheck"],
+    ["run", "content:check"],
+    ["run", "test:unit"],
+    ["run", "lint"],
+    ["run", "test:release"],
+  ]);
+  assert.deepEqual(releaseCheckSteps(true), [
+    ...releaseCheckSteps(false),
+    ["run", "test", "-w", "@26/api"],
+  ]);
+});
+
+test("direct deploy and full commands refuse unconfirmed production before doing work", () => {
+  for (const [command, environment] of [
+    ["deploy", "production"],
+    ["full", "both"],
+  ]) {
+    const result = spawnSync(
+      process.execPath,
+      [
+        "--experimental-strip-types",
+        "scripts/release.ts",
+        command,
+        "--env",
+        environment,
+      ],
+      { cwd: projectRoot(), encoding: "utf8", shell: false, windowsHide: true },
+    );
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /needs --confirm-production/);
+    assert.equal(result.stdout, "");
+  }
 });

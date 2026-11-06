@@ -62,6 +62,7 @@
     "deploy:prod:full": "node --experimental-strip-types scripts/release.ts full --env production",
     "deploy:both:full": "node --experimental-strip-types scripts/release.ts full --env both",
     "email:preview": "node scripts/email-preview.mjs",
+    "presmoke:rehearsal": "npm run build -w @26/kart-solo",
     "smoke:rehearsal": "playwright test --config playwright.rehearsal.config.ts",
     "load:kart-baseline": "node scripts/kart-baseline.mjs",
     "perf:kart-render": "node scripts/kart-render-baseline.mjs"

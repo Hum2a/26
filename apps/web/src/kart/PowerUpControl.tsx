@@ -32,8 +32,16 @@ export function PowerUpControl({
             ? item === "turbo"
               ? "A short burst of speed — hold A"
               : item === "shield"
-                ? "Blocks one oil slick for 5 seconds"
-                : "Drop oil behind you to slow a kart"
+                ? "Blocks one item hit for 5 seconds"
+                : item === "oil"
+                  ? "Drop oil behind you to slow a kart"
+                  : item === "tennis"
+                    ? "Throw a bouncing tennis ball ahead"
+                    : item === "bomb"
+                      ? "Drop a bomb — move away before its fuse ends"
+                      : item === "homing"
+                        ? "Targets a racer ahead; gives a small boost if nobody is ahead"
+                        : "A personal 0.6-second boost — hold A"
             : "Drive through a glowing item box to collect an item")}
       </p>
     </div>

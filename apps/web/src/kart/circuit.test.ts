@@ -22,15 +22,83 @@ it("uses versioned plain pose/effect descriptions without cross-bundle Three obj
 });
 
 afterEach(() => vi.restoreAllMocks());
+it("renders bounded authoritative item hazards even with decoration and detail off, then clears stale poses", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((role) => [
+      role,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const race = projectKartRace(
+    createKartRace("items", [], {
+      itemRules: { version: 2, allowed: ["tennis", "bomb", "homing"] },
+    }),
+    null,
+    0,
+  );
+  if (race.presentation?.version !== 3) throw new Error("Expanded projection required");
+  race.presentation.items.projectiles = ["tennis", "bomb", "homing"].map(
+    (kind, index) => ({
+      id: `projectile-${index + 1}`,
+      kind: kind as "tennis" | "bomb" | "homing",
+      x: 42,
+      z: index * 5,
+      height: 0,
+      createdAt: 0,
+    }),
+  );
+  const circuit = createCircuit(palette, false, undefined, "party-ring-v1");
+  circuit.update(race, 0.02, false, 1, 0, 0, false);
+  for (const kind of ["tennis", "bomb", "homing"])
+    expect(
+      (circuit.scene.getObjectByName(`kart-projectile-${kind}`) as THREE.InstancedMesh)
+        .count,
+    ).toBe(1);
+  const mesh = circuit.scene.getObjectByName(
+    "kart-projectile-tennis",
+  ) as THREE.InstancedMesh;
+  const matrix = new THREE.Matrix4();
+  mesh.getMatrixAt(0, matrix);
+  expect(new THREE.Vector3().setFromMatrixPosition(matrix).x).toBe(42);
+  race.presentation.items.projectiles = [];
+  circuit.update(race, 0.02, true, 1, 0, 0, false);
+  for (const kind of ["tennis", "bomb", "homing"])
+    expect(
+      (circuit.scene.getObjectByName(`kart-projectile-${kind}`) as THREE.InstancedMesh)
+        .count,
+    ).toBe(0);
+  circuit.dispose();
+});
 it("renders the finite impact script as a fresh contact spark burst", () => {
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   vi.spyOn(GLTFLoader.prototype, "load").mockImplementation(() => {});
-  const palette = Object.fromEntries(["ground", "road", "accent", "highlight", "ink", "muted"].map(role => [role, new THREE.Color()])) as Parameters<typeof createCircuit>[0];
-  const source = projectKartRace(createKartRace("sample", [{playerId: "p", name: "Stand-in"}], {trackId:"mario-circuit-v1"}), "p", 0);
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((role) => [
+      role,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const source = projectKartRace(
+    createKartRace("sample", [{ playerId: "p", name: "Stand-in" }], {
+      trackId: "mario-circuit-v1",
+    }),
+    "p",
+    0,
+  );
   const circuit = createCircuit(palette, true, "p", "mario-circuit-v1");
   let peak = 0;
   for (let ms = 0; ms < 3500; ms += 50) {
-    circuit.update(vfxRehearsalRace(source,"impact",ms,1), .05, false, 1, 640, 8, false, {preset: defaultKartVfxPreset, tier:"high", paused:false});
+    circuit.update(
+      vfxRehearsalRace(source, "impact", ms, 1),
+      0.05,
+      false,
+      1,
+      640,
+      8,
+      false,
+      { preset: defaultKartVfxPreset, tier: "high", paused: false },
+    );
     peak = Math.max(peak, circuit.vfxStats().byKind?.spark ?? 0);
   }
   expect(peak).toBeGreaterThan(0);

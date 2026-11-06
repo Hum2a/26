@@ -438,7 +438,7 @@ export function openRoomSocket(options: {
     const resume = lastView ? `&since=${encodeURIComponent(lastView)}` : "";
     const current = new WebSocket(
       withClientApiKey(
-        `${protocol}//${location.host}/ws/${options.gameId}?role=${options.role}&patches=1${resume}`,
+        `${protocol}//${location.host}/ws/${options.gameId}?role=${options.role}&patches=1&kartItems=2${resume}`,
       ),
       options.botSession
         ? [`26-bot.${options.botSession.playerId}.${options.botSession.secret}`]

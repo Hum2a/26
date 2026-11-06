@@ -1,5 +1,6 @@
 /** Pure arcade driving and swept-circle contacts. No clocks, browser or rendering APIs. */
 import { stepCourse, type CourseFeature } from "./kart-course.ts";
+import { kartBounceTuning, type KartHandling } from "./kart-handling.ts";
 export type DrivingInput = {
   steer: number;
   gas: boolean;
@@ -27,6 +28,8 @@ export type DrivingBody = {
   driftSide?: number;
   contact: boolean;
   offRoad: boolean;
+  stunMs?: number;
+  impactCooldownMs?: number;
 };
 export type DrivingProfile = {
   /** Reference for steering and drift entry only; never a velocity limit. */
@@ -139,11 +142,15 @@ function sweep(
   return best;
 }
 
+/** Reused by bounded items; exactly the same swept wall geometry as driving. */
+export { sweep as sweepKartWall };
+
 export function moveWithWalls(
   body: DrivingBody,
   seconds: number,
   walls: readonly Wall[],
   radius: number,
+  handling: KartHandling = "slide-v1",
 ): DrivingBody {
   const next = { ...body, contact: false };
   let remaining = seconds;
@@ -173,8 +180,17 @@ export function moveWithWalls(
     next.x += dx * first.t + first.nx * 0.0001;
     next.z += dz * first.t + first.nz * 0.0001;
     const inward = next.vx * first.nx + next.vz * first.nz;
-    next.vx = (next.vx - inward * first.nx) * 0.98;
-    next.vz = (next.vz - inward * first.nz) * 0.98;
+    const rebound = handling === "bounce-v1" ? 1 + kartBounceTuning.restitution : 1;
+    if (
+      handling === "bounce-v1" &&
+      -inward >= kartBounceTuning.minimumImpactSpeed &&
+      (next.impactCooldownMs ?? 0) <= 0
+    ) {
+      next.stunMs = kartBounceTuning.stunMs;
+      next.impactCooldownMs = kartBounceTuning.cooldownMs;
+    }
+    next.vx = (next.vx - rebound * inward * first.nx) * 0.98;
+    next.vz = (next.vz - rebound * inward * first.nz) * 0.98;
     remaining *= 1 - first.t;
   }
   return next;
@@ -190,10 +206,17 @@ export function stepDriving(
   offRoad = false,
   fresh = true,
   features: readonly CourseFeature[] = [],
+  handling: KartHandling = "slide-v1",
 ): DrivingBody {
   if (!Number.isFinite(ms) || ms <= 0 || ms > 20) return body;
   const dt = ms / 1000,
     next = { ...body, offRoad };
+  if (handling === "bounce-v1") {
+    next.stunMs = Math.max(0, (body.stunMs ?? 0) - ms);
+    next.impactCooldownMs = Math.max(0, (body.impactCooldownMs ?? 0) - ms);
+    if ((body.stunMs ?? 0) > 0)
+      input = { steer: 0, gas: false, brake: false, drift: false };
+  }
   const fx = Math.cos(body.heading),
     fz = Math.sin(body.heading);
   const forward = body.vx * fx + body.vz * fz;
@@ -288,7 +311,7 @@ export function stepDriving(
     Math.exp(-(airborne ? 1.2 : drifting ? 2.2 : offRoad ? 7 : 14) * dt);
   next.vx = nx * speed - nz * lateral;
   next.vz = nz * speed + nx * lateral;
-  const moved = moveWithWalls(next, dt, walls, profile.radius);
+  const moved = moveWithWalls(next, dt, walls, profile.radius, handling);
   if (moved.contact) {
     moved.driftMs = 0;
     moved.wasDrifting = false;

@@ -67,6 +67,33 @@ a:focus-visible {
   width: 100%;
   touch-action: manipulation;
 }
+.solo-trial-panel {
+  position: absolute;
+  top: calc(7rem + env(safe-area-inset-top));
+  left: max(0.6rem, env(safe-area-inset-left));
+  width: min(25rem, calc(100% - 7rem));
+  z-index: 5;
+  pointer-events: none;
+  font-size: 0.75rem;
+}
+.solo-trial-panel[data-finished="true"] {
+  top: 5rem;
+  right: 0.6rem;
+  bottom: max(0.6rem, env(safe-area-inset-bottom));
+  width: auto;
+  overflow: auto;
+  pointer-events: auto;
+  z-index: 15;
+}
+.solo-trial-panel[data-finished="true"] .kart-trial-results {
+  max-height: none;
+}
+@media (max-height: 500px) {
+  .solo-trial-panel {
+    top: 5rem;
+    width: min(24rem, calc(100% - 8rem));
+  }
+}
 .solo-world {
   position: absolute;
   inset: 0;
@@ -205,6 +232,17 @@ a:focus-visible {
 .solo-controls .kart-controller-shell {
   max-width: 660px;
   margin: auto;
+}
+.solo-controls .kart-input-settings {
+  position: fixed;
+  z-index: 25;
+  top: max(4.5rem, env(safe-area-inset-top));
+  right: max(0.75rem, env(safe-area-inset-right));
+  width: min(32rem, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 5.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
 }
 .solo-controls .kart-controller {
   min-height: 128px;

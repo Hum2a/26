@@ -2,6 +2,11 @@ import type { RoomPhaseName } from "@26/shared";
 import type { PlayAction } from "../live/room-api";
 
 export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
+  if (action === "kart-item-rules") return "Kart item rules saved for the next start.";
+  if (action === "kart-items-on") return "Kart item spawning resumed.";
+  if (action === "kart-items-off")
+    return "Kart item spawning stopped. Held personal boosts and shields remain usable.";
+  if (action === "kart-items-clear") return "Active kart track items cleared.";
   if (action === "start-kart")
     return "The kart race has started. The starting grid is frozen.";
   if (action === "open-joining")
@@ -28,8 +33,12 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "kart-opponents-on") return "Nearby racers are visible on phones.";
   if (action === "kart-effects-on") return "New kart effects are on.";
   if (action === "kart-effects-off") return "Kart decoration is off.";
+  if (action === "kart-look")
+    return "Kart look updated. Each screen keeps its graphics preference.";
   if (action === "kart-setting")
     return "Kart driving setting saved. Phones pick it up straight away.";
+  if (action === "kart-handling")
+    return "Kart handling saved for the next race. An open starting grid updates before racing.";
   if (action === "kart-opponents-off") return "Nearby racers are hidden on phones.";
   if (action === "kart-stage-map") return "Stage returned to the full-field map.";
   if (action === "kart-stage-overview") return "Stage is showing the 3D overview.";

@@ -10,6 +10,34 @@
   font-weight: 800;
   color: var(--accent);
 }
+.kart-contact-cue {
+  position: fixed;
+  inset: 0;
+  border: 0.3rem solid var(--accent);
+  opacity: 0;
+  z-index: 70;
+  pointer-events: none;
+}
+.kart-contact-settings {
+  min-width: 0;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+.kart-contact-settings label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 44px;
+}
+.kart-contact-settings input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
 .kart-phone-hud {
   display: grid;
   grid-template-columns: minmax(80px, 1fr) 1.3fr;
@@ -297,6 +325,69 @@ body:has(.kart-phone) {
   gap: 0.4rem;
   margin-bottom: 0.6rem;
 }
+.kart-input-settings {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--foreground);
+  margin-block: 0.6rem;
+  max-width: 32rem;
+}
+.kart-input-settings input[type="range"],
+.kart-input-settings button {
+  min-height: 44px;
+}
+.kart-input-settings input[type="range"] {
+  width: 100%;
+}
+.kart-input-settings button,
+.kart-mouse-steering {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 0.6rem;
+  transition:
+    background 0.16s ease,
+    opacity 0.16s ease;
+}
+.kart-mouse-steering {
+  min-height: 70px;
+  background: var(--surface);
+  touch-action: none;
+  user-select: none;
+  margin-block: 0.5rem;
+}
+.kart-mouse-steering[aria-disabled="true"] {
+  opacity: 0.5;
+}
+.kart-mouse-steering:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+.kart-gamepad-status {
+  font-size: 0.75rem;
+  margin-block: 0.25rem;
+}
+@media (orientation: landscape) and (max-height: 32rem) {
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-input-settings {
+    position: absolute;
+    z-index: 9;
+    right: var(--race-edge);
+    top: calc(env(safe-area-inset-top) + 6rem);
+    width: min(26rem, 92vw);
+    max-height: calc(100dvh - 7rem);
+    overflow-y: auto;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-mouse-steering {
+    position: absolute;
+    z-index: 4;
+    left: 28%;
+    right: 28%;
+    top: 40%;
+  }
+}
 .kart-control-options button {
   min-height: 44px;
   padding: 0.4rem 0.6rem;
@@ -480,6 +571,68 @@ body:has(.kart-phone) {
   inset: 0;
   display: grid;
   place-items: center;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    width 160ms ease,
+    height 160ms ease;
+}
+.kart-driver-viewport[data-view="chase"] .kart-driver-map {
+  inset: auto 0.5rem 0.5rem auto;
+  width: min(7rem, 30%);
+  height: min(7rem, calc(100% - 4.5rem));
+  z-index: 2;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--background);
+  opacity: 0;
+}
+.kart-driver-viewport[data-view="chase"][data-inset="true"] .kart-driver-map {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kart-driver-map {
+    transition: opacity 100ms ease;
+  }
+}
+.kart-view-preferences {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.kart-inset-toggle {
+  min-height: 44px;
+  padding: 0.35rem 0.65rem;
+  color: var(--foreground);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+.kart-inset-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.kart-inset-toggle:hover {
+  color: var(--accent);
+}
+@media (orientation: landscape) and (max-height: 32rem) {
+  .kart-phone .kart-inset-toggle {
+    position: absolute;
+    z-index: 4;
+    top: max(0.5rem, env(safe-area-inset-top));
+    right: calc(var(--race-edge, 0.6rem) + 5rem);
+    font-size: 0.7rem;
+  }
+  .kart-phone .kart-driver-viewport[data-view="chase"] .kart-driver-map {
+    inset: max(6rem, calc(env(safe-area-inset-top) + 5.5rem)) auto auto 50%;
+    translate: -50% 0;
+    width: min(5.5rem, 20%);
+    height: min(4.5rem, 20%);
+  }
 }
 .kart-driver-map svg {
   width: 100%;
@@ -506,6 +659,17 @@ body:has(.kart-phone) {
   background: var(--background);
   font-size: 0.8rem;
   padding: 0.5rem;
+}
+.kart-start-preview {
+  position: relative;
+  isolation: isolate;
+}
+.kart-start-preview .kart-countdown {
+  position: absolute;
+  z-index: 2;
+}
+.kart-start-preview .kart-countdown span {
+  font-size: 4rem;
 }
 .kart-view-toggle {
   min-height: 44px;

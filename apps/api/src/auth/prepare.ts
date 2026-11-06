@@ -29,16 +29,20 @@ async function prepareDatabase(
   database: AppDatabase,
   options: { seed: boolean; devInbox: boolean },
 ): Promise<void> {
-  const auth = createAuth(env, {
-    origin: "http://localhost",
-    database,
-    email: {
-      kind: "unconfigured",
-      async send() {
-        throw new Error("Email delivery is not configured.");
+  const auth = createAuth(
+    env,
+    {
+      origin: "http://localhost",
+      database,
+      email: {
+        kind: "unconfigured",
+        async send() {
+          throw new Error("Email delivery is not configured.");
+        },
       },
     },
-  });
+    { preparingLocalDatabase: true },
+  );
   await applyAuthMigrations(auth);
   await applyExtraSchema(database, options.devInbox);
   if (options.seed) {

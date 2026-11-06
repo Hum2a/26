@@ -50,7 +50,11 @@ import {
   changeKartCourse,
   changeKartOpponents,
   changeKartEffects,
+  changeKartLook,
   changeKartSetting,
+  changeKartHandling,
+  changeKartItemRules,
+  changeKartItemsSafety,
   changeKartStage,
 } from "../questions/kart.ts";
 import { changePhotoBias } from "../media/photo-bias.ts";
@@ -65,6 +69,9 @@ export type HostActionInput = {
   action: string;
   botCount?: number;
   kartSetting?: unknown;
+  lookPreset?: unknown;
+  handlingPreset?: unknown;
+  itemRules?: unknown;
   rehearsalConfig?: unknown;
   questionIndex?: number;
   scenario?: unknown;
@@ -176,6 +183,26 @@ export function applyHostAction(
   }
   if (input.action === "kart-setting") {
     changeKartSetting(sql, input.kartSetting, input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (input.action === "kart-handling") {
+    changeKartHandling(sql, input.handlingPreset, input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (input.action === "kart-item-rules") {
+    changeKartItemRules(sql, input.itemRules, input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (["kart-items-on", "kart-items-off", "kart-items-clear"].includes(input.action)) {
+    changeKartItemsSafety(sql, input.action.slice("kart-items-".length), input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (input.action === "kart-look") {
+    changeKartLook(sql, input.lookPreset, input.nowMs);
     touch(sql);
     return {};
   }

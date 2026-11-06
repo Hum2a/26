@@ -20,11 +20,41 @@ import {
   ringItemBoxes,
   soloItemBoxes as importedBoxes,
   kartPowerViewSchema,
+  legacyKartItem,
   type KartPowers,
   type OilSlick,
 } from "./kart-powers.ts";
 import { z } from "zod";
-import { kartPresentationSchema, kartFinishPresentation } from "./kart-events.ts";
+import {
+  allowedKartItems,
+  kartItemRulesSchema,
+  type KartItemRules,
+} from "./kart-item-rules.ts";
+import {
+  createKartProjectiles,
+  copyKartProjectiles,
+  noteKartItemEvent,
+  launchKartProjectile,
+  stepKartProjectiles,
+  clearKartProjectiles,
+  setKartProjectileSpawning,
+  type KartProjectileWorld,
+} from "./kart-projectiles.ts";
+import { selectKartTarget } from "./kart-targeting.ts";
+import { type KartHandling } from "./kart-handling.ts";
+import { advanceKartLap } from "./kart-laps.ts";
+import { kartRaceRecap, type KartEndReason } from "./kart-recap.ts";
+import {
+  kartPresentationSchema,
+  kartFinishPresentation,
+  kartContactPresentation,
+  kartItemsPresentation,
+} from "./kart-events.ts";
+import {
+  appendKartContactHistory,
+  type KartContactHistoryEntry,
+  type KartContactEvent,
+} from "./kart-contacts.ts";
 import { selectNearbyNumbers } from "./kart-nearby.ts";
 import {
   kartSpectatorSchema,
@@ -64,6 +94,27 @@ export const kartInputSchema = kartControlsSchema
   })
   .strict();
 export type KartInput = z.infer<typeof kartInputSchema>;
+/** Optional host presentation choice; absence preserves the legacy renderer. */
+export const kartLookNameSchema = z.enum([
+  "off",
+  "daylight",
+  "warm",
+  "crisp",
+  "cool",
+  "race",
+]);
+export type KartLookName = z.infer<typeof kartLookNameSchema>;
+export const kartLookHistorySchema = z
+  .array(
+    z
+      .object({
+        atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+        preset: kartLookNameSchema,
+      })
+      .strict(),
+  )
+  .max(20);
+export type KartLookHistory = z.infer<typeof kartLookHistorySchema>;
 export const kartDriverSchema = z
   .object({
     playerId: z.string(),
@@ -107,6 +158,7 @@ export const kartRaceSchema = z
     courseEnabled: z.boolean().optional(),
     opponentsEnabled: z.boolean().optional(),
     effectsEnabled: z.boolean().optional(),
+    look: kartLookNameSchema.optional().catch(undefined),
     // Host driving-feel choices; absent means the defaults in kart-settings.ts.
     settings: kartSettingsSchema.optional(),
     spectator: kartSpectatorSchema.optional().catch(undefined),
@@ -179,21 +231,32 @@ type Driver = Omit<
     progress: number;
   };
   lastRecoveryAt?: number;
+  lastImpact?: KartContactEvent;
+  lap?: { crossingsMs: (number | null)[]; recoveries: number };
 };
 export type KartRace = {
   raceId: string;
   elapsedMs: number;
   ended: boolean;
   drivers: Driver[];
+  recapVersion?: 1;
+  endReason?: KartEndReason;
   powerUpVersion?: 1;
+  itemRules?: KartItemRules;
+  itemsWorld?: KartProjectileWorld;
   oils?: OilSlick[];
   physicsVersion?: "arcade-v2";
+  handling?: KartHandling;
+  contactVersion?: 1;
+  contactHistory?: KartContactHistoryEntry[];
   trackId?: KartTrackId;
   timeLimitMs?: 45000 | 180000;
   courseEnabled?: boolean;
   courseHistory?: { atMs: number; enabled: boolean }[];
   opponentsEnabled?: boolean;
   effectsEnabled?: boolean;
+  look?: KartLookName;
+  lookHistory?: KartLookHistory;
   /** Host driving-feel choices for phones and the stage; never race rules. */
   settings?: KartSettings;
   settingsHistory?: KartSettingHistory;
@@ -208,7 +271,12 @@ export type KartRace = {
 export function createKartRace(
   raceId: string,
   players: readonly { playerId: string; name: string; points?: number }[],
-  options: { seedGrid?: boolean; trackId?: KartTrackId } = {},
+  options: {
+    seedGrid?: boolean;
+    trackId?: KartTrackId;
+    handling?: KartHandling;
+    itemRules?: KartItemRules;
+  } = {},
 ): KartRace {
   if (
     players.length > 100 ||
@@ -226,12 +294,20 @@ export function createKartRace(
     timeLimitMs:
       options.trackId === importedTrackId ? importedTrackLimitMs : kartLimitMs,
     physicsVersion: "arcade-v2",
+    ...(options.handling ? { handling: options.handling } : {}),
+    contactVersion: 1,
+    contactHistory: [],
     courseEnabled: options.trackId === importedTrackId,
     courseHistory: [],
     powerUpVersion: 1,
+    ...(options.itemRules
+      ? { itemRules: kartItemRulesSchema.parse(options.itemRules) }
+      : {}),
+    itemsWorld: createKartProjectiles(),
     oils: [],
     elapsedMs: 0,
     ended: false,
+    recapVersion: 1,
     drivers: roster.map((p, i) => ({
       playerId: p.playerId,
       name: p.name,
@@ -254,6 +330,7 @@ export function createKartRace(
       progress: 0,
       checkpoint: 0,
       status: "RACING",
+      lap: { crossingsMs: [], recoveries: 0 },
       lapTimeMs: null,
       sequence: -1,
       input: { ...kartNeutral },
@@ -277,6 +354,7 @@ export function createKartRace(
 function copyRace(race: KartRace): KartRace {
   return {
     ...race,
+    itemsWorld: race.itemsWorld && copyKartProjectiles(race.itemsWorld),
     oils: race.oils?.map((o) => ({ ...o })),
     drivers: race.drivers.map((d) => ({
       ...d,
@@ -288,6 +366,10 @@ function copyRace(race: KartRace): KartRace {
       input: { ...d.input },
       physics: d.physics && { ...d.physics },
       lastSafe: d.lastSafe && { ...d.lastSafe },
+      lap: d.lap && {
+        crossingsMs: [...d.lap.crossingsMs],
+        recoveries: d.lap.recoveries,
+      },
     })),
   };
 }
@@ -321,11 +403,12 @@ function advanceDriver(
   oils?: readonly OilSlick[],
   courseEnabled = false,
   trackId: KartTrackId = kartTrackId,
+  race?: KartRace,
 ): void {
   const step = version ? 20 : 50;
   for (let t = from; t < target && driver.status === "RACING"; t += step) {
     const ms = Math.min(step, target - t);
-    stepDriver(driver, t + ms, ms, version, oils, courseEnabled, trackId);
+    stepDriver(driver, t + ms, ms, version, oils, courseEnabled, trackId, race);
   }
 }
 function settleRace(race: KartRace, force = false): KartRace {
@@ -335,6 +418,17 @@ function settleRace(race: KartRace, force = false): KartRace {
     race.drivers.every((d) => d.status !== "RACING")
   ) {
     race.ended = true;
+    if (race.itemsWorld) race.itemsWorld = clearKartProjectiles(race.itemsWorld);
+    if (race.itemRules?.version === 2) race.oils = [];
+    if (race.recapVersion === 1)
+      race.endReason ??=
+        race.elapsedMs >= (race.timeLimitMs ?? kartLimitMs)
+          ? "time-limit"
+          : force
+            ? "host-ended"
+            : race.drivers.every((driver) => driver.status === "FINISHED")
+              ? "all-finished"
+              : "race-ended";
     for (const d of race.drivers) {
       if (d.status === "RACING") {
         d.status = "DNF";
@@ -353,6 +447,164 @@ function settleRace(race: KartRace, force = false): KartRace {
 }
 
 export type KartTimedInput = { playerId: string; elapsed: number; input: KartInput };
+
+function itemActors(race: KartRace) {
+  return race.drivers.map((driver) => ({
+    playerId: driver.playerId,
+    number: driver.number,
+    status: driver.status,
+    progress: driver.progress,
+    x: driver.x,
+    z: driver.z,
+    heading: driver.heading,
+    height: driver.physics?.height ?? 0,
+    power: driver.power ?? createKartPowers(),
+  }));
+}
+function itemContext(race: KartRace) {
+  return {
+    trackId: race.trackId ?? kartTrackId,
+    walls: race.trackId === importedTrackId ? nearbyImportedWalls : nearbyRingWalls,
+  };
+}
+export function configureKartItems(race: KartRace, value: unknown): KartRace {
+  const rules = kartItemRulesSchema.parse(value);
+  if (race.ended || race.elapsedMs > 0)
+    throw new Error("Choose item rules before the race starts.");
+  const next = copyRace(race);
+  next.itemRules = rules;
+  next.itemsWorld ??= createKartProjectiles();
+  return next;
+}
+export function kartItemRefusal(race: KartRace, playerId: string): string | undefined {
+  const driver = race.drivers.find((row) => row.playerId === playerId),
+    item = driver?.power?.item;
+  if (race.ended || driver?.status !== "RACING")
+    return "This race has ended for your kart.";
+  if (!item) return "Drive through an item box first.";
+  const hazard =
+    item === "oil" || item === "tennis" || item === "bomb" || item === "homing";
+  if (hazard && race.itemsWorld?.spawning === false)
+    return "The host has paused new track hazards. Your item is kept.";
+  if (race.itemRules?.version === 2 && item === "oil" && (race.oils?.length ?? 0) >= 64)
+    return "The oil pool is full. Your item is kept.";
+  if (
+    race.itemRules?.version === 2 &&
+    (item === "tennis" || item === "bomb" || item === "homing")
+  ) {
+    const actors = itemActors(race),
+      owner = actors.find((row) => row.playerId === playerId)!;
+    if (item === "homing" && !selectKartTarget(owner, actors)) return undefined;
+    const result = launchKartProjectile(
+      race.itemsWorld!,
+      item,
+      owner,
+      actors,
+      itemContext(race),
+    );
+    if (!result.accepted)
+      return result.reason === "capacity"
+        ? "The projectile pool is full. Your item is kept."
+        : "A barrier blocks this launch. Your item is kept.";
+  }
+  return undefined;
+}
+function expandedTimeline(
+  next: KartRace,
+  byPlayer: Map<string, KartTimedInput[]>,
+  target: number,
+) {
+  if (!next.itemsWorld)
+    throw new Error("Expanded items require their saved simulation state.");
+  for (const pending of byPlayer.values())
+    pending.sort(
+      (a, b) => a.elapsed - b.elapsed || a.input.sequence - b.input.sequence,
+    );
+  const positions = new Map<string, number>();
+  // A flush can carry fresh controls at exactly the persisted clock (for example
+  // a use-item intent immediately after an input). Accept them without advancing time.
+  if (target === next.elapsedMs)
+    for (const driver of next.drivers)
+      for (const event of byPlayer.get(driver.playerId) ?? [])
+        applyInput(driver, next.raceId, event.input, event.elapsed);
+  for (let from = next.elapsedMs; from < target;) {
+    const end = Math.min(target, from + 20);
+    const previous = new Map(
+      next.drivers.map((driver) => [
+        driver.playerId,
+        { x: driver.x, z: driver.z, height: driver.physics?.height ?? 0 },
+      ]),
+    );
+    for (const driver of next.drivers) {
+      const pending = byPlayer.get(driver.playerId) ?? [];
+      let index = positions.get(driver.playerId) ?? 0,
+        cursor = from;
+      while (index < pending.length && pending[index]!.elapsed <= end) {
+        const event = pending[index++]!;
+        if (
+          event.input.raceId !== next.raceId ||
+          event.input.sequence <= driver.sequence
+        )
+          continue;
+        advanceDriver(
+          driver,
+          cursor,
+          event.elapsed,
+          next.physicsVersion,
+          next.oils,
+          next.courseEnabled,
+          next.trackId,
+          next,
+        );
+        cursor = event.elapsed;
+        applyInput(driver, next.raceId, event.input, event.elapsed);
+      }
+      positions.set(driver.playerId, index);
+      advanceDriver(
+        driver,
+        cursor,
+        end,
+        next.physicsVersion,
+        next.oils,
+        next.courseEnabled,
+        next.trackId,
+        next,
+      );
+    }
+    const actors = itemActors(next).map((actor) => ({
+      ...actor,
+      previous: previous.get(actor.playerId)!,
+    }));
+    const result = stepKartProjectiles(next.itemsWorld, actors, end, itemContext(next));
+    next.itemsWorld = result.world;
+    for (const actor of result.actors)
+      next.drivers.find((driver) => driver.playerId === actor.playerId)!.power =
+        actor.power;
+    for (const hit of result.hits)
+      if (hit.kind === "hit") {
+        const driver = next.drivers.find((row) => row.playerId === hit.playerId)!;
+        if (driver.physics) {
+          driver.physics = {
+            ...driver.physics,
+            vx: driver.physics.vx * 0.35,
+            vz: driver.physics.vz * 0.35,
+            boostMs: 0,
+            driftMs: 0,
+            wasDrifting: false,
+          };
+          driver.speed =
+            driver.physics.vx * Math.cos(driver.heading) +
+            driver.physics.vz * Math.sin(driver.heading);
+        }
+        driver.boostMs = driver.driftMs = 0;
+        driver.wasDrifting = false;
+      }
+    if (next.oils) next.oils = next.oils.filter((oil) => oil.expiresAt > end);
+    from = end;
+  }
+  next.elapsedMs = target;
+  return settleRace(next);
+}
 
 /** Replays persisted server-stamped input independently for each ghost kart.
  * One clone per tick; another driver's 10Hz inputs do not subdivide everyone's physics.
@@ -381,6 +633,7 @@ export function reduceKartTimeline(
     pending.push(event);
     byPlayer.set(event.playerId, pending);
   }
+  if (next.itemRules?.version === 2) return expandedTimeline(next, byPlayer, target);
   for (const driver of next.drivers) {
     let cursor = race.elapsedMs;
     const pending = byPlayer.get(driver.playerId) ?? [];
@@ -398,6 +651,7 @@ export function reduceKartTimeline(
         race.powerUpVersion ? (race.oils ?? []) : undefined,
         race.courseEnabled,
         race.trackId,
+        next,
       );
       cursor = event.elapsed;
       applyInput(driver, race.raceId, event.input, event.elapsed);
@@ -410,9 +664,11 @@ export function reduceKartTimeline(
       race.powerUpVersion ? (race.oils ?? []) : undefined,
       race.courseEnabled,
       race.trackId,
+      next,
     );
   }
   next.elapsedMs = target;
+  if (next.itemsWorld) next.itemsWorld.elapsedMs = target;
   if (next.oils) next.oils = next.oils.filter((o) => o.expiresAt > target);
   return settleRace(next);
 }
@@ -426,12 +682,38 @@ export function reduceKart(
     | { type: "release" }
     | { type: "recover"; playerId: string }
     | { type: "use-power"; playerId: string }
-    | { type: "end" },
+    | { type: "end" }
+    | { type: "items-spawning"; enabled: boolean }
+    | { type: "clear-items" },
 ): KartRace {
-  if (race.ended) return race;
+  if (race.ended && event.type !== "clear-items" && event.type !== "items-spawning")
+    return race;
   if (event.type === "tick") return reduceKartTimeline(race, [], event.elapsedMs);
   const next = copyRace(race);
   if (event.type === "end") return settleRace(next, true);
+  if (event.type === "items-spawning" || event.type === "clear-items") {
+    next.itemsWorld ??= { ...createKartProjectiles(), elapsedMs: race.elapsedMs };
+    if (event.type === "items-spawning") {
+      if (typeof event.enabled !== "boolean") throw new Error("Choose item spawning.");
+      next.itemsWorld = setKartProjectileSpawning(next.itemsWorld, event.enabled);
+      next.itemsWorld = noteKartItemEvent(next.itemsWorld, {
+        kind: "spawning",
+        atMs: race.elapsedMs,
+        projectileId: "all",
+      });
+    } else {
+      const hadProjectiles = next.itemsWorld.projectiles.length > 0;
+      next.itemsWorld = clearKartProjectiles(next.itemsWorld);
+      if (!hadProjectiles)
+        next.itemsWorld = noteKartItemEvent(next.itemsWorld, {
+          kind: "clear",
+          atMs: race.elapsedMs,
+          projectileId: "all",
+        });
+      next.oils = [];
+    }
+    return next;
+  }
   if (event.type === "release") {
     for (const driver of next.drivers) {
       driver.input = { ...kartNeutral };
@@ -446,6 +728,43 @@ export function reduceKart(
   const driver = next.drivers.find((d) => d.playerId === event.playerId);
   if (event.type === "use-power") {
     if (!race.powerUpVersion || !driver || driver.status !== "RACING") return race;
+    if (kartItemRefusal(race, event.playerId)) return race;
+    const item = driver.power?.item;
+    if (!item) return race;
+    if (
+      next.itemRules?.version === 2 &&
+      (item === "tennis" || item === "bomb" || item === "homing")
+    ) {
+      const actors = itemActors(next),
+        owner = actors.find((row) => row.playerId === event.playerId)!;
+      if (item === "homing" && !selectKartTarget(owner, actors)) {
+        driver.power = useKartPower(
+          { ...owner.power, item: "treat" },
+          driver.playerId,
+          driver,
+          race.elapsedMs,
+        )!.powers;
+        next.itemsWorld = noteKartItemEvent(next.itemsWorld!, {
+          kind: "use",
+          item,
+          playerId: driver.playerId,
+          atMs: race.elapsedMs,
+          projectileId: "all",
+        });
+        return next;
+      }
+      const launched = launchKartProjectile(
+        next.itemsWorld!,
+        item,
+        owner,
+        actors,
+        itemContext(next),
+      );
+      if (!launched.accepted) return race;
+      next.itemsWorld = launched.world;
+      driver.power = { ...owner.power, item: null };
+      return next;
+    }
     const used = useKartPower(
       driver.power ?? createKartPowers(),
       driver.playerId,
@@ -455,6 +774,14 @@ export function reduceKart(
     if (!used) return race;
     driver.power = used.powers;
     if (used.oil) next.oils = [...(next.oils ?? []), used.oil].slice(-64);
+    if (next.itemsWorld)
+      next.itemsWorld = noteKartItemEvent(next.itemsWorld, {
+        kind: "use",
+        item,
+        playerId: driver.playerId,
+        atMs: race.elapsedMs,
+        projectileId: "all",
+      });
     return next;
   }
   if (event.type === "recover") {
@@ -486,6 +813,22 @@ export function reduceKart(
       lastRecoveryAt: race.elapsedMs,
       physics: createDrivingBody(safe.x, safe.z, safe.heading),
     });
+    if (next.recapVersion === 1)
+      driver.lap = {
+        crossingsMs: (driver.lap?.crossingsMs ?? []).slice(0, safe.checkpoint),
+        recoveries: (driver.lap?.recoveries ?? 0) + 1,
+      };
+    if (next.contactVersion === 1)
+      next.contactHistory = appendKartContactHistory(next.contactHistory, {
+        eventId: next.elapsedMs * 100 + driver.number,
+        atMs: next.elapsedMs,
+        playerId: driver.playerId,
+        number: driver.number,
+        kind: "recovery",
+        x: driver.x,
+        z: driver.z,
+        speed: 0,
+      });
     return next;
   }
   return driver && applyInput(driver, race.raceId, event.value, race.elapsedMs)
@@ -509,6 +852,7 @@ function stepDriver(
   oils?: readonly OilSlick[],
   courseEnabled = false,
   trackId: KartTrackId = kartTrackId,
+  race?: KartRace,
 ): void {
   const dt = ms / 1000;
   const imported = trackId === importedTrackId;
@@ -533,19 +877,67 @@ function stepDriver(
         (imported && importedSurfaceAt(body.x, body.z) !== "road"),
       fresh,
       courseEnabled ? (imported ? soloCourse : ringCourse) : [],
+      race?.handling,
     );
+    if (
+      race?.contactVersion === 1 &&
+      next.contact &&
+      !body.contact &&
+      elapsed - (d.lastImpact?.atMs ?? -400) >= 400
+    ) {
+      const atMs = Math.floor(elapsed);
+      const accepted = { eventId: atMs * 100 + d.number, atMs, playerId: d.playerId };
+      d.lastImpact = accepted;
+      race.contactHistory = appendKartContactHistory(race.contactHistory, {
+        ...accepted,
+        kind: "impact",
+        number: d.number,
+        x: next.x,
+        z: next.z,
+        speed: Math.min(1000, Math.hypot(body.vx, body.vz)),
+      });
+    }
     if (oils && d.power) {
+      const before = d.power;
       const effect = stepKartPowers(
         d.power,
         d.playerId,
         body,
         next,
-        (next.height ?? 0) > 0 ? [] : imported ? importedBoxes : ringItemBoxes,
+        (next.height ?? 0) > 0 || race?.itemsWorld?.spawning === false
+          ? []
+          : imported
+            ? importedBoxes
+            : ringItemBoxes,
         (next.height ?? 0) > 0 ? [] : oils,
         elapsed,
         d.playerId,
+        race?.itemRules?.version === 2
+          ? { allowed: allowedKartItems(race.itemRules), damageGrace: true }
+          : undefined,
       );
       d.power = effect.powers;
+      if (race?.itemsWorld) {
+        const base = { atMs: elapsed, projectileId: "all", playerId: d.playerId };
+        if (d.power.collections > before.collections)
+          race.itemsWorld = noteKartItemEvent(race.itemsWorld, {
+            ...base,
+            kind: "collect",
+            item: d.power.item ?? undefined,
+          });
+        if (effect.hit)
+          race.itemsWorld = noteKartItemEvent(race.itemsWorld, {
+            ...base,
+            kind: "hit",
+            item: "oil",
+          });
+        else if (before.shieldUntil > elapsed && d.power.shieldUntil === 0)
+          race.itemsWorld = noteKartItemEvent(race.itemsWorld, {
+            ...base,
+            kind: "shield",
+            item: "oil",
+          });
+      }
       if (effect.hit) {
         next.vx *= 0.35;
         next.vz *= 0.35;
@@ -597,43 +989,27 @@ function stepDriver(
   const projection = imported ? importedTrackProgress(d.x, d.z) : undefined;
   const lapLength = imported ? importedLapLength : tau;
   const angle = projection?.along ?? Math.atan2(d.z, d.x);
-  let change = angle - d.angle;
-  if (change > lapLength / 2) change -= lapLength;
-  if (change < -lapLength / 2) change += lapLength;
-  const plausible =
-    !projection ||
-    (projection.distance <= 20 && Math.abs(change) <= Math.abs(d.speed) * dt * 2 + 2);
-  const nextCheckpoint = ((d.checkpoint + 1) * lapLength) / 8;
-  let safeProgress = plausible;
-  if (imported) {
-    const unwrap = (along: number) =>
-      d.checkpoint === 0 && along > lapLength / 2
-        ? along - lapLength
-        : d.checkpoint === 7 && along < lapLength / 8
-          ? along + lapLength
-          : along;
-    const previous = unwrap(d.angle),
-      candidate = unwrap(angle);
-    // A sector is a physical crossing, not accumulated travel: a rejected
-    // projection jump must never let short loops manufacture a completed lap.
-    const crossed =
-      plausible &&
-      change > 0 &&
-      previous < nextCheckpoint &&
-      candidate >= nextCheckpoint;
-    safeProgress = plausible && (candidate < nextCheckpoint || crossed);
-    if (safeProgress) d.distance = candidate;
-    if (crossed && d.checkpoint < 8) d.checkpoint += 1;
-  } else {
-    if (plausible) d.distance = Math.max(-lapLength, d.distance + change);
-    if (change > 0 && d.distance >= nextCheckpoint && d.checkpoint < 8)
-      d.checkpoint += 1;
-  }
-  d.angle = angle;
-  d.progress = Math.min(1, Math.max(0, d.distance / lapLength));
+  const lap = advanceKartLap(d, {
+    along: angle,
+    lapLength,
+    speed: d.speed,
+    stepMs: ms,
+    ...(projection ? { routeDistance: projection.distance } : {}),
+  });
+  if (race?.recapVersion === 1 && lap.checkpoint > d.checkpoint)
+    d.lap = {
+      crossingsMs: Array.from({ length: lap.checkpoint }, (_, index) =>
+        index === lap.checkpoint - 1 ? elapsed : (d.lap?.crossingsMs[index] ?? null),
+      ),
+      recoveries: d.lap?.recoveries ?? 0,
+    };
+  d.angle = lap.angle;
+  d.distance = lap.distance;
+  d.checkpoint = lap.checkpoint;
+  d.progress = lap.progress;
   if (
     version === "arcade-v2" &&
-    safeProgress &&
+    lap.safeProgress &&
     !d.physics?.contact &&
     !(d.physics?.height ?? 0) &&
     (!imported || importedSurfaceAt(d.x, d.z) === "road") &&
@@ -648,7 +1024,7 @@ function stepDriver(
       checkpoint: d.checkpoint,
       progress: d.progress,
     };
-  if (d.checkpoint === 8 && d.distance >= lapLength) {
+  if (lap.finished) {
     d.status = "FINISHED";
     d.lapTimeMs = elapsed;
     d.speed = 0;
@@ -697,6 +1073,12 @@ export function projectKartRace(
   selfPlayerId: string | null,
   points: number,
 ): KartRaceView {
+  const originalFinish = kartFinishPresentation(race);
+  const recap = race.ended ? kartRaceRecap(race) : undefined;
+  const finish =
+    originalFinish?.version === 1 && recap
+      ? { ...originalFinish, recap }
+      : originalFinish;
   return kartRaceSchema.parse({
     raceId: race.raceId,
     courseEnabled: race.courseEnabled ?? false,
@@ -707,6 +1089,7 @@ export function projectKartRace(
     ...(race.effectsEnabled !== undefined
       ? { effectsEnabled: race.effectsEnabled }
       : {}),
+    ...(race.look !== undefined ? { look: race.look } : {}),
     ...(race.stageMode
       ? {
           spectator: {
@@ -715,7 +1098,11 @@ export function projectKartRace(
           },
         }
       : {}),
-    presentation: kartFinishPresentation(race),
+    presentation: kartItemsPresentation(
+      race,
+      selfPlayerId,
+      kartContactPresentation(race, selfPlayerId, finish),
+    ),
     trackId: race.trackId ?? kartTrackId,
     timeLimitMs: race.timeLimitMs ?? kartLimitMs,
     elapsedMs: race.elapsedMs,
@@ -731,15 +1118,17 @@ export function projectKartRace(
     ...(race.powerUpVersion
       ? {
           powers: {
-            selfItem:
-              race.drivers.find((d) => d.playerId === selfPlayerId)?.power?.item ??
-              null,
+            selfItem: legacyKartItem(
+              race.drivers.find((d) => d.playerId === selfPlayerId)?.power?.item,
+            ),
             boxes: (race.trackId === importedTrackId
               ? importedBoxes
               : ringItemBoxes
             ).map((box) => ({
               ...box,
               available:
+                race.itemsWorld?.spawning !== false &&
+                allowedKartItems(race.itemRules).length > 0 &&
                 (race.drivers.find((d) => d.playerId === selfPlayerId)?.power
                   ?.cooldowns[box.id] ?? 0) <= race.elapsedMs,
             })),

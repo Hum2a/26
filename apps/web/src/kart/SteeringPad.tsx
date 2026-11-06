@@ -8,35 +8,44 @@ export function SteeringPad({
   disabled,
   onChange,
   absolute = false,
+  releaseToken = 0,
+  claimPointer,
+  releasePointer,
 }: {
   value: number;
   disabled: boolean;
   onChange: (value: number) => void;
   /** Older fixed-centre steering: the touch point itself sets the lock. */
   absolute?: boolean;
+  releaseToken?: number;
+  claimPointer?: (pointerId: number) => boolean;
+  releasePointer?: (pointerId: number) => void;
 }) {
-  const owner = useRef<number | null>(null);
+  const ownerRef = useRef<number | null>(null);
   /** Where the steering thumb landed; travel from here steers. */
   const origin = useRef(0);
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const resetOwner = () => {
-      owner.current = null;
+      const previous = ownerRef.current;
+      ownerRef.current = null;
+      if (previous !== null) releasePointer?.(previous);
     };
     const hidden = () => {
       if (document.hidden) resetOwner();
     };
-    if (disabled) resetOwner();
+    resetOwner();
     window.addEventListener("blur", resetOwner);
     document.addEventListener("visibilitychange", hidden);
     return () => {
       window.removeEventListener("blur", resetOwner);
       document.removeEventListener("visibilitychange", hidden);
     };
-  }, [disabled]);
+  }, [disabled, releaseToken, releasePointer]);
   const release = (pointerId: number) => {
-    if (owner.current !== pointerId) return;
-    owner.current = null;
+    if (ownerRef.current !== pointerId) return;
+    ownerRef.current = null;
+    releasePointer?.(pointerId);
     onChange(0);
   };
   return (
@@ -47,12 +56,13 @@ export function SteeringPad({
       onPointerDown={(event) => {
         if (
           disabled ||
-          owner.current !== null ||
+          ownerRef.current !== null ||
           (event.pointerType === "mouse" && event.button !== 0)
         )
           return;
+        if (claimPointer && !claimPointer(event.pointerId)) return;
         event.preventDefault();
-        owner.current = event.pointerId;
+        ownerRef.current = event.pointerId;
         event.currentTarget.setPointerCapture(event.pointerId);
         input.current?.focus({ preventScroll: true });
         origin.current = event.clientX;
@@ -62,7 +72,7 @@ export function SteeringPad({
         );
       }}
       onPointerMove={(event) => {
-        if (disabled || owner.current !== event.pointerId) return;
+        if (disabled || ownerRef.current !== event.pointerId) return;
         const box = event.currentTarget.getBoundingClientRect();
         onChange(
           absolute
@@ -82,6 +92,7 @@ export function SteeringPad({
         id="kart-steering"
         ref={input}
         aria-label="Steering"
+        data-kart-steering
         aria-valuetext={
           value === 0
             ? "Centred"
@@ -95,7 +106,8 @@ export function SteeringPad({
         disabled={disabled}
         onChange={(event) => onChange(Number(event.target.value))}
         onBlur={() => {
-          owner.current = null;
+          if (ownerRef.current !== null) releasePointer?.(ownerRef.current);
+          ownerRef.current = null;
           onChange(0);
         }}
       />

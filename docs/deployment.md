@@ -78,7 +78,11 @@ Wrangler warns that the secret names are missing from `env.staging.vars`. That w
 
 `npm run secrets-sync:staging` uploads the required names from `apps/api/.dev.vars.staging` with `wrangler secret bulk`. Empty values are rejected. Extra keys in that file are not uploaded. `npm run deploy:staging` does not upload secrets. `npm run deploy:staging:full` attaches them with `--secrets-file` on the same deploy as the new code.
 
-`npm run deploy:both` and `npm run deploy:both:full` run staging and then production. Add `-- --dry-run` to a secrets-sync or deploy command to check names or packaging without uploading.
+`npm run deploy:both` and `npm run deploy:both:full` run staging and then production. Actual production or combined deployments require `-- --confirm-production`. All deploy commands run typecheck, content, unit, lint and release-script checks once before any migrations or deployment; add `--full-checks` for the isolated API suite. `npm run release` retains its existing checks and tells the deploy command those checks have already run.
+
+Add `-- --dry-run` to a secrets-sync or deploy command to check names or packaging without uploading, migrating or deploying. A deploy dry run builds the package but needs no production confirmation or freeze override and does not run the full pre-release check suite.
+
+Production is frozen from 20 November 2026 at 00:00 until 22 November at 12:00, London time. An explicitly requested emergency deployment can use `--confirm-production --override-freeze`; `--skip-checks` separately skips the pre-release checks when necessary. These flags work through both `npm run release -- ...` and the direct deploy commands. Packaging and generated Worker target checks still run.
 
 ## Production build
 
@@ -87,10 +91,10 @@ Do not run this until a production deploy is explicitly requested.
 ```powershell
 npm run secrets-sync:prod
 npm run db:migrate:prod
-npm run deploy:prod
+npm run deploy:prod -- --confirm-production
 ```
 
-Or `npm run deploy:prod:full`. The generated worker name must be `26-humza-website` and the custom domain must be `26.humza.website`. This repository has no `account_id`. Cloudflare creates the DNS record for the custom domain on deploy when `humza.website` is in that account.
+Or `npm run deploy:prod:full -- --confirm-production`. The generated worker name must be `26-humza-website` and the custom domain must be `26.humza.website`. Cloudflare creates the DNS record for the custom domain on deploy when `humza.website` is in that account.
 
 ## Rollback
 
@@ -148,7 +152,7 @@ Names only. Prefer `npm run secrets-sync:staging` after filling `apps/api/.dev.v
 
 `CLIENT_API_KEY` must match `VITE_CLIENT_API_KEY` in the matching `.env.{env}` file used at build time. Rotate both together with `npm run client-api-key:rotate -- --env staging`, rebuild, then sync secrets. The SPA embeds the Vite value in the client bundle. This blocks casual direct API access; it is not a hidden server secret.
 
-`EMAIL_TEST_RECIPIENT` is required on staging. Results mail is sent only to that address. Admin sign-in is not limited by it. If the name is unset on staging, results mail throws and does not send. Production sends to the guest address only when this secret is absent, so production no longer lists it as required (5 November 2026). If it is set in production, results mail is limited to it as well. Production was deployed on 31 October with the secret uploaded; syncing never deletes a secret, so remove it once before the party with `npx wrangler secret delete EMAIL_TEST_RECIPIENT --env production` (from `apps/api`), and confirm with `npx wrangler secret list --env production`.
+`EMAIL_TEST_RECIPIENT` is required on staging. Results mail is sent only to that address; if the name is unset, delivery refuses to send. Local development can opt into the same restriction by setting it. Production always sends to the requested guest address, even if an old test-recipient binding remains. Admin sign-in is not limited by this setting. This source change takes effect when deployed; it does not inspect or remove any existing secret.
 
 An empty string in `vars` would replace a secret on the next deploy. Staging and production `vars` therefore contain only `APP_ENV` and `MEDIA_BUCKET_NAME`. Local `vars` still include empty placeholders so local development and type generation stay explicit.
 

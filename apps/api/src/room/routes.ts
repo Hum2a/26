@@ -1,4 +1,12 @@
-import { kartSettingChangeSchema, type KartSettingChange } from "@26/shared";
+import {
+  kartSettingChangeSchema,
+  kartLookNameSchema,
+  kartHandlingSchema,
+  kartItemRulesSchema,
+  type KartHandling,
+  type KartSettingChange,
+  type KartLookName,
+} from "@26/shared";
 import {
   gameIdSchema,
   botCountSchema,
@@ -387,6 +395,12 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "kart-effects-on",
       "kart-effects-off",
       "kart-setting",
+      "kart-handling",
+      "kart-item-rules",
+      "kart-items-on",
+      "kart-items-off",
+      "kart-items-clear",
+      "kart-look",
       "kart-opponents-off",
       "kart-stage-map",
       "kart-stage-overview",
@@ -906,6 +920,9 @@ function readHostDetails(
         scenario?: unknown;
         botCount?: number;
         kartSetting?: KartSettingChange;
+        itemRules?: unknown;
+        lookPreset?: KartLookName;
+        handlingPreset?: KartHandling;
         playerId?: string;
         otherPlayerId?: string;
         nickname?: string;
@@ -972,6 +989,24 @@ function readHostDetails(
     return change.success
       ? { ok: true, fields: { kartSetting: change.data } }
       : { ok: false, message: "Choose a valid kart setting." };
+  }
+  if (action === "kart-look") {
+    const preset = kartLookNameSchema.safeParse(field(body, "lookPreset"));
+    return preset.success
+      ? { ok: true, fields: { lookPreset: preset.data } }
+      : { ok: false, message: "Choose a valid kart look." };
+  }
+  if (action === "kart-handling") {
+    const preset = kartHandlingSchema.safeParse(field(body, "handlingPreset"));
+    return preset.success
+      ? { ok: true, fields: { handlingPreset: preset.data } }
+      : { ok: false, message: "Choose valid kart handling." };
+  }
+  if (action === "kart-item-rules") {
+    const rules = kartItemRulesSchema.safeParse(field(body, "itemRules"));
+    return rules.success
+      ? { ok: true, fields: { itemRules: rules.data } }
+      : { ok: false, message: "Choose valid item rules." };
   }
   if (action === "developer-bots") {
     const count = botCountSchema.safeParse(field(body, "botCount"));
@@ -1111,18 +1146,33 @@ function readRequestId(body: unknown): string | undefined {
   return value;
 }
 
-/** Room API bodies are small commands; anything larger is refused unread. */
+/** Room API bodies are small commands; stop reading at this byte limit. */
 export const maxJsonBodyBytes = 65_536;
 
 export async function readJson(request: Request): Promise<unknown> {
   const declared = Number(request.headers.get("content-length") ?? 0);
   if (Number.isFinite(declared) && declared > maxJsonBodyBytes) return undefined;
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   try {
-    const text = await request.text();
-    // A chunked body has no declared length, so check what actually arrived.
-    if (text.length > maxJsonBodyBytes) return undefined;
-    return JSON.parse(text);
+    reader = request.body?.getReader();
+    if (!reader) return undefined;
+    const decoder = new TextDecoder();
+    let bytes = 0;
+    let text = "";
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) return JSON.parse(text + decoder.decode());
+      bytes += chunk.value.byteLength;
+      if (bytes > maxJsonBodyBytes) {
+        void reader.cancel().catch(() => undefined);
+        return undefined;
+      }
+      text += decoder.decode(chunk.value, { stream: true });
+    }
   } catch {
+    void reader?.cancel().catch(() => undefined);
     return undefined;
+  } finally {
+    reader?.releaseLock();
   }
 }

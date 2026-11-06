@@ -4,6 +4,85 @@ import { payloadDigest } from "../src/room/digest.ts";
 import { createSqlStore } from "../src/room/sql-store.ts";
 import { questionFor } from "../src/questions/registry.ts";
 
+it("refuses birthday start with rehearsal bots, then starts once after their removal", async () => {
+  const registry = env.ROOM_CODE_REGISTRY.getByName("codes");
+  const current = await registry.birthdayOrder();
+  const order = await registry.updateBirthdayOrder(
+    {
+      requestId: crypto.randomUUID(),
+      expectedRevision: current.revision,
+      ids: ["car-name"],
+    },
+    1000,
+  );
+  if ("error" in order) throw new Error(order.message);
+  const now = Date.now();
+  const created = await registry.createLobby({
+    requestId: crypto.randomUUID(),
+    digest: await payloadDigest({ action: "create" }),
+    now: new Date(now).toISOString(),
+  });
+  if (!created.ok) throw new Error(created.message);
+  const stub = env.PARTY_ROOM.getByName(created.result.gameId);
+  const control = {
+    credentialId: created.result.control.credentialId,
+    secret: created.result.control.secret,
+  };
+  const guest = await stub.joinPlayer({
+    nickname: "Guest",
+    requestId: crypto.randomUUID(),
+    now: new Date(now).toISOString(),
+  });
+  if (!guest.ok) throw new Error(guest.message);
+  expect(
+    (
+      await stub.hostAction({
+        ...control,
+        action: "developer-bots",
+        botCount: 2,
+        requestId: crypto.randomUUID(),
+        nowMs: now,
+      })
+    ).ok,
+  ).toBe(true);
+  const input = { ...control, requestId: crypto.randomUUID(), nowMs: now };
+  expect((await stub.startBirthday({ ...input, secret: "wrong" })).ok).toBe(false);
+  const refused = await stub.startBirthday(input);
+  expect(refused).toMatchObject({
+    ok: false,
+    message: "Remove rehearsal bots before starting the birthday game.",
+  });
+  await evictDurableObject(stub);
+  expect(await stub.startBirthday(input)).toEqual(refused);
+  const lobby = await stub.snapshotFor("control");
+  expect(lobby.phase).toBe("lobby");
+  expect(lobby.players).toHaveLength(3);
+  expect(lobby.developerTools?.bots).toHaveLength(2);
+  await runInDurableObject(stub, (_instance, state) => {
+    expect(createSqlStore(state.storage.sql).readRoom().questionScript).toBeUndefined();
+  });
+  expect(
+    (
+      await stub.hostAction({
+        ...control,
+        action: "developer-bots",
+        botCount: 0,
+        requestId: crypto.randomUUID(),
+        nowMs: now + 1,
+      })
+    ).ok,
+  ).toBe(true);
+  const retry = { ...input, requestId: crypto.randomUUID(), nowMs: now + 2 };
+  const started = await stub.startBirthday(retry);
+  expect(started.ok).toBe(true);
+  await evictDurableObject(stub);
+  expect(await stub.startBirthday(retry)).toEqual(started);
+  const live = await stub.snapshotFor("control");
+  expect(live.play?.question.id).toBe("car-name");
+  expect(live.players.map((player) => player.playerId)).toEqual([guest.playerId]);
+  expect(live.developerTools?.bots).toHaveLength(0);
+});
+
 it("persists order saves and receipts, rejects stale/invalid edits and survives eviction", async () => {
   const registry = env.ROOM_CODE_REGISTRY.getByName("codes");
   const current = await registry.birthdayOrder();

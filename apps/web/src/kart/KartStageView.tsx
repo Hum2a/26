@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from "react";
 import { usePrefersReducedMotion } from "../anim/use-reduced-motion";
 import { liveKartVfxPreset } from "./live-vfx";
+import { liveKartLookPreset } from "./live-look";
 import type { KartRaceView } from "@26/shared";
 import { KartMap } from "./KartMap";
 import { GraphicsControls } from "./graphics-controls";
@@ -40,6 +41,7 @@ export function KartStageView({
                 reducedMotion={Boolean(reduced)}
                 paused={paused}
                 vfxPreset={liveKartVfxPreset(race.effectsEnabled)}
+                lookPreset={liveKartLookPreset(race.look)}
                 followPlayerId={race.spectator?.followPlayerId}
                 graphicsTier={graphics.tier}
                 onFrameHealth={graphics.onHealth}

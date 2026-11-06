@@ -2,14 +2,39 @@ import { Link } from "react-router";
 import { Button } from "../ui/primitives";
 import { useAdminRoom } from "./room-provider";
 import { CommandFeedback } from "./command-feedback";
+import { kartLookNameSchema } from "@26/shared";
+import { KartCollisionOverlay } from "./kart-collision-overlay";
+import { KartRecapPanel } from "../kart/KartRecapPanel";
+import { KartItemControls } from "./kart-item-controls";
 
 export function KartCourseControls() {
   const { snapshot, execute, busy, connection } = useAdminRoom();
   const race = snapshot.play?.kart;
-  if (!race) return null;
+  if (!race) return <KartItemControls />;
   return (
     <section aria-label="Kart course controls">
+      <KartItemControls />
       <h2>Kart course</h2>
+      <KartRecapPanel
+        recap={snapshot.kartRecap}
+        names={Object.fromEntries(
+          snapshot.players.map((player) => [player.playerId, player.nickname]),
+        )}
+      />
+      <p>
+        Pause freezes accepted sector timing. Advance ends an active race early;
+        unfinished drivers receive DNF, with the host-ended reason retained. Use the
+        existing Live controls above.
+      </p>
+      <Link to="/admin/kart?view=recap">Rehearse race results without guests</Link>
+      <KartCollisionOverlay
+        trackId={race.trackId}
+        history={snapshot.kartContactHistory}
+        names={Object.fromEntries(
+          snapshot.players.map((player) => [player.playerId, player.nickname]),
+        )}
+      />
+      <Link to="/admin/kart?view=collisions">Rehearse collisions without guests</Link>
       <p>
         {race.courseEnabled
           ? "Floor boosts, ramps and moving sweepers are on."
@@ -127,6 +152,55 @@ export function KartCourseControls() {
       ) : null}
       <Link to="/admin/kart?view=effects">
         Rehearse and tune effects with stand-ins
+      </Link>
+      <h3>Kart look</h3>
+      <p>
+        Current look: {race.look ?? "original"}. These change the 3D scene only. Phones
+        keep their own graphics and reduced-motion preferences; Low skips optional
+        optical effects.
+      </p>
+      <div role="group" aria-label="Kart look presets">
+        {kartLookNameSchema.options.map((preset) => (
+          <Button
+            key={preset}
+            variant={race.look === preset ? "primary" : "secondary"}
+            aria-pressed={race.look === preset}
+            disabled={
+              busy ||
+              connection !== "open" ||
+              (preset !== "off" && race.ended) ||
+              !(
+                preset === "off"
+                  ? ["intro", "prompt", "collect", "reveal", "scores"]
+                  : ["intro", "collect"]
+              ).includes(snapshot.phase)
+            }
+            onClick={() =>
+              void execute(
+                { action: "kart-look", lookPreset: preset },
+                "Change kart look",
+                "kart",
+              )
+            }
+          >
+            {preset === "off" ? "Use original kart look" : `Use ${preset} kart look`}
+          </Button>
+        ))}
+      </div>
+      {snapshot.kartLookHistory?.length ? (
+        <ol aria-label="Kart look history">
+          {[...snapshot.kartLookHistory].reverse().map((entry, index) => (
+            <li key={`${entry.atMs}:${index}`}>
+              Host chose {entry.preset} at{" "}
+              {new Date(entry.atMs).toLocaleTimeString("en-GB")}
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p>No look changes yet.</p>
+      )}
+      <Link to="/admin/kart?view=look">
+        Rehearse and tune the kart look with stand-ins
       </Link>
       <h3>Nearby racers</h3>
       <p>

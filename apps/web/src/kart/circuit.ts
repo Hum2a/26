@@ -351,6 +351,22 @@ export function createCircuit(
   gliders.name = "kart-gliders";
   const itemBoxes = batch(seats.geometry, bright, 24),
     oilSlicks = batch(helmets.geometry, dark, 64);
+  // Gameplay hazards remain visible at Low quality and when decoration is off.
+  const projectileBatches = {
+    tennis: batch(helmets.geometry, bright, 64),
+    bomb: batch(helmets.geometry, dark, 64),
+    homing: batch(sparks.geometry, second, 64),
+  };
+  const bombFuses = batch(helmets.geometry, bright, 64);
+  bombFuses.name = "kart-bomb-fuses";
+  bombFuses.count = 0;
+  bombFuses.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  for (const [kind, mesh] of Object.entries(projectileBatches)) {
+    mesh.name = `kart-projectile-${kind}`;
+    mesh.count = 0;
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  }
+  const projectilePoses = new Map<string, { x: number; z: number; height: number }>();
   const shieldMaterial = new THREE.MeshBasicMaterial({
     color: highlight,
     transparent: true,
@@ -462,6 +478,7 @@ export function createCircuit(
       serverSeen.clear();
       travel.clear();
       featurePoses.clear();
+      projectilePoses.clear();
       effectTime = 0;
       effectRaceId = race.raceId;
     }
@@ -733,6 +750,56 @@ export function createCircuit(
       place(oilSlicks, oilCount++, oil.x, 0.09, oil.z, 0, 3.5, 0.05, 3.5);
     itemBoxes.count = boxCount;
     oilSlicks.count = oilCount;
+    const itemPoses =
+      race.presentation?.version === 3 ? race.presentation.items.projectiles : [];
+    const counts = { tennis: 0, bomb: 0, homing: 0 };
+    let fuseCount = 0;
+    const ids = new Set(itemPoses.slice(0, 64).map((item) => item.id));
+    for (const id of projectilePoses.keys())
+      if (!ids.has(id)) projectilePoses.delete(id);
+    for (const item of itemPoses.slice(0, 64)) {
+      const previous = projectilePoses.get(item.id) ?? item;
+      const alpha = reduced ? 1 : 1 - Math.exp(-Math.max(0, Math.min(0.1, dt)) * 20);
+      const pose = {
+        x: previous.x + (item.x - previous.x) * alpha,
+        z: previous.z + (item.z - previous.z) * alpha,
+        height: previous.height + (item.height - previous.height) * alpha,
+      };
+      projectilePoses.set(item.id, pose);
+      const groundY = imported
+        ? (importedGroundAt(pose.x, pose.z, "connected")?.y ?? 0)
+        : 0;
+      const size = item.kind === "homing" ? 5 : item.kind === "bomb" ? 1.1 : 0.8;
+      place(
+        projectileBatches[item.kind],
+        counts[item.kind]++,
+        pose.x,
+        groundY + pose.height + 0.65,
+        pose.z,
+        0,
+        size,
+        size,
+        size,
+      );
+      if (item.kind === "bomb")
+        place(
+          bombFuses,
+          fuseCount++,
+          pose.x,
+          groundY + pose.height + 1.3,
+          pose.z,
+          0,
+          0.3,
+          0.3,
+          0.3,
+        );
+    }
+    for (const kind of ["tennis", "bomb", "homing"] as const) {
+      projectileBatches[kind].count = counts[kind];
+      projectileBatches[kind].instanceMatrix.needsUpdate = true;
+    }
+    bombFuses.count = fuseCount;
+    bombFuses.instanceMatrix.needsUpdate = true;
     shields.count = shieldCount;
     for (const m of [itemBoxes, oilSlicks, shields])
       m.instanceMatrix.needsUpdate = true;

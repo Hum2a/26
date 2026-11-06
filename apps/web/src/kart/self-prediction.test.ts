@@ -1,9 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { createKartRace, projectKartRace, type KartRaceView } from "@26/shared";
+import {
+  createKartRace,
+  projectKartRace,
+  ringCourse,
+  type KartRaceView,
+  createDrivingBody,
+} from "@26/shared";
 import { createSelfPrediction } from "./self-prediction";
 
 const gas = { steer: 0, gas: true, brake: false, drift: false };
 const idle = { steer: 0, gas: false, brake: false, drift: false };
+
+it("seeds optional bounce stun/cooldown from accepted self metadata and resumes responsive prediction afterwards", () => {
+  const state = createKartRace("bounce-predict", [{ playerId: "a", name: "Amina" }], {
+    handling: "bounce-v1",
+  });
+  state.elapsedMs = 1000;
+  const driver = state.drivers[0]!;
+  driver.physics = {
+    ...createDrivingBody(driver.x, driver.z, driver.heading),
+    stunMs: 180,
+    impactCooldownMs: 600,
+  };
+  const view = projectKartRace(state, "a", 0);
+  const prediction = createSelfPrediction();
+  prediction.input(gas, 1000);
+  prediction.server(view, 1000, 0);
+  const first = prediction.pose(1000)!;
+  const waiting = prediction.pose(1100)!;
+  expect(waiting.x).toBe(first.x);
+  expect(waiting.z).toBe(first.z);
+  expect(prediction.pose(1250)!.speed).toBeGreaterThan(0);
+});
 
 function race(elapsedMs = 1_000): KartRaceView {
   const state = createKartRace("predict", [
@@ -108,6 +136,81 @@ describe("self prediction", () => {
     // At most 600 ms of travel, not a minute.
     expect(Math.hypot(stalled.x - start.x, stalled.z - start.z)).toBeLessThan(10);
   });
+
+  it.each([
+    ["on", 600],
+    ["on-conservative", 300],
+  ] as const)(
+    "freezes %s prediction after stale frames, even while rendering every 16 ms",
+    (mode, spanMs) => {
+      const prediction = createSelfPrediction();
+      const view = race();
+      prediction.configure(mode);
+      prediction.input(gas, 0);
+      prediction.server(view, 1_000, 0);
+      for (let now = 1_016; now < 1_000 + spanMs; now += 16) {
+        prediction.server(view, now, 0);
+        prediction.pose(now);
+      }
+      const stopped = prediction.pose(1_000 + spanMs)!;
+      expect(stopped.speed).toBeGreaterThan(0);
+      for (let now = 1_000 + spanMs + 16; now < 11_000; now += 16) {
+        prediction.server(view, now, 0);
+        expect(prediction.pose(now)).toEqual(stopped);
+      }
+      // New controls cannot extend the age of the last room frame either.
+      prediction.input({ ...gas, steer: 1 }, 11_000);
+      prediction.server(view, 11_000, 0);
+      expect(prediction.pose(11_000)).toEqual(stopped);
+    },
+  );
+
+  it("resumes from a fresh room frame after prediction has frozen", () => {
+    const prediction = createSelfPrediction();
+    prediction.input(gas, 0);
+    prediction.server(race(), 1_000, 0);
+    const stopped = prediction.pose(1_600)!;
+    prediction.pose(10_000);
+    const fresh = race(1_200);
+    Object.assign(self(fresh), stopped);
+    prediction.server(fresh, 10_000, 0);
+    const resumed = prediction.pose(10_000)!;
+    expect(resumed.x).toBeCloseTo(stopped.x, 6);
+    expect(resumed.z).toBeCloseTo(stopped.z, 6);
+    const moving = prediction.pose(10_200)!;
+    expect(Math.hypot(moving.x - resumed.x, moving.z - resumed.z)).toBeGreaterThan(
+      0.05,
+    );
+  });
+
+  it.each([false, true])(
+    "refreshes course features when a same-tick host change replaces enabled=%s",
+    (initiallyEnabled) => {
+      const boost = ringCourse.find((feature) => feature.kind === "boost")!;
+      const initial = race();
+      initial.courseEnabled = initiallyEnabled;
+      Object.assign(self(initial), {
+        x: boost.x,
+        z: boost.z,
+        heading: boost.heading,
+        speed: 12,
+      });
+      const changed = { ...initial, courseEnabled: !initiallyEnabled };
+      const switched = createSelfPrediction();
+      const reference = createSelfPrediction();
+      const unchanged = createSelfPrediction();
+      for (const prediction of [switched, reference, unchanged])
+        prediction.input(gas, 0);
+      switched.server(initial, 1_000, 0);
+      switched.server(changed, 1_000, 0);
+      reference.server(changed, 1_000, 0);
+      unchanged.server(initial, 1_000, 0);
+      expect(switched.pose(1_200)).toEqual(reference.pose(1_200));
+      expect(
+        Math.abs(switched.pose(1_200)!.speed - unchanged.pose(1_200)!.speed),
+      ).toBeGreaterThan(0.5);
+    },
+  );
 
   it("conservative mode extrapolates less after frames stop", () => {
     const standard = createSelfPrediction();

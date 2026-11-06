@@ -17,8 +17,9 @@ export function raceCountdown(input: {
   raceElapsedMs?: number;
   paused: boolean;
   mode: "prompt-tail" | "none";
+  enabled?: boolean;
 }): RaceCountdown {
-  if (input.mode === "none" || input.paused) return null;
+  if (input.enabled === false || input.mode === "none" || input.paused) return null;
   if (input.phase === "prompt" && input.remainingMs !== null) {
     if (input.remainingMs <= 0 || input.remainingMs > 3_000) return null;
     return Math.max(1, Math.ceil(input.remainingMs / 1_000)) as 1 | 2 | 3;
@@ -35,14 +36,25 @@ export function raceCountdown(input: {
 export function useRaceCountdown(
   snapshot: LobbySnapshot | undefined,
   observedAt: number,
+  enabled = true,
 ): RaceCountdown {
   const clock = usePhaseCountdown(snapshot, observedAt);
   if (!snapshot || snapshot.play?.question?.kind !== "kart") return null;
   return raceCountdown({
     phase: snapshot.phase,
     remainingMs: clock?.remainingMs ?? null,
-    raceElapsedMs: snapshot.play.kart?.elapsedMs,
+    raceElapsedMs: snapshot.play.kart
+      ? Math.max(
+          snapshot.play.kart.elapsedMs,
+          snapshot.phase === "collect" &&
+            clock?.remainingMs !== null &&
+            clock?.remainingMs !== undefined
+            ? snapshot.play.kart.timeLimitMs - clock.remainingMs
+            : 0,
+        )
+      : undefined,
     paused: snapshot.paused || snapshot.held,
     mode: resolveKartSettings(snapshot.play.kart?.settings).countdown,
+    enabled,
   });
 }

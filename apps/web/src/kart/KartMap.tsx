@@ -1,6 +1,6 @@
 import { importedRoute } from "../../../../packages/shared/src/kart-route";
-import { useId } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { useId, type ReactNode } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   ringCourse,
   soloCourse,
@@ -9,6 +9,8 @@ import {
 } from "@26/shared";
 import { driverFaceUrl } from "./driver-face";
 import { useKartDrivers } from "./drivers-context";
+import { mapHeadingPath, nextMapSector, mapX, mapZ } from "./navigation";
+import { KartProjectileLayer } from "./KartProjectileLayer";
 
 /** A leader's face inside their marker ring. Drivers without a photo keep the plain dot. */
 function MapFace({
@@ -45,15 +47,18 @@ function MapFace({
 export function KartMap({
   race,
   personal = false,
+  children,
 }: {
   race: KartRaceView;
   personal?: boolean;
+  children?: ReactNode;
 }) {
   const imported = race.trackId === "mario-circuit-v1";
-  const px = (x: number) => (imported ? (x - 150) * 0.34 : x);
-  const pz = (z: number) => (imported ? z * 0.34 : z);
+  const px = (x: number) => mapX(race.trackId, x);
+  const pz = (z: number) => mapZ(race.trackId, z);
   const reduced = useReducedMotion();
   const faces = useKartDrivers();
+  const nextSector = personal ? nextMapSector(race) : undefined;
   const drivers = personal
     ? [
         ...race.participants.filter((driver) => driver.playerId === race.selfPlayerId),
@@ -195,6 +200,52 @@ export function KartMap({
           </text>
         </>
       )}
+      <AnimatePresence initial={false}>
+        {nextSector ? (
+          <motion.g
+            key={nextSector.sector}
+            data-map-next-sector={nextSector.sector}
+            aria-label={
+              nextSector.sector === 8
+                ? "Next sector: finish line"
+                : `Next sector: ${nextSector.sector}`
+            }
+            transform={`translate(${px(nextSector.x)} ${pz(nextSector.z)})`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduced ? 0.1 : 0.18, ease: "easeOut" }}
+          >
+            <circle
+              r="6"
+              fill="var(--background)"
+              stroke="var(--highlight)"
+              strokeWidth="1"
+            />
+            <text
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize="7.5"
+              fill="var(--highlight)"
+            >
+              {nextSector.sector === 8 ? "F" : nextSector.sector}
+            </text>
+            <title>
+              {nextSector.sector === 8
+                ? "Finish line — complete the remaining sector"
+                : `Next accepted sector ${nextSector.sector}`}
+            </title>
+          </motion.g>
+        ) : null}
+      </AnimatePresence>
+      {children}
+      {race.presentation?.version === 3 && (
+        <KartProjectileLayer
+          projectiles={race.presentation.items.projectiles}
+          elapsedMs={race.elapsedMs}
+          trackId={race.trackId}
+        />
+      )}
       {drivers.map((driver) => (
         <motion.g
           key={driver.playerId}
@@ -220,6 +271,17 @@ export function KartMap({
             className="kart-map-dot"
             data-finished={driver.status === "FINISHED"}
           />
+          {personal && driver.playerId === race.selfPlayerId ? (
+            <motion.path
+              aria-label="Your heading"
+              fill="var(--foreground)"
+              stroke="var(--background)"
+              strokeWidth="0.4"
+              initial={false}
+              animate={{ d: mapHeadingPath(driver.heading) }}
+              transition={{ duration: reduced ? 0.1 : 0.18, ease: "easeOut" }}
+            />
+          ) : null}
           {(
             personal
               ? driver.playerId === race.selfPlayerId

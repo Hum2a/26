@@ -10,21 +10,30 @@ export function KartCountdown({
   snapshot,
   observedAt,
   haptics = false,
+  enabled = true,
 }: {
   snapshot: LobbySnapshot;
   observedAt: number;
   haptics?: boolean;
+  enabled?: boolean;
 }) {
   const reduced = usePrefersReducedMotion();
-  const beat = useRaceCountdown(snapshot, observedAt);
-  const last = useRef<typeof beat>(null);
+  const beat = useRaceCountdown(snapshot, observedAt, enabled);
+  const last = useRef({ beat: null as typeof beat, enabled });
   useEffect(() => {
-    if (haptics && beat !== null && beat !== last.current)
+    const resuming = enabled && !last.current.enabled;
+    if (enabled && !resuming && haptics && beat !== null && beat !== last.current.beat)
       buzz(beat === "GO" ? [40, 30, 90] : [18]);
-    last.current = beat;
-  }, [beat, haptics]);
+    last.current = { beat, enabled };
+  }, [beat, haptics, enabled]);
   return (
-    <div className="kart-countdown" aria-live="assertive" aria-atomic="true">
+    <div
+      className="kart-countdown"
+      data-active={enabled}
+      aria-hidden={!enabled}
+      aria-live={enabled ? "assertive" : "off"}
+      aria-atomic="true"
+    >
       <AnimatePresence>
         {beat !== null ? (
           <motion.span

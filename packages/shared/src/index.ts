@@ -1,4 +1,11 @@
-import { kartRaceSchema } from "./kart.ts";
+import { kartRaceSchema, kartLookHistorySchema } from "./kart.ts";
+import { kartContactHistorySchema } from "./kart-contacts.ts";
+import { kartRecapSchema } from "./kart-recap.ts";
+import { kartItemsControlSchema } from "./kart-item-rules.ts";
+import {
+  kartHandlingControlSchema,
+  kartHandlingHistorySchema,
+} from "./kart-handling.ts";
 import { lobbyDriverSchema } from "./kart-driver.ts";
 import { kartSettingsSchema, kartSettingHistorySchema } from "./kart-settings.ts";
 export * from "./kart.ts";
@@ -6,6 +13,12 @@ export * from "./kart-driver.ts";
 export * from "./kart-driving.ts";
 export * from "./kart-assets.ts";
 export * from "./kart-events.ts";
+export * from "./kart-contacts.ts";
+export * from "./kart-handling.ts";
+export * from "./kart-laps.ts";
+export * from "./kart-time-trial.ts";
+export * from "./kart-recap.ts";
+export { importedWalls, importedRoute } from "./kart-track.ts";
 export * from "./kart-nearby.ts";
 export * from "./kart-settings.ts";
 export * from "./moderation.ts";
@@ -1144,6 +1157,17 @@ export const lobbySnapshotSchema = z
       )
       .max(20)
       .optional(),
+    /** Control only: bounded changes to the race's cosmetic look. */
+    kartLookHistory: kartLookHistorySchema.optional(),
+    /** Control only: at most20 accepted impact/recovery records. */
+    kartContactHistory: kartContactHistorySchema.optional(),
+    /** Control only while racing; public recap is delivered only after the finish. */
+    kartRecap: kartRecapSchema.optional(),
+    /** Control only: inventory, accepted item history and frozen choices. */
+    kartItems: kartItemsControlSchema.optional(),
+    /** Control only: next race choice, current frozen profile and host changes. */
+    kartHandling: kartHandlingControlSchema.optional(),
+    kartHandlingHistory: kartHandlingHistorySchema.optional(),
     /** Control only: the round after the current one. */
     nextQuestion: z
       .object({ title: z.string().max(200), kind: z.string().max(40) })
@@ -1555,7 +1579,11 @@ export function remainingUntil(
 }
 
 export * from "./kart-powers.ts";
+export * from "./kart-projectiles.ts";
+export * from "./kart-targeting.ts";
+export * from "./kart-item-rules.ts";
 export * from "./kart-course.ts";
+export * from "./kart-tracks.ts";
 export * from "./kart-spectator.ts";
 export * from "./kart-vfx.ts";
 export * from "./kart-look.ts";

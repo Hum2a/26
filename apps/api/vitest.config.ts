@@ -7,6 +7,9 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
+    // Bound the combined Node/workerd pool as well as each project's workers.
+    // Cold auth and isolated room runtimes otherwise compete for desktop memory.
+    maxWorkers: 1,
     // workerd closes its socket with ECONNRESET after the harness stops.
     // Fetch failures still fail the test. This only ignores that shutdown reset.
     onUnhandledError(error) {
@@ -34,6 +37,8 @@ export default defineConfig({
       {
         test: {
           name: "routing",
+          pool: process.platform === "win32" ? "threads" : "forks",
+          maxWorkers: process.platform === "win32" ? 1 : 2,
           include: ["test/routing.spec.ts"],
           environment: "node",
           hookTimeout: 60_000,
@@ -68,6 +73,7 @@ export default defineConfig({
             "test/wordle-room.spec.ts",
             "test/party-polish-room.spec.ts",
             "test/kart-room.spec.ts",
+            "test/kart-items-room.spec.ts",
             "test/kart-lobby.spec.ts",
             "test/birthday-room.spec.ts",
             "test/admin-rooms.spec.ts",
@@ -117,6 +123,8 @@ export default defineConfig({
         },
         test: {
           name: "auth",
+          pool: process.platform === "win32" ? "threads" : "forks",
+          maxWorkers: process.platform === "win32" ? 1 : 2,
           include: [
             "test/auth.spec.ts",
             "test/email-design.spec.ts",
@@ -156,9 +164,17 @@ export default defineConfig({
             "test/party-concepts.spec.ts",
             "test/party-scoring.spec.ts",
             "test/kart-score.spec.ts",
+            "test/kart-tracks.spec.ts",
+            "test/kart-track-catalogue.spec.ts",
             "test/birthday-order.spec.ts",
             "test/kart-driving.spec.ts",
+            "test/kart-laps.spec.ts",
+            "test/kart-time-trial.spec.ts",
+            "test/kart-recap.spec.ts",
             "test/kart-powers.spec.ts",
+            "test/kart-projectiles.spec.ts",
+            "test/kart-expanded.spec.ts",
+            "test/kart-targeting.spec.ts",
             "test/kart-guard.spec.ts",
             "test/kart-ingress.spec.ts",
             "test/kart-events.spec.ts",

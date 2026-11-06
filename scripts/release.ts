@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { resolveCommand } from "./command.mjs";
 import {
   devVarsPath,
   projectRoot,
@@ -11,11 +12,13 @@ import {
 } from "./env-files.ts";
 import {
   assertGeneratedWorkerConfig,
+  assertDeployAllowed,
   collectWorkerSecrets,
   readGeneratedWorkerConfig,
   requiredWorkerSecrets,
   resolveMigrateEnvironment,
   resolveReleaseTargets,
+  releaseCheckSteps,
   workerRelease,
   type DeployableEnvironment,
 } from "./release-support.ts";
@@ -34,9 +37,26 @@ if (command === "migrate") {
   );
   migrateEnvironment(environment);
 } else {
-  for (const environment of resolveReleaseTargets(
+  const targets = resolveReleaseTargets(
     readTargetEnvironment(process.argv) ?? (argv.includes("both") ? "both" : argv[1]),
-  )) {
+  );
+  if (command === "deploy" || command === "full") {
+    assertDeployAllowed(
+      targets,
+      {
+        dryRun,
+        confirmProduction: argv.includes("--confirm-production"),
+        overrideFreeze: argv.includes("--override-freeze"),
+      },
+      Date.now(),
+    );
+    if (!dryRun && !argv.includes("--skip-checks")) {
+      console.log("Checking the release before any migrations or deployment.");
+      for (const args of releaseCheckSteps(argv.includes("--full-checks")))
+        runCommand(npmCommand(), args);
+    }
+  }
+  for (const environment of targets) {
     if (command === "secrets-sync") {
       syncSecrets(environment);
     } else if (command === "deploy") {
@@ -169,11 +189,13 @@ function runCommand(
   extraEnv?: Record<string, string>,
   cwd = root,
 ) {
-  const result = spawnSync(command, args, {
+  const invocation = resolveCommand(command, args);
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd,
     env: extraEnv ? { ...process.env, ...extraEnv } : process.env,
     stdio: "inherit",
-    shell: process.platform === "win32",
+    shell: false,
+    windowsHide: true,
   });
   if (result.status !== 0) {
     throw new Error(

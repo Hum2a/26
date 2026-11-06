@@ -1,4 +1,5 @@
 import { KartIngressCache, type KartIngressClock } from "./kart-ingress.ts";
+import { kartRaceRecap } from "@26/shared";
 import {
   kartRehearsalVersion,
   requirePlayable as requireKartRehearsal,
@@ -12,6 +13,8 @@ import {
   useKartItem,
   readKart,
   readRoomKartSettings,
+  kartHandlingDetails,
+  kartItemsDetails,
 } from "../questions/kart.ts";
 import { readRoundState } from "../questions/round-state.ts";
 import { readAdmission } from "./admission.ts";
@@ -262,6 +265,7 @@ type SocketAttachment = {
   deliverySeq: number;
   /** The screen said it can apply patches. Older builds get full snapshots. */
   patches?: true;
+  kartItems?: 2;
 };
 
 type BroadcastScope = "all" | "facilitators" | "stage";
@@ -1318,6 +1322,8 @@ export class PartyRoom extends DurableObject<Env> {
     return this.phaseCommand(input.requestId, { action: "start-birthday" }, (sql) => {
       if (createSqlStore(sql).readRoom().phase !== "lobby")
         throw new Error("This game has already started.");
+      if (developerDetails(sql).bots.length > 0)
+        throw new Error("Remove rehearsal bots before starting the birthday game.");
       writeRoundState(sql, "__pack", "birthday-script", script);
       sql.exec(
         "UPDATE room SET question_set_version = ?, scoring_version = ?, opening = 'done'",
@@ -1559,6 +1565,9 @@ export class PartyRoom extends DurableObject<Env> {
     action: string;
     botCount?: number;
     kartSetting?: unknown;
+    lookPreset?: unknown;
+    handlingPreset?: unknown;
+    itemRules?: unknown;
     rehearsalConfig?: unknown;
     questionIndex?: number;
     scenario?: unknown;
@@ -1616,6 +1625,12 @@ export class PartyRoom extends DurableObject<Env> {
     if (input.botCount !== undefined) payload.botCount = input.botCount;
     if (input.kartSetting !== undefined)
       payload.kartSetting = JSON.stringify(input.kartSetting);
+    if (input.lookPreset !== undefined)
+      payload.lookPreset = JSON.stringify(input.lookPreset);
+    if (input.handlingPreset !== undefined)
+      payload.handlingPreset = JSON.stringify(input.handlingPreset);
+    if (input.itemRules !== undefined)
+      payload.itemRules = JSON.stringify(input.itemRules);
     if (input.playerId) {
       payload.playerId = input.playerId;
     }
@@ -1698,6 +1713,9 @@ export class PartyRoom extends DurableObject<Env> {
           action: input.action,
           botCount: input.botCount,
           kartSetting: input.kartSetting,
+          lookPreset: input.lookPreset,
+          handlingPreset: input.handlingPreset,
+          itemRules: input.itemRules,
           rehearsalConfig: input.rehearsalConfig,
           questionIndex: input.questionIndex,
           scenario: input.scenario,
@@ -2330,11 +2348,11 @@ export class PartyRoom extends DurableObject<Env> {
     const client = pair[0];
     const server = pair[1];
     this.ctx.acceptWebSocket(server, [identity.attachment.role]);
-    server.serializeAttachment(
-      query.get("patches") === "1"
-        ? { ...identity.attachment, patches: true }
-        : identity.attachment,
-    );
+    server.serializeAttachment({
+      ...identity.attachment,
+      ...(query.get("patches") === "1" ? { patches: true } : {}),
+      ...(query.get("kartItems") === "2" ? { kartItems: 2 } : {}),
+    });
     if (identity.attachment.role === "guest") {
       this.closeOlder(server, identity.attachment, newerTabMessage);
     } else if (identity.attachment.role === "presentation") {
@@ -2376,6 +2394,7 @@ export class PartyRoom extends DurableObject<Env> {
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    if (ws.readyState !== 1) return;
     const text =
       typeof message === "string" ? message : new TextDecoder().decode(message);
     // A UTF-16 length undercounts accented text and emoji; measure real bytes
@@ -3276,7 +3295,9 @@ export class PartyRoom extends DurableObject<Env> {
           testRecipient: boolean;
         }
   > {
-    const testRecipient = Boolean(presentBinding(this.env.EMAIL_TEST_RECIPIENT));
+    const testRecipient =
+      this.env.APP_ENV !== "production" &&
+      Boolean(presentBinding(this.env.EMAIL_TEST_RECIPIENT));
     try {
       const delivery = await this.resultsDelivery();
       const room = this.readRoom();
@@ -3992,6 +4013,32 @@ export class PartyRoom extends DurableObject<Env> {
                 ? (readKart(this.ctx.storage.sql, play.question.id)?.effectsHistory ??
                   [])
                 : [],
+            kartLookHistory:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.lookHistory ?? [])
+                : [],
+            kartContactHistory:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.contactHistory ??
+                  [])
+                : [],
+            kartRecap:
+              play?.question.kind === "kart"
+                ? (() => {
+                    const race = readKart(this.ctx.storage.sql, play.question.id);
+                    return race ? kartRaceRecap(race) : undefined;
+                  })()
+                : undefined,
+            ...kartHandlingDetails(
+              this.ctx.storage.sql,
+              play?.question.kind === "kart" ? play.question.id : undefined,
+              stored.phase,
+            ),
+            ...kartItemsDetails(
+              this.ctx.storage.sql,
+              play?.question.kind === "kart" ? play.question.id : undefined,
+              stored.phase,
+            ),
             kartSettings:
               play?.question.kind === "kart"
                 ? (readKart(this.ctx.storage.sql, play.question.id)?.settings ??
@@ -4121,6 +4168,9 @@ export class PartyRoom extends DurableObject<Env> {
     }
     const stateVersion = this.readRoom()?.state_version ?? 0;
     const serverNow = Date.now();
+    const contactHistory = JSON.stringify(frames.contactHistory);
+    const recap = JSON.stringify(frames.recap);
+    const items = JSON.stringify(frames.itemsControl);
     this.meter.add("broadcast:kart", 0, serverNow);
     for (const socket of this.ctx.getWebSockets()) {
       const attachment = this.attachment(socket);
@@ -4128,6 +4178,25 @@ export class PartyRoom extends DurableObject<Env> {
         continue;
       }
       if (attachment.role !== "guest" && !this.facilitatorAllowed(socket, attachment)) {
+        continue;
+      }
+      if (
+        !this.kartClientAllowed(
+          socket,
+          attachment,
+          frames.full.presentation?.version === 3,
+        )
+      )
+        continue;
+      // Reuse the existing authenticated snapshot/patch path only when private
+      // history changes. Diagnostics never enter public compact kart frames.
+      if (
+        attachment.role === "control" &&
+        (this.views.get(socket)?.fields.get("kartContactHistory") !== contactHistory ||
+          this.views.get(socket)?.fields.get("kartRecap") !== recap ||
+          this.views.get(socket)?.fields.get("kartItems") !== items)
+      ) {
+        this.sendSnapshot(socket);
         continue;
       }
       this.send(socket, {
@@ -4268,7 +4337,28 @@ export class PartyRoom extends DurableObject<Env> {
       attachment.role === "guest" ? attachment.principalId : undefined,
       parts,
     );
+    if (
+      !this.kartClientAllowed(
+        ws,
+        attachment,
+        snapshot.play?.kart?.presentation?.version === 3,
+      )
+    )
+      return;
     this.sendView(ws, attachment, snapshot);
+  }
+  private kartClientAllowed(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    expanded: boolean,
+  ) {
+    if (!expanded || attachment.kartItems === 2) return true;
+    const message =
+      "The kart game has updated. Refresh this tab to use the race items.";
+    this.send(ws, { kind: "replaced", scope: "private", message });
+    ws.close(4000, message);
+    this.views.delete(ws);
+    return false;
   }
 
   /**
@@ -4470,6 +4560,7 @@ export class PartyRoom extends DurableObject<Env> {
       principalId: record.principalId,
       deliverySeq: record.deliverySeq,
       ...(record.patches === true ? { patches: true } : {}),
+      ...(record.kartItems === 2 ? { kartItems: 2 as const } : {}),
     };
   }
 

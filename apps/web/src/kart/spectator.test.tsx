@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { createKartRace, projectKartRace } from "@26/shared";
+import { createKartRace, projectKartRace, type KartLookPreset } from "@26/shared";
 import KartGameWrapper from "./KartGameWrapper";
 vi.mock("./KartCanvas", () => ({
   default: ({
@@ -8,11 +8,13 @@ vi.mock("./KartCanvas", () => ({
     spectator,
     vfxPreset,
     paused,
+    lookPreset,
   }: {
     followPlayerId?: string;
     spectator?: boolean;
     vfxPreset?: { enabled: boolean };
     paused?: boolean;
+    lookPreset?: KartLookPreset;
   }) => (
     <div
       data-testid="stage-renderer"
@@ -20,6 +22,7 @@ vi.mock("./KartCanvas", () => ({
       data-spectator={String(spectator)}
       data-effects={vfxPreset === undefined ? "legacy" : String(vfxPreset.enabled)}
       data-paused={String(paused)}
+      data-look={lookPreset ? JSON.stringify(lookPreset) : "original"}
     >
       Real canvas adapter boundary
     </div>
@@ -49,6 +52,11 @@ it("passes the public effects switch and accepted pause to the stage renderer wi
   expect(canvas.getAttribute("data-paused")).toBe("true");
   view.rerender(<KartGameWrapper race={{ ...race, effectsEnabled: false }} />);
   expect(canvas.getAttribute("data-effects")).toBe("false");
+  expect(canvas.getAttribute("data-look")).toBe("original");
+  view.rerender(<KartGameWrapper race={{ ...race, look: "race" }} />);
+  expect(JSON.parse(canvas.getAttribute("data-look")!).optics.bloom.enabled).toBe(true);
+  view.rerender(<KartGameWrapper race={{ ...race, look: "off" }} />);
+  expect(canvas.getAttribute("data-look")).toBe("original");
 });
 
 it("opts into server-selected 3D, returns to the whole map immediately and honours a later host selection", async () => {

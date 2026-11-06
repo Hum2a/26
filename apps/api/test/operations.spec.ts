@@ -5,6 +5,40 @@ import { withClientApiQuery } from "./client-api-key.ts";
 import { payloadDigest } from "../src/room/digest.ts";
 
 describe("event operations", () => {
+  it.each([
+    ["production", false],
+    ["staging", true],
+    ["local", true],
+  ] as const)(
+    "reports recipient restrictions accurately for %s",
+    async (appEnv, restricted) => {
+      const created = await createRoom();
+      const stub = room(created.gameId);
+      await runInDurableObject(stub, async (instance) => {
+        const host = instance as unknown as { env: Env };
+        const previous = host.env;
+        host.env = {
+          ...previous,
+          APP_ENV: appEnv,
+          DATABASE_URL: "",
+          RESEND_API_KEY: "",
+          EMAIL_TEST_RECIPIENT: "sample@example.test",
+        };
+        try {
+          const result = await instance.diagnostics({
+            ...control(created),
+            nowMs: Date.now(),
+          });
+          if (!result.ok) throw new Error(result.message);
+          expect(result.report.delivery.testRecipient).toBe(restricted);
+          expect(JSON.stringify(result.report)).not.toContain("sample@example.test");
+        } finally {
+          host.env = previous;
+        }
+      });
+    },
+  );
+
   it("redacts diagnostics and keeps them off a guest cookie", async () => {
     const created = await createRoom();
     const stub = room(created.gameId);

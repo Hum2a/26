@@ -49,6 +49,7 @@ export const adminSessionOptions = {
 export function createAuth(
   env: AuthBindings,
   input: { origin: string; database: AppDatabase; email: EmailSender },
+  preparation?: { preparingLocalDatabase: true },
 ) {
   const adminEmail = configuredAdminEmail(env);
   const secret = resolveAuthSecret(env);
@@ -63,7 +64,18 @@ export function createAuth(
     secret,
     trustedOrigins: [input.origin],
     telemetry: { enabled: false },
-    advanced: { useSecureCookies: true },
+    advanced: {
+      useSecureCookies: true,
+      // The isolated local migration instance is created before tables exist.
+      // Real request instances, including local ones, validate after preparation.
+      database: {
+        validateSchema: !(
+          preparation?.preparingLocalDatabase &&
+          env.APP_ENV === "local" &&
+          input.database.kind === "pglite"
+        ),
+      },
+    },
     emailAndPassword: { enabled: false },
     rateLimit: { enabled: env.APP_ENV !== "local" },
     // Host commands check the admin session on every Pause or Advance. A short

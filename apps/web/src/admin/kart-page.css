@@ -12,6 +12,16 @@
   font-size: 1.5rem;
   font-weight: 700;
 }
+.kart-controls-bench {
+  grid-template-columns: minmax(0, 1fr);
+}
+.kart-controls-bench .kart-controller-shell {
+  grid-column: 1;
+  grid-row: auto;
+  align-self: stretch;
+  width: 100%;
+  max-width: 42rem;
+}
 .admin-kart-drive-frame {
   display: block;
   width: 100%;
@@ -117,4 +127,21 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
   padding: 0.6rem;
+}
+.kart-collision-overlay svg {
+  display: block;
+  width: 100%;
+  max-height: 32rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+}
+.kart-collision-overlay label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+}
+.kart-collision-overlay input {
+  accent-color: var(--accent);
 }

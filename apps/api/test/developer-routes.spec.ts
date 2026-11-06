@@ -82,6 +82,68 @@ it("validates bot count and sends the exact receipted command to the room", asyn
   );
 });
 
+it("authenticates and validates each named look before forwarding its receipted command", async () => {
+  const command = {
+    gameId: "ABCDEFGH",
+    requestId: crypto.randomUUID(),
+    action: "kart-look",
+    lookPreset: "race",
+  };
+  expect((await post("/api/rooms/play", command, "https://wrong.example")).status).toBe(
+    403,
+  );
+  expect(
+    (await post("/api/rooms/play", command, "https://example.com", "")).status,
+  ).toBe(401);
+  for (const lookPreset of [undefined, null, 2, {}, "neutral", "DAYLIGHT"])
+    expect((await post("/api/rooms/play", { ...command, lookPreset })).status).toBe(
+      400,
+    );
+  expect(hostAction).not.toHaveBeenCalled();
+  for (const lookPreset of ["off", "daylight", "warm", "crisp", "cool", "race"]) {
+    const input = { ...command, requestId: crypto.randomUUID(), lookPreset };
+    expect((await post("/api/rooms/play", input)).status).toBe(200);
+    expect(hostAction).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        requestId: input.requestId,
+        action: "kart-look",
+        lookPreset,
+      }),
+    );
+  }
+});
+
+it("authenticates and validates named gameplay handling before forwarding the host command", async () => {
+  const command = {
+    gameId: "ABCDEFGH",
+    requestId: crypto.randomUUID(),
+    action: "kart-handling",
+    handlingPreset: "bounce-v1",
+  };
+  expect((await post("/api/rooms/play", command, "https://wrong.example")).status).toBe(
+    403,
+  );
+  expect(
+    (await post("/api/rooms/play", command, "https://example.com", "")).status,
+  ).toBe(401);
+  for (const handlingPreset of [undefined, null, {}, "bounce", "unknown", 3])
+    expect((await post("/api/rooms/play", { ...command, handlingPreset })).status).toBe(
+      400,
+    );
+  expect(hostAction).not.toHaveBeenCalled();
+  for (const handlingPreset of ["slide-v1", "bounce-v1"]) {
+    const input = { ...command, requestId: crypto.randomUUID(), handlingPreset };
+    expect((await post("/api/rooms/play", input)).status).toBe(200);
+    expect(hostAction).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: "kart-handling",
+        handlingPreset,
+        requestId: input.requestId,
+      }),
+    );
+  }
+});
+
 it("projects a real rehearsal phone bootstrap without leaking internal receipt fields", async () => {
   const requestId = crypto.randomUUID();
   const session = {

@@ -1,6 +1,7 @@
 import { estimateRoundMs } from "../questions/runtime.ts";
 import {
   kartAssetManifest,
+  kartTrackPreview,
   adminContentSchema,
   adminTrollsSchema,
   type AdminContent,
@@ -211,6 +212,21 @@ export function registerAdminContentRoutes(app: Hono<{ Bindings: Env }>) {
   app.get("/api/admin/kart-assets", async (c) => {
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
     return rejected ?? jsonData(kartAssetManifest);
+  });
+  app.get("/api/admin/kart-tracks", async (c) => {
+    const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
+    if (rejected) return rejected;
+    try {
+      return jsonData(
+        kartTrackPreview({
+          track: c.req.query("track"),
+          slot: c.req.query("slot"),
+          beat: c.req.query("beat"),
+        }),
+      );
+    } catch {
+      return authFailure("invalid", 400);
+    }
   });
   app.get("/api/admin/trolls", async (c) => {
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);

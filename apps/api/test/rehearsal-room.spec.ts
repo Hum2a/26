@@ -69,6 +69,20 @@ it("creates a persistent isolated rehearsal, validates again and keeps host tool
     ).ok,
   ).toBe(false);
 });
+
+it("still runs the birthday pack with bots in a dedicated rehearsal", async () => {
+  const { stub, command } = await setup(true, { pack: "birthday", botCount: 2 });
+  const input = command("developer-run");
+  const started = await stub.hostAction(input);
+  expect(started.ok).toBe(true);
+  await evictDurableObject(stub);
+  expect(await stub.hostAction(input)).toEqual(started);
+  const snapshot = await stub.snapshotFor("control");
+  expect(snapshot.phase).toBe("intro");
+  expect(snapshot.developerTools?.rehearsal?.config.pack).toBe("birthday");
+  expect(snapshot.developerTools?.bots).toHaveLength(2);
+  expect(snapshot.players).toHaveLength(2);
+});
 it.each([
   ["developer-run", {}],
   ["developer-stop", {}],

@@ -14,6 +14,9 @@ import {
   type PlayCommand,
   type TransferIssued,
   type RehearsalConfig,
+  type KartLookName,
+  type KartHandling,
+  type KartItemRules,
 } from "@26/shared";
 import { clientApiHeaders } from "../api/client-key.ts";
 
@@ -160,7 +163,13 @@ export type PlayAction =
   | "kart-opponents-on"
   | "kart-effects-on"
   | "kart-effects-off"
+  | "kart-look"
   | "kart-setting"
+  | "kart-handling"
+  | "kart-item-rules"
+  | "kart-items-on"
+  | "kart-items-off"
+  | "kart-items-clear"
   | "kart-opponents-off"
   | "kart-stage-map"
   | "kart-stage-overview"
@@ -215,6 +224,9 @@ export type PlayIntent = {
   botCount?: number;
   /** Kart driving-feel change; the room validates the key and value again. */
   kartSetting?: { key: string; value: string };
+  lookPreset?: KartLookName;
+  handlingPreset?: KartHandling;
+  itemRules?: KartItemRules;
   gameId: string;
   action: PlayAction;
   requestId: string;

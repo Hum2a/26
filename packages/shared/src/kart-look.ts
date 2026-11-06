@@ -39,11 +39,40 @@ export const kartEnvironmentSchema = z
     shadows: z.boolean(),
   })
   .strict();
+const opticalSwitch = (maximum: number) =>
+  z.object({ enabled: z.boolean(), strength: finite(0, maximum) }).strict();
+export const neutralKartOptics = {
+  wind: { enabled: false, strength: 0.4 },
+  chromatic: { enabled: false, strength: 0.3 },
+  lensDirt: { enabled: false, strength: 0.05 },
+  bloom: { enabled: false, strength: 0.12, threshold: 1 },
+  ao: { enabled: false, strength: 0.12, radius: 3 },
+  tiltShift: {
+    enabled: false,
+    strength: 0.3,
+    focusDistance: 25,
+    focusRange: 18,
+  },
+};
+export const kartOpticsSchema = z
+  .object({
+    wind: opticalSwitch(1),
+    chromatic: opticalSwitch(1),
+    lensDirt: opticalSwitch(0.15),
+    bloom: opticalSwitch(0.35).extend({ threshold: finite(0.5, 3) }),
+    ao: opticalSwitch(0.25).extend({ radius: finite(1, 6) }),
+    tiltShift: opticalSwitch(1).extend({
+      focusDistance: finite(4, 120),
+      focusRange: finite(2, 60),
+    }),
+  })
+  .strict();
 export const kartLookPresetSchema = z
   .object({
     version: z.literal(1),
     enabled: z.boolean(),
     environment: kartEnvironmentSchema.default(neutralKartEnvironment),
+    optics: kartOpticsSchema.default(() => kartOpticsSchema.parse(neutralKartOptics)),
     grading: z
       .object({
         enabled: z.boolean(),
@@ -83,6 +112,7 @@ export const neutralKartLook: KartLookPreset = {
   version: 1,
   enabled: true,
   environment: { ...neutralKartEnvironment },
+  optics: kartOpticsSchema.parse(neutralKartOptics),
   grading: {
     enabled: true,
     mixer: [1, 0, 0, 0, 1, 0, 0, 0, 1],
@@ -130,6 +160,16 @@ export const kartLookPresets = {
   cool: {
     ...neutralKartLook,
     grading: { ...neutralKartLook.grading, temperature: -0.25, saturation: 0.9 },
+  },
+  race: {
+    ...neutralKartLook,
+    grading: { ...neutralKartLook.grading, vibrance: 0.08 },
+    optics: {
+      ...neutralKartLook.optics,
+      wind: { enabled: true, strength: 0.25 },
+      chromatic: { enabled: true, strength: 0.18 },
+      bloom: { enabled: true, strength: 0.08, threshold: 1 },
+    },
   },
 } satisfies Record<string, KartLookPreset>;
 export function isNeutralKartGrade(value: KartLookPreset) {

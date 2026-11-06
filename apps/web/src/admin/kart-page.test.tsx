@@ -1,7 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { beforeEach, expect, it, vi } from "vitest";
-vi.mock("./sections-api", () => ({ readContent: vi.fn(), readKartAssets: vi.fn() }));
+vi.mock("./sections-api", () => ({
+  readContent: vi.fn(),
+  readKartAssets: vi.fn(),
+  readKartTracks: vi.fn(),
+}));
 vi.mock("../live/room-api", () => ({ createLobby: vi.fn() }));
 vi.mock("./phone-preview-panel", () => ({
   PhonePreviewPanel: ({
@@ -16,7 +20,8 @@ vi.mock("./phone-preview-panel", () => ({
     </p>
   ),
 }));
-import { readContent, readKartAssets } from "./sections-api";
+import { readContent, readKartAssets, readKartTracks } from "./sections-api";
+import { kartTrackPreview } from "@26/shared";
 import { kartAssetManifest } from "@26/shared";
 import { createLobby } from "../live/room-api";
 import { AdminKartPage } from "./kart-page";
@@ -26,6 +31,7 @@ import { safeAdminReturnTo } from "./admin-return";
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(readKartAssets).mockResolvedValue(kartAssetManifest);
+  vi.mocked(readKartTracks).mockResolvedValue(kartTrackPreview({}));
 });
 
 it("creates only a kart lobby and reuses the request after uncertain creation", async () => {
@@ -50,6 +56,35 @@ function mount(path = "/admin/kart") {
     </MemoryRouter>,
   );
 }
+it("opens the authenticated track catalogue in its existing Kart navigation", async () => {
+  mount("/admin/kart?view=tracks");
+  expect(
+    screen.getByRole("button", { name: "Tracks & modes", pressed: true }),
+  ).toBeTruthy();
+  await screen.findByRole("heading", { name: "Tracks & modes" });
+  await screen.findByText(/Mario circuit · Imported circuit/);
+});
+
+it("opens the actual time-trial rehearsal from its Kart view", () => {
+  mount("/admin/kart?view=trials");
+  expect(
+    screen.getByRole("button", { name: "Time trials", pressed: true }),
+  ).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Time trials" })).toBeTruthy();
+  expect(screen.getByTitle("Time trial practice").getAttribute("src")).toBe(
+    "/kart-engine/index.html",
+  );
+});
+
+it("opens the real isolated Controls bench from the Kart navigation", async () => {
+  mount("/admin/kart?view=controls");
+  expect(await screen.findByRole("heading", { name: "Controls bench" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Controls", pressed: true })).toBeTruthy();
+  fireEvent.keyDown(window, { key: "w" });
+  expect(screen.getByLabelText("Current driving input").textContent).toContain(
+    "Accelerate on",
+  );
+});
 
 it("opens the playable circuit from its own active admin tab without needing rooms or content", () => {
   mount();
@@ -146,4 +181,13 @@ it("keeps file diagnostics in their own view and rehearses with the real engine"
   );
   expect(readKartAssets).toHaveBeenCalledTimes(1);
   expect(readContent).not.toHaveBeenCalled();
+});
+
+it("opens the real collision bench as a dedicated kart view", async () => {
+  mount("/admin/kart?view=collisions");
+  expect(screen.getByRole("heading", { name: "Collision bench" })).toBeTruthy();
+  expect(
+    screen.getByRole("img", { name: "Actual course collision boundaries" }),
+  ).toBeTruthy();
+  expect(screen.queryByTitle("Solo kart practice")).toBeNull();
 });

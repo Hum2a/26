@@ -15,6 +15,7 @@ import {
   type KartDriver,
   type KartRaceView,
   type Wall,
+  type KartHandling,
 } from "@26/shared";
 import {
   importedSurfaceAt,
@@ -48,6 +49,7 @@ type Environment = {
   walls: (x: number, z: number, reach: number) => Wall[];
   offRoad: (x: number, z: number) => boolean;
   features: readonly CourseFeature[];
+  handling: KartHandling;
 };
 
 const neutral: DrivingInput = { steer: 0, gas: false, brake: false, drift: false };
@@ -72,11 +74,15 @@ function environment(race: KartRaceView): Environment {
     walls: ring ? ringIndex : nearbyImportedWalls,
     offRoad: ring ? () => false : (x, z) => importedSurfaceAt(x, z) !== "road",
     features: race.courseEnabled ? (ring ? ringCourse : soloCourse) : [],
+    handling:
+      race.presentation?.version === 2 || race.presentation?.version === 3
+        ? (race.presentation.handling?.preset ?? "slide-v1")
+        : "slide-v1",
   };
 }
 
 /** Rebuild a physics body from the public pose. Lateral slip is not public; it settles within a tick. */
-function bodyFrom(driver: KartDriver): DrivingBody {
+function bodyFrom(driver: KartDriver, race: KartRaceView): DrivingBody {
   const body = createDrivingBody(driver.x, driver.z, driver.heading);
   body.vx = Math.cos(driver.heading) * driver.speed;
   body.vz = Math.sin(driver.heading) * driver.speed;
@@ -87,6 +93,13 @@ function bodyFrom(driver: KartDriver): DrivingBody {
   body.boostLevel = driver.boostLevel ?? 0;
   body.height = driver.height ?? 0;
   body.contact = driver.contact ?? false;
+  if (
+    (race.presentation?.version === 2 || race.presentation?.version === 3) &&
+    race.presentation.handling
+  ) {
+    body.stunMs = race.presentation.handling.stunMs;
+    body.impactCooldownMs = race.presentation.handling.cooldownMs;
+  }
   return body;
 }
 
@@ -101,8 +114,11 @@ export function createSelfPrediction() {
   let raceId: string | undefined;
   let lastElapsed = -1;
   let env: Environment | undefined;
+  let environmentKey = "";
   let body: DrivingBody | undefined;
   let bodyAt = 0;
+  /** Only a newer room frame extends the prediction window. */
+  let frameAt = 0;
   /** Race time at a phone time: elapsed(t) = base.elapsed + t - base.at. */
   let base = { elapsed: 0, at: 0 };
   let slowedUntil = 0;
@@ -130,6 +146,7 @@ export function createSelfPrediction() {
         slowedUntil > elapsed || env!.offRoad(next.x, next.z),
         true,
         env!.features,
+        env!.handling,
       );
       t += ms;
     }
@@ -140,6 +157,10 @@ export function createSelfPrediction() {
     body = undefined;
     lastElapsed = -1;
     error = { x: 0, z: 0, heading: 0 };
+  }
+
+  function predictionTime(now: number) {
+    return Math.max(bodyAt, Math.min(now, frameAt + maxSpanMs));
   }
 
   return {
@@ -181,23 +202,30 @@ export function createSelfPrediction() {
       }
       if (race.raceId !== raceId) {
         raceId = race.raceId;
-        env = environment(race);
         // Keep the control currently held: controls only report changes, so
         // a pedal held as the race begins would otherwise be forgotten.
         inputs = inputs.slice(-1);
         reset();
       }
+      // Host course changes can arrive without advancing the race clock.
+      // Refresh presentation physics without treating that as a fresh pose.
+      const nextEnvironmentKey = `${race.trackId}:${Boolean(race.courseEnabled)}:${race.presentation?.version === 2 || race.presentation?.version === 3 ? (race.presentation.handling?.preset ?? "slide-v1") : "slide-v1"}`;
+      if (!env || nextEnvironmentKey !== environmentKey) {
+        env = environment(race);
+        environmentKey = nextEnvironmentKey;
+      }
       if (race.elapsedMs === lastElapsed) return;
+      const shown = body ? advance(body, bodyAt, predictionTime(now)) : undefined;
       lastElapsed = race.elapsedMs;
+      frameAt = now;
       const rtt = Math.max(0, Math.min(maxSpanMs, roundTripMs));
       base = { elapsed: race.elapsedMs, at: now - rtt };
       const slowedMs =
         race.powers?.effects.find((effect) => effect.playerId === self.playerId)
           ?.slowedMs ?? 0;
       slowedUntil = race.elapsedMs + slowedMs;
-      const replayed = advance(bodyFrom(self), base.at, now);
-      if (body) {
-        const shown = advance(body, bodyAt, now);
+      const replayed = advance(bodyFrom(self, race), base.at, now);
+      if (shown) {
         const dx = shown.x + error.x - replayed.x,
           dz = shown.z + error.z - replayed.z;
         error =
@@ -216,10 +244,10 @@ export function createSelfPrediction() {
     /** The pose to draw now, or undefined when there is nothing to predict. */
     pose(now: number): PredictedPose | undefined {
       if (!body || !env) return undefined;
-      const from = Math.max(bodyAt, now - maxSpanMs);
-      const dt = Math.max(0, now - bodyAt) / 1000;
-      body = advance(body, from, now);
-      bodyAt = now;
+      const to = predictionTime(now);
+      const dt = Math.max(0, to - bodyAt) / 1000;
+      body = advance(body, bodyAt, to);
+      bodyAt = to;
       const fade = Math.exp(-correctionRate * dt);
       error = { x: error.x * fade, z: error.z * fade, heading: error.heading * fade };
       return {

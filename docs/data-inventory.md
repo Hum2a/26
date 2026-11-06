@@ -332,7 +332,6 @@ The existing durable race additionally holds optional effectsEnabled and at most
 
 The same-origin practice message accepts an optional validated/cloned preset or null. Metadata-only messages omit face to preserve its object URL/texture; explicit null clears it. The parent caches one bounded authorised/local photo Blob per media key and frame revision, fetches it once and resends bytes only to a new frame or changed photo. Unknown/private fields reject the whole message. Native176 resources stay inside the solo renderer; the existing in-memory store and receiver clear state/URLs on replacement/unmount. Nothing sends credentials, media URLs or room state to practice.
 
-
 ### Early local kart Look bench (Phase4 incomplete)
 
 The mounted authenticated Look bench holds a strict version1 presentation preset, before/after selection, optional exported/imported JSON and local pass/target counts. No browser persistence, upload or room changes. Grading parameters include bounded nine-channel mixer, globals, eight HSL bands, theme-role split tones and named renderer tone mapping. Environment parameters are bounded sun/sky/light/reflection/shadow settings. Old grading-only exports normalise to a disabled environment. All palette colours remain theme roles.
@@ -340,3 +339,75 @@ The mounted authenticated Look bench holds a strict version1 presentation preset
 Connected scenes own at most one colour target (quality/capability edge cap1024/1536/2048), optional native procedural PMREM reflection and a single1024 shadow target with56m frustum. High/Balanced/Low colour MSAA is capped4/2/0 and by renderer capability. Neutral releases the colour target and restores source lights/environment/material flags; Low omits reflection/shadow allocations. No external sky/environment asset, dependency, telemetry or new identity. Procedural GPU resources are not retained as files.
 
 The same existing practice presentation message additionally accepts an optional validated/cloned look preset or null, preserving the metadata-only face semantics. Parent photo caching remains unchanged; only presentation values and optional bounded Blob enter the frame. Native176 keeps the preset in the existing ephemeral practice store and releases scene-owned resources on unmount. Native176 browser verification passed for the opt-in rehearsal, including reflection, face preservation, before/after and legacy restoration. A one-shot soloLookReady flag keeps practice loading until its first successful look frame. Ordinary practice/live rooms remain legacy. No public snapshot or durable-room look field has been introduced yet.
+
+### Kart Look presentation (Phase 4 increment, verification pending)
+
+Optional public race.look stores only a named cosmetic preset: off, daylight, warm, crisp, cool or race. Absence retains legacy rendering. At most20 injected-time preset changes are stored with the race and projected only to control snapshots as kartLookHistory. Guest/stage receive the current named choice, not history, arbitrary tuning JSON or diagnostics. No scores, personal data or identity are added. Look bench presets, scripts and sample images remain isolated browser state; new depth/colour textures are scene-owned and released on reset/unmount. Production email Health now reports recipient restrictions according to actual environment behaviour.
+
+### Kart controls (Phase 5 input increment)
+
+Steering response, gamepad deadzone and opt-in mouse steering are ephemeral local
+component preferences. They reset with the controller; no storage, account,
+fingerprint, device name or hardware identifier is added. A controller slot index
+is used only to require neutral input when a pad changes and is never sent or
+saved. Keyboard/touch/mouse/gamepad all feed the existing normalised driving
+intent and existing receipted item/recovery commands. Admin Controls shows actual
+local inputs, item/recovery attempt counts and at most20 local rehearsal actions
+with browser-relative times. It opens no room or socket and saves no history.
+
+Contact edge, sound and vibration choices are also screen-local and memory-only;
+sound and vibration default off. A cursor reads accepted race time/contact edges
+and suppresses repeats, pauses and reconnections, with a maximum one pulse per
+400ms. No telemetry or hardware identity is saved. The Controls bench labels its
+contact samples as stand-ins and keeps them only in its bounded local history.
+Optional audio reuses the shared browser adapter; contexts are created only by
+an explicit sound gesture and closed on unmount. No collision outcome, gameplay
+event, score, command or additional socket is produced by feedback.
+
+### Kart accepted contacts and collision inspection (Phase5, in progress)
+
+New races store optional contactVersion1, at most20 recent accepted impact/recovery records (stable active-time eventId, active atMs, playerId, frozen kart number, position and incoming speed), and each driver's latest accepted impact. These share existing durable round-state retention and do not add a database, queue or scheduler. Contact recording uses the authoritative20ms swept solver with rising-edge/400ms suppression; replay/catch-up and eviction preserve stable IDs. Legacy races without this version keep their existing projection.
+
+Only authenticated control snapshots include kartContactHistory. It is absent from stage/guest snapshots and all public compact kart frames. Changed private history reuses the existing authenticated snapshot/patch path; unchanged ticks keep compact frames. An active phone may receive a version2 cosmetic envelope with at most its own latest contact event (eventId, atMs, playerId only), alongside the existing bounded finish events. Other drivers' contact records, history positions/speeds, raw inputs, inventories, identities and credentials are excluded. Unsupported cosmetic versions drop without invalidating driving. Finished races and projector frames retain the original finish envelope. Local cursors reject stale/duplicate/replayed effects.
+
+Admin Collisions renders the actual baked X/Z wall segments and course line, with local visibility switches and the recent accepted history. Its isolated stand-in demonstration calls the real swept solver and keeps only20 ephemeral rows. It has no room connection, socket or score. This does not introduce or claim measured wall heights or browser collision authority.
+
+### Kart named contact handling (Phase5)
+
+Room defaults store one validated slide-v1/bounce-v1 choice and at most20 private host changes (injected timestamp and preset) in existing round-state storage. A grid copies the choice; collect, including pauses, refuses changes. Later choices affect the next race while the finished race retains its profile. Control snapshots alone include the next/current/frozen summary and selection history. Guest/stage receive no host choice history.
+
+An active phone's existing version2 optional presentation envelope may additionally contain its accepted bounce preset, stun remaining (0–180ms) and cooldown remaining (0–600ms), only to seed the existing cosmetic prediction. The server owns all physics and active-time expiry; ordinary guest intents remain the same six fields and cannot set handling or timers. Projector/finished envelopes and original-slide defaults retain their established format. Stored older grids retain original rules. Practice stores its profile and stun only in the existing in-memory solo store; changing profiles resets/pauses practice and creates no room or persistent record. No new identity, analytics, database table, queue or scheduler is added.
+
+### Optional solo time-trial records
+
+Practice can opt in to `26-kart-trials-v1` browser-local storage. It defaults off; switching it off removes the key and in-memory records, and Clear local records deletes its runs while retaining the opt-in choice. No room, identity, email, face image or credential is stored. No network request or Neon write is made. Storage denial/malformed/oversized/incompatible data produces a notice and does not stop driving. There is no browser-local record clock outside the existing active20ms practice simulation.
+
+Version1 retains at most20 actual attempts (at most40,000 characters when read), with frozen version/track/physics/handling/lap target/assists/items/course switches, clean versus assisted quality, total milliseconds and one or three lap milliseconds. Invalid/incomplete runs do not enter records. Matching profiles retain separate actual best-total and best-lap attempts if needed; no synthetic combined run is stored. Maximum accepted time per field is24hours. Trial cursors, eight sector splits, live elapsed times, notices and current-run quality remain in the existing ephemeral solo store and reset with practice; they are not room results or guest score inputs. Admin stand-in record rehearsal uses component-local state and does not write this key.
+
+### Local kart view readiness
+
+Phone and isolated Admin rendering keep only ephemeral per-view loading/usable/failed state and the selected map/3D view. These states release or enable that screen's existing controls; they are not sent as room-ready messages, stored in a room, attached to identity or used for server phase/timing/scoring. Stage snapshots receive no new diagnostics. Circuit/simple-kart fallback, retry/context loss and new-race reset reuse existing renderers; countdown suppression is local display/haptics only.
+
+### Accepted live-race sector recap
+
+New races store recapVersion1 and, when settled, endReason(all-finished/time-limit/host-ended/race-ended) in their existing Durable Object race JSON. Each driver stores at most8 accepted active-time sector crossing timestamps and a bounded recovery count. Recovery trims timestamps for rolled-back gates; unknown older spans remain null rather than invented durations. Existing room retention/destruction owns these fields; there is no new database, identity, scheduler or score table.
+
+During racing, kartRecap is control-only and updates through existing authenticated snapshots only on crossings/recovery/finish. It contains at most100 driver IDs/numbers, status/checkpoint, accepted finish time,0–8 sector durations (nullable when unknown), recovery count and history updated-at active milliseconds. It excludes raw controls, queues, positions, credentials, faces and device context. Its timestamp is history time, not a second live clock. Phone/stage public frames omit it while racing. After the race ends, the same official summary may appear in the existing optional cosmetic presentation envelope. Older clients can discard that envelope while retaining authoritative race/score fields; older stored races without the version keep their old projection and show history unavailable. Phone UI shows its own row; stage shows at most3 headline rows and counts; the host can inspect the full bounded history. No client timing/recap claim is accepted.
+
+### Local map navigation display
+
+The optional small chase map is off by default and held only in the existing driving view's React state; remounting a race/view resets it. Heading and next-sector markers derive only from public route geometry and the accepted self pose/checkpoint already supplied by the room. They do not infer progress, send packets, record locations or change scores. Admin Race start's track/sector/reversed-heading samples are clearly labelled in-memory stand-ins, with no room, ledger or browser record writes.
+
+### Item physics foundation rehearsal (not live room storage)
+
+Admin Items sandbox holds an in-memory version1 projectile world with at most64 objects and20 events, stable object/event counters, injected active milliseconds and spawning state. Objects contain kind, owner/optional target ID, pose/velocity/height, arm/expiry times, bounce count and at most100 hit IDs. Two labelled parked actors use existing powers plus optional active-time damageUntil. Clear/reset/reload removes rehearsal data; nothing goes to room storage, browser records, Neon or a room socket. Original live item projection remains unchanged until authoritative integration. Shared SVG geometry reads only visible pose/kind/time, excluding owner, target and hit history.
+
+The item rehearsal now restores its existing world through strict versioned Zod schemas:64 objects,20 ordered history entries,100 distinct hit IDs per object, bounded game IDs/counters and active times. The same world clock and fuse survive validated JSON copy/restore. A separate strict visible-pose schema and explicit projection omit owner, target and hit history. These boundaries are prepared for later integration; no new room/network storage is enabled, and validation does not run inside each20ms simulation step.
+
+### Authoritative expanded kart items (implementation in progress)
+
+Room race JSON now optionally copies frozen itemRules version2 (unique allowed catalogue, maximum7) and the validated version1 projectile world described above. Existing room retention/destruction applies. Original rules version1 remain default. Treats consume the held item for600ms personal turbo, no collectible/score write. The same small boost resolves homing with no eligible target ahead. World/fuses use the existing active race clock; no new timers, sockets, identity or database. Control-only kartItems contains held slots (maximum100), oils/projectile counts (maximum64 each), spawning, frozen current/next rules and bounded20 item/rule histories. Public version3 presentation exposes only allowed rules, spawn state, own held slot and64 visible poses; owner/target/hit history stays private. Legacy base inventories remain original3-or-null; clients without expanded-item capability are asked to refresh before receiving version3 gameplay. Admin sandbox remains isolated and includes the actual personal Treats helper. No additional personal information or browser persistence.
+
+### Track/mode catalogue preview data
+
+The code-versioned kart-tracks-v1 catalogue derives counts/lengths from existing driving, route, walls, surfaces, item boxes and course constants. Authenticated no-store /api/admin/kart-tracks validates selected installed track, grid slot1–80 and grid/recovery beat; it creates labelled stand-ins through the actual shared factory/recovery reducer and projects only public race fields (one selected phone driver,80 stage poses, zero sample points). No room/storage/ledger/scheduler/credential/email access occurs. Current mode support is labelled honestly, including pending ring hub/trials and frozen live-track selection. Existing original party ring is described, not a newly imported or built course. Admin selection and optional3D toggle are ephemeral React state; no browser records/cache/database fields are added. Native practice and live rules remain unchanged.

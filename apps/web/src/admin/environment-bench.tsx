@@ -16,6 +16,7 @@ import type { GraphicsTier } from "../kart/graphics";
 import type { KartLookStats } from "../kart/look-renderer";
 import { SoloPracticeFrame } from "../kart/SoloPracticeFrame";
 import { practiceFaceLimit } from "../kart/practice-presentation";
+import { vfxScripts, type VfxScript } from "../kart/vfx-rehearsal";
 const KartCanvas = lazy(() => import("../kart/KartCanvas"));
 const read = () => readKartPreview("turn");
 const numeric = [
@@ -31,6 +32,14 @@ const numeric = [
   ["splitAmount", "Split tone amount", 0, 0.3, 0.01],
   ["splitBalance", "Split tone balance", 0.1, 0.9, 0.05],
 ] as const;
+const opticalControls = [
+  ["wind", "Speed lines", 1, 0.05],
+  ["chromatic", "Boost colour split", 1, 0.05],
+  ["lensDirt", "Lens dirt", 0.15, 0.01],
+  ["bloom", "Bloom", 0.35, 0.01],
+  ["ao", "Ambient occlusion", 0.25, 0.01],
+  ["tiltShift", "Tilt shift", 1, 0.05],
+] as const;
 /** Isolated real render bench. Only implemented controls appear; no room is changed. */
 export function EnvironmentBench() {
   const [preset, setPreset] = useState(() =>
@@ -45,6 +54,8 @@ export function EnvironmentBench() {
   const [solo, setSolo] = useState(false),
     [soloLook, setSoloLook] = useState(true),
     [sampleFace, setSampleFace] = useState<Blob | null>(null);
+  const [script, setScript] = useState<VfxScript | "static">("static"),
+    [run, setRun] = useState(0);
   const sample = useSection(read),
     reduced = usePrefersReducedMotion();
   const update = (patch: Partial<KartLookPreset["grading"]>) => {
@@ -78,16 +89,29 @@ export function EnvironmentBench() {
       setError("");
     } else setError("That environment setting is outside the supported range.");
   };
+  const updateOptic = (
+    key: keyof KartLookPreset["optics"],
+    patch: Record<string, number | boolean>,
+  ) => {
+    const next = kartLookPresetSchema.safeParse({
+      ...preset,
+      optics: { ...preset.optics, [key]: { ...preset.optics[key], ...patch } },
+    });
+    if (next.success) {
+      setPreset(next.data);
+      setError("");
+    } else setError("That optical setting is outside the supported range.");
+  };
   return (
     <section
       className="admin-kart-pane vfx-bench environment-bench"
       aria-label="Kart look bench"
     >
-      <h2>Look bench · work in progress</h2>
+      <h2>Look bench</h2>
       <p>
-        Grading preview with real stand-ins. Settings stay here; rooms and ordinary
-        practice keep their current look. Optical effects and solo integration are still
-        to follow.
+        Rehearse light, grading and optional effects with real stand-ins or the solo
+        driving engine. Settings stay in this page. Live controls chooses the room's
+        named look; every screen keeps its own graphics and reduced-motion settings.
       </p>
       <label>
         Look preset
@@ -101,6 +125,7 @@ export function EnvironmentBench() {
           <option value="warm">Warm grade</option>
           <option value="crisp">Crisp grade</option>
           <option value="cool">Cool grade</option>
+          <option value="race">Race effects</option>
         </select>
       </label>
       <label>
@@ -137,6 +162,35 @@ export function EnvironmentBench() {
       <Button variant="secondary" onClick={() => setPaused((value) => !value)}>
         {paused ? "Resume look sample" : "Pause look sample"}
       </Button>
+      <label>
+        Look rehearsal script
+        <select
+          value={script}
+          onChange={(event) => {
+            const next = event.target.value;
+            if (next === "static" || vfxScripts.some((id) => id === next)) {
+              setScript(next as VfxScript | "static");
+              setRun((value) => (value + 1) % 1_000_000);
+            }
+          }}
+        >
+          <option value="static">Static pose</option>
+          {vfxScripts.map((id) => (
+            <option key={id} value={id}>
+              {id}
+            </option>
+          ))}
+        </select>
+      </label>
+      <Button
+        variant="secondary"
+        onClick={() => {
+          setRun((value) => (value + 1) % 1_000_000);
+          setPaused(false);
+        }}
+      >
+        Restart look script
+      </Button>
       {sample.loading ? (
         <p>Loading stand-ins…</p>
       ) : sample.data && !solo ? (
@@ -151,6 +205,7 @@ export function EnvironmentBench() {
               graphicsTier={tier}
               lookPreset={before ? neutralKartLook : preset}
               onLookStats={setStats}
+              vfxRehearsal={script === "static" ? undefined : { script, run }}
             />
           </Suspense>
         </div>
@@ -169,6 +224,17 @@ export function EnvironmentBench() {
           counts only; no frame-rate guarantee.
         </p>
       ) : null}
+      {stats && !solo ? (
+        <p aria-label="Optical rendering cost">
+          {stats.depthTextures} depth textures · at most {stats.textureSamples} texture
+          reads per fragment. Active effects:{" "}
+          {Object.entries(stats.optics)
+            .filter(([, enabled]) => enabled)
+            .map(([name]) => name)
+            .join(", ") || "none"}
+          .
+        </p>
+      ) : null}
       <Button
         variant="secondary"
         onClick={() => {
@@ -179,6 +245,96 @@ export function EnvironmentBench() {
       >
         Reset to neutral look
       </Button>
+      <fieldset className="look-controls">
+        <legend>Optional optical effects</legend>
+        {opticalControls.map(([key, label, max, step]) => (
+          <fieldset key={key} className="look-controls">
+            <legend>{label}</legend>
+            <label>
+              <input
+                type="checkbox"
+                checked={preset.optics[key].enabled}
+                onChange={(event) =>
+                  updateOptic(key, { enabled: event.target.checked })
+                }
+              />
+              Enable {label.toLocaleLowerCase("en-GB")}
+            </label>
+            <label>
+              {label} strength
+              <input
+                type="number"
+                min={0}
+                max={max}
+                step={step}
+                value={preset.optics[key].strength}
+                onChange={(event) =>
+                  updateOptic(key, { strength: event.target.valueAsNumber })
+                }
+              />
+            </label>
+          </fieldset>
+        ))}
+        {(
+          [
+            [
+              "bloom",
+              "threshold",
+              "Bloom threshold",
+              0.5,
+              3,
+              0.1,
+              preset.optics.bloom.threshold,
+            ],
+            [
+              "ao",
+              "radius",
+              "Ambient occlusion radius (pixels)",
+              1,
+              6,
+              1,
+              preset.optics.ao.radius,
+            ],
+            [
+              "tiltShift",
+              "focusDistance",
+              "Tilt shift focus distance (metres)",
+              4,
+              120,
+              1,
+              preset.optics.tiltShift.focusDistance,
+            ],
+            [
+              "tiltShift",
+              "focusRange",
+              "Tilt shift focus range (metres)",
+              2,
+              60,
+              1,
+              preset.optics.tiltShift.focusRange,
+            ],
+          ] as const
+        ).map(([key, field, label, min, max, step, value]) => (
+          <label key={field}>
+            {label}
+            <input
+              type="number"
+              min={min}
+              max={max}
+              step={step}
+              value={value}
+              onChange={(event) =>
+                updateOptic(key, { [field]: event.target.valueAsNumber })
+              }
+            />
+          </label>
+        ))}
+      </fieldset>
+      <p>
+        Low skips optional optical effects. Reduced motion removes speed lines, moving
+        colour split and tilt shift. Speed effects use the shown driver's accepted speed
+        and turbo state; scripts are isolated visual stand-ins.
+      </p>
       <fieldset className="look-controls">
         <legend>Environment and light</legend>
         <label>

@@ -4,6 +4,7 @@ import type { KartRaceView, KartVfxPreset } from "@26/shared";
 import { importedRoute } from "../../../../packages/shared/src/kart-route";
 import { createCircuit } from "./circuit";
 import type { SelfPrediction } from "./self-prediction";
+import type { KartRenderState } from "./view-readiness";
 import { serverRoundTrip } from "../live/server-clock";
 import { kartCameraPose, boostCameraAmount } from "./presentation";
 import { vfxRehearsalRace, type VfxScript } from "./vfx-rehearsal";
@@ -35,6 +36,7 @@ export default function KartCanvas({
   lookPreset,
   onLookStats,
   prediction,
+  onRenderState,
 }: {
   race: KartRaceView;
   mobile: boolean;
@@ -51,11 +53,16 @@ export default function KartCanvas({
   onLookStats?: (stats: KartLookStats) => void;
   /** Draws the followed kart from local prediction; the room stays authoritative. */
   prediction?: SelfPrediction;
+  onRenderState?: (state: KartRenderState) => void;
 }) {
   const focusPlayerId = spectator ? undefined : followPlayerId;
   const perspective = Boolean(followPlayerId);
   const following = useRef(followPlayerId);
   const predictor = useRef(prediction);
+  const readiness = useRef(onRenderState);
+  useEffect(() => {
+    readiness.current = onRenderState;
+  }, [onRenderState]);
   useEffect(() => {
     predictor.current = prediction;
   }, [prediction]);
@@ -95,6 +102,7 @@ export default function KartCanvas({
   useEffect(() => {
     const root = mount.current;
     if (!root) return;
+    readiness.current?.("loading");
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({
@@ -103,6 +111,9 @@ export default function KartCanvas({
         alpha: false,
       });
     } catch {
+      readiness.current?.("failed");
+      // Constructor failure has no renderer to subscribe to. Keep the existing
+      // imperative fallback and report its local availability to the phone.
       const message = document.createElement("p"),
         retry = document.createElement("button");
       message.setAttribute("role", "status");
@@ -110,7 +121,10 @@ export default function KartCanvas({
         "The circuit could not load. Race timing and the leaderboard continue.";
       retry.type = "button";
       retry.textContent = "Retry circuit";
-      retry.onclick = () => setRevision((value) => value + 1);
+      retry.onclick = () => {
+        readiness.current?.("loading");
+        setRevision((value) => value + 1);
+      };
       root.append(message, retry);
       return () => {
         message.remove();
@@ -127,6 +141,7 @@ export default function KartCanvas({
     if (!initialProfile) {
       renderer.dispose();
       setFailed(true);
+      readiness.current?.("failed");
       return;
     }
     let profile = initialProfile;
@@ -162,6 +177,7 @@ export default function KartCanvas({
       (state) => {
         dirty = true;
         setAssetState(state);
+        readiness.current?.(state === "ready" ? "usable" : state);
       },
       8,
       (state) => {
@@ -309,22 +325,25 @@ export default function KartCanvas({
       );
       const stats = circuit.renderStats();
       renderer.domElement.dataset.playerId = following.current ?? "";
+      renderer.domElement.dataset.roomLook = displayRace.look ?? "off";
       renderer.domElement.dataset.karts = String(stats.drivers);
       renderer.domElement.dataset.vehicleDetail = stats.detailed
         ? "detailed"
         : "simple";
       const pose = following.current ? circuit.pose(following.current) : undefined;
+      const followedDriver = following.current
+        ? displayRace.participants.find(
+            (driver) => driver.playerId === following.current,
+          )
+        : undefined;
       // Drawn position of the followed kart, for browser checks of responsiveness.
       renderer.domElement.dataset.followPose = pose
         ? `${pose.x.toFixed(2)},${pose.z.toFixed(2)},${pose.heading.toFixed(3)}`
         : "";
       if (pose) {
-        const driver = displayRace.participants.find(
-          (driver) => driver.playerId === following.current,
-        );
         boost = boostCameraAmount(
           boost,
-          Boolean(driver?.boostRemainingMs),
+          Boolean(followedDriver?.boostRemainingMs),
           delta,
           reduced.current,
         );
@@ -365,6 +384,8 @@ export default function KartCanvas({
           dt: delta,
           paused: effects.current.paused,
           reducedMotion: reduced.current,
+          speed: Math.abs(followedDriver?.speed ?? 0),
+          boost: followedDriver?.boostRemainingMs ? 1 : 0,
           focus: pose ? [pose.x, pose.height ?? 0, pose.z] : [centreX, 0, centreZ],
         });
       else renderer.render(circuit.scene, camera);
@@ -393,6 +414,20 @@ export default function KartCanvas({
         renderer.domElement.dataset.lookShadowSize = String(
           lookStats.environment?.shadowSize ?? 0,
         );
+        renderer.domElement.dataset.lookDepthTextures = String(lookStats.depthTextures);
+        renderer.domElement.dataset.lookTextureSamples = String(
+          lookStats.textureSamples,
+        );
+        for (const key of [
+          "wind",
+          "chromatic",
+          "lensDirt",
+          "bloom",
+          "ao",
+          "tiltShift",
+        ] as const)
+          renderer.domElement.dataset[`look${key[0]!.toUpperCase()}${key.slice(1)}`] =
+            String(lookStats.optics[key]);
         if (!lastLookReport || forceStats || now - lastLookReport >= 500) {
           lookConfig.current.report(lookStats);
           lastLookReport = now;
@@ -422,8 +457,10 @@ export default function KartCanvas({
       event.preventDefault();
       renderer.setAnimationLoop(null);
       setFailed(true);
+      readiness.current?.("failed");
     };
     const restored = () => {
+      readiness.current?.("loading");
       setFailed(false);
       setRevision((value) => value + 1);
     };
@@ -494,6 +531,7 @@ export default function KartCanvas({
           <button
             type="button"
             onClick={() => {
+              readiness.current?.("loading");
               setFailed(false);
               setRevision((value) => value + 1);
             }}

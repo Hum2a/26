@@ -61,7 +61,13 @@ test("local room host controls nearby opponents and stage modes on the existing 
   test.setTimeout(180_000);
   await signIn(page);
   await page.goto("/admin/kart");
+  const creation = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/rooms" &&
+      response.request().method() === "POST",
+  );
   await page.getByRole("button", { name: "Create kart lobby" }).click();
+  expect((await creation).ok()).toBe(true);
   await expect(page).toHaveURL(/\/admin\/rooms\/[^/]+\/live$/);
   const code = (
     await page.locator(".admin-live-side .admin-side-code").innerText()
@@ -113,6 +119,8 @@ test("local room host controls nearby opponents and stage modes on the existing 
     }
     const phone = phones[0]!;
     await expect(phone.locator("canvas")).toHaveAttribute("data-karts", "2");
+    await page.getByRole("button", { name: "Use warm kart look", exact: true }).click();
+    await expect(phone.locator("canvas")).toHaveAttribute("data-room-look", "warm");
     await expect
       .poll(async () =>
         Number(await phone.locator("canvas").getAttribute("data-vfx-particles")),
@@ -128,6 +136,17 @@ test("local room host controls nearby opponents and stage modes on the existing 
     const stageCanvas = stage.locator('canvas[aria-label="Live kart circuit"]');
     await expect(stageCanvas).toHaveAttribute("data-karts", "2");
     await expect(stageCanvas).toHaveAttribute("data-player-id", /.+/);
+    await expect(stageCanvas).toHaveAttribute("data-room-look", "warm");
+    await expect(
+      stage.getByText("Loading circuit model… Race timing follows the room."),
+    ).toHaveCount(0);
+    await expect(stageCanvas).toHaveAttribute("data-vehicle-detail", "detailed");
+    await stage.screenshot({ path: ".codex/previews/kart/phase4-live-stage-look.png" });
+    await page
+      .getByRole("button", { name: "Use original kart look", exact: true })
+      .click();
+    await expect(phone.locator("canvas")).toHaveAttribute("data-room-look", "off");
+    await expect(stageCanvas).toHaveAttribute("data-room-look", "off");
     await expect
       .poll(async () => Number(await stageCanvas.getAttribute("data-vfx-particles")))
       .toBeGreaterThan(0);

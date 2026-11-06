@@ -61,7 +61,7 @@ fail() { printf '\n\033[31m%s\033[0m\n' "$*" >&2; exit 1; }
 
 # Production is never deployed by accident: it needs an explicit flag, and
 # the party weekend is frozen because a deploy drops every phone's connection.
-if [[ "$deploy" == both || "$deploy" == production ]]; then
+if [[ "$dry_run" != true && ( "$deploy" == both || "$deploy" == production ) ]]; then
   [[ "$confirm_production" == true ]] || fail "Deploying to production needs --confirm-production. Deploy to staging and check it first."
   if [[ "$override_freeze" != true ]] && node --experimental-strip-types -e "import('./scripts/release-support.ts').then((m) => process.exit(m.inDeployFreeze(Date.now()) ? 0 : 1))"; then
     fail "Production is frozen for the party weekend (20 Nov to midday 22 Nov). Pass --override-freeze only for an emergency fix."
@@ -152,7 +152,7 @@ if [[ "$skip_checks" != true ]]; then
   checks_ok=true
   npm run typecheck && npm run content:check && npm run test:unit && npx eslint . && npm run test:release || checks_ok=false
   if [[ "$checks_ok" == true && "$full_checks" == true ]]; then
-    npm run safe-env -- npm run test -w @26/api || checks_ok=false
+    npm run test -w @26/api || checks_ok=false
   fi
   if [[ "$checks_ok" != true ]]; then
     git checkout -- package.json package-lock.json packages/shared/src/version.ts
@@ -196,7 +196,12 @@ check_live() {
 
 if [[ "$deploy" != none ]]; then
   say "Deploying v$next to $deploy"
-  npm run "deploy:$deploy"
+  # The checks above already passed (or were explicitly skipped). The common
+  # deploy entry point still owns production confirmation and the party freeze.
+  deploy_options=(--skip-checks)
+  [[ "$confirm_production" == true ]] && deploy_options+=(--confirm-production)
+  [[ "$override_freeze" == true ]] && deploy_options+=(--override-freeze)
+  npm run "deploy:$deploy" -- "${deploy_options[@]}"
   say "Checking the live sites"
   ok=true
   if [[ "$deploy" == both || "$deploy" == staging ]]; then

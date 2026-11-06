@@ -1,0 +1,73 @@
+.kart-time-trial {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 0.65rem;
+}
+.kart-trial-metrics {
+  display: flex;
+  gap: 0.5rem 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.kart-trial-metrics output {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.kart-time-trial p {
+  margin: 0.3rem 0;
+}
+.kart-time-trial li {
+  margin: 0.3rem 0;
+}
+.kart-time-trial summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.kart-trial-results {
+  max-height: 50dvh;
+  overflow: auto;
+}
+.kart-trial-results h2 {
+  margin: 0.4rem 0;
+}
+.kart-trial-results > ol {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+}
+.kart-trial-results > ol > li {
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+.kart-trial-results li > span {
+  display: block;
+  margin-top: 0.3rem;
+}
+.kart-trial-results li > ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.2rem 0.6rem;
+  list-style: none;
+  padding: 0;
+  font-size: 0.85rem;
+}
+.kart-trial-records label {
+  display: flex;
+  gap: 0.5rem;
+  min-height: 44px;
+  align-items: center;
+  cursor: pointer;
+}
+.kart-trial-records input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}

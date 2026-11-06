@@ -14,6 +14,7 @@ import {
 } from "../../web/src/kart/graphics";
 import { Bvh, useProgress } from "@react-three/drei";
 import { TouchController } from "../../web/src/kart/TouchController";
+import { useKartContactFeedback } from "../../web/src/kart/useKartContactFeedback";
 import {
   themeDocumentHead,
   themes,
@@ -23,11 +24,19 @@ import { TrackItems } from "./TrackItems";
 import { Course } from "./Course";
 import { PracticePresentation } from "./PracticePresentation";
 import { DriftGauge } from "../../web/src/kart/DriftGauge";
+import { KartTimeTrial } from "../../web/src/kart/KartTimeTrial";
+import { KartTrialRecords } from "../../web/src/kart/KartTrialRecords";
+import {
+  browserKartRecordStorage,
+  writeKartRecords,
+} from "../../web/src/kart/kart-records";
 import {
   defaultCourseSettings,
   clearCourseSettings,
   soloCourse,
   type CourseSettings,
+  kartHandlingSchema,
+  kartHandlingNames,
 } from "@26/shared";
 import { PowerUpControl } from "../../web/src/kart/PowerUpControl";
 import { PlayerController } from "./upstream/PlayerController.jsx";
@@ -84,6 +93,7 @@ function Telemetry() {
   const sliding = useGameStore((state) => state.driftLevel?.charging ?? false);
   const surface = useGameStore((state) => state.soloSurface);
   const contact = useGameStore((state) => state.soloContact);
+  const stunned = useGameStore((state) => state.soloStunMs > 0);
   const chargeMs = useGameStore((state) => state.soloChargeMs);
   const boostLevel = useGameStore((state) => state.soloBoostLevel);
   const height = useGameStore((state) => Math.round(state.soloHeight * 10) / 10);
@@ -102,15 +112,17 @@ function Telemetry() {
           ? "Boost!"
           : surface === "unsupported"
             ? "Off track — use Back to track"
-            : contact
-              ? "Barrier contact — steer away"
-              : surface === "dirt"
-                ? "Off-road — reduced grip and speed"
-                : drift
-                  ? "Release drift to boost"
-                  : sliding
-                    ? "Drifting — hold to charge"
-                    : "Hold A to drive"}
+            : stunned
+              ? "Barrier impact — controls resume in a moment"
+              : contact
+                ? "Barrier contact — steer away"
+                : surface === "dirt"
+                  ? "Off-road — reduced grip and speed"
+                  : drift
+                    ? "Release drift to boost"
+                    : sliding
+                      ? "Drifting — hold to charge"
+                      : "Hold A to drive"}
       </span>
       {boost && surface !== "road" ? (
         <span>
@@ -169,6 +181,7 @@ class GameBoundary extends Component<{ children: ReactNode }, { failed: boolean 
 }
 
 function SoloPowerInventory() {
+  const enabled = useGameStore((s) => s.soloItemsEnabled);
   const item = useGameStore((s) => s.soloPowers.item),
     shield = useGameStore((s) => s.soloPowers.shieldUntil > s.soloElapsed),
     slowed = useGameStore((s) => s.soloPowers.slowedUntil > s.soloElapsed);
@@ -176,6 +189,7 @@ function SoloPowerInventory() {
       (s) => s.soloPaused || s.soloRecover !== s.soloRecovered,
     ),
     notice = useGameStore((s) => s.soloPowerMessage);
+  if (!enabled) return null;
   return (
     <aside className="solo-power">
       <PowerUpControl
@@ -192,6 +206,48 @@ function SoloPowerInventory() {
         onUse={useItem}
       />
     </aside>
+  );
+}
+
+/** Keep accepted contact updates out of the Canvas owner and graphics setup. */
+function SoloDrivingControls() {
+  const paused = useGameStore((state) => state.soloPaused);
+  const recoveryPending = useGameStore(
+    (state) => state.soloRecover !== state.soloRecovered,
+  );
+  const recoveryReady = useGameStore((state) => state.soloRecoveryReady);
+  const heldPower = useGameStore((state) => state.soloPowers.item);
+  const recoveryMessage = useGameStore((state) => state.soloRecoveryMessage);
+  const contact = useGameStore((state) => state.soloContact);
+  const elapsedMs = useGameStore((state) => state.soloElapsed);
+  const itemsEnabled = useGameStore((state) => state.soloItemsEnabled);
+  const revision = useGameStore((state) => state.soloReset);
+  const feedback = useKartContactFeedback({
+    raceId: `solo-${revision}`,
+    elapsedMs,
+    active: !paused && !recoveryPending,
+    contact,
+  });
+  return (
+    <>
+      {feedback.overlay}
+      <aside className="solo-controls" aria-label="Driving controls">
+        <TouchController
+          key={revision}
+          extraSettings={feedback.settings}
+          disabled={paused || recoveryPending}
+          onChange={drive}
+          onUseItem={itemsEnabled ? useItem : undefined}
+          onRecover={recover}
+          itemDisabled={!heldPower}
+          recoveryDisabled={!recoveryReady}
+        />
+        <p role="status">
+          {recoveryMessage ||
+            "Arrows/WASD: drive · Space: drift · E: item · R: back to track"}
+        </p>
+      </aside>
+    </>
   );
 }
 
@@ -212,12 +268,12 @@ function SoloGame() {
   const [mounted, setMounted] = useState(false);
   const [lost, setLost] = useState(false);
   const paused = useGameStore((state) => state.soloPaused);
+  const trialFinished = useGameStore((state) => state.soloTrial?.finished ?? false);
   const ready = useGameStore((state) => state.soloStarted);
   const recoveryPending = useGameStore(
     (state) => state.soloRecover !== state.soloRecovered,
   );
   const recoveryReady = useGameStore((state) => state.soloRecoveryReady);
-  const recoveryMessage = useGameStore((state) => state.soloRecoveryMessage);
   useEffect(() => {
     const hidden = () => {
       if (document.hidden) pause();
@@ -328,7 +384,10 @@ function SoloGame() {
           <span>Solo practice</span>
           {ready && !lost ? (
             <nav aria-label="Practice actions">
-              <button onClick={paused ? continueDriving : pause}>
+              <button
+                disabled={trialFinished}
+                onClick={paused ? continueDriving : pause}
+              >
                 {paused ? "Resume" : "Pause"}
               </button>
               <button
@@ -380,20 +439,15 @@ function SoloGame() {
         {ready && !lost ? (
           <>
             <Telemetry />
+            <SoloTrialStatus />
             <SoloPowerInventory />
-            {paused ? (
+            {paused && !trialFinished ? (
               <div className="solo-message solo-paused" role="status">
                 <h2>Taking a pit stop.</h2>
                 <button onClick={continueDriving}>Keep driving</button>
               </div>
             ) : null}
-            <aside className="solo-controls" aria-label="Driving controls">
-              <TouchController disabled={paused || recoveryPending} onChange={drive} />
-              <p role="status">
-                {recoveryMessage ||
-                  "Arrows: drive · Space: drift · Back to track if you get stuck"}
-              </p>
-            </aside>
+            <SoloDrivingControls />
           </>
         ) : null}
       </main>
@@ -418,6 +472,9 @@ function GraphicsMonitor({ onHealth }: { onHealth: (health: FrameHealth) => void
 function SoloCourseSettings({ graphics }: { graphics: ReactNode }) {
   const [open, setOpen] = useState(false);
   const settings = useGameStore((state) => state.soloCourseSettings);
+  const handling = useGameStore((state) => state.soloHandling);
+  const mode = useGameStore((state) => state.soloMode);
+  const itemsEnabled = useGameStore((state) => state.soloItemsEnabled);
   const update = (value: CourseSettings) => {
     pause();
     useGameStore.setState({ soloCourseSettings: value });
@@ -432,7 +489,61 @@ function SoloCourseSettings({ graphics }: { graphics: ReactNode }) {
         <div>
           <PracticePresentation />
           {graphics}
-          <p>Course changes reset the kart and pause practice.</p>
+          <label>
+            Practice mode
+            <select
+              value={mode}
+              onChange={(event) => {
+                const mode = event.target.value;
+                if (!["free", "trial-1", "trial-3"].includes(mode)) return;
+                pause();
+                useGameStore.setState({ soloMode: mode, soloPractice: null });
+                reset();
+              }}
+            >
+              <option value="free">Free drive</option>
+              <option value="trial-1">One-lap time trial</option>
+              <option value="trial-3">Three-lap time trial</option>
+            </select>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={itemsEnabled}
+              onChange={(event) => {
+                pause();
+                useGameStore.setState({ soloItemsEnabled: event.target.checked });
+                reset();
+              }}
+            />
+            Item boxes in practice
+          </label>
+          <SoloTrialRecords />
+          <p>
+            Time trials start at the coloured line ahead of the kart, require all eight
+            sectors and stop the clock while paused. Recovery is recorded as assisted.
+            Mode and item changes also reset and pause practice.
+          </p>
+          <p>Course and handling changes reset the kart and pause practice.</p>
+          <label>
+            Contact handling
+            <select
+              value={handling}
+              onChange={(event) => {
+                const parsed = kartHandlingSchema.safeParse(event.target.value);
+                if (!parsed.success) return;
+                pause();
+                useGameStore.setState({ soloHandling: parsed.data });
+                reset();
+              }}
+            >
+              {kartHandlingSchema.options.map((preset) => (
+                <option key={preset} value={preset}>
+                  {kartHandlingNames[preset]}
+                </option>
+              ))}
+            </select>
+          </label>
           {(
             [
               ["boosts", "Floor boosts"],
@@ -461,7 +572,7 @@ function SoloCourseSettings({ graphics }: { graphics: ReactNode }) {
             <button
               key={feature.id}
               onClick={() => {
-                useGameStore.setState({ soloPractice: feature.id });
+                useGameStore.setState({ soloPractice: feature.id, soloMode: "free" });
                 update({ ...defaultCourseSettings });
               }}
             >
@@ -488,6 +599,45 @@ function SoloCourseSettings({ graphics }: { graphics: ReactNode }) {
         </div>
       </div>
     </section>
+  );
+}
+
+function SoloTrialStatus() {
+  const trial = useGameStore((state) => state.soloTrial);
+  const paused = useGameStore((state) => state.soloPaused);
+  if (!trial) return null;
+  return (
+    <div className="solo-trial-panel" data-finished={trial.finished}>
+      <KartTimeTrial
+        trial={trial}
+        paused={paused}
+        onRestart={() => {
+          pause();
+          reset();
+        }}
+      />
+    </div>
+  );
+}
+
+function SoloTrialRecords() {
+  const data = useGameStore((state) => state.soloRecords);
+  const notice = useGameStore((state) => state.soloRecordNotice);
+  const config = useGameStore((state) => state.soloTrial?.config);
+  const update = (next: typeof data) => {
+    const notice = writeKartRecords(browserKartRecordStorage, next);
+    useGameStore.setState({ soloRecords: next, soloRecordNotice: notice });
+  };
+  return (
+    <KartTrialRecords
+      data={data}
+      config={config}
+      notice={notice}
+      onEnabled={(enabled) =>
+        update({ ...data, enabled, records: enabled ? data.records : [] })
+      }
+      onClear={() => update({ ...data, records: [] })}
+    />
   );
 }
 

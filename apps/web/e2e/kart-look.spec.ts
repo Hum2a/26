@@ -54,6 +54,17 @@ test("native176 solo look uses its own renderer, preserves a face while tuning a
   await expect(canvas).toHaveAttribute("data-driver-faces", "1");
   await page.getByLabel("Exposure (stops)").fill("0.4");
   await expect(canvas).toHaveAttribute("data-driver-faces", "1");
+  await page.getByLabel("Enable bloom", { exact: true }).check();
+  await page.getByLabel("Enable ambient occlusion", { exact: true }).check();
+  await page.getByLabel("Enable tilt shift", { exact: true }).check();
+  await expect(canvas).toHaveAttribute("data-look-depth-textures", "1");
+  await expect(canvas).toHaveAttribute("data-look-ao", "true");
+  await expect(canvas).toHaveAttribute("data-look-tilt-shift", "true");
+  await frame.getByLabel("Graphics", { exact: true }).selectOption("low");
+  await expect(canvas).toHaveAttribute("data-look-depth-textures", "0");
+  await expect(canvas).toHaveAttribute("data-look-bloom", "false");
+  await frame.getByLabel("Graphics", { exact: true }).selectOption("high");
+  await expect(canvas).toHaveAttribute("data-look-depth-textures", "1");
   await page.getByLabel("Enable environment").uncheck();
   await expect(canvas).toHaveAttribute("data-look-sky", "false");
   await expect(canvas).toHaveAttribute("data-look-reflection", "false");
@@ -118,6 +129,33 @@ test("real look pass changes pixels, restores neutral exactly and recovers the c
   await canvas.screenshot({ path: ".codex/previews/kart/phase4-neutral.png" });
   const neutral = await pixels();
   expect(neutral.hasColour).toBe(true);
+  for (const [label, key, strength] of [
+    ["Lens dirt", "lens-dirt", "0.15"],
+    ["Bloom", "bloom", "0.35"],
+    ["Ambient occlusion", "ao", "0.25"],
+    ["Tilt shift", "tilt-shift", "1"],
+  ] as const) {
+    await page.getByLabel(`Enable ${label.toLowerCase()}`, { exact: true }).check();
+    await page.getByLabel(`${label} strength`, { exact: true }).fill(strength);
+    if (key === "bloom") await page.getByLabel("Bloom threshold").fill("0.5");
+    if (key === "tilt-shift") {
+      await page.getByLabel("Tilt shift focus distance (metres)").fill("4");
+      await page.getByLabel("Tilt shift focus range (metres)").fill("2");
+    }
+    await expect(canvas).toHaveAttribute(`data-look-${key}`, "true");
+    await expect(canvas).toHaveAttribute(
+      "data-look-depth-textures",
+      key === "ao" || key === "tilt-shift" ? "1" : "0",
+    );
+    expect((await pixels()).hash).not.toBe(neutral.hash);
+    await page.getByLabel("Look quality").selectOption("low");
+    await expect(canvas).toHaveAttribute(`data-look-${key}`, "false");
+    await expect(canvas).toHaveAttribute("data-look-depth-textures", "0");
+    await page.getByLabel("Look quality").selectOption("high");
+    await page.getByRole("button", { name: "Reset to neutral look" }).click();
+    await expect(canvas).toHaveAttribute("data-look-active", "false");
+    expect(await pixels()).toEqual(neutral);
+  }
   await page.getByLabel("Look preset", { exact: true }).selectOption("warm");
   await expect(canvas).toHaveAttribute("data-look-active", "true");
   await expect(canvas).toHaveAttribute("data-look-passes", "2");
@@ -184,8 +222,21 @@ test("real look pass changes pixels, restores neutral exactly and recovers the c
     (window as unknown as { restoreLook: () => void }).restoreLook(),
   );
   await expect(canvas).toHaveAttribute("data-look-active", "true");
+  await page.getByLabel("Look quality").selectOption("high");
+  await page.getByLabel("Look preset", { exact: true }).selectOption("race");
+  await page.getByLabel("Look rehearsal script").selectOption("boost");
+  await page.getByRole("button", { name: "Restart look script" }).click();
+  await expect(canvas).toHaveAttribute("data-look-wind", "true");
+  await expect(canvas).toHaveAttribute("data-look-chromatic", "true");
+  await page.getByRole("button", { name: "Pause look sample" }).click();
+  await expect(canvas).toHaveAttribute("data-look-wind", "false");
+  await expect(canvas).toHaveAttribute("data-look-chromatic", "false");
+  await page.getByRole("button", { name: "Resume look sample" }).click();
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(canvas).toHaveAttribute("data-look-wind", "false");
+  await expect(canvas).toHaveAttribute("data-look-chromatic", "false");
   await expect(canvas).toHaveAttribute("data-look-active", "true");
+  await page.getByLabel("Look rehearsal script").selectOption("static");
   await page.getByRole("button", { name: "Reset to neutral look" }).click();
   await expect(canvas).toHaveAttribute("data-look-active", "false");
   for (const [width, height] of [

@@ -14,7 +14,167 @@ import {
   createKartRace,
   reduceKart,
   projectKartRace,
+  kartBounceTuning,
 } from "@26/shared";
+
+it("preserves exact default slide behaviour and makes the optional bounce mild and bounded", () => {
+  const wall = [{ ax: 0, az: -10, bx: 0, bz: 10 }];
+  const body = { ...createDrivingBody(-2, 0, 0), vx: 30 };
+  const original = moveWithWalls(body, 0.1, wall, 0.8);
+  expect(moveWithWalls(body, 0.1, wall, 0.8, "slide-v1")).toEqual(original);
+  const bounce = moveWithWalls(body, 0.1, wall, 0.8, "bounce-v1");
+  expect(bounce.contact).toBe(true);
+  expect(bounce.vx).toBeLessThan(0);
+  expect(Math.abs(bounce.vx)).toBeLessThan(7);
+  expect(bounce.x).toBeLessThan(-0.8);
+  expect(bounce.stunMs).toBe(kartBounceTuning.stunMs);
+  expect(bounce.impactCooldownMs).toBe(kartBounceTuning.cooldownMs);
+  expect(original).not.toHaveProperty("stunMs");
+  expect(body).not.toHaveProperty("stunMs");
+  const input = { ...kartNeutral, gas: true, steer: 0.5 };
+  expect(stepDriving(body, input, 20, soloDriving, wall)).toEqual(
+    stepDriving(body, input, 20, soloDriving, wall, false, true, [], "slide-v1"),
+  );
+});
+
+it("counts down a short stun, ignores pedal/drift rewards during it and never refreshes stun in cooldown", () => {
+  const wall = [{ ax: 0, az: -10, bx: 0, bz: 10 }];
+  const hit = moveWithWalls(
+    { ...createDrivingBody(-2), vx: 30 },
+    0.1,
+    wall,
+    0.8,
+    "bounce-v1",
+  );
+  const held = { ...kartNeutral, gas: true, drift: true, steer: 1 };
+  const stunned = stepDriving(
+    hit,
+    held,
+    20,
+    soloDriving,
+    [],
+    false,
+    true,
+    [],
+    "bounce-v1",
+  );
+  const released = stepDriving(
+    hit,
+    kartNeutral,
+    20,
+    soloDriving,
+    [],
+    false,
+    true,
+    [],
+    "bounce-v1",
+  );
+  expect(stunned).toEqual(released);
+  expect(stunned.stunMs).toBe(160);
+  expect(stunned.impactCooldownMs).toBe(580);
+  const repeated = moveWithWalls(
+    { ...stunned, x: -2, vx: 30 },
+    0.1,
+    wall,
+    0.8,
+    "bounce-v1",
+  );
+  expect(repeated.stunMs).toBe(160);
+  expect(repeated.impactCooldownMs).toBe(580);
+  let free = hit;
+  for (let elapsed = 0; elapsed < 180; elapsed += 20)
+    free = stepDriving(
+      free,
+      kartNeutral,
+      20,
+      soloDriving,
+      [],
+      false,
+      true,
+      [],
+      "bounce-v1",
+    );
+  expect(free.stunMs).toBe(0);
+  expect(free.impactCooldownMs).toBe(420);
+  const rest = { ...free, vx: 0, vz: 0 };
+  expect(
+    stepDriving(rest, held, 20, soloDriving, [], false, true, [], "bounce-v1").vx,
+  ).toBeGreaterThan(0);
+  const slow = moveWithWalls(
+    { ...createDrivingBody(-0.9), vx: 1 },
+    0.2,
+    wall,
+    0.8,
+    "bounce-v1",
+  );
+  expect(slow.contact).toBe(true);
+  expect(slow.stunMs ?? 0).toBe(0);
+});
+
+it("keeps high-speed corners and airborne bounce finite with the conservative swept-wall fallback", () => {
+  const walls = [
+    { ax: 0, az: -10, bx: 0, bz: 10 },
+    { ax: -10, az: 0, bx: 10, bz: 0 },
+  ];
+  const body = { ...createDrivingBody(-2, -2), vx: 500, vz: 500, height: 6 };
+  const result = moveWithWalls(body, 0.1, walls, 0.8, "bounce-v1");
+  expect(result.x).toBeLessThanOrEqual(-0.8);
+  expect(result.z).toBeLessThanOrEqual(-0.8);
+  expect([result.x, result.z, result.vx, result.vz].every(Number.isFinite)).toBe(true);
+  expect(result.height).toBe(6);
+  expect(result.stunMs).toBe(180);
+});
+
+it("runs optional handling in the server reducer and clears stun on recovery while preserving earned progress", () => {
+  const race = createKartRace("bounce-recovery", [{ playerId: "a", name: "Amina" }], {
+    handling: "bounce-v1",
+  });
+  const driver = race.drivers[0]!;
+  Object.assign(driver, {
+    x: 0,
+    z: 49,
+    heading: Math.PI / 2,
+    angle: Math.PI / 2,
+    distance: (42 * Math.PI) / 2,
+    checkpoint: 2,
+    progress: 0.25,
+    physics: { ...createDrivingBody(0, 49, Math.PI / 2), vz: 100 },
+    lastSafe: {
+      x: 0,
+      z: 42,
+      heading: Math.PI,
+      angle: Math.PI / 2,
+      distance: (42 * Math.PI) / 2,
+      checkpoint: 2,
+      progress: 0.25,
+    },
+  });
+  const hit = reduceKart(race, { type: "tick", elapsedMs: 20 });
+  expect(hit.drivers[0]!.physics!.stunMs).toBe(180);
+  const paused = reduceKart(hit, { type: "release" });
+  expect(
+    reduceKart(paused, { type: "tick", elapsedMs: 20 }).drivers[0]!.physics!.stunMs,
+  ).toBe(180);
+  const publicState = projectKartRace(hit, "a", 100).presentation;
+  expect(publicState?.version === 2 && publicState.handling).toEqual({
+    preset: "bounce-v1",
+    stunMs: 180,
+    cooldownMs: 600,
+  });
+  const recovered = reduceKart(hit, { type: "recover", playerId: "a" });
+  expect(recovered.drivers[0]).toMatchObject({
+    x: 0,
+    z: 42,
+    progress: 0.25,
+    checkpoint: 2,
+  });
+  expect(recovered.drivers[0]!.physics!.stunMs ?? 0).toBe(0);
+  expect(recovered.drivers[0]!.physics!.impactCooldownMs ?? 0).toBe(0);
+  expect(recovered.drivers[0]!.input).toEqual(kartNeutral);
+  expect(
+    reduceKart(JSON.parse(JSON.stringify(hit)), { type: "tick", elapsedMs: 200 }),
+  ).toEqual(reduceKart(hit, { type: "tick", elapsedMs: 200 }));
+});
 
 it("runs course launch and flight in the authoritative race reducer, only when enabled", () => {
   const ramp = ringCourse.find((f) => f.kind === "ramp")!;

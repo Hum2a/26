@@ -1,6 +1,8 @@
 import {
   kartAssetManifestSchema,
   kartRehearsalSchema,
+  kartTracksSectionSchema,
+  type KartTrackSelection,
   wordlePreviewResultSchema,
   birthdayOrderSchema,
   adminContentSchema,
@@ -21,6 +23,11 @@ export const readContent = (): Promise<AdminContent | { error: string }> =>
   readSection("/api/admin/content", adminContentSchema);
 export const readKartAssets = () =>
   readSection("/api/admin/kart-assets", kartAssetManifestSchema);
+export const readKartTracks = (selection: KartTrackSelection) =>
+  readSection(
+    `/api/admin/kart-tracks?${new URLSearchParams({ track: selection.track, slot: String(selection.slot), beat: selection.beat })}`,
+    kartTracksSectionSchema,
+  );
 export const readKartPreview = (beat: "grid" | "turn" | "boost" | "finish") =>
   readSection(`/api/admin/kart-preview?beat=${beat}`, kartRehearsalSchema);
 export const saveRunningOrder = (request: {

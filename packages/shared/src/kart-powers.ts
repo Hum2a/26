@@ -1,12 +1,26 @@
 import { z } from "zod";
 import type { DrivingBody } from "./kart-driving.ts";
-export const kartItemSchema = z.enum(["turbo", "shield", "oil"]);
+export const kartLegacyItems = ["turbo", "shield", "oil"] as const;
+export const kartProjectileKinds = ["tennis", "bomb", "homing"] as const;
+export const kartLegacyItemSchema = z.enum(kartLegacyItems);
+export const kartItemSchema = z.enum([
+  ...kartLegacyItems,
+  ...kartProjectileKinds,
+  "treat",
+]);
 export type KartItem = z.infer<typeof kartItemSchema>;
 export const kartItemNames: Record<KartItem, string> = {
   turbo: "Turbo",
   shield: "Bubble shield",
   oil: "Oil slick",
+  tennis: "Tennis ball",
+  bomb: "Bomb",
+  homing: "Homing bolt",
+  treat: "Treats boost",
 };
+export function legacyKartItem(item: KartItem | null | undefined) {
+  return item === "turbo" || item === "shield" || item === "oil" ? item : null;
+}
 export type ItemBox = { id: string; x: number; z: number };
 export type OilSlick = {
   id: string;
@@ -24,6 +38,8 @@ export type KartPowers = {
   shieldUntil: number;
   slowedUntil: number;
   hits: string[];
+  /** Active-time damage grace for the expanded item rules, absent in older races. */
+  damageUntil?: number;
 };
 export const createKartPowers = (): KartPowers => ({
   item: null,
@@ -34,6 +50,25 @@ export const createKartPowers = (): KartPowers => ({
   slowedUntil: 0,
   hits: [],
 });
+/** Shared item damage outcome. The caller applies the existing driving slowdown. */
+export function applyKartItemHit(prior: KartPowers, now: number) {
+  if (!Number.isSafeInteger(now) || now < 0) throw new RangeError("Invalid item time");
+  if ((prior.damageUntil ?? 0) > now)
+    return { powers: prior, hit: false, absorbed: false, immune: true };
+  const powers = {
+    ...prior,
+    cooldowns: { ...prior.cooldowns },
+    hits: [...prior.hits],
+    damageUntil: now + 300,
+  };
+  if (prior.shieldUntil > now) {
+    powers.shieldUntil = 0;
+    return { powers, hit: false, absorbed: true, immune: false };
+  }
+  powers.slowedUntil = Math.max(prior.slowedUntil, now + 1600);
+  powers.turboUntil = 0;
+  return { powers, hit: true, absorbed: false, immune: false };
+}
 export const ringItemBoxes: readonly ItemBox[] = Array.from(
   { length: 6 },
   (_, station) =>
@@ -75,19 +110,21 @@ export function stepKartPowers(
   oils: readonly OilSlick[],
   now: number,
   seed: string,
+  options?: { allowed: readonly KartItem[]; damageGrace: boolean },
 ): { powers: KartPowers; hit: boolean } {
   const next = {
     ...prior,
     cooldowns: { ...prior.cooldowns },
     hits: prior.hits.filter((id) => oils.some((o) => o.id === id && o.expiresAt > now)),
   };
-  if (!next.item)
+  const allowed = options?.allowed ?? kartLegacyItems;
+  if (!next.item && allowed.length)
     for (const box of boxes) {
       if ((next.cooldowns[box.id] ?? 0) > now || !nearSegment(from, to, box, 2.2))
         continue;
       let hash = 0;
       for (const c of seed) hash = (Math.imul(hash, 31) + c.charCodeAt(0)) >>> 0;
-      next.item = (["turbo", "shield", "oil"] as const)[(hash + next.collections) % 3]!;
+      next.item = allowed[(hash + next.collections) % allowed.length]!;
       next.collections++;
       next.cooldowns[box.id] = now + 8000;
       break;
@@ -103,6 +140,12 @@ export function stepKartPowers(
     )
       continue;
     next.hits.push(oil.id);
+    if (options?.damageGrace) {
+      const outcome = applyKartItemHit(next, now);
+      Object.assign(next, outcome.powers);
+      hit ||= outcome.hit;
+      continue;
+    }
     if (next.shieldUntil > now) next.shieldUntil = 0;
     else {
       next.slowedUntil = now + 1600;
@@ -118,9 +161,17 @@ export function useKartPower(
   pose: { x: number; z: number; heading: number },
   now: number,
 ): { powers: KartPowers; oil?: OilSlick } | undefined {
-  if (!prior.item) return;
+  if (
+    !prior.item ||
+    (prior.item !== "turbo" &&
+      prior.item !== "shield" &&
+      prior.item !== "oil" &&
+      prior.item !== "treat")
+  )
+    return;
   const powers = { ...prior, item: null };
   if (prior.item === "turbo") powers.turboUntil = now + 1200;
+  if (prior.item === "treat") powers.turboUntil = Math.max(prior.turboUntil, now + 600);
   if (prior.item === "shield") powers.shieldUntil = now + 5000;
   return {
     powers,
@@ -152,7 +203,7 @@ export function powerDrivingBody(
 }
 export const kartPowerViewSchema = z
   .object({
-    selfItem: kartItemSchema.nullable(),
+    selfItem: kartLegacyItemSchema.nullable(),
     boxes: z
       .array(
         z

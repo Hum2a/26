@@ -1,11 +1,11 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { clientApiKeyHeader } from "@26/shared";
 import { createEmail } from "../src/auth/create-email.ts";
 import { openDatabase } from "../src/auth/create-database.ts";
-import { ensurePrepared } from "../src/auth/prepare.ts";
+import { ensurePrepared, authForRequest } from "../src/auth/prepare.ts";
 import { app } from "../src/index.ts";
 
 const roomId = "ABCDEFGH";
@@ -102,6 +102,35 @@ function cookiePair(response: Response, name: string): string | undefined {
 }
 
 describe("administrator auth", () => {
+  it("prepares an empty local database before validating real auth requests", async () => {
+    const env = localEnv(`cold-auth-${crypto.randomUUID()}`);
+    const errors = vi.spyOn(console, "error");
+    try {
+      const [first, concurrent] = await Promise.all([
+        authForRequest(env, origin),
+        authForRequest(env, origin),
+      ]);
+      expect(first.database).toBe(concurrent.database);
+      expect(first.auth.options.advanced.database.validateSchema).toBe(true);
+      expect(concurrent.auth.options.advanced.database.validateSchema).toBe(true);
+      await Promise.all([first.auth.$context, concurrent.auth.$context]);
+      const response = await send(env, "/api/admin/magic-link", {
+        method: "POST",
+        body: { email: adminEmail },
+      });
+      expect(response.status).toBe(200);
+      expect(
+        errors.mock.calls.some((args) =>
+          args.some(
+            (value) =>
+              typeof value === "string" && value.includes("Database schema mismatch"),
+          ),
+        ),
+      ).toBe(false);
+    } finally {
+      errors.mockRestore();
+    }
+  }, 30_000);
   it("sends a confirm link only for the configured administrator", async () => {
     const env = localEnv("allowlist");
     const stranger = await send(env, "/api/admin/magic-link", {

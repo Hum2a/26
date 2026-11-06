@@ -12,16 +12,18 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveCommand } from "./command.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const devVarsPath = path.join(root, "apps/api/.dev.vars");
 
-/** The file text with every `DATABASE_URL=` line emptied. */
+/** Match the whitespace accepted by readEnvValues, retaining line endings. */
 export function blankDatabaseUrl(text) {
-  return text.replace(/^DATABASE_URL=.*$/gm, "DATABASE_URL=");
+  return text.replace(/^[^\S\r\n]*DATABASE_URL[^\S\r\n]*=[^\r\n]*/gm, "DATABASE_URL=");
 }
 
 export function runSafely(command, args, file = devVarsPath) {
+  const invocation = resolveCommand(command, args);
   const original = existsSync(file) ? readFileSync(file, "utf8") : undefined;
   let restored = false;
   const restore = () => {
@@ -31,24 +33,36 @@ export function runSafely(command, args, file = devVarsPath) {
   };
   if (original !== undefined) writeFileSync(file, blankDatabaseUrl(original));
   return new Promise((resolve) => {
-    const child = spawn(command, args, {
-      cwd: root,
-      stdio: "inherit",
-      shell: process.platform === "win32",
-    });
-    const forward = (signal) => child.kill(signal);
-    process.on("SIGINT", forward);
-    process.on("SIGTERM", forward);
-    process.on("exit", restore);
-    child.on("exit", (code, signal) => {
-      restore();
-      process.off("SIGINT", forward);
-      process.off("SIGTERM", forward);
-      resolve(code ?? (signal ? 1 : 0));
-    });
-    child.on("error", () => {
+    let child;
+    try {
+      child = spawn(invocation.command, invocation.args, {
+        cwd: root,
+        stdio: "inherit",
+        shell: false,
+        windowsHide: true,
+      });
+    } catch {
       restore();
       resolve(1);
+      return;
+    }
+    const interrupt = () => child.kill("SIGINT");
+    const terminate = () => child.kill("SIGTERM");
+    const finish = (code) => {
+      restore();
+      process.off("SIGINT", interrupt);
+      process.off("SIGTERM", terminate);
+      process.off("exit", restore);
+      resolve(code);
+    };
+    process.on("SIGINT", interrupt);
+    process.on("SIGTERM", terminate);
+    process.on("exit", restore);
+    child.on("exit", (code, signal) => {
+      finish(code ?? (signal ? 1 : 0));
+    });
+    child.on("error", () => {
+      finish(1);
     });
   });
 }

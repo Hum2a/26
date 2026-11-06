@@ -1,11 +1,11 @@
 import { defineConfig } from "@playwright/test";
 import base from "./playwright.config";
 
-/** Runs the real Worker with explicit local adapters and ephemeral storage. */
+/** Run through npm run smoke:rehearsal, which builds solo before server startup. */
 export default defineConfig({
   ...base,
   webServer: {
-    command: "npm run dev -w @26/web -- --port 4173",
+    command: "npm run dev:rehearsal -w @26/web",
     url: "http://localhost:4173",
     reuseExistingServer: false,
     timeout: 120_000,

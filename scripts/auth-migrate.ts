@@ -18,16 +18,20 @@ if (target.devInbox) {
 
 const database = await createDatabase(target.bindings);
 try {
-  const auth = createAuth(target.bindings, {
-    origin: "http://localhost",
-    database,
-    email: {
-      kind: "unconfigured",
-      async send() {
-        throw new Error("Email delivery is not configured.");
+  const auth = createAuth(
+    target.bindings,
+    {
+      origin: "http://localhost",
+      database,
+      email: {
+        kind: "unconfigured",
+        async send() {
+          throw new Error("Email delivery is not configured.");
+        },
       },
     },
-  });
+    { preparingLocalDatabase: true },
+  );
   await applyAuthMigrations(auth);
   await applyExtraSchema(database, target.devInbox);
   console.log("Migration finished.");

@@ -191,7 +191,10 @@ Each phase is independently reviewable. **Every phase ends with npm run test:uni
 
 ### Phase 4 — environment, lighting and the complete look
 
-**Status:** Started, incomplete. Isolated connected/native solo Look rehearsals now cover grading, procedural sky/environment light, reflections and bounded shadows. Optical effects, live host controls and the full final gate remain. Exact verification is in the checkpoint.
+**Status:** Implemented locally; remaining integration and visual sign-off deferred
+to the end by the user's explicit decision. Native/connected browser checks,
+web146/607, auth14 and main+solo types passed; the full API timing failures and
+final projector review remain recorded in the checkpoint. Phase5 can proceed.
 
 **Deliver:** K18–K25: sky/sun, reflection/environment setup, quality-gated follow-light shadows, full grading controls, boost wind/chromatic effect, lens dirt, bloom and optional AO/tilt-shift. Finish all named controls rather than presenting sliders that have no effect. Do not copy upstream numeric defaults blindly.
 
@@ -201,6 +204,25 @@ Each phase is independently reviewable. **Every phase ends with npm run test:uni
 
 ### Phase 5 — control parity and contact handling
 
+**Status:** Locally complete, 6 November 2026. The user explicitly deferred remaining
+Phase4 verification to final integration and authorised Phase5 to proceed. This
+changes sequencing only; deferred failures and visual checks remain recorded.
+
+Control parity is verified locally: shared connected/solo gamepad, keyboard
+shortcuts, optional mouse, response/deadzone tuning and real Admin Controls bench.
+Final root154files/646tests, main+solo types, build/content, full lint,
+named API12files/103tests and7browser cases pass. Contact feedback has a shared accepted-state cursor, readable
+barrier guidance, a finite gentle edge cue and optional sound/vibration in live
+phones and native practice, with real Admin stand-in rehearsal. Updated unit
+checks also cover viewport-bounded native settings. Real collision overlays,
+bounded private impact/recovery history and self-only accepted IDs for short
+impacts are verified, including eviction and actual live host updates.
+Optional pre-race versioned slide-v1/bounce-v1 handling is implemented, with mild
+rebound,180ms stun and600ms cooldown, frozen race rules, private bounded history,
+receipt/refusal/replay coverage and real Admin/native rehearsal. Original slide is
+the default; old stored races remain compatible. Physical device sign-off stays
+in Phase10. Phase4 remains deferred to final integration.
+
 **Deliver:** K26–K31: shared connected gamepad adapter; accessible keyboard shortcuts; opt-in pointer steering; configurable control sensitivity; contact flash/audio/haptics; an optional arcade bounce/stun preset. Preserve fresh-input-on-resume and release-on-disconnect. If 3D collisions are justified, bake conservative height-aware static data offline and keep the current swept solver as a versioned fallback. Do not build BVHs from a browser scene and send the outcome to the server.
 
 **Tests:** gamepad.test.ts, controller input tests, kart-driving.spec.ts, kart-guard.spec.ts and kart-room.spec.ts extended; kart-inputs.spec.ts and kart-collision.spec.ts. Test gamepad unplug, competing pointers, keyboard focus, reset/item repeats, swept high-speed contacts, corners, flight height, repeated contacts, eviction and recovery progress retention.
@@ -208,6 +230,20 @@ Each phase is independently reviewable. **Every phase ends with npm run test:uni
 **Admin:** a controller/contact bench and real course collision overlay. The host can inspect impact/recovery history and choose only pre-race gameplay tuning; reverting to the established handling remains possible for the next race.
 
 ### Phase 6 — race start, HUD and complete time trials
+
+**Status:** Locally complete. Shared ordered-lap validation, native one-/three-lap
+time trials and opt-in bounded records, connected readiness/countdown, accepted
+sector HUD/recap, heading/next-sector guidance and the optional chase inset all
+have real Admin rehearsal. Final verification:162files666 root unit tests,
+15files127 named kart/API tests,51 focused UI tests,12 browser regression cases
+and a final4-case browser confirmation after the CSS refinements. Types, lint,
+build/content and owned formatting/whitespace pass. Final admin,320/430px phone
+and740×360 screenshots inspected; inset avoids the kart and primary/secondary
+controls. Exact evidence: artifacts/phase6-navigation/final-results.json, with
+earlier trial/readiness/recap results retained. Phase4 is still deferred.
+Physical devices/venue checks remain Phase10; short portrait driving still needs
+the final integration review because the existing page chrome pushes pedals
+below the fold. Optional replay ghosts remain an unimplemented extension.
 
 **Deliver:** K32–K37/K46: reliable asset-ready states, a server-timed countdown for connected races, lap/sector HUD and race recap. Solo gets free drive and time trial, shared ordered checkpoint validation, clean start/finish crossing, reset/invalid-lap feedback, best-lap and total-time records. Proposed options: one-lap sprint and three-lap practice; birthday default stays one lap. Replay ghosts are an explicitly new extension, not a pre-existing upstream feature.
 
@@ -218,6 +254,14 @@ Solo records are versioned by track, physics, assists, items and course settings
 **Admin:** rehearse loading failures, countdown, every HUD/result state and time trial with the actual components; inspect room lap/sector results and finish/DNF reasons. New lap/configuration actions have receipt/refusal/replay coverage.
 
 ### Phase 7 — all named item ideas, made multiplayer-safe
+
+**Status:** Locally verified, 6 November 2026. Frozen version2 rules, personal
+600ms Treats, projectiles, pause/restore/receipts, private host controls/history,
+visible hazards and actual moving/no-target rehearsals are implemented. Original
+rules remain the default. Root166files688tests, API19files156tests,14 browser
+checks plus two final confirmations, final types/lint/build/content pass. Exact
+results are in artifacts/phase7-live-items/final-results.json. Physical-device,
+venue and full-plan acceptance remain Phase10; Phase4 stays explicitly deferred.
 
 **Deliver:** expand the existing power-up engine for tennis ball, bomb, homing shell-style projectile and the agreed treats behaviour. Retain turbo, oil and shield. Implement targeting, swept projectile paths, wall/height interaction, owner grace, expiration, one-hit rules, shield consumption, short damage immunity and cleanup. Proposed initial pool: at most 64 live projectiles across a room, separate from 64 existing oil slicks; reject/resolve capacity before consuming inventory. No unbounded per-projectile timers.
 
@@ -279,7 +323,7 @@ These are proposed defaults, not blockers to writing this plan:
 - **Party defaults:** preserve one lap/three minutes/80 participants, existing score formula and ghost karts. Kart-to-kart impacts are beyond parity and off unless separately requested.
 - **Look:** rich effects with adaptive limits; AO/tilt-shift and intrusive screen effects off by default. Every capability must have a usable appropriate rehearsal, even when not enabled for ordinary phones.
 - **Characters/assets:** keep the six party drivers/faces; use approved alternate rigs or original equivalents. Do not imply a full franchise roster.
-- **Treats:** proposed small collectible turbo reward; agree the actual rule before coding.
+- **Treats:** agreed 6 November: personal 600ms turbo, no dropped collectible or score bonus. Homing with no legal target ahead resolves as the same small personal boost; both rules are frozen in expanded item rules version2.
 - **Time trials:** one- and three-lap solo variants, clean versus assisted records, local records first; ghost replay optional within this phase.
 - **Audio:** opt-in on phones, explicit host start/stop on the projector, approved/original sound pack.
 - **PWA:** solo practice only, scoped cache and idle updates.

@@ -197,3 +197,34 @@ export const deployFreeze = {
 export function inDeployFreeze(nowMs: number): boolean {
   return nowMs >= deployFreeze.from && nowMs < deployFreeze.until;
 }
+
+/** Shared by every deploy/full entry point, before checks or remote changes. */
+export function assertDeployAllowed(
+  targets: readonly DeployableEnvironment[],
+  options: { dryRun: boolean; confirmProduction: boolean; overrideFreeze: boolean },
+  nowMs: number,
+): void {
+  // A packaging dry run does not deploy, migrate or upload secrets.
+  if (options.dryRun || !targets.includes("production")) return;
+  if (!options.confirmProduction)
+    throw new Error(
+      "Deploying to production needs --confirm-production. Check staging first.",
+    );
+  if (inDeployFreeze(nowMs) && !options.overrideFreeze)
+    throw new Error(
+      "Production is frozen for the party weekend (20 Nov to midday 22 Nov). Pass --override-freeze only for an emergency fix.",
+    );
+}
+
+/** Run once per invocation, including a staging + production release. */
+export function releaseCheckSteps(fullChecks: boolean): string[][] {
+  const steps = [
+    ["run", "typecheck"],
+    ["run", "content:check"],
+    ["run", "test:unit"],
+    ["run", "lint"],
+    ["run", "test:release"],
+  ];
+  if (fullChecks) steps.push(["run", "test", "-w", "@26/api"]);
+  return steps;
+}

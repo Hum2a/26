@@ -2,9 +2,10 @@ import { expect, it } from "vitest";
 import headers from "../public/_headers?raw";
 
 function block(path: string): string {
-  const start = headers.indexOf(`\n${path}\n`);
+  const normalised = headers.replace(/\r\n/g, "\n");
+  const start = normalised.indexOf(`\n${path}\n`);
   expect(start).toBeGreaterThanOrEqual(0);
-  const rest = headers.slice(start + path.length + 2);
+  const rest = normalised.slice(start + path.length + 2);
   const end = rest.search(/\n\S/);
   return end === -1 ? rest : rest.slice(0, end);
 }
@@ -21,8 +22,11 @@ it("sends baseline security headers on every page", () => {
   expect(all).not.toContain("includeSubDomains");
 });
 
-it("never lets another site frame the admin console", () => {
+it("allows the real same-origin admin rehearsals while refusing external framing", () => {
   const admin = block("/admin*");
-  expect(admin).toContain("X-Frame-Options: DENY");
-  expect(admin).toContain("frame-ancestors 'none'");
+  expect(admin).toContain("X-Frame-Options: SAMEORIGIN");
+  expect(admin).toContain("frame-ancestors 'self'");
+  // Phone and projector previews are intentionally embedded under /admin too.
+  expect(admin).not.toContain("X-Frame-Options: DENY");
+  expect(admin).not.toContain("frame-ancestors 'none'");
 });

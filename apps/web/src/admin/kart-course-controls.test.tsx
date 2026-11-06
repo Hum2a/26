@@ -7,8 +7,147 @@ import { createKartRace, projectKartRace } from "@26/shared";
 import { playRoom } from "../live/room-api";
 import { setupControls, mountControls, playingFixture } from "./controls.test-support";
 import { KartCourseControls } from "./kart-course-controls";
+import { kartRaceRecap, reduceKart } from "@26/shared";
 
 beforeEach(() => setupControls());
+it("shows the authenticated accepted recap and links to real result rehearsal", async () => {
+  const player = playingFixture.players[0]!;
+  const race = reduceKart(
+    createKartRace("host-recap", [
+      { playerId: player.playerId, name: player.nickname },
+    ]),
+    { type: "end" },
+  );
+  setupControls({
+    ...playingFixture,
+    phase: "reveal",
+    kartRecap: kartRaceRecap(race),
+    play: { ...playingFixture.play!, kart: projectKartRace(race, null, 100) },
+  });
+  await mountControls(
+    <>
+      <h1>Live controls</h1>
+      <KartCourseControls />
+    </>,
+  );
+  expect(screen.getByRole("region", { name: "Race recap" })).toBeTruthy();
+  expect(screen.getByText("DNF — host ended race")).toBeTruthy();
+  expect(
+    screen
+      .getByRole("link", { name: "Rehearse race results without guests" })
+      .getAttribute("href"),
+  ).toBe("/admin/kart?view=recap");
+});
+it("shows named accepted impact/recovery history on real boundaries and links to isolated rehearsal", async () => {
+  const player = playingFixture.players[0]!;
+  const race = createKartRace("history-room", [
+    { playerId: player.playerId, name: player.nickname },
+  ]);
+  setupControls({
+    ...playingFixture,
+    play: { ...playingFixture.play!, kart: projectKartRace(race, null, 100) },
+    kartContactHistory: [
+      {
+        eventId: 2001,
+        atMs: 20,
+        kind: "impact",
+        number: 1,
+        playerId: player.playerId,
+        x: 49,
+        z: 0,
+        speed: 10,
+      },
+      {
+        eventId: 20001,
+        atMs: 200,
+        kind: "recovery",
+        number: 1,
+        playerId: player.playerId,
+        x: 42,
+        z: 0,
+        speed: 0,
+      },
+    ],
+  });
+  await mountControls(
+    <>
+      <h1>Race controls</h1>
+      <KartCourseControls />
+    </>,
+  );
+  expect(
+    screen.getByRole("img", { name: "Actual course collision boundaries" }),
+  ).toBeTruthy();
+  expect(screen.getByText(/Kart 1 · Amina · Barrier impact · 0.02s/)).toBeTruthy();
+  expect(screen.getByText(/Kart 1 · Amina · Back to track · 0.20s/)).toBeTruthy();
+  expect(
+    screen
+      .getByRole("link", { name: "Rehearse collisions without guests" })
+      .getAttribute("href"),
+  ).toBe("/admin/kart?view=collisions");
+});
+for (const preset of ["off", "daylight", "warm", "crisp", "cool", "race"] as const)
+  it(`sends the scoped ${preset} look command and shows its private history`, async () => {
+    const race = createKartRace("look", []);
+    setupControls({
+      ...playingFixture,
+      kartLookHistory: [{ atMs: 1000, preset }],
+      play: { ...playingFixture.play!, kart: projectKartRace(race, null, 100) },
+    });
+    await mountControls(
+      <>
+        <h1>Live controls</h1>
+        <KartCourseControls />
+      </>,
+    );
+    expect(screen.getByRole("list", { name: "Kart look history" })).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: preset === "off" ? "Use original kart look" : `Use ${preset} kart look`,
+      }),
+    );
+    await screen.findByText(
+      "Kart look updated. Each screen keeps its graphics preference.",
+    );
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "kart-look",
+        lookPreset: preset,
+        requestId: expect.any(String),
+      }),
+    );
+    expect(
+      screen
+        .getByRole("link", { name: "Rehearse and tune the kart look with stand-ins" })
+        .getAttribute("href"),
+    ).toBe("/admin/kart?view=look");
+  });
+it("keeps original-look recovery available after the race ends", async () => {
+  const race = createKartRace("look-ended", []);
+  race.ended = true;
+  race.look = "race";
+  setupControls({
+    ...playingFixture,
+    phase: "reveal",
+    play: { ...playingFixture.play!, kart: projectKartRace(race, null, 100) },
+  });
+  await mountControls(
+    <>
+      <h1>Live controls</h1>
+      <KartCourseControls />
+    </>,
+  );
+  expect(
+    (screen.getByRole("button", { name: "Use race kart look" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Use original kart look" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "kart-look", lookPreset: "off" }),
+    ),
+  );
+});
 for (const [mode, label] of [
   ["map", "Return stage to map"],
   ["overview", "3D stage overview"],

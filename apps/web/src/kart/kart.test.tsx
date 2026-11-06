@@ -7,38 +7,53 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { createKartRace, projectKartRace, kartNeutral } from "@26/shared";
+import {
+  createKartRace,
+  projectKartRace,
+  kartNeutral,
+  createDrivingBody,
+  kartItemNames,
+} from "@26/shared";
 import { TouchController } from "./TouchController";
 import { useKartSocket } from "./useKartSocket";
 import { GuestKart } from "./GuestKart";
 import { steerFromPointer, steerFromTravel } from "./steering";
-import type { LobbySnapshot } from "@26/shared";
+import type { LobbySnapshot, KartLookPreset } from "@26/shared";
 import KartGameWrapper from "./KartGameWrapper";
+import { useEffect } from "react";
 vi.mock("./KartCanvas", () => ({
-  default: ({
+  default: function ReadyKartCanvas({
     followPlayerId,
     mobile,
     vfxPreset,
     paused,
     prediction,
+    lookPreset,
+    onRenderState,
   }: {
     followPlayerId?: string;
     mobile: boolean;
     vfxPreset?: { enabled: boolean };
     paused?: boolean;
     prediction?: unknown;
-  }) => (
-    <div
-      data-testid="driving-renderer"
-      data-player={followPlayerId}
-      data-mobile={String(mobile)}
-      data-effects={vfxPreset === undefined ? "legacy" : String(vfxPreset.enabled)}
-      data-paused={String(paused)}
-      data-prediction={prediction ? "on" : "off"}
-    >
-      Stand-in WebGL renderer
-    </div>
-  ),
+    lookPreset?: KartLookPreset;
+    onRenderState?: (state: "usable") => void;
+  }) {
+    useEffect(() => onRenderState?.("usable"), [onRenderState]);
+    return (
+      <div
+        data-testid="driving-renderer"
+        data-player={followPlayerId}
+        data-mobile={String(mobile)}
+        data-effects={vfxPreset === undefined ? "legacy" : String(vfxPreset.enabled)}
+        data-paused={String(paused)}
+        data-prediction={prediction ? "on" : "off"}
+        data-look={lookPreset ? JSON.stringify(lookPreset) : "original"}
+      >
+        Stand-in WebGL renderer
+      </div>
+    );
+  },
 }));
 
 afterEach(() => {
@@ -46,6 +61,49 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
+for (const item of ["tennis", "bomb", "homing", "treat"] as const)
+  it(`uses the phone's version3 ${item} slot and retains pedal control while awaiting acceptance`, async () => {
+    const saved = createKartRace("expanded-ui", [{ playerId: "mine", name: "Amina" }], {
+      itemRules: { version: 2, allowed: [item] },
+    });
+    saved.drivers[0]!.power!.item = item;
+    const race = projectKartRace(saved, "mine", 100);
+    expect(race.powers!.selfItem).toBeNull();
+    const snapshot = {
+      phase: "collect",
+      paused: false,
+      held: false,
+      play: { kart: race },
+    } as unknown as LobbySnapshot;
+    const use = vi.fn();
+    const view = render(
+      <GuestKart snapshot={snapshot} onInput={vi.fn()} onUseItem={use} />,
+    );
+    await waitFor(() =>
+      expect(
+        (
+          screen.getByRole("button", {
+            name: "Accelerate",
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(false),
+    );
+    fireEvent.click(screen.getByRole("button", { name: `Use ${kartItemNames[item]}` }));
+    expect(use).toHaveBeenCalledWith("expanded-ui");
+    view.rerender(
+      <GuestKart snapshot={snapshot} onInput={vi.fn()} onUseItem={use} itemPending />,
+    );
+    expect(
+      (screen.getByRole("button", { name: "Using…" }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Accelerate",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false);
+  });
 it("emits normalised steering and releases all held controls on blur or disabling", () => {
   const change = vi.fn(),
     view = render(<TouchController onChange={change} />);
@@ -220,10 +278,11 @@ it("steers the thumb pad from where the thumb lands, clamps travel, ignores a se
   ).toBe("true");
 });
 
-it("shows server-confirmed drift and wrong-way feedback, and replaces pedals with a settled finish card", () => {
+it("shows server-confirmed drift and wrong-way feedback, and replaces pedals with a settled finish card", async () => {
   const state = createKartRace("hud", [{ playerId: "a", name: "Amina" }]);
   state.drivers[0]!.driftMs = 700;
   state.drivers[0]!.wasDrifting = true;
+  state.drivers[0]!.checkpoint = 3;
   const race = projectKartRace(state, "a", 100);
   const snapshot = {
     phase: "collect",
@@ -232,12 +291,13 @@ it("shows server-confirmed drift and wrong-way feedback, and replaces pedals wit
     play: { kart: race, selfAward: null },
   } as unknown as LobbySnapshot;
   const view = render(<GuestKart snapshot={snapshot} />);
+  expect(screen.getByText("Sector 4 / 8")).toBeTruthy();
   expect(
     screen
       .getByRole("progressbar", { name: "Drift charge" })
       .getAttribute("aria-valuenow"),
   ).toBe("1");
-  expect(screen.getByText("Drift ready — release R!")).toBeTruthy();
+  expect(await screen.findByText("Drift ready — release R!")).toBeTruthy();
   race.participants[0]!.wrongWay = true;
   view.rerender(<GuestKart snapshot={{ ...snapshot }} />);
   expect(screen.getByText("Wrong way — turn around")).toBeTruthy();
@@ -278,6 +338,25 @@ it("passes the public effects switch and authoritative pause separately into the
   }
   view.rerender(<GuestKart snapshot={{ ...snapshot, paused: true }} />);
   expect(canvas.getAttribute("data-paused")).toBe("true");
+  expect(canvas.getAttribute("data-look")).toBe("original");
+  view.rerender(
+    <GuestKart
+      snapshot={{
+        ...snapshot,
+        play: { ...snapshot.play!, kart: { ...race, look: "race" } },
+      }}
+    />,
+  );
+  expect(JSON.parse(canvas.getAttribute("data-look")!).optics.bloom.enabled).toBe(true);
+  view.rerender(
+    <GuestKart
+      snapshot={{
+        ...snapshot,
+        play: { ...snapshot.play!, kart: { ...race, look: "off" } },
+      }}
+    />,
+  );
+  expect(canvas.getAttribute("data-look")).toBe("original");
 });
 
 it("gives the phone its own driving view and a map option without changing input authority", async () => {
@@ -416,6 +495,60 @@ it("shows the held power-up and waits for server acknowledgement without releasi
     (screen.getByRole("button", { name: "Use Bubble shield" }) as HTMLButtonElement)
       .disabled,
   ).toBe(true);
+});
+
+it("routes keyboard actions through existing callbacks and starts a new race with released input", () => {
+  const race = projectKartRace(
+    createKartRace("keyboard-race", [{ playerId: "mine", name: "Amina" }]),
+    "mine",
+    100,
+  );
+  race.powers!.selfItem = "shield";
+  const snapshot = {
+    phase: "collect",
+    paused: false,
+    held: false,
+    play: { kart: race },
+  } as unknown as LobbySnapshot;
+  const use = vi.fn(),
+    recover = vi.fn(),
+    send = vi.fn();
+  const view = render(
+    <GuestKart
+      snapshot={snapshot}
+      onInput={send}
+      onUseItem={use}
+      onRecover={recover}
+    />,
+  );
+  fireEvent.keyDown(window, { key: "e" });
+  fireEvent.keyDown(window, { key: "e", repeat: true });
+  expect(use).toHaveBeenCalledTimes(1);
+  expect(use).toHaveBeenLastCalledWith("keyboard-race");
+  fireEvent.keyDown(window, { key: "r" });
+  expect(recover).toHaveBeenLastCalledWith("keyboard-race");
+  fireEvent.keyDown(window, { key: "w" });
+  expect(
+    screen.getByRole("button", { name: "Accelerate" }).getAttribute("aria-pressed"),
+  ).toBe("true");
+  view.rerender(
+    <GuestKart
+      snapshot={{
+        ...snapshot,
+        play: { ...snapshot.play!, kart: { ...race, raceId: "another-race" } },
+      }}
+      onInput={send}
+      onUseItem={use}
+      onRecover={recover}
+    />,
+  );
+  expect(
+    screen.getByRole("button", { name: "Accelerate" }).getAttribute("aria-pressed"),
+  ).toBe("false");
+  fireEvent.keyDown(window, { key: "w", repeat: true });
+  expect(
+    screen.getByRole("button", { name: "Accelerate" }).getAttribute("aria-pressed"),
+  ).toBe("false");
 });
 
 it("lays out each kart state for landscape and keeps race notices visible over the driving view", async () => {
@@ -574,4 +707,34 @@ it("starts sideways phones on the slider when the host chooses it, unless the gu
   fireEvent.click(screen.getByRole("button", { name: "Use steering slider" }));
   view.rerender(<TouchController onChange={vi.fn()} steeringDefault="pad-absolute" />);
   expect(screen.getByRole("button", { name: "Use thumb pad" })).toBeTruthy();
+});
+
+it("explains accepted bounce stun on the phone while keeping held controls ready to resume", () => {
+  const state = createKartRace("phone-stun", [{ playerId: "a", name: "Amina" }], {
+    handling: "bounce-v1",
+  });
+  state.drivers[0]!.physics = {
+    ...createDrivingBody(),
+    stunMs: 180,
+    impactCooldownMs: 600,
+  };
+  const race = projectKartRace(state, "a", 100);
+  race.participants[0]!.wrongWay = true;
+  const snapshot = {
+    phase: "collect",
+    paused: false,
+    held: false,
+    play: { kart: race, selfAward: null },
+  } as unknown as LobbySnapshot;
+  const view = render(<GuestKart snapshot={snapshot} />);
+  expect(screen.getByText("Barrier impact — controls resume in a moment")).toBeTruthy();
+  expect(
+    (screen.getByRole("button", { name: "Accelerate" }) as HTMLButtonElement).disabled,
+  ).toBe(false);
+  if (race.presentation?.version !== 2 || !race.presentation.handling)
+    throw new Error("Accepted handling state required");
+  race.presentation.handling.stunMs = 0;
+  race.elapsedMs = 200;
+  view.rerender(<GuestKart snapshot={{ ...snapshot }} />);
+  expect(screen.getByText("Wrong way — turn around")).toBeTruthy();
 });

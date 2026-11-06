@@ -14,8 +14,20 @@ import {
   type KartRaceView,
   applyKartSetting,
   kartSettingChangeSchema,
+  kartLookNameSchema,
   type KartSettings,
   type KartSettingHistory,
+  kartContactPresentation,
+  kartRaceRecap,
+  kartHandlingSchema,
+  kartItemsPresentation,
+  legacyKartItem,
+  kartItemRefusal,
+  kartItemRulesSchema,
+  configureKartItems,
+  type KartItemRules,
+  type KartHandling,
+  type KartHandlingHistory,
 } from "@26/shared";
 import {
   advance,
@@ -36,9 +48,159 @@ const write = (sql: SqlStorage, id: string, race: KartRace) =>
   writeRoundState(sql, id, key, race);
 
 type RoomKartSettings = { settings?: KartSettings; history?: KartSettingHistory };
+export const readRoomKartItems = (sql: SqlStorage) =>
+  readRoundState<{
+    rules: KartItemRules;
+    history: { atMs: number; rules: KartItemRules }[];
+  }>(sql, "__kart", "items") ?? { rules: { version: 1 } as KartItemRules, history: [] };
+export function kartItemsDetails(
+  sql: SqlStorage,
+  questionId: string | undefined,
+  phase: string,
+) {
+  const saved = readRoomKartItems(sql),
+    race = questionId ? readKart(sql, questionId) : undefined;
+  return {
+    kartItems: {
+      next: saved.rules,
+      ...(race ? { current: race.itemRules ?? { version: 1 as const } } : {}),
+      frozen: Boolean(
+        race &&
+        (race.ended || race.elapsedMs > 0 || !["intro", "prompt"].includes(phase)),
+      ),
+      spawning: race?.itemsWorld?.spawning ?? true,
+      held: (race?.drivers ?? [])
+        .filter((d) => d.power?.item)
+        .map((d) => ({ playerId: d.playerId, number: d.number, item: d.power!.item! })),
+      oils: race?.oils?.length ?? 0,
+      projectiles: race?.itemsWorld?.projectiles.length ?? 0,
+      tracked: Boolean(race?.itemsWorld),
+      history: race?.itemsWorld?.history ?? [],
+      rulesHistory: saved.history,
+    },
+  };
+}
+export function changeKartItemRules(sql: SqlStorage, value: unknown, now: number) {
+  const rules = kartItemRulesSchema.parse(value);
+  if (!Number.isSafeInteger(now) || now < 0)
+    throw new Error("Choose valid item rules.");
+  const room = createSqlStore(sql).readRoom(),
+    q = questionFor(room);
+  if (q?.kind === "kart" && room.phase === "collect")
+    throw new Error("Item rules are frozen during racing, including pauses.");
+  const grid =
+    q?.kind === "kart" && ["intro", "prompt"].includes(room.phase)
+      ? readKart(sql, q.id)
+      : undefined;
+  if (q?.kind === "kart" && ["intro", "prompt"].includes(room.phase) && !grid)
+    throw new Error("Item rules need a fresh starting grid.");
+  const updated = grid ? configureKartItems(grid, rules) : undefined;
+  const saved = readRoomKartItems(sql);
+  writeRoundState(sql, "__kart", "items", {
+    rules,
+    history: [...saved.history, { atMs: now, rules }].slice(-20),
+  });
+  if (updated && q?.kind === "kart") write(sql, q.id, updated);
+}
+export function changeKartItemsSafety(sql: SqlStorage, action: unknown, now: number) {
+  if (
+    !["on", "off", "clear"].includes(String(action)) ||
+    !Number.isSafeInteger(now) ||
+    now < 0
+  )
+    throw new Error("Choose a valid item action.");
+  const store = createSqlStore(sql),
+    room = store.readRoom(),
+    q = questionFor(room);
+  if (
+    q?.kind !== "kart" ||
+    !["intro", "prompt", "collect", "reveal", "scores"].includes(room.phase)
+  )
+    throw new Error("Open a kart round to manage its hazards.");
+  const race = catchUp(sql, store, q, now);
+  if (!race) throw new Error("The kart race is unavailable.");
+  write(
+    sql,
+    q.id,
+    reduceKart(
+      race,
+      action === "clear"
+        ? { type: "clear-items" }
+        : { type: "items-spawning", enabled: action === "on" },
+    ),
+  );
+}
 /** Room-wide defaults; a new race copies them when it is created. */
 export const readRoomKartSettings = (sql: SqlStorage): RoomKartSettings =>
   readRoundState<RoomKartSettings>(sql, "__kart", "settings") ?? {};
+
+export const readRoomKartHandling = (sql: SqlStorage) =>
+  readRoundState<{ preset: KartHandling; history: KartHandlingHistory }>(
+    sql,
+    "__kart",
+    "handling",
+  ) ?? { preset: "slide-v1" as const, history: [] };
+
+export function kartHandlingDetails(
+  sql: SqlStorage,
+  questionId: string | undefined,
+  phase: string,
+) {
+  const saved = readRoomKartHandling(sql),
+    race = questionId ? readKart(sql, questionId) : undefined;
+  return {
+    kartHandling: {
+      next: saved.preset,
+      ...(race ? { current: race.handling ?? ("slide-v1" as const) } : {}),
+      frozen: Boolean(
+        race &&
+        (race.ended || race.elapsedMs > 0 || !["intro", "prompt"].includes(phase)),
+      ),
+    },
+    kartHandlingHistory: saved.history,
+  };
+}
+
+/** Gameplay choice: only a grid can change; a running race stays frozen even when paused. */
+export function changeKartHandling(sql: SqlStorage, value: unknown, now: number) {
+  const parsed = kartHandlingSchema.safeParse(value);
+  if (!parsed.success || !Number.isSafeInteger(now) || now < 0)
+    throw new Error("Choose valid kart handling.");
+  const store = createSqlStore(sql),
+    room = store.readRoom(),
+    q = questionFor(room);
+  if (q?.kind === "kart" && room.phase === "collect")
+    throw new Error(
+      "Handling is frozen during a race. Choose it before the next race.",
+    );
+  const grid =
+    q?.kind === "kart" && ["intro", "prompt"].includes(room.phase)
+      ? readKart(sql, q.id)
+      : undefined;
+  if (
+    q?.kind === "kart" &&
+    ["intro", "prompt"].includes(room.phase) &&
+    (!grid || grid.elapsedMs > 0 || grid.ended)
+  )
+    throw new Error("Handling needs a fresh starting grid.");
+  if (grid && parsed.data === "bounce-v1" && grid.physicsVersion !== "arcade-v2")
+    throw new Error(
+      "This older grid uses original handling. Choose bounce for a new race.",
+    );
+  const current = readRoomKartHandling(sql);
+  writeRoundState(sql, "__kart", "handling", {
+    preset: parsed.data,
+    history: [...current.history, { atMs: now, preset: parsed.data }].slice(-20),
+  });
+  if (grid && q?.kind === "kart") {
+    grid.handling = parsed.data;
+    if (parsed.data === "bounce-v1") {
+      grid.contactVersion = 1;
+      grid.contactHistory ??= [];
+    }
+    write(sql, q.id, grid);
+  }
+}
 
 /**
  * Host driving-feel change. Always becomes the room default for later races;
@@ -122,6 +284,35 @@ export function changeKartEffects(sql: SqlStorage, enabled: boolean, now: number
   race.effectsHistory = [...(race.effectsHistory ?? []), { atMs: now, enabled }].slice(
     -20,
   );
+  write(sql, q.id, race);
+}
+
+export function changeKartLook(sql: SqlStorage, preset: unknown, now: number) {
+  const selected = kartLookNameSchema.safeParse(preset);
+  if (!selected.success || !Number.isSafeInteger(now) || now < 0)
+    throw new Error("Choose a valid kart look.");
+  const enabled = selected.data !== "off";
+  const store = createSqlStore(sql),
+    room = store.readRoom(),
+    q = questionFor(room);
+  if (
+    q?.kind !== "kart" ||
+    !(
+      enabled
+        ? ["intro", "collect"]
+        : ["intro", "prompt", "collect", "reveal", "scores"]
+    ).includes(room.phase)
+  )
+    throw new Error("Look controls need an open kart round.");
+  const race = ["intro", "collect"].includes(room.phase)
+    ? catchUp(sql, store, q, now)
+    : readKart(sql, q.id);
+  if (!race || (enabled && race.ended)) throw new Error("This race has ended.");
+  race.look = selected.data;
+  race.lookHistory = [
+    ...(race.lookHistory ?? []),
+    { atMs: now, preset: selected.data },
+  ].slice(-20);
   write(sql, q.id, race);
 }
 
@@ -209,6 +400,9 @@ export function enterKart(
     // The race starts with the room's chosen driving feel.
     const defaults = readRoomKartSettings(sql).settings;
     if (defaults && Object.keys(defaults).length > 0) race.settings = { ...defaults };
+    const handling = readRoomKartHandling(sql).preset;
+    if (handling !== "slide-v1") race.handling = handling;
+    race.itemRules = readRoomKartItems(sql).rules;
     write(sql, q.id, race);
     writeRoundState(sql, q.id, "kart-session", {
       raceId,
@@ -360,6 +554,8 @@ export function useKartItem(
       message: "Items are available only to a racing phone in the current race.",
     };
   const race = catchUp(sql, store, q, now)!;
+  const refusal = kartItemRefusal(race, playerId);
+  if (refusal) return { ok: false, message: refusal };
   const next = reduceKart(race, { type: "use-power", playerId });
   if (next === race) return { ok: false, message: "Drive through an item box first." };
   write(sql, q.id, next);
@@ -656,16 +852,22 @@ export function phoneRaceView(
   return {
     ...full,
     selfPlayerId,
+    presentation: kartItemsPresentation(
+      race,
+      selfPlayerId,
+      kartContactPresentation(race, selfPlayerId, full.presentation),
+    ),
     ...(full.powers
       ? {
           powers: {
             ...full.powers,
-            selfItem:
-              race.drivers.find((d) => d.playerId === selfPlayerId)?.power?.item ??
-              null,
+            selfItem: legacyKartItem(
+              race.drivers.find((d) => d.playerId === selfPlayerId)?.power?.item,
+            ),
             boxes: full.powers.boxes.map((b) => ({
               ...b,
               available:
+                b.available &&
                 (race.drivers.find((d) => d.playerId === selfPlayerId)?.power
                   ?.cooldowns[b.id] ?? 0) <= race.elapsedMs,
             })),
@@ -710,6 +912,10 @@ export function kartFrames(sql: SqlStorage, q: KartQuestion) {
   }
   return {
     full,
+    itemsControl: kartItemsDetails(sql, q.id, createSqlStore(sql).readRoom().phase)
+      .kartItems,
+    contactHistory: race.contactHistory ?? [],
+    recap: kartRaceRecap(race),
     submissionCount: race.drivers.filter((d) => d.status !== "RACING").length,
     forPhone: (playerId: string) =>
       phoneRaceView(race, full, playerId, cursors.get(playerId)),

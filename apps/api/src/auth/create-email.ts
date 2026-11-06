@@ -38,12 +38,14 @@ export type InboxMessage = {
 
 /**
  * Results mail on staging goes only to EMAIL_TEST_RECIPIENT.
+ * Local runs may opt into the same restriction; production ignores that binding.
  * Administrator sign-in uses createEmail directly and is not limited by this.
  */
 export function restrictResultsEmail(
   env: AuthBindings,
   sender: EmailSender,
 ): EmailSender {
+  if (env.APP_ENV === "production") return sender;
   const testRecipient = presentBinding(env.EMAIL_TEST_RECIPIENT)?.toLowerCase();
   if (env.APP_ENV !== "staging" && !testRecipient) {
     return sender;

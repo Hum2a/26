@@ -12,6 +12,13 @@ import { KartVehicleRehearsal } from "./kart-vehicle-rehearsal";
 import { KartStageRehearsal } from "./kart-stage-rehearsal";
 import { VfxBench } from "./vfx-bench";
 import { EnvironmentBench } from "./environment-bench";
+import { KartControlsBench } from "./kart-controls-bench";
+import { KartCollisionBench } from "./kart-collision-overlay";
+import { KartTrialBench } from "./kart-trial-bench";
+import { KartStartBench } from "./kart-start-bench";
+import { KartRecapBench } from "./kart-recap-bench";
+import { KartItemsBench } from "./kart-items-bench";
+import { KartTracksBench } from "./kart-tracks-bench";
 
 const views = [
   ["drive", "Drive"],
@@ -21,6 +28,13 @@ const views = [
   ["stage", "Stage views"],
   ["effects", "Effects"],
   ["look", "Look"],
+  ["controls", "Controls"],
+  ["collisions", "Collisions"],
+  ["trials", "Time trials"],
+  ["start", "Race start"],
+  ["recap", "Race results"],
+  ["items", "Items sandbox"],
+  ["tracks", "Tracks & modes"],
   ["multiplayer", "Multiplayer"],
 ] as const;
 
@@ -100,6 +114,20 @@ export function AdminKartPage() {
             <VfxBench />
           ) : view === "look" ? (
             <EnvironmentBench />
+          ) : view === "controls" ? (
+            <KartControlsBench />
+          ) : view === "collisions" ? (
+            <KartCollisionBench />
+          ) : view === "trials" ? (
+            <KartTrialBench />
+          ) : view === "start" ? (
+            <KartStartBench />
+          ) : view === "recap" ? (
+            <KartRecapBench />
+          ) : view === "items" ? (
+            <KartItemsBench />
+          ) : view === "tracks" ? (
+            <KartTracksBench />
           ) : view === "files" ? (
             <section
               className="admin-kart-pane"

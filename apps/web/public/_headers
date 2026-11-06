@@ -27,7 +27,8 @@
   Permissions-Policy: camera=(self), microphone=(self), geolocation=()
   Strict-Transport-Security: max-age=31536000
 
-# The admin console must never be framed by another site.
+# Admin rehearsals embed real phone/stage pages on this origin. Other sites
+# must not frame the console or those previews.
 /admin*
-  X-Frame-Options: DENY
-  Content-Security-Policy: frame-ancestors 'none'
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: frame-ancestors 'self'

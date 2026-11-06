@@ -22,3 +22,14 @@ Original bounded drift sparks and boost trails now render beside the adapted kar
 Track item boxes, local turbo/shield/oil rules and the item inventory use newly written shared pure logic; they do not import upstream multiplayer or persistence. The solo render loop owns only its practice simulation, and item visuals use existing theme colours.
 
 Drift polish (21 October 2026) adds latched slide steering, shared tiered release turbos, slip-based kart/camera feedback, a bounded world-space spark wake and charge-tier HUD text. These remain original local changes over the pinned upstream renderer. The existing ephemeral solo store remains the sole practice adapter; connected physics stays in the shared authoritative model.
+
+Control parity (6 November 2026) replaces the separate controller-loop gamepad
+poll with the shared phone/solo TouchController boundary. Its normalised inputs
+still enter the existing ephemeral solo store; it does not add another physics
+loop, socket or store. The original A/B/RB/RT mapping remains, with keyboard
+WASD/E/R, X/Y actions, neutral re-arming, local response/deadzone controls and an
+opt-in mouse area. No new upstream code or media was copied for these controls.
+
+Optional slide-v1 / bounce-v1 contact handling is project tuning in the existing shared swept solver. Native practice selects the same named profile as connected races; changing it resets and pauses practice. Mild restitution, a short stun and an active-time cooldown do not add an independent physics loop or store. The upstream controller still owns rendering/camera presentation and reads the existing practice store.
+
+The complete ordered time-trial implementation is original work for26, not a claim that the audited fork's unused startLap/endLap methods were wired. Native practice calls the same pure ordered checkpoint validator as the party room through the existing20ms shared-physics loop. One-/three-lap trial state, recovery/invalid quality, split HUD, timing-line cue and opt-in bounded local record adapter are shared with actual Admin rehearsal components. Free drive remains the default. No fork identity, remote score service or replay backend is imported.

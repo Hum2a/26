@@ -7,10 +7,12 @@ import { useKartSocket } from "./useKartSocket";
 import { PowerUpControl } from "./PowerUpControl";
 import { Button } from "../ui/primitives";
 import { DriftGauge } from "./DriftGauge";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { kartNeutral, resolveKartSettings } from "@26/shared";
 import { createSelfPrediction } from "./self-prediction";
 import { KartCountdown } from "./KartCountdown";
+import { useKartContactFeedback } from "./useKartContactFeedback";
+import { KartRecapPanel } from "./KartRecapPanel";
 
 export function GuestKart({
   snapshot,
@@ -46,16 +48,63 @@ export function GuestKart({
   const self = race?.participants.find((d) => d.playerId === race.selfPlayerId);
   const place = race?.leaderboard.find((d) => d.playerId === self?.playerId)?.place;
   const complete = self && self.status !== "RACING";
+  const recap =
+    race?.presentation && race.presentation.version !== 2
+      ? race.presentation.recap
+      : undefined;
+  const heldItem =
+    race?.presentation?.version === 3
+      ? race.presentation.items.heldItem
+      : (race?.powers?.selfItem ?? null);
+  const hostEnded = recap?.reason === "host-ended";
+  const earlyEnded = Boolean(race?.ended && race.elapsedMs < timeLimitMs);
+  const stunned =
+    (race?.presentation?.version === 2 || race?.presentation?.version === 3) &&
+    (race.presentation.handling?.stunMs ?? 0) > 0;
+  const [viewReadiness, setViewReadiness] = useState({ raceId: "", usable: false });
+  const onReadiness = useCallback((raceId: string, usable: boolean) => {
+    setViewReadiness((previous) =>
+      previous.raceId === raceId && previous.usable === usable
+        ? previous
+        : { raceId, usable },
+    );
+  }, []);
+  const viewUsable =
+    !race ||
+    !self ||
+    complete ||
+    (viewReadiness.raceId === race.raceId && viewReadiness.usable);
   const open =
     snapshot.phase === "collect" && !snapshot.paused && !snapshot.held && connected;
-  const send = useKartSocket(race, open && !recoveryPending, onInput);
+  const driveOpen = open && viewUsable;
+  const send = useKartSocket(race, driveOpen && !recoveryPending, onInput);
+  const contactFeedback = useKartContactFeedback({
+    raceId: race?.raceId ?? "",
+    elapsedMs: race?.elapsedMs ?? 0,
+    active: Boolean(
+      driveOpen &&
+      self &&
+      !complete &&
+      !recoveryPending &&
+      race?.effectsEnabled !== false,
+    ),
+    contact: Boolean(self?.contact),
+    eventMode: race?.presentation?.version === 2 || race?.presentation?.version === 3,
+    event:
+      race?.presentation?.version === 2 || race?.presentation?.version === 3
+        ? race.presentation.contacts.find((event) => event.playerId === self?.playerId)
+        : undefined,
+  });
   // Draws this phone's kart from its own controls straight away; the room
   // still decides where the kart really is and corrects the drawing.
   const [prediction] = useState(createSelfPrediction);
   const feel = resolveKartSettings(race?.settings);
   if (feel.prediction !== "off") prediction.configure(feel.prediction);
   const change = (value: KartControls) => {
-    prediction.input(open && !recoveryPending ? value : kartNeutral, performance.now());
+    prediction.input(
+      driveOpen && !recoveryPending ? value : kartNeutral,
+      performance.now(),
+    );
     send(value);
   };
   const rehearsal = !onInput && !race;
@@ -76,11 +125,13 @@ export function GuestKart({
       ? "Paused — controls released"
       : recoveryPending
         ? "Returning to the track — controls released"
-        : layout === "grid"
-          ? self?.gridPosition
-            ? `Grid slot ${self.gridPosition}${race?.participantCount ? ` of ${race.participantCount}` : ""} · hold A when the race starts`
-            : "Hold A when the race starts"
-          : "";
+        : !viewUsable
+          ? "Preparing your driving view — choose Map view to drive now"
+          : layout === "grid"
+            ? self?.gridPosition
+              ? `Grid slot ${self.gridPosition}${race?.participantCount ? ` of ${race.participantCount}` : ""} · hold A when the race starts`
+              : "Hold A when the race starts"
+            : "";
   const instruction = !connected
     ? "Connection lost — controls released"
     : snapshot.paused || snapshot.held
@@ -101,11 +152,13 @@ export function GuestKart({
       // Short landscape phones turn this into a full-screen driving view.
       data-layout={layout}
     >
+      {contactFeedback.overlay}
       {self && !complete ? (
         <KartCountdown
           snapshot={snapshot}
           observedAt={observedAt ?? snapshot.serverNow}
           haptics={Boolean(onInput)}
+          enabled={connected && viewUsable}
         />
       ) : null}
       {layout === "grid" || layout === "race" ? (
@@ -133,7 +186,9 @@ export function GuestKart({
           {complete
             ? self.status === "FINISHED"
               ? "Lap complete"
-              : "Time’s up"
+              : hostEnded || earlyEnded
+                ? "Race ended"
+                : "Time’s up"
             : self
               ? `Kart ${self.number}`
               : "Start your engines"}
@@ -153,8 +208,10 @@ export function GuestKart({
           <div>
             <strong>
               {self.status === "FINISHED"
-                ? `${(self.lapTimeMs! / 1000).toFixed(2)}s`
-                : `${self.checkpoint} / 8 gates`}
+                ? self.lapTimeMs === null
+                  ? "Time unavailable"
+                  : `${(self.lapTimeMs / 1000).toFixed(2)}s`
+                : `Sector ${Math.min(8, self.checkpoint + 1)} / 8`}
             </strong>
             <p>
               {complete
@@ -173,9 +230,11 @@ export function GuestKart({
       ) : null}
       {race && self && !complete ? (
         <KartDriverView
+          key={`view-${race.raceId}`}
           race={race}
           reducedMotion={reduced}
-          paused={!open}
+          paused={!driveOpen}
+          onReadiness={onReadiness}
           prediction={
             onInput && !recoveryPending && feel.prediction !== "off"
               ? prediction
@@ -185,13 +244,19 @@ export function GuestKart({
       ) : null}
       {!complete ? (
         <TouchController
+          key={race?.raceId ?? "kart-rehearsal"}
           disabled={
-            !open ||
+            !driveOpen ||
             recoveryPending ||
             (!rehearsal && (!self || self.status !== "RACING" || race?.ended))
           }
           onChange={change}
           steeringDefault={feel.steering}
+          onUseItem={race && onUseItem ? () => onUseItem(race.raceId) : undefined}
+          onRecover={race && onRecover ? () => onRecover(race.raceId) : undefined}
+          itemDisabled={Boolean(itemPending) || !heldItem}
+          recoveryDisabled={recoveryPending}
+          extraSettings={contactFeedback.settings}
         />
       ) : (
         <motion.div
@@ -204,27 +269,42 @@ export function GuestKart({
           <p>
             {self.status === "FINISHED"
               ? "You made it. Take your hands off the wheel."
-              : snapshot.mode === "kart"
-                ? "The race time is up. Thanks for driving."
-                : "The race time is up. There’s always the next round."}
+              : hostEnded
+                ? "The host ended this race. Thanks for driving."
+                : earlyEnded
+                  ? "This race ended before you finished. Thanks for driving."
+                  : snapshot.mode === "kart"
+                    ? "The race time is up. Thanks for driving."
+                    : "The race time is up. There’s always the next round."}
           </p>
           <p>Watch the stage for the results.</p>
         </motion.div>
       )}
+      {race?.ended && self ? (
+        <KartRecapPanel
+          recap={recap}
+          selfPlayerId={self.playerId}
+          names={{ [self.playerId]: self.name }}
+        />
+      ) : null}
       {self && !complete ? (
         <div className="kart-telemetry" aria-label="Driving feedback">
           <p className="kart-driving-state" role="status">
-            {!open
+            {!driveOpen
               ? "Controls released"
-              : self.wrongWay
-                ? "Wrong way — turn around"
-                : self.boostRemainingMs > 0
-                  ? "BOOST! Keep holding A"
-                  : (self.driftLevel ?? 0) >= 1
-                    ? "Drift ready — release R!"
-                    : self.drifting
-                      ? "Charging drift…"
-                      : "Hold A · steer gently to the right"}
+              : stunned
+                ? "Barrier impact — controls resume in a moment"
+                : self.wrongWay
+                  ? "Wrong way — turn around"
+                  : self.contact
+                    ? "Barrier contact — steer away"
+                    : self.boostRemainingMs > 0
+                      ? "BOOST! Keep holding A"
+                      : (self.driftLevel ?? 0) >= 1
+                        ? "Drift ready — release R!"
+                        : self.drifting
+                          ? "Charging drift…"
+                          : "Hold A · steer gently to the right"}
           </p>
           <DriftGauge
             chargeMs={self.driftChargeMs ?? self.driftCharge * 700}
@@ -241,16 +321,18 @@ export function GuestKart({
       ) : null}
       {race?.powers && self && !complete && onUseItem ? (
         <PowerUpControl
-          item={race.powers.selfItem}
+          item={heldItem}
           pending={itemPending}
           disabled={!open || recoveryPending}
           notice={itemNotice}
           effect={
             race.powers.effects.find((e) => e.playerId === self.playerId)?.shieldMs
-              ? "Shield active — blocks one slick"
+              ? "Shield active — blocks one item hit"
               : race.powers.effects.find((e) => e.playerId === self.playerId)?.slowedMs
-                ? "Oil hit — slowing down"
-                : ""
+                ? "Item hit — briefly slowed"
+                : race.powers.effects.find((e) => e.playerId === self.playerId)?.turboMs
+                  ? "Turbo active — keep holding A"
+                  : ""
           }
           onUse={() => onUseItem(race.raceId)}
         />
@@ -277,7 +359,7 @@ export function GuestKart({
         <p className="kart-help">
           A: accelerate · B: brake / reverse · R: drift / boost
           <br />
-          Keyboard: arrows and space. Follow the circuit.
+          Keyboard: arrows or WASD · Space: drift · E: item · R: back to track.
         </p>
       ) : null}
       {snapshot.play?.selfAward != null ? (
