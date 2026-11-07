@@ -5642,3 +5642,28 @@ Verified on the deployed sites with real keyboard input in headless Chromium, no
 Not verified: a real room race on a deployed site, because that needs the administrator's own emailed sign-in, and physical phones, venue Wi-Fi and the projector. GitHub CI now passes formatting, lint, unit and API but still fails its browser step, because `check.yml` runs plain `npx playwright test` against `vite preview`, where specs importing `/src/...` cannot load and room creation is refused. That failure existed behind the formatting failure and does not affect the deployed app.
 
 Next: a two-phone room race on staging, then the kart evolution next action in `docs/kart-evolution-checkpoint.md`.
+
+## 7 November 2026 — page weight, projector standings and second release
+
+Every page was downloading a 3.4MB chunk holding the kart course. The race schemas moved to `packages/shared/src/kart-race-schema.ts`, `@26/shared` is marked `sideEffects: false`, and `GuestKart`, solo practice, the stage scoreboard, kart countdown and fun facts load lazily. No script budget was raised. Measured on production: `/` 3,954,597 to 679,080 bytes, `/join` 4,282,280 to 946,295, `/host` 4,130,932 to 848,535, `/admin/login` 3,959,501 to 684,007.
+
+At 1080p the podium pushed the standings list and its paging off the projector. On screens at least 64rem wide and 4:3 or wider, the podium now sits beside the list and scales with screen height. Narrow screens stay stacked. Checked at 1920×1080 and 1280×720 with fifty players.
+
+Browser specs were brought up to date: the catalogue view, the closed event history and the real question number. Specs that race the live room clock now retry when the room moves on. `playwright.rehearsal.config.ts` ignores the performance spec, which needs a production build.
+
+Commands and results on this code, run locally:
+
+- `npm run typecheck`, `format:check`, `lint`, `test:release`, `content:check` and `build`: passed.
+- Performance budgets: 9 of 9.
+- `npm run test:unit`: 707 of 707. API tests: 655 of 655.
+- `npm run smoke:rehearsal`: 83 of 84. The one failure, `birthday-assets-prices`, measured cards during an entrance animation. It now waits for them to settle and passed when rerun alone. The whole suite was not rerun after that spec-only change.
+- `npm run load:kart-baseline`: passed. With 80 simulated racers, stage updates had a p95 gap of 247ms at about 4 per second, with no full snapshots to guests.
+- `npm run load:realtime`: passed. Answer acknowledgement p95 was 521ms at 50 guests and 1,715ms at 100. These are local Durable Object figures, not production.
+
+During `developer-tools`, which cuts connections on purpose, the dev server logs `fetch failed`. Its error overlay can then cover a page in a later spec, as it did once for `party-concepts`. This is dev-only; deployed sites have no overlay.
+
+`4d61268` is deployed to staging as `ab2977af` and to production as `c380b29d` (previous production `0b7d4216`). No migrations or secrets were needed. Staging passed the release checks; production used `--skip-checks` for the same commit. On both sites health, pages, script sizes, the join refusal and a real keyboard solo drive passed (peak 82 km/h on staging, 90 km/h on production).
+
+Not verified: a real room race on a deployed site, because that needs the administrator's own emailed sign-in, and physical phones, venue Wi-Fi and the projector. GitHub CI was deliberately left alone at the owner's request. Its browser step still uses the wrong harness, so CI stays red there, and `npm run github-actions:check` reruns that same command for about 30 minutes. `npm run smoke:rehearsal` is the browser check to trust.
+
+Next: a two-phone room race on staging, then the kart evolution next action in `docs/kart-evolution-checkpoint.md`.
