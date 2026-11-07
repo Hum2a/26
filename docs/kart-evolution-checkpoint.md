@@ -1,5 +1,9 @@
 # Kart evolution checkpoint
 
+## Released to staging and production — 7 November 2026
+
+On explicit request, master through `d01f85c` is live on both sites, including live course selection. See the matching entry in [build-progress.md](build-progress.md). One race now keeps one mounted view from the grid to the start. The next action below is unchanged, and later deployments still need a new explicit request.
+
 ## Current verified stage — live course selection, 7 November2026
 
 This increment is saved by the master commit containing this entry (parent9b7571d).
