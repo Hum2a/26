@@ -5668,6 +5668,30 @@ Not verified: a real room race on a deployed site, because that needs the admini
 
 Next: a two-phone room race on staging, then the kart evolution next action in `docs/kart-evolution-checkpoint.md`.
 
+## 7 November 2026 — Netanyahu troll image and music
+
+Status: the Netanyahu phone gag now has its real assets. It floods the target's phone with the supplied cut-out face for 4 seconds and plays a Hava Nagila clip over it.
+
+Files:
+
+- `apps/web/public/assets/netanyahu.webp`: the supplied 640×640 WebP with transparency, 47,242 bytes, unchanged. The code had pointed at a missing `netanyahu.png`; it now points here.
+- `apps/web/public/assets/netanyahu.mp3`: 10.0 to 14.2 seconds of the supplied 2:45 recording, the first loud, steady stretch. 0.15 s fade-in and a 0.7 s fade-out ending with the flood, mono, 96 kbps, metadata removed, 51,095 bytes. Made with `ffmpeg -ss 10 -t 4.2 … -af "afade=t=in:d=0.15,afade=t=out:st=3.5:d=0.7" -ac 1 -b:a 96k -map_metadata -1`. The full song is not shipped.
+- `apps/web/src/troll/troll-sound.ts`: `trollSound`, one `createScreenAudio()` output for phone gags; `useTrollSoundUnlock` (any tap or key press unlocks or resumes it); `useTrollClip(url)`, which plays while a gag is mounted and stops when it unmounts.
+- `NetanyahuFlood` in `screen-trolls.tsx` plays the clip. `GuestTrolls` and the admin troll catalogue call `useTrollSoundUnlock`, so the admin "Preview on this screen" button plays it too.
+
+Decisions: this reuses the existing Web Audio adapter, not an `<audio>` element. iOS Safari only plays a context resumed during a tap, and guests tap to join and answer before any troll can reach them. If sound is blocked or fails, the flood still runs silently. Phones have no mute switch for troll sound; the phone's own volume and silent mode are the control. The supplied image still carries faint pngtree watermarks.
+
+Commands and results:
+
+- `npm run typecheck`: passed, on the final code.
+- `npm run test:unit`: 171 files, 704 tests passed, but the run exited 1. A worker timed out starting `results-page.test.tsx` while the dev server was building on the same machine. That file, `src/troll` and `src/admin/troll-rehearsal.test.tsx` were then rerun on the final code, and all 10 files (32 tests) passed. The whole suite was not rerun in one go.
+- The new `troll-sound.test.tsx` checks the face source, that the clip plays on mount and stops on unmount, and that the tap unlock listens and then stops.
+- Prettier on the changed files: clean. ESLint: only the existing fast-refresh warning in `screen-trolls.tsx`.
+
+Checked in the browser on the local dev server: both files are served (`audio/mpeg` 51,095 bytes, `image/webp` 47,242 bytes). Web Audio decoded the clip as 4.20 s mono. The flood's CSS showed the cut-out layering cleanly. The real admin preview was not opened, because it needs the administrator's emailed sign-in. The sound was not heard on a phone.
+
+Next: hear it on a real phone in a room (iOS and Android), then the next troll's assets.
+
 ## 7 November 2026 — one-thumb driving on the kart thumb pad
 
 Status: on phones, guests could not hold Accelerate and Drift together, because both sat under the right thumb. The thumb pad now works the pedals as well as steering. Slide sideways to steer, push up from where the thumb lands to accelerate, pull down to brake, and come back to the middle to coast. The A and B buttons are gone whenever the pad is in use, so Drift is the only button and the other thumb holds it.
@@ -5695,3 +5719,29 @@ Commands and results:
   - `kart-spectator` once stalled at the local admin sign-in step. It is not part of this change, and it passed in the earlier run.
 
 Not verified: the pad on a physical phone.
+
+## 7 November 2026 — glass smash and Thomas theme song
+
+Status: the cracked screen now plays a glass smash on the target's phone. The theme song troll now plays a Thomas the Tank Engine flute sting on the stage, in place of the generated placeholder beep.
+
+Files:
+
+- `apps/web/public/assets/glass-crack.mp3`: 0.76 to 4.0 seconds of the supplied effect, starting on the smash. +5 dB, 0.74 s fade-out, mono, 96 kbps, no metadata. 3.24 s, 39,810 bytes. `ShatteredScreen` plays it through `useTrollClip`.
+- `apps/web/public/assets/theme-song.mp3`: 5.85 to 8.95 seconds of the supplied 2:46 flute video, from the first notes of the tune to the end of its opening phrase. −4 dB (the source peaks at full scale), short fades, mono, 96 kbps, no metadata. 3.10 s, 37,929 bytes.
+- `demoStingAsset` is renamed `themeStingAsset` (`/assets/theme-song.mp3`) in `apps/api/src/troll/catalogue.ts` and `engine.ts`. `illustrativeStingAsset` in `validate.ts` points at the new file, so `content:check` still checks it exists. `stage-effects.spec.ts` and `content-preflight.spec.ts` now expect the new path.
+- Removed `apps/web/public/assets/demo-sting.wav` and `scripts/generate-theme-sting.mjs`; nothing else referred to them.
+- The troll README has a new **Assets** table listing what each troll has and what it would use. `docs/content-guide.md` points to it.
+
+Decision: Thomas went on the theme song because that troll is the one that gives a player a tune, and it already plays a short clip on the stage at each score reveal, up to four times. The clip cut points were chosen from loudness measurements, not by listening.
+
+Commands and results:
+
+- `npm run typecheck`: exits 2, but only because of other in-progress kart work in the checkout (`KartRaceHud.tsx`, `race-callouts.test.ts`, `kart-track-controls.test.tsx`). A filtered `tsc -b` shows no other errors.
+- `npm run content:check`: passed.
+- Web tests: `src/troll` and `src/admin/troll-rehearsal.test.tsx`, 9 files, 26 tests passed. `troll-sound.test.tsx` now also checks the glass smash plays on mount and stops on unmount.
+- API tests: `stage-effects`, `content-preflight` and `troll-catalogue`, 3 files, 14 tests passed.
+- The full unit and API suites were not rerun.
+
+Not verified: neither new clip was played in a browser, and the theme sting has not been heard on the projector.
+
+Next: listen to both clips, then supply sounds from the README asset table, starting with Call from Mum.

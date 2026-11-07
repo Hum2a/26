@@ -25,7 +25,7 @@ import {
 } from "../room/limits.ts";
 import { createSqlStore } from "../room/sql-store.ts";
 import {
-  demoStingAsset,
+  themeStingAsset,
   isTrollKind,
   slotDecision,
   themeCueCap,
@@ -1125,7 +1125,7 @@ function enqueueThemeCues(
       "Theme jingle",
       now,
       {
-        audioAsset: demoStingAsset,
+        audioAsset: themeStingAsset,
         questionIndex: room.questionIndex,
         durationMs: trollDefinitions.theme.cueMs,
       },

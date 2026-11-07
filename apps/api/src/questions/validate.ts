@@ -23,7 +23,7 @@ import { isSupportedPresentation } from "./presentation.ts";
  */
 export const unsupportedEffects: readonly string[] = [];
 
-export const illustrativeStingAsset = "apps/web/public/assets/demo-sting.wav";
+export const illustrativeStingAsset = "apps/web/public/assets/theme-song.mp3";
 
 export type ContentIssue = {
   level: "error" | "incomplete";
