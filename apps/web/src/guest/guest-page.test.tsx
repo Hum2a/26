@@ -69,9 +69,9 @@ async function sendTroll() {
   const groups = await screen.findByRole("group", { name: "Troll groups" });
   fireEvent.click(within(groups).getByRole("button", { name: /Identity/ }));
   fireEvent.click(screen.getByRole("button", { name: /Nickname swap/ }));
-  // The picker eases in after the troll is chosen.
+  // The picker eases in after the troll is chosen, and role queries on this page are slow.
   fireEvent.click(
-    await screen.findByRole("button", { name: "Troll Sam" }, { timeout: 4000 }),
+    await screen.findByRole("button", { name: "Troll Sam" }, { timeout: 15_000 }),
   );
   fireEvent.click(screen.getByRole("button", { name: "Send to Sam" }));
   const confirm = await screen.findByRole("dialog");
