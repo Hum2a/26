@@ -129,8 +129,8 @@ export function GuestKart({
           ? "Preparing your driving view — choose Map view to drive now"
           : layout === "grid"
             ? self?.gridPosition
-              ? `Grid slot ${self.gridPosition}${race?.participantCount ? ` of ${race.participantCount}` : ""} · hold A when the race starts`
-              : "Hold A when the race starts"
+              ? `Grid slot ${self.gridPosition}${race?.participantCount ? ` of ${race.participantCount}` : ""} · push up to go when the race starts`
+              : "Push up to go when the race starts"
             : "";
   const instruction = !connected
     ? "Connection lost — controls released"
@@ -144,7 +144,7 @@ export function GuestKart({
             ? snapshot.mode === "kart"
               ? "You’re watching this race from the side."
               : "You’re watching this race. Join the next round."
-            : "Drive on this screen. Hold A and follow the circuit.";
+            : "Drive on this screen. Accelerate and follow the circuit.";
   return (
     <section
       className="kart-phone"
@@ -299,12 +299,12 @@ export function GuestKart({
                   : self.contact
                     ? "Barrier contact — steer away"
                     : self.boostRemainingMs > 0
-                      ? "BOOST! Keep holding A"
+                      ? "BOOST! Keep accelerating"
                       : (self.driftLevel ?? 0) >= 1
                         ? "Drift ready — release R!"
                         : self.drifting
                           ? "Charging drift…"
-                          : "Hold A · steer gently to the right"}
+                          : "Accelerate · steer gently to the right"}
           </p>
           <DriftGauge
             chargeMs={self.driftChargeMs ?? self.driftCharge * 700}
@@ -331,7 +331,7 @@ export function GuestKart({
               : race.powers.effects.find((e) => e.playerId === self.playerId)?.slowedMs
                 ? "Item hit — briefly slowed"
                 : race.powers.effects.find((e) => e.playerId === self.playerId)?.turboMs
-                  ? "Turbo active — keep holding A"
+                  ? "Turbo active — keep accelerating"
                   : ""
           }
           onUse={() => onUseItem(race.raceId)}
@@ -357,7 +357,8 @@ export function GuestKart({
       ) : null}
       {!complete ? (
         <p className="kart-help">
-          A: accelerate · B: brake / reverse · R: drift / boost
+          Thumb pad: slide to steer, push up to accelerate, pull down to brake · Slider:
+          A accelerate, B brake / reverse · R: drift / boost
           <br />
           Keyboard: arrows or WASD · Space: drift · E: item · R: back to track.
         </p>

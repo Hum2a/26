@@ -93,9 +93,9 @@ export function AdminKartPage() {
               <p>
                 Charge Mini, Super and Ultra turbos by holding drift, then release. On
                 the opening straight, take the left lane for a floor boost and ramp; the
-                right lane has a moving sweeper. Hold A to glide and B to descend.
-                Course set-up inside the driving view can switch each feature off, clear
-                the track or restore it. Changes reset and pause practice.
+                right lane has a moving sweeper. Keep accelerating to glide and brake to
+                descend. Course set-up inside the driving view can switch each feature
+                off, clear the track or restore it. Changes reset and pause practice.
               </p>
               <iframe
                 className="admin-kart-drive-frame"

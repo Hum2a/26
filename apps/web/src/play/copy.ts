@@ -35,7 +35,7 @@ export function guestRoundCopy(snapshot: LobbySnapshot): string {
     return driver?.status === "FINISHED"
       ? "Lap finished — watch the stage."
       : driver
-        ? "Hold A to accelerate. Race on your phone; the stage follows everyone."
+        ? "Push up to accelerate. Race on your phone; the stage follows everyone."
         : "You’re watching this race. Join the next round.";
   }
   if (snapshot.phase === "reveal" || snapshot.phase === "scores") {

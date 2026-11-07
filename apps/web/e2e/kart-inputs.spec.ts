@@ -352,9 +352,11 @@ test("connected gamepad uses the existing intent socket, releases on host pause 
           phone.evaluate(() =>
             [
               ".kart-steering",
-              ".kart-pedal-gas",
-              ".kart-pedal-brake",
               ".kart-pedal-drift",
+              // The thumb pad works the throttle and brake; a slider keeps buttons.
+              ...(document.querySelector(".kart-thumb-pad")
+                ? [".kart-thumb-pad"]
+                : [".kart-pedal-gas", ".kart-pedal-brake"]),
             ].flatMap((selector) => {
               const element = document.querySelector(selector);
               if (!element) return [`Missing ${selector}`];

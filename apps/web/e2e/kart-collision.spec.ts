@@ -79,8 +79,9 @@ test("native practice uses the real bounce preset and switching back resets and 
   await page.getByRole("button", { name: "Course set-up", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Taking a pit stop." })).toBeVisible();
   await page.getByRole("button", { name: "Keep driving", exact: true }).click();
+  // Short landscape uses the thumb pad for the pedals; drift is its only button.
   await expect(
-    page.getByRole("button", { name: "Accelerate", exact: true }),
+    page.getByRole("button", { name: "Drift / boost", exact: true }),
   ).toBeEnabled();
   expect(sockets.filter((url) => new URL(url).pathname !== "/")).toEqual([]);
   expect(errors).toEqual([]);
@@ -188,7 +189,7 @@ test("native contact settings remain reachable on narrow and short landscape scr
   });
   await panel.getByRole("button", { name: "Back to driving" }).click();
   await expect(
-    page.getByRole("button", { name: "Accelerate", exact: true }),
+    page.getByRole("button", { name: "Drift / boost", exact: true }),
   ).toBeEnabled();
 });
 

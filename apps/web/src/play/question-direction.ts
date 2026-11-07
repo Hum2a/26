@@ -38,7 +38,7 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
   if (play.duel?.role === "spectator") return "Watch the duel on the stage";
   switch (play.question.kind) {
     case "kart":
-      return "Hold A to drive — race on your phone";
+      return "Push up to drive — race on your phone";
     case "choice":
       return play.question.outcome === "multiple"
         ? "Select all that apply, then send"

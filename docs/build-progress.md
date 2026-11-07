@@ -5667,3 +5667,31 @@ During `developer-tools`, which cuts connections on purpose, the dev server logs
 Not verified: a real room race on a deployed site, because that needs the administrator's own emailed sign-in, and physical phones, venue Wi-Fi and the projector. GitHub CI was deliberately left alone at the owner's request. Its browser step still uses the wrong harness, so CI stays red there, and `npm run github-actions:check` reruns that same command for about 30 minutes. `npm run smoke:rehearsal` is the browser check to trust.
 
 Next: a two-phone room race on staging, then the kart evolution next action in `docs/kart-evolution-checkpoint.md`.
+
+## 7 November 2026 — one-thumb driving on the kart thumb pad
+
+Status: on phones, guests could not hold Accelerate and Drift together, because both sat under the right thumb. The thumb pad now works the pedals as well as steering. Slide sideways to steer, push up from where the thumb lands to accelerate, pull down to brake, and come back to the middle to coast. The A and B buttons are gone whenever the pad is in use, so Drift is the only button and the other thumb holds it.
+
+Files and interfaces:
+
+- `apps/web/src/kart/steering.ts`: `pedalFromTravel(dy, height)` and `pedalFromPointer(y, top, height)` return `"gas" | "brake" | null`. The pedal band is 18% of the pad's height, kept between 14 and 28 px.
+- `apps/web/src/kart/SteeringPad.tsx`: optional `onPedal` and `pedal`. Travel is measured from the landing point; the fixed-centre `pad-absolute` setting uses the touch point. Lifting, cancelling, blur and locking release both pedals. The knob rides up or down with the pedal, and ↑ and ↓ marks show on the pad.
+- `apps/web/src/kart/TouchController.tsx`: in thumb-pad mode, Drift is the only pedal button and the pad feeds `gas` and `brake` into the existing touch channel. The slider keeps Accelerate, Brake and Drift, because a slider only steers. The wire protocol and server physics are unchanged: `gas` and `brake` are still booleans.
+- `kart.css` and `apps/kart-solo/src/solo.css`: in short landscape the pad strip is taller (`min(9rem, 42dvh)`) to leave room to push up and down. Drift takes the large button slot.
+- Copy: phone hints, power-up hints, the admin glide hint, solo practice and the draft `kart-sprint` instructions now say "push up" or "accelerate" instead of "hold A". The released `kart-rehearsal-v1` instructions in `apps/api/src/questions/registry.ts` still say "Hold A". A released pack is not edited in place.
+
+Decisions: the pad is still the default only on short landscape phones, as before. Upright phones and desktops keep the slider with its own Accelerate and Brake buttons, and the keyboard and gamepad are unchanged.
+
+Tests: two new tests in `kart.test.tsx`. The first checks the pedal bands, and that the pad holds the throttle and steers while a second pointer drifts, then coasts, brakes and releases. The second checks that locking the controls mid-push releases the throttle. Browser specs that expected Accelerate on short landscape screens now expect the pad and Drift. `kart-solo.spec.ts` drives the landscape solo practice with real touch: it pushes up, drifts with a second finger while the throttle stays held, then pulls down to brake.
+
+Commands and results:
+
+- `npx vitest run src/kart src/admin/kart src/play` in `apps/web`: 69 files, 339 tests passed. A first run also reported one unhandled timer error on a busy machine; the rerun was clean.
+- `tsc` for `apps/web` (app and node configs), `apps/api` and `@26/kart-solo`: passed for these files. The only errors came from another piece of work in progress, an untracked troll test. Prettier and ESLint on the changed files: clean.
+- Browser, `playwright.rehearsal.config.ts`:
+  - `kart-collision`, `kart-lobby`, `kart-inputs` and the landscape touch test in `kart-solo`: passed.
+  - `kart.spec.ts` passed alone. In a busy run it had once ended DNF at 90% of the 45-second ring lap.
+  - `kart-solo`'s first test fails only when it is the first test on a freshly started dev server, because the iframe heading takes longer than 5 s. With `--repeat-each 2`, the second run passed. This was not caused by this change.
+  - `kart-spectator` once stalled at the local admin sign-in step. It is not part of this change, and it passed in the earlier run.
+
+Not verified: the pad on a physical phone.

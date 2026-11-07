@@ -322,10 +322,15 @@ a:focus-visible {
     min-height: 90px;
     justify-self: center;
   }
+  /* The pad also works the pedals, so it gets room to push up and down. */
+  .solo-controls .kart-thumb-pad[data-pedals="true"] {
+    width: 140px;
+  }
   .solo-controls .kart-pedal {
     min-height: 44px;
   }
-  .solo-controls .kart-pedal-gas {
+  .solo-controls .kart-pedal-gas,
+  .solo-controls .kart-pedals[data-pad="true"] .kart-pedal-drift {
     min-height: 56px;
   }
   .solo-controls .kart-steering > span,

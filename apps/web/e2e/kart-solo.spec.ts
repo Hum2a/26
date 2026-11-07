@@ -116,36 +116,78 @@ test("solo practice fits phones and landscape, with held touch input and clean r
     await page.goto("/kart");
     const game = page.frameLocator('iframe[title="Solo kart practice"]');
     await game.getByRole("button", { name: "Start driving" }).click();
-    await expect(
-      game.getByRole("button", { name: "Accelerate", exact: true }),
-    ).toBeEnabled({ timeout: 60_000 });
+    const drift = game.getByRole("button", { name: "Drift / boost", exact: true });
+    await expect(drift).toBeEnabled({ timeout: 60_000 });
     expect(
       await game.locator("body").evaluate((body) => body.scrollWidth <= innerWidth),
     ).toBe(true);
+    // Sideways phones steer and work the pedals from the thumb pad; upright
+    // phones keep the slider and its own Accelerate button.
+    const sideways = viewport.width > viewport.height;
+    const thumbPad = game.locator(".kart-thumb-pad");
     const gas = game.getByRole("button", { name: "Accelerate", exact: true });
-    const box = (await gas.boundingBox())!;
+    await expect(gas).toHaveCount(sideways ? 0 : 1);
+    const target = sideways ? thumbPad : gas;
+    const box = (await target.boundingBox())!;
     expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
     expect(box.height).toBeGreaterThanOrEqual(44);
+    expect((await drift.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     const client = await context.newCDPSession(page);
+    const x = box.x + box.width / 2,
+      y = box.y + box.height / 2;
     await client.send("Input.dispatchTouchEvent", {
       type: "touchStart",
-      touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2, id: 1 }],
+      touchPoints: [{ x, y, id: 1 }],
     });
-    await expect(gas).toHaveAttribute("aria-pressed", "true");
-    await expect
-      .poll(
-        async () =>
-          Number.parseInt(
-            (await game.getByLabel("Distance from start").textContent())!,
-          ),
-        { timeout: 20_000 },
-      )
-      .toBeGreaterThan(2);
+    if (sideways) {
+      // Landing alone coasts; pushing up from there holds the throttle.
+      await expect(thumbPad).toHaveAttribute("data-pedal", "none");
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x, y: y - box.height * 0.35, id: 1 }],
+      });
+      await expect(thumbPad).toHaveAttribute("data-pedal", "gas");
+    } else await expect(gas).toHaveAttribute("aria-pressed", "true");
+    const distance = async () =>
+      Number.parseInt((await game.getByLabel("Distance from start").textContent())!);
+    await expect.poll(distance, { timeout: 20_000 }).toBeGreaterThan(2);
+    if (sideways) {
+      // A second thumb drifts while the first keeps the throttle held.
+      const driftBox = (await drift.boundingBox())!;
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [
+          { x, y: y - box.height * 0.35, id: 1 },
+          {
+            x: driftBox.x + driftBox.width / 2,
+            y: driftBox.y + driftBox.height / 2,
+            id: 2,
+          },
+        ],
+      });
+      await expect(drift).toHaveAttribute("aria-pressed", "true");
+      await expect(thumbPad).toHaveAttribute("data-pedal", "gas");
+      // Lifting both thumbs releases the drift and the throttle.
+      await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await expect(drift).toHaveAttribute("aria-pressed", "false");
+      await expect(thumbPad).toHaveAttribute("data-pedal", "none");
+      // A fresh touch pulled down past its landing point brakes.
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ x, y, id: 3 }],
+      });
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x, y: y + box.height * 0.35, id: 3 }],
+      });
+      await expect(thumbPad).toHaveAttribute("data-pedal", "brake");
+    }
     await client.send("Input.dispatchTouchEvent", {
       type: "touchEnd",
       touchPoints: [],
     });
-    await expect(gas).toHaveAttribute("aria-pressed", "false");
+    if (sideways) await expect(thumbPad).toHaveAttribute("data-pedal", "none");
+    else await expect(gas).toHaveAttribute("aria-pressed", "false");
     await game.getByRole("button", { name: "Swap sides" }).click();
     await expect(game.getByRole("button", { name: "Swap sides" })).toHaveAttribute(
       "aria-pressed",

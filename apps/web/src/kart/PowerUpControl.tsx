@@ -30,7 +30,7 @@ export function PowerUpControl({
           notice ||
           (item
             ? item === "turbo"
-              ? "A short burst of speed — hold A"
+              ? "A short burst of speed — keep accelerating"
               : item === "shield"
                 ? "Blocks one item hit for 5 seconds"
                 : item === "oil"
@@ -41,7 +41,7 @@ export function PowerUpControl({
                       ? "Drop a bomb — move away before its fuse ends"
                       : item === "homing"
                         ? "Targets a racer ahead; gives a small boost if nobody is ahead"
-                        : "A personal 0.6-second boost — hold A"
+                        : "A personal 0.6-second boost — keep accelerating"
             : "Drive through a glowing item box to collect an item")}
       </p>
     </div>
