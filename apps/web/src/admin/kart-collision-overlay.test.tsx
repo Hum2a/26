@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { expect, it } from "vitest";
-import { importedWalls, ringWalls } from "@26/shared";
+import { importedWalls, ringWalls, parkWalls } from "@26/shared";
 import { KartCollisionBench, KartCollisionOverlay } from "./kart-collision-overlay";
 
 it("draws the exact baked solver segments, named accepted history and local eased switches", async () => {
@@ -39,7 +39,7 @@ it("draws the exact baked solver segments, named accepted history and local ease
   await waitFor(() => expect(view.container.querySelector("circle")).toBeNull());
 });
 
-it("rehearses real swept contacts on both actual courses without a room", async () => {
+it("rehearses real swept contacts on all three actual courses without a room", async () => {
   const view = render(<KartCollisionBench />);
   const history = screen.getByRole("list", {
     name: "Recent kart contacts and recoveries",
@@ -74,6 +74,14 @@ it("rehearses real swept contacts on both actual courses without a room", async 
         .children,
     ).toHaveLength(0),
   );
+  fireEvent.change(screen.getByLabelText("Rehearsal course"), {
+    target: { value: "26-park-v1" },
+  });
+  expect(
+    view.container.querySelector('[data-layer="walls"]')?.getAttribute("data-segments"),
+  ).toBe(String(parkWalls.length));
+  fireEvent.click(screen.getByRole("button", { name: "Rehearse a swept wall impact" }));
+  expect(within(history).getAllByRole("listitem")).toHaveLength(1);
 });
 
 it("rehearses both actual handling profiles and reports a bounded rebound/stun", async () => {

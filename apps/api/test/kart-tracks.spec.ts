@@ -7,6 +7,9 @@ import {
   clearOfWalls,
   importedWalls,
   ringWalls,
+  parkTrackId,
+  parkWalls,
+  parkSurfaceAt,
 } from "@26/shared";
 import {
   importedSurfaceAt,
@@ -29,12 +32,18 @@ for (const track of kartTrackCatalogue.tracks)
         clearOfWalls(
           driver.x,
           driver.z,
-          track.id === "mario-circuit-v1" ? importedWalls : ringWalls,
+          track.id === parkTrackId
+            ? parkWalls
+            : track.id === "mario-circuit-v1"
+              ? importedWalls
+              : ringWalls,
           track.collision.bodyRadius,
         ),
         `slot ${driver.number} wall clearance`,
       ).toBe(true);
-      if (track.id === "mario-circuit-v1")
+      if (track.id === parkTrackId)
+        expect(parkSurfaceAt(driver.x, driver.z)).toBe("road");
+      else if (track.id === "mario-circuit-v1")
         expect(
           importedSurfaceAt(driver.x, driver.z),
           `slot ${driver.number} road`,
@@ -71,7 +80,7 @@ it("keeps installed source geometry/counts and honest current mode availability 
     (track) => track.id === "mario-circuit-v1",
   )!;
   const original = kartTrackCatalogue.tracks.find(
-    (track) => track.origin === "original",
+    (track) => track.id === "party-ring-v1",
   )!;
   expect(imported.collision.segments).toBe(importedWalls.length);
   expect(original.collision.segments).toBe(ringWalls.length);
@@ -81,6 +90,15 @@ it("keeps installed source geometry/counts and honest current mode availability 
     false,
   );
   expect(imported.modes.every((mode) => mode.available)).toBe(true);
+  const park = kartTrackCatalogue.tracks.find((track) => track.id === parkTrackId)!;
+  expect(park.collision.segments).toBe(parkWalls.length);
+  expect(park.modes.every((mode) => !mode.available)).toBe(true);
+  expect(
+    kartTrackCatalogueSchema.safeParse({
+      ...kartTrackCatalogue,
+      tracks: [imported, original, original],
+    }).success,
+  ).toBe(false);
   expect(
     kartTrackCatalogueSchema.safeParse({
       ...kartTrackCatalogue,

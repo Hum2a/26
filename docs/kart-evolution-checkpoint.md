@@ -1,5 +1,126 @@
 # Kart evolution checkpoint
 
+## Current verified stage — original 26 Park, 7 November 2026, 00:59 UTC
+
+Original26-park-v1 is implemented through the existing shared driving/lap/recovery/
+items/projection/prediction/render paths and is available in isolated Admin rehearsal.
+It is not yet a public/live course choice. Catalogue v2 has all three courses,
+all80 starting/recovery slots, a finite actual3-second driving sample, real SVG/3D,
+High detailed/Low simple kart fallback, and actual Collision bench geometry/impact.
+One original24m road ribbon supplies72 centreline segments/144 walls/surfaces/mesh;
+there are18 boxes/eight sectors/boost/ramp/sweeper lanes. Original upstream alternate
+GLB metadata/hash audited and disposition saved; it was not installed. Existing
+imported/ring rules and the four factual drafts remain unchanged.
+
+Verification: root167files696tests PASSED438.14s; UI16files139tests PASSED48.23s;
+API23files187tests PASSED82.26s; final browser15/15 PASSED3.8m. Main+solo types,
+full lint (27 existing warnings), final changed-E2E lint and build/content PASSED.
+Actual detailed park screenshot inspected; current native/connected/admin flows
+passed together. All owned queues finished. Initial fixture/type/selector failures
+are preserved and excluded. No assertion precision/timeout or test was weakened.
+Final owned formatting/whitespace and combined10-step source hashes are collected
+immediately after this entry in artifacts/phase8-park/final-results.json.
+
+Isolated Node22.23.4 measurement after verification, not Worker/socket/GPU/venue
+certification:658.9305m course; actual shared-driving bot lap21980ms, eight gates,
+zero recorded contacts.80-racer200ms simulation median4.1243ms/p95 4.8075ms,
+public39367bytes; same-run imported baseline median2.58615ms/p95 3.1846ms,
+38208bytes. Method:10 warmups/30 identical gas-held samples,1/16/21/50/80 racers;
+exact command/output/method saved in measure.mjs/measurements.json/measure.log.
+
+Try locally with npm run dev: Admin → Kart → Tracks & modes →26 Park; choose any
+slot, recovery or three-second drive, then open3D. Collisions also offers26 Park.
+No room, score or browser record is created. This stage is a follow-up master save
+after87a540f/b35a993; final commit is recorded in Git and local results. No push/deploy.
+
+EXACT NEXT ACTION: add frozen, receipted course selection for kart-only lobbies,
+through the existing host command/room persistence path. Keep current live races
+and versioned question packs unchanged. Add its real Live controls view/history,
+command notices/scopes, success/refusal/replay/eviction/role projection tests and
+old-client refresh gating before any new question/frame track ID is sent. Current
+public question track schema intentionally accepts only the old two IDs; no live
+park option should be exposed until this boundary is implemented/tested. Then
+public /kart mode/help and park/native practice/trials with separate versioned
+records, applicable native expanded-item parity, original opt-in audio/soundboard,
+and scoped solo offline/install/update. Complete admin coverage and all required
+gates per increment. WholePhase8 is NOT complete; Phase4 remains user-deferred.
+Physical devices/projector/venue Wi-Fi/full80-racer soak,740px admin crowding and
+optional ghosts remain recorded, not passed. Existing continuation stays active.
+No paid resource, live-room change, real email or credit purchase/redemption.
+Earlier work-in-progress statuses below are historical and superseded.
+
+## Earlier continuation — original26 Park, 7 November2026
+
+Last completed commits on master:87a540f and b35a993. Clean at wake; all14 prior
+foundation gates/hashes inspected, no owned queue running. Ordinary usage available
+(primary26%/secondary82% used). No credit purchase/redemption. Implementing saved
+next action: original26-park-v1 geometry through the existing shared engine and
+actual Admin catalogue/collision/render previews. No public/live selection yet:
+public question track schema deliberately still accepts only the two existing IDs.
+Frozen live choice/old-client compatibility, hub modes, audio/offline remain next.
+
+Original course code and tests are WIP, not a whole-phase pass. Added24m ribbon road,
+40m bends/S section,80grid slots/18boxes/eight sectors, existing course/driving/lap/
+recovery/items/prediction/projection paths, actual3D/SVG geometry, catalogue v2 and
+bounded three-second stand-in driving read. One ribbon supplies visible/collision/
+surface data. No new engine, room, socket, clock, scoring, credentials or persistence.
+Unused pinned alternate GLB hash/JSON geometry metadata audited in ignored output;
+not installed or claimed as a fully decoded/approved additional course. See
+docs/kart-track-audit.md and artifacts/phase8-park/alternate-audit.json.
+
+Initial core3files15tests passed4.22s after registering the new file in the explicit
+API test include list (first2file run did not run it and is not new-course proof).
+Integrated API6files42tests passed10.62s: actual-driving full lap/all eight gates,
+teleport refusal,240 actual grid/recovery slots, restore, catalogue privacy/drive.
+UI initial41passed1failed54.81s: new fixture compared rounded public heading against
+unrounded initial server heading. Matched fixture inputs instead, retaining exact
+five-decimal assertions/production quantisation. Types initial failed for Collision
+overlay's exhaustive two-course map; actual park layer/control/tests now added.
+New model-failure fallback and exact mesh/wall/disposal coverage added. Original
+failed logs retained; none deleted or counted green. Whole increment UNVERIFIED.
+
+Exact next: format owned sources, run serial full lint/types/focused UI/API/browser/
+root/build/content queue under artifacts/phase8-park, inspect actual park screenshot,
+fix any failures without weakening checks, final format/whitespace/results/hash/doc
+save and master commit. Do not launch duplicate checks while a saved owner is active.
+Complete this increment before frozen live choice/new public modes. Phase4 remains
+user-deferred; four factual drafts untouched; no push/deployment/live-room/email/
+paid-resource/reset-credit changes. Existing continuation stays active for the plan.
+
+ACTIVE final queue61701: artifacts/phase8-park/verify.ps1, started00:36:39UTC.
+Full lint PASSED (27existing warnings), fresh main+solo types PASSED. Focused16
+UI files currently running, then23 API files,15 real browser cases, full root
+unit and build/content. Product source frozen. The browser case was strengthened
+while lint/types ran to require actual park detailed kart loading at High, safe
+Low fallback and all three real course renders; fresh changed-E2E scoped lint
+is still required after the queue. Inspect results.json/logs before duplicates.
+No pending gate passed. Save screenshots/final format/metadata and master commit
+only after fixing any real failures. Full phase8/live selection still unfinished.
+
+Latest00:44UTC: focused UI16files139tests PASSED48.23s; API23files187tests
+PASSED82.26s. Original queue61701 finished at browser14passed/1failed3.0m:
+new park-road selector matched both the overview and chase inset, so strict mode
+refused it. Scoped the same visibility assertion to the actual80-driver overview
+SVG; no timeout/assertion weakened. Original failure saved. Root/build never ran.
+Current owned finish49457 runs artifacts/phase8-park/finish.ps1, started00:44:23UTC:
+changed-E2E lint, all15 browser cases, full root unit and build/content. Earlier
+current-source lint/types/UI139/API187 remain valid (only E2E selector changed).
+Inspect finish-results.json/logs before duplicates. Product source remains frozen.
+After finish: actual detailed park screenshot, isolated Node measurement using
+measure.mjs (not while verification competes), final owned format/whitespace and
+combined results excluding failed browser, docs and master commit. Nothing pending
+is passed. WholePhase8/live/public modes and Phase4 are still unfinished.
+
+Latest finish49457: changed-E2E lint PASSED; full browser15/15 PASSED3.8m at
+00:49:17UTC, including actual new park3D/detailed High and simple Low, all three
+course previews and real three-second selected driving. Detailed park screenshot
+inspected: complete route/80 labelled grid, real retained detailed kart and clear
+pending-mode labels visible. Current full root unit is RUNNING since00:49:17,
+then build/content. No pending pass. Earlier UI139/API187/types/full lint remain
+current. Product source frozen; do not launch duplicate checks. After this owned
+queue finishes, run isolated measurement, owned final formatting/whitespace and
+collect-final.mjs after writing final-format-results.json; then docs/commit master.
+
 ## Current saved stage — 7 November 2026, 00:17 UTC
 
 Branch: master. Existing work saved as87a540f; this stage adds a follow-up save,

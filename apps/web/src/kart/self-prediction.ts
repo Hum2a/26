@@ -16,6 +16,10 @@ import {
   type KartRaceView,
   type Wall,
   type KartHandling,
+  parkTrackId,
+  nearbyParkWalls,
+  parkSurfaceAt,
+  parkCourse,
 } from "@26/shared";
 import {
   importedSurfaceAt,
@@ -69,11 +73,20 @@ const ringIndex = indexWalls(ringWalls);
 
 function environment(race: KartRaceView): Environment {
   const ring = race.trackId === kartTrackId;
+  const park = race.trackId === parkTrackId;
   return {
     profile: ring ? ringDriving : soloDriving,
-    walls: ring ? ringIndex : nearbyImportedWalls,
-    offRoad: ring ? () => false : (x, z) => importedSurfaceAt(x, z) !== "road",
-    features: race.courseEnabled ? (ring ? ringCourse : soloCourse) : [],
+    walls: park ? nearbyParkWalls : ring ? ringIndex : nearbyImportedWalls,
+    offRoad: ring
+      ? () => false
+      : (x, z) => (park ? parkSurfaceAt(x, z) : importedSurfaceAt(x, z)) !== "road",
+    features: race.courseEnabled
+      ? park
+        ? parkCourse
+        : ring
+          ? ringCourse
+          : soloCourse
+      : [],
     handling:
       race.presentation?.version === 2 || race.presentation?.version === 3
         ? (race.presentation.handling?.preset ?? "slide-v1")

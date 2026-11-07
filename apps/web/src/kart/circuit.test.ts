@@ -1,7 +1,13 @@
 import { afterEach, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
-import { createKartRace, projectKartRace, defaultKartVfxPreset } from "@26/shared";
+import {
+  createKartRace,
+  projectKartRace,
+  defaultKartVfxPreset,
+  parkRibbon,
+  parkWalls,
+} from "@26/shared";
 import { vfxRehearsalRace } from "./vfx-rehearsal";
 import { createCircuit } from "./circuit";
 import { kartCameraPose, smoothKartPose, kartVehiclePose } from "./presentation";
@@ -22,6 +28,72 @@ it("uses versioned plain pose/effect descriptions without cross-bundle Three obj
 });
 
 afterEach(() => vi.restoreAllMocks());
+it("builds the original park mesh and visible edge barriers from exactly the shared collision ribbon, then disposes it", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((role) => [
+      role,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const circuit = createCircuit(palette, true, "p", "26-park-v1");
+  const road = circuit.scene.getObjectByName("kart-park-road") as THREE.Mesh;
+  const positions = road.geometry.getAttribute("position"),
+    normals = road.geometry.getAttribute("normal");
+  expect(positions.count).toBe(parkRibbon.length * 6);
+  for (let i = 0; i < parkRibbon.length; i++) {
+    expect(positions.getX(i * 6)).toBeCloseTo(parkRibbon[i]!.left[0], 4);
+    expect(positions.getZ(i * 6)).toBeCloseTo(parkRibbon[i]!.left[1], 4);
+    expect(normals.getY(i * 6)).toBeGreaterThan(0.99);
+  }
+  const a = circuit.scene.getObjectByName(
+    "kart-park-walls-accent",
+  ) as THREE.InstancedMesh;
+  const b = circuit.scene.getObjectByName("kart-park-walls-ink") as THREE.InstancedMesh;
+  expect(a.count + b.count).toBe(parkWalls.length);
+  const dispose = vi.spyOn(road.geometry, "dispose");
+  circuit.dispose();
+  expect(dispose).toHaveBeenCalledOnce();
+});
+it("keeps original park geometry and procedural driving visible if the optional detailed kart model fails", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  vi.spyOn(GLTFLoader.prototype, "load").mockImplementation(
+    (_url, _loaded, _progress, failed) => {
+      failed?.(new Error("Asset unavailable"));
+    },
+  );
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((role) => [
+      role,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const trackStates: string[] = [],
+    vehicleStates: string[] = [];
+  const circuit = createCircuit(
+    palette,
+    true,
+    "p",
+    "26-park-v1",
+    undefined,
+    (state) => trackStates.push(state),
+    0,
+    (state) => vehicleStates.push(state),
+  );
+  const view = projectKartRace(
+    createKartRace("park-fallback", [{ playerId: "p", name: "Stand-in" }], {
+      trackId: "26-park-v1",
+    }),
+    "p",
+    0,
+  );
+  circuit.update(view, 0.02, false, 1, 0, 0, true);
+  expect(trackStates).toEqual(["ready"]);
+  expect(vehicleStates).toEqual(["loading", "failed"]);
+  expect(circuit.renderStats()).toMatchObject({ drivers: 1, detailed: false });
+  expect(circuit.scene.getObjectByName("kart-park-road")?.visible).toBe(true);
+  circuit.dispose();
+});
 it("renders bounded authoritative item hazards even with decoration and detail off, then clears stale poses", () => {
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   const palette = Object.fromEntries(

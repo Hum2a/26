@@ -9,7 +9,13 @@ import { serverRoundTrip } from "../live/server-clock";
 import { kartCameraPose, boostCameraAmount } from "./presentation";
 import { vfxRehearsalRace, type VfxScript } from "./vfx-rehearsal";
 import type { VfxCounts } from "./vfx-budget";
-import { neutralKartLook, resolveKartSettings, type KartLookPreset } from "@26/shared";
+import {
+  neutralKartLook,
+  resolveKartSettings,
+  parkTrackId,
+  parkRoute,
+  type KartLookPreset,
+} from "@26/shared";
 import { createNativeKartLook, type KartLookStats } from "./look-renderer";
 import { driverFaceUrl } from "./driver-face";
 import { useKartDrivers, type KartDrivers } from "./drivers-context";
@@ -192,12 +198,14 @@ export default function KartCanvas({
       ? new THREE.PerspectiveCamera(65, 1, 0.1, 1000)
       : new THREE.OrthographicCamera(-64, 64, 64, -64, 0.1, 500);
     const route =
-      race.trackId === "mario-circuit-v1"
-        ? importedRoute
-        : [
-            [-63, -63],
-            [63, 63],
-          ];
+      race.trackId === parkTrackId
+        ? parkRoute.points
+        : race.trackId === "mario-circuit-v1"
+          ? importedRoute
+          : [
+              [-63, -63],
+              [63, 63],
+            ];
     const xs = route.map((point) => point[0]!);
     const zs = route.map((point) => point[1]!);
     const centreX = (Math.min(...xs) + Math.max(...xs)) / 2;

@@ -5,6 +5,11 @@ import {
   ringCourse,
   soloCourse,
   courseFeaturePose,
+  parkTrackId,
+  parkRibbon,
+  parkCourse,
+  parkRoute,
+  parkLanePoint,
   type KartRaceView,
 } from "@26/shared";
 import { driverFaceUrl } from "./driver-face";
@@ -54,6 +59,7 @@ export function KartMap({
   children?: ReactNode;
 }) {
   const imported = race.trackId === "mario-circuit-v1";
+  const park = race.trackId === parkTrackId;
   const px = (x: number) => mapX(race.trackId, x);
   const pz = (z: number) => mapZ(race.trackId, z);
   const reduced = useReducedMotion();
@@ -81,7 +87,21 @@ export function KartMap({
           : `Live race map: ${drivers.length} drivers`
       }
     >
-      {imported ? (
+      {park ? (
+        <path
+          data-track-road="26-park-v1"
+          d={(["left", "right"] as const)
+            .map(
+              (side) =>
+                `M${parkRibbon.map((edge) => `${px(edge[side][0])} ${pz(edge[side][1])}`).join("L")}Z`,
+            )
+            .join(" ")}
+          fill="var(--surface)"
+          fillRule="evenodd"
+          stroke="var(--accent)"
+          strokeWidth="0.5"
+        />
+      ) : imported ? (
         <polyline
           points={importedRoute.map(([x, z]) => `${px(x)},${pz(z)}`).join(" ")}
           fill="none"
@@ -98,7 +118,7 @@ export function KartMap({
         </>
       )}
       {race.courseEnabled
-        ? (imported ? soloCourse : ringCourse).map((feature) => {
+        ? (park ? parkCourse : imported ? soloCourse : ringCourse).map((feature) => {
             const pose = courseFeaturePose(feature, race.elapsedMs);
             return (
               <motion.g
@@ -133,7 +153,26 @@ export function KartMap({
             );
           })
         : null}
+      {park &&
+        Array.from({ length: 8 }, (_, i) => {
+          const along = ((i + 1) * parkRoute.lapLength) / 8,
+            a = parkLanePoint(along, -12),
+            b = parkLanePoint(along, 12),
+            label = parkLanePoint(along, -16);
+          return (
+            <g key={`park-gate-${i}`}>
+              <path
+                d={`M${px(a.x)} ${pz(a.z)}L${px(b.x)} ${pz(b.z)}`}
+                className="kart-map-checkpoint"
+              />
+              <text x={px(label.x)} y={pz(label.z)} className="kart-map-sector">
+                {i === 7 ? "START" : i + 1}
+              </text>
+            </g>
+          );
+        })}
       {!imported &&
+        !park &&
         Array.from({ length: 8 }, (_, i) => {
           const a = ((i + 1) * Math.PI) / 4;
           return (
@@ -186,7 +225,7 @@ export function KartMap({
           aria-label="Oil slick"
         />
       ))}
-      {!imported && (
+      {!imported && !park && (
         <>
           <path d="M34 0H50" className="kart-map-finish" />
           <text y="-2" className="kart-map-wordmark">

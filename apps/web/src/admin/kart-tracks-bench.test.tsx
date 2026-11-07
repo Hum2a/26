@@ -61,6 +61,34 @@ it("rehearses actual selected grid/recovery inputs, mode availability and real r
   fireEvent.click(screen.getByRole("button", { name: "Reload catalogue" }));
   await waitFor(() => expect(readKartTracks).toHaveBeenCalledTimes(5));
 });
+it("rehearses the original park and finite actual driving while public modes remain honestly pending", async () => {
+  vi.mocked(readKartTracks).mockImplementation(async (selection) =>
+    kartTrackPreview(selection),
+  );
+  render(
+    <MemoryRouter>
+      <KartTracksBench />
+    </MemoryRouter>,
+  );
+  await screen.findByText(/Mario circuit · Imported/);
+  fireEvent.change(screen.getByLabelText("Preview track"), {
+    target: { value: "26-park-v1" },
+  });
+  await screen.findByText(/26 Park · Original party course/);
+  fireEvent.change(screen.getByLabelText("Preview state"), {
+    target: { value: "drive" },
+  });
+  await screen.findByText(/actual shared driving after three seconds/);
+  expect(readKartTracks).toHaveBeenLastCalledWith({
+    track: "26-park-v1",
+    slot: 1,
+    beat: "drive",
+  });
+  expect(
+    screen.getByRole("list", { name: "Course mode availability" }).textContent,
+  ).toContain("Connected race · Pending");
+  expect(document.querySelector('[data-track-road="26-park-v1"]')).toBeTruthy();
+});
 it("shows failed validated reads honestly and allows retry", async () => {
   vi.mocked(readKartTracks)
     .mockReset()

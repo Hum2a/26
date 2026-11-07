@@ -16,12 +16,19 @@ import { importedWalls } from "./kart-track.ts";
 import { ringBounds, ringWalls, ringDriving, soloDriving } from "./kart-driving.ts";
 import { ringItemBoxes, soloItemBoxes } from "./kart-powers.ts";
 import { ringCourse, soloCourse } from "./kart-course.ts";
+import {
+  parkTrackId,
+  parkRoute,
+  parkWalls,
+  parkItemBoxes,
+  parkCourse,
+} from "./kart-park.ts";
 
 export const kartTrackSelectionSchema = z
   .object({
     track: kartRaceSchema.shape.trackId.default("mario-circuit-v1"),
     slot: z.coerce.number().int().min(1).max(80).default(1),
-    beat: z.enum(["grid", "recovery"]).default("grid"),
+    beat: z.enum(["grid", "recovery", "drive"]).default("grid"),
   })
   .strict();
 const modeSchema = z
@@ -47,12 +54,12 @@ export const kartTrackDefinitionSchema = z
       .strict(),
     collision: z
       .object({
-        kind: z.enum(["baked-walls", "polygon-rings"]),
+        kind: z.enum(["baked-walls", "polygon-rings", "ribbon-walls"]),
         segments: z.number().int().positive(),
         bodyRadius: z.number().positive().finite(),
       })
       .strict(),
-    surface: z.enum(["baked-road-dirt", "annular-road"]),
+    surface: z.enum(["baked-road-dirt", "annular-road", "procedural-road"]),
     grid: z
       .object({
         slots: z.literal(80),
@@ -76,12 +83,12 @@ export const kartTrackDefinitionSchema = z
   .strict();
 export const kartTrackCatalogueSchema = z
   .object({
-    version: z.literal("kart-tracks-v1"),
-    tracks: z.array(kartTrackDefinitionSchema).length(2),
+    version: z.literal("kart-tracks-v2"),
+    tracks: z.array(kartTrackDefinitionSchema).length(3),
   })
   .strict()
   .refine(
-    (value) => new Set(value.tracks.map((track) => track.id)).size === 2,
+    (value) => new Set(value.tracks.map((track) => track.id)).size === 3,
     "Each installed track appears once",
   );
 const grid = {
@@ -96,6 +103,56 @@ const features = (course: typeof ringCourse) => ({
   sweepers: course.filter((f) => f.kind === "hazard").length,
 });
 const definitions = {
+  [parkTrackId]: {
+    id: parkTrackId,
+    name: "26 Park",
+    origin: "original",
+    route: {
+      kind: "polyline",
+      metres: parkRoute.lapLength,
+      segments: parkRoute.points.length - 1,
+      sectors: 8,
+    },
+    collision: {
+      kind: "ribbon-walls",
+      segments: parkWalls.length,
+      bodyRadius: soloDriving.radius,
+    },
+    surface: "procedural-road",
+    grid,
+    recovery: "last-accepted-safe-pose",
+    itemBoxes: parkItemBoxes.length,
+    features: features(parkCourse),
+    raceLimitMs: importedTrackLimitMs,
+    modes: [
+      {
+        id: "room-race",
+        label: "Connected race",
+        available: false,
+        detail: "Rehearse the course here. Live race selection is still being added.",
+      },
+      {
+        id: "free-drive",
+        label: "Free drive",
+        available: false,
+        detail:
+          "Try the actual three-second driving sample here. Public park practice is still being added.",
+      },
+      {
+        id: "trial-1",
+        label: "One-lap time trial",
+        available: false,
+        detail:
+          "Eight ordered sectors work in the rehearsal. Playable park time trials are still being added.",
+      },
+      {
+        id: "trial-3",
+        label: "Three-lap time trial",
+        available: false,
+        detail: "Three-lap park practice is still being added.",
+      },
+    ],
+  },
   "mario-circuit-v1": {
     id: "mario-circuit-v1",
     name: "Mario circuit",
@@ -196,7 +253,7 @@ const definitions = {
   },
 } satisfies Record<KartTrackId, z.input<typeof kartTrackDefinitionSchema>>;
 export const kartTrackCatalogue = kartTrackCatalogueSchema.parse({
-  version: "kart-tracks-v1",
+  version: "kart-tracks-v2",
   tracks: Object.values(definitions),
 });
 export const kartTracksSectionSchema = z
@@ -228,6 +285,23 @@ export function kartTrackPreview(raw: unknown) {
     selected.speed = 10;
     race = reduceKart(race, { type: "recover", playerId: selected.playerId });
   }
+  if (selection.beat === "drive") {
+    for (let elapsedMs = 200; elapsedMs <= 3000; elapsedMs += 200) {
+      race = reduceKart(race, {
+        type: "input",
+        playerId: selected.playerId,
+        value: {
+          raceId: race.raceId,
+          sequence: elapsedMs,
+          steer: 0,
+          gas: true,
+          brake: false,
+          drift: false,
+        },
+      });
+      race = reduceKart(race, { type: "tick", elapsedMs });
+    }
+  }
   const stage = projectKartRace(race, null, 0),
     fullPhone = projectKartRace(race, selected.playerId, 0);
   const phone = {
@@ -243,7 +317,7 @@ export function kartTrackPreview(raw: unknown) {
   return kartTracksSectionSchema.parse({
     catalogue: kartTrackCatalogue,
     selection,
-    label: `80 labelled stand-ins · slot ${selection.slot} · ${selection.beat === "recovery" ? "actual shared recovery to its accepted starting-grid pose" : "actual shared starting grid"}. Isolated preview; no room, score or persistence.`,
+    label: `80 labelled stand-ins · slot ${selection.slot} · ${selection.beat === "drive" ? "actual shared driving after three seconds of straight acceleration" : selection.beat === "recovery" ? "actual shared recovery to its accepted starting-grid pose" : "actual shared starting grid"}. Isolated preview; no room, score or persistence.`,
     phone,
     stage,
   });

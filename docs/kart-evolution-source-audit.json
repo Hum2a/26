@@ -221,7 +221,7 @@
             "hash": "a8fa36852395c711b5a869edaee229a2051cdc22",
             "bytes": 1797320,
             "usage": "vehicle-and-track-assets",
-            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+            "replacement": "inspected pinned GLB metadata/hash on 7 November2026; not installed; replaced for additional-course capability by original26-park-v1 geometry (docs/kart-track-audit.md)"
           }
         },
         {
@@ -1267,7 +1267,7 @@
             "hash": "a8fa36852395c711b5a869edaee229a2051cdc22",
             "bytes": 1797320,
             "usage": "vehicle-and-track-assets",
-            "replacement": "not installed; inspect and adapt or replace before use in phases2–8"
+            "replacement": "inspected pinned GLB metadata/hash on 7 November2026; not installed; replaced for additional-course capability by original26-park-v1 geometry (docs/kart-track-audit.md)"
           }
         },
         {

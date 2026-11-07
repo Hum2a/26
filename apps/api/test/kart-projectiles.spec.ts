@@ -182,7 +182,7 @@ it("enforces owner grace, finished-target refusal and departure cleanup", () => 
       .reason,
   ).toBe("target");
 });
-it("steers homing along both public routes at bounded speed and stops at barriers", () => {
+it("steers homing along both public routes and the rehearsed original park at bounded speed and stops at barriers", () => {
   const actors = [actor(), actor("b", 6, 0, 2)];
   const wall: KartProjectileContext = {
     ...empty,
@@ -191,7 +191,7 @@ it("steers homing along both public routes at bounded speed and stops at barrier
   const stopped = advance(launch("homing", actors, wall), actors, 200, wall);
   expect(stopped.world.projectiles).toEqual([]);
   expect(stopped.hits).toEqual([]);
-  for (const trackId of ["party-ring-v1", "mario-circuit-v1"] as const) {
+  for (const trackId of ["party-ring-v1", "mario-circuit-v1", "26-park-v1"] as const) {
     const owner = {
       ...actor(),
       x: trackId === "party-ring-v1" ? 42 : 0,

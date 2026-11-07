@@ -68,11 +68,30 @@ it("requires admin and refuses invalid track/slot/beat selections", async () => 
   expect(roomAccess).not.toHaveBeenCalled();
 });
 it("keeps sample scores at zero and projects the actual starting/recovered pose on both courses", () => {
-  for (const track of ["party-ring-v1", "mario-circuit-v1"])
+  for (const track of ["party-ring-v1", "mario-circuit-v1", "26-park-v1"])
     for (const slot of [1, 16, 21, 50, 80]) {
       const grid = kartTrackPreview({ track, slot, beat: "grid" }),
         recovery = kartTrackPreview({ track, slot, beat: "recovery" });
       expect(recovery.phone.participants[0]).toEqual(grid.phone.participants[0]);
       expect(recovery.stage.leaderboard.every((row) => row.points === 0)).toBe(true);
     }
+});
+it("rehearses real park driving with zero scores and no room, credentials or private physics", async () => {
+  const response = await app.request(
+    "https://example.com/api/admin/kart-tracks?track=26-park-v1&slot=80&beat=drive",
+    {},
+    bindings,
+  );
+  expect(response.status).toBe(200);
+  const result = kartTracksSectionSchema.parse(await response.json());
+  const grid = kartTrackPreview({ track: "26-park-v1", slot: 80 });
+  expect(result.phone.elapsedMs).toBe(3000);
+  expect(result.phone.participants[0]!.z).toBeLessThan(
+    grid.phone.participants[0]!.z - 20,
+  );
+  expect(result.stage.leaderboard.every((row) => row.points === 0)).toBe(true);
+  expect(JSON.stringify(result)).not.toMatch(
+    /credential|inputUntil|lastSafe|itemsWorld|correctAnswer/,
+  );
+  expect(roomAccess).not.toHaveBeenCalled();
 });

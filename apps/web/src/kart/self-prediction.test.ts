@@ -5,11 +5,35 @@ import {
   ringCourse,
   type KartRaceView,
   createDrivingBody,
+  parkTrackId,
+  reduceKart,
 } from "@26/shared";
 import { createSelfPrediction } from "./self-prediction";
 
 const gas = { steer: 0, gas: true, brake: false, drift: false };
 const idle = { steer: 0, gas: false, brake: false, drift: false };
+it("uses the same original park driving environment for cosmetic prediction and accepted movement", () => {
+  const state = createKartRace("park-prediction", [{ playerId: "a", name: "Amina" }], {
+    trackId: parkTrackId,
+  });
+  const view = projectKartRace(state, "a", 0);
+  // Compare identical initial poses: public headings are intentionally milliradian-rounded.
+  state.drivers[0]!.heading = view.participants[0]!.heading;
+  const prediction = createSelfPrediction();
+  prediction.input(gas, 0);
+  prediction.server(view, 0, 0);
+  const accepted = reduceKart(
+    reduceKart(state, {
+      type: "input",
+      playerId: "a",
+      value: { ...gas, raceId: state.raceId, sequence: 1 },
+    }),
+    { type: "tick", elapsedMs: 200 },
+  );
+  const pose = prediction.pose(200)!;
+  expect(pose.x).toBeCloseTo(accepted.drivers[0]!.x, 5);
+  expect(pose.z).toBeCloseTo(accepted.drivers[0]!.z, 5);
+});
 
 it("seeds optional bounce stun/cooldown from accepted self metadata and resumes responsive prediction afterwards", () => {
   const state = createKartRace("bounce-predict", [{ playerId: "a", name: "Amina" }], {

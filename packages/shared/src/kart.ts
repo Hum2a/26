@@ -4,6 +4,15 @@ import {
   type KartSettingHistory,
 } from "./kart-settings.ts";
 import {
+  parkTrackId,
+  parkRoute,
+  parkLanePoint,
+  nearbyParkWalls,
+  parkSurfaceAt,
+  parkCourse,
+  parkItemBoxes,
+} from "./kart-park.ts";
+import {
   importedTrackId,
   importedTrackLimitMs,
   importedLapLength,
@@ -75,7 +84,8 @@ import {
 
 export const kartTrackId = "party-ring-v1" as const;
 export const kartLimitMs = 45_000;
-export type KartTrackId = typeof kartTrackId | typeof importedTrackId;
+export type KartTrackId =
+  typeof kartTrackId | typeof importedTrackId | typeof parkTrackId;
 export const kartTickMs = 200;
 export const kartNeutral = { steer: 0, gas: false, brake: false, drift: false };
 export const kartControlsSchema = z
@@ -146,7 +156,7 @@ export type KartDriver = z.infer<typeof kartDriverSchema>;
 export const kartRaceSchema = z
   .object({
     raceId: z.string(),
-    trackId: z.enum([kartTrackId, importedTrackId]),
+    trackId: z.enum([kartTrackId, importedTrackId, parkTrackId]),
     timeLimitMs: z.union([z.literal(kartLimitMs), z.literal(importedTrackLimitMs)]),
     elapsedMs: z.number().int().min(0).max(importedTrackLimitMs),
     ended: z.boolean(),
@@ -288,16 +298,23 @@ export function createKartRace(
         .map((p, index) => ({ ...p, index }))
         .sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || a.index - b.index)
     : players;
+  const seeded =
+    options.seedGrid ||
+    options.trackId === importedTrackId ||
+    options.trackId === parkTrackId;
   return {
     raceId,
     trackId: options.trackId ?? kartTrackId,
     timeLimitMs:
-      options.trackId === importedTrackId ? importedTrackLimitMs : kartLimitMs,
+      options.trackId === importedTrackId || options.trackId === parkTrackId
+        ? importedTrackLimitMs
+        : kartLimitMs,
     physicsVersion: "arcade-v2",
     ...(options.handling ? { handling: options.handling } : {}),
     contactVersion: 1,
     contactHistory: [],
-    courseEnabled: options.trackId === importedTrackId,
+    courseEnabled:
+      options.trackId === importedTrackId || options.trackId === parkTrackId,
     courseHistory: [],
     powerUpVersion: 1,
     ...(options.itemRules
@@ -314,10 +331,10 @@ export function createKartRace(
       number: i + 1,
       ...(options.seedGrid ? { gridPosition: i + 1 } : {}),
       power: createKartPowers(),
-      ...(options.seedGrid || options.trackId === importedTrackId
+      ...(seeded
         ? gridSlot(i, options.trackId ?? kartTrackId)
         : { x: 42 + ((i % 5) - 2) * 1.5, z: 0, heading: Math.PI / 2 }),
-      ...(options.seedGrid || options.trackId === importedTrackId
+      ...(seeded
         ? {
             lastSafe: {
               ...gridSlot(i, options.trackId ?? kartTrackId),
@@ -336,14 +353,8 @@ export function createKartRace(
       input: { ...kartNeutral },
       inputUntil: 0,
       turn: 0,
-      angle:
-        options.seedGrid || options.trackId === importedTrackId
-          ? gridSlot(i, options.trackId ?? kartTrackId).angle
-          : 0,
-      distance:
-        options.seedGrid || options.trackId === importedTrackId
-          ? gridSlot(i, options.trackId ?? kartTrackId).distance
-          : 0,
+      angle: seeded ? gridSlot(i, options.trackId ?? kartTrackId).angle : 0,
+      distance: seeded ? gridSlot(i, options.trackId ?? kartTrackId).distance : 0,
       driftMs: 0,
       boostMs: 0,
       wasDrifting: false,
@@ -464,7 +475,12 @@ function itemActors(race: KartRace) {
 function itemContext(race: KartRace) {
   return {
     trackId: race.trackId ?? kartTrackId,
-    walls: race.trackId === importedTrackId ? nearbyImportedWalls : nearbyRingWalls,
+    walls:
+      race.trackId === parkTrackId
+        ? nearbyParkWalls
+        : race.trackId === importedTrackId
+          ? nearbyImportedWalls
+          : nearbyRingWalls,
   };
 }
 export function configureKartItems(race: KartRace, value: unknown): KartRace {
@@ -856,8 +872,15 @@ function stepDriver(
 ): void {
   const dt = ms / 1000;
   const imported = trackId === importedTrackId;
-  const profile = imported ? soloDriving : ringDriving;
-  const nearbyWalls = imported ? nearbyImportedWalls : nearbyRingWalls;
+  const park = trackId === parkTrackId;
+  const polyline = imported || park;
+  const surfaceAt = park ? parkSurfaceAt : importedSurfaceAt;
+  const profile = polyline ? soloDriving : ringDriving;
+  const nearbyWalls = park
+    ? nearbyParkWalls
+    : imported
+      ? nearbyImportedWalls
+      : nearbyRingWalls;
   const fresh = elapsed <= d.inputUntil;
   const input = fresh ? d.input : kartNeutral;
   if (version === "arcade-v2") {
@@ -874,9 +897,9 @@ function stepDriver(
       profile,
       nearbyWalls(body.x, body.z, profile.radius + Math.hypot(body.vx, body.vz) * 0.02),
       Boolean(d.power && d.power.slowedUntil > elapsed) ||
-        (imported && importedSurfaceAt(body.x, body.z) !== "road"),
+        (polyline && surfaceAt(body.x, body.z) !== "road"),
       fresh,
-      courseEnabled ? (imported ? soloCourse : ringCourse) : [],
+      courseEnabled ? (park ? parkCourse : imported ? soloCourse : ringCourse) : [],
       race?.handling,
     );
     if (
@@ -906,9 +929,11 @@ function stepDriver(
         next,
         (next.height ?? 0) > 0 || race?.itemsWorld?.spawning === false
           ? []
-          : imported
-            ? importedBoxes
-            : ringItemBoxes,
+          : park
+            ? parkItemBoxes
+            : imported
+              ? importedBoxes
+              : ringItemBoxes,
         (next.height ?? 0) > 0 ? [] : oils,
         elapsed,
         d.playerId,
@@ -986,8 +1011,12 @@ function stepDriver(
       d.speed *= 0.95;
     }
   }
-  const projection = imported ? importedTrackProgress(d.x, d.z) : undefined;
-  const lapLength = imported ? importedLapLength : tau;
+  const projection = park
+    ? parkRoute.progress(d.x, d.z)
+    : imported
+      ? importedTrackProgress(d.x, d.z)
+      : undefined;
+  const lapLength = park ? parkRoute.lapLength : imported ? importedLapLength : tau;
   const angle = projection?.along ?? Math.atan2(d.z, d.x);
   const lap = advanceKartLap(d, {
     along: angle,
@@ -1012,7 +1041,7 @@ function stepDriver(
     lap.safeProgress &&
     !d.physics?.contact &&
     !(d.physics?.height ?? 0) &&
-    (!imported || importedSurfaceAt(d.x, d.z) === "road") &&
+    (!polyline || surfaceAt(d.x, d.z) === "road") &&
     clearOfWalls(d.x, d.z, nearbyWalls(d.x, d.z, 3), profile.radius + 2)
   )
     d.lastSafe = {
@@ -1121,9 +1150,11 @@ export function projectKartRace(
             selfItem: legacyKartItem(
               race.drivers.find((d) => d.playerId === selfPlayerId)?.power?.item,
             ),
-            boxes: (race.trackId === importedTrackId
-              ? importedBoxes
-              : ringItemBoxes
+            boxes: (race.trackId === parkTrackId
+              ? parkItemBoxes
+              : race.trackId === importedTrackId
+                ? importedBoxes
+                : ringItemBoxes
             ).map((box) => ({
               ...box,
               available:
@@ -1187,7 +1218,11 @@ export function projectKartRace(
         height: round(physics?.height ?? 0, 3),
         wrongWay:
           status === "RACING" &&
-          (race.trackId === importedTrackId ? importedWrongWay : wrongWayVelocity)(
+          (race.trackId === parkTrackId
+            ? parkWrongWay
+            : race.trackId === importedTrackId
+              ? importedWrongWay
+              : wrongWayVelocity)(
             x,
             z,
             physics?.vx ?? Math.cos(heading) * speed,
@@ -1213,8 +1248,23 @@ function importedWrongWay(x: number, z: number, vx: number, vz: number) {
     vx * Math.cos(p.heading) + vz * Math.sin(p.heading) < -0.5
   );
 }
+function parkWrongWay(x: number, z: number, vx: number, vz: number) {
+  const p = parkRoute.progress(x, z);
+  return (
+    Math.hypot(vx, vz) > 0.5 &&
+    vx * Math.cos(p.heading) + vz * Math.sin(p.heading) < -0.5
+  );
+}
 function gridSlot(i: number, track: KartTrackId) {
   const behind = 1.5 + Math.floor(i / 5) * 3;
+  if (track === parkTrackId) {
+    const pose = parkLanePoint(-behind, ((i % 5) - 2) * 4);
+    return {
+      ...pose,
+      angle: parkRoute.progress(pose.x, pose.z).along,
+      distance: -behind,
+    };
+  }
   if (track === importedTrackId) {
     const x = ((i % 5) - 2) * 4,
       z = behind;

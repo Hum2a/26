@@ -165,6 +165,7 @@ export default defineConfig({
             "test/party-scoring.spec.ts",
             "test/kart-score.spec.ts",
             "test/kart-tracks.spec.ts",
+            "test/kart-park.spec.ts",
             "test/kart-track-catalogue.spec.ts",
             "test/birthday-order.spec.ts",
             "test/kart-driving.spec.ts",

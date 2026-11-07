@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
-import { createKartRace, projectKartRace } from "@26/shared";
+import { createKartRace, projectKartRace, parkRoute, parkTrackId } from "@26/shared";
 import { KartMap } from "./KartMap";
 import { KartDriverView } from "./KartDriverView";
 import { mapHeadingPath, mapSectorPoint, nextMapSector } from "./navigation";
@@ -32,6 +32,23 @@ it("guides the accepted next sector and finish on both public tracks, never raw 
   }
   expect(mapSectorPoint("party-ring-v1", 8)).toMatchObject({ x: 42, z: 0 });
   expect(() => mapSectorPoint("party-ring-v1", 0)).toThrow(RangeError);
+});
+it("maps original park gates onto the same shared route used by driving", () => {
+  for (let sector = 1; sector <= 8; sector++)
+    expect(mapSectorPoint(parkTrackId, sector)).toEqual(
+      parkRoute.point((sector * parkRoute.lapLength) / 8),
+    );
+  const race = projectKartRace(
+    createKartRace("park", [{ playerId: "p", name: "Stand-in" }], {
+      trackId: parkTrackId,
+    }),
+    "p",
+    0,
+  );
+  const view = render(<KartMap race={race} personal />);
+  expect(view.container.querySelector('[data-track-road="26-park-v1"]')).toBeTruthy();
+  expect(view.container.querySelectorAll(".kart-map-checkpoint")).toHaveLength(8);
+  expect(screen.getByLabelText("Next sector: 1")).toBeTruthy();
 });
 it("shows heading/next-sector guidance only on personal maps and keeps the stage public", async () => {
   expect(mapHeadingPath(0)).toBe("M8 0L4 -2.5L4 2.5Z");

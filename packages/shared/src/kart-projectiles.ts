@@ -7,6 +7,7 @@ import {
 } from "./kart-powers.ts";
 import { selectKartTarget, type KartTarget } from "./kart-targeting.ts";
 import { importedTrackPoint, importedTrackProgress } from "./kart-route.ts";
+import { parkRoute, parkTrackId } from "./kart-park.ts";
 import { z } from "zod";
 
 export const kartProjectileKindSchema = z.enum(kartProjectileKinds);
@@ -150,7 +151,7 @@ export type KartProjectileActor = KartTarget & {
   previous?: { x: number; z: number; height: number };
 };
 export type KartProjectileContext = {
-  trackId: "party-ring-v1" | "mario-circuit-v1";
+  trackId: "party-ring-v1" | "mario-circuit-v1" | typeof parkTrackId;
   walls: (x: number, z: number, padding: number) => readonly Wall[];
 };
 export const createKartProjectiles = (): KartProjectileWorld => ({
@@ -311,7 +312,9 @@ function steerHoming(
 ) {
   let aim = { x: target.x, z: target.z };
   if (Math.hypot(target.x - item.x, target.z - item.z) > 10) {
-    if (context.trackId === "mario-circuit-v1") {
+    if (context.trackId === parkTrackId) {
+      aim = parkRoute.point(parkRoute.progress(item.x, item.z).along + 8);
+    } else if (context.trackId === "mario-circuit-v1") {
       const along = importedTrackProgress(item.x, item.z).along;
       aim = importedTrackPoint(along + 8);
     } else {

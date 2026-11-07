@@ -31,7 +31,7 @@ export function KartTracksBench() {
     <section className="admin-kart-pane" aria-label="Tracks and modes catalogue">
       <h2>Tracks &amp; modes</h2>
       <p>
-        Installed courses and actual shared grid/recovery previews with80 labelled
+        Installed courses and actual shared grid/recovery previews with 80 labelled
         stand-ins. Selections here rehearse the course; choose real race settings in
         Live controls. Mode availability below describes what works today.
       </p>
@@ -46,6 +46,7 @@ export function KartTracksBench() {
         >
           <option value="mario-circuit-v1">Mario circuit</option>
           <option value="party-ring-v1">Party ring</option>
+          <option value="26-park-v1">26 Park · new original course</option>
         </select>
         <label htmlFor={`${id}-slot`}>Starting-grid slot</label>
         <select
@@ -69,6 +70,7 @@ export function KartTracksBench() {
         >
           <option value="grid">Starting grid</option>
           <option value="recovery">Back to accepted grid pose</option>
+          <option value="drive">Drive straight for three seconds</option>
         </select>
         <Button
           variant="secondary"
@@ -124,7 +126,9 @@ export function KartTracksBench() {
               <dd>
                 {track.surface === "baked-road-dirt"
                   ? "Verified road and dirt triangles"
-                  : "Original annular road"}
+                  : track.surface === "procedural-road"
+                    ? "Original 24m-wide procedural road"
+                    : "Original annular road"}
               </dd>
               <dt>Grid</dt>
               <dd>

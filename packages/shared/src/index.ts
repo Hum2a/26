@@ -1584,6 +1584,7 @@ export * from "./kart-targeting.ts";
 export * from "./kart-item-rules.ts";
 export * from "./kart-course.ts";
 export * from "./kart-tracks.ts";
+export * from "./kart-park.ts";
 export * from "./kart-spectator.ts";
 export * from "./kart-vfx.ts";
 export * from "./kart-look.ts";

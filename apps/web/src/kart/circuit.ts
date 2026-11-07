@@ -1,7 +1,17 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
-import { ringBounds, ringCourse, soloCourse, courseFeaturePose } from "@26/shared";
+import {
+  ringBounds,
+  ringCourse,
+  soloCourse,
+  courseFeaturePose,
+  parkTrackId,
+  parkCourse,
+  parkRibbon,
+  parkWalls,
+  parkSurfaceAt,
+} from "@26/shared";
 import type { KartRaceView } from "@26/shared";
 import { driftEffectDescription, driftStrength } from "./drift-effects";
 import { extrapolateKartPose, smoothKartPose, type KartPose } from "./presentation";
@@ -36,10 +46,13 @@ export function createCircuit(
   onVisualChange?: () => void,
 ) {
   const imported = trackId === "mario-circuit-v1";
-  const course = imported ? soloCourse : ringCourse;
+  const park = trackId === parkTrackId;
+  const course = park ? parkCourse : imported ? soloCourse : ringCourse;
   let disposed = false;
   const venue = new THREE.Group();
-  venue.visible = !imported;
+  venue.visible = !imported && !park;
+  const parkVenue = new THREE.Group();
+  parkVenue.name = "kart-park-venue";
   let target: THREE.Object3D = venue;
   const neighbourCapacity = Math.max(0, Math.min(8, Math.floor(nearbyCapacity) || 0));
   const capacity = focusPlayerId ? 1 + neighbourCapacity : 80;
@@ -51,6 +64,7 @@ export function createCircuit(
   let vfxActive = false;
   scene.background = ground;
   scene.add(venue);
+  if (park) scene.add(parkVenue);
   scene.add(new THREE.HemisphereLight(ink, ground, 2));
   const sun = new THREE.DirectionalLight(ink, 2);
   sun.position.set(25, 70, 10);
@@ -104,7 +118,7 @@ export function createCircuit(
   let vehicleRequested = false;
   let detailedVisible = false;
   function ensureVehicle() {
-    if (!imported || vehicleRequested || disposed) return;
+    if (!(imported || park) || vehicleRequested || disposed) return;
     vehicleRequested = true;
     onVehicleState?.("loading");
     vehicleDecoder = new DRACOLoader()
@@ -300,6 +314,74 @@ export function createCircuit(
     materials.add(material);
     const mark = mesh(geo(new THREE.PlaneGeometry(28, 14)), material, 0, 0.12, 0);
     mark.rotation.x = -Math.PI / 2;
+    if (park) {
+      const parkMark = mesh(
+        geo(new THREE.PlaneGeometry(28, 14)),
+        material,
+        80,
+        0.12,
+        0,
+      );
+      parkMark.rotation.x = -Math.PI / 2;
+      parkVenue.add(parkMark);
+    }
+  }
+  if (park) {
+    target = parkVenue;
+    const lawn = mesh(geo(new THREE.PlaneGeometry(230, 260)), quiet, 80, -0.04, 0);
+    lawn.rotation.x = -Math.PI / 2;
+    const positions: number[] = [];
+    for (let i = 0; i < parkRibbon.length; i++) {
+      const a = parkRibbon[i]!,
+        b = parkRibbon[(i + 1) % parkRibbon.length]!;
+      for (const point of [a.left, b.left, a.right, a.right, b.left, b.right])
+        positions.push(point[0], 0.02, point[1]);
+    }
+    const ribbon = geo(new THREE.BufferGeometry());
+    ribbon.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    ribbon.computeVertexNormals();
+    mesh(ribbon, surface, 0, 0, 0).name = "kart-park-road";
+    const edgeGeometry = geo(new THREE.BoxGeometry(1, 0.6, 0.65));
+    const a = batch(edgeGeometry, bright, Math.ceil(parkWalls.length / 2)),
+      b = batch(edgeGeometry, text, Math.floor(parkWalls.length / 2));
+    a.name = "kart-park-walls-accent";
+    b.name = "kart-park-walls-ink";
+    parkWalls.forEach((wall, i) => {
+      const heading = Math.atan2(wall.bz - wall.az, wall.bx - wall.ax);
+      place(
+        i % 2 ? b : a,
+        Math.floor(i / 2),
+        (wall.ax + wall.bx) / 2,
+        0.3,
+        (wall.az + wall.bz) / 2,
+        -heading,
+        Math.hypot(wall.bx - wall.ax, wall.bz - wall.az),
+      );
+    });
+    const trees = batch(crowns.geometry, bright, 6),
+      stems = batch(trunks.geometry, dark, 6);
+    for (let i = 0; i < 6; i++) {
+      const x = 60 + (i % 2) * 40,
+        z = -40 + Math.floor(i / 2) * 40;
+      place(trees, i, x, 4, z);
+      place(stems, i, x, 1, z);
+    }
+    const finishLight = batch(checkGeo, text, 12),
+      finishDark = batch(checkGeo, dark, 12);
+    for (let i = 0; i < 24; i++) {
+      const column = i % 12,
+        row = Math.floor(i / 12),
+        light = (column + row) % 2;
+      place(
+        light ? finishLight : finishDark,
+        Math.floor(i / 2),
+        -11 + column * 2,
+        0.12,
+        row - 0.5,
+      );
+    }
+    for (const x of [-13, 13]) mesh(poleGeo, second, x, 3, 0);
+    mesh(geo(new THREE.BoxGeometry(26, 1.5, 0.8)), bright, 0, 6, 0);
   }
   // Six batches instead of one group of draw calls per racer (including 320 wheels).
   // Instance colours are the palette; the base material is a neutral multiplier.
@@ -662,11 +744,13 @@ export function createCircuit(
             boosting: driver.boostRemainingMs > 0,
             charge: driver.driftLevel ?? driver.driftCharge * 3,
             status: driver.status,
-            surface: imported
-              ? importedSurfaceAt(pose.x, pose.z)
-              : Math.abs(Math.hypot(pose.x, pose.z) - 42) > 8
-                ? "dirt"
-                : "road",
+            surface: park
+              ? parkSurfaceAt(pose.x, pose.z)
+              : imported
+                ? importedSurfaceAt(pose.x, pose.z)
+                : Math.abs(Math.hypot(pose.x, pose.z) - 42) > 8
+                  ? "dirt"
+                  : "road",
           } satisfies VfxActor;
         }),
       });

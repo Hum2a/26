@@ -5,6 +5,8 @@ import {
   importedRoute,
   ringWalls,
   ringBounds,
+  parkWalls,
+  parkRoute,
   createDrivingBody,
   moveWithWalls,
   type KartContactHistoryEntry,
@@ -41,6 +43,7 @@ function layer(walls: readonly Wall[], route: readonly (readonly number[])[]) {
 const layers = {
   "party-ring-v1": layer(ringWalls, ringRoute),
   "mario-circuit-v1": layer(importedWalls, importedRoute),
+  "26-park-v1": layer(parkWalls, parkRoute.points),
 };
 
 /** Real server solver data; this is an admin drawing, never browser collision authority. */
@@ -61,10 +64,14 @@ export function KartCollisionOverlay({
     <section className="kart-collision-overlay" aria-label="Kart collision inspection">
       <h3>Collision boundaries</h3>
       <p>
-        {data.walls.length} baked segments ·{" "}
-        {trackId === "mario-circuit-v1" ? "Imported circuit" : "Party ring"}. Boundaries
-        are the actual swept solver’s X/Z data. Height clearance is conservative; this
-        view does not claim 3D wall heights.
+        {data.walls.length} boundary segments ·{" "}
+        {trackId === "26-park-v1"
+          ? "26 Park"
+          : trackId === "mario-circuit-v1"
+            ? "Imported circuit"
+            : "Party ring"}
+        . Boundaries are the actual swept solver’s X/Z data. Height clearance is
+        conservative; this view does not claim 3D wall heights.
       </p>
       <div className="flex flex-wrap gap-3">
         <label>
@@ -187,7 +194,7 @@ export function KartCollisionBench() {
     <section className="admin-kart-pane" aria-label="Kart collision rehearsal">
       <h2>Collision bench</h2>
       <p>
-        Stand-in impacts use the real swept solver and baked boundaries. No room,
+        Stand-in impacts use the real swept solver and actual boundaries. No room,
         socket, score or live racer is involved.
       </p>
       <label>
@@ -203,6 +210,7 @@ export function KartCollisionBench() {
         >
           <option value="mario-circuit-v1">Imported circuit</option>
           <option value="party-ring-v1">Party ring</option>
+          <option value="26-park-v1">26 Park</option>
         </select>
       </label>
       <div className="flex flex-wrap gap-3">

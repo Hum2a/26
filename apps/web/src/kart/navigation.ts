@@ -1,8 +1,12 @@
-import type { KartRaceView } from "@26/shared";
+import { parkTrackId, parkRoute, type KartRaceView } from "@26/shared";
 export const mapX = (trackId: KartRaceView["trackId"], x: number) =>
-  trackId === "mario-circuit-v1" ? (x - 150) * 0.34 : x;
+  trackId === parkTrackId
+    ? (x - 80) * 0.52
+    : trackId === "mario-circuit-v1"
+      ? (x - 150) * 0.34
+      : x;
 export const mapZ = (trackId: KartRaceView["trackId"], z: number) =>
-  trackId === "mario-circuit-v1" ? z * 0.34 : z;
+  trackId === parkTrackId ? z * 0.52 : trackId === "mario-circuit-v1" ? z * 0.34 : z;
 import {
   importedLapLength,
   importedTrackPoint,
@@ -20,6 +24,8 @@ export function mapSectorPoint(trackId: KartRaceView["trackId"], sector: number)
     throw new RangeError("Sector must be between one and eight");
   if (trackId === "mario-circuit-v1")
     return importedTrackPoint((sector * importedLapLength) / 8);
+  if (trackId === parkTrackId)
+    return parkRoute.point((sector * parkRoute.lapLength) / 8);
   const angle = ((sector % 8) * Math.PI) / 4;
   return {
     x: Math.cos(angle) * 42,
