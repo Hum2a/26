@@ -406,7 +406,7 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
     .object({
       ...publicQuestionCore,
       kind: z.literal("kart"),
-      trackId: z.enum(["party-ring-v1", "mario-circuit-v1"]),
+      trackId: z.enum(["party-ring-v1", "mario-circuit-v1", "26-park-v1"]),
       timeLimitMs: z.union([z.literal(45_000), z.literal(180_000)]),
     })
     .strict(),
@@ -951,7 +951,23 @@ export type TrollKindName = (typeof trollKinds)[number];
 
 /** Control-only metadata for a deliberately created kart lobby. */
 export const kartLobbySchema = z
-  .object({ createdAt: z.number().int().nonnegative() })
+  .object({
+    createdAt: z.number().int().nonnegative(),
+    trackId: z.enum(["party-ring-v1", "mario-circuit-v1", "26-park-v1"]).optional(),
+    sourceVersion: z.string().min(1).max(120).optional(),
+    history: z
+      .array(
+        z
+          .object({
+            atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+            trackId: z.enum(["party-ring-v1", "mario-circuit-v1", "26-park-v1"]),
+            source: z.literal("host"),
+          })
+          .strict(),
+      )
+      .max(20)
+      .optional(),
+  })
   .strict();
 
 /** Audience projections omit private operator fields for guests and stage. */
@@ -1584,6 +1600,7 @@ export * from "./kart-targeting.ts";
 export * from "./kart-item-rules.ts";
 export * from "./kart-course.ts";
 export * from "./kart-tracks.ts";
+export * from "./kart-track-compatibility.ts";
 export * from "./kart-park.ts";
 export * from "./kart-spectator.ts";
 export * from "./kart-vfx.ts";

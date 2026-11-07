@@ -86,7 +86,7 @@ it("rehearses the original park and finite actual driving while public modes rem
   });
   expect(
     screen.getByRole("list", { name: "Course mode availability" }).textContent,
-  ).toContain("Connected race · Pending");
+  ).toContain("Connected race · Available");
   expect(document.querySelector('[data-track-road="26-park-v1"]')).toBeTruthy();
 });
 it("shows failed validated reads honestly and allows retry", async () => {

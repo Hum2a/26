@@ -3,10 +3,12 @@ import {
   kartLookNameSchema,
   kartHandlingSchema,
   kartItemRulesSchema,
+  kartRaceSchema,
   type KartHandling,
   type KartSettingChange,
   type KartLookName,
 } from "@26/shared";
+import { rejectOldKartTrackClient } from "./kart-track-compatibility.ts";
 import {
   gameIdSchema,
   botCountSchema,
@@ -290,7 +292,8 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     if (!allowed.ok) {
       return roomFailure(401, "unauthenticated", "This screen needs its room session.");
     }
-    return jsonData(await room(c.env, resolved.gameId).snapshotFor("stage"));
+    const snapshot = await room(c.env, resolved.gameId).snapshotFor("stage");
+    return rejectOldKartTrackClient(c.req.raw, snapshot) ?? jsonData(snapshot);
   });
 
   app.post("/api/rooms/transfer", async (c) => {
@@ -397,6 +400,7 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "kart-setting",
       "kart-handling",
       "kart-item-rules",
+      "kart-track",
       "kart-items-on",
       "kart-items-off",
       "kart-items-clear",
@@ -921,6 +925,7 @@ function readHostDetails(
         botCount?: number;
         kartSetting?: KartSettingChange;
         itemRules?: unknown;
+        kartTrack?: unknown;
         lookPreset?: KartLookName;
         handlingPreset?: KartHandling;
         playerId?: string;
@@ -1007,6 +1012,12 @@ function readHostDetails(
     return rules.success
       ? { ok: true, fields: { itemRules: rules.data } }
       : { ok: false, message: "Choose valid item rules." };
+  }
+  if (action === "kart-track") {
+    const track = kartRaceSchema.shape.trackId.safeParse(field(body, "kartTrack"));
+    return track.success
+      ? { ok: true, fields: { kartTrack: track.data } }
+      : { ok: false, message: "Choose an installed kart course." };
   }
   if (action === "developer-bots") {
     const count = botCountSchema.safeParse(field(body, "botCount"));

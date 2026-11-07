@@ -224,7 +224,7 @@ export type AuthoredFinale = AuthorFields &
 
 export type KartBody = {
   kind: "kart";
-  trackId: "party-ring-v1" | "mario-circuit-v1";
+  trackId: "party-ring-v1" | "mario-circuit-v1" | "26-park-v1";
   timeLimitMs: 45_000 | 180_000;
 };
 export type AuthoredKart = AuthorFields & KartBody;

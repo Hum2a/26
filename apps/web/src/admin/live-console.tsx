@@ -15,6 +15,7 @@ import { CommandFeedback } from "./command-feedback";
 import { WallQuickPanel } from "./wall-page";
 import { RoomExtras } from "./room-extras";
 import { KartCourseControls } from "./kart-course-controls";
+import { KartTrackControls } from "./kart-track-controls";
 import { KartDrivingFeel } from "./kart-driving-feel";
 import { DangerZone } from "./danger-zone";
 
@@ -219,7 +220,9 @@ export function LiveConsole() {
       {kartLobby ? (
         <section className="admin-current" aria-label="Kart lobby details">
           <h2>Kart-only lobby</h2>
-          <p>Mario circuit · one lap · three-minute limit · up to 80 racers.</p>
+          <p>
+            One lap · up to 80 racers. The saved course and time limit are shown below.
+          </p>
           <p>
             Created {new Date(snapshot.kartLobby!.createdAt).toLocaleString("en-GB")}.
             The starting grid freezes when you start. Late arrivals watch this race;
@@ -228,6 +231,7 @@ export function LiveConsole() {
         </section>
       ) : null}
       <KartDrivingFeel />
+      <KartTrackControls />
       <div className="admin-live-actions" aria-label="Live actions">
         {phase === "lobby" ? (
           <Button

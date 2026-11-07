@@ -14,6 +14,7 @@ import {
 } from "../credentials/cookies.ts";
 import { credentialLifetimeMs } from "../credentials/verify.ts";
 import { rejectUnlessRoomCreator } from "./access.ts";
+import { rejectOldKartTrackClient } from "./kart-track-compatibility.ts";
 
 // This cookie is a location hint, never authority. Every read verifies control
 // credentials against the selected room; tampering cannot select another room.
@@ -88,6 +89,10 @@ export function registerAdminRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       ...credential,
       now: new Date().toISOString(),
     });
+    if (found.ok) {
+      const rejected = rejectOldKartTrackClient(c.req.raw, found.snapshot);
+      if (rejected) return rejected;
+    }
     return jsonData({
       snapshot: found.ok ? lobbySnapshotSchema.parse(found.snapshot) : null,
     });
@@ -156,7 +161,10 @@ export function registerAdminRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     });
     if (!found.ok) return failure(401, "Open this room to renew its access.");
     const headers = new Headers({ "set-cookie": selectedRoomCookie(parsed.data) });
-    return jsonData(lobbySnapshotSchema.parse(found.snapshot), 200, headers);
+    return (
+      rejectOldKartTrackClient(c.req.raw, found.snapshot, headers) ??
+      jsonData(lobbySnapshotSchema.parse(found.snapshot), 200, headers)
+    );
   });
   app.post("/api/admin/rooms/:gameId/resume", async (c) => {
     const parsed = gameIdSchema.safeParse(c.req.param("gameId"));
@@ -194,7 +202,10 @@ export function registerAdminRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       );
     }
     headers.append("set-cookie", selectedRoomCookie(parsed.data));
-    return jsonData(lobbySnapshotSchema.parse(resumed.snapshot), 200, headers);
+    return (
+      rejectOldKartTrackClient(c.req.raw, resumed.snapshot, headers) ??
+      jsonData(lobbySnapshotSchema.parse(resumed.snapshot), 200, headers)
+    );
   });
 }
 

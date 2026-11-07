@@ -49,7 +49,7 @@ test("real track catalogue projects selected grid/recovery/driving slots and ren
   await expect(overview.locator('[data-track-road="26-park-v1"]')).toBeVisible();
   await expect(
     bench.getByRole("list", { name: "Course mode availability" }),
-  ).toContainText("Connected race · Pending");
+  ).toContainText("Connected race · Available");
   await expect(bench.locator(".kart-driver-view")).toHaveAttribute(
     "data-readiness",
     "usable",

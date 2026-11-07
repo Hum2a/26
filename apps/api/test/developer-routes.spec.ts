@@ -44,6 +44,33 @@ beforeEach(() => {
   });
   openBotSessions.mockResolvedValue({ ok: true, sessions: [] });
 });
+it("validates course choices before forwarding the receipted host command", async () => {
+  for (const kartTrack of ["unknown", null, 5])
+    expect(
+      (
+        await post("/api/rooms/play", {
+          gameId: "ABCDEFGH",
+          requestId: crypto.randomUUID(),
+          action: "kart-track",
+          kartTrack,
+        })
+      ).status,
+    ).toBe(400);
+  expect(hostAction).not.toHaveBeenCalled();
+  expect(
+    (
+      await post("/api/rooms/play", {
+        gameId: "ABCDEFGH",
+        requestId: crypto.randomUUID(),
+        action: "kart-track",
+        kartTrack: "26-park-v1",
+      })
+    ).status,
+  ).toBe(200);
+  expect(hostAction).toHaveBeenCalledWith(
+    expect.objectContaining({ action: "kart-track", kartTrack: "26-park-v1" }),
+  );
+});
 it("requires administrator, control credential and same origin for bot transport bootstrap", async () => {
   const path = "/api/rooms/ABCDEFGH/bot-sessions";
   expect((await post(path, undefined, "https://wrong.example")).status).toBe(403);

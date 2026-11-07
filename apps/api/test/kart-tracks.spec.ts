@@ -92,7 +92,12 @@ it("keeps installed source geometry/counts and honest current mode availability 
   expect(imported.modes.every((mode) => mode.available)).toBe(true);
   const park = kartTrackCatalogue.tracks.find((track) => track.id === parkTrackId)!;
   expect(park.collision.segments).toBe(parkWalls.length);
-  expect(park.modes.every((mode) => !mode.available)).toBe(true);
+  expect(park.modes.find((mode) => mode.id === "room-race")?.available).toBe(true);
+  expect(
+    park.modes
+      .filter((mode) => mode.id !== "room-race")
+      .every((mode) => !mode.available),
+  ).toBe(true);
   expect(
     kartTrackCatalogueSchema.safeParse({
       ...kartTrackCatalogue,

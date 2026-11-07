@@ -34,6 +34,10 @@ model dependency. Existing approved karts and the shared theme palette still ren
 Admin → Kart → Tracks & modes selects any slot, actual recovery or the finite
 three-second driving sample with the real map and optional3D renderer. All actors
 are labelled stand-ins, all sample scores are zero and no room is created or changed.
-Public question selection still accepts only the two existing courses. Park's live
-selection, public practice/time trials and old-client refresh boundary remain pending;
-their catalogue entries must say so until those flows are implemented and verified.
+Kart-only lobbies now offer all three courses in Live controls before Start, with
+receipted selection, bounded host history and a room-owned script version. Start
+freezes that choice; released question files and underway races stay unchanged.
+The public contract accepts Park, with HTTP/WS course capability2: older readers
+receive a refresh response before incompatible data. The isolated connected Park
+journey passed; the current full verification status is in the checkpoint.
+Public Park free drive/time trials remain pending and are labelled accordingly.

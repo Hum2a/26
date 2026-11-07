@@ -266,6 +266,7 @@ type SocketAttachment = {
   /** The screen said it can apply patches. Older builds get full snapshots. */
   patches?: true;
   kartItems?: 2;
+  kartTracks?: 2;
 };
 
 type BroadcastScope = "all" | "facilitators" | "stage";
@@ -1568,6 +1569,7 @@ export class PartyRoom extends DurableObject<Env> {
     lookPreset?: unknown;
     handlingPreset?: unknown;
     itemRules?: unknown;
+    kartTrack?: unknown;
     rehearsalConfig?: unknown;
     questionIndex?: number;
     scenario?: unknown;
@@ -1631,6 +1633,8 @@ export class PartyRoom extends DurableObject<Env> {
       payload.handlingPreset = JSON.stringify(input.handlingPreset);
     if (input.itemRules !== undefined)
       payload.itemRules = JSON.stringify(input.itemRules);
+    if (input.kartTrack !== undefined)
+      payload.kartTrack = JSON.stringify(input.kartTrack);
     if (input.playerId) {
       payload.playerId = input.playerId;
     }
@@ -1716,6 +1720,7 @@ export class PartyRoom extends DurableObject<Env> {
           lookPreset: input.lookPreset,
           handlingPreset: input.handlingPreset,
           itemRules: input.itemRules,
+          kartTrack: input.kartTrack,
           rehearsalConfig: input.rehearsalConfig,
           questionIndex: input.questionIndex,
           scenario: input.scenario,
@@ -2352,6 +2357,7 @@ export class PartyRoom extends DurableObject<Env> {
       ...identity.attachment,
       ...(query.get("patches") === "1" ? { patches: true } : {}),
       ...(query.get("kartItems") === "2" ? { kartItems: 2 } : {}),
+      ...(query.get("kartTracks") === "2" ? { kartTracks: 2 } : {}),
     });
     if (identity.attachment.role === "guest") {
       this.closeOlder(server, identity.attachment, newerTabMessage);
@@ -4185,6 +4191,9 @@ export class PartyRoom extends DurableObject<Env> {
           socket,
           attachment,
           frames.full.presentation?.version === 3,
+          frames.full.trackId === "26-park-v1" ||
+            (attachment.role === "control" &&
+              readKartLobby(this.ctx.storage.sql)?.trackId !== undefined),
         )
       )
         continue;
@@ -4342,6 +4351,10 @@ export class PartyRoom extends DurableObject<Env> {
         ws,
         attachment,
         snapshot.play?.kart?.presentation?.version === 3,
+        snapshot.play?.kart?.trackId === "26-park-v1" ||
+          (snapshot.play?.question.kind === "kart" &&
+            snapshot.play.question.trackId === "26-park-v1") ||
+          (attachment.role === "control" && snapshot.kartLobby?.trackId !== undefined),
       )
     )
       return;
@@ -4351,10 +4364,17 @@ export class PartyRoom extends DurableObject<Env> {
     ws: WebSocket,
     attachment: SocketAttachment,
     expanded: boolean,
+    tracks = false,
   ) {
-    if (!expanded || attachment.kartItems === 2) return true;
+    if (
+      (!expanded || attachment.kartItems === 2) &&
+      (!tracks || attachment.kartTracks === 2)
+    )
+      return true;
     const message =
-      "The kart game has updated. Refresh this tab to use the race items.";
+      tracks && attachment.kartTracks !== 2
+        ? "The kart courses have updated. Refresh this tab to join the race."
+        : "The kart game has updated. Refresh this tab to use the race items.";
     this.send(ws, { kind: "replaced", scope: "private", message });
     ws.close(4000, message);
     this.views.delete(ws);
@@ -4561,6 +4581,7 @@ export class PartyRoom extends DurableObject<Env> {
       deliverySeq: record.deliverySeq,
       ...(record.patches === true ? { patches: true } : {}),
       ...(record.kartItems === 2 ? { kartItems: 2 as const } : {}),
+      ...(record.kartTracks === 2 ? { kartTracks: 2 as const } : {}),
     };
   }
 

@@ -31,6 +31,7 @@ export type CommandScope =
   | "wall"
   | "kart"
   | "kart-items"
+  | "kart-track"
   | "developer";
 type CommandRequest = {
   command: AdminCommand;

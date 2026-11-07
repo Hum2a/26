@@ -36,7 +36,7 @@ it("shares a closed original road strip with clear centreline, sectors, boxes an
   expect(parkItemBoxes).toHaveLength(18);
   expect(parkSurfaceAt(80, 0)).toBe("dirt");
 });
-it("uses the existing race reducer and recovery/public projection while keeping live question selection closed", () => {
+it("uses the existing race reducer and recovery/public projection with the versioned public course contract", () => {
   const race = createKartRace("park-drive", [{ playerId: "p", name: "Stand-in" }], {
     trackId: "26-park-v1",
     seedGrid: true,
@@ -70,7 +70,7 @@ it("uses the existing race reducer and recovery/public projection while keeping 
   expect(projectKartRace(driven, "p", 0).trackId).toBe("26-park-v1");
   expect(
     publicQuestionSchema.options[0].shape.trackId.safeParse("26-park-v1").success,
-  ).toBe(false);
+  ).toBe(true);
 });
 it("awards only actual ordered forward sectors on the new route and rejects a teleport", () => {
   let cursor = { angle: 0, distance: 0, checkpoint: 0 };

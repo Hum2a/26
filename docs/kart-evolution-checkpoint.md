@@ -1,5 +1,123 @@
 # Kart evolution checkpoint
 
+## Current verified stage — live course selection, 7 November2026
+
+This increment is saved by the master commit containing this entry (parent9b7571d).
+No push or deployment. All owned queues finished; no pending checks counted passed.
+Source/results/hashes: artifacts/phase8-selection/final-results.json. The exact serial
+commands are in verify.ps1/finish.ps1 there; retained initial failures are not green.
+
+Kart-only Live controls selects26 Park, Mario circuit or Party ring before Start.
+The existing receipted host command validates again in the room, stores a room-owned
+script/version, clock and bounded20 host choices, and freezes at Start. Defaults,
+underway races and released source packs stay unchanged. Host sees saved course,
+history, scoped feedback and actual rehearsal. Private metadata stays control-only.
+Course-contract2 HTTP/WS readers are gated before incompatible data; old tabs refresh.
+
+Found and fixed an existing admin navigation bug: a live Outlet mounted incoming
+controls in the outgoing page, then remounted and lost drafts. AdminPage now captures
+useOutlet() like the room provider. Deterministic retained-child regression failed
+with2mounts before the fix and passes with1 afterwards. Course save reads its visible
+native form value. All original failures and diagnostic repeats are retained; temporary
+instrumentation removed. Background phone wake is synchronised with two actual frames,
+matching the existing controller test; speed and exact-request assertions remain intact.
+
+Final owner7737: root170files701tests PASSED389.35s; focused UI19files144tests
+PASSED53.01s; API24files192tests PASSED55.47s (unchanged API/shared since that check);
+full16browser cases PASSED3.1m, plus affected journey3/3 PASSED50.3s. Main+solo types,
+full lint (27existing warnings), build/content preflight passed. Final phone screenshot
+inspected at390px: actual Park road/kart and all driving controls visible. Final owned
+format/whitespace/results hashes are collected with this entry before the master commit.
+
+Try: npm run dev → Admin → Kart → Create kart lobby → Live controls → choose/save a
+course → join a phone → Start kart race. Tracks & modes rehearses all three courses,
+all80 grid/recovery slots and actual finite driving without guests.
+
+Exact next action: continue remainingPhase8 through existing native practice store,
+starting public /kart initial mode selection and controls help with actual free/one-/
+three-lap practice, real admin rehearsal and kart-mode-select tests. Native Park then
+needs its actual route/surface/collider/grid/item/course adapters, versioned practice
+trials/records and connected/native parity checks; do not label pending modes available.
+Native expanded-item parity, original opt-in audio/soundboard, scoped offline/install/
+update, Phase9/10 integration and final real-device/projector/venue/80-racer soak follow.
+Phase4 remains explicitly user-deferred until final integration; retain its failures and
+visual checks below.740px admin crowding and optional ghosts remain recorded, not passed.
+
+Preserve four factual drafts outside the order and all user work. No paid resources,
+live rooms, email, deployment or reset-credit changes without new explicit instruction.
+Check ordinary usage first; no credits. Continuation stays active until the whole plan
+finishes. This latest entry supersedes old owner/next-action reports in the history.
+
+## Earlier live-course continuation (historical)
+
+## Current continuation — live course choice final checks, 7 November2026
+
+05:06UTC resume: ordinary usage reset (primary0%, secondary94% used). Inspected
+completed owner47689/results before reruns: full lint/types PASSED,18UI files142tests
+PASSED77.15s,24API files192tests PASSED55.47s. Browser15passed/1failed3.1m:
+new course-selection journey saved Mario after choosing Park; root/build UNRUN.
+Preserved browser-initial.log/results-broad-initial.json. Strengthened new browser
+test with enabled/selected-value/exact outgoing request assertions and explicit
+phone baseURL; isolated debug owner76302 PASSED1test1.7m with real Park driving.
+No production change was needed after this failure. Added UI regressions for
+retaining unsaved choice through snapshots and following accepted host selection.
+Final source formatted; owned finish42133 started05:05:58UTC via
+artifacts/phase8-selection/finish.ps1: lint/types/UI/full16browser/root/build.
+API192pass remains current (no API/shared production edits). Inspect finish-results
+and logs before duplicates. Do not claim whole increment verified/committed yet.
+Next: fix any actual failure, inspect live Park screenshot, update stale track audit/
+data docs, final format/whitespace/results/hashes, commit master. Phase4 deferred;
+remainingPhase8/native modes/audio/offline and final physical checks still pending.
+
+Last completed master commit9b7571d; prior Park10 gates all green and no queues
+running at wake. Ordinary usage was72% primary/90% secondary; latest91%/93%,
+still available. No credits bought/redeemed. All current dirty work is preserved.
+
+Implemented but NOT fully verified: receipted kart-track host command for fresh
+kart-only lobbies, revalidated in domain, room-owned frozen script copy (source
+packs untouched), bounded20 host choices and all three course clocks. Default
+unselected Mario remains unchanged; choices freeze at Start. Live controls shows
+saved course, selection/history/rehearsal link and scoped feedback. Public question
+schema accepts park only now that WS/HTTP reader capability gating is implemented:
+new clients advertise kartTracks=2 / x-26-kart-tracks:2; old sockets receive existing
+replaced/Refresh before new snapshot/patch/frame, old host/projector HTTP reads409
+without new typed data. New private metadata stays control-only. No live rooms changed.
+
+Initial API3files:9pass3fail32.75s, all new failures from a generated version longer
+than existing40-character contentVersionSchema. Fixed compact source-hash/course
+tag using existing schema, preserving limits. Second3files12tests PASSED19.82s,
+including receipt/replay/eviction/refusal, frozen ring45s/park180s, old WS and HTTP
+guard. Original failure retained. Added route validation/HTTP boundary, host UI,
+header-advertisement and connected browser tests alongside; those remain unrun.
+
+Initial main+solo types PASSED, session49996 finished. Queue6804 stopped at
+lint: one new react-hooks/set-state-in-effect error and27 existing warnings;
+later gates did not run. Preserved lint-initial.log/results-initial.json. Replaced
+effect-based selection reset with guarded render-time state adjustment, without
+relaxing lint. Formatted selector. Restarted serial verify.ps1 at01:19:22UTC,
+owned session47689: lint/types/18UI files/24API files/16browser cases/root/build.
+Inspect phase8-selection/results.json/logs and owner before any duplicate check.
+Latest quota ordinary available99% primary/94% secondary; never spend credits.
+Fix any real failures without weakening tests. UI test uses required h1 wrapper;
+browser uses actual admin-side-code and awaits successful room creation receipt.
+Remaining close-out: update data inventory/track audit/current mode availability,
+inspect real live Park screenshot, exact results/hash/format/whitespace and commit
+on master. No whole-feature/phase pass or pending checks counted green.
+
+Phase4 remains user-deferred; four factual drafts untouched. No push/deploy,
+paid resource/live-room/email/reset-credit changes. WholePhase8/public practice/
+trials/native expanded items/audio/offline remain unfinished. Continue this exact
+increment before dependent work. Existing continuation remains active.
+
+Latest01:16UTC: initial main+solo types PASSED (session49996 finished). Final
+serial queue6804 now runs artifacts/phase8-selection/verify.ps1: full lint/types,
+18 focused UI files,24 named API files,16 real browser cases, root unit and build/
+content. Source frozen; inspect results.json/logs before duplicates. Owned formatting
+applied before queue. No pending check passed. Later close-out must revise previous
+Park-only test expectation/comment (public contract now accepts park only with
+capability boundary), inspect live screenshot, update track audit/data docs, final
+format/whitespace/results/hash and commit. Public practice/audio/offline still pending.
+
 ## Current verified stage — original 26 Park, 7 November 2026, 00:59 UTC
 
 Original26-park-v1 is implemented through the existing shared driving/lap/recovery/
@@ -1029,3 +1147,5 @@ Phase8 foundation verification queue72718 continues unchanged in the background:
 Committed all179 selected source/test/config/docs paths on master as87a540f (Save app fixes and kart evolution through track catalogue). No source changes lost; no push or deployment. The temporary same-head main branch is gone, following the user's correction. Phase8 final queue72718 still owns root unit/build after its passing lint/types/UI128/API179/browser15; inspect saved results, do not launch duplicate full tests.
 
 Continued the known final-integration short-portrait issue independently: new CSS at portrait<=44rem high and<=30rem wide temporarily removes duplicate phone/question chrome during grid/racing, preserves safe-area padding, leaves secondary tools scrollable and restores chrome in other phases. No mechanics, input handling, stage or native practice changes. Added real connected-browser assertions that steering and all three pedals are entirely within320x568,430x844 and740x360 viewports after returning scroll to the top, retaining all existing map-overlap/privacy/input/receipt assertions. This new CSS/test increment is UNVERIFIED; run targeted kart-inputs browser only after existing owned queue finishes, inspect screenshots, fix any failures, then current types/scoped lint/format and save results. Full current root is running while these CSS-only/e2e changes were made; actual layout still requires the new browser assertions. All four content drafts and deferred Phase4 status unchanged.
+
+01:19:47UTC restart47689: full lint PASSED27existing warnings; main+solo types RUNNING, remaining gates queued. Inspect exact logs/results; no duplicate queues or pending passes.

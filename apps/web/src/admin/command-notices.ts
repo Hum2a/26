@@ -3,6 +3,7 @@ import type { PlayAction } from "../live/room-api";
 
 export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "kart-item-rules") return "Kart item rules saved for the next start.";
+  if (action === "kart-track") return "Course saved. It freezes when this race starts.";
   if (action === "kart-items-on") return "Kart item spawning resumed.";
   if (action === "kart-items-off")
     return "Kart item spawning stopped. Held personal boosts and shields remain usable.";

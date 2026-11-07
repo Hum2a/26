@@ -60,7 +60,11 @@ import {
 import { changePhotoBias } from "../media/photo-bias.ts";
 import { setBotCount } from "../developer/bots.ts";
 import { changeAdmission } from "./admission.ts";
-import { assertKartLobbyAction, readKartLobby } from "./kart-lobby.ts";
+import {
+  assertKartLobbyAction,
+  readKartLobby,
+  chooseKartLobbyTrack,
+} from "./kart-lobby.ts";
 import { startRound } from "./lifecycle.ts";
 
 const shownPhases = new Set(["reveal", "scores", "final", "podium"]);
@@ -72,6 +76,7 @@ export type HostActionInput = {
   lookPreset?: unknown;
   handlingPreset?: unknown;
   itemRules?: unknown;
+  kartTrack?: unknown;
   rehearsalConfig?: unknown;
   questionIndex?: number;
   scenario?: unknown;
@@ -96,6 +101,11 @@ export function applyHostAction(
   input: HostActionInput,
 ): { transferCode?: string; released?: number } {
   assertKartLobbyAction(sql, input.action);
+  if (input.action === "kart-track") {
+    chooseKartLobbyTrack(sql, input.kartTrack, input.nowMs);
+    touch(sql);
+    return {};
+  }
   if (input.action === "start-kart") {
     const room = createSqlStore(sql).readRoom();
     const script = room.questionScript;

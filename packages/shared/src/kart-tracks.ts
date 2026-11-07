@@ -128,8 +128,9 @@ const definitions = {
       {
         id: "room-race",
         label: "Connected race",
-        available: false,
-        detail: "Rehearse the course here. Live race selection is still being added.",
+        available: true,
+        detail:
+          "Choose this course in a kart-only lobby before starting. One lap, three minutes and up to80 racers.",
       },
       {
         id: "free-drive",
@@ -228,7 +229,7 @@ const definitions = {
         label: "Connected race",
         available: true,
         detail:
-          "Available in the demo/rehearsal round. New kart-only lobbies currently use Mario circuit.",
+          "Available in the demo/rehearsal round and as a45-second course choice before a kart-only race starts.",
       },
       {
         id: "free-drive",

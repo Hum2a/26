@@ -1,5 +1,6 @@
 import {
   adminRoomListSchema,
+  kartTrackCapabilityHeader,
   lobbySnapshotSchema,
   type LobbySnapshot,
   type AdminRoomList,
@@ -20,7 +21,9 @@ async function request(
       cache: "no-store",
       signal: controller.signal,
       headers: clientApiHeaders(
-        body === undefined ? {} : { "content-type": "application/json" },
+        body === undefined
+          ? { [kartTrackCapabilityHeader]: "2" }
+          : { "content-type": "application/json", [kartTrackCapabilityHeader]: "2" },
       ),
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });

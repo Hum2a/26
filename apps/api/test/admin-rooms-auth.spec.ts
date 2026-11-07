@@ -35,6 +35,59 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(administratorForRequest).mockResolvedValue({ email: "admin@example.test" });
 });
+it("replaces old HTTP readers before returning new private course metadata, and serves capable readers", async () => {
+  const snapshot: shared.LobbySnapshot = {
+    gameId: "ABCDEFGH",
+    joinCode: "ABCDEF",
+    phase: "lobby",
+    paused: false,
+    held: false,
+    deadlineAt: null,
+    remainingMs: null,
+    serverNow: 1,
+    stateVersion: 1,
+    questionSetVersion: "demo-2026-09-22",
+    scoringVersion: "demo-2026-09-22",
+    players: [],
+    play: null,
+    cloud: [],
+    namesReveal: null,
+    stageHidden: false,
+    finishAfterRound: false,
+    revealNonce: 0,
+    media: [],
+    trolls: { token: "locked", offers: [], active: [], announcement: null },
+    connections: { guests: 0, stage: 0, control: 1 },
+    kartLobby: { createdAt: 1, trackId: "26-park-v1", history: [] },
+  };
+  const env = {
+    ...bindings,
+    ROOM_CODE_REGISTRY: { getByName: () => ({ hasGame: async () => true }) },
+    PARTY_ROOM: {
+      getByName: () => ({ adminRoom: async () => ({ ok: true, snapshot }) }),
+    },
+  } as unknown as Env;
+  const cookie = "26_room_control=id.secret; 26_admin_room=ABCDEFGH";
+  for (const path of ["/api/admin/rooms/ABCDEFGH", "/api/admin/rooms/current"]) {
+    const old = await app.request(
+      `https://example.com${path}`,
+      { headers: { cookie } },
+      env,
+    );
+    expect(old.status).toBe(409);
+    expect(old.headers.get("cache-control")).toBe("no-store");
+    const body = await old.text();
+    expect(body).toContain("Refresh");
+    expect(body).not.toContain("26-park-v1");
+    expect(body).not.toContain("sourceVersion");
+    const current = await app.request(
+      `https://example.com${path}`,
+      { headers: { cookie, "x-26-kart-tracks": "2" } },
+      env,
+    );
+    expect(current.status).toBe(200);
+  }
+});
 
 it("serves the versioned kart inventory only to administrators without caching or room side effects", async () => {
   const path = "https://example.com/api/admin/kart-assets";

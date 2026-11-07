@@ -1,7 +1,7 @@
 import { PresentationRehearsal } from "./presentation-rehearsal";
 import { useState } from "react";
 
-import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router";
+import { Link, Navigate, useOutlet, useLocation, useNavigate } from "react-router";
 
 import { Button, StatusMessage } from "../ui/primitives";
 
@@ -21,6 +21,10 @@ export function AdminPage() {
   const location = useLocation();
 
   const navigate = useNavigate();
+
+  // Retain the outgoing route during its fade, rather than mounting the incoming
+  // controls in that route and then resetting them when the new page enters.
+  const page = useOutlet();
 
   const [notice, setNotice] = useState("");
 
@@ -70,7 +74,7 @@ export function AdminPage() {
       >
         {notice ? <StatusMessage>{notice}</StatusMessage> : null}
 
-        <Outlet />
+        {page}
       </AdminShell>
     );
   }

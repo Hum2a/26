@@ -1,5 +1,6 @@
 import {
   authFailureSchema,
+  kartTrackCapabilityHeader,
   guestSessionSchema,
   lobbyCreatedSchema,
   roomDiagnosticsSchema,
@@ -133,7 +134,10 @@ export async function lookupStage(
     const response = await fetch("/api/rooms/lookup", {
       method: "POST",
       credentials: "same-origin",
-      headers: clientApiHeaders({ "content-type": "application/json" }),
+      headers: clientApiHeaders({
+        "content-type": "application/json",
+        [kartTrackCapabilityHeader]: "2",
+      }),
       body: JSON.stringify({ code }),
       signal: controller.signal,
     });
@@ -167,6 +171,7 @@ export type PlayAction =
   | "kart-setting"
   | "kart-handling"
   | "kart-item-rules"
+  | "kart-track"
   | "kart-items-on"
   | "kart-items-off"
   | "kart-items-clear"
@@ -227,6 +232,7 @@ export type PlayIntent = {
   lookPreset?: KartLookName;
   handlingPreset?: KartHandling;
   itemRules?: KartItemRules;
+  kartTrack?: import("@26/shared").KartTrackId;
   gameId: string;
   action: PlayAction;
   requestId: string;
