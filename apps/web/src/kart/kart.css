@@ -958,17 +958,51 @@ body:has(.kart-phone) {
   inset: 0;
 }
 
+/* Portrait phones reserve the first screen for the driving controls.
+ * Secondary tools remain in the normal scroll flow; notices and escape UI stay visible. */
+@media (orientation: portrait) and (max-width: 30rem) {
+  .phone-shell[data-tab="play"]:has(
+      .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    )
+    :is(.phone-bar, .phone-tabbar, .phone-dock, .skin-status, .question-direction) {
+    display: none;
+  }
+  .phone-shell[data-tab="play"]:has(
+      .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    )
+    .phone-scroll {
+    padding: max(0.5rem, env(safe-area-inset-top))
+      max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom))
+      max(0.5rem, env(safe-area-inset-left));
+  }
+  .phone-shell[data-tab="play"]:has(
+      .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    )
+    .question-experience {
+    padding: 0;
+    gap: 0;
+  }
+  .phone-shell
+    .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    > .kart-phone-heading {
+    display: none;
+  }
+}
 /*
  * Landscape race mode. While a guest is racing on a short landscape phone the
  * driving view fills the screen and the controls sit under the thumbs: steering
  * on one side, pedals on the other. Phone chrome is hidden until the race ends.
  */
 @media (orientation: landscape) and (max-height: 32rem) {
-  .phone-shell:has(.kart-phone:is([data-layout="race"], [data-layout="grid"]))
+  .phone-shell[data-tab="play"]:has(
+      .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    )
     :is(.phone-bar, .phone-tabbar, .phone-dock, .skin-status, .question-direction) {
     display: none;
   }
-  .phone-shell:has(.kart-phone:is([data-layout="race"], [data-layout="grid"]))
+  .phone-shell[data-tab="play"]:has(
+      .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    )
     .phone-scroll {
     padding: 0;
     overflow: hidden;

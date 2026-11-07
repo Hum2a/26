@@ -339,10 +339,45 @@ test("connected gamepad uses the existing intent socket, releases on host pause 
     await expect(phone.getByLabel("Your heading", { exact: true })).toBeVisible();
     for (const [width, height] of [
       [320, 568],
+      [390, 844],
       [430, 844],
       [740, 360],
     ]) {
       await phone.setViewportSize({ width: width!, height: height! });
+      await phone.evaluate(() =>
+        document.querySelector(".phone-scroll")?.scrollTo(0, 0),
+      );
+      await expect
+        .poll(() =>
+          phone.evaluate(() =>
+            [
+              ".kart-steering",
+              ".kart-pedal-gas",
+              ".kart-pedal-brake",
+              ".kart-pedal-drift",
+            ].flatMap((selector) => {
+              const element = document.querySelector(selector);
+              if (!element) return [`Missing ${selector}`];
+              const rect = element.getBoundingClientRect();
+              if (!rect.width || !rect.height) return [`Hidden ${selector}`];
+              const target = document.elementFromPoint(
+                rect.left + rect.width / 2,
+                rect.top + rect.height / 2,
+              );
+              if (!target || !element.contains(target))
+                return [`${selector} covered by ${target?.className ?? "nothing"}`];
+              return rect.top < 0 ||
+                rect.bottom > innerHeight ||
+                rect.left < 0 ||
+                rect.right > innerWidth
+                ? [
+                    `${selector} outside ${innerWidth}x${innerHeight}: ${JSON.stringify(rect.toJSON())}`,
+                  ]
+                : [];
+            }),
+          ),
+        )
+        .toEqual([]);
       expect(
         await phone.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth + 1,
@@ -407,6 +442,15 @@ test("connected gamepad uses the existing intent socket, releases on host pause 
       path: ".codex/previews/kart/phase5-connected-controls.png",
       fullPage: true,
     });
+    await phone.setViewportSize({ width: 320, height: 568 });
+    await page.getByRole("button", { name: "Advance", exact: true }).click();
+    await expect(phone.locator(".phone-tabbar")).toBeVisible();
+    await expect(phone.locator(".phone-bar")).toBeVisible();
+    await phone.getByRole("button", { name: "Ranks", exact: true }).click();
+    await expect(phone.locator('.phone-shell[data-tab="ranks"]')).toBeVisible();
+    await phone.getByRole("button", { name: "Play", exact: true }).click();
+    await expect(phone.locator('.phone-shell[data-tab="play"]')).toBeVisible();
+    expect(errors).toEqual([]);
   } finally {
     await context.close();
   }

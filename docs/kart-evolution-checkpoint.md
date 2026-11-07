@@ -1,5 +1,101 @@
 # Kart evolution checkpoint
 
+## Current saved stage — 7 November 2026, 00:17 UTC
+
+Branch: master. Existing work saved as87a540f; this stage adds a follow-up save,
+with no push or deployment. Phase7 is locally complete. Phase8's track-catalogue
+foundation and portrait control reachability have passed their runtime gates:
+
+- Root167files691tests PASSED469.67s; main+solo typecheck PASSED.
+- Focused UI14files128tests PASSED39.41s; API22files179tests PASSED59.30s.
+- Broad browser15/15 PASSED3.4m; final current controls browser3/3 PASSED1.2m,
+  including320/390/430/740 bounds, centre hit targets, no map overlap, actual
+  Advance ending the race, restored navigation and working Ranks/Play tabs.
+- Full lint passed with27 existing warnings; final changed-E2E lint passed.
+- Build/content PASSED; all four factual drafts remain incomplete and out of order.
+- Catalogue and actual320/390/430/740 screenshots inspected. Portrait pedals are
+  no longer under fixed navigation; immersive rules apply only to active Play.
+
+All owned verification queues are finished. Final owned source/docs formatting,
+whitespace and combined14-step metadata/source hashes are collected immediately
+after this entry in artifacts/phase8-tracks/final-results.json. Inspect that file
+before duplicating any check. The old root run was interrupted before a summary
+and is excluded; the first local sign-in timeout and superseded interrupted browser
+are retained, never counted as green. Local first sign-in confirmation was missing
+once; two subsequent complete controls runs passed without auth/timeout changes.
+Keep that observation for final integration; its precise cause is not established.
+
+Try: Admin → Kart → Tracks & modes, choose either existing course and any80 grid/
+recovery slots, then real optional3D preview. Connected grid/racing phones now keep
+steering/A/B/R uncovered; navigation returns for results. Safe-area spacing and
+secondary-tool scroll remain. No driving/scoring/room-state authority changed.
+
+EXACT NEXT ACTION: continue Phase8 with alternate upstream geometry/provenance
+inspection and at least one genuinely new original course through the existing
+track/route/collision/race/render adapters, not by renaming the existing party ring.
+Add route/wall/surface/grid/recovery/item/course metadata and real admin preview;
+freeze live track choice and test old-client refresh compatibility before exposing
+new track IDs. Then public /kart mode selection/help, original opt-in audio/music
+with Admin soundboard, and scoped /kart-engine/ offline/install/update practice.
+Each increment needs its actual admin view and required tests. No new parallel
+engine/socket/state store. WholePhase8 is NOT complete. Phase4 remains explicitly
+deferred until final integration; physical devices/projector/Wi-Fi/80-racer soak,
+740px admin crowding and optional ghost replay remain recorded, not passed.
+
+Preserve all existing work and the four factual drafts. No deployment, paid
+resource, live-room change, real email or credit purchase/redemption authorised.
+Existing automatic continuation remains active until the whole approved plan ends.
+Historical pending statuses below are superseded by this current saved stage.
+
+## Earlier continuation — 6 November 2026, 23:50 UTC
+
+LATEST 7 November00:01UTC: portrait chrome now clears controls at all phone heights
+up to30rem wide. Real browser3/3 PASSED1.5m, including320/390/430/740 viewport bounds,
+visibility and actual centre hit targets, with all original input/privacy/receipt/map
+checks retained. Inspected actual320/430 screenshots: no navigation over pedals.
+Initial run2pass1fail4.7m was local first sign-in confirmation missing; exact log/context
+retained. No auth or timeout change; fresh full3case rerun passed. Record as observed
+intermittent local cold-start issue for final integration, not a production diagnosis.
+Superseded browser-short-portrait-final-20261106 was deliberately interrupted after
+visual review found430px navigation over pedals; no pass claimed from that attempt.
+
+ACTIVE owned session16357 runs finish-resume.ps1: fresh main+solo types, scoped E2E
+lint, unfinished full root unit, build/content. Inspect resume-results.json before
+duplicates. Product source frozen. Final format/whitespace/combined metadata/docs and
+follow-up master commit still needed. WholePhase8 and deferredPhase4 are not complete.
+
+Update00:04UTC: current main+solo types PASSED; scoped E2E lint PASSED. Full root
+unit is RUNNING in session16357 (owner2804), build/content queued. Final narrow
+CSS scope now requires active Play, protecting other tab views, and the browser
+case additionally ends the real race with Advance and checks restored navigation
+and working Ranks/Play buttons. Only CSS/E2E/comment changes since the prior3case
+pass; no unit-tested production JavaScript changed. These last checks are pending.
+Owned final waiter session73055 runs portrait-final.ps1 after owner2804 exits and
+only if all four resume gates pass. It runs current three browser cases, fresh
+types and scoped lint, writing portrait-final-results.json. Do not launch duplicates.
+Finish screenshot/docs/owned format/whitespace/combined metadata and commit on master.
+
+Ordinary usage is available (primary1%, secondary79% used); no credits bought or redeemed.
+Branch is master, saved commit87a540f; no push or deployment. Phase7 is locally complete.
+Phase8 track-catalogue foundation has lint/types, UI14files128tests, API22files179tests
+and browser15/15 passing. The original queue72718 is no longer running: unit-full.log
+ends at the Vitest RUN header, without a summary, and build never started. That root
+run is INTERRUPTED, not passed. Keep its log and results; rerun only these unfinished
+gates after the independent short-phone check, rather than duplicating the five passes.
+
+Current owned browser session48846 checks the new short-portrait CSS and all existing
+kart-inputs scenarios. Its run id is browser-short-portrait-20261106; log is
+artifacts/phase8-tracks/browser-short-portrait-initial.log. Source is frozen during it.
+Prepared finish-resume.ps1 has current types/scoped E2E lint/full root/build, but has
+NOT been launched. Inspect browser result before launching it; fix any real failure.
+Catalogue screenshot inspected: both-course metadata, actual slot80 ring preview and
+honest pending modes are readable. Short-phone screenshot/format/final metadata still
+pending. Phase4 remains deferred; Phase8 whole/new course/modes/audio/offline unfinished.
+All four factual drafts and existing work remain untouched; no remote room/email changes.
+
+Historical checkpoints follow; this current section and the latest appended entries
+take precedence over old pending status or previously unanswered Treats wording.
+
 ## Current user direction — 6 November 2026
 
 Latest18:49UTC after ordinary reset: storage-boundary finish95583 FINISHED at
@@ -806,3 +902,9 @@ Final serial foundation queue72718 started20:04:45UTC, artifacts/phase8-tracks/v
 User explicitly requested committing current work and continuing unfinished phases, then corrected the branch name to master. Returned to master; removed only the temporary main branch created in this run after verifying both names pointed to the same pre-existing commit. No commits or working changes were lost.179 changed/new source, test, configuration and documentation files are selected for the requested save; no forbidden, secret or generated-output path is included. No push or deployment requested/performed.
 
 Phase8 foundation verification queue72718 continues unchanged in the background: full lint/types pass, UI14files128tests pass39.41s, API22files179tests pass59.30s, real browser15/15 pass3.4m. Full root unit currently running since20:11:21UTC, then build/content; neither pending gate is passed yet. Current commit is a work checkpoint, including documented deferred Phase4 and unfinished Phase8+, not a claim that the whole evolution is finished. Next: inspect owned queue, final catalogue screenshot/format/results, then resolve short-portrait driving control reachability and resume remaining approved track/mode/audio/offline work.
+
+### Saved on master and continued short-phone work
+
+Committed all179 selected source/test/config/docs paths on master as87a540f (Save app fixes and kart evolution through track catalogue). No source changes lost; no push or deployment. The temporary same-head main branch is gone, following the user's correction. Phase8 final queue72718 still owns root unit/build after its passing lint/types/UI128/API179/browser15; inspect saved results, do not launch duplicate full tests.
+
+Continued the known final-integration short-portrait issue independently: new CSS at portrait<=44rem high and<=30rem wide temporarily removes duplicate phone/question chrome during grid/racing, preserves safe-area padding, leaves secondary tools scrollable and restores chrome in other phases. No mechanics, input handling, stage or native practice changes. Added real connected-browser assertions that steering and all three pedals are entirely within320x568,430x844 and740x360 viewports after returning scroll to the top, retaining all existing map-overlap/privacy/input/receipt assertions. This new CSS/test increment is UNVERIFIED; run targeted kart-inputs browser only after existing owned queue finishes, inspect screenshots, fix any failures, then current types/scoped lint/format and save results. Full current root is running while these CSS-only/e2e changes were made; actual layout still requires the new browser assertions. All four content drafts and deferred Phase4 status unchanged.
