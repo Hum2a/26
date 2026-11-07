@@ -5,9 +5,29 @@ vi.mock("../live/room-socket", () => ({ openRoomSocket: vi.fn() }));
 vi.mock("../live/room-api", () => ({ playRoom: vi.fn(), issueTransfer: vi.fn() }));
 import { playRoom } from "../live/room-api";
 import { setupControls, mountControls, playingFixture } from "./controls.test-support";
+import { KartCourseControls } from "./kart-course-controls";
 import { KartHandlingControls } from "./kart-handling-controls";
 
 beforeEach(() => setupControls());
+it("reports a handling choice once beside the course controls on the same page", async () => {
+  setupControls({
+    ...playingFixture,
+    phase: "intro",
+    kartHandling: { next: "slide-v1", current: "slide-v1", frozen: false },
+  });
+  await mountControls(
+    <>
+      <h1>Live controls</h1>
+      <KartHandlingControls />
+      <KartCourseControls />
+    </>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Use arcade bounce handling" }));
+  const notice =
+    "Kart handling saved for the next race. An open starting grid updates before racing.";
+  await screen.findByText(notice);
+  expect(screen.getAllByText(notice)).toHaveLength(1);
+});
 for (const preset of ["slide-v1", "bounce-v1"] as const)
   it(`shows the grid/history and sends the scoped receipted ${preset} command`, async () => {
     setupControls({

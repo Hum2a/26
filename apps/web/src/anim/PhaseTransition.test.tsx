@@ -95,6 +95,36 @@ it("disables outgoing question controls and the portalled send button during an 
   view.unmount();
   dock.remove();
 });
+it.each([
+  ["phone", false],
+  ["stage", true],
+])(
+  "keeps a %s scene mounted and enabled across phases while reporting the real phase",
+  (_surface, stage) => {
+    let mounts = 0;
+    function Mark() {
+      useEffect(() => {
+        mounts += 1;
+      }, []);
+      return <button>Accelerate</button>;
+    }
+    const view = render(
+      <PhaseTransition phase="prompt" scene="kart:race-1" stage={stage}>
+        <Mark />
+      </PhaseTransition>,
+    );
+    const pedal = screen.getByRole("button", { name: "Accelerate" });
+    view.rerender(
+      <PhaseTransition phase="collect" scene="kart:race-1" stage={stage}>
+        <Mark />
+      </PhaseTransition>,
+    );
+    expect(mounts).toBe(1);
+    expect(screen.getByRole("button", { name: "Accelerate" })).toBe(pedal);
+    expect(pedal.closest("fieldset")?.disabled ?? false).toBe(false);
+    expect(pedal.parentElement!.dataset.phase).toBe("collect");
+  },
+);
 it("keeps the projector readable and switches its heading with the authoritative phase", () => {
   const view = render(
     <PhaseTransition phase="prompt" stage>

@@ -30,6 +30,7 @@ export type CommandScope =
   | "trolls"
   | "wall"
   | "kart"
+  | "kart-handling"
   | "kart-items"
   | "kart-track"
   | "developer";

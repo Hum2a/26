@@ -214,7 +214,8 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
   ).toBeVisible();
   await driver.getByRole("button", { name: "Use 3D driving view" }).click();
   await expect(driver.locator("canvas[aria-label='Your driving view']")).toBeVisible();
-  await expect(other.getByRole("heading", { name: "Kart 2" })).toBeVisible();
+  // Racing portrait hides this heading so the pedals fit; the kart stays this phone's own.
+  await expect(other.locator(".kart-phone-heading .phone-prompt")).toHaveText("Kart 2");
   await expect(
     driver.getByText(`Position 1 of ${participantCount}`, { exact: true }),
   ).toBeVisible();

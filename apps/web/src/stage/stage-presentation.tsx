@@ -8,6 +8,7 @@ import { JoinMark } from "../lobby/join-mark";
 import { NameCloud, NameReveal } from "../lobby/name-cloud";
 import { StagePlay } from "../play/stage-play";
 import { PhaseTransition } from "../anim/PhaseTransition";
+import { kartRaceScene } from "../kart/race-scene";
 import { withClientApiKey } from "../api/client-key";
 import { usePhaseCountdown } from "../live/use-phase-countdown";
 import { SafeArea } from "./SafeArea";
@@ -132,7 +133,11 @@ export function StagePresentation({
             </section>
           ) : (
             <>
-              <PhaseTransition phase={snapshot.phase} stage>
+              <PhaseTransition
+                phase={snapshot.phase}
+                scene={kartRaceScene(snapshot)}
+                stage
+              >
                 <StagePlay snapshot={snapshot} observedAt={observedAt} />
               </PhaseTransition>
               {collecting && snapshot.play && snapshot.play.question.kind !== "kart" ? (

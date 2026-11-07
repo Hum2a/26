@@ -15,6 +15,7 @@ import { NameCloud, NameReveal } from "../lobby/name-cloud";
 import { joinLobby, redeemTransfer, resumeGuest } from "../live/room-api";
 import { openRoomSocket } from "../live/room-socket";
 import { PhaseTransition } from "../anim/PhaseTransition";
+import { kartRaceScene } from "../kart/race-scene";
 import { guestRoundCopy } from "../play/copy";
 import { GuestPlay } from "../play/guest-play";
 import { FunFactPhone } from "../play/fun-fact";
@@ -801,7 +802,10 @@ export function GuestPage({
                 ) : null}
               </div>
             ) : null}
-            <PhaseTransition phase={snapshot?.phase ?? "lobby"}>
+            <PhaseTransition
+              phase={snapshot?.phase ?? "lobby"}
+              scene={kartRaceScene(snapshot)}
+            >
               {snapshot?.phase === "facts" && snapshot.funFact ? (
                 <FunFactPhone fact={snapshot.funFact} />
               ) : snapshot ? (

@@ -35,8 +35,13 @@ test("moving stand-in scripts rehearse tyre marks, dust, flight, contact and rep
     .poll(async () => Number(await canvas.getAttribute("data-vfx-dust")))
     .toBeGreaterThan(0);
   await page.getByLabel("Effects script").selectOption("flight");
+  // A sample advances at most 100ms per frame, and software WebGL may draw under 4 a second.
+  const sampleDeadline = { timeout: 20_000 };
   await expect
-    .poll(async () => Number(await canvas.getAttribute("data-vfx-sample-ms")))
+    .poll(
+      async () => Number(await canvas.getAttribute("data-vfx-sample-ms")),
+      sampleDeadline,
+    )
     .toBeGreaterThanOrEqual(2000);
   await expect(canvas).toHaveAttribute("data-vfx-dust", "0");
   await page.getByLabel("Effects script").selectOption("impact");
@@ -48,7 +53,10 @@ test("moving stand-in scripts rehearse tyre marks, dust, flight, contact and rep
     return Number(view?.dataset.vfxSparks) > 0;
   });
   await expect
-    .poll(async () => Number(await canvas.getAttribute("data-vfx-sample-ms")))
+    .poll(
+      async () => Number(await canvas.getAttribute("data-vfx-sample-ms")),
+      sampleDeadline,
+    )
     .toBeGreaterThanOrEqual(3000);
   await expect(canvas).toHaveAttribute("data-vfx-sparks", "0");
   for (let replay = 0; replay < 2; replay++) {
@@ -101,6 +109,17 @@ test("repeated effects scripts keep actual GPU resource counts stable across qua
       particles: Number(view.dataset.vfxParticles),
       skids: Number(view.dataset.vfxSkids),
     }));
+  // A loaded model reaches the GPU on the next drawn frame, so settle the baseline first.
+  await expect
+    .poll(
+      async () => {
+        const before = (await read()).geometries;
+        await page.waitForTimeout(1_000);
+        return (await read()).geometries === before;
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(true);
   const samples = [await read()];
   for (const tier of ["low", "balanced", "high", "low", "balanced", "high"]) {
     await page.getByLabel("Effects quality").selectOption(tier);

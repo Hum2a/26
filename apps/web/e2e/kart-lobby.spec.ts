@@ -1,4 +1,21 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+/** A beat lasts a second, shorter than a slow poll, so note each one as it renders. */
+function recordBeats(screen: Page) {
+  return screen.evaluate(() => {
+    const seen: string[] = [];
+    (window as unknown as { __beats: string[] }).__beats = seen;
+    new MutationObserver(() => {
+      for (const beat of document.querySelectorAll(".kart-countdown [data-beat]")) {
+        const value = beat.getAttribute("data-beat")!;
+        if (!seen.includes(value)) seen.push(value);
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+}
+function beats(screen: Page) {
+  return screen.evaluate(() => (window as unknown as { __beats: string[] }).__beats);
+}
 
 test("a fresh kart lobby goes directly to the Mario circuit with normal room controls", async ({
   browser,
@@ -105,18 +122,25 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
       phase,
     );
   }
+  // Mark the live renderer: nothing may rebuild it behind the countdown.
+  await phone
+    .locator("canvas[aria-label='Your driving view']")
+    .evaluate((canvas: HTMLCanvasElement) => {
+      canvas.dataset.raceStart = "kept";
+    });
+  await recordBeats(phone);
+  await recordBeats(stage);
   await advance("prompt");
   // The prompt runs out on its own: 3-2-1 on the phone and the stage, then GO.
-  await expect(phone.locator('.kart-countdown [data-beat="1"]')).toBeVisible({
-    timeout: 12_000,
-  });
-  await expect(stage.locator(".kart-countdown [data-beat]")).toHaveCount(1);
+  await expect.poll(() => beats(phone), { timeout: 12_000 }).toContain("1");
   await expect(stage.locator("[data-phase-motion]")).toHaveAttribute(
     "data-phase",
     "collect",
     { timeout: 5_000 },
   );
-  await expect(phone.locator('.kart-countdown [data-beat="GO"]')).toBeVisible();
+  await expect.poll(() => beats(phone)).toEqual(["3", "2", "1", "GO"]);
+  await expect.poll(() => beats(stage)).toEqual(["3", "2", "1", "GO"]);
+  await expect(phone.locator("canvas[data-race-start='kept']")).toHaveCount(1);
   await expect(phone.getByRole("button", { name: "Accelerate" })).toBeEnabled();
   await expect(stage.locator("[data-map-player]")).toHaveCount(2);
   await expect(rival.getByRole("button", { name: "Accelerate" })).toBeEnabled();

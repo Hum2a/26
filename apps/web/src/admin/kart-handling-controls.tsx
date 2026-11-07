@@ -64,7 +64,7 @@ export function KartHandlingControls() {
                 : void execute(
                     { action: "kart-handling", handlingPreset: preset },
                     "Choose kart contact handling",
-                    "kart",
+                    "kart-handling",
                   )
             }
           >
@@ -74,7 +74,7 @@ export function KartHandlingControls() {
           </Button>
         ))}
       </div>
-      <CommandFeedback scope="kart" />
+      <CommandFeedback scope="kart-handling" />
       <Link to="/admin/kart?view=collisions">
         Rehearse both handling profiles without guests
       </Link>

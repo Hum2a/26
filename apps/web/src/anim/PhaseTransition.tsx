@@ -3,20 +3,24 @@ import { AnimatePresence, motion, useIsPresent } from "motion/react";
 
 export function PhaseTransition({
   phase,
+  scene,
   children,
   stage = false,
 }: {
   phase: string;
+  /** Phases sharing a scene keep one mounted subtree, such as a live race renderer. */
+  scene?: string;
   children: ReactNode;
   stage?: boolean;
 }) {
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const identity = scene ?? phase;
   // Projected state must change with the server snapshot. Keeping an outgoing
   // question mounted until an exit completes can show the wrong phase heading.
   if (stage)
     return (
       <motion.div
-        key={phase}
+        key={identity}
         data-phase={phase}
         data-phase-motion={reduce ? "fade" : "eased"}
         initial={{ opacity: 0.96, y: reduce ? 0 : 6 }}
@@ -28,7 +32,7 @@ export function PhaseTransition({
     );
   return (
     <AnimatePresence mode="wait">
-      <PhonePhase key={phase} phase={phase} reduce={reduce}>
+      <PhonePhase key={identity} phase={phase} reduce={reduce}>
         {children}
       </PhonePhase>
     </AnimatePresence>
