@@ -8,9 +8,15 @@ import { Glyph } from "./designs/glyph";
 import { AnswerNames } from "./attributions";
 import { renderPresentation } from "./presentation";
 import { KartDriversProvider } from "../kart/KartDriversProvider";
-import { KartCountdown } from "../kart/KartCountdown";
-import { FunFactStage } from "./fun-fact";
-import { Scoreboard } from "../ui/scoreboard";
+const KartCountdown = lazy(() =>
+  import("../kart/KartCountdown").then((beat) => ({ default: beat.KartCountdown })),
+);
+const FunFactStage = lazy(() =>
+  import("./fun-fact").then((fact) => ({ default: fact.FunFactStage })),
+);
+const Scoreboard = lazy(() =>
+  import("../ui/scoreboard").then((board) => ({ default: board.Scoreboard })),
+);
 import { GuestPush } from "./guest-push";
 import { PlayerAvatar } from "../ui/player-avatar";
 
@@ -50,7 +56,11 @@ export function StagePlay({
   observedAt?: number;
 }) {
   if (snapshot.phase === "facts" && snapshot.funFact) {
-    return <FunFactStage fact={snapshot.funFact} />;
+    return (
+      <Suspense fallback={<p role="status">Preparing the next fact…</p>}>
+        <FunFactStage fact={snapshot.funFact} />
+      </Suspense>
+    );
   }
   const play = snapshot.play;
   if (!play) {
@@ -65,10 +75,12 @@ export function StagePlay({
         <Suspense fallback={<p>Preparing the race…</p>}>
           <KartGameWrapper race={play.kart} paused={snapshot.paused || snapshot.held} />
         </Suspense>
-        <KartCountdown
-          snapshot={snapshot}
-          observedAt={observedAt ?? snapshot.serverNow}
-        />
+        <Suspense fallback={null}>
+          <KartCountdown
+            snapshot={snapshot}
+            observedAt={observedAt ?? snapshot.serverNow}
+          />
+        </Suspense>
       </KartDriversProvider>
     );
   const leadBoard =
@@ -608,27 +620,29 @@ function Standings({
     return null;
   }
   return (
-    <Scoreboard
-      title={title ?? "The standings"}
-      label="Scoreboard"
-      podium={podium}
-      entries={(play.standings ?? []).map((row) => ({
-        id: row.nickname,
-        name: row.nickname,
-        place: row.place,
-        points: row.points,
-        badge: (
-          <PlayerAvatar
-            playerId={
-              players.find((player) => player.nickname === row.nickname)?.playerId ??
-              row.nickname
-            }
-            nickname={row.nickname}
-            size="sm"
-          />
-        ),
-      }))}
-    />
+    <Suspense fallback={<p role="status">{title ?? "The standings"}</p>}>
+      <Scoreboard
+        title={title ?? "The standings"}
+        label="Scoreboard"
+        podium={podium}
+        entries={(play.standings ?? []).map((row) => ({
+          id: row.nickname,
+          name: row.nickname,
+          place: row.place,
+          points: row.points,
+          badge: (
+            <PlayerAvatar
+              playerId={
+                players.find((player) => player.nickname === row.nickname)?.playerId ??
+                row.nickname
+              }
+              nickname={row.nickname}
+              size="sm"
+            />
+          ),
+        }))}
+      />
+    </Suspense>
   );
 }
 

@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { driverStyles, type DriverStyle, type LobbyDriver } from "@26/shared";
 import { Button } from "../ui/primitives";
 import { CaptureFlow } from "../photo/CaptureFlow";
 import { sendFacePhoto } from "../media/face-upload";
 import { DriverBadge, DriverEmblem } from "./DriverBadge";
-import { SoloPracticeFrame } from "./SoloPracticeFrame";
+
+const SoloPracticeFrame = lazy(() =>
+  import("./SoloPracticeFrame").then((frame) => ({ default: frame.SoloPracticeFrame })),
+);
 
 /**
  * Lobby choice of kart driver. The style saves at once; a face photo is
@@ -88,7 +91,9 @@ export function DriverPicker({
               Solo practice uses your chosen driver and visible photo. No room controls
               or party points.
             </p>
-            <SoloPracticeFrame gameId={gameId} driver={driver} />
+            <Suspense fallback={<p role="status">Preparing solo practice…</p>}>
+              <SoloPracticeFrame gameId={gameId} driver={driver} />
+            </Suspense>
           </motion.div>
         ) : null}
       </AnimatePresence>

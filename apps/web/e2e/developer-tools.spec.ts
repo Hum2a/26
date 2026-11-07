@@ -132,6 +132,8 @@ test("creates an isolated automatic rehearsal with a real phone, question reset 
     .getByRole("button", { name: "Disconnect 25% of bots", exact: true })
     .click();
   await expect(results).toContainText("4 / 4", { timeout: 30_000 });
+  // The full history now sits in a closed section beneath the live notifications.
+  await page.getByRole("button", { name: /Event history/ }).click();
   await expect(page.getByRole("region", { name: "Rehearsal timeline" })).toContainText(
     "Disconnect 25% of bots",
   );
