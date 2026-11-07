@@ -4,6 +4,8 @@ import base from "./playwright.config";
 /** Run through npm run smoke:rehearsal, which builds solo before server startup. */
 export default defineConfig({
   ...base,
+  // Script budgets measure a production build: see playwright.performance.config.ts.
+  testIgnore: "**/performance.spec.ts",
   webServer: {
     command: "npm run dev:rehearsal -w @26/web",
     url: "http://localhost:4173",

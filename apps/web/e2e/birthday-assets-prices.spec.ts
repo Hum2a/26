@@ -56,12 +56,24 @@ test("Pokémon PNGs fit unchanged cards, and both dated inflation sliders rehear
           ),
       )
       .toBe(true);
-    const before = await cards.evaluateAll((buttons) =>
-      buttons.map((button) => ({
-        width: button.getBoundingClientRect().width,
-        height: button.getBoundingClientRect().height,
-      })),
-    );
+    // Entrance springs keep scaling the cards for a moment, and longer on a busy
+    // machine, so measure only once two readings in a row agree.
+    const measure = () =>
+      cards.evaluateAll((buttons) =>
+        buttons.map((button) => ({
+          width: button.getBoundingClientRect().width,
+          height: button.getBoundingClientRect().height,
+        })),
+      );
+    let before = await measure();
+    await expect
+      .poll(async () => {
+        const next = await measure();
+        const settled = JSON.stringify(next) === JSON.stringify(before);
+        before = next;
+        return settled;
+      })
+      .toBe(true);
     const geometry = await page
       .locator(".question-option-image")
       .evaluateAll((images) =>

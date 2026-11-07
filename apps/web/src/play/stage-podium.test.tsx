@@ -6,7 +6,7 @@ vi.mock("@number-flow/react", () => ({
 import { playingFixture } from "../admin/controls.test-support";
 import { StagePlay } from "./stage-play";
 
-it("puts the leaders on a podium at the end without losing the heading or the list", () => {
+it("puts the leaders on a podium at the end without losing the heading or the list", async () => {
   const standings = [
     { place: 1, nickname: "Amina", points: 300 },
     { place: 2, nickname: "Bilal", points: 200 },
@@ -22,6 +22,6 @@ it("puts the leaders on a podium at the end without losing the heading or the li
       }}
     />,
   );
-  expect(screen.getByRole("heading", { name: "Podium" })).toBeTruthy();
+  expect(await screen.findByRole("heading", { name: "Podium" })).toBeTruthy();
   expect(screen.getAllByRole("listitem")).toHaveLength(4);
 });

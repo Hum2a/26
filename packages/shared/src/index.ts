@@ -1,4 +1,4 @@
-import { kartRaceSchema, kartLookHistorySchema } from "./kart.ts";
+import { kartRaceSchema, kartLookHistorySchema } from "./kart-race-schema.ts";
 import { kartContactHistorySchema } from "./kart-contacts.ts";
 import { kartRecapSchema } from "./kart-recap.ts";
 import { kartItemsControlSchema } from "./kart-item-rules.ts";

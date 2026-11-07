@@ -488,6 +488,47 @@
   );
   color: var(--accent-foreground);
 }
+/* A projector is wide and short. Stacking the podium above the list pushes the
+   list and its paging off the screen, so they sit side by side, and the podium
+   scales with the height of the screen. Narrow screens stay stacked and scroll. */
+@media (min-width: 64rem) and (min-aspect-ratio: 4/3) {
+  .stage-presentation .scoreboard:has(> .scoreboard-podium) {
+    max-width: 100rem;
+  }
+  .scoreboard:has(> .scoreboard-podium) {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    grid-template-areas:
+      "heading heading"
+      "caption caption"
+      "podium columns"
+      "podium rows"
+      "podium navigation";
+    grid-template-rows: auto auto auto 1fr auto;
+    column-gap: clamp(1rem, 2.5vw, 2.5rem);
+  }
+  .scoreboard:has(> .scoreboard-podium) > .scoreboard-heading {
+    grid-area: heading;
+  }
+  .scoreboard:has(> .scoreboard-podium) > .scoreboard-caption {
+    grid-area: caption;
+  }
+  .scoreboard:has(> .scoreboard-podium) > .scoreboard-columns {
+    grid-area: columns;
+  }
+  .scoreboard:has(> .scoreboard-podium) > .scoreboard-rows,
+  .scoreboard:has(> .scoreboard-podium) > .scoreboard-empty {
+    grid-area: rows;
+  }
+  .scoreboard:has(> .scoreboard-podium) > .scoreboard-navigation {
+    grid-area: navigation;
+  }
+  .scoreboard-podium {
+    grid-area: podium;
+    align-self: end;
+    font-size: clamp(0.7rem, 1.7vh, 1.2rem);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .scoreboard-row::before {
     transition: none;

@@ -5,7 +5,7 @@ test("live desk and player tools keep actions deliberate and private across devi
   browser,
   context,
 }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
   await page.goto("/admin");
   await page.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
   await page.getByRole("button", { name: "Email me a code and link" }).click();
@@ -170,30 +170,43 @@ test("live desk and player tools keep actions deliberate and private across devi
   await expect(
     page.getByRole("button", { name: "Finish after this question", exact: true }),
   ).toBeFocused();
-  await page
-    .getByRole("button", { name: "Finish after this question", exact: true })
-    .click();
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "Finish after this question", exact: true })
-    .click();
+  // The question clock keeps running, so on a slow machine the phase can change
+  // while the dialog is open. The dialog then refuses and asks for a fresh look.
+  await expect(async () => {
+    const dialog = page.getByRole("dialog");
+    if (await dialog.getByText("The room has moved on.").isVisible())
+      await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    if (!(await dialog.isVisible()))
+      await page
+        .getByRole("button", { name: "Finish after this question", exact: true })
+        .click({ timeout: 5_000 });
+    await dialog
+      .getByRole("button", { name: "Finish after this question", exact: true })
+      .click({ timeout: 2_000 });
+  }).toPass({ timeout: 45_000 });
   await expect(
     page.getByText("The quiz will finish after this question.").last(),
   ).toBeVisible();
-  for (
-    let step = 0;
-    step < 12 &&
-    !(await page.getByText("The quiz is complete.", { exact: true }).isVisible());
-    step++
-  ) {
+  // The room's own timers also move the show on, so any of these controls can
+  // leave the page mid-click. Each attempt is bounded and the loop looks again.
+  const podium = stage.getByRole("heading", { name: "Podium", exact: true });
+  for (let step = 0; step < 24 && !(await podium.isVisible()); step++) {
+    const dialog = page.getByRole("dialog");
+    if (await dialog.getByText("The room has moved on.").isVisible())
+      await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
     const finish = page.getByRole("button", { name: "Finish quiz", exact: true });
+    const bounded = { timeout: 5_000 };
     if (await finish.isVisible()) {
-      await finish.click();
-      await page
-        .getByRole("dialog")
+      await finish.click(bounded).catch(() => undefined);
+      await dialog
         .getByRole("button", { name: "Finish quiz", exact: true })
-        .click();
-    } else await page.getByRole("button", { name: "Advance", exact: true }).click();
+        .click(bounded)
+        .catch(() => undefined);
+    } else
+      await page
+        .getByRole("button", { name: "Advance", exact: true })
+        .click(bounded)
+        .catch(() => undefined);
     await expect(page.locator(".admin-command-feedback[aria-busy=true]")).toHaveCount(
       0,
     );

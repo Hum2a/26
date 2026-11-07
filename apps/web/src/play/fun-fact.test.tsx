@@ -10,7 +10,7 @@ const card = {
   text: "1 person used Firefox.",
 };
 
-it("shows one stage sentence and the count, not the question", () => {
+it("shows one stage sentence and the count, not the question", async () => {
   render(
     <StagePlay
       snapshot={
@@ -23,7 +23,7 @@ it("shows one stage sentence and the count, not the question", () => {
     />,
   );
   expect(
-    screen.getByRole("region", { name: "From your phones" }).textContent,
+    (await screen.findByRole("region", { name: "From your phones" })).textContent,
   ).toContain("1 person used Firefox.");
   expect(screen.getByText("1 of 10")).toBeTruthy();
   expect(screen.queryByText("A secret question?")).toBeNull();

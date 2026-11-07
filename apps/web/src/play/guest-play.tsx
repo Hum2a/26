@@ -1,4 +1,8 @@
-import { GuestKart } from "../kart/GuestKart";
+import { lazy, Suspense } from "react";
+// The race and its track geometry load when a kart round arrives, not on joining.
+const GuestKart = lazy(() =>
+  import("../kart/GuestKart").then((kart) => ({ default: kart.GuestKart })),
+);
 import { KartDriversProvider } from "../kart/KartDriversProvider";
 import type { KartInput } from "@26/shared";
 import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
@@ -76,18 +80,20 @@ export function GuestPlay({
     return (
       <QuestionExperience snapshot={snapshot} pending={false}>
         <KartDriversProvider snapshot={snapshot}>
-          <GuestKart
-            snapshot={snapshot}
-            connected={connected}
-            onInput={onKartInput}
-            onUseItem={onKartUseItem}
-            itemPending={kartItemPending}
-            itemNotice={kartItemNotice}
-            onRecover={onKartRecover}
-            recoveryPending={kartRecoveryPending}
-            recoveryNotice={kartRecoveryNotice}
-            observedAt={observedAt}
-          />
+          <Suspense fallback={<p role="status">Preparing your kart…</p>}>
+            <GuestKart
+              snapshot={snapshot}
+              connected={connected}
+              onInput={onKartInput}
+              onUseItem={onKartUseItem}
+              itemPending={kartItemPending}
+              itemNotice={kartItemNotice}
+              onRecover={onKartRecover}
+              recoveryPending={kartRecoveryPending}
+              recoveryNotice={kartRecoveryNotice}
+              observedAt={observedAt}
+            />
+          </Suspense>
         </KartDriversProvider>
       </QuestionExperience>
     );

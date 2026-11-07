@@ -81,6 +81,8 @@ test("individual questions support private inspection, direct links and responsi
   });
   await page.getByRole("link", { name: /Back to question packs/ }).click();
   await expect(page).toHaveURL(/\/admin\/content\?pack=birthday-draft$/);
+  // A pack with a running order opens on that view; the links are in the catalogue.
+  await page.getByRole("button", { name: "Question catalogue", exact: true }).click();
   await expect(page.getByRole("link", { name: /^View / }).first()).toBeVisible();
   const links = await page.getByRole("link", { name: /^View / }).evaluateAll((nodes) =>
     nodes.map((node) => ({
