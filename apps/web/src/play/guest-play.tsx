@@ -3,8 +3,11 @@ import { lazy, Suspense } from "react";
 const GuestKart = lazy(() =>
   import("../kart/GuestKart").then((kart) => ({ default: kart.GuestKart })),
 );
+const GuestChess = lazy(() =>
+  import("../chess/guest-chess").then((chess) => ({ default: chess.GuestChess })),
+);
 import { KartDriversProvider } from "../kart/KartDriversProvider";
-import type { KartInput } from "@26/shared";
+import type { KartInput, ChessMoveParams, ChessResignParams } from "@26/shared";
 import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
 import { QuestionOptionImage } from "./question-option-image";
 import { OptionText } from "../rounds/OptionText";
@@ -43,6 +46,8 @@ export function GuestPlay({
   kartItemNotice,
   kartRecoveryPending,
   kartRecoveryNotice,
+  onChessMove,
+  onChessResign,
   connected,
   observedAt,
   onChoose,
@@ -59,6 +64,8 @@ export function GuestPlay({
   kartItemNotice?: string;
   kartRecoveryPending?: boolean;
   kartRecoveryNotice?: string;
+  onChessMove?: (params: ChessMoveParams) => void;
+  onChessResign?: (params: ChessResignParams) => void;
   connected?: boolean;
   selectedId?: string;
   pending: boolean;
@@ -96,6 +103,17 @@ export function GuestPlay({
           </Suspense>
         </KartDriversProvider>
       </QuestionExperience>
+    );
+  if (play.question.kind === "chess")
+    return (
+      <Suspense fallback={<p role="status">Loading chess engine…</p>}>
+        <GuestChess
+          snapshot={snapshot}
+          pending={pending}
+          onChessMove={onChessMove ?? (() => {})}
+          onChessResign={onChessResign ?? (() => {})}
+        />
+      </Suspense>
     );
   const open =
     snapshot.phase === "collect" &&

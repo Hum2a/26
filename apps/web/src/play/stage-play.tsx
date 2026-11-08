@@ -1,8 +1,9 @@
 import { lazy, Suspense } from "react";
 const KartGameWrapper = lazy(() => import("../kart/KartGameWrapper"));
 import { motion } from "motion/react";
-import type { LobbySnapshot, PlaySnapshot, RoomPhaseName } from "@26/shared";
+import type { LobbySnapshot, PlaySnapshot, RoomPhaseName, ChessStageSnapshot } from "@26/shared";
 import { QuestionOptionImage } from "./question-option-image";
+import { ChessStage } from "../chess/chess-stage";
 import { Panel } from "../ui/primitives";
 import { Glyph } from "./designs/glyph";
 import { AnswerNames } from "./attributions";
@@ -83,6 +84,9 @@ export function StagePlay({
         </Suspense>
       </KartDriversProvider>
     );
+  if (play.question.kind === "chess" && play.chess) {
+    return <ChessStage snapshot={play.chess as ChessStageSnapshot} />;
+  }
   const leadBoard =
     snapshot.phase === "scores" ||
     snapshot.phase === "final" ||
