@@ -22,11 +22,13 @@
     "@iconify-icons/simple-icons": "2.0.4",
     "@iconify/react": "6.0.2",
     "@number-flow/react": "0.6.2",
+    "chess.js": "1.4.0",
     "motion": "13.4.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-router": "7.18.4",
     "sonner": "2.0.8",
+    "stockfish": "19.0.1",
     "three": "0.186.1",
     "uqr": "0.1.3"
   },

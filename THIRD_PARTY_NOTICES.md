@@ -25,3 +25,23 @@ The project's dependencies retain their respective licences. See their published
 ## Solo practice provenance
 
 See `apps/kart-solo/UPSTREAM.md` for the upstream commit, asset checksums and the changes made for this site. The same notice is included with the standalone game at `/kart-engine/THIRD_PARTY_NOTICES.md`.
+
+## Stockfish chess engine
+
+Chess round uses Stockfish 19 compiled to WebAssembly, distributed via npm package `stockfish@19.0.1`.
+
+**Source:** https://github.com/nmrugg/stockfish.js (WASM compilation by Nathan Rugg)  
+**Upstream engine:** https://github.com/official-stockfish/Stockfish  
+**Package version:** 19.0.1  
+**Assets:** `stockfish-19-lite-single.wasm` (1.8 MB) and `stockfish-19-lite-single.js` (28 KB) copied to `apps/web/public/chess-engine/`  
+**License:** GPL-3.0-or-later
+
+The full GPL-3.0 license text is available in `node_modules/stockfish/Copying.txt`. Stockfish is copyright The Stockfish developers.
+
+Per GPL-3.0 requirements:
+- Source code is available at the repositories above
+- This distribution includes the compiled WebAssembly binary and JavaScript wrapper unmodified from the npm package
+- Recipients have the same rights to use, modify, and distribute under GPL-3.0-or-later
+- No warranty is provided
+
+The 26 birthday game project uses Stockfish as a separate work; the entire project is not licensed under GPL. Only the Stockfish chess engine components are GPL-licensed.
