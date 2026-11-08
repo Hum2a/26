@@ -33,42 +33,26 @@ describe("release safeguards", () => {
   });
 
   describe("assertDeployAllowed", () => {
-    it("allows staging deploys without confirmation", () => {
+    it("allows staging deploys without freeze or git checks", () => {
       assert.doesNotThrow(() => {
         assertDeployAllowed(
           ["staging"],
-          { dryRun: false, confirmProduction: false, overrideFreeze: false },
+          { dryRun: false, overrideFreeze: false },
           nowOutsideFreeze,
           { branch: "feature-branch", clean: false },
         );
       });
     });
 
-    it("allows dry-run production deploys without confirmation", () => {
+    it("allows dry-run production deploys without freeze or git checks", () => {
       assert.doesNotThrow(() => {
         assertDeployAllowed(
           ["production"],
-          { dryRun: true, confirmProduction: false, overrideFreeze: false },
+          { dryRun: true, overrideFreeze: false },
           nowOutsideFreeze,
           { branch: "feature-branch", clean: false },
         );
       });
-    });
-
-    it("rejects production deploy without confirmation", () => {
-      assert.throws(
-        () => {
-          assertDeployAllowed(
-            ["production"],
-            { dryRun: false, confirmProduction: false, overrideFreeze: false },
-            nowOutsideFreeze,
-            { branch: "master", clean: true },
-          );
-        },
-        {
-          message: /Deploying to production needs --confirm-production/,
-        },
-      );
     });
 
     it("rejects production deploy during freeze without override", () => {
@@ -76,7 +60,7 @@ describe("release safeguards", () => {
         () => {
           assertDeployAllowed(
             ["production"],
-            { dryRun: false, confirmProduction: true, overrideFreeze: false },
+            { dryRun: false, overrideFreeze: false },
             nowInsideFreeze,
             { branch: "master", clean: true },
           );
@@ -91,7 +75,7 @@ describe("release safeguards", () => {
       assert.doesNotThrow(() => {
         assertDeployAllowed(
           ["production"],
-          { dryRun: false, confirmProduction: true, overrideFreeze: true },
+          { dryRun: false, overrideFreeze: true },
           nowInsideFreeze,
           { branch: "master", clean: true },
         );
@@ -103,7 +87,7 @@ describe("release safeguards", () => {
         () => {
           assertDeployAllowed(
             ["production"],
-            { dryRun: false, confirmProduction: true, overrideFreeze: false },
+            { dryRun: false, overrideFreeze: false },
             nowOutsideFreeze,
             { branch: "feature-branch", clean: true },
           );
@@ -119,7 +103,7 @@ describe("release safeguards", () => {
         () => {
           assertDeployAllowed(
             ["production"],
-            { dryRun: false, confirmProduction: true, overrideFreeze: false },
+            { dryRun: false, overrideFreeze: false },
             nowOutsideFreeze,
             { branch: "master", clean: false },
           );
@@ -134,7 +118,7 @@ describe("release safeguards", () => {
       assert.doesNotThrow(() => {
         assertDeployAllowed(
           ["production"],
-          { dryRun: false, confirmProduction: true, overrideFreeze: false },
+          { dryRun: false, overrideFreeze: false },
           nowOutsideFreeze,
           { branch: "master", clean: true },
         );
@@ -145,25 +129,11 @@ describe("release safeguards", () => {
       assert.doesNotThrow(() => {
         assertDeployAllowed(
           ["production"],
-          { dryRun: false, confirmProduction: true, overrideFreeze: false },
+          { dryRun: false, overrideFreeze: false },
           nowOutsideFreeze,
           undefined,
         );
       });
-    });
-
-    it("still requires confirmation when git state is skipped", () => {
-      assert.throws(
-        () => {
-          assertDeployAllowed(
-            ["production"],
-            { dryRun: false, confirmProduction: false, overrideFreeze: false },
-            nowOutsideFreeze,
-            undefined,
-          );
-        },
-        { message: /needs --confirm-production/ },
-      );
     });
 
     it("still requires freeze override when git state is skipped", () => {
@@ -171,7 +141,7 @@ describe("release safeguards", () => {
         () => {
           assertDeployAllowed(
             ["production"],
-            { dryRun: false, confirmProduction: true, overrideFreeze: false },
+            { dryRun: false, overrideFreeze: false },
             nowInsideFreeze,
             undefined,
           );
@@ -180,27 +150,11 @@ describe("release safeguards", () => {
       );
     });
 
-    it("rejects both staging+production without confirmation", () => {
-      assert.throws(
-        () => {
-          assertDeployAllowed(
-            ["staging", "production"],
-            { dryRun: false, confirmProduction: false, overrideFreeze: false },
-            nowOutsideFreeze,
-            { branch: "master", clean: true },
-          );
-        },
-        {
-          message: /Deploying to production needs --confirm-production/,
-        },
-      );
-    });
-
-    it("allows both staging+production with confirmation and clean state", () => {
+    it("allows both staging+production with clean state", () => {
       assert.doesNotThrow(() => {
         assertDeployAllowed(
           ["staging", "production"],
-          { dryRun: false, confirmProduction: true, overrideFreeze: false },
+          { dryRun: false, overrideFreeze: false },
           nowOutsideFreeze,
           { branch: "master", clean: true },
         );

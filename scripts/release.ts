@@ -72,7 +72,6 @@ if (command === "migrate") {
       targets,
       {
         dryRun,
-        confirmProduction: argv.includes("--confirm-production"),
         overrideFreeze: argv.includes("--override-freeze"),
       },
       Date.now(),

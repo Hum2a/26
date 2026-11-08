@@ -81,31 +81,31 @@ npm run deploy:staging:full
 **Recommended approach using release.sh:**
 
 ```powershell
-bash release.sh --deploy=production --confirm-production
+bash release.sh --deploy=production
 ```
 
-The `release.sh` script handles version bumping, requires master and a clean tree before the bump, runs checks, then deploys. After that point it sets `SKIP_GIT_CHECK=true` so generated artefacts from the bump/checks do not fail `release.ts`'s git check. It still passes `--confirm-production` / `--override-freeze` through. `release.sh` does not accept `--skip-git-check`.
+The `release.sh` script handles version bumping, requires master and a clean tree before the bump, runs checks, then deploys. After that point it sets `SKIP_GIT_CHECK=true` so generated artefacts from the bump/checks do not fail `release.ts`'s git check. It still passes `--override-freeze` through. `release.sh` does not accept `--skip-git-check`.
 
 **Direct approach (bypasses version bumping):**
 
 ```powershell
-npm run deploy:prod -- --confirm-production
+npm run deploy:prod
 ```
 
 **Production safeguards by command type:**
 
-| Command type                                    | Confirmation | Freeze check | Clean master |
-| ----------------------------------------------- | ------------ | ------------ | ------------ |
-| deploy/full to production or both               | Required     | Required     | Required     |
-| deploy/full to staging only, or any `--dry-run` | Not required | Not required | Not required |
-| secrets-sync (any target)                       | Not required | Not required | Not required |
-| standalone migrate (`db:migrate:*`)             | Not required | Not required | Not required |
+| Command type                                    | Freeze check | Clean master |
+| ----------------------------------------------- | ------------ | ------------ |
+| deploy/full to production or both               | Required     | Required     |
+| deploy/full to staging only, or any `--dry-run` | Not required | Not required |
+| secrets-sync (any target)                       | Not required | Not required |
+| standalone migrate (`db:migrate:*`)             | Not required | Not required |
 
 Raw vendor commands (`npx wrangler deploy`, `npx wrangler secret put`, the auth and archive migration scripts run directly) are outside these safeguards.
 
 Pass `--override-freeze` for emergency deploys during freeze period (20 Nov-22 Nov UTC).
 
-A git-check bypass (`SKIP_GIT_CHECK=true` or `--skip-git-check` on `release.ts`) never skips confirmation or freeze. Use it only from a trusted wrapper that has already required clean master. Direct `npm run deploy:prod` still reads git and fails closed if git is unavailable. Git is read only for a real production deploy: staging deploys and dry runs do not need it.
+A git-check bypass (`SKIP_GIT_CHECK=true` or `--skip-git-check` on `release.ts`) never skips freeze. Use it only from a trusted wrapper that has already required clean master. Direct `npm run deploy:prod` still reads git and fails closed if git is unavailable. Git is read only for a real production deploy: staging deploys and dry runs do not need it.
 
 `npm run test:release` runs `release.ts` and `release.sh` against fake git, npm, npx, curl and gh, on Windows as well as Linux. It refuses to run a release command unless those fakes answer, and sets an invalid `CLOUDFLARE_API_TOKEN` so a real Wrangler could not use a saved login. The `release.sh` tests use a throwaway repository with a local bare remote.
 
@@ -115,11 +115,11 @@ Wrangler warns that the secret names are missing from `env.staging.vars`. That w
 
 `npm run secrets-sync:staging` uploads the required names from `apps/api/.dev.vars.staging` with `wrangler secret bulk`. Empty values are rejected. Extra keys in that file are not uploaded. `npm run deploy:staging` does not upload secrets. `npm run deploy:staging:full` attaches them with `--secrets-file` on the same deploy as the new code.
 
-`npm run deploy:both` and `npm run deploy:both:full` run staging and then production. Actual production or combined deployments require `-- --confirm-production`. All deploy commands run typecheck, content, unit, lint and release-script checks once before any migrations or deployment; add `--full-checks` for the isolated API suite. `npm run release` retains its existing checks and tells the deploy command those checks have already run.
+`npm run deploy:both` and `npm run deploy:both:full` run staging and then production. All deploy commands run typecheck, content, unit, lint and release-script checks once before any migrations or deployment; add `--full-checks` for the isolated API suite. `npm run release` retains its existing checks and tells the deploy command those checks have already run.
 
-Add `-- --dry-run` to a secrets-sync or deploy command to check names or packaging without uploading, migrating or deploying. A deploy dry run builds the package but needs no production confirmation or freeze override and does not run the full pre-release check suite.
+Add `-- --dry-run` to a secrets-sync or deploy command to check names or packaging without uploading, migrating or deploying. A deploy dry run builds the package but needs no freeze override and does not run the full pre-release check suite.
 
-Production is frozen from 20 November 2026 at 00:00 until 22 November at 12:00, London time. An explicitly requested emergency deployment can use `--confirm-production --override-freeze`; `--skip-checks` separately skips the pre-release checks when necessary. These flags work through both `npm run release -- ...` and the direct deploy commands. Packaging and generated Worker target checks still run.
+Production is frozen from 20 November 2026 at 00:00 until 22 November at 12:00, London time. An explicitly requested emergency deployment can use `--override-freeze`; `--skip-checks` separately skips the pre-release checks when necessary. These flags work through both `npm run release -- ...` and the direct deploy commands. Packaging and generated Worker target checks still run.
 
 ## Production build
 
@@ -128,10 +128,10 @@ Do not run this until a production deploy is explicitly requested.
 ```powershell
 npm run secrets-sync:prod
 npm run db:migrate:prod
-npm run deploy:prod -- --confirm-production
+npm run deploy:prod
 ```
 
-Or `npm run deploy:prod:full -- --confirm-production`. The generated worker name must be `26-humza-website` and the custom domain must be `26.humza.website`. Cloudflare creates the DNS record for the custom domain on deploy when `humza.website` is in that account.
+Or `npm run deploy:prod:full`. The generated worker name must be `26-humza-website` and the custom domain must be `26.humza.website`. Cloudflare creates the DNS record for the custom domain on deploy when `humza.website` is in that account.
 
 ## Rollback
 

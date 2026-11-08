@@ -303,16 +303,6 @@ describe("package.json deploy/full routes", () => {
 });
 
 describe("release.ts guards with fake git/npm/npx", () => {
-  it("refuses production without confirmation before npm or wrangler", () => {
-    for (const command of ["deploy", "full"]) {
-      const result = runRelease([command, "--env", "production"]);
-      assert.equal(result.status, 1, command);
-      assert.match(result.stderr, /needs --confirm-production/);
-      assert.equal(loggedCommands(result.log, "NPM").length, 0);
-      assert.equal(loggedCommands(result.log, "NPX").length, 0);
-    }
-  });
-
   it("refuses a non-master branch for deploy and full, before npm or wrangler", () => {
     for (const [command, target] of [
       ["deploy", "production"],
@@ -320,7 +310,7 @@ describe("release.ts guards with fake git/npm/npx", () => {
       ["deploy", "both"],
       ["full", "both"],
     ]) {
-      const result = runRelease([command, "--env", target, "--confirm-production"], {
+      const result = runRelease([command, "--env", target], {
         FAKE_GIT_BRANCH: "cursor/safeguard-corrections-c6a9",
       });
       assert.equal(result.status, 1, `${command} ${target}`);
@@ -335,7 +325,7 @@ describe("release.ts guards with fake git/npm/npx", () => {
 
   it("refuses a dirty tree for deploy and full, before npm or wrangler", () => {
     for (const command of ["deploy", "full"]) {
-      const result = runRelease([command, "--env", "both", "--confirm-production"], {
+      const result = runRelease([command, "--env", "both"], {
         FAKE_GIT_STATUS: " M package.json\n",
       });
       assert.equal(result.status, 1, command);
@@ -347,12 +337,9 @@ describe("release.ts guards with fake git/npm/npx", () => {
 
   it("fails closed for production when git cannot be queried", () => {
     for (const command of ["deploy", "full"]) {
-      const result = runRelease(
-        [command, "--env", "production", "--confirm-production"],
-        {
-          FAKE_GIT_FAIL: "1",
-        },
-      );
+      const result = runRelease([command, "--env", "production"], {
+        FAKE_GIT_FAIL: "1",
+      });
       assert.equal(result.status, 1, command);
       assert.match(result.stderr, /Cannot verify git state/);
       assert.equal(loggedCommands(result.log, "NPM").length, 0);
@@ -405,12 +392,9 @@ describe("release.ts guards with fake git/npm/npx", () => {
 
 describe("release.ts validation and approved deploys with fakes", () => {
   it("stops deploy at a failed check: no build, no wrangler", () => {
-    const result = runRelease(
-      ["deploy", "--env", "production", "--confirm-production"],
-      {
-        FAKE_NPM_FAIL: "test:unit",
-      },
-    );
+    const result = runRelease(["deploy", "--env", "production"], {
+      FAKE_NPM_FAIL: "test:unit",
+    });
     assert.equal(result.status, 1);
     assert.deepEqual(loggedCommands(result.log, "NPM"), [
       "run typecheck",
@@ -422,7 +406,7 @@ describe("release.ts validation and approved deploys with fakes", () => {
   });
 
   it("stops full at a failed check: no migrations, no build, no wrangler", () => {
-    const result = runRelease(["full", "--env", "both", "--confirm-production"], {
+    const result = runRelease(["full", "--env", "both"], {
       FAKE_NPM_FAIL: "lint",
     });
     assert.equal(result.status, 1);
@@ -436,12 +420,7 @@ describe("release.ts validation and approved deploys with fakes", () => {
   });
 
   it("runs every check once, then one build and one deploy for production", () => {
-    const result = runRelease([
-      "deploy",
-      "--env",
-      "production",
-      "--confirm-production",
-    ]);
+    const result = runRelease(["deploy", "--env", "production"]);
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(loggedCommands(result.log, "GIT"), [
       "rev-parse --abbrev-ref HEAD",
@@ -457,7 +436,7 @@ describe("release.ts validation and approved deploys with fakes", () => {
   });
 
   it("checks once for both targets, then builds and deploys staging before production", () => {
-    const result = runRelease(["deploy", "--env", "both", "--confirm-production"]);
+    const result = runRelease(["deploy", "--env", "both"]);
     assert.equal(result.status, 0, result.stderr);
     assert.equal(loggedCommands(result.log, "GIT").length, 2);
     assert.deepEqual(loggedCommands(result.log, "NPM"), [
@@ -491,24 +470,15 @@ describe("release.ts validation and approved deploys with fakes", () => {
   });
 });
 
-describe("release.ts confirmation and freeze survive a git bypass", () => {
+describe("release.ts freeze survives a git bypass", () => {
   for (const [label, bypass, flag] of [
     ["SKIP_GIT_CHECK=true", { SKIP_GIT_CHECK: "true" }, []],
     ["--skip-git-check", {}, ["--skip-git-check"]],
   ] as const) {
-    it(`still needs --confirm-production with ${label}`, () => {
-      const result = runRelease(["deploy", "--env", "production", ...flag], bypass);
-      assert.equal(result.status, 1);
-      assert.match(result.stderr, /needs --confirm-production/);
-      assert.equal(loggedCommands(result.log, "GIT").length, 0);
-      assert.equal(loggedCommands(result.log, "NPM").length, 0);
-      assert.equal(loggedCommands(result.log, "NPX").length, 0);
-    });
-
     it(`still refuses the party freeze with ${label}`, () => {
       for (const command of ["deploy", "full"]) {
         const result = runRelease(
-          [command, "--env", "production", "--confirm-production", ...flag],
+          [command, "--env", "production", ...flag],
           bypass,
           { nowMs: insideFreeze },
         );
@@ -522,14 +492,7 @@ describe("release.ts confirmation and freeze survive a git bypass", () => {
 
   it("deploys in the freeze only with --override-freeze, once", () => {
     const result = runRelease(
-      [
-        "deploy",
-        "--env",
-        "production",
-        "--confirm-production",
-        "--override-freeze",
-        "--skip-checks",
-      ],
+      ["deploy", "--env", "production", "--override-freeze", "--skip-checks"],
       { SKIP_GIT_CHECK: "true" },
       { nowMs: insideFreeze },
     );
@@ -722,22 +685,16 @@ describe("release.sh wrapper", () => {
     });
   });
 
-  it("passes production confirmation through to the deploy step", () => {
+  it("deploys production without a confirmation flag", () => {
     withFixture((fixture) => {
       const result = runReleaseSh(
         fixture,
-        [
-          "patch",
-          "--deploy=production",
-          "--confirm-production",
-          "--no-github",
-          "--skip-checks",
-        ],
+        ["patch", "--deploy=production", "--no-github", "--skip-checks"],
         { NODE_OPTIONS: clockImport(outsideFreeze) },
       );
       assert.equal(result.status, 0, result.stderr);
       assert.deepEqual(loggedCommands(result.log, "NPM"), [
-        "run deploy:production -- --skip-checks --confirm-production",
+        "run deploy:production -- --skip-checks",
       ]);
       assert.deepEqual(loggedCommands(result.log, "DEPLOY"), ["SKIP_GIT_CHECK=true"]);
     });
@@ -785,31 +742,22 @@ describe("release.sh wrapper", () => {
     withFixture((fixture) => {
       git(fixture.work, ["checkout", "-q", "-b", "feature"]);
       const head = git(fixture.work, ["rev-parse", "HEAD"]);
-      const result = runReleaseSh(
-        fixture,
-        ["patch", "--deploy=production", "--confirm-production"],
-        { NODE_OPTIONS: clockImport(outsideFreeze) },
-      );
+      const result = runReleaseSh(fixture, ["patch", "--deploy=production"], {
+        NODE_OPTIONS: clockImport(outsideFreeze),
+      });
       assert.equal(result.status, 1);
       assert.match(result.stderr, /Releases are cut from master/);
       assertUntouched(fixture, head, result.log);
     });
   });
 
-  it("refuses unconfirmed or frozen production before bumping", () => {
+  it("refuses frozen production before bumping", () => {
     withFixture((fixture) => {
       const head = git(fixture.work, ["rev-parse", "HEAD"]);
-      const unconfirmed = runReleaseSh(fixture, ["patch", "--deploy=both"], {
+      const frozen = runReleaseSh(fixture, ["patch", "--deploy=production"], {
         SKIP_GIT_CHECK: "true",
+        NODE_OPTIONS: clockImport(insideFreeze),
       });
-      assert.equal(unconfirmed.status, 1);
-      assert.match(unconfirmed.stderr, /needs --confirm-production/);
-      assertUntouched(fixture, head, unconfirmed.log);
-      const frozen = runReleaseSh(
-        fixture,
-        ["patch", "--deploy=production", "--confirm-production"],
-        { SKIP_GIT_CHECK: "true", NODE_OPTIONS: clockImport(insideFreeze) },
-      );
       assert.equal(frozen.status, 1);
       assert.match(frozen.stderr, /frozen for the party weekend/);
       assertUntouched(fixture, head, frozen.log);

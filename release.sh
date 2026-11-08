@@ -9,13 +9,13 @@
 #
 # Options:
 #   --deploy=both|staging|production|none   where to deploy (default: staging)
-#   --confirm-production                    required for production or both
 #   --override-freeze                       deploy production during the party freeze
 #   --dry-run                               show what would happen, change nothing
 #   --skip-checks                           skip the pre-release checks
 #   --full-checks                           also run the full API suite (slow)
 #   --no-github                             no GitHub release (tag is still pushed)
 #   --v1                                    allow 1.0.0 and above (the final product)
+#   --confirm-production                    accepted and ignored (kept for old scripts)
 #
 # The version lives in the root package.json (and its lockfile entry),
 # packages/shared/src/version.ts (shown in the admin sidebar and returned by
@@ -27,7 +27,6 @@ cd "$(dirname "$0")"
 
 bump="patch"
 deploy="staging"
-confirm_production=false
 override_freeze=false
 full_checks=false
 dry_run=false
@@ -41,11 +40,11 @@ for arg in "$@"; do
     --dry-run) dry_run=true ;;
     --skip-checks) skip_checks=true ;;
     --full-checks) full_checks=true ;;
-    --confirm-production) confirm_production=true ;;
+    --confirm-production) ;; # ignored; kept so old scripts still parse
     --override-freeze) override_freeze=true ;;
     --no-github) github=false ;;
     --v1) allow_v1=true ;;
-    -h|--help) sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) echo "Unknown option: $arg" >&2; exit 2 ;;
     *) bump="$arg" ;;
   esac
@@ -59,10 +58,8 @@ esac
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 fail() { printf '\n\033[31m%s\033[0m\n' "$*" >&2; exit 1; }
 
-# Production is never deployed by accident: it needs an explicit flag, and
-# the party weekend is frozen because a deploy drops every phone's connection.
+# The party weekend is frozen because a deploy drops every phone's connection.
 if [[ "$dry_run" != true && ( "$deploy" == both || "$deploy" == production ) ]]; then
-  [[ "$confirm_production" == true ]] || fail "Deploying to production needs --confirm-production. Deploy to staging and check it first."
   if [[ "$override_freeze" != true ]] && node --experimental-strip-types -e "import('./scripts/release-support.ts').then((m) => process.exit(m.inDeployFreeze(Date.now()) ? 0 : 1))"; then
     fail "Production is frozen for the party weekend (20 Nov to midday 22 Nov). Pass --override-freeze only for an emergency fix."
   fi
@@ -198,9 +195,8 @@ if [[ "$deploy" != none ]]; then
   say "Deploying v$next to $deploy"
   # Branch/cleanliness were required before the version bump. Checks and the
   # bump may leave generated files, so release.ts git state is skipped here.
-  # Confirmation and freeze still go through the common deploy entry point.
+  # Freeze still goes through the common deploy entry point.
   deploy_options=(--skip-checks)
-  [[ "$confirm_production" == true ]] && deploy_options+=(--confirm-production)
   [[ "$override_freeze" == true ]] && deploy_options+=(--override-freeze)
   SKIP_GIT_CHECK=true npm run "deploy:$deploy" -- "${deploy_options[@]}"
   say "Checking the live sites"

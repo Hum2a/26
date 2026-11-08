@@ -222,9 +222,9 @@ Each step needs the owner's go-ahead; nothing here has been run.
    are room (Durable Object) columns, added when a room starts.
 4. Run the rehearsal below on staging.
 5. Production, before the freeze (20 November 00:00 to 22 November 12:00, London):
-   `bash release.sh --deploy=production --confirm-production`. It requires clean
-   `master`, bumps the app version so `/api/health` shows a new number, runs the
-   checks and deploys.
+   `bash release.sh --deploy=production` (or `npm run deploy:prod`). It requires
+   clean `master`, bumps the app version so `/api/health` shows a new number,
+   runs the checks and deploys.
 6. Record the commit, both Cloudflare version ids and the health version in
    `docs/build-progress.md`. Roll back with the previous version id (see
    `docs/deployment.md`, Rollback) if anything is wrong.
