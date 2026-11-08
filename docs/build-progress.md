@@ -5935,3 +5935,60 @@ Uncommitted work in the checkout was set aside in a tagged stash for the deploy,
 Checked after deploy: health, `/`, `/join`, `/admin` and `/kart` return 200 on both sites, and `/assets/theme-song.mp3` and `/assets/netanyahu.webp` serve as audio and image. The troll pack's `/assets/trolls/` files were not in this release (that path serves the app page).
 
 The troll pack, host moderation and photo-wall recovery were then committed on `master` (`23bea04`, `2609b5d`, `809f9c1`) and are not deployed. `npm run format:check` still fails on `apps/web/e2e/kart-solo.spec.ts`, as on `master` before; the deploy checks do not run it.
+
+## 8 November 2026 — event-readiness branch
+
+Status: branch `event-readiness` finished for review. App code at `e1e5afa` is unchanged by the docs and browser-spec commits below. The game is **not** event-ready: physical phones, projector, venue Wi-Fi and the rehearsal checklist remain outstanding, and this branch is not deployed.
+
+### Commits on the branch (from `master` `4de8687`)
+
+- `5a2e0d1` Keep host-hidden answers out of troll lines — `quotableAnswer` in `apps/api/src/questions/hidden-answers.ts`; `publicVoteLine`, `misattributedLine`, `publicCueLabel` in `apps/api/src/troll/engine.ts`; `stage_cue` columns `quote_question_id` / `quote_authors` / `unquoted_label`; spec `apps/api/test/troll-hidden-answers.spec.ts`.
+- `ebe84f9` Registers five kart specs that had never run in `apps/api/vitest.config.ts`, and fixes two defects in `kart-cpu.spec.ts`.
+- `e1e5afa` Wall: 4 s load timeout (`wallImageTimeoutMs` in `apps/web/src/wall/framed-photo.tsx`), only the current post can report (`stage-wall.tsx`), `wall_post.display_failed_at`, control-only `displayFailed` (`packages/shared/src/wall.ts`, `apps/api/src/wall/snapshot.ts`), "Couldn't display" in `apps/web/src/admin/wall-page.tsx`.
+- (this pass) `docs/event-runbook.md` — "Releasing the event build" and "Moderation and wall rehearsal".
+- (this pass) `apps/web/e2e/photo-wall-failure.spec.ts` — projector timeout, move-on and host-only flag.
+- (this pass) this progress note.
+
+### Commands and results at `e1e5afa` (`artifacts/verify-event-readiness/`)
+
+- `typecheck` exit 0
+- `lint` exit 0 (0 errors, warnings only)
+- `format:check` exit 1 — only pre-existing `apps/web/e2e/kart-solo.spec.ts` (also fails on `master`; left alone)
+- `test:release` exit 0
+- `content:check` exit 0
+- `test:unit` 175 files / 764 tests exit 0
+- `npm run test -w @26/api` 125 files / 701 tests exit 0
+- `build` exit 0
+
+App code was not changed after `e1e5afa`, so those suite results stay current for the branch tip once only the runbook, failure e2e and this note are committed.
+
+### Browser (rehearsal harness only)
+
+```
+npx playwright test --config playwright.rehearsal.config.ts --reporter=line <spec>
+```
+
+- `apps/web/e2e/photo-wall-failure.spec.ts` — 1 passed (~1.3 m). First run hung on "Connect room" with the media route registered before projector setup; the spec now pins Amina's pending-card media path and registers `stage.route` only after Present. No browser coverage of answer Hide/Restore (not added).
+- `apps/web/e2e/photo-wall.spec.ts` — 1 passed (~1.3 m)
+- `apps/web/e2e/admin-live-controls.spec.ts` — 1 passed (~1.6 m)
+
+Plain `playwright.config.ts` and `github-actions:check` were not run.
+
+### Findings
+
+- **Trolls:** the leak was real. Stage could announce a hidden answer (`Chen wrote "Secret toast line".`). Fixed for hide before selection, hide after selection, restore, no eligible answers, and stored cue/reconnect. Cue label is re-checked on every read. Guests never receive cue labels; only stage and control do. The reconnect test writes the hidden list directly because the room refuses Hide at the reveal. A hidden answer's author still sees their own text on their phone (existing, deliberate).
+- **Wall:** uses the existing shortened deadline and `syncWall`, with no second timer. The wall keeps running through a round pause. The API test covers failure during pause.
+- **Kart:** an earlier handoff said the kart specs passed; those five had not run until `ebe84f9`.
+- **Content:** no sources found; four birthday drafts stay excluded. Missing inputs — tribunal-reddit (thread, title, ending, top comment, correct choice); council-ferrier-sector (source for "Ferrier Sector" vs Estate, correct category); nextdoor-paranoia (genuine post/screenshot redacted, mundane explanation); property-price-roulette (dated listing, authorised photo, rent, agent wording, slider scale and true value).
+- **Deployment:** both sites still on `cbd1e6c` (staging `6317ea2b-ea31-4079-8992-8abd1d3d989d`, production `09181ecb-af1a-48f8-96df-e33f00ee272d`). Later `master` and this branch are not deployed. `/api/health` returns version `0.0.5` with no SHA. Release steps are in `docs/event-runbook.md`. Production freeze: 20 Nov 00:00 to 22 Nov 12:00 London.
+
+### Blockers
+
+- **Code:** none known on this branch for the shipped fixes; answer Hide/Restore has no browser spec.
+- **User-supplied content:** the four draft questions above.
+- **Deployment:** event-readiness (and later master commits) not live; needs owner go-ahead per the runbook.
+- **Physical rehearsal:** phones, projector, venue Wi-Fi and the moderation/wall checklist in the runbook.
+
+### Exact next stage
+
+Review and merge the `event-readiness` PR; deploy per the runbook when the owner asks; complete physical rehearsal. Do not start the next prompt automatically.
