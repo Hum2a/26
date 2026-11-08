@@ -110,7 +110,7 @@ These commands read `apps/api/.dev.vars.staging` or `apps/api/.dev.vars.producti
 | `npm run secrets-sync:both`    | Staging secrets, then production secrets                                                           | Not covered by deploy/full production guards                             |
 | `npm run db:migrate:dev`       | Auth and archive migrations on the Neon development branch, or PGlite when `DATABASE_URL` is blank |                                                                          |
 | `npm run db:migrate:staging`   | Auth and archive migrations against the staging database                                           |                                                                          |
-| `npm run db:migrate:prod`      | Auth and archive migrations against the production database                                        |                                                                          |
+| `npm run db:migrate:prod`      | Auth and archive migrations against the production database                                        | Not covered by deploy/full production guards                             |
 | `npm run deploy:staging`       | Build with `CLOUDFLARE_ENV=staging` and deploy that generated config                               |                                                                          |
 | `npm run deploy:prod`          | Build with `CLOUDFLARE_ENV=production` and deploy that generated config                            | **Requires `--confirm-production`, clean master, outside freeze period** |
 | `npm run deploy:both`          | Staging deploy, then production deploy                                                             | **Requires `--confirm-production`, clean master, outside freeze period** |
@@ -127,11 +127,11 @@ Add `-- --dry-run` to a secrets-sync or deploy command to check the package or s
 - Master branch (no feature branches)
 - Freeze period check (20 Nov 00:00 to 22 Nov 12:00 UTC) unless `--override-freeze`
 
-**Note:** `secrets-sync` and standalone `migrate` do not call `assertDeployAllowed`. They have no confirmation, freeze, or git checks. This patch does not add those guards.
+**Note:** `secrets-sync` and standalone `migrate` (`db:migrate:*`) do not call `assertDeployAllowed`. They have no confirmation, freeze, or git checks, so run their production forms deliberately. Raw vendor commands such as `npx wrangler deploy` or `npx wrangler secret put` bypass every safeguard here.
 
 Example production deploy: `npm run deploy:prod -- --confirm-production`
 
-`bash release.sh --deploy=production --confirm-production` is the recommended wrapper: it requires master and a clean tree before bumping the version, then sets `SKIP_GIT_CHECK=true` on the deploy invocation so generated check artefacts do not fail the later git check. Confirmation and freeze still apply. Direct `npm run deploy:*` routes keep the git check. There is no `release.sh --skip-git-check` flag. Set `SKIP_GIT_CHECK=true` only from a trusted wrapper that has already enforced clean master.
+`bash release.sh --deploy=production --confirm-production` is the recommended wrapper: it requires master and a clean tree before bumping the version, then sets `SKIP_GIT_CHECK=true` on the deploy invocation so generated check artefacts do not fail the later git check. Confirmation and freeze still apply. Direct `npm run deploy:*` routes keep the git check for a real production deploy; staging deploys and `--dry-run` do not read git. There is no `release.sh --skip-git-check` flag. Set `SKIP_GIT_CHECK=true` only from a trusted wrapper that has already enforced clean master.
 
 Do not deploy the local build to staging. The script refuses a generated name of `26-humza-website-local`.
 
