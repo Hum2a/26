@@ -7,8 +7,9 @@
 ### Move Command
 ```typescript
 {
-  kind: "chess-move",
-  requestId: string,        // Request deduplication
+  kind: "command",
+  requestId: string,
+  name: "chess-move",
   gameId: string,           // "{roundId}-{playerId}"
   from: string,             // "e2" (a-h, 1-8)
   to: string,               // "e4"
