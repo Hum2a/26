@@ -75,6 +75,8 @@ export const kartDriverSchema = z
     slipstream: z.enum(["charging", "active"]).optional(),
     /** A CPU racer the room drives; it takes places but never scores. */
     cpu: z.literal(true).optional(),
+    /** A boosted start, shown for the race's opening seconds. */
+    launch: z.enum(["perfect", "good"]).optional(),
   })
   .strict();
 export type KartDriver = z.infer<typeof kartDriverSchema>;

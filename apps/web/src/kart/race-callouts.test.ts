@@ -72,6 +72,27 @@ it("announces lead changes once the grid has settled, and the leader's laps", ()
   expect(stageCallouts({ ...before, laps: 1 }, { ...lap2, laps: 1 })).toEqual([]);
 });
 
+it("calls the first perfect start once, and gives this phone its own start cue", () => {
+  const grid = view([
+    { id: "a", place: 1 },
+    { id: "b", place: 2 },
+  ]);
+  const launched = {
+    ...grid,
+    elapsedMs: 600,
+    participants: grid.participants.map((d) =>
+      d.playerId === "b" ? { ...d, launch: "perfect" as const } : d,
+    ),
+  };
+  expect(stageCallouts(grid, launched)).toEqual([
+    { id: "launch-race", text: "B rockets off the line!", tone: "launch" },
+  ]);
+  expect(selfCues(grid, launched)).toEqual([{ kind: "launch", grade: "perfect" }]);
+  // Seen once only.
+  expect(stageCallouts(launched, launched)).toEqual([]);
+  expect(selfCues(launched, launched)).toEqual([]);
+});
+
 it("announces the winner and later finishers in place order", () => {
   const before = view([
     { id: "a", place: 1, lap: 3 },

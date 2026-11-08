@@ -16,6 +16,10 @@ const topSpeed = 30;
 export const bannerMs = 2200;
 
 function bannerFor(cue: SelfCue, at: number): RaceBanner | undefined {
+  if (cue.kind === "launch")
+    return cue.grade === "perfect"
+      ? { id: `launch-${at}`, text: "PERFECT START!", tone: "final" }
+      : { id: `launch-${at}`, text: "Good start!", tone: "lap" };
   if (cue.kind === "final-lap")
     return { id: `final-${at}`, text: "FINAL LAP", tone: "final" };
   if (cue.kind === "lap")
@@ -107,6 +111,9 @@ export function useRaceFeedback(
       } else if (cue.kind === "lap") {
         audio.cue("lap");
         if (feedback) buzz(60);
+      } else if (cue.kind === "launch") {
+        audio.cue("launch");
+        if (feedback) buzz(cue.grade === "perfect" ? [40, 30, 90] : 50);
       } else if (cue.gained) {
         audio.cue("place-up");
         if (feedback) buzz(30);

@@ -111,7 +111,7 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   await phone.setViewportSize({ width: 844, height: 390 });
   await expect(phone.locator(".kart-phone")).toHaveAttribute("data-layout", "grid");
   await expect(phone.locator(".kart-race-status")).toContainText(
-    "push up to go when the race starts",
+    "push up right on GO for a rocket start",
   );
   await expect(phone.locator(".kart-race-status")).toBeVisible();
   await phone.setViewportSize({ width: 390, height: 844 });

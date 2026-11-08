@@ -21,7 +21,7 @@ export type StageCallout = {
   /** Stable, so the same moment never shows twice. */
   id: string;
   text: string;
-  tone: "lead" | "lap" | "final" | "finish" | "win";
+  tone: "lead" | "lap" | "final" | "finish" | "win" | "launch";
 };
 
 /** Lead changes settle after the first scramble off the grid. */
@@ -56,6 +56,16 @@ export function stageCallouts(
             tone: "finish",
           },
     );
+  // The first perfect start of the race gets one call.
+  const rocket = next.participants.find(
+    (d) => d.launch === "perfect" && before.get(d.playerId)?.launch !== "perfect",
+  );
+  if (rocket)
+    callouts.push({
+      id: `launch-${next.raceId}`,
+      text: `${rocket.name} rockets off the line!`,
+      tone: "launch",
+    });
   const leaderId = leaderOf(next),
     previousLeader = leaderOf(previous);
   const leader = next.participants.find((d) => d.playerId === leaderId);
@@ -90,6 +100,7 @@ export function stageCallouts(
 }
 
 export type SelfCue =
+  | { kind: "launch"; grade: "perfect" | "good" }
   | { kind: "place"; place: number; gained: boolean }
   | { kind: "lap"; lap: number; laps: number }
   | { kind: "final-lap" }
@@ -109,6 +120,7 @@ export function selfCues(
     return [{ kind: "finish", place: placeOf(next, id) }];
   if (now.status !== "RACING") return [];
   const cues: SelfCue[] = [];
+  if (now.launch && !was.launch) cues.push({ kind: "launch", grade: now.launch });
   const laps = raceLaps(next);
   if (lapOf(now) > lapOf(was))
     cues.push(

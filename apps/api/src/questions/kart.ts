@@ -408,6 +408,8 @@ export function enterKart(
     const handling = readRoomKartHandling(sql).preset;
     if (handling !== "slide-v1") race.handling = handling;
     race.itemRules = readRoomKartItems(sql).rules;
+    // Room races time each kart's first throttle against GO for a start boost.
+    race.launchVersion = 1;
     write(sql, q.id, race);
     writeRoundState(sql, q.id, "kart-session", {
       raceId,

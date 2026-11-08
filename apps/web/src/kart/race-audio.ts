@@ -5,7 +5,13 @@
  * which is also what lets iOS start the audio context.
  */
 export type RaceSound =
-  "go" | "lap" | "final-lap" | "finish" | "place-up" | "slipstream";
+  | "go"
+  | "launch"
+  | "lap"
+  | "final-lap"
+  | "finish"
+  | "place-up"
+  | "slipstream";
 
 type Context = Pick<
   AudioContext,
@@ -18,6 +24,10 @@ type Context = Pick<
 
 const melodies: Record<RaceSound, readonly [frequency: number, seconds: number][]> = {
   go: [[880, 0.32]],
+  launch: [
+    [660, 0.07],
+    [990, 0.22],
+  ],
   lap: [
     [660, 0.1],
     [880, 0.18],

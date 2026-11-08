@@ -139,8 +139,8 @@ export function GuestKart({
           ? "Preparing your driving view — choose Map view to drive now"
           : layout === "grid"
             ? self?.gridPosition
-              ? `Grid slot ${self.gridPosition}${race?.participantCount ? ` of ${race.participantCount}` : ""} · push up to go when the race starts`
-              : "Push up to go when the race starts"
+              ? `Grid slot ${self.gridPosition}${race?.participantCount ? ` of ${race.participantCount}` : ""} · push up right on GO for a rocket start`
+              : "Push up right on GO for a rocket start"
             : "";
   const instruction = !connected
     ? "Connection lost — controls released"
@@ -149,7 +149,7 @@ export function GuestKart({
       : race?.ended || complete
         ? "Race complete — watch the stage"
         : snapshot.phase !== "collect" && !rehearsal
-          ? "Your driving view opens here. Wait for the race to start."
+          ? "Your driving view opens here. Accelerate right on GO for a rocket start."
           : race && !self
             ? snapshot.mode === "kart"
               ? "You’re watching this race from the side."

@@ -116,6 +116,7 @@ type Driver = Omit<
   | "lap"
   | "lapsMs"
   | "slipstream"
+  | "launch"
 > & {
   sequence: number;
   input: KartControls;
@@ -150,6 +151,8 @@ type Driver = Omit<
   cpu?: true;
   skill?: number;
   stuckMs?: number;
+  /** How this kart's first throttle compared with GO. */
+  launch?: "perfect" | "good" | "late";
 };
 export type KartRace = {
   raceId: string;
@@ -171,6 +174,8 @@ export type KartRace = {
   timeLimitMs?: number;
   /** Absent for a one-lap race. */
   laps?: KartLaps;
+  /** Present on room races: the first throttle after GO can earn a start boost. */
+  launchVersion?: 1;
   courseEnabled?: boolean;
   courseHistory?: { atMs: number; enabled: boolean }[];
   opponentsEnabled?: boolean;
@@ -325,6 +330,7 @@ function applyInput(
   raceId: string,
   input: KartInput,
   elapsed: number,
+  launches = false,
 ): boolean {
   if (
     driver.status !== "RACING" ||
@@ -340,7 +346,38 @@ function applyInput(
     drift: input.drift,
   };
   driver.inputUntil = elapsed + 400;
+  if (launches && input.gas && !driver.launch) launchKart(driver, elapsed);
   return true;
+}
+
+/**
+ * The start: the room times each kart's first throttle against GO. Phones are
+ * locked until the race opens, so nobody can hold the throttle through the
+ * countdown; the windows allow for the phone hearing GO a little late.
+ */
+export const kartLaunchTuning = {
+  perfectMs: 600,
+  goodMs: 1200,
+  /** Boost time and tier: Super for a perfect start, Mini for a good one. */
+  perfect: { boostMs: 1000, level: 2 },
+  good: { boostMs: 600, level: 1 },
+} as const;
+function launchKart(driver: Driver, elapsed: number) {
+  const grade =
+    elapsed <= kartLaunchTuning.perfectMs
+      ? "perfect"
+      : elapsed <= kartLaunchTuning.goodMs
+        ? "good"
+        : "late";
+  driver.launch = grade;
+  if (grade === "late") return;
+  const { boostMs, level } = kartLaunchTuning[grade];
+  driver.boostMs = Math.max(driver.boostMs, boostMs);
+  driver.physics = {
+    ...(driver.physics ?? createDrivingBody(driver.x, driver.z, driver.heading)),
+    boostMs: Math.max(driver.physics?.boostMs ?? 0, boostMs),
+    boostLevel: Math.max(driver.physics?.boostLevel ?? 0, level),
+  };
 }
 function advanceDriver(
   driver: Driver,
@@ -483,7 +520,7 @@ function expandedTimeline(
   if (target === next.elapsedMs)
     for (const driver of next.drivers)
       for (const event of byPlayer.get(driver.playerId) ?? [])
-        applyInput(driver, next.raceId, event.input, event.elapsed);
+        applyInput(driver, next.raceId, event.input, event.elapsed, next.launchVersion === 1);
   for (let from = next.elapsedMs; from < target;) {
     const end = Math.min(target, from + 20);
     const previous = new Map(
@@ -514,7 +551,7 @@ function expandedTimeline(
           next,
         );
         cursor = event.elapsed;
-        applyInput(driver, next.raceId, event.input, event.elapsed);
+        applyInput(driver, next.raceId, event.input, event.elapsed, next.launchVersion === 1);
       }
       positions.set(driver.playerId, index);
       advanceDriver(
@@ -611,7 +648,7 @@ export function reduceKartTimeline(
         next,
       );
       cursor = event.elapsed;
-      applyInput(driver, race.raceId, event.input, event.elapsed);
+      applyInput(driver, race.raceId, event.input, event.elapsed, race.launchVersion === 1);
     }
     advanceDriver(
       driver,
@@ -788,7 +825,7 @@ export function reduceKart(
       });
     return next;
   }
-  return driver && applyInput(driver, race.raceId, event.value, race.elapsedMs)
+  return driver && applyInput(driver, race.raceId, event.value, race.elapsedMs, race.launchVersion === 1)
     ? next
     : race;
 }
@@ -1227,10 +1264,15 @@ export function projectKartRace(
         draftMs,
         slipstreamMs,
         cpu,
+        launch,
       }) => ({
         playerId,
         name,
         ...(cpu ? { cpu: true as const } : {}),
+        // Only for the opening seconds, so frames stay small for the rest of the race.
+        ...((launch === "perfect" || launch === "good") && race.elapsedMs < 4000
+          ? { launch }
+          : {}),
         number,
         ...(gridPosition ? { gridPosition } : {}),
         // Millimetre and milliradian precision is far below what a screen shows,
