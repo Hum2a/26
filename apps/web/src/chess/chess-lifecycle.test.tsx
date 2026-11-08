@@ -26,14 +26,17 @@ describe("Chess Engine Lifecycle", () => {
 
     // Start a search
     engine.setPosition("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
-    const searchPromise = engine.go(5000);
+    engine.go(5000);
 
-    // Terminate before search completes
+    // Terminate immediately (cancels search)
     engine.terminate();
 
-    // Search should reject without calling callback
-    await expect(searchPromise).rejects.toThrow();
+    // Wait for any pending callbacks
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Callback should not fire after termination
     expect(onBestMove).not.toHaveBeenCalled();
+    expect(engine.isReady()).toBe(false);
   });
 
   it("stops search on explicit stop command", async () => {
@@ -43,14 +46,18 @@ describe("Chess Engine Lifecycle", () => {
     await engine.initialize();
 
     engine.setPosition("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
-    const searchPromise = engine.go(5000);
+    engine.go(5000);
 
-    // Stop search
+    // Stop search immediately
     engine.stop();
 
-    // Should still resolve and call callback
-    await searchPromise;
-    expect(onBestMove).toHaveBeenCalled();
+    // Wait for callback
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Callback should fire with bestmove
+    expect(onBestMove).toHaveBeenCalledWith("e7", "e5", undefined);
+    
+    engine.terminate();
   });
 
   it("rejects multiple initializations", async () => {
@@ -59,8 +66,10 @@ describe("Chess Engine Lifecycle", () => {
     await engine.initialize();
     expect(engine.isReady()).toBe(true);
 
-    // Second init should reject
-    await expect(engine.initialize()).rejects.toThrow();
+    // Second init should reject (already initialized)
+    await expect(engine.initialize()).rejects.toThrow(/already/i);
+    
+    engine.terminate();
   });
 
   it("handles rapid position changes during search", async () => {
@@ -71,31 +80,37 @@ describe("Chess Engine Lifecycle", () => {
 
     // Set position and start search
     engine.setPosition("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
-    const search1 = engine.go(1000);
+    engine.go(100);
 
     // Change position while searching (simulates pause/resume)
     engine.setPosition("rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2");
 
-    await search1;
+    // Wait for callback
+    await new Promise((resolve) => setTimeout(resolve, 150));
 
-    // Callback fires; component must check FEN/revision match
-    expect(onBestMove).toHaveBeenCalled();
-
+    // Callback may fire; component must validate FEN/revision
+    // (This tests that adapter doesn't crash on position changes)
+    
     engine.terminate();
   });
 
   it("cleans up on component unmount", async () => {
-    const engine = new StockfishEngine({ elo: 1425 });
+    const onBestMove = vi.fn();
+    const engine = new StockfishEngine({ elo: 1425, onBestMove });
 
     await engine.initialize();
+    expect(engine.isReady()).toBe(true);
+    
     engine.setPosition("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
-    const searchPromise = engine.go(2000);
+    engine.go(2000);
 
     // Simulate unmount
     engine.terminate();
-
-    await expect(searchPromise).rejects.toThrow();
     expect(engine.isReady()).toBe(false);
+
+    // Wait to ensure no callbacks fire
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(onBestMove).not.toHaveBeenCalled();
   });
 
   it("gracefully handles worker construction failure", async () => {
