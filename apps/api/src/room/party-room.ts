@@ -909,7 +909,7 @@ export class PartyRoom extends DurableObject<Env> {
     await commitAndArm(this.ctx.storage, async (sql) => {
       this.flushKartInputs(sql);
       const baseStore = createGameStore(sql);
-      // Extend store with chess alarm handling
+      // Extend store with chess callbacks
       const store: GameStore = {
         ...baseStore,
         onScheduledJob: async (job, now) => {
@@ -917,6 +917,21 @@ export class PartyRoom extends DurableObject<Env> {
             const gameId = job.payload.substring("chess-clock:".length);
             const { handleChessClockAlarm } = await import("../questions/chess-mechanic.ts");
             await handleChessClockAlarm(sql, store, gameId, now);
+          }
+        },
+        onEnterPhase: (room, now) => {
+          if (room.phase === "collect") {
+            const question = questionFor(room);
+            if (question?.kind === "chess") {
+              const { createChessRound } = require("../questions/chess-mechanic.ts");
+              const participants = sql
+                .exec<{ player_id: string }>(
+                  `SELECT player_id FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
+                )
+                .toArray()
+                .map((r) => r.player_id);
+              createChessRound(sql, store, question, participants, now);
+            }
           }
         },
       };
@@ -1232,6 +1247,10 @@ export class PartyRoom extends DurableObject<Env> {
       const question = questionFor(store.readRoom());
       if (question?.kind === "kart")
         releaseKartInputs(sql, store, question, input.nowMs);
+      if (question?.kind === "chess") {
+        const { pauseChessClocks } = require("../questions/chess-mechanic.ts");
+        pauseChessClocks(sql, store, input.nowMs);
+      }
       pause(store, input.nowMs);
     });
   }
@@ -1251,7 +1270,13 @@ export class PartyRoom extends DurableObject<Env> {
       return allowed;
     }
     return this.phaseCommand(input.requestId, { action: "resume" }, (sql) => {
-      resume(createSqlStore(sql), input.nowMs);
+      const store = createSqlStore(sql);
+      const question = questionFor(store.readRoom());
+      if (question?.kind === "chess") {
+        const { resumeChessClocks } = require("../questions/chess-mechanic.ts");
+        resumeChessClocks(sql, store, input.nowMs);
+      }
+      resume(store, input.nowMs);
     });
   }
 
@@ -4836,7 +4861,30 @@ function acceptRoundCommand(
     if (!question || question.kind !== "chess") {
       return { ok: false, message: "Not a chess round" };
     }
-    const { executeChessMove } = require("../questions/chess-mechanic.ts");
+    const { executeChessMove, executeBotMove } = require("../questions/chess-mechanic.ts");
+    
+    // Determine if this is a bot move (gameId format: roundId-playerId, move is for opponent's game)
+    // Bot moves: submitted by player whose turn it is NOT, for their opponent's game
+    const gameIdParts = command.gameId.split("-");
+    const gameOwnerId = gameIdParts.slice(1).join("-"); // Extract playerId from gameId
+    
+    if (gameOwnerId !== playerId) {
+      // Bot move: player submitting for opponent's game
+      const result = executeBotMove(
+        sql,
+        store,
+        command.gameId,
+        { from: command.from, to: command.to, promotion: command.promotion },
+        command.positionRevision,
+        now
+      );
+      if (!result.success) {
+        return { ok: false, message: result.error };
+      }
+      return { ok: true };
+    }
+    
+    // Player move: normal flow with ownership validation
     const result = executeChessMove(sql, store, command, playerId, now);
     if (!result.success) {
       return { ok: false, message: result.error };

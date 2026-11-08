@@ -118,6 +118,12 @@ export const chessGuestSnapshotSchema = z.object({
   botTimeMs: z.number().int().min(0),
   sideToMove: chessColorSchema,
   plyCount: z.number().int().min(0),
+  // Position revision - REQUIRED for client to echo in move commands
+  positionRevision: z.number().int().nonnegative(),
+  // Server timestamp for clock interpolation
+  lastMoveAt: z.number().int(),
+  // Pause state affects clock countdown
+  paused: z.boolean(),
   // Terminal state
   winner: z.enum(["player", "bot", "draw"]).optional(),
   terminationReason: z.string().optional(),

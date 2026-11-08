@@ -114,10 +114,10 @@ describe("Chess Review Regressions", () => {
 
       // Make sequence of moves
       const moves = [
-        { from: "e2", to: "e4", positionRevision: game.positionRevision, positionRevision: 0 },
-        { from: "e7", to: "e5", positionRevision: game.positionRevision },
-        { from: "g1", to: "f3", positionRevision: game.positionRevision },
-        { from: "b8", to: "c6", positionRevision: game.positionRevision },
+        { from: "e2", to: "e4" },
+        { from: "e7", to: "e5" },
+        { from: "g1", to: "f3" },
+        { from: "b8", to: "c6" },
       ];
 
       for (let i = 0; i < moves.length; i++) {
@@ -130,6 +130,7 @@ describe("Chess Review Regressions", () => {
               gameId: game.gameId,
               from: moves[i].from,
               to: moves[i].to,
+              positionRevision: game.positionRevision,
             },
             now + i * 1000,
           );
@@ -186,10 +187,10 @@ describe("Chess Review Regressions", () => {
 
       // Make some moves
       const moves = [
-        { from: "e2", to: "e4", positionRevision: game.positionRevision, positionRevision: 0 },
-        { from: "e7", to: "e5", positionRevision: game.positionRevision },
-        { from: "g1", to: "f3", positionRevision: game.positionRevision },
-        { from: "b8", to: "c6", positionRevision: game.positionRevision },
+        { from: "e2", to: "e4" },
+        { from: "e7", to: "e5" },
+        { from: "g1", to: "f3" },
+        { from: "b8", to: "c6" },
       ];
 
       for (let i = 0; i < moves.length; i++) {
@@ -202,6 +203,7 @@ describe("Chess Review Regressions", () => {
               gameId: game.gameId,
               from: moves[i].from,
               to: moves[i].to,
+              positionRevision: game.positionRevision,
             },
             now + i * 1000,
           );
