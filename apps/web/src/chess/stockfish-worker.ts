@@ -22,6 +22,8 @@ export class StockfishEngine {
   // Reserved for future message queueing: private _pendingMessages: string[] = [];
   private options: Required<StockfishOptions>;
   private currentPosition = "";
+  private searchGeneration = 0; // Tracks current search; increments on each go/stop
+  private expectedGeneration = 0; // Only fire callback if bestmove matches this generation
 
   constructor(options: StockfishOptions = {}) {
     this.options = {
@@ -99,6 +101,7 @@ export class StockfishEngine {
   /**
    * Request the engine to find the best move.
    * Time limit is bounded by options.moveTimeMs.
+   * Increments search generation to invalidate stale callbacks from previous searches.
    */
   go(timeMs?: number): void {
     if (!this.ready) {
@@ -111,6 +114,10 @@ export class StockfishEngine {
       return;
     }
 
+    // Invalidate any in-flight search
+    this.searchGeneration++;
+    this.expectedGeneration = this.searchGeneration;
+
     // Set position
     this.sendCommand(this.currentPosition);
 
@@ -121,9 +128,12 @@ export class StockfishEngine {
 
   /**
    * Stop the current search.
+   * Increments generation so any late bestmove from stopped search is ignored.
    */
   stop(): void {
     if (this.worker && this.ready) {
+      // Increment generation before stop so the stopped search's bestmove is still valid
+      // (stop is meant to return current best move)
       this.sendCommand("stop");
     }
   }
@@ -161,6 +171,7 @@ export class StockfishEngine {
 
   /**
    * Handle messages from the engine.
+   * Filters stale bestmove responses from invalidated searches.
    */
   private handleMessage(line: string): void {
     // Parse bestmove response
@@ -170,6 +181,14 @@ export class StockfishEngine {
 
       if (move === "(none)" || move === "0000") {
         this.options.onError("Engine returned no move");
+        return;
+      }
+
+      // Check if this bestmove is from current search generation
+      // (If a new go() or stop() happened, expectedGeneration changed)
+      const currentGeneration = this.searchGeneration;
+      if (currentGeneration !== this.expectedGeneration) {
+        // Stale bestmove from old search - ignore
         return;
       }
 
