@@ -10,8 +10,9 @@ import { StockfishEngine } from "./stockfish-worker.ts";
 import { PromotionChooser } from "./promotion-chooser.tsx";
 import type { ChessGuestSnapshot, ChessPromotionPiece } from "@26/shared";
 
-type ChessGameProps = {
+export type ChessGameProps = {
   snapshot: ChessGuestSnapshot;
+  onEngineError?: (error: string) => void;
   onMove: (from: string, to: string, promotion?: ChessPromotionPiece, positionRevision?: number) => void;
   onResign: () => void;
   disabled?: boolean;

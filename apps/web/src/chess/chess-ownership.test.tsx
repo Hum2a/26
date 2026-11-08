@@ -118,7 +118,7 @@ describe("Chess Ownership Contract", () => {
     // Bot move submission
     mockSubmit(snapshot.gameId);
 
-    expect(mockSubmit).toHaveBeenCalledWith(ownGameId, "e7", "e5");
+    expect(mockSubmit).toHaveBeenCalledWith(ownGameId);
   });
 
   it("rejects stale bot move with old positionRevision", () => {
