@@ -197,7 +197,7 @@ describe("a photo that never loads or errors on the projector", () => {
     expect(onImageFailed).toHaveBeenCalledTimes(1);
   });
 
-  it("a late timer for the photo that left never reports it or the new one early", () => {
+  it("a late timer for the photo that left never reports it", () => {
     vi.useFakeTimers();
     const onImageFailed = vi.fn();
     const view = render(
