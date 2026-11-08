@@ -1,12 +1,10 @@
 /**
  * Chess round mechanic for PartyRoom integration.
- * Handles SQLite persistence, recovery, and snapshot projection.
+ * Handles game initialization, move processing, clock alarms, and scoring.
  */
 
 import type { ChessQuestion } from "./definition.ts";
 import type { GameStore } from "../room/lifecycle.ts";
-
-// SqlStorage is the Cloudflare Durable Object SQL storage type
 import {
   initializeChessRound,
   applyChessMove,
@@ -16,14 +14,13 @@ import {
   projectGuestSnapshot,
   projectStageSnapshot,
   projectControlSnapshot,
-  updateRoundAggregates as updateRoundAggregatesCoordinator,
   type ChessPlayerGame,
   type ChessRoundState,
 } from "./chess-coordinator.ts";
 import type { ChessMoveCommand, ChessResignCommand } from "@26/shared";
 
 /**
- * Initialize a new chess round in SQLite.
+ * Initialize a new chess round in SQLite and schedule clock alarms.
  */
 export function createChessRound(
   sql: SqlStorage,
@@ -37,23 +34,14 @@ export function createChessRound(
 
   const state = initializeChessRound(roundId, participants, now);
 
-  // Persist round state
-  sql.exec(
-    `INSERT INTO chess_rounds (round_id, started_at, frozen_participants)
-     VALUES (?, ?, ?)`,
-    roundId,
-    state.startedAt,
-    JSON.stringify(state.frozenParticipants),
-  );
-
   // Persist all games
-  for (const [_playerId, game] of Object.entries(state.games)) {
+  for (const game of Object.values(state.games)) {
     persistGame(sql, game);
   }
 
   // Schedule initial clock alarms for all games (all start on player's turn)
   for (const game of Object.values(state.games)) {
-    scheduleClockAlarm(sql, store, game.gameId, now + game.playerTimeMs);
+    scheduleClockAlarm(store, game.gameId, now + game.playerTimeMs, room.phaseGeneration, room.scopeGeneration);
   }
 }
 
@@ -64,7 +52,7 @@ export function executeChessMove(
   sql: SqlStorage,
   store: GameStore,
   command: ChessMoveCommand,
-  _playerId: string,
+  playerId: string,
   now: number,
 ): { success: true; botMoveNeeded: boolean } | { success: false; error: string } {
   // Load game from SQLite
@@ -74,7 +62,7 @@ export function executeChessMove(
   }
 
   // Verify ownership
-  if (game.playerId !== _playerId) {
+  if (game.playerId !== playerId) {
     return { success: false, error: "Not your game" };
   }
 
@@ -88,36 +76,38 @@ export function executeChessMove(
   // Persist updated game
   persistGame(sql, result.game);
 
-  // Update round aggregates
-  updateRoundAggregates(sql);
-
   // If game is now terminal, score it
-  if (result.game.status !== "in-progress" && result.game.status !== "waiting") {
-    scoreGame(sql, result.game);
+  if (result.game.status !== "in-progress") {
+    scoreGameOnce(sql, result.game);
   } else {
     // Schedule alarm for bot's clock
-    scheduleClockAlarm(sql, store, result.game.gameId, now + result.game.botTimeMs);
+    const room = store.readRoom();
+    scheduleClockAlarm(store, result.game.gameId, now + result.game.botTimeMs, room.phaseGeneration, room.scopeGeneration);
   }
 
-  return {
-    success: true,
-    botMoveNeeded: result.game.status === "in-progress" && result.game.sideToMove === "black",
-  };
+  return { success: true, botMoveNeeded: result.game.status === "in-progress" };
 }
 
 /**
  * Apply a bot move (received from client engine with casual trust).
+ * Bot moves MUST also validate positionRevision - casual trust doesn't excuse stale commands.
  */
 export function executeBotMove(
   sql: SqlStorage,
   store: GameStore,
   gameId: string,
   move: { from: string; to: string; promotion?: string },
+  positionRevision: number,
   now: number,
 ): { success: true } | { success: false; error: string } {
   const game = loadGame(sql, gameId);
   if (!game) {
     return { success: false, error: "Game not found" };
+  }
+
+  // CRITICAL: Validate position revision before applying bot move
+  if (positionRevision !== game.positionRevision) {
+    return { success: false, error: `Bot position revision mismatch: expected ${game.positionRevision}, got ${positionRevision}` };
   }
 
   const result = applyBotMove(game, move, now);
@@ -129,15 +119,13 @@ export function executeBotMove(
   // Persist updated game
   persistGame(sql, result.game);
 
-  // Update aggregates
-  updateRoundAggregates(sql);
-
   // If terminal, score
-  if (result.game.status !== "in-progress" && result.game.status !== "waiting") {
-    scoreGame(sql, result.game);
+  if (result.game.status !== "in-progress") {
+    scoreGameOnce(sql, result.game);
   } else {
     // Schedule alarm for player's clock
-    scheduleClockAlarm(sql, store, result.game.gameId, now + result.game.playerTimeMs);
+    const room = store.readRoom();
+    scheduleClockAlarm(store, result.game.gameId, now + result.game.playerTimeMs, room.phaseGeneration, room.scopeGeneration);
   }
 
   return { success: true };
@@ -163,93 +151,62 @@ export function executeResignation(
 
   const resigned = resignGame(game, now);
   persistGame(sql, resigned);
-  updateRoundAggregates(sql);
-  scoreGame(sql, resigned);
+  scoreGameOnce(sql, resigned);
 
   return { success: true };
 }
 
 /**
- * Handle clock alarm - check for timeouts.
+ * Handle clock alarm - check for timeouts when alarm fires.
+ * Called from PartyRoom onAlarm when chess-clock job is due.
  */
 export async function handleChessClockAlarm(
   sql: SqlStorage,
-  _store: GameStore,
+  store: GameStore,
+  gameId: string,
   now: number,
 ): Promise<void> {
-  // Find all games with expired alarms
-  const expired = sql
-    .exec<{ game_id: string }>(
-      `SELECT game_id FROM chess_clock_alarms WHERE due_at <= ? AND paused_at IS NULL`,
-      now,
-    )
-    .toArray();
-
-  for (const { game_id } of expired) {
-    const game = loadGame(sql, game_id);
-    if (!game || game.status !== "in-progress") {
-      // Clean up alarm
-      sql.exec(`DELETE FROM chess_clock_alarms WHERE game_id = ?`, game_id);
-      continue;
-    }
-
-    // Check if the side to move has flagged
-    const elapsed = now - game.lastMoveAt;
-    const remainingTime =
-      game.sideToMove === game.playerColor
-        ? game.playerTimeMs - elapsed
-        : game.botTimeMs - elapsed;
-
-    if (remainingTime <= 0) {
-      // Timeout!
-      const flagged = game.sideToMove === game.playerColor ? "player" : "bot";
-      const Chess = (await import("chess.js")).Chess;
-      const chess = new Chess(game.fen);
-
-      // Check if opponent can mate
-      const canMate = hasMateMaterial(chess, flagged === "player" ? "b" : "w");
-
-      const terminatedGame: ChessPlayerGame = {
-        ...game,
-        status: canMate ? "timeout" : "timeout-draw",
-        winner: canMate ? (flagged === "player" ? "bot" : "player") : "draw",
-        playerTimeMs: flagged === "player" ? 0 : game.playerTimeMs,
-        botTimeMs: flagged === "bot" ? 0 : game.botTimeMs,
-        terminatedAt: now,
-        terminationReason: canMate
-          ? `${flagged === "player" ? "Player" : "Bot"} ran out of time`
-          : `${flagged === "player" ? "Player" : "Bot"} flagged but opponent cannot mate - draw`,
-      };
-
-      persistGame(sql, terminatedGame);
-      updateRoundAggregates(sql);
-      scoreGame(sql, terminatedGame);
-
-      // Remove alarm
-      sql.exec(`DELETE FROM chess_clock_alarms WHERE game_id = ?`, game_id);
-    } else {
-      // Not yet flagged, reschedule
-      const nextAlarm = game.lastMoveAt + remainingTime;
-      sql.exec(`UPDATE chess_clock_alarms SET due_at = ? WHERE game_id = ?`, nextAlarm, game_id);
-    }
+  const game = loadGame(sql, gameId);
+  if (!game || game.status !== "in-progress") {
+    return;
   }
 
-  // Schedule next aggregate alarm if any games remain
-  const remaining = sql
-    .exec<{ count: number }>(`SELECT COUNT(*) as count FROM chess_games WHERE status = 'in-progress'`)
-    .toArray()[0];
+  // Check if the side to move has flagged
+  const elapsed = now - game.lastMoveAt;
+  const remainingTime =
+    game.sideToMove === "white"
+      ? game.playerTimeMs - elapsed
+      : game.botTimeMs - elapsed;
 
-  if (remaining && remaining.count > 0) {
-    const nextAlarm = sql
-      .exec<{ next: number | null }>(
-        `SELECT MIN(due_at) as next FROM chess_clock_alarms WHERE paused_at IS NULL`,
-      )
-      .toArray()[0];
-
-    if (nextAlarm?.next) {
-      // TODO: Schedule job for next alarm via PartyRoom's job scheduler
-      // (This would integrate with PartyRoom's job scheduler)
+  if (remainingTime <= 0) {
+    // Timeout!
+    const flagged = game.sideToMove === "white" ? "player" : "bot";
+    const { Chess } = await import("chess.js");
+    const chess = new Chess();
+    if (game.pgn) {
+      chess.loadPgn(game.pgn);
+    } else {
+      chess.load(game.fen);
     }
+
+    // Check if opponent can mate
+    const canMate = hasMateMaterial(chess, flagged === "player" ? "b" : "w");
+
+    const terminatedGame: ChessPlayerGame = {
+      ...game,
+      status: canMate ? "timeout" : "timeout-draw",
+      winner: canMate ? (flagged === "player" ? "bot" : "player") : "draw",
+      playerTimeMs: flagged === "player" ? 0 : game.playerTimeMs,
+      botTimeMs: flagged === "bot" ? 0 : game.botTimeMs,
+      terminatedAt: now,
+      terminationReason: canMate
+        ? `${flagged === "player" ? "Player" : "Bot"} ran out of time`
+        : `${flagged === "player" ? "Player" : "Bot"} flagged but opponent cannot mate - draw`,
+      positionRevision: game.positionRevision + 1,
+    };
+
+    persistGame(sql, terminatedGame);
+    scoreGameOnce(sql, terminatedGame);
   }
 }
 
@@ -258,6 +215,7 @@ export async function handleChessClockAlarm(
  */
 export function projectChessGameSnapshot(
   sql: SqlStorage,
+  store: GameStore,
   audience: "guest" | "stage" | "control",
   playerId?: string,
 ): unknown {
@@ -272,9 +230,8 @@ export function projectChessGameSnapshot(
   const state = loadRoundState(sql);
   if (!state) return null;
 
-  // Build nickname map (would come from room)
-  const nicknameMap = new Map<string, string>();
-  // TODO: Populate from room.guests
+  // Build nickname map from room
+  const nicknameMap = buildNicknameMap(sql);
 
   if (audience === "stage") {
     return projectStageSnapshot(state, nicknameMap);
@@ -284,44 +241,71 @@ export function projectChessGameSnapshot(
 }
 
 /**
- * Pause all chess clocks.
+ * Pause all chess clocks and increment position revision.
+ * This invalidates all in-flight client state (including bot engine calculations).
  */
-export function pauseChessClocks(sql: SqlStorage, now: number): void {
-  // Mark all alarms as paused
-  sql.exec(`UPDATE chess_clock_alarms SET paused_at = ?`, now);
-}
-
-/**
- * Resume all chess clocks.
- */
-export function resumeChessClocks(sql: SqlStorage, _store: GameStore, now: number): void {
-  // Get all paused alarms
-  const paused = sql
-    .exec<{ game_id: string; due_at: number; paused_at: number | null }>(
-      `SELECT game_id, due_at, paused_at FROM chess_clock_alarms`,
+export function pauseChessClocks(sql: SqlStorage, store: GameStore, now: number): void {
+  const games = sql
+    .exec<{ game_id: string; position_revision: number }>(
+      `SELECT game_id, position_revision FROM chess_game WHERE status = 'in-progress'`,
     )
     .toArray();
 
-  for (const alarm of paused) {
-    if (alarm.paused_at === null) continue;
-
-    const pauseDuration = now - alarm.paused_at;
-    const newDueAt = alarm.due_at + pauseDuration;
-
+  for (const { game_id, position_revision } of games) {
+    // Increment position revision to reject pre-pause commands
     sql.exec(
-      `UPDATE chess_clock_alarms SET due_at = ?, paused_at = NULL WHERE game_id = ?`,
-      newDueAt,
-      alarm.game_id,
+      `UPDATE chess_game SET position_revision = ? WHERE game_id = ?`,
+      position_revision + 1,
+      game_id,
     );
+  }
+
+  // Cancel all pending clock alarms
+  const room = store.readRoom();
+  const jobs = store.jobs().filter((job) => 
+    job.payload.startsWith("chess-clock:") &&
+    job.status === "pending" &&
+    job.phaseGeneration === room.phaseGeneration
+  );
+
+  for (const job of jobs) {
+    store.saveJob({ ...job, status: "cancelled", dueAt: null, remainingMs: null });
   }
 }
 
 /**
- * Force-end all remaining games (abort).
+ * Resume all chess clocks.
+ * Clocks are already paused (no alarm modifications during pause).
+ * Reschedule alarms based on current clock state.
+ */
+export function resumeChessClocks(sql: SqlStorage, store: GameStore, now: number): void {
+  const games = sql
+    .exec<{ game_id: string; last_move_at: number; side_to_move: string; player_time_ms: number; bot_time_ms: number }>(
+      `SELECT game_id, last_move_at, side_to_move, player_time_ms, bot_time_ms FROM chess_game WHERE status = 'in-progress'`,
+    )
+    .toArray();
+
+  const room = store.readRoom();
+
+  for (const game of games) {
+    const elapsed = now - game.last_move_at;
+    const remainingTime =
+      game.side_to_move === "white"
+        ? game.player_time_ms - elapsed
+        : game.bot_time_ms - elapsed;
+
+    if (remainingTime > 0) {
+      scheduleClockAlarm(store, game.game_id, now + remainingTime, room.phaseGeneration, room.scopeGeneration);
+    }
+  }
+}
+
+/**
+ * Force-end all remaining games (abort, score 0).
  */
 export function forceEndChessRound(sql: SqlStorage, now: number): void {
   const active = sql
-    .exec<{ game_id: string }>(`SELECT game_id FROM chess_games WHERE status = 'in-progress'`)
+    .exec<{ game_id: string }>(`SELECT game_id FROM chess_game WHERE status = 'in-progress'`)
     .toArray();
 
   for (const { game_id } of active) {
@@ -333,27 +317,23 @@ export function forceEndChessRound(sql: SqlStorage, now: number): void {
       status: "aborted",
       terminatedAt: now,
       terminationReason: "Host force-ended round",
+      positionRevision: game.positionRevision + 1,
     };
 
     persistGame(sql, aborted);
-    scoreGame(sql, aborted); // Score 0
+    scoreGameOnce(sql, aborted); // Score 0
   }
-
-  updateRoundAggregates(sql);
-
-  // Clear all alarms
-  sql.exec(`DELETE FROM chess_clock_alarms`);
 }
 
 // Helper functions
 
 function persistGame(sql: SqlStorage, game: ChessPlayerGame): void {
   sql.exec(
-    `INSERT OR REPLACE INTO chess_games (
+    `INSERT OR REPLACE INTO chess_game (
       game_id, round_id, player_id, fen, pgn, position_history,
-      player_time_ms, bot_time_ms, last_move_at, side_to_move, ply_count,
+      player_time_ms, bot_time_ms, last_move_at, side_to_move, ply_count, position_revision,
       status, winner, terminated_at, termination_reason, scored
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     game.gameId,
     game.gameId.split("-")[0], // Extract roundId
     game.playerId,
@@ -365,6 +345,7 @@ function persistGame(sql: SqlStorage, game: ChessPlayerGame): void {
     game.lastMoveAt,
     game.sideToMove,
     game.plyCount,
+    game.positionRevision,
     game.status,
     game.winner ?? null,
     game.terminatedAt ?? null,
@@ -374,14 +355,14 @@ function persistGame(sql: SqlStorage, game: ChessPlayerGame): void {
 }
 
 function loadGame(sql: SqlStorage, gameId: string): ChessPlayerGame | null {
-  const row = sql.exec<any>(`SELECT * FROM chess_games WHERE game_id = ?`, gameId).toArray()[0];
+  const row = sql.exec<any>(`SELECT * FROM chess_game WHERE game_id = ?`, gameId).toArray()[0];
 
   if (!row) return null;
 
   return {
     gameId: row.game_id,
     playerId: row.player_id,
-    playerColor: row.player_id, // Always white
+    playerColor: "white",
     botColor: "black",
     fen: row.fen,
     pgn: row.pgn,
@@ -391,6 +372,7 @@ function loadGame(sql: SqlStorage, gameId: string): ChessPlayerGame | null {
     lastMoveAt: row.last_move_at,
     sideToMove: row.side_to_move,
     plyCount: row.ply_count,
+    positionRevision: row.position_revision,
     status: row.status,
     winner: row.winner,
     terminatedAt: row.terminated_at,
@@ -401,7 +383,7 @@ function loadGame(sql: SqlStorage, gameId: string): ChessPlayerGame | null {
 function loadGameByPlayer(sql: SqlStorage, playerId: string): ChessPlayerGame | null {
   const row = sql
     .exec<{ game_id: string }>(
-      `SELECT game_id FROM chess_games WHERE player_id = ? ORDER BY last_move_at DESC LIMIT 1`,
+      `SELECT game_id FROM chess_game WHERE player_id = ? ORDER BY last_move_at DESC LIMIT 1`,
       playerId,
     )
     .toArray()[0];
@@ -411,75 +393,102 @@ function loadGameByPlayer(sql: SqlStorage, playerId: string): ChessPlayerGame | 
 }
 
 function loadRoundState(sql: SqlStorage): ChessRoundState | null {
-  const round = sql
-    .exec<any>(`SELECT * FROM chess_rounds ORDER BY started_at DESC LIMIT 1`)
-    .toArray()[0];
-
-  if (!round) return null;
-
+  // Chess round state is reconstructed from chess_game rows
   const gameRows = sql
-    .exec<any>(`SELECT * FROM chess_games WHERE round_id = ?`, round.round_id)
+    .exec<any>(`SELECT * FROM chess_game ORDER BY game_id`)
     .toArray();
 
+  if (gameRows.length === 0) return null;
+
   const games: Record<string, ChessPlayerGame> = {};
+  let roundId = "";
+  const participants = new Set<string>();
+
   for (const row of gameRows) {
     const game = loadGame(sql, row.game_id);
     if (game) {
       games[game.playerId] = game;
+      participants.add(game.playerId);
+      if (!roundId) roundId = game.gameId.split("-")[0];
     }
   }
 
-  const state = updateRoundAggregatesCoordinator({
-    roundId: round.round_id,
-    startedAt: round.started_at,
-    frozenParticipants: JSON.parse(round.frozen_participants),
+  const inProgress = gameRows.filter((r: any) => r.status === "in-progress").length;
+  const finished = gameRows.length - inProgress;
+
+  return {
+    roundId,
+    startedAt: Math.min(...gameRows.map((r: any) => r.last_move_at)),
+    frozenParticipants: Array.from(participants),
     games,
-    gamesInProgress: 0,
-    gamesFinished: 0,
-    allGamesComplete: false,
-  });
-
-  return state;
+    gamesInProgress: inProgress,
+    gamesFinished: finished,
+    allGamesComplete: inProgress === 0,
+  };
 }
 
-function updateRoundAggregates(_sql: SqlStorage): void {
-  // Aggregates computed on-demand via loadRoundState
-  // No persistent aggregate table needed
-}
-
-function scoreGame(sql: SqlStorage, game: ChessPlayerGame): void {
+function scoreGameOnce(sql: SqlStorage, game: ChessPlayerGame): void {
   // Check if already scored
   const existing = sql
-    .exec<{ scored: number }>(`SELECT scored FROM chess_games WHERE game_id = ?`, game.gameId)
+    .exec<{ scored: number }>(`SELECT scored FROM chess_game WHERE game_id = ?`, game.gameId)
     .toArray()[0];
 
   if (existing && existing.scored === 1) {
     return; // Already scored
   }
 
-  calculateChessScore(game); // Score calculated but not yet written to ledger
+  const score = calculateChessScore(game);
 
-  // Write to ledger (would integrate with room's ledger system)
-  // For now, mark as scored
-  sql.exec(`UPDATE chess_games SET scored = 1 WHERE game_id = ?`, game.gameId);
+  // Write to score_ledger (exactly once)
+  const questionId = game.gameId.split("-")[0];
+  sql.exec(
+    `INSERT INTO score_ledger (question_id, player_id, points, detail, created_at)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT (question_id, player_id) DO NOTHING`,
+    questionId,
+    game.playerId,
+    score,
+    JSON.stringify({ result: game.winner, status: game.status }),
+    Date.now(),
+  );
 
-  // TODO: Integrate with room.ledger to write score
+  // Mark as scored
+  sql.exec(`UPDATE chess_game SET scored = 1 WHERE game_id = ?`, game.gameId);
 }
 
 function scheduleClockAlarm(
-  sql: SqlStorage,
-  _store: GameStore,
+  store: GameStore,
   gameId: string,
   dueAt: number,
+  phaseGeneration: number,
+  scopeGeneration: number,
 ): void {
-  sql.exec(
-    `INSERT OR REPLACE INTO chess_clock_alarms (game_id, due_at, paused_at)
-     VALUES (?, ?, NULL)`,
-    gameId,
+  const jobId = `chess-clock:${gameId}`;
+  const room = store.readRoom();
+  
+  store.saveJob({
+    jobId,
+    jobType: "gameplay",
     dueAt,
-  );
+    remainingMs: null,
+    scopeGeneration,
+    phaseGeneration,
+    phase: room.phase,
+    status: "pending",
+    retryCount: 0,
+    payload: jobId,
+    createdAt: Date.now(),
+  });
+}
 
-  // TODO: Integrate with PartyRoom's job scheduler to wake at dueAt
+function buildNicknameMap(sql: SqlStorage): Map<string, string> {
+  const rows = sql
+    .exec<{ player_id: string; nickname: string }>(
+      `SELECT player_id, nickname FROM player WHERE revoked_at IS NULL`,
+    )
+    .toArray();
+
+  return new Map(rows.map((r) => [r.player_id, r.nickname]));
 }
 
 function hasMateMaterial(chess: any, color: "w" | "b"): boolean {
@@ -517,7 +526,6 @@ function hasMateMaterial(chess: any, color: "w" | "b"): boolean {
   if (queens > 0 || rooks > 0 || pawns > 0) return true;
   if (bishops >= 2) return true;
   if (bishops >= 1 && knights >= 1) return true;
-  if (knights >= 2) return true;
-
+  if (knights >= 3) return true;
   return false;
 }

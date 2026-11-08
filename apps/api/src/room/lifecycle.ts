@@ -112,7 +112,7 @@ export function isTrollPayload(payload: string): boolean {
 }
 
 export function isRoundJobPayload(payload: string): boolean {
-  return isTrollPayload(payload) || payload === "kart-tick";
+  return isTrollPayload(payload) || payload === "kart-tick" || payload.startsWith("chess-clock:");
 }
 
 export type RoundPlugin = {
@@ -440,6 +440,24 @@ export function onAlarm(store: GameStore, now: number): void {
 
   for (const job of due) {
     if (job.jobType !== "gameplay" || !isRoundJobPayload(job.payload)) {
+      continue;
+    }
+    // Chess clock alarm
+    if (job.payload.startsWith("chess-clock:")) {
+      if (
+        job.phaseGeneration !== room.phaseGeneration ||
+        job.scopeGeneration !== room.scopeGeneration ||
+        job.phase !== room.phase ||
+        room.hold
+      ) {
+        store.saveJob({ ...job, status: "cancelled", dueAt: null, remainingMs: null });
+        continue;
+      }
+      const gameId = job.payload.substring("chess-clock:".length);
+      const { handleChessClockAlarm } = require("../questions/chess-mechanic.ts");
+      // Note: sql is not available in this context; mechanic will be called from party-room with sql
+      store.onScheduledJob?.(job, now);
+      store.saveJob({ ...job, status: "done", dueAt: null });
       continue;
     }
     if (

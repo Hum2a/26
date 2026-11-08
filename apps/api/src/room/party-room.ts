@@ -4775,6 +4775,8 @@ function acceptRoundCommand(
     | { name: "duel"; value: unknown }
     | { name: "troll"; kind: unknown; targetId: unknown; mediaId?: string }
     | { name: "troll-escape"; effectId: unknown }
+    | { name: "chess-move"; gameId: string; from: string; to: string; promotion?: string; positionRevision: number }
+    | { name: "chess-resign"; gameId: string }
     | WallCommand,
   now: number,
   question: Question | undefined,
@@ -4818,6 +4820,28 @@ function acceptRoundCommand(
   }
   if (command.name === "troll-escape") {
     return escapeTroll(sql, store, playerId, command.effectId, now);
+  }
+  if (command.name === "chess-move") {
+    if (!question || question.kind !== "chess") {
+      return { ok: false, message: "Not a chess round" };
+    }
+    const { executeChessMove } = require("../questions/chess-mechanic.ts");
+    const result = executeChessMove(sql, store, command, playerId, now);
+    if (!result.success) {
+      return { ok: false, message: result.error };
+    }
+    return { ok: true };
+  }
+  if (command.name === "chess-resign") {
+    if (!question || question.kind !== "chess") {
+      return { ok: false, message: "Not a chess round" };
+    }
+    const { executeResignation } = require("../questions/chess-mechanic.ts");
+    const result = executeResignation(sql, command, playerId, now);
+    if (!result.success) {
+      return { ok: false, message: result.error };
+    }
+    return { ok: true };
   }
   if (command.name === "wall-react") {
     return reactToWall(sql, playerId, command, now);
