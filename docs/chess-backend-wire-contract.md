@@ -7,8 +7,9 @@
 ### Move Command
 ```typescript
 {
-  kind: "chess-move",
-  requestId: string,        // Request deduplication
+  kind: "command",
+  requestId: string,
+  name: "chess-move",
   gameId: string,           // "{roundId}-{playerId}"
   from: string,             // "e2" (a-h, 1-8)
   to: string,               // "e4"
@@ -30,7 +31,7 @@
 - Game state updated with new FEN, PGN, incremented ply, incremented positionRevision
 - Clock updated (player time decreased by elapsed)
 - If terminal: scores written to ledger exactly once
-- If not terminal: bot move needed, schedule player clock alarm
+- If not terminal: bot move needed, schedule bot clock alarm
 
 ### Resign Command
 ```typescript
