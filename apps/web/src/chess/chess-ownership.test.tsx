@@ -108,14 +108,15 @@ describe("Chess Ownership Contract", () => {
       isGameOver: false,
     };
 
-    const mockSubmit = vi.fn((_gameId: string) => {
+    const mockSubmit = vi.fn((submittedGameId: string) => {
       // CRITICAL: gameId must be ownGameId, NEVER opponentGameId
-      expect(gameId).toBe(ownGameId);
-      expect(gameId).not.toBe(opponentGameId);
+      expect(submittedGameId).toBe(ownGameId);
+      expect(submittedGameId).not.toBe(opponentGameId);
+      return crypto.randomUUID();
     });
 
     // Bot move submission
-    mockSubmit(snapshot.gameId, "e7", "e5");
+    mockSubmit(snapshot.gameId);
 
     expect(mockSubmit).toHaveBeenCalledWith(ownGameId, "e7", "e5");
   });
