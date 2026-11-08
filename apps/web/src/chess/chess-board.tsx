@@ -125,7 +125,6 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
               const piece = getPieceAt(board, square);
               const isLight = (files.indexOf(file) + rank) % 2 === 0;
               const isSelected = selectedSquare === square;
-              const isLegalMove = legalMoves.includes(square);
 
               return (
                 <button
@@ -133,7 +132,7 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
                   type="button"
                   className={`chess-square ${isLight ? "light" : "dark"} ${
                     isSelected ? "selected" : ""
-                  } ${isLegalMove ? "legal-move" : ""}`}
+                  }`}
                   onClick={() => handleSquareClick(file, rank)}
                   disabled={!isInteractive}
                   aria-label={`${file}${rank}${piece ? ` ${getPieceName(piece)}` : ""}`}
