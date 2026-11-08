@@ -13,8 +13,8 @@ import { WorkerMock } from "./worker-mock";
 describe("Chess Engine Lifecycle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Install faithful Worker mock
-    (globalThis as any).Worker = vi.fn(() => new WorkerMock());
+    // Install faithful Worker mock as constructor
+    (globalThis as any).Worker = WorkerMock;
   });
 
   it("cancels in-flight search on terminate", async () => {
