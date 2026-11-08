@@ -547,6 +547,6 @@ function hasMateMaterial(chess: any, color: "w" | "b"): boolean {
   if (queens > 0 || rooks > 0 || pawns > 0) return true;
   if (bishops >= 2) return true;
   if (bishops >= 1 && knights >= 1) return true;
-  if (knights >= 3) return true;
+  if (knights >= 2) return true;
   return false;
 }
