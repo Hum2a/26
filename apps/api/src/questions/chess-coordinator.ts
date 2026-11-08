@@ -44,6 +44,7 @@ export function initializeChessRound(
       positionHistory: [chess.fen()],
       sideToMove: "white",
       plyCount: 0,
+      positionRevision: 0, // Incremented on every position change (move/pause/resume)
     };
   }
 
@@ -69,6 +70,11 @@ export function applyChessMove(
   // Validate game ownership
   if (command.gameId !== game.gameId) {
     return { error: "Game ID mismatch" };
+  }
+
+  // Validate position revision - reject stale moves from old position
+  if (command.positionRevision !== game.positionRevision) {
+    return { error: `Position revision mismatch: expected ${game.positionRevision}, got ${command.positionRevision}` };
   }
 
   // Check game is in progress
@@ -134,6 +140,7 @@ export function applyChessMove(
         positionHistory: [...game.positionHistory, stripCounters(newFen)],
         sideToMove: "black",
         plyCount: game.plyCount + 1,
+        positionRevision: game.positionRevision + 1,
         terminatedAt: now,
         terminationReason: terminalStatus.reason,
       },
@@ -151,6 +158,7 @@ export function applyChessMove(
       positionHistory: [...game.positionHistory, stripCounters(newFen)],
       sideToMove: "black",
       plyCount: game.plyCount + 1,
+      positionRevision: game.positionRevision + 1,
     },
   };
 }
@@ -220,6 +228,7 @@ export function applyBotMove(
         positionHistory: [...game.positionHistory, stripCounters(newFen)],
         sideToMove: "white",
         plyCount: game.plyCount + 1,
+        positionRevision: game.positionRevision + 1,
         terminatedAt: now,
         terminationReason: terminalStatus.reason,
       },
@@ -237,6 +246,7 @@ export function applyBotMove(
       positionHistory: [...game.positionHistory, stripCounters(newFen)],
       sideToMove: "white",
       plyCount: game.plyCount + 1,
+      positionRevision: game.positionRevision + 1,
     },
   };
 }
