@@ -401,8 +401,8 @@ export function chessQuestion(
       ...shared(
         {
           ...input,
-          collectMs: 10_000, // 10 second collection time after games finish
-          attribution: "never",
+          collectMs: input.collectMs ?? 15_000, // Default collection time
+          attribution: input.attribution ?? "never",
         },
         input.points ?? 100,
       ),
