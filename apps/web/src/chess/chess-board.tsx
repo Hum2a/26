@@ -6,14 +6,15 @@
 import { useState, useCallback } from "react";
 import type { ChessGuestSnapshot } from "@26/shared";
 
-type Square = {
-  file: string;
-  rank: number;
-  piece: string | null;
-  isLight: boolean;
-  isSelected: boolean;
-  isLegalMove: boolean;
-};
+// Reserved for future rich board interaction
+// type BoardSquare = {
+//   file: string;
+//   rank: number;
+//   piece: string | null;
+//   isLight: boolean;
+//   isSelected: boolean;
+//   isLegalMove: boolean;
+// };
 
 type ChessBoardProps = {
   snapshot: ChessGuestSnapshot;
@@ -51,7 +52,7 @@ function parseFen(fen: string): (string | null)[][] {
  * Get legal moves for a piece (simplified - real implementation would query server/chess.js).
  * For MVP, we'll validate on server and show error if illegal.
  */
-function getLegalMoves(from: string, fen: string): string[] {
+function getLegalMoves(_from: string, _fen: string): string[] {
   // TODO: In production, either:
   // 1. Request legal moves from server for this square
   // 2. Use client-side chess.js instance to compute

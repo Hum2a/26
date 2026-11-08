@@ -10,7 +10,6 @@ import type {
   ChessControlSnapshot,
   ChessMoveCommand,
   ChessGameStatus,
-  ChessColor,
   ChessPlayerGame,
   ChessRoundState,
 } from "@26/shared";

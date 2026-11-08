@@ -6,8 +6,7 @@
 import type { ChessQuestion } from "./definition.ts";
 import type { GameStore } from "../room/lifecycle.ts";
 
-// D1Database is the Cloudflare D1 SQL storage type
-type D1Database = any; // TODO: Import from proper D1 types when wired
+// SqlStorage is the Cloudflare Durable Object SQL storage type
 import {
   initializeChessRound,
   applyChessMove,
@@ -27,7 +26,7 @@ import type { ChessMoveCommand, ChessResignCommand } from "@26/shared";
  * Initialize a new chess round in SQLite.
  */
 export function createChessRound(
-  sql: D1Database,
+  sql: SqlStorage,
   store: GameStore,
   _question: ChessQuestion,
   participants: string[],
@@ -39,16 +38,16 @@ export function createChessRound(
   const state = initializeChessRound(roundId, participants, now);
 
   // Persist round state
-  sql
-    .exec(
-      `INSERT INTO chess_rounds (round_id, started_at, frozen_participants)
-       VALUES (?, ?, ?)`,
-    )
-    .bind(roundId, state.startedAt, JSON.stringify(state.frozenParticipants))
-    .run();
+  sql.exec(
+    `INSERT INTO chess_rounds (round_id, started_at, frozen_participants)
+     VALUES (?, ?, ?)`,
+    roundId,
+    state.startedAt,
+    JSON.stringify(state.frozenParticipants),
+  );
 
   // Persist all games
-  for (const [playerId, game] of Object.entries(state.games)) {
+  for (const [_playerId, game] of Object.entries(state.games)) {
     persistGame(sql, game);
   }
 
@@ -62,10 +61,10 @@ export function createChessRound(
  * Apply a player move command.
  */
 export function executeChessMove(
-  sql: D1Database,
+  sql: SqlStorage,
   store: GameStore,
   command: ChessMoveCommand,
-  playerId: string,
+  _playerId: string,
   now: number,
 ): { success: true; botMoveNeeded: boolean } | { success: false; error: string } {
   // Load game from SQLite
@@ -75,7 +74,7 @@ export function executeChessMove(
   }
 
   // Verify ownership
-  if (game.playerId !== playerId) {
+  if (game.playerId !== _playerId) {
     return { success: false, error: "Not your game" };
   }
 
@@ -110,7 +109,7 @@ export function executeChessMove(
  * Apply a bot move (received from client engine with casual trust).
  */
 export function executeBotMove(
-  sql: D1Database,
+  sql: SqlStorage,
   store: GameStore,
   gameId: string,
   move: { from: string; to: string; promotion?: string },
@@ -148,9 +147,9 @@ export function executeBotMove(
  * Resign a game.
  */
 export function executeResignation(
-  sql: D1Database,
+  sql: SqlStorage,
   command: ChessResignCommand,
-  _playerId: string,
+  playerId: string,
   now: number,
 ): { success: true } | { success: false; error: string } {
   const game = loadGame(sql, command.gameId);
@@ -174,21 +173,23 @@ export function executeResignation(
  * Handle clock alarm - check for timeouts.
  */
 export async function handleChessClockAlarm(
-  sql: D1Database,
-  store: GameStore,
+  sql: SqlStorage,
+  _store: GameStore,
   now: number,
 ): Promise<void> {
   // Find all games with expired alarms
-  const stmt = sql.prepare(
-    `SELECT game_id FROM chess_clock_alarms WHERE due_at <= ? AND paused_at IS NULL`,
-  );
-  const expired = stmt.bind(now).all<{ game_id: string }>();
+  const expired = sql
+    .exec<{ game_id: string }>(
+      `SELECT game_id FROM chess_clock_alarms WHERE due_at <= ? AND paused_at IS NULL`,
+      now,
+    )
+    .toArray();
 
   for (const { game_id } of expired) {
     const game = loadGame(sql, game_id);
     if (!game || game.status !== "in-progress") {
       // Clean up alarm
-      sql.exec(`DELETE FROM chess_clock_alarms WHERE game_id = ?`).bind(game_id).run();
+      sql.exec(`DELETE FROM chess_clock_alarms WHERE game_id = ?`, game_id);
       continue;
     }
 
@@ -225,29 +226,28 @@ export async function handleChessClockAlarm(
       scoreGame(sql, terminatedGame);
 
       // Remove alarm
-      sql.exec(`DELETE FROM chess_clock_alarms WHERE game_id = ?`).bind(game_id).run();
+      sql.exec(`DELETE FROM chess_clock_alarms WHERE game_id = ?`, game_id);
     } else {
       // Not yet flagged, reschedule
       const nextAlarm = game.lastMoveAt + remainingTime;
-      sql
-        .exec(`UPDATE chess_clock_alarms SET due_at = ? WHERE game_id = ?`)
-        .bind(nextAlarm, game_id)
-        .run();
+      sql.exec(`UPDATE chess_clock_alarms SET due_at = ? WHERE game_id = ?`, nextAlarm, game_id);
     }
   }
 
   // Schedule next aggregate alarm if any games remain
   const remaining = sql
-    .prepare(`SELECT COUNT(*) as count FROM chess_games WHERE status = 'in-progress'`)
-    .first<{ count: number }>();
+    .exec<{ count: number }>(`SELECT COUNT(*) as count FROM chess_games WHERE status = 'in-progress'`)
+    .toArray()[0];
 
   if (remaining && remaining.count > 0) {
     const nextAlarm = sql
-      .prepare(`SELECT MIN(due_at) as next FROM chess_clock_alarms WHERE paused_at IS NULL`)
-      .first<{ next: number | null }>();
+      .exec<{ next: number | null }>(
+        `SELECT MIN(due_at) as next FROM chess_clock_alarms WHERE paused_at IS NULL`,
+      )
+      .toArray()[0];
 
     if (nextAlarm?.next) {
-      // Schedule job for next alarm
+      // TODO: Schedule job for next alarm via PartyRoom's job scheduler
       // (This would integrate with PartyRoom's job scheduler)
     }
   }
@@ -257,7 +257,7 @@ export async function handleChessClockAlarm(
  * Project snapshot for audience.
  */
 export function projectChessGameSnapshot(
-  sql: D1Database,
+  sql: SqlStorage,
   audience: "guest" | "stage" | "control",
   playerId?: string,
 ): unknown {
@@ -286,18 +286,21 @@ export function projectChessGameSnapshot(
 /**
  * Pause all chess clocks.
  */
-export function pauseChessClocks(sql: D1Database, now: number): void {
+export function pauseChessClocks(sql: SqlStorage, now: number): void {
   // Mark all alarms as paused
-  sql.exec(`UPDATE chess_clock_alarms SET paused_at = ?`).bind(now).run();
+  sql.exec(`UPDATE chess_clock_alarms SET paused_at = ?`, now);
 }
 
 /**
  * Resume all chess clocks.
  */
-export function resumeChessClocks(sql: D1Database, store: GameStore, now: number): void {
+export function resumeChessClocks(sql: SqlStorage, _store: GameStore, now: number): void {
   // Get all paused alarms
-  const stmt = sql.prepare(`SELECT game_id, due_at, paused_at FROM chess_clock_alarms`);
-  const paused = stmt.all<{ game_id: string; due_at: number; paused_at: number | null }>();
+  const paused = sql
+    .exec<{ game_id: string; due_at: number; paused_at: number | null }>(
+      `SELECT game_id, due_at, paused_at FROM chess_clock_alarms`,
+    )
+    .toArray();
 
   for (const alarm of paused) {
     if (alarm.paused_at === null) continue;
@@ -305,19 +308,21 @@ export function resumeChessClocks(sql: D1Database, store: GameStore, now: number
     const pauseDuration = now - alarm.paused_at;
     const newDueAt = alarm.due_at + pauseDuration;
 
-    sql
-      .exec(`UPDATE chess_clock_alarms SET due_at = ?, paused_at = NULL WHERE game_id = ?`)
-      .bind(newDueAt, alarm.game_id)
-      .run();
+    sql.exec(
+      `UPDATE chess_clock_alarms SET due_at = ?, paused_at = NULL WHERE game_id = ?`,
+      newDueAt,
+      alarm.game_id,
+    );
   }
 }
 
 /**
  * Force-end all remaining games (abort).
  */
-export function forceEndChessRound(sql: D1Database, now: number): void {
-  const stmt = sql.prepare(`SELECT game_id FROM chess_games WHERE status = 'in-progress'`);
-  const active = stmt.all<{ game_id: string }>();
+export function forceEndChessRound(sql: SqlStorage, now: number): void {
+  const active = sql
+    .exec<{ game_id: string }>(`SELECT game_id FROM chess_games WHERE status = 'in-progress'`)
+    .toArray();
 
   for (const { game_id } of active) {
     const game = loadGame(sql, game_id);
@@ -337,44 +342,39 @@ export function forceEndChessRound(sql: D1Database, now: number): void {
   updateRoundAggregates(sql);
 
   // Clear all alarms
-  sql.exec(`DELETE FROM chess_clock_alarms`).run();
+  sql.exec(`DELETE FROM chess_clock_alarms`);
 }
 
 // Helper functions
 
-function persistGame(sql: D1Database, game: ChessPlayerGame): void {
-  sql
-    .exec(
-      `INSERT OR REPLACE INTO chess_games (
-        game_id, round_id, player_id, fen, pgn, position_history,
-        player_time_ms, bot_time_ms, last_move_at, side_to_move, ply_count,
-        status, winner, terminated_at, termination_reason, scored
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .bind(
-      game.gameId,
-      game.gameId.split("-")[0], // Extract roundId
-      game.playerId,
-      game.fen,
-      game.pgn,
-      JSON.stringify(game.positionHistory),
-      game.playerTimeMs,
-      game.botTimeMs,
-      game.lastMoveAt,
-      game.sideToMove,
-      game.plyCount,
-      game.status,
-      game.winner ?? null,
-      game.terminatedAt ?? null,
-      game.terminationReason ?? null,
-      0, // scored flag
-    )
-    .run();
+function persistGame(sql: SqlStorage, game: ChessPlayerGame): void {
+  sql.exec(
+    `INSERT OR REPLACE INTO chess_games (
+      game_id, round_id, player_id, fen, pgn, position_history,
+      player_time_ms, bot_time_ms, last_move_at, side_to_move, ply_count,
+      status, winner, terminated_at, termination_reason, scored
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    game.gameId,
+    game.gameId.split("-")[0], // Extract roundId
+    game.playerId,
+    game.fen,
+    game.pgn,
+    JSON.stringify(game.positionHistory),
+    game.playerTimeMs,
+    game.botTimeMs,
+    game.lastMoveAt,
+    game.sideToMove,
+    game.plyCount,
+    game.status,
+    game.winner ?? null,
+    game.terminatedAt ?? null,
+    game.terminationReason ?? null,
+    0, // scored flag
+  );
 }
 
-function loadGame(sql: D1Database, gameId: string): ChessPlayerGame | null {
-  const stmt = sql.prepare(`SELECT * FROM chess_games WHERE game_id = ?`);
-  const row = stmt.bind(gameId).first<any>();
+function loadGame(sql: SqlStorage, gameId: string): ChessPlayerGame | null {
+  const row = sql.exec<any>(`SELECT * FROM chess_games WHERE game_id = ?`, gameId).toArray()[0];
 
   if (!row) return null;
 
@@ -398,22 +398,28 @@ function loadGame(sql: D1Database, gameId: string): ChessPlayerGame | null {
   };
 }
 
-function loadGameByPlayer(sql: D1Database, playerId: string): ChessPlayerGame | null {
-  const stmt = sql.prepare(`SELECT game_id FROM chess_games WHERE player_id = ? ORDER BY last_move_at DESC LIMIT 1`);
-  const row = stmt.bind(playerId).first<{ game_id: string }>();
-  
+function loadGameByPlayer(sql: SqlStorage, playerId: string): ChessPlayerGame | null {
+  const row = sql
+    .exec<{ game_id: string }>(
+      `SELECT game_id FROM chess_games WHERE player_id = ? ORDER BY last_move_at DESC LIMIT 1`,
+      playerId,
+    )
+    .toArray()[0];
+
   if (!row) return null;
   return loadGame(sql, row.game_id);
 }
 
-function loadRoundState(sql: D1Database): ChessRoundState | null {
-  const roundStmt = sql.prepare(`SELECT * FROM chess_rounds ORDER BY started_at DESC LIMIT 1`);
-  const round = roundStmt.first<any>();
+function loadRoundState(sql: SqlStorage): ChessRoundState | null {
+  const round = sql
+    .exec<any>(`SELECT * FROM chess_rounds ORDER BY started_at DESC LIMIT 1`)
+    .toArray()[0];
 
   if (!round) return null;
 
-  const gamesStmt = sql.prepare(`SELECT * FROM chess_games WHERE round_id = ?`);
-  const gameRows = gamesStmt.bind(round.round_id).all<any>();
+  const gameRows = sql
+    .exec<any>(`SELECT * FROM chess_games WHERE round_id = ?`, round.round_id)
+    .toArray();
 
   const games: Record<string, ChessPlayerGame> = {};
   for (const row of gameRows) {
@@ -436,47 +442,42 @@ function loadRoundState(sql: D1Database): ChessRoundState | null {
   return state;
 }
 
-function updateRoundAggregates(_sql: D1Database): void {
+function updateRoundAggregates(_sql: SqlStorage): void {
   // Aggregates computed on-demand via loadRoundState
   // No persistent aggregate table needed
 }
 
-function scoreGame(sql: D1Database, game: ChessPlayerGame): void {
+function scoreGame(sql: SqlStorage, game: ChessPlayerGame): void {
   // Check if already scored
   const existing = sql
-    .prepare(`SELECT scored FROM chess_games WHERE game_id = ?`)
-    .bind(game.gameId)
-    .first<{ scored: number }>();
+    .exec<{ scored: number }>(`SELECT scored FROM chess_games WHERE game_id = ?`, game.gameId)
+    .toArray()[0];
 
   if (existing && existing.scored === 1) {
     return; // Already scored
   }
 
-  const score = calculateChessScore(game);
+  calculateChessScore(game); // Score calculated but not yet written to ledger
 
   // Write to ledger (would integrate with room's ledger system)
   // For now, mark as scored
-  sql
-    .exec(`UPDATE chess_games SET scored = 1 WHERE game_id = ?`)
-    .bind(game.gameId)
-    .run();
+  sql.exec(`UPDATE chess_games SET scored = 1 WHERE game_id = ?`, game.gameId);
 
-  // TODO: Integrate with room.ledger
+  // TODO: Integrate with room.ledger to write score
 }
 
 function scheduleClockAlarm(
-  sql: D1Database,
-  store: GameStore,
+  sql: SqlStorage,
+  _store: GameStore,
   gameId: string,
   dueAt: number,
 ): void {
-  sql
-    .exec(
-      `INSERT OR REPLACE INTO chess_clock_alarms (game_id, due_at, paused_at)
-       VALUES (?, ?, NULL)`,
-    )
-    .bind(gameId, dueAt)
-    .run();
+  sql.exec(
+    `INSERT OR REPLACE INTO chess_clock_alarms (game_id, due_at, paused_at)
+     VALUES (?, ?, NULL)`,
+    gameId,
+    dueAt,
+  );
 
   // TODO: Integrate with PartyRoom's job scheduler to wake at dueAt
 }

@@ -141,7 +141,7 @@ export const chessStageSnapshotSchema = z.object({
     z.object({
       playerId: z.string(),
       nickname: z.string(),
-      event: z.enum(["checkmate-win", "checkmate-loss", "draw", "timeout", "resign"]),
+      event: z.enum(["checkmate-win", "checkmate-loss", "draw", "timeout", "resign", "abort"]),
       timestamp: z.number(),
     }),
   ),
@@ -165,7 +165,7 @@ export const chessControlSnapshotSchema = z.object({
     z.object({
       playerId: z.string(),
       nickname: z.string(),
-      event: z.enum(["checkmate-win", "checkmate-loss", "draw", "timeout", "resign"]),
+      event: z.enum(["checkmate-win", "checkmate-loss", "draw", "timeout", "resign", "abort"]),
       timestamp: z.number(),
     }),
   ),

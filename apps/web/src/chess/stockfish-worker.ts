@@ -19,7 +19,7 @@ export type StockfishOptions = {
 export class StockfishEngine {
   private worker: Worker | null = null;
   private ready = false;
-  private pendingMessages: string[] = [];
+  // Reserved for future message queueing: private _pendingMessages: string[] = [];
   private options: Required<StockfishOptions>;
   private currentPosition = "";
 
@@ -132,7 +132,7 @@ export class StockfishEngine {
       this.worker.terminate();
       this.worker = null;
       this.ready = false;
-      this.pendingMessages = [];
+      // this._pendingMessages = [];
     }
   }
 
