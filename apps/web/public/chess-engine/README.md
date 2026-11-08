@@ -16,9 +16,9 @@ This directory contains the Stockfish 19 chess engine compiled to WebAssembly.
 
 ## Usage
 
-These assets are loaded by the chess round's phone UI to provide bot opponents running at approximately 1425 Elo strength (UCI_LimitStrength + UCI_Elo configuration).
+The planned chess-round phone UI will load these assets in a Web Worker for bot opponents; browser integration is not yet present in this revision.
 
-The engine runs entirely in the guest's browser via Web Worker. No server-side chess engine execution.
+Once integrated, the engine is intended to run entirely in the guest's browser; there is no server-side chess engine execution.
 
 ## License Compliance
 
