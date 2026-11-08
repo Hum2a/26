@@ -126,7 +126,9 @@ it("says which photo the big screen could not display, and keeps Skip", async ()
   );
   // In the history, only the photo that failed is marked.
   fireEvent.click(screen.getByRole("button", { name: /Shown so far \(2\)/ }));
-  expect(await screen.findAllByText("Couldn't display")).toHaveLength(1);
+  const marked = await screen.findAllByText("Couldn't display");
+  expect(marked).toHaveLength(1);
+  expect(marked[0].closest("li")?.textContent).toContain("Bilal");
 });
 
 it("pulls the photo on screen and changes settings", async () => {
