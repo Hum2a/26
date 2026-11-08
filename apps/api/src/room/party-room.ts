@@ -4872,6 +4872,16 @@ function readCommand(body: unknown):
   | { requestId: string; name: "draft"; text: string }
   | {
       requestId: string;
+      name: "chess-move";
+      gameId: string;
+      from: string;
+      to: string;
+      promotion?: string;
+      positionRevision: number;
+    }
+  | { requestId: string; name: "chess-resign"; gameId: string }
+  | {
+      requestId: string;
       name: "troll";
       kind: unknown;
       targetId: unknown;
@@ -4985,6 +4995,42 @@ function readCommand(body: unknown):
   }
   if (record.name === "duel") {
     return { requestId: record.requestId, name: "duel", value: record.value };
+  }
+  if (record.name === "chess-move") {
+    if (
+      typeof record.gameId !== "string" ||
+      typeof record.from !== "string" ||
+      typeof record.to !== "string" ||
+      !/^[a-h][1-8]$/.test(record.from) ||
+      !/^[a-h][1-8]$/.test(record.to) ||
+      typeof record.positionRevision !== "number" ||
+      record.positionRevision < 0 ||
+      !Number.isInteger(record.positionRevision)
+    ) {
+      return null;
+    }
+    if (record.promotion && !["q", "r", "b", "n"].includes(record.promotion as string)) {
+      return null;
+    }
+    return {
+      requestId: record.requestId,
+      name: "chess-move",
+      gameId: record.gameId,
+      from: record.from,
+      to: record.to,
+      promotion: record.promotion as "q" | "r" | "b" | "n" | undefined,
+      positionRevision: record.positionRevision,
+    };
+  }
+  if (record.name === "chess-resign") {
+    if (typeof record.gameId !== "string") {
+      return null;
+    }
+    return {
+      requestId: record.requestId,
+      name: "chess-resign",
+      gameId: record.gameId,
+    };
   }
   if (record.name === "wall-post") {
     return {
