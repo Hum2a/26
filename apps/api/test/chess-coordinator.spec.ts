@@ -54,6 +54,7 @@ describe("Chess Coordinator", () => {
           gameId: game.gameId,
           from: "e2",
           to: "e4",
+          positionRevision: 0,
         },
         now + 1000,
       );
@@ -99,6 +100,7 @@ describe("Chess Coordinator", () => {
           gameId: game.gameId,
           from: "e2",
           to: "e4",
+          positionRevision: game.positionRevision,
         },
         now + 1000,
       );
@@ -114,6 +116,7 @@ describe("Chess Coordinator", () => {
           gameId: game.gameId,
           from: "d2",
           to: "d4",
+          positionRevision: game.positionRevision,
         },
         now + 2000,
       );
@@ -145,6 +148,7 @@ describe("Chess Coordinator", () => {
           from: "e7",
           to: "e8",
           promotion: "q",
+          positionRevision: game.positionRevision,
         },
         now + 1000,
       );
@@ -171,6 +175,7 @@ describe("Chess Coordinator", () => {
           gameId: game.gameId,
           from: "e2",
           to: "e4",
+          positionRevision: game.positionRevision,
         },
         now + 1000,
       );
@@ -180,7 +185,7 @@ describe("Chess Coordinator", () => {
       // Bot responds
       const result = applyBotMove(
         game,
-        { from: "e7", to: "e5" },
+        { from: "e7", to: "e5", positionRevision: game.positionRevision },
         now + 2000,
       );
 
@@ -205,6 +210,7 @@ describe("Chess Coordinator", () => {
           gameId: game.gameId,
           from: "e2",
           to: "e4",
+          positionRevision: game.positionRevision,
         },
         now + 1000,
       );
@@ -213,7 +219,7 @@ describe("Chess Coordinator", () => {
       // Bot tries illegal move
       const result = applyBotMove(
         game,
-        { from: "e7", to: "e4" }, // Illegal
+        { from: "e7", to: "e4", positionRevision: game.positionRevision }, // Illegal
         now + 2000,
       );
 
@@ -230,28 +236,28 @@ describe("Chess Coordinator", () => {
       // 1. f3
       let result = applyChessMove(
         game,
-        { kind: "chess-move", requestId: "1", gameId: game.gameId, from: "f2", to: "f3" },
+        { kind: "chess-move", requestId: "1", gameId: game.gameId, from: "f2", to: "f3", positionRevision: game.positionRevision },
         now + 1000,
       );
       expect(result).toHaveProperty("game");
       if ("game" in result) game = result.game;
 
       // 1... e5
-      result = applyBotMove(game, { from: "e7", to: "e5" }, now + 2000);
+      result = applyBotMove(game, { from: "e7", to: "e5", positionRevision: game.positionRevision }, now + 2000);
       expect(result).toHaveProperty("game");
       if ("game" in result) game = result.game;
 
       // 2. g4
       result = applyChessMove(
         game,
-        { kind: "chess-move", requestId: "2", gameId: game.gameId, from: "g2", to: "g4" },
+        { kind: "chess-move", requestId: "2", gameId: game.gameId, from: "g2", to: "g4", positionRevision: game.positionRevision },
         now + 3000,
       );
       expect(result).toHaveProperty("game");
       if ("game" in result) game = result.game;
 
       // 2... Qh4# (checkmate)
-      result = applyBotMove(game, { from: "d8", to: "h4" }, now + 4000);
+      result = applyBotMove(game, { from: "d8", to: "h4", positionRevision: game.positionRevision }, now + 4000);
 
       expect(result).toHaveProperty("game");
       if ("game" in result) {
@@ -275,7 +281,7 @@ describe("Chess Coordinator", () => {
       // Any move will trigger insufficient material detection
       const result = applyChessMove(
         game,
-        { kind: "chess-move", requestId: "1", gameId: game.gameId, from: "d2", to: "d3" },
+        { kind: "chess-move", requestId: "1", gameId: game.gameId, from: "d2", to: "d3", positionRevision: game.positionRevision },
         now + 1000,
       );
 

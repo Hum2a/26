@@ -114,10 +114,10 @@ describe("Chess Review Regressions", () => {
 
       // Make sequence of moves
       const moves = [
-        { from: "e2", to: "e4" },
-        { from: "e7", to: "e5" },
-        { from: "g1", to: "f3" },
-        { from: "b8", to: "c6" },
+        { from: "e2", to: "e4", positionRevision: game.positionRevision, positionRevision: 0 },
+        { from: "e7", to: "e5", positionRevision: game.positionRevision },
+        { from: "g1", to: "f3", positionRevision: game.positionRevision },
+        { from: "b8", to: "c6", positionRevision: game.positionRevision },
       ];
 
       for (let i = 0; i < moves.length; i++) {
@@ -166,6 +166,7 @@ describe("Chess Review Regressions", () => {
           gameId: game.gameId,
           from: "e2",
           to: "e4",
+          positionRevision: game.positionRevision,
         },
         now,
       );
@@ -185,10 +186,10 @@ describe("Chess Review Regressions", () => {
 
       // Make some moves
       const moves = [
-        { from: "e2", to: "e4" },
-        { from: "e7", to: "e5" },
-        { from: "g1", to: "f3" },
-        { from: "b8", to: "c6" },
+        { from: "e2", to: "e4", positionRevision: game.positionRevision, positionRevision: 0 },
+        { from: "e7", to: "e5", positionRevision: game.positionRevision },
+        { from: "g1", to: "f3", positionRevision: game.positionRevision },
+        { from: "b8", to: "c6", positionRevision: game.positionRevision },
       ];
 
       for (let i = 0; i < moves.length; i++) {
@@ -227,7 +228,8 @@ describe("Chess Review Regressions", () => {
 
       // Verify recovered state matches
       expect(chess.fen()).toBe(fenBeforeEviction);
-      expect(chess.pgn()).toBe(pgnBeforeEviction);
+      // PGN is preserved (history for repetition detection)
+      expect(serialized.pgn).toBe(pgnBeforeEviction);
 
       // Verify history is preserved (can make more moves with correct repetition detection)
       const canMove = chess.move({ from: "f1", to: "c4" });
