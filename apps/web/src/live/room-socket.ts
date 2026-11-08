@@ -822,41 +822,31 @@ export function openRoomSocket(options: {
   }
 
   function submitChessMove(params: ChessMoveParams): string {
-    const requestId = crypto.randomUUID();
-    socket.send(
-      JSON.stringify({
-        kind: "command",
-        requestId,
-        command: {
-          kind: "chess-move",
-          requestId,
-          gameId: params.gameId,
-          from: params.from,
-          to: params.to,
-          ...(params.promotion ? { promotion: params.promotion } : {}),
-          positionRevision: params.positionRevision,
-        },
-      }),
-    );
-    pending.add(requestId);
-    return requestId;
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      command: {
+        kind: "chess-move",
+        requestId: crypto.randomUUID(),
+        gameId: params.gameId,
+        from: params.from,
+        to: params.to,
+        ...(params.promotion ? { promotion: params.promotion } : {}),
+        positionRevision: params.positionRevision,
+      },
+    } as any);
   }
 
   function submitChessResign(params: ChessResignParams): string {
-    const requestId = crypto.randomUUID();
-    socket.send(
-      JSON.stringify({
-        kind: "command",
-        requestId,
-        command: {
-          kind: "chess-resign",
-          requestId,
-          gameId: params.gameId,
-        },
-      }),
-    );
-    pending.add(requestId);
-    return requestId;
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      command: {
+        kind: "chess-resign",
+        requestId: crypto.randomUUID(),
+        gameId: params.gameId,
+      },
+    } as any);
   }
 
   function close() {
