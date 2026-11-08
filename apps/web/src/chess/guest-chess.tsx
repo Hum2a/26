@@ -17,6 +17,7 @@ export function GuestChess({
   onChessResign: (params: ChessResignParams) => void;
 }) {
   const play = snapshot.play;
+  // @ts-expect-error - play.chess not yet in LobbySnapshot type, but exists at runtime
   const chessSnapshot = play?.chess as ChessGuestSnapshot | undefined;
   const [engineError, setEngineError] = useState<string>();
   const pendingMoveRef = useRef<string | null>(null);

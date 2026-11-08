@@ -1,4 +1,4 @@
-import { useEffect, useState } from "motion/react";
+import { useEffect, useState } from "react";
 import type { ChessGuestSnapshot } from "@26/shared";
 import { useServerTimeOffset } from "../live/server-clock";
 

@@ -48,21 +48,8 @@ function parseFen(fen: string): (string | null)[][] {
   return board;
 }
 
-/**
- * Get legal moves for a piece (simplified - real implementation would query server/chess.js).
- * For MVP, we'll validate on server and show error if illegal.
- */
-function getLegalMoves(_from: string, _fen: string): string[] {
-  // TODO: In production, either:
-  // 1. Request legal moves from server for this square
-  // 2. Use client-side chess.js instance to compute
-  // For now, return empty array (server will validate)
-  return [];
-}
-
 export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
-  const [legalMoves, setLegalMoves] = useState<string[]>([]);
 
   const board = parseFen(snapshot.fen);
   const files = ["a", "b", "c", "d", "e", "f", "g", "h"];

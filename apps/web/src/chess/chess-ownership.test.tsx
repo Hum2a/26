@@ -63,8 +63,6 @@ describe("Chess Ownership Contract", () => {
   });
 
   it("captures positionRevision at search dispatch time, not callback time", () => {
-    const mockGameId = "round-123-player-789";
-    
     let capturedRevision: number | undefined;
     let currentRevision = 10;
 
@@ -110,7 +108,7 @@ describe("Chess Ownership Contract", () => {
       isGameOver: false,
     };
 
-    const mockSubmit = vi.fn((gameId: string, from: string, to: string) => {
+    const mockSubmit = vi.fn((gameId: string, _from: string, _to: string) => {
       // CRITICAL: gameId must be ownGameId, NEVER opponentGameId
       expect(gameId).toBe(ownGameId);
       expect(gameId).not.toBe(opponentGameId);
