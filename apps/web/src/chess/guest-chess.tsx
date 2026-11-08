@@ -54,14 +54,17 @@ export function GuestChess({
     if (pendingMoveRef.current === moveKey) return;
     pendingMoveRef.current = moveKey;
 
-    // CRITICAL: positionRevision must be provided by snapshot when available
-    // For now, we send 0 and backend will add proper validation when schema updates
+    // CRITICAL OWNERSHIP CONTRACT:
+    // This phone owns ONE game (chessSnapshot.gameId) and submits BOTH
+    // player AND bot moves for that SAME gameId. Server distinguishes
+    // player vs bot using sideToMove from game state, NOT gameId ownership.
+    // positionRevision must match snapshot to prevent stale moves.
     onChessMove({
-      gameId: chessSnapshot.gameId,
+      gameId: chessSnapshot.gameId, // ALWAYS own gameId, never opponent
       from,
       to,
       promotion,
-      positionRevision: positionRevision ?? 0,
+      positionRevision: positionRevision ?? chessSnapshot.positionRevision,
     });
   }
 
