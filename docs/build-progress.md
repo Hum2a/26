@@ -5834,3 +5834,14 @@ Commands and results:
 - Browser: `kart-cpu-race`, `kart-race-laps`, `kart-lobby`, `kart-track-selection`, `kart` and `kart-items-live` passed, 8 of 9 cases in one run. `kart-cpu-race` is new: one phone against three CPU racers on Park gets a boosted start, the projector lists the CPU karts, and all three CPU karts move. `kart-inputs`' gamepad case missed a barrier impact within 15 s once, then passed twice in a row on its own.
 
 Not verified: CPU driving quality over a full three-lap race, the rocket-start windows on real phones over venue Wi-Fi, and how much position luck changes a real race.
+
+## 8 November 2026 — release safeguard follow-up after PR #8
+
+Status: corrections on a new branch from master `fbbf587`. PR #8 had already been merged when it was reviewed, so it could not carry them.
+
+- Fixed a safety defect in `scripts/release-integration.test.ts`. Its fakes were extensionless bash scripts on PATH. On Windows, `command.mjs` resolves `npm.cmd`/`npx.cmd` to the real `npm-cli.js` and cmd.exe ignores an extensionless `git`, so the approved-path tests would have run the real build and `wrangler deploy` against production, with real git and a saved Wrangler login. The fakes are now Node scripts installed for PATH, the Windows npm resolution and cmd.exe. A probe refuses to run any release command unless they answer, and `CLOUDFLARE_API_TOKEN` is set to an invalid value instead of being deleted.
+- `scripts/release.ts` reads git only for a real production deploy. Staging deploys and dry runs no longer fail on unreadable git with a production message.
+- New command tests: validation failure stops deploy and full before build, migrations or wrangler; an approved deploy runs each check once, then one build and one deploy (two for `both`, staging first); deploy and full refusals for branch, dirty tree, unreadable git and confirmation; confirmation and the freeze with both git bypasses, using an injected clock; `--override-freeze`. `release.sh` runs in a throwaway repository with a local bare remote: full bump, checks, commit, tag, push and one deploy with `SKIP_GIT_CHECK=true`; refusal before any change on a dirty tree (even with `SKIP_GIT_CHECK` set), a non-master branch, missing confirmation and the freeze; a failed check undoes the version.
+- Docs: the safeguard tables now cover staging-only and dry-run deploys, standalone migrate and raw vendor commands.
+
+Checks: `npm run test:release` 79 of 79 passed (was 65) on Windows. `npm run format:check`, `npm run typecheck` and ESLint on the changed scripts passed. `tsc -b` does not cover `scripts/`; an ad-hoc `tsc --ignoreConfig --strict --module nodenext --allowImportingTsExtensions --types node --allowJs` over the release scripts and tests passed. Not run: the full approved `full` route, because it reads the real `.dev.vars.<env>` secret files; a Linux run of the new harness.

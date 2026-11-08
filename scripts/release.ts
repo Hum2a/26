@@ -64,6 +64,10 @@ if (command === "migrate") {
     readTargetEnvironment(process.argv) ?? (argv.includes("both") ? "both" : argv[1]),
   );
   if (command === "deploy" || command === "full") {
+    // Git state matters only to a real production deploy, the one case
+    // assertDeployAllowed checks it. Staging and packaging dry runs never read
+    // git, so they do not fail on a missing git with a production message.
+    const needsGit = !dryRun && targets.includes("production");
     assertDeployAllowed(
       targets,
       {
@@ -72,7 +76,7 @@ if (command === "migrate") {
         overrideFreeze: argv.includes("--override-freeze"),
       },
       Date.now(),
-      readGitState(),
+      needsGit ? readGitState() : undefined,
     );
     if (!dryRun && !argv.includes("--skip-checks")) {
       console.log("Checking the release before any migrations or deployment.");
