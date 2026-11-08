@@ -823,28 +823,20 @@ export function openRoomSocket(options: {
 
   function submitChessMove(params: ChessMoveParams): string {
     return sendCommand({
-      kind: "command",
-      requestId: crypto.randomUUID(),
-      command: {
-        kind: "chess-move",
-        gameId: params.gameId,
-        from: params.from,
-        to: params.to,
-        ...(params.promotion ? { promotion: params.promotion } : {}),
-        positionRevision: params.positionRevision,
-      },
-    });
+      kind: "chess-move",
+      gameId: params.gameId,
+      from: params.from,
+      to: params.to,
+      ...(params.promotion ? { promotion: params.promotion } : {}),
+      positionRevision: params.positionRevision,
+    } as any);
   }
 
   function submitChessResign(params: ChessResignParams): string {
     return sendCommand({
-      kind: "command",
-      requestId: crypto.randomUUID(),
-      command: {
-        kind: "chess-resign",
-        gameId: params.gameId,
-      },
-    });
+      kind: "chess-resign",
+      gameId: params.gameId,
+    } as any);
   }
 
   function close() {
