@@ -61,6 +61,7 @@ import { datingExitExcuse } from "./dating-exit-excuse.ts";
 import { dialPopCulture } from "./dial-pop-culture.ts";
 import { dialLondonGeography } from "./dial-london-geography.ts";
 import { dialBritishPolitics } from "./dial-british-politics.ts";
+import { chessBattle } from "./chess-battle.ts";
 
 /**
  * Working catalogue for Humza's questions.
@@ -197,6 +198,7 @@ export const birthdayPack: QuestionPack = {
     dialPopCulture,
     dialLondonGeography,
     dialBritishPolitics,
+    chessBattle,
   ]),
 };
 

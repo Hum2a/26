@@ -235,7 +235,18 @@ export type KartBody = {
 export type AuthoredKart = AuthorFields & KartBody;
 export type KartQuestion = PlayableFields & KartBody;
 
+export type ChessBody = {
+  kind: "chess";
+  /** Time control in milliseconds (e.g., 60000 for 1 minute) */
+  initialTimeMs: number;
+  /** Time increment per move in milliseconds (0 for no increment) */
+  incrementMs: number;
+};
+export type AuthoredChess = AuthorFields & ChessBody;
+export type ChessQuestion = PlayableFields & ChessBody;
+
 export type AuthoredQuestion =
+  | AuthoredChess
   | AuthoredKart
   | AuthoredChoice
   | AuthoredSlider
@@ -290,6 +301,7 @@ export type FinaleQuestion = PlayableFields &
 
 /** A question the engine can score. Drafts are not this type. */
 export type Question =
+  | ChessQuestion
   | KartQuestion
   | ChoiceQuestion
   | SliderQuestion

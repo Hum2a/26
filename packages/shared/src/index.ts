@@ -94,6 +94,7 @@ export type {
 export type { FunFactCard, StatCard } from "./stats.ts";
 export { resultsStatusSchema } from "./archive.ts";
 export type { ResultsStatus } from "./archive.ts";
+export * from "./chess-schemas.ts";
 export {
   emailVerifyTtlMs,
   galleryAttribution,

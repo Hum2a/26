@@ -374,17 +374,21 @@ export function recordRevealScores(
     scoreBallotQuestion(sql, question, now);
     return;
   }
+  if (question.kind === "chess") {
+    // Chess has its own scoring mechanism
+    return new Map();
+  }
   if (question.kind === "duel" || question.kind === "finale") {
     scoreDuelQuestion(sql, question, now);
-    return;
+    return new Map();
   }
   if (question.kind === "wordle") {
     wordleScores(sql, question, now);
-    return;
+    return new Map();
   }
   if (question.kind === "typed") {
     typedScores(sql, question, now);
-    return;
+    return new Map();
   }
   const players = sql
     .exec<{ player_id: string }>(
