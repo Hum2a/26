@@ -1,6 +1,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { assertDeployAllowed, inDeployFreeze, deployFreeze } from "./release-support.ts";
+import {
+  assertDeployAllowed,
+  inDeployFreeze,
+  deployFreeze,
+} from "./release-support.ts";
 
 describe("release safeguards", () => {
   const nowOutsideFreeze = Date.parse("2026-11-15T12:00:00Z");
@@ -146,6 +150,34 @@ describe("release safeguards", () => {
           undefined,
         );
       });
+    });
+
+    it("still requires confirmation when git state is skipped", () => {
+      assert.throws(
+        () => {
+          assertDeployAllowed(
+            ["production"],
+            { dryRun: false, confirmProduction: false, overrideFreeze: false },
+            nowOutsideFreeze,
+            undefined,
+          );
+        },
+        { message: /needs --confirm-production/ },
+      );
+    });
+
+    it("still requires freeze override when git state is skipped", () => {
+      assert.throws(
+        () => {
+          assertDeployAllowed(
+            ["production"],
+            { dryRun: false, confirmProduction: true, overrideFreeze: false },
+            nowInsideFreeze,
+            undefined,
+          );
+        },
+        { message: /Production is frozen for the party weekend/ },
+      );
     });
 
     it("rejects both staging+production without confirmation", () => {

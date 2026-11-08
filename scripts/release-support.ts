@@ -199,8 +199,11 @@ export function inDeployFreeze(nowMs: number): boolean {
 }
 
 /**
- * Shared by every deploy/full entry point, before checks or remote changes.
- * Enforces production safeguards: confirmation, freeze check, and git state.
+ * Shared by deploy/full entry points, before checks or remote changes.
+ * Confirmation and freeze always apply to production. Git state applies when
+ * provided; `undefined` is the documented wrapper bypass after release.sh (or
+ * trusted CI) has already enforced clean master. secrets-sync and migrate do
+ * not call this function.
  */
 export function assertDeployAllowed(
   targets: readonly DeployableEnvironment[],
@@ -210,20 +213,17 @@ export function assertDeployAllowed(
 ): void {
   // A packaging dry run does not deploy, migrate or upload secrets.
   if (options.dryRun || !targets.includes("production")) return;
-  
-  // Production requires explicit confirmation
+
   if (!options.confirmProduction)
     throw new Error(
       "Deploying to production needs --confirm-production. Check staging first.",
     );
-  
-  // Production freeze (party weekend)
+
   if (inDeployFreeze(nowMs) && !options.overrideFreeze)
     throw new Error(
       "Production is frozen for the party weekend (20 Nov to midday 22 Nov). Pass --override-freeze only for an emergency fix.",
     );
-  
-  // Production requires clean master branch (when git state provided)
+
   if (gitState) {
     if (gitState.branch !== "master")
       throw new Error(

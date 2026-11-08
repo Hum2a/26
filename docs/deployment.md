@@ -84,7 +84,7 @@ npm run deploy:staging:full
 bash release.sh --deploy=production --confirm-production
 ```
 
-The `release.sh` script handles version bumping, enforces clean master branch, runs all checks, and includes production safeguards.
+The `release.sh` script handles version bumping, requires master and a clean tree before the bump, runs checks, then deploys. After that point it sets `SKIP_GIT_CHECK=true` so generated artefacts from the bump/checks do not fail `release.ts`'s git check. It still passes `--confirm-production` / `--override-freeze` through. `release.sh` does not accept `--skip-git-check`.
 
 **Direct approach (bypasses version bumping):**
 
@@ -92,11 +92,16 @@ The `release.sh` script handles version bumping, enforces clean master branch, r
 npm run deploy:prod -- --confirm-production
 ```
 
-**Production safeguards enforced by all routes:**
-- Requires `--confirm-production` flag
-- Must be on clean master branch (no uncommitted changes)
-- Freeze period (20 Nov 00:00 to 22 Nov 12:00 UTC) requires `--override-freeze`
-- Checks run unless `--skip-checks` is passed
+**Production safeguards by command type:**
+
+| Command type | Confirmation | Freeze check | Clean master |
+| ------------ | ------------ | ------------ | ------------ |
+| deploy/full  | Required     | Required     | Required     |
+| secrets-sync | Not required | Not required | Not required |
+
+Pass `--override-freeze` for emergency deploys during freeze period (20 Nov-22 Nov UTC).
+
+A git-check bypass (`SKIP_GIT_CHECK=true` or `--skip-git-check` on `release.ts`) never skips confirmation or freeze. Use it only from a trusted wrapper that has already required clean master. Direct `npm run deploy:prod` still reads git and fails closed if git is unavailable.
 
 The Vite environment directory stays `apps/web/dist/26_humza_website_local` because that name comes from the top-level Worker. The script opens `apps/web/dist/26_humza_website_local/wrangler.json` and refuses to continue unless `"name"` is `26-humza-website-staging` and `"targetEnvironment"` is `staging`. A build that still has `"name": "26-humza-website-local"` is the local build. Do not deploy it as staging.
 
