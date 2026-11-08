@@ -77,23 +77,10 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
 
       const square = `${file}${rank}`;
 
-      // If a square is selected and this is a legal move, execute move
-      if (selectedSquare && legalMoves.includes(square)) {
-        // Check if this is a pawn promotion
-        const piece = getPieceAt(board, selectedSquare);
-        const isPromotion =
-          piece?.toLowerCase() === "p" &&
-          ((snapshot.playerColor === "white" && rank === 8) ||
-            (snapshot.playerColor === "black" && rank === 1));
-
-        if (isPromotion) {
-          // TODO: Show promotion chooser modal
-          // For now, default to queen
-          onMove(selectedSquare, square, "q");
-        } else {
-          onMove(selectedSquare, square);
-        }
-
+      // If a square is selected, attempt move
+      if (selectedSquare) {
+        // Let parent handle promotion detection and chooser
+        onMove(selectedSquare, square);
         setSelectedSquare(null);
         setLegalMoves([]);
         return;
@@ -105,8 +92,9 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
         const pieceColor = clickedPiece === clickedPiece.toUpperCase() ? "white" : "black";
         if (pieceColor === snapshot.playerColor) {
           setSelectedSquare(square);
-          const moves = getLegalMoves(square, snapshot.fen);
-          setLegalMoves(moves);
+          // Note: legal moves would need server API or client chess.js instance
+          // For now, selection visual only - server validates legality
+          setLegalMoves([]);
           return;
         }
       }
@@ -115,7 +103,7 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
       setSelectedSquare(null);
       setLegalMoves([]);
     },
-    [isInteractive, selectedSquare, legalMoves, board, snapshot, onMove],
+    [isInteractive, selectedSquare, board, snapshot, onMove],
   );
 
   return (
