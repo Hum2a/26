@@ -306,3 +306,123 @@ it("previews the next round for the operator", async () => {
   await mountControls(<LiveConsole />);
   expect(screen.getByText("Round 1 of 2 · Next: Guess the tab")).toBeTruthy();
 });
+
+function voteFixture(
+  phase: "collect" | "vote" | "reveal",
+  question: { candidateMode: "all" | "shortlist"; flow?: "tournament" },
+) {
+  return {
+    ...playingFixture,
+    phase,
+    play: {
+      ...playingFixture.play!,
+      question: {
+        id: "toast",
+        index: 1,
+        total: 2,
+        prompt: "Write a toast.",
+        points: 60,
+        illustrative: true,
+        attribution: "after" as const,
+        presentation: "standard" as const,
+        kind: "vote" as const,
+        selfVote: "forbidden" as const,
+        votes: 1 as const,
+        tie: "shared" as const,
+        award: "authors" as const,
+        lateJoin: "ineligible" as const,
+        ...question,
+      },
+      hostResponses: [
+        { playerId, nickname: "Amina", summary: "Cheers all", included: true },
+        {
+          playerId: secondId,
+          nickname: "Bilal",
+          summary: "Rude line",
+          included: false,
+        },
+      ],
+    },
+  } as typeof playingFixture;
+}
+
+it("hides and restores written answers on an all-answer ballot", async () => {
+  setupControls(voteFixture("vote", { candidateMode: "all" }));
+  await mountControls(<LiveConsole />);
+  expect(
+    screen.getByText(/Rude line \(hidden from guests and the stage\)/),
+  ).toBeTruthy();
+  expect(screen.getByText(/Votes already cast for it stop counting/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Hide Amina's answer" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "exclude", playerId }),
+    ),
+  );
+  await screen.findByText(
+    "That answer is hidden from guests and the stage. It is still stored.",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Restore Bilal's answer" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "include", playerId: secondId }),
+    ),
+  );
+});
+
+it("offers no answer moderation once a bracket is voting or a result is settled", async () => {
+  setupControls(voteFixture("vote", { candidateMode: "all", flow: "tournament" }));
+  await mountControls(<LiveConsole />);
+  expect(screen.queryByRole("button", { name: "Hide Amina's answer" })).toBeNull();
+  update(voteFixture("reveal", { candidateMode: "all" }));
+  await waitFor(() =>
+    expect(screen.queryByRole("button", { name: "Hide Amina's answer" })).toBeNull(),
+  );
+  expect(screen.queryByRole("button", { name: "Restore Bilal's answer" })).toBeNull();
+});
+
+it("keeps shortlist Include and Remove instead of Hide", async () => {
+  setupControls(voteFixture("collect", { candidateMode: "shortlist" }));
+  await mountControls(<LiveConsole />);
+  expect(screen.getByText(/Rude line \(not on the ballot\)/)).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Hide Amina's answer" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Include Bilal" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "include", playerId: secondId }),
+    ),
+  );
+});
+
+it("hides a typed answer from a commonness reveal", async () => {
+  setupControls({
+    ...playingFixture,
+    phase: "reveal",
+    play: {
+      ...playingFixture.play!,
+      question: {
+        id: "common-password",
+        index: 1,
+        total: 2,
+        prompt: "Most common password?",
+        points: 100,
+        illustrative: false,
+        attribution: "never",
+        presentation: "standard",
+        kind: "typed",
+        maxLength: 40,
+        scoring: "commonness",
+      },
+      hostResponses: [
+        { playerId, nickname: "Amina", summary: "Submitted: hunter2", included: true },
+      ],
+    },
+  } as typeof playingFixture);
+  await mountControls(<LiveConsole />);
+  fireEvent.click(screen.getByRole("button", { name: "Hide Amina's answer" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "exclude", playerId }),
+    ),
+  );
+});

@@ -1,5 +1,7 @@
 import { createSqlStore } from "../room/sql-store.ts";
+import { blockedAnswer } from "@26/shared";
 import {
+  answerBlockedMessage,
   answerClosedMessage,
   answerDuplicateMessage,
   answerHeldMessage,
@@ -12,6 +14,8 @@ import {
   ballotWithdrawnMessage,
   featureClosedMessage,
   featureLimitMessage,
+  moderationClosedMessage,
+  moderationFlowMessage,
   shortlistClosedMessage,
   shortlistMissingMessage,
   textClosedMessage,
@@ -40,6 +44,7 @@ import {
   settlePartyVoteFlow,
   type PartyVoteFlow,
 } from "../../../../packages/shared/src/party-scoring.ts";
+import { hiddenAuthors, setAnswerHidden } from "./hidden-answers.ts";
 import { readRoundState, writeRoundState } from "./round-state.ts";
 
 export const stageCardCap = 8;
@@ -321,6 +326,9 @@ export function acceptText(
   if (body.length < 1 || body.length > 80 || hasControlCharacter(body)) {
     return { ok: false, message: textInvalidMessage };
   }
+  if (blockedAnswer(body)) {
+    return { ok: false, message: answerBlockedMessage };
+  }
   const existing = sql
     .exec(
       `SELECT player_id FROM text_response WHERE player_id = ? AND question_id = ?`,
@@ -473,6 +481,50 @@ export function excludeAuthor(sql: SqlStorage, playerId: string): void {
   sql.exec(`UPDATE room SET state_version = state_version + 1`);
 }
 
+/**
+ * Hides (`hide`) or restores one written answer on an all-answer ballot, with
+ * every other answer of the same text. Submissions and ballots are kept:
+ * - While answers are collected, a hidden answer never reaches the ballot.
+ * - While votes are cast, its card leaves every phone, it cannot be picked or
+ *   win, and ballots already cast for it stop counting. Those voters keep their
+ *   one vote; if the answer is restored before the vote closes, they count again.
+ * - From the reveal on, the result is settled and this is refused. A bracket or
+ *   awards vote fixes its cards when voting starts, so it is refused then too.
+ */
+export function moderateAnswer(sql: SqlStorage, playerId: string, hide: boolean): void {
+  const question = currentVote(sql);
+  if (!question || question.candidateMode !== "all") {
+    throw new Error(shortlistClosedMessage);
+  }
+  const phase = readPhase(sql);
+  if (phase !== "collect" && phase !== "vote") {
+    throw new Error(moderationClosedMessage);
+  }
+  if (frozen(sql, question.id) && question.flow) {
+    throw new Error(moderationFlowMessage);
+  }
+  const answers = sql
+    .exec<{ player_id: string; body: string }>(
+      `SELECT player_id, body FROM text_response WHERE question_id = ?`,
+      question.id,
+    )
+    .toArray()
+    .map((row) => ({ playerId: row.player_id, body: row.body }));
+  const group = setAnswerHidden(sql, question.id, answers, playerId, hide);
+  if (group.length === 0) {
+    throw new Error(shortlistMissingMessage);
+  }
+  for (const ownerId of group) {
+    sql.exec(
+      `UPDATE vote_candidate SET included = ? WHERE question_id = ? AND owner_id = ?`,
+      hide ? 0 : 1,
+      question.id,
+      ownerId,
+    );
+  }
+  sql.exec(`UPDATE room SET state_version = state_version + 1`);
+}
+
 export function featureCandidate(sql: SqlStorage, candidateId: string): void {
   const question = currentBallotQuestion(sql);
   const phase = readPhase(sql);
@@ -539,6 +591,7 @@ export function freezeVote(sql: SqlStorage, question: VoteQuestion, now: number)
       .toArray()
       .map((row) => row.player_id),
   );
+  const hidden = hiddenAuthors(sql, question.id);
   const answers = sql
     .exec<{ player_id: string; body: string }>(
       `SELECT text_response.player_id, text_response.body
@@ -551,8 +604,15 @@ export function freezeVote(sql: SqlStorage, question: VoteQuestion, now: number)
     .toArray();
   answers.forEach((answer, position) => {
     const eligible = isRevoked(sql, answer.player_id) ? 0 : 1;
+    // All-answer ballots take every line the host has not hidden.
     const included =
-      question.candidateMode === "all" || shortlist.has(answer.player_id) ? 1 : 0;
+      question.candidateMode === "all"
+        ? hidden.has(answer.player_id)
+          ? 0
+          : 1
+        : shortlist.has(answer.player_id)
+          ? 1
+          : 0;
     sql.exec(
       `INSERT INTO vote_candidate (
          question_id, candidate_id, owner_id, label, eligible, included, position
@@ -1047,6 +1107,7 @@ function hostRows(
     });
   }
   if (question.kind === "vote") {
+    const hidden = hiddenAuthors(sql, question.id);
     return sql
       .exec<{ player_id: string; nickname: string; body: string }>(
         `SELECT text_response.player_id, player.nickname, text_response.body
@@ -1067,7 +1128,9 @@ function hostRows(
           ...(candidate ? { candidateId: candidate.candidate_id, votes } : {}),
           included: candidate
             ? candidate.included === 1
-            : shortlisted(sql, question.id, row.player_id),
+            : question.candidateMode === "all"
+              ? !hidden.has(row.player_id)
+              : shortlisted(sql, question.id, row.player_id),
         };
       });
   }

@@ -288,7 +288,9 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
     "Answer accepted.",
   );
   await admin.getByRole("button", { name: "Include Bilal" }).click();
-  await expect(admin.getByText("That answer is on the ballot.")).toBeVisible();
+  await expect(
+    admin.getByText("That answer is shown to guests and the stage."),
+  ).toBeVisible();
 
   await advanceUntil(admin, stage, "Voting");
   await expect(amina.getByRole("button", { name: "Spare from Bilal" })).toBeVisible();

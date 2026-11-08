@@ -83,6 +83,7 @@ export default defineConfig({
             "test/social.spec.ts",
             "test/rounds.spec.ts",
             "test/vote.spec.ts",
+            "test/answer-moderation.spec.ts",
             "test/duel.spec.ts",
             "test/troll.spec.ts",
             "test/media.spec.ts",

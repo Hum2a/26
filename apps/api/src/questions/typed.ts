@@ -1,4 +1,6 @@
+import { blockedAnswer } from "@26/shared";
 import {
+  answerBlockedMessage,
   answerClosedMessage,
   answerDuplicateMessage,
   answerLateMessage,
@@ -14,6 +16,7 @@ import {
   commonnessResults,
   passwordKey,
 } from "../../../../packages/shared/src/party-scoring.ts";
+import { hiddenAuthors } from "./hidden-answers.ts";
 import { readRoundState, writeRoundState } from "./round-state.ts";
 
 /** Typed answers use `round_response` with kind `typed`. The match is decided at the reveal. */
@@ -31,6 +34,9 @@ export function checkTypedAnswer(
     [...body].some((character) => character.charCodeAt(0) <= 31)
   ) {
     return { ok: false, message: typedInvalidMessage };
+  }
+  if (blockedAnswer(body)) {
+    return { ok: false, message: answerBlockedMessage };
   }
   return { ok: true, body };
 }
@@ -193,17 +199,21 @@ export function typedReveal(
         question.id,
         "commonness",
       ) ?? [];
+    // Hidden answers still count and score; their text stays off public screens.
+    const hidden = hiddenAuthors(sql, question.id);
     const groups = [
       ...new Map(
-        result.map((row) => [
-          passwordKey(row.body),
-          {
-            body: passwordKey(row.body),
-            count: row.count,
-            rank: row.rank,
-            points: row.points,
-          },
-        ]),
+        result
+          .filter((row) => !hidden.has(row.playerId))
+          .map((row) => [
+            passwordKey(row.body),
+            {
+              body: passwordKey(row.body),
+              count: row.count,
+              rank: row.rank,
+              points: row.points,
+            },
+          ]),
       ).values(),
     ].sort((a, b) => a.rank - b.rank);
     return {
@@ -227,7 +237,14 @@ export function typedReveal(
   };
 }
 
+/**
+ * The host's view of every typed answer. Only a commonness question shows
+ * answers in public, so only its rows carry `included` (shown, not hidden),
+ * which gives the host a hide/restore control.
+ */
 export function typedHostResponses(sql: SqlStorage, question: TypedQuestion) {
+  const hidden =
+    question.scoring === "commonness" ? hiddenAuthors(sql, question.id) : undefined;
   return typedRows(sql, question.id).map((row) => ({
     playerId: row.playerId,
     nickname: row.nickname,
@@ -235,7 +252,13 @@ export function typedHostResponses(sql: SqlStorage, question: TypedQuestion) {
       question.scoring === "commonness"
         ? `Submitted: ${row.body}`
         : `${matchTyped(row.body, question.accepted).correct ? "Right" : "Wrong"}: ${row.body}`,
+    ...(hidden ? { included: !hidden.has(row.playerId) } : {}),
   }));
+}
+
+/** Every stored typed answer for a question, including any the host hid. */
+export function typedAnswers(sql: SqlStorage, questionId: string) {
+  return typedRows(sql, questionId).map(({ playerId, body }) => ({ playerId, body }));
 }
 
 function typedRows(sql: SqlStorage, questionId: string) {

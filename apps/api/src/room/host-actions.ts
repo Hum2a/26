@@ -25,7 +25,8 @@ import {
   type WallSettingsChange,
 } from "../wall/moderation.ts";
 import { syncWall } from "../wall/queue.ts";
-import { excludeAuthor, featureCandidate, includeAuthor } from "../questions/vote.ts";
+import { moderateCurrentAnswer } from "../questions/answer-moderation.ts";
+import { featureCandidate } from "../questions/vote.ts";
 import {
   hideClosedMessage,
   demoScoringVersion,
@@ -335,14 +336,14 @@ export function applyHostAction(
     if (!input.playerId) {
       throw new Error(playerMissingMessage);
     }
-    includeAuthor(sql, input.playerId);
+    moderateCurrentAnswer(sql, input.playerId, false);
     return {};
   }
   if (input.action === "exclude") {
     if (!input.playerId) {
       throw new Error(playerMissingMessage);
     }
-    excludeAuthor(sql, input.playerId);
+    moderateCurrentAnswer(sql, input.playerId, true);
     return {};
   }
   if (input.action === "feature") {

@@ -59,6 +59,15 @@ export const rankPartialMessage = "Place at least one item.";
 export const textInvalidMessage = "Write an answer of 1 to 80 characters.";
 export const textClosedMessage = "This question is not collecting written answers.";
 export const typedInvalidMessage = "Type an answer that fits the box.";
+export const moderationClosedMessage =
+  "Answers can be hidden while they are collected or voted on. Hide the stage instead.";
+export const moderationFlowMessage =
+  "This vote runs in rounds. Hide answers before voting starts, or hide the stage.";
+export const moderationNotShownMessage =
+  "This question does not show written answers on the big screen.";
+/** A written answer with an identity slur. The text is never echoed back. */
+export const answerBlockedMessage =
+  "That answer can't go on the big screen. Try different wording.";
 export const ballotClosedMessage = "This question is not collecting votes.";
 export const ballotUnknownMessage = "That answer is not on the ballot.";
 export const ballotSelfMessage = "You cannot vote for your own answer.";

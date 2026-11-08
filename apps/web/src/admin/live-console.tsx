@@ -536,15 +536,50 @@ export function LiveConsole() {
   );
 }
 
+/**
+ * Where the room accepts hide/restore for written answers (shortlists keep
+ * their own Include/Remove): an all-answer ballot while answers are collected
+ * or voted on (a bracket only before voting), and a commonness question, the
+ * typed format that shows answers in public. The room checks again.
+ */
+function answerModeration(
+  play: ReturnType<typeof useAdminRoom>["snapshot"]["play"],
+  phase: string,
+): "ballot" | "reveal" | null {
+  if (play?.question.kind === "vote" && play.question.candidateMode === "all") {
+    if (phase === "collect") return "ballot";
+    if (phase === "vote" && !play.question.flow) return "ballot";
+    return null;
+  }
+  if (
+    play?.question.kind === "typed" &&
+    play.question.scoring === "commonness" &&
+    (phase === "collect" || phase === "reveal" || phase === "scores")
+  ) {
+    return "reveal";
+  }
+  return null;
+}
+
 function LiveResponses({ locked }: { locked: boolean }) {
   const { snapshot, execute } = useAdminRoom();
   const play = snapshot.play;
   const shortlist =
     play?.question.kind === "vote" && play.question.candidateMode === "shortlist";
+  const moderation = answerModeration(play, snapshot.phase);
   const choices = play?.question.kind === "choice" ? play.question.options : [];
   return (
     <section className="admin-task-section">
       <h2>Responses on this question</h2>
+      {moderation ? (
+        <p className="text-sm">
+          Hide an answer to take it off guests' phones and the stage. Answers with the
+          same text are hidden together, and nothing is deleted.
+          {moderation === "ballot"
+            ? " Votes already cast for it stop counting until you restore it."
+            : ""}
+        </p>
+      ) : null}
       {play?.hostResponses?.length ? (
         <ul>
           {play.hostResponses.map((row) => (
@@ -553,10 +588,33 @@ function LiveResponses({ locked }: { locked: boolean }) {
                 <strong>{row.nickname}</strong>
                 <br />
                 {row.summary}
-                {row.included === false ? " (not on the ballot)" : ""}
+                {row.included === false
+                  ? shortlist
+                    ? " (not on the ballot)"
+                    : " (hidden from guests and the stage)"
+                  : ""}
                 {row.votes !== undefined ? ` · ${row.votes} votes` : ""}
               </p>
               <div className="admin-actions">
+                {moderation && row.included !== undefined ? (
+                  <Button
+                    variant="secondary"
+                    disabled={locked}
+                    onClick={() =>
+                      void execute(
+                        {
+                          action: row.included ? "exclude" : "include",
+                          playerId: row.playerId,
+                        },
+                        row.included ? "Hide answer" : "Restore answer",
+                      )
+                    }
+                  >
+                    {row.included
+                      ? `Hide ${row.nickname}'s answer`
+                      : `Restore ${row.nickname}'s answer`}
+                  </Button>
+                ) : null}
                 {shortlist && snapshot.phase === "collect" ? (
                   <Button
                     variant="secondary"

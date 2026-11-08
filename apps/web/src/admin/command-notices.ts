@@ -138,11 +138,12 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "adjust") {
     return "The score was adjusted. The reason stays on this screen.";
   }
+  // Shortlist curation, all-answer ballots and commonness reveals share these.
   if (action === "include") {
-    return "That answer is on the ballot.";
+    return "That answer is shown to guests and the stage.";
   }
   if (action === "exclude") {
-    return "That answer was taken off the ballot.";
+    return "That answer is hidden from guests and the stage. It is still stored.";
   }
   if (action === "feature") {
     return "The stage selection changed. The vote tally did not.";
