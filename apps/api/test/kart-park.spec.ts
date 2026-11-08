@@ -68,9 +68,21 @@ it("uses the existing race reducer and recovery/public projection with the versi
   expect(recovered.x).toBe(driven.drivers[0]!.lastSafe!.x);
   expect(recovered.z).toBe(driven.drivers[0]!.lastSafe!.z);
   expect(projectKartRace(driven, "p", 0).trackId).toBe("26-park-v1");
-  expect(
-    publicQuestionSchema.options[0].shape.trackId.safeParse("26-park-v1").success,
-  ).toBe(true);
+  // Validate that 26-park-v1 is accepted by the kart question schema
+  const kartQuestion = publicQuestionSchema.safeParse({
+    id: "test",
+    index: 1,
+    total: 1,
+    prompt: "Test",
+    points: 100,
+    illustrative: false,
+    attribution: "never",
+    presentation: "default",
+    kind: "kart",
+    trackId: "26-park-v1",
+    timeLimitMs: 180000,
+  });
+  expect(kartQuestion.success).toBe(true);
 });
 it("awards only actual ordered forward sectors on the new route and rejects a teleport", () => {
   let cursor = { angle: 0, distance: 0, checkpoint: 0 };

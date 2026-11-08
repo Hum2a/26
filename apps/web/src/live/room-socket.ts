@@ -11,7 +11,11 @@ import {
   type DriverStyle,
   type WallFrame,
   type WallReaction,
+  type ChessMoveParams,
+  type ChessResignParams,
 } from "@26/shared";
+
+export type { ChessMoveParams, ChessResignParams };
 import {
   noteRtt,
   noteSubmissionRetries,
@@ -29,20 +33,6 @@ const timeProbesOnOpen = 5;
 const staleAfterMs = 15_000;
 /** After waking, a socket that cannot answer within this is replaced. */
 const wakeProbeMs = 4_000;
-
-/** Chess move submission. */
-export interface ChessMoveParams {
-  gameId: string;
-  from: string;
-  to: string;
-  promotion?: "q" | "r" | "b" | "n";
-  positionRevision: number;
-}
-
-/** Chess resign submission. */
-export interface ChessResignParams {
-  gameId: string;
-}
 
 /**
  * Full jitter: a random wait up to the capped exponential. When the venue
@@ -201,6 +191,22 @@ type CommandBody =
       name: "driver";
       style: DriverStyle;
       faceMediaId: string | null;
+    }
+  | {
+      kind: "command";
+      requestId: string;
+      name: "chess-move";
+      gameId: string;
+      from: string;
+      to: string;
+      promotion?: "q" | "r" | "b" | "n";
+      positionRevision: number;
+    }
+  | {
+      kind: "command";
+      requestId: string;
+      name: "chess-resign";
+      gameId: string;
     };
 
 type TrackedCommand = {

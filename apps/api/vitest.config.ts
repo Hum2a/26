@@ -73,6 +73,7 @@ export default defineConfig({
             "test/wordle-room.spec.ts",
             "test/party-polish-room.spec.ts",
             "test/chess-alarm.spec.ts",
+            "test/chess-scheduler.spec.ts",
             "test/kart-room.spec.ts",
             "test/kart-items-room.spec.ts",
             "test/kart-lobby.spec.ts",
