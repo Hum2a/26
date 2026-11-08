@@ -844,8 +844,14 @@ function stepDriver(
         (next.height ?? 0) > 0 ? [] : oils,
         elapsed,
         d.playerId,
-        race?.itemRules?.version === 2
-          ? { allowed: allowedKartItems(race.itemRules), damageGrace: true }
+        race?.itemRules?.version === 2 || race?.itemRules?.luck === "position"
+          ? {
+              allowed: allowedKartItems(race.itemRules),
+              damageGrace: race.itemRules.version === 2,
+              ...(race.itemRules.luck === "position"
+                ? { standing: () => kartStanding(race, d) }
+                : {}),
+            }
           : undefined,
       );
       d.power = effect.powers;
@@ -1002,6 +1008,16 @@ function stepDriver(
     d.speed = 0;
     if (laps > 1) d.lapTimes = [...(d.lapTimes ?? []), elapsed];
   }
+}
+
+/** 0 for the leader, 1 for last, by whole-race progress among karts still racing. */
+function kartStanding(race: KartRace, driver: Driver): number {
+  const racing = race.drivers.filter((d) => d.status === "RACING");
+  if (racing.length < 2) return 0;
+  const ahead =
+    race.drivers.filter((d) => d.status === "FINISHED").length +
+    racing.filter((d) => d !== driver && d.progress > driver.progress).length;
+  return Math.min(1, ahead / (race.drivers.length - 1));
 }
 
 export function kartStandings(race: KartRace, points: number) {

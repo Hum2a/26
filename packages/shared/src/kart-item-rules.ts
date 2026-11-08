@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { kartItemSchema, kartLegacyItems, type KartItem } from "./kart-powers.ts";
 import { kartProjectileEventSchema } from "./kart-projectiles.ts";
+/**
+ * "position": item boxes favour catch-up items for karts at the back and
+ * defensive items for the leaders. Absent keeps the even, fixed rotation.
+ */
+const luck = z.literal("position").optional();
 const expanded = z
   .object({
     version: z.literal(2),
@@ -8,10 +13,11 @@ const expanded = z
       .array(kartItemSchema)
       .max(7)
       .refine((items) => new Set(items).size === items.length, "Choose each item once"),
+    luck,
   })
   .strict();
 export const kartItemRulesSchema = z.union([
-  z.object({ version: z.literal(1) }).strict(),
+  z.object({ version: z.literal(1), luck }).strict(),
   expanded,
 ]);
 export type KartItemRules = z.infer<typeof kartItemRulesSchema>;
