@@ -4,6 +4,7 @@ import {
   missingRequirements,
   type Answer,
   type AttributionMode,
+  type AuthoredChess,
   type AuthoredKart,
   type AuthoredChoice,
   type AuthoredDuel,
@@ -17,6 +18,7 @@ import {
   type AuthoredVote,
   type ChoiceOutcome,
   type ChoiceQuestion,
+  type ChessQuestion,
   type DuelQuestion,
   type FinaleQuestion,
   type GuessQuestion,
@@ -388,6 +390,30 @@ export function kartQuestion(
   );
 }
 
+export function chessQuestion(
+  input: SharedInput & {
+    initialTimeMs?: number;
+    incrementMs?: number;
+  },
+): AuthoredChess {
+  return finish(
+    {
+      ...shared(
+        {
+          ...input,
+          collectMs: 10_000, // 10 second collection time after games finish
+          attribution: "never",
+        },
+        input.points ?? 100,
+      ),
+      kind: "chess",
+      initialTimeMs: input.initialTimeMs ?? 60_000, // 1+0 default
+      incrementMs: input.incrementMs ?? 0,
+    },
+    input.status,
+  );
+}
+
 function playableCore(question: AuthoredQuestion, illustrative: boolean) {
   return {
     id: question.id,
@@ -428,6 +454,14 @@ export function toPlayable(
       timeLimitMs: question.timeLimitMs,
       ...(question.laps ? { laps: question.laps } : {}),
     };
+  if (question.kind === "chess") {
+    return {
+      ...core,
+      kind: "chess",
+      initialTimeMs: question.initialTimeMs,
+      incrementMs: question.incrementMs,
+    };
+  }
   if (question.kind === "choice") {
     if (!isKnown(question.correctOption)) {
       return undefined;
