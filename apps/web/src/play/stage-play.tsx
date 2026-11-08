@@ -178,6 +178,12 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
   if (play.question.kind === "duel" || play.question.kind === "finale") {
     return <DuelView play={play} omitBoard={omitBoard} />;
   }
+  
+  // Only choice questions have options
+  if (play.question.kind !== "choice") {
+    return <p>Unsupported question type for this view</p>;
+  }
+  
   const reveal = play.reveal?.kind === "choice" ? play.reveal : undefined;
   const options = play.question.options;
   const answer = reveal
