@@ -149,16 +149,16 @@ describe("Stale Search Rejection", () => {
     const searchFen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
     const currentFen = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2";
 
-    const isStale = searchFen !== currentFen;
-    expect(isStale).toBe(true);
+    const isStale = (searchFen: string, currentFen: string) => searchFen !== currentFen;
+    expect(isStale(searchFen, currentFen)).toBe(true);
   });
 
   it("rejects bestmove when positionRevision changed", () => {
     const searchRevision = 5;
     const currentRevision = 6; // Incremented by pause or new move
 
-    const isStale = searchRevision !== currentRevision;
-    expect(isStale).toBe(true);
+    const isStale = (search: number, current: number) => search !== current;
+    expect(isStale(searchRevision, currentRevision)).toBe(true);
   });
 
   it("accepts bestmove when FEN and revision match", () => {
@@ -175,7 +175,7 @@ describe("Stale Search Rejection", () => {
     const searchGeneration = 10;
     const currentGeneration = 11; // Incremented on pause/resume/unmount
 
-    const isStale = searchGeneration !== currentGeneration;
-    expect(isStale).toBe(true);
+    const isStale = (search: number, current: number) => search !== current;
+    expect(isStale(searchGeneration, currentGeneration)).toBe(true);
   });
 });

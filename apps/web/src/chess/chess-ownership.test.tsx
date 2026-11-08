@@ -108,7 +108,7 @@ describe("Chess Ownership Contract", () => {
       isGameOver: false,
     };
 
-    const mockSubmit = vi.fn((gameId: string, _from: string, _to: string) => {
+    const mockSubmit = vi.fn((gameId: string) => {
       // CRITICAL: gameId must be ownGameId, NEVER opponentGameId
       expect(gameId).toBe(ownGameId);
       expect(gameId).not.toBe(opponentGameId);
