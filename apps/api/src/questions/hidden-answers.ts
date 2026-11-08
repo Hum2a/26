@@ -35,8 +35,7 @@ export function quotableAnswer(
       questionId,
       authorId,
     )
-    .toArray()
-    .every((row) => row.included === 1);
+    .toArray()[0]?.included === 1;
 }
 
 /**
