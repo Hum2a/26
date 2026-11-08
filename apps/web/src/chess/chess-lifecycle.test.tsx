@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { StockfishEngine } from "./stockfish-worker";
+import { WorkerMock } from "./worker-mock";
 
 /**
  * Worker lifecycle and stale search cancellation tests.
- * Tests the REAL imported worker adapter, not a copy.
+ * Tests the REAL imported worker adapter with faithful Worker mock.
+ * Mock simulates UCI protocol without WASM; tests verify adapter behavior.
  * 
  * @vitest-environment jsdom
  */
@@ -11,15 +13,11 @@ import { StockfishEngine } from "./stockfish-worker";
 describe("Chess Engine Lifecycle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Install faithful Worker mock
+    (globalThis as any).Worker = vi.fn(() => new WorkerMock());
   });
 
   it("cancels in-flight search on terminate", async () => {
-    // Skip if Worker not available (Node environment)
-    if (typeof Worker === "undefined") {
-      expect(true).toBe(true); // Mark as passing - tested separately in browser
-      return;
-    }
-
     const onBestMove = vi.fn();
     const engine = new StockfishEngine({ elo: 1425, onBestMove });
 
@@ -33,17 +31,12 @@ describe("Chess Engine Lifecycle", () => {
     // Terminate before search completes
     engine.terminate();
 
-    // Search should reject or resolve without calling callback
+    // Search should reject without calling callback
     await expect(searchPromise).rejects.toThrow();
     expect(onBestMove).not.toHaveBeenCalled();
   });
 
   it("stops search on explicit stop command", async () => {
-    if (typeof Worker === "undefined") {
-      expect(true).toBe(true);
-      return;
-    }
-
     const onBestMove = vi.fn();
     const engine = new StockfishEngine({ elo: 1425, onBestMove });
 
@@ -55,32 +48,22 @@ describe("Chess Engine Lifecycle", () => {
     // Stop search
     engine.stop();
 
-    // Should still resolve but may have shorter think time
+    // Should still resolve and call callback
     await searchPromise;
     expect(onBestMove).toHaveBeenCalled();
   });
 
   it("rejects multiple initializations", async () => {
-    if (typeof Worker === "undefined") {
-      expect(true).toBe(true);
-      return;
-    }
-
     const engine = new StockfishEngine({ elo: 1425 });
 
     await engine.initialize();
     expect(engine.isReady()).toBe(true);
 
-    // Second init should reject or no-op
+    // Second init should reject
     await expect(engine.initialize()).rejects.toThrow();
   });
 
   it("handles rapid position changes during search", async () => {
-    if (typeof Worker === "undefined") {
-      expect(true).toBe(true);
-      return;
-    }
-
     const onBestMove = vi.fn();
     const engine = new StockfishEngine({ elo: 1425, onBestMove });
 
@@ -95,19 +78,13 @@ describe("Chess Engine Lifecycle", () => {
 
     await search1;
 
-    // Original search callback may fire with stale position
-    // Component must check FEN/revision match
+    // Callback fires; component must check FEN/revision match
     expect(onBestMove).toHaveBeenCalled();
 
     engine.terminate();
   });
 
   it("cleans up on component unmount", async () => {
-    if (typeof Worker === "undefined") {
-      expect(true).toBe(true);
-      return;
-    }
-
     const engine = new StockfishEngine({ elo: 1425 });
 
     await engine.initialize();
