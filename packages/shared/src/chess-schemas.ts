@@ -110,10 +110,10 @@ export const chessGuestSnapshotSchema = z.object({
   status: chessGameStatusSchema,
   playerColor: chessColorSchema,
   botColor: chessColorSchema,
-  playerTimeMs: z.number(),
-  botTimeMs: z.number(),
+  playerTimeMs: z.number().int().min(0),
+  botTimeMs: z.number().int().min(0),
   sideToMove: chessColorSchema,
-  plyCount: z.number(),
+  plyCount: z.number().int().min(0),
   // Terminal state
   winner: z.enum(["player", "bot", "draw"]).optional(),
   terminationReason: z.string().optional(),
