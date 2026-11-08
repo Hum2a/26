@@ -402,7 +402,7 @@ export function notePresence(
   }
 }
 
-export function onAlarm(store: GameStore, now: number): void {
+export async function onAlarm(store: GameStore, now: number): Promise<void> {
   const room = store.readRoom();
   const due = store
     .jobs()
@@ -442,7 +442,7 @@ export function onAlarm(store: GameStore, now: number): void {
     if (job.jobType !== "gameplay" || !isRoundJobPayload(job.payload)) {
       continue;
     }
-    // Chess clock alarm
+    // Chess clock alarm - handled via onScheduledJob callback
     if (job.payload.startsWith("chess-clock:")) {
       if (
         job.phaseGeneration !== room.phaseGeneration ||
@@ -453,11 +453,8 @@ export function onAlarm(store: GameStore, now: number): void {
         store.saveJob({ ...job, status: "cancelled", dueAt: null, remainingMs: null });
         continue;
       }
-      const gameId = job.payload.substring("chess-clock:".length);
-      const { handleChessClockAlarm } = require("../questions/chess-mechanic.ts");
-      // Note: sql is not available in this context; mechanic will be called from party-room with sql
+      store.saveJob({ ...job, status: "done", dueAt: null, remainingMs: null });
       store.onScheduledJob?.(job, now);
-      store.saveJob({ ...job, status: "done", dueAt: null });
       continue;
     }
     if (

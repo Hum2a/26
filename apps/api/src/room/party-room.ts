@@ -906,9 +906,20 @@ export class PartyRoom extends DurableObject<Env> {
 
   /** Runs every due job in one transaction that also arms the next alarm. */
   private async runDueJobs(now: number, raceTick: (only: boolean) => void) {
-    await commitAndArm(this.ctx.storage, (sql) => {
+    await commitAndArm(this.ctx.storage, async (sql) => {
       this.flushKartInputs(sql);
-      const store = createGameStore(sql);
+      const baseStore = createGameStore(sql);
+      // Extend store with chess alarm handling
+      const store: GameStore = {
+        ...baseStore,
+        onScheduledJob: async (job, now) => {
+          if (job.payload.startsWith("chess-clock:")) {
+            const gameId = job.payload.substring("chess-clock:".length);
+            const { handleChessClockAlarm } = await import("../questions/chess-mechanic.ts");
+            await handleChessClockAlarm(sql, store, gameId, now);
+          }
+        },
+      };
       const before = store.readRoom();
       const due = sql
         .exec<{ payload: string }>(
@@ -917,7 +928,7 @@ export class PartyRoom extends DurableObject<Env> {
           now,
         )
         .toArray();
-      onAlarm(store, now);
+      await onAlarm(store, now);
       const after = store.readRoom();
       // A tick that only moved the race goes out as a kart frame, not a full snapshot.
       raceTick(
