@@ -54,38 +54,58 @@ export function executeChessMove(
   command: ChessMoveCommand,
   playerId: string,
   now: number,
-): { success: true; botMoveNeeded: boolean } | { success: false; error: string } {
+): { success: true } | { success: false; error: string } {
   // Load game from SQLite
   const game = loadGame(sql, command.gameId);
   if (!game) {
     return { success: false, error: "Game not found" };
   }
 
-  // Verify ownership
+  // CRITICAL: Verify ownership FIRST - player can ONLY move in their OWN game
   if (game.playerId !== playerId) {
     return { success: false, error: "Not your game" };
   }
 
-  // Apply move through coordinator
-  const result = applyChessMove(game, command, now);
+  // Determine if this is a human or bot move from game state
+  // Human move: it's the player's turn (sideToMove === playerColor)
+  // Bot move: it's the bot's turn (sideToMove === botColor)
+  const isHumanTurn = game.sideToMove === game.playerColor;
 
-  if ("error" in result) {
-    return { success: false, error: result.error };
-  }
-
-  // Persist updated game
-  persistGame(sql, result.game);
-
-  // If game is now terminal, score it
-  if (result.game.status !== "in-progress") {
-    scoreGameOnce(sql, result.game);
+  if (isHumanTurn) {
+    // Human move: apply through coordinator (validates revision)
+    const result = applyChessMove(game, command, now);
+    if ("error" in result) {
+      return { success: false, error: result.error };
+    }
+    persistGame(sql, result.game);
+    if (result.game.status !== "in-progress") {
+      scoreGameOnce(sql, result.game);
+    } else {
+      // Schedule alarm for bot's clock
+      const room = store.readRoom();
+      scheduleClockAlarm(store, result.game.gameId, now + result.game.botTimeMs, room.phaseGeneration, room.scopeGeneration);
+    }
+    return { success: true };
   } else {
-    // Schedule alarm for bot's clock
-    const room = store.readRoom();
-    scheduleClockAlarm(store, result.game.gameId, now + result.game.botTimeMs, room.phaseGeneration, room.scopeGeneration);
+    // Bot move: apply through bot coordinator (validates revision)
+    const result = applyBotMove(
+      game,
+      { from: command.from, to: command.to, promotion: command.promotion },
+      now
+    );
+    if ("error" in result) {
+      return { success: false, error: result.error };
+    }
+    persistGame(sql, result.game);
+    if (result.game.status !== "in-progress") {
+      scoreGameOnce(sql, result.game);
+    } else {
+      // Schedule alarm for player's clock
+      const room = store.readRoom();
+      scheduleClockAlarm(store, result.game.gameId, now + result.game.playerTimeMs, room.phaseGeneration, room.scopeGeneration);
+    }
+    return { success: true };
   }
-
-  return { success: true, botMoveNeeded: result.game.status === "in-progress" };
 }
 
 /**
