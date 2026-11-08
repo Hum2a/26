@@ -96,7 +96,11 @@ export { resultsStatusSchema } from "./archive.ts";
 export type { ResultsStatus } from "./archive.ts";
 export * from "./chess-schemas.ts";
 export * from "./chess-params.ts";
-import { chessGuestSnapshotSchema } from "./chess-schemas.ts";
+import {
+  chessGuestSnapshotSchema,
+  chessStageSnapshotSchema,
+  chessControlSnapshotSchema,
+} from "./chess-schemas.ts";
 export {
   emailVerifyTtlMs,
   galleryAttribution,
@@ -817,7 +821,13 @@ export const playSnapshotSchema = z
     question: publicQuestionSchema,
     kart: kartRaceSchema.optional(),
     /** Chess: per-audience snapshot. See chess-schemas.ts. */
-    chess: chessGuestSnapshotSchema.optional(),
+    chess: z
+      .union([
+        chessGuestSnapshotSchema,
+        chessStageSnapshotSchema,
+        chessControlSnapshotSchema,
+      ])
+      .optional(),
     submissionCount: z.number().int().nonnegative(),
     selfAnswer: selfAnswerSchema,
     selfBallot: z

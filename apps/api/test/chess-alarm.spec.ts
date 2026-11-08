@@ -4,10 +4,11 @@ import { payloadDigest } from "../src/room/digest.ts";
 import { createSqlStore } from "../src/room/sql-store.ts";
 
 /**
- * Real PartyRoom integration: silent clock expiry via alarm, exactly-once scoring.
- * Proves scheduler dispatches chess-clock alarms without inbound commands.
+ * Mechanic-level tests: manual handleChessClockAlarm invocation.
+ * These verify the chess coordinator logic but do NOT prove scheduler dispatch.
+ * See chess-scheduler.spec.ts for real DO alarm() integration tests.
  */
-it("flags player silently via alarm, scores exactly once", async () => {
+it("mechanic: handleChessClockAlarm flags games and scores exactly once", async () => {
   // Create room
   const created = await env.ROOM_CODE_REGISTRY.getByName("codes").createLobby({
     requestId: crypto.randomUUID(),
@@ -151,7 +152,7 @@ it("flags player silently via alarm, scores exactly once", async () => {
   });
 });
 
-it("paused clock does not flag, increments revision", async () => {
+it("mechanic: paused clock increments revision, handler respects cancellation", async () => {
   const created = await env.ROOM_CODE_REGISTRY.getByName("codes").createLobby({
     requestId: crypto.randomUUID(),
     digest: await payloadDigest({ action: "create" }),
