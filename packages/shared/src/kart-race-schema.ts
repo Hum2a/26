@@ -15,6 +15,8 @@ export const kartLimitMs = 45_000;
 /** Laps a host can choose in a kart-only lobby; packs stay one lap. */
 export const kartLapsSchema = z.union([z.literal(1), z.literal(2), z.literal(3)]);
 export type KartLaps = z.infer<typeof kartLapsSchema>;
+/** CPU racers a host can add to a kart-only lobby. */
+export const kartCpuCountSchema = z.number().int().min(0).max(7);
 /** The longest race window: three laps of a three-minute course. */
 export const kartMaxLimitMs = importedTrackLimitMs * 3;
 export type KartTrackId =
@@ -71,6 +73,8 @@ export const kartDriverSchema = z
     lapsMs: z.array(z.number().int().nonnegative()).max(3).optional(),
     /** Drafting behind another kart, then the reduced-drag burst. */
     slipstream: z.enum(["charging", "active"]).optional(),
+    /** A CPU racer the room drives; it takes places but never scores. */
+    cpu: z.literal(true).optional(),
   })
   .strict();
 export type KartDriver = z.infer<typeof kartDriverSchema>;
@@ -116,6 +120,7 @@ export const kartRaceSchema = z
             finished: z.boolean(),
             place: z.number().int().positive(),
             points: z.number().int().nonnegative(),
+            cpu: z.literal(true).optional(),
           })
           .strict(),
       )

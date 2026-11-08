@@ -173,6 +173,46 @@ it("saves laps with the course, scales the race window, replays once and refuses
   expect(view.play?.kart).toMatchObject({ laps: 3, timeLimitMs: 540_000 });
   expect(view.play?.question).toMatchObject({ laps: 3, timeLimitMs: 540_000 });
   expect(view.deadlineAt).toBe(now + 4 + 540_000);
+  // CPU racers: validated, saved with the course and started behind the guests.
+  const cpuLobby = await lobby();
+  const cpuCommand = {
+    ...cpuLobby.credential,
+    action: "kart-track",
+    kartTrack: "26-park-v1",
+    kartCpu: 3,
+    requestId: crypto.randomUUID(),
+    nowMs: cpuLobby.now + 1,
+  };
+  for (const kartCpu of [-1, 8, 2.5, "3"])
+    expect(
+      (
+        await cpuLobby.room.hostAction({
+          ...cpuCommand,
+          kartCpu,
+          requestId: crypto.randomUUID(),
+        })
+      ).ok,
+    ).toBe(false);
+  expect((await cpuLobby.room.hostAction(cpuCommand)).ok).toBe(true);
+  expect((await cpuLobby.room.snapshotFor("control")).kartLobby).toMatchObject({ cpu: 3 });
+  for (const role of ["stage", "guest"] as const)
+    expect((await cpuLobby.room.snapshotFor(role)).kartLobby).toBeUndefined();
+  await cpuLobby.room.hostAction({
+    ...cpuLobby.credential,
+    action: "start-kart",
+    requestId: crypto.randomUUID(),
+    nowMs: cpuLobby.now + 2,
+  });
+  for (let i = 3; i <= 4; i++)
+    await cpuLobby.room.advanceRound({
+      ...cpuLobby.credential,
+      requestId: crypto.randomUUID(),
+      nowMs: cpuLobby.now + i,
+    });
+  const cpuView = await cpuLobby.room.snapshotFor("stage");
+  expect(cpuView.play?.kart?.participants.filter((d) => d.cpu)).toHaveLength(3);
+  // CPU racers never count as answers.
+  expect(cpuView.play?.submissionCount ?? 0).toBe(0);
   // Leaving laps out keeps a one-lap race.
   const single = await lobby();
   await single.room.hostAction({

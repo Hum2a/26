@@ -958,6 +958,8 @@ export const kartLobbySchema = z
     trackId: z.enum(["party-ring-v1", "mario-circuit-v1", "26-park-v1"]).optional(),
     /** Absent means one lap. */
     laps: z.union([z.literal(2), z.literal(3)]).optional(),
+    /** CPU racers added behind the guests; absent means none. */
+    cpu: z.number().int().min(1).max(7).optional(),
     sourceVersion: z.string().min(1).max(120).optional(),
     history: z
       .array(
@@ -966,6 +968,7 @@ export const kartLobbySchema = z
             atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
             trackId: z.enum(["party-ring-v1", "mario-circuit-v1", "26-park-v1"]),
             laps: z.union([z.literal(2), z.literal(3)]).optional(),
+            cpu: z.number().int().min(1).max(7).optional(),
             source: z.literal("host"),
           })
           .strict(),

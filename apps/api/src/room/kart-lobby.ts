@@ -1,4 +1,5 @@
 import {
+  kartCpuCountSchema,
   kartLapsSchema,
   kartLobbySchema,
   kartRaceSchema,
@@ -16,9 +17,11 @@ export function chooseKartLobbyTrack(
   value: unknown,
   now: number,
   lapsValue: unknown = 1,
+  cpuValue: unknown = 0,
 ) {
   const trackId = kartRaceSchema.shape.trackId.parse(value);
   const laps = kartLapsSchema.parse(lapsValue);
+  const cpu = kartCpuCountSchema.parse(cpuValue);
   const lobby = readKartLobby(sql),
     room = createSqlStore(sql).readRoom();
   const script = room.questionScript;
@@ -43,19 +46,21 @@ export function chooseKartLobbyTrack(
     "26-park-v1": "p1",
   };
   const version = contentVersionSchema.parse(
-    `kart-course-${sourceHash}-${codes[trackId]}${laps > 1 ? `l${laps}` : ""}`,
+    `kart-course-${sourceHash}-${codes[trackId]}${laps > 1 ? `l${laps}` : ""}${cpu ? `c${cpu}` : ""}`,
   );
   // More laps get a proportionally longer window, so slower guests still finish.
   const windowMs = track.raceLimitMs * laps;
   const lapWords = ["One lap", "Two laps", "Three laps"][laps - 1]!;
   const base: Record<string, unknown> = { ...script.questions[0] };
   delete base.laps;
+  delete base.cpuRacers;
   const question = {
     ...(base as (typeof script.questions)[0]),
     trackId,
     collectMs: windowMs,
     timeLimitMs: windowMs,
     ...(laps > 1 ? { laps } : {}),
+    ...(cpu ? { cpuRacers: cpu } : {}),
     // One-lap wording is unchanged from before laps existed.
     prompt:
       laps === 1
@@ -81,9 +86,16 @@ export function chooseKartLobbyTrack(
       sourceVersion,
       trackId,
       laps: laps > 1 ? laps : undefined,
+      cpu: cpu || undefined,
       history: [
         ...(lobby.history ?? []),
-        { atMs: now, trackId, ...(laps > 1 ? { laps } : {}), source: "host" },
+        {
+          atMs: now,
+          trackId,
+          ...(laps > 1 ? { laps } : {}),
+          ...(cpu ? { cpu } : {}),
+          source: "host",
+        },
       ].slice(-20),
     }),
   );

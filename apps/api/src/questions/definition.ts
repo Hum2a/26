@@ -229,6 +229,8 @@ export type KartBody = {
   timeLimitMs: number;
   /** Only room-owned kart-lobby copies set this; packs stay one lap. */
   laps?: 2 | 3;
+  /** Kart-lobby copies only: CPU racers added behind the guests (1–7). */
+  cpuRacers?: number;
 };
 export type AuthoredKart = AuthorFields & KartBody;
 export type KartQuestion = PlayableFields & KartBody;

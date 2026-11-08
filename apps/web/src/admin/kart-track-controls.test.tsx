@@ -82,7 +82,9 @@ it("sends the chosen laps with the course and shows the longer race window", asy
   expect(
     screen.getByRole("list", { name: "Course selection history" }).textContent,
   ).toContain("Host chose 26 Park · 3 laps");
+  expect(screen.getByText(/no CPU racers/)).toBeTruthy();
   fireEvent.change(screen.getByLabelText("Laps"), { target: { value: "2" } });
+  fireEvent.change(screen.getByLabelText("CPU racers"), { target: { value: "3" } });
   fireEvent.click(screen.getByRole("button", { name: "Save course" }));
   await waitFor(() =>
     expect(playRoom).toHaveBeenCalledWith(
@@ -90,6 +92,7 @@ it("sends the chosen laps with the course and shows the longer race window", asy
         action: "kart-track",
         kartTrack: "26-park-v1",
         kartLaps: 2,
+        kartCpu: 3,
       }),
     ),
   );

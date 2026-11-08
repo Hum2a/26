@@ -395,7 +395,12 @@ export function enterKart(
         name: p.nickname,
         points: p.points,
       })),
-      { seedGrid: true, trackId: q.trackId, ...(q.laps ? { laps: q.laps } : {}) },
+      {
+        seedGrid: true,
+        trackId: q.trackId,
+        ...(q.laps ? { laps: q.laps } : {}),
+        ...(q.cpuRacers ? { cpu: q.cpuRacers } : {}),
+      },
     );
     // The race starts with the room's chosen driving feel.
     const defaults = readRoomKartSettings(sql).settings;
@@ -819,7 +824,9 @@ export function projectKart(
       ...(q.laps ? { laps: q.laps } : {}),
     },
     ...(publicRace ? { kart: publicRace } : {}),
-    submissionCount: race?.drivers.filter((d) => d.status !== "RACING").length ?? 0,
+    // Guests only: CPU racers never count as answers.
+    submissionCount:
+      race?.drivers.filter((d) => !d.cpu && d.status !== "RACING").length ?? 0,
     selfAnswer: null,
     selfBallot: null,
     ballot: null,
@@ -917,7 +924,7 @@ export function kartFrames(sql: SqlStorage, q: KartQuestion) {
       .kartItems,
     contactHistory: race.contactHistory ?? [],
     recap: kartRaceRecap(race),
-    submissionCount: race.drivers.filter((d) => d.status !== "RACING").length,
+    submissionCount: race.drivers.filter((d) => !d.cpu && d.status !== "RACING").length,
     forPhone: (playerId: string) =>
       phoneRaceView(race, full, playerId, cursors.get(playerId)),
   };

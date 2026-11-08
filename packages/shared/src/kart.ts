@@ -77,6 +77,14 @@ import {
   slipstreamTuning,
   stepSlipstream,
 } from "./kart-slipstream.ts";
+import {
+  isKartCpuId,
+  kartCpuInput,
+  kartCpuMax,
+  kartCpuNames,
+  kartCpuPlayerId,
+  kartCpuSkill,
+} from "./kart-cpu.ts";
 import { kartSpectatorView, type KartStageMode } from "./kart-spectator.ts";
 import {
   clearOfWalls,
@@ -138,6 +146,10 @@ type Driver = Omit<
   /** Slipstream: draft charge and the remaining reduced-drag time. */
   draftMs?: number;
   slipstreamMs?: number;
+  /** CPU racers: driven by the room, placed on track, never scored. */
+  cpu?: true;
+  skill?: number;
+  stuckMs?: number;
 };
 export type KartRace = {
   raceId: string;
@@ -185,20 +197,40 @@ export function createKartRace(
     handling?: KartHandling;
     itemRules?: KartItemRules;
     laps?: KartLaps;
+    /** CPU racers to add behind the guests (0–7). */
+    cpu?: number;
   } = {},
 ): KartRace {
   const laps = options.laps ?? 1;
   if (![1, 2, 3].includes(laps)) throw new Error("A race has one, two or three laps.");
+  const cpu = options.cpu ?? 0;
+  if (!Number.isInteger(cpu) || cpu < 0 || cpu > kartCpuMax)
+    throw new Error(`Choose between 0 and ${kartCpuMax} CPU racers.`);
+  if (players.length + cpu > 100)
+    throw new Error("A race supports at most 100 karts, CPU racers included.");
+  if (players.some((p) => isKartCpuId(p.playerId)))
+    throw new Error("Guest ids cannot look like CPU racers.");
   if (
     players.length > 100 ||
     new Set(players.map((p) => p.playerId)).size !== players.length
   )
     throw new Error("A race supports at most 100 different players.");
-  const roster = options.seedGrid
-    ? players
-        .map((p, index) => ({ ...p, index }))
-        .sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || a.index - b.index)
-    : players;
+  const guests: { playerId: string; name: string; points?: number; cpu?: true; skill?: number }[] =
+    options.seedGrid
+      ? players
+          .map((p, index) => ({ ...p, index }))
+          .sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || a.index - b.index)
+      : [...players];
+  // CPU racers start behind every guest.
+  const roster = [
+    ...guests,
+    ...Array.from({ length: cpu }, (_, i) => ({
+      playerId: kartCpuPlayerId(i),
+      name: kartCpuNames[i]!,
+      cpu: true as const,
+      skill: kartCpuSkill(i),
+    })),
+  ];
   const seeded =
     options.seedGrid ||
     options.trackId === importedTrackId ||
@@ -230,6 +262,7 @@ export function createKartRace(
     drivers: roster.map((p, i) => ({
       playerId: p.playerId,
       name: p.name,
+      ...(p.cpu ? { cpu: true as const, skill: p.skill } : {}),
       number: i + 1,
       ...(options.seedGrid ? { gridPosition: i + 1 } : {}),
       power: createKartPowers(),
@@ -325,11 +358,16 @@ function advanceDriver(
     stepDriver(driver, t + ms, ms, version, oils, courseEnabled, trackId, race);
   }
 }
+/** Guests decide when a race is over; CPU karts never hold it open. */
+const decidingDrivers = (race: KartRace) => {
+  const guests = race.drivers.filter((d) => !d.cpu);
+  return guests.length ? guests : race.drivers;
+};
 function settleRace(race: KartRace, force = false): KartRace {
   if (
     force ||
     race.elapsedMs >= (race.timeLimitMs ?? kartLimitMs) ||
-    race.drivers.every((d) => d.status !== "RACING")
+    decidingDrivers(race).every((d) => d.status !== "RACING")
   ) {
     race.ended = true;
     if (race.itemsWorld) race.itemsWorld = clearKartProjectiles(race.itemsWorld);
@@ -340,7 +378,7 @@ function settleRace(race: KartRace, force = false): KartRace {
           ? "time-limit"
           : force
             ? "host-ended"
-            : race.drivers.every((driver) => driver.status === "FINISHED")
+            : decidingDrivers(race).every((driver) => driver.status === "FINISHED")
               ? "all-finished"
               : "race-ended";
     for (const d of race.drivers) {
@@ -784,6 +822,24 @@ function stepDriver(
     : imported
       ? nearbyImportedWalls
       : nearbyRingWalls;
+  if (d.cpu && d.status === "RACING") {
+    // The room drives CPU karts from the route, step by step.
+    d.input = kartCpuInput(d, trackId, d.skill ?? 0.88, elapsed, d.number);
+    d.inputUntil = elapsed + 400;
+    // A CPU kart stuck against a barrier goes back to its last safe point.
+    d.stuckMs = Math.abs(d.speed) < 1.5 ? (d.stuckMs ?? 0) + ms : 0;
+    if (d.stuckMs > 2500 && d.lastSafe) {
+      Object.assign(d, d.lastSafe, {
+        speed: 0,
+        turn: 0,
+        driftMs: 0,
+        boostMs: 0,
+        wasDrifting: false,
+        stuckMs: 0,
+        physics: createDrivingBody(d.lastSafe.x, d.lastSafe.z, d.lastSafe.heading),
+      });
+    }
+  }
   const fresh = elapsed <= d.inputUntil;
   const input = fresh ? d.input : kartNeutral;
   if (version === "arcade-v2") {
@@ -834,7 +890,8 @@ function stepDriver(
         d.playerId,
         body,
         next,
-        (next.height ?? 0) > 0 || race?.itemsWorld?.spawning === false
+        // CPU karts drive through item boxes without collecting.
+        d.cpu || (next.height ?? 0) > 0 || race?.itemsWorld?.spawning === false
           ? []
           : park
             ? parkItemBoxes
@@ -1028,16 +1085,24 @@ export function kartStandings(race: KartRace, points: number) {
       ? a.lapTimeMs! - b.lapTimeMs!
       : b.progress - a.progress;
   });
+  const tied = (a: Driver, b: Driver) =>
+    a.status === b.status &&
+    a.lapTimeMs === b.lapTimeMs &&
+    (a.status === "FINISHED" || a.progress === b.progress);
+  // CPU karts take places on the track; points are shared by guest rank only.
+  const guests = sorted.filter((d) => !d.cpu);
+  const guestPlace = new Map<string, number>();
+  guests.forEach((d, i) => {
+    const previous = guests[i - 1];
+    guestPlace.set(
+      d.playerId,
+      previous && tied(d, previous) ? guestPlace.get(previous.playerId)! : i + 1,
+    );
+  });
   let place = 1;
   return sorted.map((d, i) => {
     const previous = sorted[i - 1];
-    if (
-      previous &&
-      (d.status !== previous.status ||
-        d.lapTimeMs !== previous.lapTimeMs ||
-        (d.status !== "FINISHED" && d.progress !== previous.progress))
-    )
-      place = i + 1;
+    if (previous && !tied(d, previous)) place = i + 1;
     return {
       playerId: d.playerId,
       name: d.name,
@@ -1045,9 +1110,13 @@ export function kartStandings(race: KartRace, points: number) {
       finished: d.status === "FINISHED",
       place,
       points:
-        d.status === "FINISHED"
-          ? Math.round((points * (sorted.length - place + 1)) / sorted.length)
+        d.status === "FINISHED" && !d.cpu
+          ? Math.round(
+              (points * (guests.length - guestPlace.get(d.playerId)! + 1)) /
+                guests.length,
+            )
           : 0,
+      ...(d.cpu ? { cpu: true as const } : {}),
     };
   });
 }
@@ -1157,9 +1226,11 @@ export function projectKartRace(
         lapTimes,
         draftMs,
         slipstreamMs,
+        cpu,
       }) => ({
         playerId,
         name,
+        ...(cpu ? { cpu: true as const } : {}),
         number,
         ...(gridPosition ? { gridPosition } : {}),
         // Millimetre and milliradian precision is far below what a screen shows,

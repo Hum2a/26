@@ -234,6 +234,7 @@ export type PlayIntent = {
   itemRules?: KartItemRules;
   kartTrack?: import("@26/shared").KartTrackId;
   kartLaps?: import("@26/shared").KartLaps;
+  kartCpu?: number;
   gameId: string;
   action: PlayAction;
   requestId: string;

@@ -36,7 +36,7 @@ export function KartLeaderboard({
                 : driver?.lap && (race.laps ?? 1) > 1
                   ? `Lap ${driver.lap}/${race.laps}`
                   : `${Math.round((driver?.progress ?? 0) * 100)}%`,
-            meta: `Kart ${driver?.number ?? "—"}`,
+            meta: `${entry.cpu ? "CPU · " : ""}Kart ${driver?.number ?? "—"}`,
             badge: (
               <DriverBadge
                 gameId={drivers.gameId}
