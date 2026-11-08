@@ -30,6 +30,20 @@ const staleAfterMs = 15_000;
 /** After waking, a socket that cannot answer within this is replaced. */
 const wakeProbeMs = 4_000;
 
+/** Chess move submission. */
+export interface ChessMoveParams {
+  gameId: string;
+  from: string;
+  to: string;
+  promotion?: "q" | "r" | "b" | "n";
+  positionRevision: number;
+}
+
+/** Chess resign submission. */
+export interface ChessResignParams {
+  gameId: string;
+}
+
 /**
  * Full jitter: a random wait up to the capped exponential. When the venue
  * Wi-Fi drops, eighty phones spread their retries instead of arriving together.
@@ -233,6 +247,8 @@ export function openRoomSocket(options: {
   submitWallReact: (postId: string, reaction: WallReaction) => string;
   /** Projector only: the wall photo it was told to show did not load. */
   reportWallImageFailed: (postId: string) => string;
+  submitChessMove: (params: ChessMoveParams) => string;
+  submitChessResign: (params: ChessResignParams) => string;
   reconnectNow: () => void;
   close: () => void;
 } {
@@ -805,6 +821,32 @@ export function openRoomSocket(options: {
     });
   }
 
+  function submitChessMove(params: ChessMoveParams): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      command: {
+        kind: "chess-move",
+        gameId: params.gameId,
+        from: params.from,
+        to: params.to,
+        ...(params.promotion ? { promotion: params.promotion } : {}),
+        positionRevision: params.positionRevision,
+      },
+    });
+  }
+
+  function submitChessResign(params: ChessResignParams): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      command: {
+        kind: "chess-resign",
+        gameId: params.gameId,
+      },
+    });
+  }
+
   function close() {
     stopped = true;
     clearTimer();
@@ -872,6 +914,8 @@ export function openRoomSocket(options: {
     submitWallWithdraw,
     submitWallReact,
     reportWallImageFailed,
+    submitChessMove,
+    submitChessResign,
     close,
   };
 }
