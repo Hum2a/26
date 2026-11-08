@@ -1,4 +1,5 @@
 import { questionFor } from "../questions/registry.ts";
+import { quotableAnswer } from "../questions/hidden-answers.ts";
 import {
   isTrollPayload,
   type GameStore,
@@ -520,7 +521,7 @@ export function trollSnapshot(
         ? null
         : {
             cueId: playing.cue_id,
-            label: playing.label,
+            label: publicCueLabel(sql, playing),
             assetLabel: playing.asset_label,
             ...(playing.media_id && playing.media_kind
               ? {
@@ -921,7 +922,12 @@ type CueExtra = {
   questionIndex?: number | null;
   durationMs?: number;
   held?: boolean;
+  /** A line quoting guests' answers: whose, and what to show if one is hidden. */
+  quote?: { questionId: string; authors: string[]; unquoted: string };
 };
+
+/** A theatre line, and the answers it quotes, if any. */
+type TheatreLine = { label: string; quote?: CueExtra["quote"] };
 
 function announceStart(
   sql: SqlStorage,
@@ -1167,15 +1173,19 @@ function enqueueTheatreCues(
       continue;
     }
     const nickname = nicknameOf(sql, effect.target_id) ?? "A player";
-    const [label, asset] =
+    const [line, asset]: [TheatreLine, string] =
       effect.kind === "replay"
-        ? [replayLine(sql, room, effect.target_id, nickname), "Instant replay"]
+        ? [
+            { label: replayLine(sql, room, effect.target_id, nickname) },
+            "Instant replay",
+          ]
         : effect.kind === "public-vote"
           ? [publicVoteLine(sql, room, effect.target_id, nickname), "Public vote"]
           : effect.kind === "misattributed"
             ? [misattributedLine(sql, room, effect, nickname), "Totally true"]
-            : [`${nickname}, the floor is yours.`, "Speech! Speech!"];
-    enqueueCue(sql, store, room, effect.effect_id, label, asset, now, {
+            : [{ label: `${nickname}, the floor is yours.` }, "Speech! Speech!"];
+    enqueueCue(sql, store, room, effect.effect_id, line.label, asset, now, {
+      ...(line.quote ? { quote: line.quote } : {}),
       questionIndex: room.questionIndex,
       durationMs: effect.kind === "speech" ? 8_000 : 5_000,
       ...(effect.kind === "speech"
@@ -1203,17 +1213,21 @@ function enqueueTheatreCues(
   }
 }
 
-/** Who the target voted for on this vote question. */
+/**
+ * Who the target voted for on this vote question. A vote for an answer the
+ * host has hidden, even after the vote was cast, is never named.
+ */
 function publicVoteLine(
   sql: SqlStorage,
   room: RoomClock,
   playerId: string,
   nickname: string,
-): string {
+): TheatreLine {
   const question = questionFor(room);
   const ballot = sql
-    .exec<{ label: string }>(
-      `SELECT vote_candidate.label FROM vote_ballot
+    .exec<{ label: string; owner_id: string | null; included: number }>(
+      `SELECT vote_candidate.label, vote_candidate.owner_id, vote_candidate.included
+       FROM vote_ballot
        JOIN vote_candidate ON vote_candidate.question_id = vote_ballot.question_id
          AND vote_candidate.candidate_id = vote_ballot.candidate_id
        WHERE vote_ballot.player_id = ? AND vote_ballot.question_id = ?`,
@@ -1221,46 +1235,67 @@ function publicVoteLine(
       question?.id ?? "",
     )
     .toArray()[0];
-  return (
-    ballot
-      ? `${nickname} voted for "${ballot.label}".`
-      : `${nickname} didn't vote. Coward.`
-  ).slice(0, 120);
+  if (!ballot || !question) return { label: `${nickname} didn't vote. Coward.` };
+  const secret = `${nickname}'s vote stays a secret this time.`.slice(0, 120);
+  if (
+    ballot.included !== 1 ||
+    (ballot.owner_id !== null && !quotableAnswer(sql, question.id, ballot.owner_id))
+  )
+    return { label: secret };
+  return {
+    label: `${nickname} voted for "${ballot.label}".`.slice(0, 120),
+    ...(ballot.owner_id
+      ? {
+          quote: {
+            questionId: question.id,
+            authors: [ballot.owner_id],
+            unquoted: secret,
+          },
+        }
+      : {}),
+  };
 }
 
 /**
- * Claims the target wrote another guest's answer to this question. Picked by
- * the effect id, so it is the same on every screen and replay.
+ * Claims the target wrote another guest's answer to this question. It quotes
+ * only answers the public could already see: cards still on the ballot whose
+ * author the host has not hidden. Picked by the effect id, so it is the same
+ * on every screen and replay.
  */
 function misattributedLine(
   sql: SqlStorage,
   room: RoomClock,
   effect: { effect_id: string; target_id: string },
   nickname: string,
-): string {
+): TheatreLine {
   const question = questionFor(room);
+  const nothing = `${nickname} wrote nothing at all. Suspicious.`.slice(0, 120);
+  if (!question) return { label: nothing };
   const others = sql
-    .exec<{ body: string }>(
-      `SELECT body FROM text_response WHERE question_id = ? AND player_id != ?
-       UNION ALL
-       SELECT label AS body FROM vote_candidate
-       WHERE question_id = ? AND owner_id IS NOT NULL AND owner_id != ?`,
-      question?.id ?? "",
-      effect.target_id,
-      question?.id ?? "",
+    .exec<{ body: string; owner_id: string }>(
+      `SELECT label AS body, owner_id FROM vote_candidate
+       WHERE question_id = ? AND owner_id IS NOT NULL AND owner_id != ? AND included = 1
+       ORDER BY position ASC, candidate_id ASC`,
+      question.id,
       effect.target_id,
     )
     .toArray()
-    .map((row) => row.body)
-    .filter((body) => body.trim().length > 0);
+    .filter(
+      (row) =>
+        row.body.trim().length > 0 && quotableAnswer(sql, question.id, row.owner_id),
+    );
   if (others.length === 0) {
-    return `${nickname} wrote nothing at all. Suspicious.`;
+    return { label: nothing };
   }
   let hash = 0;
   for (const character of effect.effect_id) {
     hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
   }
-  return `${nickname} wrote "${others[hash % others.length]}".`.slice(0, 120);
+  const chosen = others[hash % others.length]!;
+  return {
+    label: `${nickname} wrote "${chosen.body}".`.slice(0, 120),
+    quote: { questionId: question.id, authors: [chosen.owner_id], unquoted: nothing },
+  };
 }
 
 /** What the target went with on this choice question. Not judged: the reveal does that. */
@@ -1392,8 +1427,9 @@ function insertCue(
   sql.exec(
     `INSERT INTO stage_cue (
        cue_id, effect_id, label, asset_label, status, duration_ms, created_at, started_at,
-       media_id, audio_asset, media_kind, question_index
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       media_id, audio_asset, media_kind, question_index,
+       quote_question_id, quote_authors, unquoted_label
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     cueId,
     effectId,
     label,
@@ -1406,7 +1442,34 @@ function insertCue(
     extra.audioAsset ?? null,
     extra.mediaKind ?? null,
     extra.questionIndex ?? null,
+    extra.quote?.questionId ?? null,
+    extra.quote ? JSON.stringify(extra.quote.authors) : null,
+    extra.quote?.unquoted ?? null,
   );
+}
+
+/**
+ * The words a screen may show for a stored cue. A line quoting an answer the
+ * host has hidden since it was written shows its unquoted version instead; a
+ * restored answer is quoted again. Checked on every read, so a replay or a
+ * reconnecting screen gets the same answer as the live stage.
+ */
+function publicCueLabel(sql: SqlStorage, cue: CueRow): string {
+  if (!cue.quote_question_id || !cue.quote_authors) return cue.label;
+  let authors: unknown;
+  try {
+    authors = JSON.parse(cue.quote_authors);
+  } catch {
+    authors = null;
+  }
+  const fallback = cue.unquoted_label ?? cue.asset_label;
+  if (!Array.isArray(authors)) return fallback;
+  return authors.every(
+    (author) =>
+      typeof author === "string" && quotableAnswer(sql, cue.quote_question_id!, author),
+  )
+    ? cue.label
+    : fallback;
 }
 
 function startNextCue(
@@ -1506,13 +1569,17 @@ type CueRow = {
   audio_asset: string | null;
   media_kind: string | null;
   question_index: number | null;
+  quote_question_id: string | null;
+  quote_authors: string | null;
+  unquoted_label: string | null;
 };
 
 function readCues(sql: SqlStorage): CueRow[] {
   return sql
     .exec<CueRow>(
       `SELECT cue_id, effect_id, label, asset_label, status, created_at, duration_ms,
-              media_id, audio_asset, media_kind, question_index
+              media_id, audio_asset, media_kind, question_index,
+              quote_question_id, quote_authors, unquoted_label
        FROM stage_cue ORDER BY created_at ASC`,
     )
     .toArray();

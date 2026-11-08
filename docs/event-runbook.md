@@ -206,6 +206,54 @@ No physical-device, venue, deployed email or deployed load pass is implied by th
 checklist. Use local rehearsals first; deployments and remote test sends require
 separate instructions.
 
+## Releasing the event build
+
+Deployed on 8 November 2026: `cbd1e6c` on both sites (staging `6317ea2b…`,
+production `09181ecb…`). Host moderation, the troll pack, wall recovery and the
+`event-readiness` branch are **not** deployed. `/api/health` reports only the app
+version, not a commit, so a healthy endpoint does not prove which code is live.
+
+Each step needs the owner's go-ahead; nothing here has been run.
+
+1. Review and merge the `event-readiness` pull request into `master`.
+2. From a clean checkout of `master`: `npm install`, then `npm run setup`.
+3. Staging: `npm run deploy:staging`. It runs typecheck, content, unit, lint and
+   release checks before deploying. No Neon migration is needed: the new columns
+   are room (Durable Object) columns, added when a room starts.
+4. Run the rehearsal below on staging.
+5. Production, before the freeze (20 November 00:00 to 22 November 12:00, London):
+   `bash release.sh --deploy=production --confirm-production`. It requires clean
+   `master`, bumps the app version so `/api/health` shows a new number, runs the
+   checks and deploys.
+6. Record the commit, both Cloudflare version ids and the health version in
+   `docs/build-progress.md`. Roll back with the previous version id (see
+   `docs/deployment.md`, Rollback) if anything is wrong.
+
+## Moderation and wall rehearsal
+
+Two phones (one iPhone, one Android), the real projector, Baseer presenting and
+Humza on Live controls, on staging first. Tick only what was actually done.
+
+- [ ] **Join and reconnect:** both phones join by QR; lock one during a question,
+      unlock, and confirm it rejoins with its answer kept.
+- [ ] **Typed answer:** send a typed answer; a slur is refused on the phone without
+      echoing it; an ordinary cheeky answer is accepted.
+- [ ] **Hide and Restore:** on an all-answer vote and the typed commonness round,
+      hide an answer in Live controls; it leaves the projector and the other phone;
+      restore it; it returns. Scores do not change.
+- [ ] **Voting:** vote for an answer, then hide it before the reveal; the reveal
+      and any Public vote or Misattributed troll never show its text.
+- [ ] **Wall failure:** interrupt the projector's network while a photo is still
+      loading (or use a photo that will not load). The
+      projector shows "could not be shown", moves on within about six seconds, the
+      next photo gets its full time, and Live wall shows "Couldn't display".
+- [ ] **Manual wall control:** Skip and Show next still work, including straight
+      after a failure.
+- [ ] **Pause and resume:** pause during a question; the wall keeps cycling; a
+      failed photo still moves on; resume and the question carries on.
+- [ ] **Round progression:** advance through reveal, scores and the next question;
+      the phones follow.
+
 ## Run just the kart race
 
 1. Open **Admin → Kart → Create kart lobby**. Rooms also links to this page.

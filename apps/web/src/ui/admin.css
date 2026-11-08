@@ -1037,6 +1037,16 @@
   }
 }
 
+/* A wall photo the projector could not display. Words carry the meaning; colour adds to it. */
+.admin-wall-failed {
+  margin: 0;
+  border-radius: var(--radius-control);
+  padding: 0.3rem 0.6rem;
+  font-weight: 700;
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+}
+
 /* Card grids that fill the width on a desktop. Used by the wall, trolls and analytics pages. */
 .admin-card-grid {
   display: grid;

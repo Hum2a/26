@@ -422,6 +422,14 @@ export function ensurePartySchema(sql: SqlStorage): void {
   addColumn(sql, "stage_cue", "audio_asset", "TEXT");
   addColumn(sql, "stage_cue", "media_kind", "TEXT");
   addColumn(sql, "stage_cue", "question_index", "INTEGER");
+  // Troll lines that quote guests' answers record whose answers they quote
+  // (JSON author ids for one question) and a line with no quote, so a stored cue
+  // is checked against the host's Hide again whenever it is shown.
+  addColumn(sql, "stage_cue", "quote_question_id", "TEXT");
+  addColumn(sql, "stage_cue", "quote_authors", "TEXT");
+  addColumn(sql, "stage_cue", "unquoted_label", "TEXT");
+  // When the projector reported it could not display a wall photo; host only.
+  addColumn(sql, "wall_post", "display_failed_at", "INTEGER");
   addColumn(sql, "room", "telemetry_retention_days", "INTEGER NOT NULL DEFAULT 30");
   addColumn(sql, "choice_answer", "device_context_id", "TEXT");
   addColumn(sql, "round_response", "device_context_id", "TEXT");

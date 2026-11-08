@@ -36,15 +36,22 @@ export function StageWall({
   onImageFailed?: (postId: string) => void;
 }) {
   const reported = useRef(new Set<string>());
+  const nowId = wall.now?.postId;
+  // A photo on its way out (its exit animation) cannot report: only the photo
+  // the room says is on screen now. The room checks this again.
+  const current = useRef(nowId);
+  useEffect(() => {
+    current.current = nowId;
+  }, [nowId]);
   const report = useCallback(
     (postId: string) => {
       if (!onImageFailed || reported.current.has(postId)) return;
+      if (postId !== current.current) return;
       reported.current.add(postId);
       onImageFailed(postId);
     },
     [onImageFailed],
   );
-  const nowId = wall.now?.postId;
   // Only a screen that reports failures says the wall is moving on.
   const failed = nowId && onImageFailed ? () => report(nowId) : undefined;
   const src = (mediaId: string) =>

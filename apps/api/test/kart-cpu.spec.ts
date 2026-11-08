@@ -92,7 +92,8 @@ function drive(
 
 for (const [trackId, ms, minimum] of [
   [parkTrackId, 30_000, 0.5],
-  [importedTrackId, 40_000, 0.35],
+  // A circuit lap is long: 40 s reached 34.99%, so give it 60 s for the same bar.
+  [importedTrackId, 60_000, 0.35],
   ["party-ring-v1", 20_000, 0.35],
 ] as const)
   it(`CPU racers lap the ${trackId} course on their own, deterministically`, () => {
@@ -158,14 +159,20 @@ it("puts a CPU kart stuck against a barrier back on its last safe point", () => 
   race = reduceKart(race, { type: "tick", elapsedMs: 2_000 });
   const cpu = race.drivers[1]!;
   const safe = { ...cpu.lastSafe! };
-  // Wedge it, facing a wall, at a standstill.
+  // Far from its safe point, at a standstill, and already still for 2.4 s:
+  // the state a kart pinned against a barrier is in.
   Object.assign(cpu, {
     x: safe.x + 200,
     z: safe.z + 200,
     speed: 0,
+    stuckMs: 2_400,
     physics: createDrivingBody(safe.x + 200, safe.z + 200, 0),
   });
-  race = reduceKart(race, { type: "tick", elapsedMs: 5_000 });
+  race = reduceKart(race, { type: "tick", elapsedMs: 2_200 });
   const moved = race.drivers[1]!;
-  expect(Math.hypot(moved.x - safe.x, moved.z - safe.z)).toBeLessThan(80);
+  expect(Math.hypot(moved.x - safe.x, moved.z - safe.z)).toBeLessThan(10);
+  expect(moved.stuckMs ?? 0).toBeLessThan(2_500);
+  // A CPU kart that is moving never counts as stuck.
+  race = reduceKart(race, { type: "tick", elapsedMs: 6_000 });
+  expect(race.drivers[1]!.stuckMs ?? 0).toBe(0);
 });

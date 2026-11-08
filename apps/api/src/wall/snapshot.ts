@@ -22,6 +22,7 @@ type Row = {
   shown_at: number | null;
   until_at: number | null;
   created_at: number;
+  display_failed_at: number | null;
 };
 
 type Photo = {
@@ -48,7 +49,8 @@ export function wallSnapshot(
     .exec<Row>(
       `SELECT wall_post.post_id, wall_post.media_id, wall_post.player_id, player.nickname,
               wall_post.caption, wall_post.frame, wall_post.status, wall_post.queued_at,
-              wall_post.shown_at, wall_post.until_at, wall_post.created_at
+              wall_post.shown_at, wall_post.until_at, wall_post.created_at,
+              wall_post.display_failed_at
        FROM wall_post JOIN player ON player.player_id = wall_post.player_id
        ORDER BY wall_post.created_at`,
     )
@@ -147,9 +149,16 @@ export function wallSnapshot(
       playerId: row.player_id,
       status: row.status as "shown" | "declined" | "removed",
       reactions: total(reactions.get(row.post_id)),
+      ...(row.display_failed_at !== null ? { displayFailed: true as const } : {}),
     }));
+  // Host only: which photo the projector could not display.
+  const hostNow =
+    base.now && showing?.display_failed_at != null
+      ? { ...base.now, displayFailed: true as const }
+      : base.now;
   return {
     ...base,
+    now: hostNow,
     queue: queue.slice(0, 300),
     recent,
     settings: {
@@ -167,7 +176,8 @@ export function wallNextMediaId(sql: SqlStorage): string | null {
     .exec<Row>(
       `SELECT wall_post.post_id, wall_post.media_id, wall_post.player_id, '' AS nickname,
               NULL AS caption, wall_post.frame, wall_post.status, wall_post.queued_at,
-              wall_post.shown_at, wall_post.until_at, wall_post.created_at
+              wall_post.shown_at, wall_post.until_at, wall_post.created_at,
+              NULL AS display_failed_at
        FROM wall_post WHERE status IN ('queued', 'showing', 'shown')`,
     )
     .toArray();

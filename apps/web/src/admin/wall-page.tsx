@@ -115,6 +115,22 @@ export function WallPage() {
               size="thumb"
             />
             <div className="flex flex-wrap gap-2">
+              <AnimatePresence initial={false}>
+                {wall.now.displayFailed ? (
+                  <motion.p
+                    key="failed"
+                    role="status"
+                    className="admin-wall-failed basis-full"
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                  >
+                    Couldn&apos;t display on the big screen. The wall is moving on; Skip
+                    to move on now.
+                  </motion.p>
+                ) : null}
+              </AnimatePresence>
               <Button
                 disabled={commands.locked}
                 onClick={() => wall.now && commands.pull(wall.now)}
@@ -226,6 +242,9 @@ export function WallPage() {
                   {item.status === "declined" ? "declined" : "removed"}
                 </p>
               )}
+              {item.displayFailed ? (
+                <p className="admin-wall-failed">Couldn&apos;t display</p>
+              ) : null}
               {item.status === "shown" ? (
                 <div className="flex items-center gap-3">
                   <span>{item.reactions} reactions</span>

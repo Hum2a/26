@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react/dist/offline";
 import imageOff from "@iconify-icons/lucide/image-off";
 import type { WallFrame, WallReaction } from "@26/shared";
@@ -23,6 +23,9 @@ export const reactionEmoji: Record<WallReaction, string> = {
   skull: "💀",
 };
 
+/** How long the projector gives a wall photo to load before reporting it. */
+export const wallImageTimeoutMs = 4_000;
+
 export const reactionLabels: Record<WallReaction, string> = {
   fire: "Fire",
   laugh: "Laughing",
@@ -39,8 +42,10 @@ export const reactionLabels: Record<WallReaction, string> = {
  * A photo that fails to load shows a "could not be shown" card in its frame
  * and calls `onFailed` once for that source. Only the projector passes
  * `onFailed`; there the card also says the wall is moving on, because the room
- * then ends that photo early. The image is keyed by its source, so a late
- * error from a replaced or unmounted image never reaches the new one.
+ * then ends that photo early. With `onFailed`, a photo that neither loads nor
+ * errors within `wallImageTimeoutMs` counts as failed too. The image and its
+ * timer are keyed by source: loading, an error, unmounting or a new source
+ * clears the timer, so a late callback never reaches a newer photo.
  */
 export function FramedPhoto({
   src,
@@ -58,6 +63,22 @@ export function FramedPhoto({
   onFailed?: () => void;
 }) {
   const [failedSource, setFailedSource] = useState<string>();
+  const [loadedSource, setLoadedSource] = useState<string>();
+  // The stage passes a new callback on every snapshot; the timer must not
+  // restart for that, so it reads the latest one through a ref.
+  const onFailedRef = useRef(onFailed);
+  useEffect(() => {
+    onFailedRef.current = onFailed;
+  });
+  const watching = Boolean(onFailed);
+  useEffect(() => {
+    if (!watching || loadedSource === src || failedSource === src) return;
+    const timer = window.setTimeout(() => {
+      setFailedSource(src);
+      onFailedRef.current?.();
+    }, wallImageTimeoutMs);
+    return () => window.clearTimeout(timer);
+  }, [src, watching, loadedSource, failedSource]);
   const alt = caption
     ? `${caption}, a photo from ${nickname}`
     : `Photo from ${nickname}`;
@@ -88,10 +109,11 @@ export function FramedPhoto({
             key={src}
             src={src}
             alt={alt}
+            onLoad={() => setLoadedSource(src)}
             onError={() => {
               if (failedSource === src) return;
               setFailedSource(src);
-              onFailed?.();
+              onFailedRef.current?.();
             }}
             draggable={false}
           />

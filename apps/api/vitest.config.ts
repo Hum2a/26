@@ -110,6 +110,7 @@ export default defineConfig({
             "test/wall-load.spec.ts",
             "test/troll-identity.spec.ts",
             "test/troll-theatre.spec.ts",
+            "test/troll-hidden-answers.spec.ts",
             "test/sample-room.spec.ts",
             "test/script-errors-room.spec.ts",
           ],
@@ -185,6 +186,13 @@ export default defineConfig({
             "test/kart-opponents.spec.ts",
             "test/kart-spectator.spec.ts",
             "test/kart-asset-manifest.spec.ts",
+            // Race-feel specs added on 8 November 2026; they were not registered
+            // here before, so they had not been running.
+            "test/kart-slipstream.spec.ts",
+            "test/kart-race-laps.spec.ts",
+            "test/kart-cpu.spec.ts",
+            "test/kart-launch.spec.ts",
+            "test/kart-item-luck.spec.ts",
             "test/new-party-concepts.spec.ts",
             "test/client-api-key.spec.ts",
             "test/rate-limit.spec.ts",
