@@ -243,8 +243,8 @@ Humza on Live controls, on staging first. Tick only what was actually done.
       restore it; it returns. Scores do not change.
 - [ ] **Voting:** vote for an answer, then hide it before the reveal; the reveal
       and any Public vote or Misattributed troll never show its text.
-- [ ] **Wall failure:** with a photo on the wall, break it (pull the projector's
-      network for a moment, or test with a photo that will not load). The
+- [ ] **Wall failure:** interrupt the projector's network while a photo is still
+      loading (or use a photo that will not load). The
       projector shows "could not be shown", moves on within about six seconds, the
       next photo gets its full time, and Live wall shows "Couldn't display".
 - [ ] **Manual wall control:** Skip and Show next still work, including straight
