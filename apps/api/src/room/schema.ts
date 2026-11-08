@@ -428,6 +428,8 @@ export function ensurePartySchema(sql: SqlStorage): void {
   addColumn(sql, "stage_cue", "quote_question_id", "TEXT");
   addColumn(sql, "stage_cue", "quote_authors", "TEXT");
   addColumn(sql, "stage_cue", "unquoted_label", "TEXT");
+  // When the projector reported it could not display a wall photo; host only.
+  addColumn(sql, "wall_post", "display_failed_at", "INTEGER");
   addColumn(sql, "room", "telemetry_retention_days", "INTEGER NOT NULL DEFAULT 30");
   addColumn(sql, "choice_answer", "device_context_id", "TEXT");
   addColumn(sql, "round_response", "device_context_id", "TEXT");

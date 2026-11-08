@@ -80,12 +80,13 @@ export function pullWallPost(sql: SqlStorage, postId: string | undefined, now: n
 export const wallFailedShowMs = 2_000;
 
 /**
- * The projector reports that the photo the room told it to show did not load.
- * The room accepts this from the presentation socket only. It ends that photo
- * early through the normal rotation: the photo's deadline is brought forward
- * to `wallFailedShowMs` after it started, and `syncWall` moves on when it
- * passes. A report for any other post, a repeat, or one that would not bring
- * the end forward changes nothing and returns false.
+ * The projector reports that the photo the room told it to show did not load
+ * (an error, or no load within its timeout). The room accepts this from the
+ * presentation socket only. It marks the photo for the host ("Couldn't
+ * display") and ends it early through the normal rotation: the deadline is
+ * brought forward to `wallFailedShowMs` after it started, and `syncWall` moves
+ * on when it passes. There is no second timer. A report for any other post, or
+ * a repeat, changes nothing and returns false.
  */
 export function reportWallImageFailed(
   sql: SqlStorage,
@@ -96,21 +97,31 @@ export function reportWallImageFailed(
     return false;
   }
   const showing = sql
-    .exec<{ shown_at: number | null; until_at: number | null }>(
-      `SELECT shown_at, until_at FROM wall_post WHERE status = 'showing' AND post_id = ?`,
+    .exec<{
+      shown_at: number | null;
+      until_at: number | null;
+      display_failed_at: number | null;
+    }>(
+      `SELECT shown_at, until_at, display_failed_at FROM wall_post
+       WHERE status = 'showing' AND post_id = ?`,
       postId,
     )
     .toArray()[0];
   if (!showing || showing.until_at === null) {
     return false;
   }
+  const firstReport = showing.display_failed_at === null;
   const end = Math.max(now, (showing.shown_at ?? now) + wallFailedShowMs);
-  if (end >= showing.until_at) {
+  const shorten = end < showing.until_at;
+  if (!firstReport && !shorten) {
     return false;
   }
   sql.exec(
-    `UPDATE wall_post SET until_at = ? WHERE post_id = ? AND status = 'showing'`,
-    end,
+    `UPDATE wall_post
+     SET display_failed_at = COALESCE(display_failed_at, ?), until_at = ?
+     WHERE post_id = ? AND status = 'showing'`,
+    now,
+    shorten ? end : showing.until_at,
     postId,
   );
   touch(sql);

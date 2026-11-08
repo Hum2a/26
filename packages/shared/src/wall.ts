@@ -195,7 +195,12 @@ export const wallSnapshotSchema = z
     enabled: z.boolean(),
     placement: z.enum(["breaks", "corner"]),
     now: wallPhotoSchema
-      .extend({ untilAt: z.number().int(), reactions: reactionCountsSchema })
+      .extend({
+        untilAt: z.number().int(),
+        reactions: reactionCountsSchema,
+        /** Host only: the projector reported it could not display this photo. */
+        displayFailed: z.literal(true).optional(),
+      })
       .nullable(),
     waiting: z.number().int().nonnegative(),
     next: z.object({ mediaId: z.uuid() }).strict().nullable().optional(),
@@ -249,6 +254,8 @@ export const wallSnapshotSchema = z
             playerId: z.uuid(),
             status: z.enum(["shown", "declined", "removed"]),
             reactions: z.number().int().nonnegative(),
+            /** The projector could not display it when its turn came. */
+            displayFailed: z.literal(true).optional(),
           })
           .strict(),
       )
