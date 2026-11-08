@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { LobbySnapshot, ChessGuestSnapshot } from "@26/shared";
 import { ChessGame } from "./chess-game";
+import { ChessClocks } from "./chess-clocks";
 import { QuestionExperience } from "../play/question-experience";
 import type { ChessMoveParams, ChessResignParams } from "../live/room-socket";
 
@@ -83,6 +84,8 @@ export function GuestChess({
   return (
     <QuestionExperience snapshot={snapshot} pending={pending}>
       <div className="chess-phone-container">
+        <ChessClocks snapshot={chessSnapshot} />
+
         {engineError ? (
           <div className="chess-engine-error">
             <p className="text-destructive">{engineError}</p>
