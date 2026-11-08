@@ -7,7 +7,7 @@ import { chessQuestion } from "../../authoring.ts";
 export const chessBattle = chessQuestion({
   id: "chess-battle",
   title: "Chess Battle",
-  status: "ready",
+  status: "draft",
   prompt: "Play 1-minute blitz against the Humza bot!",
   instructions:
     "You play White. Make your moves quickly—you have 1 minute total. Win = 100 points, Draw = 50 points.",
