@@ -26,7 +26,8 @@ import {
   ReverseTyping,
   TranslatedOptions,
 } from "./sabotage-trolls";
-import { useTrollClip, type TrollSound } from "./troll-sound";
+import { trollAssets } from "./troll-assets";
+import { useTrollClip, useTrollLayer } from "./troll-sound";
 
 /**
  * Phone-only gags. The server owns when they start and stop; these components
@@ -169,12 +170,7 @@ export function ScreenTroll({
   }
 }
 
-/**
- * The cut-out face and a 4.2 second Hava Nagila clip, in `apps/web/public/assets/`.
- * The clip fades out as the 4 second flood ends.
- */
-const netanyahuAsset = "/assets/netanyahu.webp";
-const netanyahuSoundAsset = "/assets/netanyahu.mp3";
+/** The cut-out face and a 4.2 second Hava Nagila clip that fades as the flood ends. */
 const netanyahuCopies = Array.from({ length: 36 }, (_, index) => ({
   left: (index * 37) % 100,
   top: (index * 61) % 100,
@@ -183,20 +179,14 @@ const netanyahuCopies = Array.from({ length: 36 }, (_, index) => ({
   delay: (index % 12) * 0.12,
 }));
 
-export function NetanyahuFlood({
-  label,
-  sound,
-}: {
-  label: string;
-  sound?: TrollSound;
-}) {
-  useTrollClip(netanyahuSoundAsset, sound);
+export function NetanyahuFlood({ label }: { label: string }) {
+  useTrollClip(trollAssets.netanyahuMusic);
   return (
     <div className="troll-flood" role="alert" aria-label={label}>
       {netanyahuCopies.map((copy, index) => (
         <img
           key={index}
-          src={netanyahuAsset}
+          src={trollAssets.netanyahuFace}
           alt=""
           className="troll-flood-face"
           style={{
@@ -259,6 +249,8 @@ const bubbleCount = 24;
 
 function BubbleWrap({ label, onEscape }: { label: string; onEscape?: () => void }) {
   const [popped, setPopped] = useState<ReadonlySet<number>>(new Set());
+  // Every press pops audibly; fast double-taps overlap up to four at once.
+  const pop = useTrollLayer({ maxVoices: 4 });
   const done = popped.size >= bubbleCount;
   const sent = useRef(false);
   useEffect(() => {
@@ -281,7 +273,10 @@ function BubbleWrap({ label, onEscape }: { label: string; onEscape?: () => void 
             data-popped={popped.has(index) || undefined}
             aria-label={popped.has(index) ? "Popped" : "Pop bubble"}
             disabled={popped.has(index)}
-            onClick={() => setPopped((current) => new Set(current).add(index))}
+            onClick={() => {
+              void pop(trollAssets.bubblePop);
+              setPopped((current) => new Set(current).add(index));
+            }}
           />
         ))}
       </div>
@@ -303,6 +298,7 @@ function useTicker(stepMs: number, limit: number) {
 
 function FakeCrash({ label }: { label: string }) {
   const percent = useTicker(60, 100);
+  useTrollClip(trollAssets.crashError);
   return (
     <div className="troll-cover troll-bsod" role="alert" aria-label={label}>
       <p className="troll-bsod-face">:(</p>
@@ -386,8 +382,18 @@ const notifications = [
   ["Uber", "Surge pricing is in effect. Everywhere. Forever."],
 ] as const;
 
+/**
+ * A ding for each notification as it lands. At most two ring at once and never
+ * closer than 0.3 s, so twelve in four seconds stays a joke, not an alarm.
+ */
 function NotificationStorm({ label }: { label: string }) {
   const shown = useTicker(350, notifications.length);
+  const ding = useTrollLayer({ maxVoices: 2, minGapMs: 300 });
+  useEffect(() => {
+    if (shown < notifications.length) {
+      void ding(trollAssets.notificationDing, trollAssets.notificationDingFallback);
+    }
+  }, [shown, ding]);
   return (
     <div className="troll-notifications" role="status" aria-label={label}>
       {notifications.slice(0, shown + 1).map(([from, text], index) => (
@@ -412,6 +418,7 @@ const confettiPieces = Array.from({ length: 90 }, (_, index) => ({
 }));
 
 function Confetti({ label }: { label: string }) {
+  useTrollClip(trollAssets.partyHorn);
   return (
     <div className="troll-confetti" role="status" aria-label={label}>
       {confettiPieces.map((piece, index) => (

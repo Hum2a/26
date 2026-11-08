@@ -28,8 +28,10 @@ import {
   themeStingAsset,
   isTrollKind,
   slotDecision,
+  speechApplauseMs,
   themeCueCap,
   trollDefinitions,
+  trollStageSounds,
   zoomAssetLabel,
   type PointTransfer,
   type TrollDefinition,
@@ -974,6 +976,7 @@ function announceStart(
       now,
       {
         ...(mediaId ? { mediaId, mediaKind: "photo" as const } : {}),
+        audioAsset: trollStageSounds.zoomEnhance,
         durationMs: 7_000,
       },
     );
@@ -990,7 +993,12 @@ function announceStart(
         : cueLabel(sql, actorId, targetId, definition.label),
       definition.assetLabel,
       now,
-      { durationMs: definition.cueMs },
+      {
+        ...(definition.kind === "sponsor"
+          ? { audioAsset: trollStageSounds.sponsor }
+          : {}),
+        durationMs: definition.cueMs,
+      },
     );
     return;
   }
@@ -1170,7 +1178,27 @@ function enqueueTheatreCues(
     enqueueCue(sql, store, room, effect.effect_id, label, asset, now, {
       questionIndex: room.questionIndex,
       durationMs: effect.kind === "speech" ? 8_000 : 5_000,
+      ...(effect.kind === "speech"
+        ? { audioAsset: trollStageSounds.speechDrumroll }
+        : {}),
     });
+    if (effect.kind === "speech") {
+      // Queued behind the drumroll, so the applause starts as the floor closes.
+      enqueueCue(
+        sql,
+        store,
+        room,
+        effect.effect_id,
+        `A round of applause for ${nickname}.`,
+        "Applause",
+        now,
+        {
+          questionIndex: room.questionIndex,
+          durationMs: speechApplauseMs,
+          audioAsset: trollStageSounds.speechApplause,
+        },
+      );
+    }
     closeEffect(sql, effect.effect_id, "expired", now);
   }
 }

@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { buzz } from "../device/haptics";
-import { useTrollClip, type TrollSound } from "./troll-sound";
-
-/** A 3.2 second glass smash in `apps/web/public/assets/`, played as the screen cracks. */
-const glassCrackSoundAsset = "/assets/glass-crack.mp3";
+import { trollAssets } from "./troll-assets";
+import { useTrollClip } from "./troll-sound";
 
 /**
  * The original trolls, finished: the troller's face everywhere, a call from
@@ -88,7 +86,14 @@ const callLines = [
   "Anyway, I'll let you go. Call me back.",
 ];
 
-/** A full incoming-call screen. Decline ends it; Answer plays a short call. */
+/** Lines appear this far apart, so the call outlasts the 6.1 second voice line. */
+const callLineMs = 1_600;
+
+/**
+ * A full incoming-call screen. The ringtone plays until Decline (which ends the
+ * troll) or Answer, which swaps it for the voice line, once. "Mum" is a stock
+ * painting and an American dialogue clip, not anyone's real mother.
+ */
 export function CallFromMum({
   label,
   escape,
@@ -100,6 +105,8 @@ export function CallFromMum({
 }) {
   const [answered, setAnswered] = useState(false);
   const [line, setLine] = useState(0);
+  const [photoFailed, setPhotoFailed] = useState(false);
+  useTrollClip(answered ? trollAssets.mumVoice : trollAssets.mumRingtone);
   useEffect(() => {
     if (answered) {
       return;
@@ -116,13 +123,22 @@ export function CallFromMum({
       onEscape?.();
       return;
     }
-    const timer = window.setTimeout(() => setLine((value) => value + 1), 1_400);
+    const timer = window.setTimeout(() => setLine((value) => value + 1), callLineMs);
     return () => window.clearTimeout(timer);
   }, [answered, line, onEscape]);
   return (
     <div className="troll-cover troll-call" role="dialog" aria-label={label}>
       <div className="troll-call-avatar" aria-hidden="true">
-        M
+        {photoFailed ? (
+          "M"
+        ) : (
+          <img
+            className="troll-call-photo"
+            src={trollAssets.mumPhoto}
+            alt=""
+            onError={() => setPhotoFailed(true)}
+          />
+        )}
       </div>
       <p className="troll-call-name">Mum</p>
       <p className="troll-call-meta">
@@ -208,16 +224,14 @@ export function ShatteredScreen({
   seed,
   escape,
   onEscape,
-  sound,
 }: {
   label: string;
   seed: number;
   escape: string | null;
   onEscape?: () => void;
-  sound?: TrollSound;
 }) {
   const cracks = useMemo(() => crackPaths(seed), [seed]);
-  useTrollClip(glassCrackSoundAsset, sound);
+  useTrollClip(trollAssets.glassCrack);
   useEffect(() => {
     buzz(80);
   }, []);

@@ -41,27 +41,31 @@ The sting at `apps/web/public/assets/theme-song.mp3` is 3.1 seconds of the Thoma
 
 ## Assets
 
-Files live in `apps/web/public/assets/`. A phone gag plays its clip with `useTrollClip` (`apps/web/src/troll/troll-sound.ts`), which stops when the gag ends. A stage cue plays its `audioAsset` through the stage sound. Every other troll is drawn in CSS, SVG or text and needs no file.
+Files live in `apps/web/public/assets/`. The asset pack's files keep their pack names in `assets/trolls/`, with their sources, licences and edits in `assets/trolls/CREDITS.txt` (see `docs/licenses/troll-assets.md`). Phone paths are listed in `apps/web/src/troll/troll-assets.ts`; stage paths are `themeStingAsset` and `trollStageSounds` in `catalogue.ts`.
 
-| Troll              | Has                       | Would use                                                 |
-| ------------------ | ------------------------- | --------------------------------------------------------- |
-| Benjamin Netanyahu | Image (webp), music (mp3) | Nothing more                                              |
-| Cracked screen     | Glass smash (mp3)         | Nothing more                                              |
-| Theme song         | Thomas flute sting (mp3)  | Nothing more                                              |
-| Call from Mum      | Vibration only            | Ringtone (sound), Mum's voice line (sound), photo (image) |
-| Bubble wrap        | Nothing                   | Pop (sound)                                               |
-| Notification storm | Nothing                   | Notification ding (sound)                                 |
-| Confetti cannon    | Nothing                   | Party horn (sound)                                        |
-| Fake crash         | Nothing                   | Error or shutdown noise (sound)                           |
-| AirDrop spam       | Nothing                   | AirDrop-style chime (sound)                               |
-| 1% battery         | Nothing                   | Low battery chirp (sound)                                 |
-| Fake last place    | Nothing                   | Sad trombone (sound)                                      |
-| Fake exit          | Nothing                   | Door slam or leave noise (sound)                          |
-| Sponsor break      | Generated lines           | Ad jingle (stage sound)                                   |
-| Speech!            | Nothing                   | Drumroll or applause (stage sound)                        |
-| Zoom and enhance   | The target's photo        | "Enhance" beep (stage sound)                              |
+Phone gags take their sound from `TrollSoundContext` (`apps/web/src/troll/troll-sound.ts`), one Web Audio output that any tap unlocks. `useTrollClip` plays one clip and stops it when the gag ends. `useTrollLayer` lets short repeated sounds overlap within a voice cap and minimum gap, and tries a fallback file only when the first fails to load. A stage cue plays its `audioAsset` once on the stage screen when the cue starts, under the stage's Start show and mute controls. Guests never hear stage sounds; only the target's phone plays a phone gag. A missing or blocked file is silent and never stops the gag.
 
-Invasion uses the troller's own driver face and the voice clip uses the guest's recording, so neither needs a party file. A stage sound for sponsor, speech or zoom means adding an `audioAsset` to that cue in `engine.ts`, as the theme song does.
+| Troll              | Where | Sound and image                                                         |
+| ------------------ | ----- | ----------------------------------------------------------------------- |
+| Benjamin Netanyahu | Phone | `netanyahu.webp` face, `netanyahu.mp3` music while he floods            |
+| Cracked screen     | Phone | `glass-crack.mp3` as it cracks                                          |
+| Call from Mum      | Phone | `03` photo; `01` ringtone until answered or declined; `02` voice once   |
+| Bubble wrap        | Phone | `04` pop on every press, up to 4 overlapping                            |
+| Notification storm | Phone | `05b` ding per notification (`05` if 05b fails), 2 at once, 0.3 s gap   |
+| Confetti cannon    | Phone | `06` party horn as it fires                                             |
+| Fake crash         | Phone | `07` error blip as it appears                                           |
+| AirDrop spam       | Phone | `08` generic chime per request, 2 at once, 0.5 s gap                    |
+| 1% battery         | Phone | `09` chirp as the warning appears                                       |
+| Fake last place    | Phone | `10` sad trombone as the LAST row lands                                 |
+| Fake exit          | Phone | `11` door slam as "You have left the party" appears                     |
+| Theme song         | Stage | `theme-song.mp3` at each of the target's score reveals                  |
+| Sponsor break      | Stage | `12` jingle as the sponsor cue starts                                   |
+| Speech!            | Stage | `13` drumroll with the 8 s floor, then a queued applause cue with `13b` |
+| Zoom and enhance   | Stage | `14` beep as the zoom cue starts                                        |
+
+Every other troll is drawn in CSS, SVG or text and has no file. Invasion uses the troller's own driver face and the voice clip uses the guest's recording.
+
+Phones have no mute or volume control of their own: the phone's volume and silent switch are the control. The pack MP3s are already normalised to −16 LUFS.
 
 ## Implemented
 
@@ -137,12 +141,12 @@ The silly name and Guest 14 go through `displayNickname`, so every screen that s
 
 Built on the stage cue queue. The stage reads a cue as "<label> <asset>.", so asset labels never give a joke away.
 
-| Effect           | When it plays                      | What the stage shows                                                   |
-| ---------------- | ---------------------------------- | ---------------------------------------------------------------------- |
-| Instant replay   | The reveal of that choice question | "Amina went with “Pink”." (not judged: the reveal does that)           |
-| Speech!          | The scores after that question     | "Amina, the floor is yours." for 8 seconds                             |
-| Fake exit        | Straight away                      | "Amina has left the party.", then "Only joking." The phone plays along |
-| Zoom and enhance | Straight away                      | The target's latest photo the stage may show, zooming slowly in        |
+| Effect           | When it plays                      | What the stage shows                                                              |
+| ---------------- | ---------------------------------- | --------------------------------------------------------------------------------- |
+| Instant replay   | The reveal of that choice question | "Amina went with “Pink”." (not judged: the reveal does that)                      |
+| Speech!          | The scores after that question     | "Amina, the floor is yours." for 8 seconds, then "A round of applause for Amina." |
+| Fake exit        | Straight away                      | "Amina has left the party.", then "Only joking." The phone plays along            |
+| Zoom and enhance | Straight away                      | The target's latest photo the stage may show, zooming slowly in                   |
 
 Replay and speech use the persistent slot, wait for their phase in `enqueueTheatreCues` (run by `settleTrolls`), play once and end. `zoomPhotoFor` takes a question photo, driver face, or a wall photo that has been on screen, never a hidden or pending one; with none, the room refuses the troll and the token is not spent.
 

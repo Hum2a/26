@@ -72,9 +72,10 @@ describe("screen trolls", () => {
       fireEvent.click(screen.getByRole("button", { name: "Answer" }));
       expect(screen.getByText("Hello? Hello? Can you hear me?")).toBeTruthy();
       expect(ended).not.toHaveBeenCalled();
+      // Lines are 1.6 s apart so the 6.1 s voice line is never cut off.
       for (let step = 0; step < 6; step += 1) {
         act(() => {
-          vi.advanceTimersByTime(1_400);
+          vi.advanceTimersByTime(1_600);
         });
       }
       expect(ended).toHaveBeenCalledTimes(1);

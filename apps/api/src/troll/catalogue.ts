@@ -10,6 +10,21 @@ export const implementedTrollKinds = trollKinds;
  */
 export const themeStingAsset = "/assets/theme-song.mp3";
 
+/**
+ * Stage sounds from the troll asset pack, under `apps/web/public/assets/trolls/`
+ * with their pack names. Sources and licences are in `trolls/CREDITS.txt`.
+ * Each plays once on the stage screen when its cue starts.
+ */
+export const trollStageSounds = {
+  sponsor: "/assets/trolls/12_sponsor-break_ad-jingle.mp3",
+  speechDrumroll: "/assets/trolls/13_speech_drumroll.mp3",
+  speechApplause: "/assets/trolls/13b_speech_applause.mp3",
+  zoomEnhance: "/assets/trolls/14_zoom-enhance_beep.mp3",
+} as const;
+
+/** The applause cue that follows a speech, after its 8 second floor. */
+export const speechApplauseMs = 6_000;
+
 export const themeCueCap = 4;
 
 /** The stage zooms slowly into a cue photo with this asset label. */

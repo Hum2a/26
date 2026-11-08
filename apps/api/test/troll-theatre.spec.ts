@@ -60,8 +60,29 @@ it("calls for a speech at the scores, once", async () => {
   expect((await stub.snapshotFor("stage")).trolls.announcement).toMatchObject({
     label: "Amina, the floor is yours.",
     assetLabel: "Speech! Speech!",
+    audioAsset: "/assets/trolls/13_speech_drumroll.mp3",
   });
   expect(await status(stub, effectId)).toBe("expired");
+  // The applause waits behind the drumroll and plays when the floor closes.
+  const cues = await runInDurableObject(stub, (_instance, state) =>
+    state.storage.sql
+      .exec<{ label: string; status: string; audio_asset: string | null }>(
+        `SELECT label, status, audio_asset FROM stage_cue ORDER BY created_at ASC, rowid ASC`,
+      )
+      .toArray(),
+  );
+  expect(cues).toEqual([
+    {
+      label: "Amina, the floor is yours.",
+      status: "playing",
+      audio_asset: "/assets/trolls/13_speech_drumroll.mp3",
+    },
+    {
+      label: "A round of applause for Amina.",
+      status: "queued",
+      audio_asset: "/assets/trolls/13b_speech_applause.mp3",
+    },
+  ]);
 });
 
 it("replays the target's answer at the reveal", async () => {

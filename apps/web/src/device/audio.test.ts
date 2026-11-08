@@ -124,3 +124,94 @@ it("cancels pending URL playback on stop even if sound is then re-enabled", asyn
   expect(await pending).toBe(false);
   expect(decode).not.toHaveBeenCalled();
 });
+
+function layeringContext() {
+  const started: { stop: ReturnType<typeof vi.fn>; onended: (() => void) | null }[] =
+    [];
+  const decode = vi.fn(async () => ({}) as AudioBuffer);
+  class Context {
+    state = "running";
+    destination = {};
+    resume = async () => undefined;
+    close = async () => undefined;
+    decodeAudioData = decode;
+    createGain() {
+      return { gain: { value: 0 }, connect() {} };
+    }
+    createBufferSource() {
+      const source = {
+        buffer: null as AudioBuffer | null,
+        onended: null as (() => void) | null,
+        connect() {},
+        start() {
+          started.push(source);
+        },
+        stop: vi.fn(),
+      };
+      return source;
+    }
+  }
+  vi.stubGlobal("AudioContext", Context);
+  const fetcher = vi.fn(async (url: string) =>
+    url.includes("missing")
+      ? new Response(null, { status: 404 })
+      : new Response(new Uint8Array([1])),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  return { started, decode, fetcher };
+}
+
+it("layers short sounds within a voice cap and a minimum gap, from one decode", async () => {
+  const { started, decode } = layeringContext();
+  let clock = 1_000;
+  vi.spyOn(performance, "now").mockImplementation(() => clock);
+  const audio = createScreenAudio();
+  expect(await audio.layerUrl("/pop.mp3")).toBe("skipped");
+  audio.unlock();
+  expect(await audio.layerUrl("/pop.mp3", { maxVoices: 2 })).toBe("played");
+  expect(await audio.layerUrl("/pop.mp3", { maxVoices: 2 })).toBe("played");
+  expect(await audio.layerUrl("/pop.mp3", { maxVoices: 2 })).toBe("skipped");
+  expect(started).toHaveLength(2);
+  expect(decode).toHaveBeenCalledTimes(1);
+  // A finished voice frees its slot.
+  started[0]?.onended?.();
+  expect(await audio.layerUrl("/pop.mp3", { maxVoices: 2 })).toBe("played");
+  // Stop ends every layer still playing, and the gap holds back the next one.
+  audio.stop();
+  expect(started[0]?.stop).not.toHaveBeenCalled();
+  expect(started.slice(1).every((source) => source.stop.mock.calls.length > 0)).toBe(
+    true,
+  );
+  clock += 1_000;
+  expect(await audio.layerUrl("/ding.mp3", { minGapMs: 300 })).toBe("played");
+  clock += 100;
+  expect(await audio.layerUrl("/ding.mp3", { minGapMs: 300 })).toBe("skipped");
+  clock += 300;
+  expect(await audio.layerUrl("/ding.mp3", { minGapMs: 300 })).toBe("played");
+  audio.dispose();
+  vi.restoreAllMocks();
+});
+
+it("reports a missing file once, without spending the gap a fallback needs", async () => {
+  const { started, fetcher } = layeringContext();
+  vi.spyOn(performance, "now").mockReturnValue(5_000);
+  const audio = createScreenAudio();
+  audio.unlock();
+  expect(await audio.layerUrl("/missing.mp3", { minGapMs: 300 })).toBe("failed");
+  expect(await audio.layerUrl("/ding.mp3", { minGapMs: 300 })).toBe("played");
+  expect(await audio.layerUrl("/missing.mp3")).toBe("failed");
+  expect(fetcher.mock.calls.filter(([url]) => url === "/missing.mp3")).toHaveLength(1);
+  expect(started).toHaveLength(1);
+  audio.dispose();
+  vi.restoreAllMocks();
+});
+
+it("does not start a layer that was still loading when sound stopped", async () => {
+  layeringContext();
+  const audio = createScreenAudio();
+  audio.unlock();
+  const pending = audio.layerUrl("/pop.mp3");
+  audio.stop();
+  expect(await pending).toBe("skipped");
+  audio.dispose();
+});

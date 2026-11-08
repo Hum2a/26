@@ -306,6 +306,10 @@ describe("stage effects", () => {
       ).toBe(true);
       socket.close();
     }
+    // A sponsor break opens with its jingle on the stage.
+    expect((await stub.snapshotFor("stage")).trolls.announcement?.audioAsset).toBe(
+      "/assets/trolls/12_sponsor-break_ad-jingle.mp3",
+    );
     for (let step = 0; step < 3; step += 1) {
       expect(
         (

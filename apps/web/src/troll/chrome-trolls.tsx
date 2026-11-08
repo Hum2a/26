@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { buzz } from "../device/haptics";
 import type { TrollSender } from "./classic-trolls";
+import { trollAssets } from "./troll-assets";
+import { useTrollClip, useTrollLayer } from "./troll-sound";
 
 /**
  * Fake phone chrome: the system pretending to do things. All are drawn by the
@@ -32,6 +34,7 @@ export function LowBattery({
   useEffect(() => {
     buzz(200);
   }, []);
+  useTrollClip(trollAssets.batteryChirp);
   return (
     <div className="troll-dim" role="dialog" aria-label={label}>
       <div className="troll-system-alert">
@@ -57,13 +60,18 @@ const airdropFiles = [
   "mum_voicenote_11min.m4a",
 ];
 
-/** AirDrop requests that keep coming back. Decline only buys a few seconds. */
+/**
+ * AirDrop requests that keep coming back. Decline only buys a few seconds.
+ * Each request plays a generic chime (not Apple's sound); two at most overlap.
+ */
 export function AirDropSpam({ label, from }: { label: string; from?: TrollSender }) {
   const [count, setCount] = useState(0);
   const [open, setOpen] = useState(true);
+  const chime = useTrollLayer({ maxVoices: 2, minGapMs: 500 });
   useEffect(() => {
     if (open) {
       buzz(60);
+      void chime(trollAssets.airdropChime);
       return;
     }
     const timer = window.setTimeout(() => {
@@ -71,7 +79,7 @@ export function AirDropSpam({ label, from }: { label: string; from?: TrollSender
       setOpen(true);
     }, 1_800);
     return () => window.clearTimeout(timer);
-  }, [open]);
+  }, [open, chime]);
   if (!open) {
     return null;
   }
