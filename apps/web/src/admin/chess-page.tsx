@@ -8,6 +8,9 @@ import { Panel } from "../ui/primitives";
 export function ChessAdminPage() {
   const { snapshot } = useAdminRoom();
   const play = snapshot.play;
+  
+  // Admin reads aggregate projection (ChessStageSnapshot), not guest schema (ChessGuestSnapshot)
+  // Backend projects play.chess as stage aggregate with totalGames, gamesInProgress, etc.
   const chessSnapshot = play?.question.kind === "chess" && play.chess ? play.chess : null;
 
   if (!chessSnapshot) {
