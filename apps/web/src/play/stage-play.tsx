@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 const KartGameWrapper = lazy(() => import("../kart/KartGameWrapper"));
 import { motion } from "motion/react";
-import type { LobbySnapshot, PlaySnapshot, RoomPhaseName, ChessStageSnapshot } from "@26/shared";
+import type { LobbySnapshot, PlaySnapshot, RoomPhaseName } from "@26/shared";
 import { QuestionOptionImage } from "./question-option-image";
 import { ChessStage } from "../chess/chess-stage";
 import { Panel } from "../ui/primitives";
@@ -85,7 +85,8 @@ export function StagePlay({
       </KartDriversProvider>
     );
   if (play.question.kind === "chess" && play.chess) {
-    return <ChessStage snapshot={play.chess as ChessStageSnapshot} />;
+    // Type assertion needed: discriminated union doesn't narrow automatically
+    return <ChessStage snapshot={play.chess as any} />;
   }
   const leadBoard =
     snapshot.phase === "scores" ||

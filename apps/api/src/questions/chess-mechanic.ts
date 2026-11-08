@@ -3,7 +3,6 @@
  * Handles game initialization, move processing, clock alarms, and scoring.
  */
 
-import type { ChessQuestion } from "./definition.ts";
 import type { GameStore } from "../room/lifecycle.ts";
 import {
   initializeChessRound,
@@ -25,14 +24,22 @@ import type { ChessMoveCommand, ChessResignCommand } from "@26/shared";
 export function createChessRound(
   sql: SqlStorage,
   store: GameStore,
-  question: ChessQuestion,
+  _question: { kind: "chess" },
   participants: string[],
   now: number,
+  playerTimeMsOverride: number = 60000,
+  botTimeMsOverride: number = 60000,
 ): void {
   const room = store.readRoom();
   const roundId = `${room.questionSetVersion}-${room.questionIndex}`;
 
-  const state = initializeChessRound(roundId, participants, now, question.playerTimeMs, question.botTimeMs);
+  const state = initializeChessRound(
+    roundId,
+    participants,
+    now,
+    playerTimeMsOverride,
+    botTimeMsOverride,
+  );
 
   // Persist all games
   for (const game of Object.values(state.games)) {

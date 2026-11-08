@@ -214,7 +214,8 @@ describe("Chess Review Regressions", () => {
         }
       }
 
-      const pgnBeforeEviction = game.pgn;
+      const _pgnBeforeEviction = game.pgn;
+    void _pgnBeforeEviction;
       const fenBeforeEviction = game.fen;
 
       // Simulate eviction: serialize game state (PGN + FEN)

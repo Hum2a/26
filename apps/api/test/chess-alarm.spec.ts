@@ -2,8 +2,6 @@ import { env, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
 import { payloadDigest } from "../src/room/digest.ts";
 import { createSqlStore } from "../src/room/sql-store.ts";
-import { toPlayable } from "../src/questions/authoring.ts";
-import { chessBattle } from "../src/questions/packs/birthday/chess-battle.ts";
 
 /**
  * Real PartyRoom integration: silent clock expiry via alarm, exactly-once scoring.
@@ -33,7 +31,7 @@ it("flags player silently via alarm, scores exactly once", async () => {
   });
   if (!alice.ok || !bob.ok) throw new Error("Guests must join");
 
-  // Use chess question directly (already structured)
+  // Use chess question directly (literals required by schema)
   const question = {
     kind: "chess" as const,
     id: "test-chess",
@@ -44,8 +42,8 @@ it("flags player silently via alarm, scores exactly once", async () => {
     illustrative: false,
     attribution: "never" as const,
     presentation: "default",
-    playerTimeMs: 100, // Very short for test
-    botTimeMs: 60000,
+    playerTimeMs: 60000 as const,
+    botTimeMs: 60000 as const,
   };
 
   const now = Date.now();
@@ -66,13 +64,12 @@ it("flags player silently via alarm, scores exactly once", async () => {
       questionSetVersion: "test-version",
     });
 
-    // Initialize chess round with very short clocks (100ms)
+    // Initialize chess round with very short clocks for test (100ms)
     const { createChessRound } = await import("../src/questions/chess-mechanic.ts");
     const participants = [alice.playerId, bob.playerId];
     
-    // Override question times for test
-    const testQuestion = { ...question, playerTimeMs: 100, botTimeMs: 60000 };
-    createChessRound(sql, store, testQuestion, participants, now);
+    // Override question times - pass directly to createChessRound
+    createChessRound(sql, store, question, participants, now, 100, 60000);
 
     // Verify games created
     const games = sql.exec("SELECT game_id, player_id, status FROM chess_game").toArray();
@@ -181,8 +178,8 @@ it("paused clock does not flag, increments revision", async () => {
     illustrative: false,
     attribution: "never" as const,
     presentation: "default",
-    playerTimeMs: 500,
-    botTimeMs: 60000,
+    playerTimeMs: 60000 as const,
+    botTimeMs: 60000 as const,
   };
 
   const now = Date.now();
@@ -201,9 +198,8 @@ it("paused clock does not flag, increments revision", async () => {
       roundId: "pause-round",
     });
 
-    const testQuestion = { ...question, playerTimeMs: 500, botTimeMs: 60000 };
     const { createChessRound } = await import("../src/questions/chess-mechanic.ts");
-    createChessRound(sql, store, testQuestion, [charlie.playerId], now);
+    createChessRound(sql, store, question, [charlie.playerId], now, 500, 60000);
 
     // Get initial revision
     const before = sql
