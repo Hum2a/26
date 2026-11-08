@@ -13,7 +13,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { resolveCommand } from "./command.mjs";
+import { resolveBash, resolveCommand } from "./command.mjs";
 import { projectRoot } from "./env-files.ts";
 import { deployFreeze, workerRelease } from "./release-support.ts";
 
@@ -125,15 +125,17 @@ function installFakes(binDir: string, logFile: string, realGit: boolean): void {
   if (!realGit) fakes.push(["GIT", "git"]);
   for (const [tool, name] of fakes) {
     writeExecutable(path.join(binDir, name), fakeSource(tool, logFile));
+    // Windows (and Git Bash) prefer name.exe / name.cmd over an extensionless
+    // shebang. System32 ships curl.exe, so without a shim the real curl wins.
+    if (process.platform === "win32") {
+      writeFileSync(
+        path.join(binDir, `${name}.cmd`),
+        `@"${process.execPath}" "%~dp0${name}" %*\r\n`,
+      );
+    }
   }
   writeFileSync(path.join(npmCliDir, "npm-cli.js"), fakeSource("NPM", logFile));
   writeFileSync(path.join(npmCliDir, "npx-cli.js"), fakeSource("NPX", logFile));
-  if (!realGit) {
-    writeFileSync(
-      path.join(binDir, "git.cmd"),
-      `@"${process.execPath}" "%~dp0git" %*\r\n`,
-    );
-  }
 }
 
 function stubEnv(
@@ -298,7 +300,7 @@ describe("package.json deploy/full routes", () => {
       scripts["secrets-sync:prod"],
       "node --experimental-strip-types scripts/release.ts secrets-sync --env production",
     );
-    assert.equal(scripts.release, "bash release.sh");
+    assert.equal(scripts.release, "node scripts/run-bash.mjs release.sh");
   });
 });
 
@@ -574,6 +576,15 @@ function releaseFixture(): Fixture {
   return { dir, work, origin };
 }
 
+/** Git Bash path for a Windows directory (`E:\x\y` → `/e/x/y`). */
+function bashPath(windowsPath: string): string {
+  if (process.platform !== "win32") return windowsPath;
+  const resolved = path.resolve(windowsPath);
+  const drive = /^([A-Za-z]):[\\/](.*)$/.exec(resolved);
+  if (!drive) return resolved.replace(/\\/g, "/");
+  return `/${drive[1].toLowerCase()}/${drive[2].replace(/\\/g, "/")}`;
+}
+
 function runReleaseSh(
   fixture: Fixture,
   args: readonly string[],
@@ -582,9 +593,22 @@ function runReleaseSh(
   return withStubs(
     { FAKE_LIVE_VERSION: "0.0.6", ...extra },
     (env) => {
+      const script = path.join(fixture.work, "release.sh");
+      const stubBin = (env.PATH ?? "").split(path.delimiter)[0] ?? "";
+      // Git for Windows injects /usr/bin (real curl) before any script runs.
+      // Put the stub directory first inside bash so the fakes win.
       const result = spawnSync(
-        "bash",
-        [path.join(fixture.work, "release.sh"), ...args],
+        resolveBash({ env }),
+        [
+          "--noprofile",
+          "--norc",
+          "-c",
+          'export PATH="$1:$PATH"; script="$2"; shift 2; exec bash --noprofile --norc "$script" "$@"',
+          "run-release-sh",
+          bashPath(stubBin),
+          bashPath(script),
+          ...args,
+        ],
         {
           cwd: fixture.work,
           encoding: "utf8",
@@ -638,8 +662,8 @@ function assertUntouched(fixture: Fixture, head: string, log: string): void {
 describe("release.sh wrapper", () => {
   it("does not accept --skip-git-check as a flag", () => {
     const result = spawnSync(
-      "bash",
-      [path.join(root, "release.sh"), "--skip-git-check"],
+      resolveBash(),
+      ["--noprofile", "--norc", path.join(root, "release.sh"), "--skip-git-check"],
       {
         cwd: root,
         encoding: "utf8",

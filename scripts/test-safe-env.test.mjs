@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { blankDatabaseUrl, runSafely } from "./test-safe-env.mjs";
-import { resolveCommand } from "./command.mjs";
+import { resolveBash, resolveCommand } from "./command.mjs";
 
 const sample = "ADMIN_EMAIL=a@example.com\nDATABASE_URL=postgres://secret\nOTHER=1\n";
 
@@ -22,6 +22,41 @@ test("blanks whitespace assignments and duplicate URLs while preserving CRLF and
     ),
     "DATABASE_URL=\r\nDATABASE_URL=\r\n# DATABASE_URL=comment\r\nDATABASE_URL_EXTRA=keep\r\n",
   );
+});
+
+test("Windows bash prefers Git Bash and skips the System32 WSL stub", () => {
+  const gitBash = "C:\\Program Files\\Git\\bin\\bash.exe";
+  const wslBash = "C:\\Windows\\System32\\bash.exe";
+  assert.equal(
+    resolveBash({
+      platform: "win32",
+      env: {
+        PROGRAMFILES: "C:\\Program Files",
+        PATH: `C:\\Windows\\System32;C:\\Program Files\\Git\\bin`,
+      },
+      exists: (candidate) => candidate === gitBash || candidate === wslBash,
+    }),
+    gitBash,
+  );
+  assert.equal(
+    resolveBash({
+      platform: "win32",
+      env: { PATH: `C:\\Windows\\System32;C:\\Tools\\Git\\bin` },
+      exists: (candidate) =>
+        candidate === wslBash || candidate === "C:\\Tools\\Git\\bin\\bash.exe",
+    }),
+    "C:\\Tools\\Git\\bin\\bash.exe",
+  );
+  assert.throws(
+    () =>
+      resolveBash({
+        platform: "win32",
+        env: { PATH: "C:\\Windows\\System32" },
+        exists: (candidate) => candidate === wslBash,
+      }),
+    /Cannot find Git Bash/,
+  );
+  assert.equal(resolveBash({ platform: "linux", env: {}, exists: () => false }), "bash");
 });
 
 test("Windows npm shims use Node with literal argument boundaries", () => {
