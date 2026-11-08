@@ -198,22 +198,42 @@ export function inDeployFreeze(nowMs: number): boolean {
   return nowMs >= deployFreeze.from && nowMs < deployFreeze.until;
 }
 
-/** Shared by every deploy/full entry point, before checks or remote changes. */
+/**
+ * Shared by every deploy/full entry point, before checks or remote changes.
+ * Enforces production safeguards: confirmation, freeze check, and git state.
+ */
 export function assertDeployAllowed(
   targets: readonly DeployableEnvironment[],
   options: { dryRun: boolean; confirmProduction: boolean; overrideFreeze: boolean },
   nowMs: number,
+  gitState?: { branch: string; clean: boolean },
 ): void {
   // A packaging dry run does not deploy, migrate or upload secrets.
   if (options.dryRun || !targets.includes("production")) return;
+  
+  // Production requires explicit confirmation
   if (!options.confirmProduction)
     throw new Error(
       "Deploying to production needs --confirm-production. Check staging first.",
     );
+  
+  // Production freeze (party weekend)
   if (inDeployFreeze(nowMs) && !options.overrideFreeze)
     throw new Error(
       "Production is frozen for the party weekend (20 Nov to midday 22 Nov). Pass --override-freeze only for an emergency fix.",
     );
+  
+  // Production requires clean master branch (when git state provided)
+  if (gitState) {
+    if (gitState.branch !== "master")
+      throw new Error(
+        `Production deploys must be from master. Current branch: ${gitState.branch}`,
+      );
+    if (!gitState.clean)
+      throw new Error(
+        "Production deploys require a clean working tree. Commit or stash changes first.",
+      );
+  }
 }
 
 /** Run once per invocation, including a staging + production release. */

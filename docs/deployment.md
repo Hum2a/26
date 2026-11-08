@@ -58,7 +58,11 @@ npm run dev
 
 ## Staging and production releases
 
+**For production releases, use `bash release.sh` which enforces version bumping, clean tree, and all checks.**
+
 The Vite plugin selects the Wrangler environment at build time. The release scripts set `CLOUDFLARE_ENV`, check the generated Worker name, and deploy that file. Passing `--env` only at deploy time does not retarget a build that was flattened as local.
+
+### Staging releases
 
 ```powershell
 npm run secrets-sync:staging
@@ -71,6 +75,28 @@ Or one command that migrates, then builds and deploys with the required secrets 
 ```powershell
 npm run deploy:staging:full
 ```
+
+### Production releases
+
+**Recommended approach using release.sh:**
+
+```powershell
+bash release.sh --deploy=production --confirm-production
+```
+
+The `release.sh` script handles version bumping, enforces clean master branch, runs all checks, and includes production safeguards.
+
+**Direct approach (bypasses version bumping):**
+
+```powershell
+npm run deploy:prod -- --confirm-production
+```
+
+**Production safeguards enforced by all routes:**
+- Requires `--confirm-production` flag
+- Must be on clean master branch (no uncommitted changes)
+- Freeze period (20 Nov 00:00 to 22 Nov 12:00 UTC) requires `--override-freeze`
+- Checks run unless `--skip-checks` is passed
 
 The Vite environment directory stays `apps/web/dist/26_humza_website_local` because that name comes from the top-level Worker. The script opens `apps/web/dist/26_humza_website_local/wrangler.json` and refuses to continue unless `"name"` is `26-humza-website-staging` and `"targetEnvironment"` is `staging`. A build that still has `"name": "26-humza-website-local"` is the local build. Do not deploy it as staging.
 
