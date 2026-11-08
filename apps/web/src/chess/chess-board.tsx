@@ -69,7 +69,6 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
         // Let parent handle promotion detection and chooser
         onMove(selectedSquare, square);
         setSelectedSquare(null);
-        setLegalMoves([]);
         return;
       }
 
@@ -79,16 +78,12 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
         const pieceColor = clickedPiece === clickedPiece.toUpperCase() ? "white" : "black";
         if (pieceColor === snapshot.playerColor) {
           setSelectedSquare(square);
-          // Note: legal moves would need server API or client chess.js instance
-          // For now, selection visual only - server validates legality
-          setLegalMoves([]);
           return;
         }
       }
 
       // Deselect
       setSelectedSquare(null);
-      setLegalMoves([]);
     },
     [isInteractive, selectedSquare, board, snapshot, onMove],
   );
