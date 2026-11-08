@@ -194,7 +194,9 @@ it("saves laps with the course, scales the race window, replays once and refuses
       ).ok,
     ).toBe(false);
   expect((await cpuLobby.room.hostAction(cpuCommand)).ok).toBe(true);
-  expect((await cpuLobby.room.snapshotFor("control")).kartLobby).toMatchObject({ cpu: 3 });
+  expect((await cpuLobby.room.snapshotFor("control")).kartLobby).toMatchObject({
+    cpu: 3,
+  });
   for (const role of ["stage", "guest"] as const)
     expect((await cpuLobby.room.snapshotFor(role)).kartLobby).toBeUndefined();
   await cpuLobby.room.hostAction({

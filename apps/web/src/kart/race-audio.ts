@@ -5,13 +5,7 @@
  * which is also what lets iOS start the audio context.
  */
 export type RaceSound =
-  | "go"
-  | "launch"
-  | "lap"
-  | "final-lap"
-  | "finish"
-  | "place-up"
-  | "slipstream";
+  "go" | "launch" | "lap" | "final-lap" | "finish" | "place-up" | "slipstream";
 
 type Context = Pick<
   AudioContext,

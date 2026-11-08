@@ -39,18 +39,35 @@ it("aims along the route: straight ahead is gas, a kart facing the wrong way tur
   expect(wrong.gas).toBe(false);
   // Its own top speed is a ceiling: no throttle above it.
   expect(
-    kartCpuInput({ x: pose.x, z: pose.z, heading: pose.heading, speed: 29 }, parkTrackId, 0.8, 0, 1)
-      .gas,
+    kartCpuInput(
+      { x: pose.x, z: pose.z, heading: pose.heading, speed: 29 },
+      parkTrackId,
+      0.8,
+      0,
+      1,
+    ).gas,
   ).toBe(false);
   // Bad numbers never escape as controls.
-  const odd = kartCpuInput({ x: pose.x, z: pose.z, heading: 0, speed: Number.NaN }, parkTrackId, 0.9, 0, 1);
+  const odd = kartCpuInput(
+    { x: pose.x, z: pose.z, heading: 0, speed: Number.NaN },
+    parkTrackId,
+    0.9,
+    0,
+    1,
+  );
   expect(Number.isFinite(odd.steer)).toBe(true);
 });
 
 it("adds CPU racers behind the guests, within limits", () => {
-  const race = createKartRace("r", guest, { trackId: parkTrackId, seedGrid: true, cpu: 3 });
+  const race = createKartRace("r", guest, {
+    trackId: parkTrackId,
+    seedGrid: true,
+    cpu: 3,
+  });
   expect(race.drivers.map((d) => d.playerId)).toEqual(["a", "cpu-1", "cpu-2", "cpu-3"]);
-  expect(race.drivers.slice(1).every((d) => d.cpu && isKartCpuId(d.playerId))).toBe(true);
+  expect(race.drivers.slice(1).every((d) => d.cpu && isKartCpuId(d.playerId))).toBe(
+    true,
+  );
   expect(race.drivers[1]!.name).toBe(kartCpuNames[0]);
   expect(race.drivers[0]!.gridPosition).toBe(1);
   expect(() => createKartRace("r", guest, { cpu: 8 })).toThrow();
@@ -63,9 +80,13 @@ it("adds CPU racers behind the guests, within limits", () => {
   expect(view.participants[0]!.cpu).toBeUndefined();
 });
 
-function drive(trackId: typeof parkTrackId | typeof importedTrackId | "party-ring-v1", ms: number) {
+function drive(
+  trackId: typeof parkTrackId | typeof importedTrackId | "party-ring-v1",
+  ms: number,
+) {
   let race = createKartRace("r", guest, { trackId, seedGrid: true, cpu: 2 });
-  for (let t = 200; t <= ms; t += 200) race = reduceKart(race, { type: "tick", elapsedMs: t });
+  for (let t = 200; t <= ms; t += 200)
+    race = reduceKart(race, { type: "tick", elapsedMs: t });
   return race;
 }
 
@@ -86,11 +107,15 @@ for (const [trackId, ms, minimum] of [
   });
 
 it("ends the race when the guests are done and shares points by guest rank only", () => {
-  let race: KartRace = createKartRace("r", [...guest, { playerId: "b", name: "Chen" }], {
-    trackId: parkTrackId,
-    seedGrid: true,
-    cpu: 2,
-  });
+  let race: KartRace = createKartRace(
+    "r",
+    [...guest, { playerId: "b", name: "Chen" }],
+    {
+      trackId: parkTrackId,
+      seedGrid: true,
+      cpu: 2,
+    },
+  );
   race = reduceKart(race, { type: "tick", elapsedMs: 10_000 });
   // A CPU finished first; then both guests finish.
   Object.assign(race.drivers[2]!, { status: "FINISHED", lapTimeMs: 9_000 });
@@ -125,7 +150,11 @@ it("never hands a CPU racer an item", () => {
 });
 
 it("puts a CPU kart stuck against a barrier back on its last safe point", () => {
-  let race = createKartRace("r", guest, { trackId: parkTrackId, seedGrid: true, cpu: 1 });
+  let race = createKartRace("r", guest, {
+    trackId: parkTrackId,
+    seedGrid: true,
+    cpu: 1,
+  });
   race = reduceKart(race, { type: "tick", elapsedMs: 2_000 });
   const cpu = race.drivers[1]!;
   const safe = { ...cpu.lastSafe! };

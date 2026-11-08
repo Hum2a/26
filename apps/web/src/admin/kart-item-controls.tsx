@@ -38,8 +38,8 @@ export function KartItemControls() {
     <section aria-label="Kart items">
       <h2>Kart items</h2>
       <p>
-        Current: {data.current ? describe(data.current) : "No active race"} · Next
-        race: {describe(data.next)}.
+        Current: {data.current ? describe(data.current) : "No active race"} · Next race:{" "}
+        {describe(data.next)}.
       </p>
       {data.current && <p>Allowed now: {catalogue(data.current)}.</p>}
       <p>Saved for next start: {catalogue(data.next)}.</p>
@@ -61,8 +61,8 @@ export function KartItemControls() {
             checked={luck}
             onChange={(e) => setLuck(e.target.checked)}
           />
-          Position luck: karts at the back get more turbos and homing shots; leaders
-          get more oil and shields
+          Position luck: karts at the back get more turbos and homing shots; leaders get
+          more oil and shields
         </label>
         {items.map((item) => (
           <label key={item}>
@@ -169,8 +169,7 @@ export function KartItemControls() {
       <ol aria-label="Item rule history">
         {data.rulesHistory.map((event, index) => (
           <li key={`${event.atMs}-${index}`}>
-            {new Date(event.atMs).toLocaleTimeString("en-GB")} ·{" "}
-            {describe(event.rules)}
+            {new Date(event.atMs).toLocaleTimeString("en-GB")} · {describe(event.rules)}
           </li>
         ))}
       </ol>

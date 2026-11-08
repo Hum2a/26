@@ -5802,3 +5802,35 @@ Commands and results:
 Not verified: real phones, so the haptics and Web Audio sound have not been heard or felt. Slipstream has not been tried by people racing each other, so the 12% may need tuning. No Park or circuit race has been run with three laps. The released `kart-rehearsal-v1` instructions still say "Hold A".
 
 Next: race two phones on staging with three Park laps, tune slipstream by feel, then decide on rocket starts.
+
+## 8 November 2026 — rocket starts, CPU racers, position luck and the last "hold A" wording
+
+Status: the three items the race-feel plan had left out are built (R9–R11 in `docs/kart-race-feel-plan.md`). The last user-facing "hold A" wording is gone. Each group was committed on its own, as the owner asked, with testing done at the end.
+
+- **Wording** (`6d492c5`, then a fix below): `kart-rehearsal-v3` carries the thumb-pad instructions. v2 gets back the instructions it was released with, and v1 is unchanged. The kart guide's phone, drift and glider tips are updated.
+- **Position luck** (`33bc183`): optional `luck: "position"` on kart item rules (both versions), set from a checkbox beside the item controls and off by default.
+  - `kartItemWeight` and `pickKartItem` make a deterministic weighted pick. Leaders mostly get oil, shields and tennis balls; the back of the field mostly gets turbos, homing shots and bombs.
+  - `stepKartPowers` asks for the standing only when a box is collected.
+- **CPU racers** (`8ecc8b6`): `packages/shared/src/kart-cpu.ts`. Up to seven, chosen beside the course and laps (`kartCpu` on `kart-track`, validated in routes and again in the lobby domain, and digested with the receipt).
+  - They start behind the guests and steer by aiming a little ahead on the course's own route, lifting for bends and holding their own top speed (skill 0.80–0.95).
+  - A CPU stuck for 2.5 s returns to its last safe point. They skip item boxes, take places (tagged CPU) and never score: points are shared by guest rank.
+  - The race ends when the guests are done, and CPUs never count as answers.
+- **Rocket starts** (`ca03d6f`): room races (`launchVersion: 1`) grade each kart's first throttle against GO. Within 0.6 s is perfect (Super boost, 1 s); within 1.2 s is good (Mini boost, 0.6 s).
+  - Phones stay locked until GO, so this is a reaction start rather than a held-throttle one.
+  - The phone shows PERFECT START! or Good start!, the projector calls the first perfect start, and the countdown hints say to accelerate right on GO.
+
+Fixed while testing:
+
+- The new v3 instructions were 205 characters, over the 200-character question limit. Every room test that started the rehearsal failed with a ZodError, so they are now 186 characters.
+- A start boost carried through a host pause, which broke the pause-release guarantee. A pause now clears every boost.
+- `kart-room`'s full-room queue test let karts coast for 3 s. The karts that throttled on GO now launch faster, so it allows 6 s; its checks are unchanged.
+- The item-controls test clicked every checkbox, which now included the luck box. It now leaves that box out of the loop and checks it separately.
+
+Commands and results:
+
+- API (`test/kart`, `test/content-preflight`, `test/room`, `test/auth`): 26 files and 206 tests passed after the fixes. These include the new `kart-cpu`, `kart-launch` and `kart-item-luck` specs and the CPU case in `kart-track-selection`. The first run had 38 failures, all from the instruction length.
+- Web (`src/kart`, `src/play`, `src/admin`): 99 files and 485 tests passed after the item-controls test fix.
+- `tsc` for shared, `apps/api`, the `apps/web` app and node configs: passed. ESLint: clean. Prettier applied.
+- Browser: `kart-cpu-race`, `kart-race-laps`, `kart-lobby`, `kart-track-selection`, `kart` and `kart-items-live` passed, 8 of 9 cases in one run. `kart-cpu-race` is new: one phone against three CPU racers on Park gets a boosted start, the projector lists the CPU karts, and all three CPU karts move. `kart-inputs`' gamepad case missed a barrier impact within 15 s once, then passed twice in a row on its own.
+
+Not verified: CPU driving quality over a full three-lap race, the rocket-start windows on real phones over venue Wi-Fi, and how much position luck changes a real race.

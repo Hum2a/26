@@ -7,7 +7,11 @@
  */
 import type { KartControls, KartTrackId } from "./kart-race-schema.ts";
 import { parkRoute, parkTrackId } from "./kart-park.ts";
-import { importedTrackId, importedTrackPoint, importedTrackProgress } from "./kart-route.ts";
+import {
+  importedTrackId,
+  importedTrackPoint,
+  importedTrackProgress,
+} from "./kart-route.ts";
 
 export const kartCpuMax = 7;
 export const kartCpuNames = [
@@ -56,7 +60,12 @@ export function kartCpuInput(
   const ring = trackId !== importedTrackId && trackId !== parkTrackId;
   const top = (ring ? 12 : 30) * skill;
   const speed = Number.isFinite(kart.speed) ? kart.speed : 0;
-  const target = aimPoint(trackId, kart.x, kart.z, (ring ? 6 : 9) + Math.max(0, speed) * 0.55);
+  const target = aimPoint(
+    trackId,
+    kart.x,
+    kart.z,
+    (ring ? 6 : 9) + Math.max(0, speed) * 0.55,
+  );
   const error = wrap(Math.atan2(target.z - kart.z, target.x - kart.x) - kart.heading);
   // A small personal wobble so CPU karts do not drive in a perfect line.
   const wobble = Math.sin(elapsedMs / 650 + index * 1.7) * 0.06 * (1.1 - skill);

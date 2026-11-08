@@ -439,3 +439,18 @@ The code-versioned kart-tracks-v2 catalogue derives counts/lengths from driving,
 - The local development inbox (`/api/dev/inbox`) accepts `?format=text`, which the
   sign-in page uses; it then skips rendering the emails. It exists only when
   `APP_ENV` is `local`, as before.
+
+**Hidden answers and failed wall photos (8 November 2026).** When the host hides a written answer, the room's existing `round_state` table stores one row per question (`<question id>` / `hidden-authors`) holding the ids of the players whose answers are hidden. On an all-answer ballot the existing `vote_candidate.included` flag is set to match. The answer text, ballots and scores are never deleted or rewritten. The host's control snapshot still shows hidden answers, marked hidden; guest and stage snapshots, stage reveals and the results highlights leave them out. An answer refused for an identity slur is not stored anywhere: the receipt keeps only the refusal message. A projector report that a wall photo failed to load only brings that post's existing `until_at` forward; nothing new is stored. Retention follows the room.
+
+## CPU racers, rocket starts and position luck (8 November 2026)
+
+- `__room/kart-lobby` may hold `cpu` (1–7) and history entries may carry it; it
+  stays control-only. The room-owned kart question copy stores `cpuRacers`.
+- The kart race JSON adds CPU drivers (`playerId` `cpu-1` to `cpu-7`, a fixed
+  name, `cpu`, `skill` and a `stuckMs` timer), `launchVersion`, and per driver
+  `launch` (`perfect`, `good` or `late`). Public frames add `cpu` on CPU karts
+  and standings, and `launch` for the opening four seconds. CPU karts have no
+  player row, so the score ledger never records them.
+- Kart item rules may carry `luck: "position"`, stored with the existing room
+  item rules and their history.
+- No personal data, new table, scheduler or browser storage.

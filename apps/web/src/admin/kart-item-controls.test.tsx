@@ -62,7 +62,10 @@ it("saves the selected expanded catalogue and shows named held items and history
   await mount();
   expect(screen.getByText(/Kart 1 · Amina/)).toBeTruthy();
   expect(screen.getByText(/0.20s · use/)).toBeTruthy();
-  const checkboxes = screen.getAllByRole("checkbox");
+  const luck = screen.getByRole("checkbox", { name: /Position luck/ });
+  const checkboxes = screen
+    .getAllByRole("checkbox")
+    .filter((checkbox) => checkbox !== luck);
   for (const checkbox of checkboxes) fireEvent.click(checkbox);
   fireEvent.click(screen.getByRole("button", { name: "Save expanded items" }));
   await waitFor(() =>
@@ -70,6 +73,17 @@ it("saves the selected expanded catalogue and shows named held items and history
       expect.objectContaining({
         action: "kart-item-rules",
         itemRules: { version: 2, allowed: [] },
+      }),
+    ),
+  );
+  // Position luck travels with either set of rules.
+  fireEvent.click(luck);
+  fireEvent.click(screen.getByRole("button", { name: "Use original items" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "kart-item-rules",
+        itemRules: { version: 1, luck: "position" },
       }),
     ),
   );

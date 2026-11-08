@@ -281,3 +281,10 @@ No deployment or physical-device certification is implied by this local implemen
 - **Phone:** place, `Lap n/N`, "Drafting…"/"Slipstream!", banners for a new lap, the final lap and places gained, and a finish card with race and lap times. "Race sound and buzzes" in Controls turns on a synthesised engine note, chimes and buzzes; it is off by default and remembered on that phone.
 - **Projector:** lead changes, "Lap 2 of 3", "Final lap!" and finishers ("Amina wins!") are announced once each; standings show each driver's lap.
 - **Try it:** Admin → Kart → Create kart lobby → choose a course and laps → join two phones → Start kart race. `apps/web/e2e/kart-race-laps.spec.ts` drives a real two-lap race. Plan: [kart-race-feel-plan.md](kart-race-feel-plan.md).
+
+## CPU racers, rocket starts and position luck (8 November 2026)
+
+- **CPU racers:** a kart-only lobby's course control has "CPU racers" (none to 7). They line up behind the guests and drive themselves along the course, each with its own top speed. They appear on the map, on phones as nearby karts, and in the standings tagged "CPU". They never collect items, never score and never hold a race open: when every guest is done, the race ends.
+- **Rocket start:** hit the throttle right on GO. Within 0.6 s is a perfect start (a Super boost); within 1.2 s is a good start (a Mini boost). The phone shows PERFECT START! or Good start!, and the projector calls the first perfect start.
+- **Position luck:** tick "Position luck" beside the item rules in Live controls. Karts at the back then get more turbos, homing shots and bombs; leaders get more oil and shields.
+- **Try it:** Admin → Kart → Create kart lobby → choose a course, laps and CPU racers → join one phone → Start kart race. Even alone, you race the CPU field.

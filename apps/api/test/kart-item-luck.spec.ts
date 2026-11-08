@@ -61,14 +61,24 @@ it("uses the standing only when a box is collected, and keeps the old rotation w
   expect(asked).toBe(1);
   expect(lucky).toBe(pickKartItem(all, 1, hashOf("seed"), 0));
   // Missing the box never asks for a standing.
-  stepKartPowers(createKartPowers(), "p", { x: 10, z: 10 }, { x: 11, z: 10 }, [box], [], 1, "seed", {
-    allowed: all,
-    damageGrace: true,
-    standing: () => {
-      asked++;
-      return 1;
+  stepKartPowers(
+    createKartPowers(),
+    "p",
+    { x: 10, z: 10 },
+    { x: 11, z: 10 },
+    [box],
+    [],
+    1,
+    "seed",
+    {
+      allowed: all,
+      damageGrace: true,
+      standing: () => {
+        asked++;
+        return 1;
+      },
     },
-  });
+  );
   expect(asked).toBe(1);
   expect(collect()).toBe(all[hashOf("seed") % all.length]);
 });
