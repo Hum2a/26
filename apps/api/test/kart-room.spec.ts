@@ -1084,8 +1084,9 @@ it("persists full-room control queues before a tick and replays them after evict
       expect(driver.sequence).toBe(2);
       expect(driver.speed > 0).toBe(i % 2 === 0);
     }
-    // Throttle expires at 500ms; exponential coasting needs time to settle.
-    onAlarm(createGameStore(sql), now + 3000);
+    // Throttle expires at 500ms; exponential coasting needs time to settle. The
+    // karts that throttled on GO also got a start boost, so they coast from higher.
+    onAlarm(createGameStore(sql), now + 6000);
     expect(readKart(sql, q.id)!.drivers.every((d) => Math.abs(d.speed) < 0.1)).toBe(
       true,
     );

@@ -220,12 +220,17 @@ export function createKartRace(
     new Set(players.map((p) => p.playerId)).size !== players.length
   )
     throw new Error("A race supports at most 100 different players.");
-  const guests: { playerId: string; name: string; points?: number; cpu?: true; skill?: number }[] =
-    options.seedGrid
-      ? players
-          .map((p, index) => ({ ...p, index }))
-          .sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || a.index - b.index)
-      : [...players];
+  const guests: {
+    playerId: string;
+    name: string;
+    points?: number;
+    cpu?: true;
+    skill?: number;
+  }[] = options.seedGrid
+    ? players
+        .map((p, index) => ({ ...p, index }))
+        .sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || a.index - b.index)
+    : [...players];
   // CPU racers start behind every guest.
   const roster = [
     ...guests,
@@ -520,7 +525,13 @@ function expandedTimeline(
   if (target === next.elapsedMs)
     for (const driver of next.drivers)
       for (const event of byPlayer.get(driver.playerId) ?? [])
-        applyInput(driver, next.raceId, event.input, event.elapsed, next.launchVersion === 1);
+        applyInput(
+          driver,
+          next.raceId,
+          event.input,
+          event.elapsed,
+          next.launchVersion === 1,
+        );
   for (let from = next.elapsedMs; from < target;) {
     const end = Math.min(target, from + 20);
     const previous = new Map(
@@ -551,7 +562,13 @@ function expandedTimeline(
           next,
         );
         cursor = event.elapsed;
-        applyInput(driver, next.raceId, event.input, event.elapsed, next.launchVersion === 1);
+        applyInput(
+          driver,
+          next.raceId,
+          event.input,
+          event.elapsed,
+          next.launchVersion === 1,
+        );
       }
       positions.set(driver.playerId, index);
       advanceDriver(
@@ -648,7 +665,13 @@ export function reduceKartTimeline(
         next,
       );
       cursor = event.elapsed;
-      applyInput(driver, race.raceId, event.input, event.elapsed, race.launchVersion === 1);
+      applyInput(
+        driver,
+        race.raceId,
+        event.input,
+        event.elapsed,
+        race.launchVersion === 1,
+      );
     }
     advanceDriver(
       driver,
@@ -714,8 +737,17 @@ export function reduceKart(
       driver.inputUntil = race.elapsedMs;
       driver.driftMs = 0;
       driver.wasDrifting = false;
+      // A pause also ends any boost, including a start boost, so nobody
+      // resumes with a head start.
+      driver.boostMs = 0;
       if (driver.physics)
-        driver.physics = { ...driver.physics, driftMs: 0, wasDrifting: false };
+        driver.physics = {
+          ...driver.physics,
+          driftMs: 0,
+          wasDrifting: false,
+          boostMs: 0,
+          boostLevel: 0,
+        };
     }
     return next;
   }
@@ -825,7 +857,14 @@ export function reduceKart(
       });
     return next;
   }
-  return driver && applyInput(driver, race.raceId, event.value, race.elapsedMs, race.launchVersion === 1)
+  return driver &&
+    applyInput(
+      driver,
+      race.raceId,
+      event.value,
+      race.elapsedMs,
+      race.launchVersion === 1,
+    )
     ? next
     : race;
 }
