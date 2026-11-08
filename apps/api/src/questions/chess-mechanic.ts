@@ -25,14 +25,14 @@ import type { ChessMoveCommand, ChessResignCommand } from "@26/shared";
 export function createChessRound(
   sql: SqlStorage,
   store: GameStore,
-  _question: ChessQuestion,
+  question: ChessQuestion,
   participants: string[],
   now: number,
 ): void {
   const room = store.readRoom();
   const roundId = `${room.questionSetVersion}-${room.questionIndex}`;
 
-  const state = initializeChessRound(roundId, participants, now);
+  const state = initializeChessRound(roundId, participants, now, question.playerTimeMs, question.botTimeMs);
 
   // Persist all games
   for (const game of Object.values(state.games)) {

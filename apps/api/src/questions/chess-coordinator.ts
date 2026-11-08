@@ -23,6 +23,8 @@ export function initializeChessRound(
   roundId: string,
   participantIds: string[],
   now: number,
+  playerTimeMs = 60_000,
+  botTimeMs = 60_000,
 ): ChessRoundState {
   const games: Record<string, ChessPlayerGame> = {};
 
@@ -38,8 +40,8 @@ export function initializeChessRound(
       fen: chess.fen(),
       pgn: "",
       status: "in-progress",
-      playerTimeMs: 60_000, // 1+0: 60 seconds
-      botTimeMs: 60_000,
+      playerTimeMs,
+      botTimeMs,
       lastMoveAt: now,
       positionHistory: [chess.fen()],
       sideToMove: "white",
