@@ -10,6 +10,7 @@ import { newSelfTroll } from "./applied";
 import { VictimToast } from "./VictimToast";
 import { isScreenTroll, ScreenTroll } from "./screen-trolls";
 import { seedFrom, type TrollSender } from "./classic-trolls";
+import { useTrollSoundUnlock } from "./troll-sound";
 import "./troll-tab.css";
 
 /** Trolls aimed at this phone. They show above every tab. */
@@ -27,6 +28,7 @@ export function GuestTrolls({
   onSend?: (kind: string, targetId: string, mediaId?: string) => void;
   onEscape: (effectId: string) => void;
 }) {
+  useTrollSoundUnlock();
   const incoming = snapshot.trolls.active.filter(
     (effect) => effect.role === "target" && effect.status === "active",
   );

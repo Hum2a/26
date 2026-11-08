@@ -24,7 +24,7 @@ export function guestRoundCopy(snapshot: LobbySnapshot): string {
       driver = race?.participants.find((d) => d.playerId === race.selfPlayerId);
     if (snapshot.phase === "reveal" || snapshot.phase === "scores")
       return driver?.status === "FINISHED"
-        ? `Lap finished in ${(driver.lapTimeMs! / 1000).toFixed(2)} seconds. You scored ${play.selfAward ?? 0}.`
+        ? `${(play.kart?.laps ?? 1) > 1 ? "Race" : "Lap"} finished in ${(driver.lapTimeMs! / 1000).toFixed(2)} seconds. You scored ${play.selfAward ?? 0}.`
         : driver?.status === "DNF"
           ? "Time’s up. DNF — 0 points this race."
           : snapshot.mode === "kart"
@@ -33,9 +33,9 @@ export function guestRoundCopy(snapshot: LobbySnapshot): string {
     if (snapshot.phase !== "collect")
       return "Get ready. Your driving view opens on this phone.";
     return driver?.status === "FINISHED"
-      ? "Lap finished — watch the stage."
+      ? `${(play.kart?.laps ?? 1) > 1 ? "Race" : "Lap"} finished — watch the stage.`
       : driver
-        ? "Hold A to accelerate. Race on your phone; the stage follows everyone."
+        ? "Accelerate and follow the circuit. Race on your phone; the stage follows everyone."
         : "You’re watching this race. Join the next round.";
   }
   if (snapshot.phase === "reveal" || snapshot.phase === "scores") {

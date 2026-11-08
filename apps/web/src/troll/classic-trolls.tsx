@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { buzz } from "../device/haptics";
+import { useTrollClip, type TrollSound } from "./troll-sound";
+
+/** A 3.2 second glass smash in `apps/web/public/assets/`, played as the screen cracks. */
+const glassCrackSoundAsset = "/assets/glass-crack.mp3";
 
 /**
  * The original trolls, finished: the troller's face everywhere, a call from
@@ -204,13 +208,16 @@ export function ShatteredScreen({
   seed,
   escape,
   onEscape,
+  sound,
 }: {
   label: string;
   seed: number;
   escape: string | null;
   onEscape?: () => void;
+  sound?: TrollSound;
 }) {
   const cracks = useMemo(() => crackPaths(seed), [seed]);
+  useTrollClip(glassCrackSoundAsset, sound);
   useEffect(() => {
     buzz(80);
   }, []);

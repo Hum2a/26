@@ -1,4 +1,6 @@
 import {
+  kartCpuCountSchema,
+  kartLapsSchema,
   kartLobbySchema,
   kartRaceSchema,
   kartTrackCatalogue,
@@ -10,8 +12,16 @@ import { readRoundState, writeRoundState } from "../questions/round-state.ts";
 import { createSqlStore } from "./sql-store.ts";
 
 /** A room-owned copy only. Released question files and underway races never change. */
-export function chooseKartLobbyTrack(sql: SqlStorage, value: unknown, now: number) {
+export function chooseKartLobbyTrack(
+  sql: SqlStorage,
+  value: unknown,
+  now: number,
+  lapsValue: unknown = 1,
+  cpuValue: unknown = 0,
+) {
   const trackId = kartRaceSchema.shape.trackId.parse(value);
+  const laps = kartLapsSchema.parse(lapsValue);
+  const cpu = kartCpuCountSchema.parse(cpuValue);
   const lobby = readKartLobby(sql),
     room = createSqlStore(sql).readRoom();
   const script = room.questionScript;
@@ -36,15 +46,30 @@ export function chooseKartLobbyTrack(sql: SqlStorage, value: unknown, now: numbe
     "26-park-v1": "p1",
   };
   const version = contentVersionSchema.parse(
-    `kart-course-${sourceHash}-${codes[trackId]}`,
+    `kart-course-${sourceHash}-${codes[trackId]}${laps > 1 ? `l${laps}` : ""}${cpu ? `c${cpu}` : ""}`,
   );
+  // More laps get a proportionally longer window, so slower guests still finish.
+  const windowMs = track.raceLimitMs * laps;
+  const lapWords = ["One lap", "Two laps", "Three laps"][laps - 1]!;
+  const base: Record<string, unknown> = { ...script.questions[0] };
+  delete base.laps;
+  delete base.cpuRacers;
   const question = {
-    ...script.questions[0],
+    ...(base as (typeof script.questions)[0]),
     trackId,
-    collectMs: track.raceLimitMs,
-    timeLimitMs: track.raceLimitMs as 45000 | 180000,
-    prompt: `One lap. ${track.raceLimitMs / 1000} seconds. Race on ${track.name}.`,
-    notes: `Room course: ${track.name}. The server owns driving, checkpoints, lap times and the ${track.raceLimitMs / 1000}-second cutoff. The starting grid and existing finisher-only points remain unchanged.`,
+    collectMs: windowMs,
+    timeLimitMs: windowMs,
+    ...(laps > 1 ? { laps } : {}),
+    ...(cpu ? { cpuRacers: cpu } : {}),
+    // One-lap wording is unchanged from before laps existed.
+    prompt:
+      laps === 1
+        ? `One lap. ${track.raceLimitMs / 1000} seconds. Race on ${track.name}.`
+        : `${lapWords}. ${raceWindowWords(windowMs)}. Race on ${track.name}.`,
+    notes:
+      laps === 1
+        ? `Room course: ${track.name}. The server owns driving, checkpoints, lap times and the ${track.raceLimitMs / 1000}-second cutoff. The starting grid and existing finisher-only points remain unchanged.`
+        : `Room course: ${track.name}, ${lapWords.toLowerCase()}. The server owns driving, checkpoints, lap times and the ${windowMs / 1000}-second cutoff. The finish time is the whole race. The starting grid and existing finisher-only points remain unchanged.`,
   };
   writeRoundState(sql, "__pack", "birthday-script", {
     ...script,
@@ -60,11 +85,25 @@ export function chooseKartLobbyTrack(sql: SqlStorage, value: unknown, now: numbe
       ...lobby,
       sourceVersion,
       trackId,
-      history: [...(lobby.history ?? []), { atMs: now, trackId, source: "host" }].slice(
-        -20,
-      ),
+      laps: laps > 1 ? laps : undefined,
+      cpu: cpu || undefined,
+      history: [
+        ...(lobby.history ?? []),
+        {
+          atMs: now,
+          trackId,
+          ...(laps > 1 ? { laps } : {}),
+          ...(cpu ? { cpu } : {}),
+          source: "host",
+        },
+      ].slice(-20),
     }),
   );
+}
+
+/** "45 seconds", "3 minutes", "9 minutes". */
+export function raceWindowWords(ms: number) {
+  return ms < 120_000 ? `${ms / 1000} seconds` : `${Math.round(ms / 60_000)} minutes`;
 }
 
 /** Freeze just the existing race; never edit the saved birthday order. */

@@ -12,7 +12,7 @@ import type { KartControls } from "@26/shared";
 import { SteeringPad } from "./SteeringPad";
 import { useKartControls } from "./useKartControls";
 import { defaultKartControls } from "./gamepad";
-import { steerFromPointer } from "./steering";
+import { steerFromPointer, type KartPedal } from "./steering";
 import { usePrefersReducedMotion } from "../anim/use-reduced-motion";
 import "./kart.css";
 
@@ -46,6 +46,16 @@ function ControlSettings({
     </motion.div>
   );
 }
+
+type PedalButton = readonly ["gas" | "brake" | "drift", string, string];
+/** A slider only steers, so it keeps its own throttle and brake buttons. */
+const sliderPedals: readonly PedalButton[] = [
+  ["gas", "A", "Accelerate"],
+  ["brake", "B", "Brake / reverse"],
+  ["drift", "R", "Drift / boost"],
+];
+/** The thumb pad works the throttle and brake itself, so drift is the only button. */
+const padPedals: readonly PedalButton[] = [["drift", "R", "Drift / boost"]];
 
 /** Pointer capture keeps multiple thumbs independent; cancellation never leaves the throttle held. */
 export function TouchController({
@@ -95,6 +105,8 @@ export function TouchController({
   const releaseThumb = useCallback((pointerId: number) => {
     if (thumb.current === pointerId) thumb.current = null;
   }, []);
+  /** The pedal the thumb pad holds; it shows on the knob, not as extra buttons. */
+  const [padPedal, setPadPedal] = useState<KartPedal>(null);
   const [settings, setSettings] = useState(false);
   const [preferences, setPreferences] = useState(() => ({ ...defaultKartControls }));
   const [mouseSteering, setMouseSteering] = useState(false);
@@ -113,6 +125,7 @@ export function TouchController({
       pointers.current.clear();
       mouse.current = null;
       thumb.current = null;
+      setPadPedal(null);
     },
   });
   const controls = input.controls,
@@ -310,16 +323,25 @@ export function TouchController({
         aria-label="Kart touch controls"
       >
         <div className="kart-steering">
-          <label htmlFor="kart-steering">Steer left / right</label>
+          <label htmlFor="kart-steering">
+            {pad
+              ? "Slide to steer · up to accelerate · down to brake"
+              : "Steer left / right"}
+          </label>
           {pad ? (
             <SteeringPad
               value={controls.steer}
+              pedal={padPedal}
               disabled={locked}
               releaseToken={input.releaseToken}
               claimPointer={claimThumb}
               releasePointer={releaseThumb}
               absolute={steeringDefault === "pad-absolute"}
               onChange={(steer) => emit({ steer })}
+              onPedal={(pedal) => {
+                setPadPedal(pedal);
+                emit({ gas: pedal === "gas", brake: pedal === "brake" });
+              }}
             />
           ) : (
             <input
@@ -358,14 +380,8 @@ export function TouchController({
             ← &nbsp; {Math.round(controls.steer * 100)} &nbsp; →
           </span>
         </div>
-        <div className="kart-pedals">
-          {(
-            [
-              ["gas", "A", "Accelerate"],
-              ["brake", "B", "Brake / reverse"],
-              ["drift", "R", "Drift / boost"],
-            ] as const
-          ).map(([control, key, label]) => (
+        <div className="kart-pedals" data-pad={pad}>
+          {(pad ? padPedals : sliderPedals).map(([control, key, label]) => (
             <button
               key={control}
               type="button"

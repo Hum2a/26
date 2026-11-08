@@ -1,20 +1,40 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 
-import { steerFromPointer, steerFromTravel } from "./steering";
+import {
+  pedalFromPointer,
+  pedalFromTravel,
+  steerFromPointer,
+  steerFromTravel,
+  type KartPedal,
+} from "./steering";
 
-/** The native slider remains the keyboard/assistive-technology interface to the pad. */
+const pedalOffset = (pedal: KartPedal) =>
+  pedal === "gas" ? -1 : pedal === "brake" ? 1 : 0;
+
+/**
+ * One thumb drives: slide sideways to steer, push up to accelerate and pull
+ * down to brake, which leaves the other thumb free for drift. The native
+ * slider remains the keyboard/assistive-technology interface to steering;
+ * the keyboard pedals are W/S or the arrow keys.
+ */
 export function SteeringPad({
   value,
+  pedal = null,
   disabled,
   onChange,
+  onPedal,
   absolute = false,
   releaseToken = 0,
   claimPointer,
   releasePointer,
 }: {
   value: number;
+  /** The pedal this pad is holding, so the knob shows it. */
+  pedal?: KartPedal;
   disabled: boolean;
   onChange: (value: number) => void;
+  /** Without this the pad only steers. */
+  onPedal?: (pedal: KartPedal) => void;
   /** Older fixed-centre steering: the touch point itself sets the lock. */
   absolute?: boolean;
   releaseToken?: number;
@@ -22,8 +42,8 @@ export function SteeringPad({
   releasePointer?: (pointerId: number) => void;
 }) {
   const ownerRef = useRef<number | null>(null);
-  /** Where the steering thumb landed; travel from here steers. */
-  const origin = useRef(0);
+  /** Where the steering thumb landed; travel from here steers and works the pedals. */
+  const origin = useRef({ x: 0, y: 0 });
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const resetOwner = () => {
@@ -47,12 +67,15 @@ export function SteeringPad({
     ownerRef.current = null;
     releasePointer?.(pointerId);
     onChange(0);
+    onPedal?.(null);
   };
   return (
     <div
       className="kart-thumb-pad"
       data-disabled={disabled}
-      style={{ "--steer": value } as CSSProperties}
+      data-pedals={Boolean(onPedal)}
+      data-pedal={pedal ?? "none"}
+      style={{ "--steer": value, "--pedal": pedalOffset(pedal) } as CSSProperties}
       onPointerDown={(event) => {
         if (
           disabled ||
@@ -65,10 +88,15 @@ export function SteeringPad({
         ownerRef.current = event.pointerId;
         event.currentTarget.setPointerCapture(event.pointerId);
         input.current?.focus({ preventScroll: true });
-        origin.current = event.clientX;
+        origin.current = { x: event.clientX, y: event.clientY };
         const landing = event.currentTarget.getBoundingClientRect();
         onChange(
           absolute ? steerFromPointer(event.clientX, landing.left, landing.width) : 0,
+        );
+        onPedal?.(
+          absolute
+            ? pedalFromPointer(event.clientY, landing.top, landing.height)
+            : null,
         );
       }}
       onPointerMove={(event) => {
@@ -77,7 +105,12 @@ export function SteeringPad({
         onChange(
           absolute
             ? steerFromPointer(event.clientX, box.left, box.width)
-            : steerFromTravel(event.clientX - origin.current, box.width),
+            : steerFromTravel(event.clientX - origin.current.x, box.width),
+        );
+        onPedal?.(
+          absolute
+            ? pedalFromPointer(event.clientY, box.top, box.height)
+            : pedalFromTravel(event.clientY - origin.current.y, box.height),
         );
       }}
       onPointerUp={(event) => release(event.pointerId)}
@@ -87,6 +120,12 @@ export function SteeringPad({
       <span className="kart-thumb-track" aria-hidden="true">
         ←<span />→
       </span>
+      {onPedal ? (
+        <span className="kart-thumb-pedals" aria-hidden="true">
+          <span>↑</span>
+          <span>↓</span>
+        </span>
+      ) : null}
       <span className="kart-thumb-knob" aria-hidden="true" />
       <input
         id="kart-steering"
@@ -109,6 +148,7 @@ export function SteeringPad({
           if (ownerRef.current !== null) releasePointer?.(ownerRef.current);
           ownerRef.current = null;
           onChange(0);
+          onPedal?.(null);
         }}
       />
     </div>

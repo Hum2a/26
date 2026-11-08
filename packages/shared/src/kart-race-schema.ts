@@ -12,6 +12,13 @@ import { kartSpectatorSchema } from "./kart-spectator.ts";
 
 export const kartTrackId = "party-ring-v1" as const;
 export const kartLimitMs = 45_000;
+/** Laps a host can choose in a kart-only lobby; packs stay one lap. */
+export const kartLapsSchema = z.union([z.literal(1), z.literal(2), z.literal(3)]);
+export type KartLaps = z.infer<typeof kartLapsSchema>;
+/** CPU racers a host can add to a kart-only lobby. */
+export const kartCpuCountSchema = z.number().int().min(0).max(7);
+/** The longest race window: three laps of a three-minute course. */
+export const kartMaxLimitMs = importedTrackLimitMs * 3;
 export type KartTrackId =
   typeof kartTrackId | typeof importedTrackId | typeof parkTrackId;
 /** Optional host presentation choice; absence preserves the legacy renderer. */
@@ -59,7 +66,17 @@ export const kartDriverSchema = z
     height: z.number().min(0).max(20).optional(),
     wrongWay: z.boolean().default(false),
     status: z.enum(["RACING", "FINISHED", "DNF"]),
+    /** The finish time: the whole race, however many laps. */
     lapTimeMs: z.number().int().nonnegative().nullable(),
+    /** Multi-lap races only: the lap this kart is on, and when each lap ended. */
+    lap: z.number().int().min(1).max(3).optional(),
+    lapsMs: z.array(z.number().int().nonnegative()).max(3).optional(),
+    /** Drafting behind another kart, then the reduced-drag burst. */
+    slipstream: z.enum(["charging", "active"]).optional(),
+    /** A CPU racer the room drives; it takes places but never scores. */
+    cpu: z.literal(true).optional(),
+    /** A boosted start, shown for the race's opening seconds. */
+    launch: z.enum(["perfect", "good"]).optional(),
   })
   .strict();
 export type KartDriver = z.infer<typeof kartDriverSchema>;
@@ -67,8 +84,10 @@ export const kartRaceSchema = z
   .object({
     raceId: z.string(),
     trackId: z.enum([kartTrackId, importedTrackId, parkTrackId]),
-    timeLimitMs: z.union([z.literal(kartLimitMs), z.literal(importedTrackLimitMs)]),
-    elapsedMs: z.number().int().min(0).max(importedTrackLimitMs),
+    timeLimitMs: z.number().int().positive().max(kartMaxLimitMs),
+    elapsedMs: z.number().int().min(0).max(kartMaxLimitMs),
+    /** Present for races of more than one lap. */
+    laps: kartLapsSchema.optional(),
     ended: z.boolean(),
     selfPlayerId: z.string().nullable(),
     inputCursor: z.number().int().nonnegative().nullable(),
@@ -103,6 +122,7 @@ export const kartRaceSchema = z
             finished: z.boolean(),
             place: z.number().int().positive(),
             points: z.number().int().nonnegative(),
+            cpu: z.literal(true).optional(),
           })
           .strict(),
       )

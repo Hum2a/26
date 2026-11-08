@@ -17,7 +17,12 @@ import {
 import { TouchController } from "./TouchController";
 import { useKartSocket } from "./useKartSocket";
 import { GuestKart } from "./GuestKart";
-import { steerFromPointer, steerFromTravel } from "./steering";
+import {
+  pedalFromPointer,
+  pedalFromTravel,
+  steerFromPointer,
+  steerFromTravel,
+} from "./steering";
 import type { LobbySnapshot, KartLookPreset } from "@26/shared";
 import KartGameWrapper from "./KartGameWrapper";
 import { useEffect } from "react";
@@ -262,7 +267,7 @@ it("steers the thumb pad from where the thumb lands, clamps travel, ignores a se
   expect(change.mock.lastCall![0].steer).toBe(1);
   fireEvent.pointerCancel(pad, { pointerId: 1 });
   expect(change).toHaveBeenLastCalledWith(kartNeutral);
-  fireEvent.keyDown(screen.getByRole("button", { name: "Accelerate" }), {
+  fireEvent.keyDown(screen.getByRole("button", { name: "Drift / boost" }), {
     key: "Enter",
   });
   fireEvent.pointerDown(pad, { pointerId: 3, clientX: 92 });
@@ -276,6 +281,121 @@ it("steers the thumb pad from where the thumb lands, clamps travel, ignores a se
   expect(
     screen.getByRole("button", { name: "Swap sides" }).getAttribute("aria-pressed"),
   ).toBe("true");
+});
+
+it("drives from one thumb: up holds the throttle, down brakes, while the other thumb drifts", () => {
+  // Up and down from the landing point, with a coasting band in the middle.
+  expect(pedalFromTravel(0, 120)).toBeNull();
+  expect(pedalFromTravel(-20, 120)).toBeNull();
+  expect(pedalFromTravel(-22, 120)).toBe("gas");
+  expect(pedalFromTravel(22, 120)).toBe("brake");
+  // Short pads still need a deliberate 14 px; tall pads never more than 28 px.
+  expect(pedalFromTravel(-13, 40)).toBeNull();
+  expect(pedalFromTravel(-14, 40)).toBe("gas");
+  expect(pedalFromTravel(-28, 400)).toBe("gas");
+  expect(pedalFromTravel(Number.NaN, 120)).toBeNull();
+  expect(pedalFromTravel(-50, 0)).toBeNull();
+  expect(pedalFromPointer(10, 0, 120)).toBe("gas");
+  expect(pedalFromPointer(60, 0, 120)).toBeNull();
+  expect(pedalFromPointer(110, 0, 120)).toBe("brake");
+  class TestPointer extends MouseEvent {
+    pointerId: number;
+    constructor(type: string, init: PointerEventInit = {}) {
+      super(type, init);
+      this.pointerId = init.pointerId ?? 0;
+    }
+  }
+  vi.stubGlobal("PointerEvent", TestPointer);
+  Object.defineProperty(HTMLElement.prototype, "setPointerCapture", {
+    configurable: true,
+    value: vi.fn(),
+  });
+  const change = vi.fn();
+  render(<TouchController onChange={change} />);
+  // The slider only steers, so it keeps its own throttle and brake buttons.
+  expect(screen.getByRole("button", { name: "Accelerate" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Use thumb pad" }));
+  expect(screen.queryByRole("button", { name: "Accelerate" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Brake / reverse" })).toBeNull();
+  const drift = screen.getByRole("button", { name: "Drift / boost" });
+  const pad = screen
+    .getByLabelText("Steering")
+    .closest<HTMLElement>(".kart-thumb-pad")!;
+  vi.spyOn(pad, "getBoundingClientRect").mockReturnValue({
+    left: 0,
+    top: 0,
+    width: 300,
+    height: 120,
+  } as DOMRect);
+  fireEvent.pointerDown(pad, { pointerId: 1, clientX: 150, clientY: 60 });
+  expect(change.mock.lastCall![0]).toEqual(kartNeutral);
+  // Push up and right: throttle and steering together.
+  fireEvent.pointerMove(pad, { pointerId: 1, clientX: 240, clientY: 30 });
+  expect(change.mock.lastCall![0]).toMatchObject({ gas: true, brake: false, steer: 1 });
+  expect(pad.dataset.pedal).toBe("gas");
+  // The second thumb drifts without releasing the throttle.
+  fireEvent.pointerDown(drift, { pointerId: 2 });
+  expect(change.mock.lastCall![0]).toEqual({
+    steer: 1,
+    gas: true,
+    brake: false,
+    drift: true,
+  });
+  // Back to the middle band coasts; pulling down brakes.
+  fireEvent.pointerMove(pad, { pointerId: 1, clientX: 240, clientY: 55 });
+  expect(change.mock.lastCall![0]).toMatchObject({
+    gas: false,
+    brake: false,
+    drift: true,
+  });
+  fireEvent.pointerMove(pad, { pointerId: 1, clientX: 150, clientY: 100 });
+  expect(change.mock.lastCall![0]).toMatchObject({ gas: false, brake: true, steer: 0 });
+  expect(pad.dataset.pedal).toBe("brake");
+  // Lifting the steering thumb releases both pedals but not the drift.
+  fireEvent.pointerUp(pad, { pointerId: 1 });
+  expect(change.mock.lastCall![0]).toEqual({ ...kartNeutral, drift: true });
+  expect(pad.dataset.pedal).toBe("none");
+  fireEvent.pointerUp(drift, { pointerId: 2 });
+  expect(change).toHaveBeenLastCalledWith(kartNeutral);
+});
+
+it("releases the thumb pad's throttle when the controls lock mid-push", () => {
+  class TestPointer extends MouseEvent {
+    pointerId: number;
+    constructor(type: string, init: PointerEventInit = {}) {
+      super(type, init);
+      this.pointerId = init.pointerId ?? 0;
+    }
+  }
+  vi.stubGlobal("PointerEvent", TestPointer);
+  Object.defineProperty(HTMLElement.prototype, "setPointerCapture", {
+    configurable: true,
+    value: vi.fn(),
+  });
+  const change = vi.fn();
+  const view = render(
+    <TouchController onChange={change} steeringDefault="pad-absolute" />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Use thumb pad" }));
+  const pad = screen
+    .getByLabelText("Steering")
+    .closest<HTMLElement>(".kart-thumb-pad")!;
+  vi.spyOn(pad, "getBoundingClientRect").mockReturnValue({
+    left: 0,
+    top: 0,
+    width: 300,
+    height: 120,
+  } as DOMRect);
+  // Fixed-centre pads: landing near the top holds the throttle at once.
+  fireEvent.pointerDown(pad, { pointerId: 1, clientX: 150, clientY: 10 });
+  expect(change.mock.lastCall![0]).toMatchObject({ gas: true, steer: 0 });
+  view.rerender(
+    <TouchController onChange={change} steeringDefault="pad-absolute" disabled />,
+  );
+  expect(change).toHaveBeenLastCalledWith(kartNeutral);
+  expect(pad.dataset.pedal).toBe("none");
+  fireEvent.pointerMove(pad, { pointerId: 1, clientX: 150, clientY: 5 });
+  expect(change).toHaveBeenLastCalledWith(kartNeutral);
 });
 
 it("shows server-confirmed drift and wrong-way feedback, and replaces pedals with a settled finish card", async () => {

@@ -14,6 +14,28 @@ export function steerFromPointer(x: number, left: number, width: number): number
     : (Math.sign(raw) * (Math.abs(raw) - deadZone)) / (1 - deadZone);
 }
 
+export type KartPedal = "gas" | "brake" | null;
+
+/** Push past this much of the pad's height, or at least 14 px, to hold a pedal. */
+const pedalBand = (height: number) => Math.max(14, Math.min(28, height * 0.18));
+
+/**
+ * The thumb pad's vertical axis: push up from where the thumb landed to hold
+ * the throttle, pull down to brake, and stay in the middle band to coast.
+ */
+export function pedalFromTravel(dy: number, height: number): KartPedal {
+  if (!Number.isFinite(dy) || !Number.isFinite(height) || height <= 0) return null;
+  const band = pedalBand(height);
+  return dy <= -band ? "gas" : dy >= band ? "brake" : null;
+}
+
+/** Fixed-centre pads: above the middle accelerates, below brakes. */
+export function pedalFromPointer(y: number, top: number, height: number): KartPedal {
+  if (!Number.isFinite(y) || !Number.isFinite(top) || !Number.isFinite(height))
+    return null;
+  return pedalFromTravel(y - top - height / 2, height);
+}
+
 /**
  * Steering from thumb travel since the thumb landed, so touching the pad never
  * jerks the kart. Full lock is a comfortable thumb movement (between 48 and

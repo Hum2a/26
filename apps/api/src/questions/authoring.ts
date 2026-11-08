@@ -426,6 +426,7 @@ export function toPlayable(
       kind: "kart",
       trackId: question.trackId,
       timeLimitMs: question.timeLimitMs,
+      ...(question.laps ? { laps: question.laps } : {}),
     };
   if (question.kind === "choice") {
     if (!isKnown(question.correctOption)) {

@@ -6,6 +6,9 @@ import type { KartRaceView } from "@26/shared";
 import { KartMap } from "./KartMap";
 import { GraphicsControls } from "./graphics-controls";
 import { useKartGraphics } from "./graphics-preferences";
+import { KartStageCallouts } from "./KartStageCallouts";
+import { raceLaps } from "./race-callouts";
+import "./race-hud.css";
 const KartCanvas = lazy(() => import("./KartCanvas"));
 
 export function KartStageView({
@@ -51,8 +54,11 @@ export function KartStageView({
         ) : null}
         <div className="kart-map-summary">
           <strong>{race.participants.length}</strong>
-          <span>drivers · one lap</span>
+          <span>
+            drivers · {raceLaps(race) === 1 ? "one lap" : `${raceLaps(race)} laps`}
+          </span>
         </div>
+        <KartStageCallouts race={race} />
       </div>
       {mode !== "map" ? (
         <>

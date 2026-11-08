@@ -5,6 +5,7 @@ import { Button, Disclosure } from "../ui/primitives";
 import { TrollRehearsal } from "./troll-rehearsal";
 import { EntryNotice } from "../ui/entry-frame";
 import { isScreenTroll, ScreenTroll } from "../troll/screen-trolls";
+import { useTrollSoundUnlock } from "../troll/troll-sound";
 import { CommandFeedback } from "./command-feedback";
 import { useAdminRoom } from "./room-provider";
 import { readTrolls } from "./sections-api";
@@ -130,6 +131,8 @@ function TrollCatalogue({
   };
 }) {
   const report = useSection(readTrolls);
+  // A preview click unlocks the same troll sound a guest phone uses.
+  useTrollSoundUnlock();
   const [preview, setPreview] = useState<Troll | null>(null);
   const endPreview = useCallback(() => setPreview(null), []);
   const trolls = report.data?.trolls ?? [];

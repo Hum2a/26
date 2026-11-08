@@ -47,7 +47,7 @@ for (const pack of questionPacks) {
 }
 
 /** Explicit local rehearsal only; never in the admin pack catalogue or a production start path. */
-export const kartRehearsalVersion = "kart-rehearsal-v2";
+export const kartRehearsalVersion = "kart-rehearsal-v3";
 const rehearsalKart = toPlayable(
   { ...kartSprint, trackId: "party-ring-v1", timeLimitMs: 45000, collectMs: 45000 },
   true,
@@ -68,6 +68,22 @@ released.set("kart-rehearsal-v1", {
     },
   ],
 });
+// v2 keeps the instructions it was released with; rooms that stored it keep them.
+released.set("kart-rehearsal-v2", {
+  ...released.get("kart-rehearsal-v1")!,
+  version: "kart-rehearsal-v2",
+  questions: [
+    released.get(demoQuestionSetVersion)!.questions[0]!,
+    {
+      ...rehearsalKart,
+      instructions:
+        "Race on your phone. Hold A to accelerate, follow the circuit, B to brake and R to drift. The big screen shows the live map and race order.",
+      prompt:
+        "Illustrative rehearsal: one lap, 45 seconds. Race on your phone; follow the field on the big screen.",
+    },
+  ],
+});
+// v3: the thumb pad accelerates and brakes, so the wording no longer says "hold A".
 released.set(kartRehearsalVersion, {
   ...released.get("kart-rehearsal-v1")!,
   version: kartRehearsalVersion,
@@ -75,6 +91,9 @@ released.set(kartRehearsalVersion, {
     released.get(demoQuestionSetVersion)!.questions[0]!,
     {
       ...rehearsalKart,
+      instructions:
+        // Question text is capped at 200 characters.
+        "Race on your phone held sideways: slide the pad to steer, push up to accelerate, pull down to brake, hold R to drift. Upright, use the slider with A and B. The big screen shows the race.",
       prompt:
         "Illustrative rehearsal: one lap, 45 seconds. Race on your phone; follow the field on the big screen.",
     },

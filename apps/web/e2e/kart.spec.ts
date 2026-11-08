@@ -241,11 +241,17 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
       .toBe(true);
   }
   await driver.setViewportSize({ width: 844, height: 390 });
-  expect(
-    await driver
-      .getByRole("button", { name: "Accelerate" })
-      .evaluate((button) => button.getBoundingClientRect().bottom <= innerHeight),
-  ).toBe(true);
+  // Sideways, the thumb pad works the throttle and brake, so drift is the only button.
+  await expect(driver.getByRole("button", { name: "Accelerate" })).toHaveCount(0);
+  for (const control of [
+    driver.locator(".kart-thumb-pad"),
+    driver.getByRole("button", { name: "Drift / boost" }),
+  ])
+    expect(
+      await control.evaluate(
+        (node) => node.getBoundingClientRect().bottom <= innerHeight,
+      ),
+    ).toBe(true);
   await driver.setViewportSize({ width: 390, height: 844 });
   await driver.getByRole("button", { name: "Use thumb pad" }).click();
   const thumb = driver.locator(".kart-thumb-pad"),

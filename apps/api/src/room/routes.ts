@@ -3,6 +3,8 @@ import {
   kartLookNameSchema,
   kartHandlingSchema,
   kartItemRulesSchema,
+  kartLapsSchema,
+  kartCpuCountSchema,
   kartRaceSchema,
   type KartHandling,
   type KartSettingChange,
@@ -926,6 +928,8 @@ function readHostDetails(
         kartSetting?: KartSettingChange;
         itemRules?: unknown;
         kartTrack?: unknown;
+        kartLaps?: unknown;
+        kartCpu?: unknown;
         lookPreset?: KartLookName;
         handlingPreset?: KartHandling;
         playerId?: string;
@@ -1015,9 +1019,24 @@ function readHostDetails(
   }
   if (action === "kart-track") {
     const track = kartRaceSchema.shape.trackId.safeParse(field(body, "kartTrack"));
-    return track.success
-      ? { ok: true, fields: { kartTrack: track.data } }
-      : { ok: false, message: "Choose an installed kart course." };
+    if (!track.success)
+      return { ok: false, message: "Choose an installed kart course." };
+    const rawLaps = field(body, "kartLaps"),
+      rawCpu = field(body, "kartCpu");
+    const laps = rawLaps === undefined ? undefined : kartLapsSchema.safeParse(rawLaps);
+    if (laps && !laps.success)
+      return { ok: false, message: "Choose one, two or three laps." };
+    const cpu = rawCpu === undefined ? undefined : kartCpuCountSchema.safeParse(rawCpu);
+    if (cpu && !cpu.success)
+      return { ok: false, message: "Choose between 0 and 7 CPU racers." };
+    return {
+      ok: true,
+      fields: {
+        kartTrack: track.data,
+        ...(laps ? { kartLaps: laps.data } : {}),
+        ...(cpu ? { kartCpu: cpu.data } : {}),
+      },
+    };
   }
   if (action === "developer-bots") {
     const count = botCountSchema.safeParse(field(body, "botCount"));

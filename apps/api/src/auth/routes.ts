@@ -210,7 +210,9 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>): void {
     if (ready.email.kind !== "local-inbox") {
       return jsonNotFound();
     }
-    const messages = await listLocalInbox(ready.database);
+    const messages = await listLocalInbox(ready.database, {
+      html: c.req.query("format") !== "text",
+    });
     return jsonData(devInboxSchema.parse({ messages }));
   });
 

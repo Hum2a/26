@@ -100,6 +100,47 @@ function nearSegment(
     );
   return Math.hypot(from.x + t * dx - target.x, from.z + t * dz - target.z) <= radius;
 }
+/**
+ * How likely each item is, given a kart's standing (0 the leader, 1 last).
+ * Leaders mostly get defensive items; the back of the field mostly gets the
+ * items that close a gap.
+ */
+export function kartItemWeight(item: KartItem, standing: number): number {
+  const s = Math.max(0, Math.min(1, Number.isFinite(standing) ? standing : 0.5));
+  switch (item) {
+    case "turbo":
+      return 1 + 3 * s;
+    case "treat":
+      return 1 + s;
+    case "homing":
+      return 0.3 + 3 * s;
+    case "bomb":
+      return 0.6 + 1.5 * s;
+    case "tennis":
+      return 2 - s;
+    case "oil":
+    case "shield":
+      return 3 - 2.4 * s;
+  }
+}
+/** A deterministic weighted pick: the same seed, collection and standing give the same item. */
+export function pickKartItem(
+  allowed: readonly KartItem[],
+  standing: number,
+  hash: number,
+  collections: number,
+): KartItem | undefined {
+  if (!allowed.length) return undefined;
+  const weights = allowed.map((item) => kartItemWeight(item, standing));
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  const mixed = (hash ^ Math.imul(collections + 1, 2654435761)) >>> 0;
+  let r = ((mixed % 100_000) / 100_000) * total;
+  for (let i = 0; i < allowed.length; i++) {
+    r -= weights[i]!;
+    if (r < 0) return allowed[i];
+  }
+  return allowed.at(-1);
+}
 /** Swept collection/hits; all times are active simulation milliseconds. */
 export function stepKartPowers(
   prior: KartPowers,
@@ -110,7 +151,12 @@ export function stepKartPowers(
   oils: readonly OilSlick[],
   now: number,
   seed: string,
-  options?: { allowed: readonly KartItem[]; damageGrace: boolean },
+  options?: {
+    allowed: readonly KartItem[];
+    damageGrace: boolean;
+    /** Position luck: called only when a box is collected. */
+    standing?: () => number;
+  },
 ): { powers: KartPowers; hit: boolean } {
   const next = {
     ...prior,
@@ -124,7 +170,9 @@ export function stepKartPowers(
         continue;
       let hash = 0;
       for (const c of seed) hash = (Math.imul(hash, 31) + c.charCodeAt(0)) >>> 0;
-      next.item = allowed[(hash + next.collections) % allowed.length]!;
+      next.item = options?.standing
+        ? pickKartItem(allowed, options.standing(), hash, next.collections)!
+        : allowed[(hash + next.collections) % allowed.length]!;
       next.collections++;
       next.cooldowns[box.id] = now + 8000;
       break;

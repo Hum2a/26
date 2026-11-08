@@ -420,3 +420,37 @@ old readers receive a refresh response before incompatible typed data. No new
 identity, score data, browser storage, database or scheduler.
 
 The code-versioned kart-tracks-v2 catalogue derives counts/lengths from driving, route, walls, surfaces, item boxes and course constants. It includes the existing imported circuit, existing party ring and newly original26-park-v1 geometry. Authenticated no-store /api/admin/kart-tracks validates selected installed track, grid slot1–80 and grid/recovery/three-second-drive beat; it creates labelled stand-ins through the actual shared factory/recovery/driving reducer and projects only public race fields (one selected phone driver,80 stage poses, zero sample points). The drive sample sends bounded in-memory intents for3000ms; there is no background simulation or retained history. No room/storage/ledger/scheduler/credential/email access occurs. Current mode support distinguishes connected races from pending public Park practice/time trials. All three courses can be selected in a kart-only lobby before Start; the room-owned script and course clock then freeze. Public Park IDs use the course-contract2 compatibility boundary described above. Admin selection and optional3D toggle are ephemeral React state; no browser records/cache/database fields are added. Native practice and live rules remain unchanged.
+
+## Kart race laps, slipstream and race sound (8 November 2026)
+
+- `__room/kart-lobby` may now hold `laps` (2 or 3; absent means one) and each
+  host history entry may carry the laps chosen. It stays control-only. The
+  room-owned kart question copy stores `laps` and the scaled window; released
+  packs are unchanged.
+- The kart race JSON in `round_state` adds, per driver, `lapsDone`, `lapTimes`
+  (the race time at which each lap ended), and the slipstream timers `draftMs`
+  and `slipstreamMs`. Public frames add the race's `laps`, each kart's current
+  `lap`, its `lapsMs` and a `slipstream` phase. There is no personal data and no
+  new table, scheduler or retention rule.
+- The phone keeps `26.kart.race-sound` (`on` or `off`) in local storage, only on
+  that phone, to remember the optional race sound and buzzes. Reads and writes
+  are wrapped so a blocked store just means sound starts off. Nothing is sent to
+  the room.
+- The local development inbox (`/api/dev/inbox`) accepts `?format=text`, which the
+  sign-in page uses; it then skips rendering the emails. It exists only when
+  `APP_ENV` is `local`, as before.
+
+**Hidden answers and failed wall photos (8 November 2026).** When the host hides a written answer, the room's existing `round_state` table stores one row per question (`<question id>` / `hidden-authors`) holding the ids of the players whose answers are hidden. On an all-answer ballot the existing `vote_candidate.included` flag is set to match. The answer text, ballots and scores are never deleted or rewritten. The host's control snapshot still shows hidden answers, marked hidden; guest and stage snapshots, stage reveals and the results highlights leave them out. An answer refused for an identity slur is not stored anywhere: the receipt keeps only the refusal message. A projector report that a wall photo failed to load only brings that post's existing `until_at` forward; nothing new is stored. Retention follows the room.
+
+## CPU racers, rocket starts and position luck (8 November 2026)
+
+- `__room/kart-lobby` may hold `cpu` (1–7) and history entries may carry it; it
+  stays control-only. The room-owned kart question copy stores `cpuRacers`.
+- The kart race JSON adds CPU drivers (`playerId` `cpu-1` to `cpu-7`, a fixed
+  name, `cpu`, `skill` and a `stuckMs` timer), `launchVersion`, and per driver
+  `launch` (`perfect`, `good` or `late`). Public frames add `cpu` on CPU karts
+  and standings, and `launch` for the opening four seconds. CPU karts have no
+  player row, so the score ledger never records them.
+- Kart item rules may carry `luck: "position"`, stored with the existing room
+  item rules and their history.
+- No personal data, new table, scheduler or browser storage.

@@ -461,7 +461,40 @@ body:has(.kart-phone) {
   background: var(--accent);
   transform: translate(-50%, -50%);
   pointer-events: none;
-  transition: left 0.06s ease-out;
+  transition:
+    left 0.06s ease-out,
+    top 0.08s ease-out,
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+/* Up holds the throttle, down brakes: the knob rides with the thumb. */
+.kart-thumb-pad[data-pedals="true"] .kart-thumb-knob {
+  top: calc(50% + var(--pedal, 0) * 24%);
+}
+.kart-thumb-pad[data-pedal="gas"] .kart-thumb-knob {
+  background: var(--highlight);
+}
+.kart-thumb-pad[data-pedal="brake"] .kart-thumb-knob {
+  background: var(--surface);
+  border-color: var(--highlight);
+}
+.kart-thumb-pedals {
+  position: absolute;
+  inset: 4% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+.kart-pedals[data-pad="true"] {
+  grid-template-columns: 1fr;
+}
+.kart-pedals[data-pad="true"] .kart-pedal-drift {
+  min-height: 94px;
 }
 .kart-thumb-pad input {
   position: absolute;
@@ -1211,6 +1244,27 @@ body:has(.kart-phone) {
     aspect-ratio: auto;
     margin-inline: auto;
     border-radius: var(--radius-panel);
+  }
+  /* The strip also works the pedals, so it needs room to push up and down. */
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-thumb-pad[data-pedals="true"] {
+    height: min(9rem, 42dvh);
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-thumb-pad[data-pedals="true"]
+    .kart-thumb-knob {
+    height: 40%;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-pedals[data-pad="true"] {
+    grid-template-columns: auto;
+    grid-template-rows: auto;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-pedals[data-pad="true"]
+    .kart-pedal-drift {
+    min-width: 6.5rem;
+    min-height: 7.5rem;
   }
   .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-thumb-knob {
     width: auto;

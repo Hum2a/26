@@ -122,7 +122,7 @@ function Telemetry() {
                     ? "Release drift to boost"
                     : sliding
                       ? "Drifting — hold to charge"
-                      : "Hold A to drive"}
+                      : "Push up to drive"}
       </span>
       {boost && surface !== "road" ? (
         <span>
@@ -372,7 +372,8 @@ function SoloGame() {
               <p>
                 Arrow keys to drive · Space to hop and drift.
                 <br />
-                On a phone, hold A and steer with your other thumb.
+                On a phone held sideways, one thumb steers and pushes up to accelerate;
+                the other holds R to drift.
               </p>
             </section>
           )}

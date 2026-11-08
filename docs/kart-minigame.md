@@ -140,7 +140,7 @@ The server projection carries the frozen `participantCount` separately from each
 
 Run `npm install` if dependencies changed, then `npm run dev` and open [solo practice](http://localhost:5173/kart). Admin → Question packs → select `kart-sprint` → Phone & big screen also offers **Play standalone kart**. The existing phone/stage rehearsal remains a layout rehearsal; the link opens a separate playable mode.
 
-Press **Start driving**. On a keyboard, use the arrow keys to accelerate/reverse/steer and Space to hop/drift. On a phone, hold A and steer with the other thumb; B brakes/reverses and R hops/drifts. Hold a turn and drift at speed, then release drift for the upstream charged boost. Switch between the steering slider and thumb pad, or swap control sides. Pause and Reset kart are always available after loading. Hiding/leaving the game pauses it and releases controls; Resume requires a deliberate action. A lost WebGL context or failed model download offers Retry circuit.
+Press **Start driving**. On a keyboard, use the arrow keys to accelerate/reverse/steer and Space to hop/drift. On a phone held sideways, one thumb slides the pad to steer and pushes up to accelerate or down to brake/reverse, while the other holds R to hop/drift. Upright phones use the slider with A and B. Hold a turn and drift at speed, then release drift for the upstream charged boost. Switch between the steering slider and thumb pad, or swap control sides. Pause and Reset kart are always available after loading. Hiding/leaving the game pauses it and releases controls; Resume requires a deliberate action. A lost WebGL context or failed model download offers Retry circuit.
 
 `apps/kart-solo` is a separate static Vite/React Three Fiber bundle embedded by the public `/kart` route. Web development and production builds run its build first; generated files live under the ignored `apps/web/public/kart-engine/`. Rebuild with `npm run build -w @26/kart-solo` and refresh after editing engine source during web development. The same Worker serves the generated assets in production. No additional hosting service is needed.
 
@@ -164,7 +164,7 @@ Try locally with npm run dev, then Admin → Kart → Drive for the imported tra
 
 Both 3D kart views emit eight recycled rear-wheel sparks while drifting. Their spread/size grows with the existing drift charge; charged sparks use the theme highlight, and boost release turns the stream into longer, faster trails. Emission eases in/out. Reduced motion replaces travelling particles with two stationary wheel glows. These visuals read the existing solo physics body or authoritative connected driver feedback and never calculate boosts, change grip, submit controls or change scoring. The ring combines its previous solid boost cone and the new drift feedback into one instanced batch, preserving the existing full-room draw-object budget and disposal path. Solo uses one instanced mesh, shared geometry/material and its existing render loop; pause freezes the scene and reset remounts the effect.
 
-Visual maths lives in apps/web/src/kart/drift-effects.ts and is reused by apps/kart-solo/src/DriftEffects.tsx. No textures, dependencies, audio, bloom or per-frame React state were added. The SVG spectator/lightweight map remains unchanged. Try Admin → Kart → Drive: hold A, steer gently with R held, then release R while continuing to accelerate.
+Visual maths lives in apps/web/src/kart/drift-effects.ts and is reused by apps/kart-solo/src/DriftEffects.tsx. No textures, dependencies, audio, bloom or per-frame React state were added. The SVG spectator/lightweight map remains unchanged. Try Admin → Kart → Drive: accelerate, steer gently with R held, then release R while continuing to accelerate.
 
 ## Collectable power-ups
 
@@ -211,7 +211,7 @@ The existing 700/1400/2400 ms drift thresholds now give **Mini / Super / Ultra**
 Run `npm run dev`, then open **Admin → Kart → Drive** or `/kart`. Course set-up has independent floor-boost, ramp and sweeper switches, Clear track, Restore course, Return to starting grid and direct rehearsal starts for each real interaction. Changing set-up resets and pauses practice; resume to drive. The imported opening straight has a boost and ramp in its left lane and a moving sweeper in its right lane. Rehearsal starts are placed on verified road, avoiding the imported start-grid surface gap around z = −30 to −32.
 
 - **Floor boost:** drive forwards across the chevrons with A held for a Super-tier burst. Swept checks catch crossings between simulation steps; cooldown prevents repeated activation while sitting on the pad.
-- **Ramp and glider:** cross a ramp forwards at speed to launch. The real physics body has height and vertical velocity. Hold A to glide, steer gently in flight, or hold B for a quicker descent. The wing deploys visually; landing retains horizontal momentum. Airborne karts clear floor sweepers and item/oil interactions. Boundary walls remain solid at all heights, so flying cannot escape the track.
+- **Ramp and glider:** cross a ramp forwards at speed to launch. The real physics body has height and vertical velocity. Keep accelerating to glide, steer gently in flight, or brake for a quicker descent. The wing deploys visually; landing retains horizontal momentum. Airborne karts clear floor sweepers and item/oil interactions. Boundary walls remain solid at all heights, so flying cannot escape the track.
 - **Moving sweeper:** a visibly marked obstacle moves across its lane using active simulation time. Contact slows the kart and cancels drift/turbo. It freezes while paused. This is a track obstacle, so an oil shield does not block it.
 
 ### Connected race controls
@@ -273,3 +273,18 @@ Treats give the holder a 600ms turbo and drop nothing. Tennis balls bounce, bomb
 Live controls show held items by player, active counts and recent accepted item history. **Stop item spawning** stops boxes and new oil/projectile use while retaining held inventory; held boosts/shields still work. **Clear track items** removes current projectiles/oil. **Resume item spawning** reopens pickups and hazards. Use the normal Pause/Resume for the entire race clock. Rehearse without guests in **Admin → Kart → Items sandbox**, including personal Treats, shields, fuses, height, full pools and restore/clear/stop. No room or score is changed by that sandbox. Mandatory hazards stay visible when decorative effects are off or graphics are Low.
 
 No deployment or physical-device certification is implied by this local implementation note.
+
+## Laps, slipstream and the race director (8 November 2026)
+
+- **Laps:** a kart-only lobby's course control has a Laps choice (1, 2 or 3). The race window becomes the course window × laps. Each full set of gates then the line counts a lap; the finish time is the whole race, and each lap time is kept. Packs, including the birthday sprint, stay one lap.
+- **Slipstream:** sit 2.5–16 m behind another kart at speed for a second and you get 1.6 s of lower drag, about 12% more top speed. It is server-authoritative; karts are still ghosts.
+- **Phone:** place, `Lap n/N`, "Drafting…"/"Slipstream!", banners for a new lap, the final lap and places gained, and a finish card with race and lap times. "Race sound and buzzes" in Controls turns on a synthesised engine note, chimes and buzzes; it is off by default and remembered on that phone.
+- **Projector:** lead changes, "Lap 2 of 3", "Final lap!" and finishers ("Amina wins!") are announced once each; standings show each driver's lap.
+- **Try it:** Admin → Kart → Create kart lobby → choose a course and laps → join two phones → Start kart race. `apps/web/e2e/kart-race-laps.spec.ts` drives a real two-lap race. Plan: [kart-race-feel-plan.md](kart-race-feel-plan.md).
+
+## CPU racers, rocket starts and position luck (8 November 2026)
+
+- **CPU racers:** a kart-only lobby's course control has "CPU racers" (none to 7). They line up behind the guests and drive themselves along the course, each with its own top speed. They appear on the map, on phones as nearby karts, and in the standings tagged "CPU". They never collect items, never score and never hold a race open: when every guest is done, the race ends.
+- **Rocket start:** hit the throttle right on GO. Within 0.6 s is a perfect start (a Super boost); within 1.2 s is a good start (a Mini boost). The phone shows PERFECT START! or Good start!, and the projector calls the first perfect start.
+- **Position luck:** tick "Position luck" beside the item rules in Live controls. Karts at the back then get more turbos, homing shots and bombs; leaders get more oil and shields.
+- **Try it:** Admin → Kart → Create kart lobby → choose a course, laps and CPU racers → join one phone → Start kart race. Even alone, you race the CPU field.

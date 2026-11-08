@@ -5668,6 +5668,173 @@ Not verified: a real room race on a deployed site, because that needs the admini
 
 Next: a two-phone room race on staging, then the kart evolution next action in `docs/kart-evolution-checkpoint.md`.
 
+## 7 November 2026 — Netanyahu troll image and music
+
+Status: the Netanyahu phone gag now has its real assets. It floods the target's phone with the supplied cut-out face for 4 seconds and plays a Hava Nagila clip over it.
+
+Files:
+
+- `apps/web/public/assets/netanyahu.webp`: the supplied 640×640 WebP with transparency, 47,242 bytes, unchanged. The code had pointed at a missing `netanyahu.png`; it now points here.
+- `apps/web/public/assets/netanyahu.mp3`: 10.0 to 14.2 seconds of the supplied 2:45 recording, the first loud, steady stretch. 0.15 s fade-in and a 0.7 s fade-out ending with the flood, mono, 96 kbps, metadata removed, 51,095 bytes. Made with `ffmpeg -ss 10 -t 4.2 … -af "afade=t=in:d=0.15,afade=t=out:st=3.5:d=0.7" -ac 1 -b:a 96k -map_metadata -1`. The full song is not shipped.
+- `apps/web/src/troll/troll-sound.ts`: `trollSound`, one `createScreenAudio()` output for phone gags; `useTrollSoundUnlock` (any tap or key press unlocks or resumes it); `useTrollClip(url)`, which plays while a gag is mounted and stops when it unmounts.
+- `NetanyahuFlood` in `screen-trolls.tsx` plays the clip. `GuestTrolls` and the admin troll catalogue call `useTrollSoundUnlock`, so the admin "Preview on this screen" button plays it too.
+
+Decisions: this reuses the existing Web Audio adapter, not an `<audio>` element. iOS Safari only plays a context resumed during a tap, and guests tap to join and answer before any troll can reach them. If sound is blocked or fails, the flood still runs silently. Phones have no mute switch for troll sound; the phone's own volume and silent mode are the control. The supplied image still carries faint pngtree watermarks.
+
+Commands and results:
+
+- `npm run typecheck`: passed, on the final code.
+- `npm run test:unit`: 171 files, 704 tests passed, but the run exited 1. A worker timed out starting `results-page.test.tsx` while the dev server was building on the same machine. That file, `src/troll` and `src/admin/troll-rehearsal.test.tsx` were then rerun on the final code, and all 10 files (32 tests) passed. The whole suite was not rerun in one go.
+- The new `troll-sound.test.tsx` checks the face source, that the clip plays on mount and stops on unmount, and that the tap unlock listens and then stops.
+- Prettier on the changed files: clean. ESLint: only the existing fast-refresh warning in `screen-trolls.tsx`.
+
+Checked in the browser on the local dev server: both files are served (`audio/mpeg` 51,095 bytes, `image/webp` 47,242 bytes). Web Audio decoded the clip as 4.20 s mono. The flood's CSS showed the cut-out layering cleanly. The real admin preview was not opened, because it needs the administrator's emailed sign-in. The sound was not heard on a phone.
+
+Next: hear it on a real phone in a room (iOS and Android), then the next troll's assets.
+
+## 7 November 2026 — one-thumb driving on the kart thumb pad
+
+Status: on phones, guests could not hold Accelerate and Drift together, because both sat under the right thumb. The thumb pad now works the pedals as well as steering. Slide sideways to steer, push up from where the thumb lands to accelerate, pull down to brake, and come back to the middle to coast. The A and B buttons are gone whenever the pad is in use, so Drift is the only button and the other thumb holds it.
+
+Files and interfaces:
+
+- `apps/web/src/kart/steering.ts`: `pedalFromTravel(dy, height)` and `pedalFromPointer(y, top, height)` return `"gas" | "brake" | null`. The pedal band is 18% of the pad's height, kept between 14 and 28 px.
+- `apps/web/src/kart/SteeringPad.tsx`: optional `onPedal` and `pedal`. Travel is measured from the landing point; the fixed-centre `pad-absolute` setting uses the touch point. Lifting, cancelling, blur and locking release both pedals. The knob rides up or down with the pedal, and ↑ and ↓ marks show on the pad.
+- `apps/web/src/kart/TouchController.tsx`: in thumb-pad mode, Drift is the only pedal button and the pad feeds `gas` and `brake` into the existing touch channel. The slider keeps Accelerate, Brake and Drift, because a slider only steers. The wire protocol and server physics are unchanged: `gas` and `brake` are still booleans.
+- `kart.css` and `apps/kart-solo/src/solo.css`: in short landscape the pad strip is taller (`min(9rem, 42dvh)`) to leave room to push up and down. Drift takes the large button slot.
+- Copy: phone hints, power-up hints, the admin glide hint, solo practice and the draft `kart-sprint` instructions now say "push up" or "accelerate" instead of "hold A". The released `kart-rehearsal-v1` instructions in `apps/api/src/questions/registry.ts` still say "Hold A". A released pack is not edited in place.
+
+Decisions: the pad is still the default only on short landscape phones, as before. Upright phones and desktops keep the slider with its own Accelerate and Brake buttons, and the keyboard and gamepad are unchanged.
+
+Tests: two new tests in `kart.test.tsx`. The first checks the pedal bands, and that the pad holds the throttle and steers while a second pointer drifts, then coasts, brakes and releases. The second checks that locking the controls mid-push releases the throttle. Browser specs that expected Accelerate on short landscape screens now expect the pad and Drift. `kart-solo.spec.ts` drives the landscape solo practice with real touch: it pushes up, drifts with a second finger while the throttle stays held, then pulls down to brake.
+
+Commands and results:
+
+- `npx vitest run src/kart src/admin/kart src/play` in `apps/web`: 69 files, 339 tests passed. A first run also reported one unhandled timer error on a busy machine; the rerun was clean.
+- `tsc` for `apps/web` (app and node configs), `apps/api` and `@26/kart-solo`: passed for these files. The only errors came from another piece of work in progress, an untracked troll test. Prettier and ESLint on the changed files: clean.
+- Browser, `playwright.rehearsal.config.ts`:
+  - `kart-collision`, `kart-lobby`, `kart-inputs` and the landscape touch test in `kart-solo`: passed.
+  - `kart.spec.ts` passed alone. In a busy run it had once ended DNF at 90% of the 45-second ring lap.
+  - `kart-solo`'s first test fails only when it is the first test on a freshly started dev server, because the iframe heading takes longer than 5 s. With `--repeat-each 2`, the second run passed. This was not caused by this change.
+  - `kart-spectator` once stalled at the local admin sign-in step. It is not part of this change, and it passed in the earlier run.
+
+Not verified: the pad on a physical phone.
+
+## 7 November 2026 — glass smash and Thomas theme song
+
+Status: the cracked screen now plays a glass smash on the target's phone. The theme song troll now plays a Thomas the Tank Engine flute sting on the stage, in place of the generated placeholder beep.
+
+Files:
+
+- `apps/web/public/assets/glass-crack.mp3`: 0.76 to 4.0 seconds of the supplied effect, starting on the smash. +5 dB, 0.74 s fade-out, mono, 96 kbps, no metadata. 3.24 s, 39,810 bytes. `ShatteredScreen` plays it through `useTrollClip`.
+- `apps/web/public/assets/theme-song.mp3`: 5.85 to 8.95 seconds of the supplied 2:46 flute video, from the first notes of the tune to the end of its opening phrase. −4 dB (the source peaks at full scale), short fades, mono, 96 kbps, no metadata. 3.10 s, 37,929 bytes.
+- `demoStingAsset` is renamed `themeStingAsset` (`/assets/theme-song.mp3`) in `apps/api/src/troll/catalogue.ts` and `engine.ts`. `illustrativeStingAsset` in `validate.ts` points at the new file, so `content:check` still checks it exists. `stage-effects.spec.ts` and `content-preflight.spec.ts` now expect the new path.
+- Removed `apps/web/public/assets/demo-sting.wav` and `scripts/generate-theme-sting.mjs`; nothing else referred to them.
+- The troll README has a new **Assets** table listing what each troll has and what it would use. `docs/content-guide.md` points to it.
+
+Decision: Thomas went on the theme song because that troll is the one that gives a player a tune, and it already plays a short clip on the stage at each score reveal, up to four times. The clip cut points were chosen from loudness measurements, not by listening.
+
+Commands and results:
+
+- `npm run typecheck`: exits 2, but only because of other in-progress kart work in the checkout (`KartRaceHud.tsx`, `race-callouts.test.ts`, `kart-track-controls.test.tsx`). A filtered `tsc -b` shows no other errors.
+- `npm run content:check`: passed.
+- Web tests: `src/troll` and `src/admin/troll-rehearsal.test.tsx`, 9 files, 26 tests passed. `troll-sound.test.tsx` now also checks the glass smash plays on mount and stops on unmount.
+- API tests: `stage-effects`, `content-preflight` and `troll-catalogue`, 3 files, 14 tests passed.
+- The full unit and API suites were not rerun.
+
+Not verified: neither new clip was played in a browser, and the theme sting has not been heard on the projector.
+
+Next: listen to both clips, then supply sounds from the README asset table, starting with Call from Mum.
+
+## 8 November 2026 — kart races that feel like races, and local agent sign-in
+
+Status: the plan in `docs/kart-race-feel-plan.md` (R1–R8) is built. A kart-only lobby can now run a one, two or three lap race with slipstream between karts. Phones get a race HUD, banners, a finish moment and optional sound and buzzes. The projector has a race director that announces lead changes, laps and finishers. Released packs, including the birthday one-lap sprint, are unchanged.
+
+Files and interfaces:
+
+- `packages/shared/src/kart-slipstream.ts`: `inWake`, `stepSlipstream`, `slipstreamPhase` and `slipstreamTuning`.
+  - A kart 2.5–16 m behind another, within 2.6 m of its line, pointing the same way, with both moving at least 12 m/s, charges for 1 s.
+  - Once charged, it gets 1.6 s at 0.7× drag, about 12% more top speed. Leaving the wake drains the charge twice as fast.
+  - The step uses the stored drivers directly, so there is no per-step allocation at 80 karts.
+- `packages/shared/src/kart.ts`:
+  - `createKartRace(…, { laps })` sets the race window to the course window × laps.
+  - Each line crossing after a full set of gates counts a lap: gates restart, the lap time is kept, and the recovery point moves to the line, so recovering cannot refund or repeat a lap.
+  - The last crossing finishes, with `lapTimeMs` as the total race time.
+  - `progress` is whole-race progress, so standings, homing and nearby karts compare correctly across laps.
+  - Projection adds the race's `laps`, each kart's `lap` and `lapsMs`, and a `slipstream` phase.
+  - One-lap races keep exactly the old fields. Slipstream timers are stored only when non-zero.
+- `kart-race-schema.ts` and `index.ts`: `kartLapsSchema` and `kartMaxLimitMs` (540 s). The public race and question `timeLimitMs` is now a bounded integer, and both carry optional `laps`. `kartLobbySchema` and its history carry optional `laps`.
+- API: `kart-track` takes an optional `kartLaps`, validated in `readHostDetails` and again in `chooseKartLobbyTrack`, and digested with the receipt.
+  - The room-owned question copy gets `laps`, a scaled `collectMs`/`timeLimitMs`, a lap-aware prompt and a version suffix (`-p1l3`).
+  - One-lap wording and versions are unchanged.
+  - `KartBody.timeLimitMs` is now a number with optional `laps`; pack validation still holds packs to one lap.
+- Web:
+  - `KartRaceHud` shows place, `Lap n/N`, slipstream and banners. On a sideways phone it sits bottom-centre between the pad and Drift.
+  - `useRaceFeedback` gives banners, optional sound and buzzes from this phone's own frames.
+  - `race-callouts.ts` holds `ordinal`, `stageCallouts` and `selfCues`; `race-audio.ts` is the Web Audio adapter.
+  - `KartStageCallouts` is the projector race director, and `race-hud.css` styles the new pieces.
+  - `GuestKart`: lap-aware heading and eyebrow, the finish card ("You finished 2nd!", race time, each lap), and a "Race sound and buzzes" switch in Controls.
+  - The stage standings show `Lap n/N`, and the stage heading and summary count laps.
+  - Admin: a Laps choice on the course control, with saved laps, the window and history. The kart-lobby intro copy is updated.
+- Local sign-in: the local inbox lists text only on request (`?format=text`) and renders just the newest email otherwise. The admin login page asks for text.
+
+Decisions:
+
+- Laps exist only in kart-only lobbies, so the party pack's sprint stays one lap.
+- Ghost karts stay: slipstream is the one deliberate interaction between karts. The ghost-timeline determinism spec still holds, because its compared kart has nobody to draft.
+- Race sound is off by default and remembered per phone. Buzzes follow the same switch.
+- Rocket starts, CPU racers and position-weighted items are recorded in the plan as not done: each changes race authority or fairness.
+- Local agent sign-in: email was never going through Resend on local dev. The Vite middleware already blanks `RESEND_API_KEY` and uses the local inbox. The real fault was that the inbox endpoint rendered up to 20 React Email messages on a cold dev server and outlasted the admin client's 12-second timeout. The aborted request hid the "Open the sign-in confirmation" link, which also stalled browser specs at sign-in. No new login route was needed.
+
+Commands and results:
+
+- API (`vitest-pool-workers`): `test/kart`, `test/content-preflight` and `test/room`, 24 files and 191 tests passed. These include the new `kart-race-laps` and `kart-slipstream` specs and the new lap case in `kart-track-selection`. `auth.spec.ts`: 14 passed.
+- Web: `src/kart`, `src/play` and `src/admin/kart`, 73 files and 355 tests passed. `admin-auth.test.tsx`: 27 passed.
+- `tsc` for shared, `apps/api`, the `apps/web` app and node configs, and `@26/kart-solo`: passed. Prettier and ESLint on the changed files: clean.
+- Browser (`playwright.rehearsal.config.ts`): the new `kart-race-laps.spec.ts` passed three times. It is a real two-lap ring race with a host lap choice, a racing phone, a rival left on the grid, the projector and a sideways-phone check.
+  - It verifies "Lap 1/2" then "Lap 2/2", the "Final lap!" call, "You finished 1st!" with race time and both lap times, and "Amina wins!" on stage while the rival is still on lap 1.
+  - The sideways HUD stays clear of the pad and Drift.
+  - `email-code`, `kart-track-selection` and `kart-lobby` passed. `kart-lobby` missed its first countdown beats once, then passed twice in a row.
+  - The wider kart set (`kart-inputs`, `kart`, `kart-solo`, `kart-drift`, `kart-collision`, `kart-spectator`, `kart-recap` and `kart-timetrial`) passed 21 of 22. The failure was real: at 320×568 upright, the new HUD row pushed Brake and Drift 15px below the screen. On an upright phone the HUD now overlays the driving view's empty top-left corner. After that, `kart-inputs` and `kart-race-laps` passed 4 of 4, and `kart`, `kart-drift`, `kart-recap`, `kart-timetrial` and `kart-lobby` passed 11 of 11. The screenshots of both orientations were checked.
+- Web `src/kart` after the HUD move: 43 files and 208 tests passed.
+- Manual: on a cold `npm run dev`, a fresh admin sign-in showed the confirmation links at once and reached Admin → Kart.
+
+Not verified: real phones, so the haptics and Web Audio sound have not been heard or felt. Slipstream has not been tried by people racing each other, so the 12% may need tuning. No Park or circuit race has been run with three laps. The released `kart-rehearsal-v1` instructions still say "Hold A".
+
+Next: race two phones on staging with three Park laps, tune slipstream by feel, then decide on rocket starts.
+
+## 8 November 2026 — rocket starts, CPU racers, position luck and the last "hold A" wording
+
+Status: the three items the race-feel plan had left out are built (R9–R11 in `docs/kart-race-feel-plan.md`). The last user-facing "hold A" wording is gone. Each group was committed on its own, as the owner asked, with testing done at the end.
+
+- **Wording** (`6d492c5`, then a fix below): `kart-rehearsal-v3` carries the thumb-pad instructions. v2 gets back the instructions it was released with, and v1 is unchanged. The kart guide's phone, drift and glider tips are updated.
+- **Position luck** (`33bc183`): optional `luck: "position"` on kart item rules (both versions), set from a checkbox beside the item controls and off by default.
+  - `kartItemWeight` and `pickKartItem` make a deterministic weighted pick. Leaders mostly get oil, shields and tennis balls; the back of the field mostly gets turbos, homing shots and bombs.
+  - `stepKartPowers` asks for the standing only when a box is collected.
+- **CPU racers** (`8ecc8b6`): `packages/shared/src/kart-cpu.ts`. Up to seven, chosen beside the course and laps (`kartCpu` on `kart-track`, validated in routes and again in the lobby domain, and digested with the receipt).
+  - They start behind the guests and steer by aiming a little ahead on the course's own route, lifting for bends and holding their own top speed (skill 0.80–0.95).
+  - A CPU stuck for 2.5 s returns to its last safe point. They skip item boxes, take places (tagged CPU) and never score: points are shared by guest rank.
+  - The race ends when the guests are done, and CPUs never count as answers.
+- **Rocket starts** (`ca03d6f`): room races (`launchVersion: 1`) grade each kart's first throttle against GO. Within 0.6 s is perfect (Super boost, 1 s); within 1.2 s is good (Mini boost, 0.6 s).
+  - Phones stay locked until GO, so this is a reaction start rather than a held-throttle one.
+  - The phone shows PERFECT START! or Good start!, the projector calls the first perfect start, and the countdown hints say to accelerate right on GO.
+
+Fixed while testing:
+
+- The new v3 instructions were 205 characters, over the 200-character question limit. Every room test that started the rehearsal failed with a ZodError, so they are now 186 characters.
+- A start boost carried through a host pause, which broke the pause-release guarantee. A pause now clears every boost.
+- `kart-room`'s full-room queue test let karts coast for 3 s. The karts that throttled on GO now launch faster, so it allows 6 s; its checks are unchanged.
+- The item-controls test clicked every checkbox, which now included the luck box. It now leaves that box out of the loop and checks it separately.
+
+Commands and results:
+
+- API (`test/kart`, `test/content-preflight`, `test/room`, `test/auth`): 26 files and 206 tests passed after the fixes. These include the new `kart-cpu`, `kart-launch` and `kart-item-luck` specs and the CPU case in `kart-track-selection`. The first run had 38 failures, all from the instruction length.
+- Web (`src/kart`, `src/play`, `src/admin`): 99 files and 485 tests passed after the item-controls test fix.
+- `tsc` for shared, `apps/api`, the `apps/web` app and node configs: passed. ESLint: clean. Prettier applied.
+- Browser: `kart-cpu-race`, `kart-race-laps`, `kart-lobby`, `kart-track-selection`, `kart` and `kart-items-live` passed, 8 of 9 cases in one run. `kart-cpu-race` is new: one phone against three CPU racers on Park gets a boosted start, the projector lists the CPU karts, and all three CPU karts move. `kart-inputs`' gamepad case missed a barrier impact within 15 s once, then passed twice in a row on its own.
+
+Not verified: CPU driving quality over a full three-lap race, the rocket-start windows on real phones over venue Wi-Fi, and how much position luck changes a real race.
+
 ## 8 November 2026 — release safeguard follow-up after PR #8
 
 Status: corrections on a new branch from master `fbbf587`. PR #8 had already been merged when it was reviewed, so it could not carry them.

@@ -17,15 +17,19 @@ export function KartItemControls() {
   const [selected, setSelected] = useState<KartItem[]>(() =>
     data?.next.version === 2 ? data.next.allowed : items,
   );
+  const [luck, setLuck] = useState(() => data?.next.luck === "position");
   if (!data) return null;
+  const withLuck = luck ? { luck: "position" as const } : {};
   const unavailable = busy || connection !== "open";
   const collecting = !!snapshot.play?.kart && snapshot.phase === "collect";
   const canManage =
     !!snapshot.play?.kart &&
     ["intro", "prompt", "collect", "reveal", "scores"].includes(snapshot.phase);
   const names = new Map(snapshot.players.map((p) => [p.playerId, p.nickname]));
-  const describe = (version: number | undefined) =>
-    version === 2 ? "Expanded items" : "Original items";
+  const describe = (rules: KartItemRules | undefined) =>
+    `${rules?.version === 2 ? "Expanded items" : "Original items"}${
+      rules?.luck === "position" ? " · position luck" : ""
+    }`;
   const catalogue = (rules: KartItemRules) =>
     allowedKartItems(rules)
       .map((item) => kartItemNames[item])
@@ -34,8 +38,8 @@ export function KartItemControls() {
     <section aria-label="Kart items">
       <h2>Kart items</h2>
       <p>
-        Current: {data.current ? describe(data.current.version) : "No active race"} ·
-        Next race: {describe(data.next.version)}.
+        Current: {data.current ? describe(data.current) : "No active race"} · Next race:{" "}
+        {describe(data.next)}.
       </p>
       {data.current && <p>Allowed now: {catalogue(data.current)}.</p>}
       <p>Saved for next start: {catalogue(data.next)}.</p>
@@ -51,6 +55,15 @@ export function KartItemControls() {
         disabled={unavailable || collecting}
       >
         <legend>Expanded item selection</legend>
+        <label>
+          <input
+            type="checkbox"
+            checked={luck}
+            onChange={(e) => setLuck(e.target.checked)}
+          />
+          Position luck: karts at the back get more turbos and homing shots; leaders get
+          more oil and shields
+        </label>
         {items.map((item) => (
           <label key={item}>
             <input
@@ -72,7 +85,7 @@ export function KartItemControls() {
             void execute(
               {
                 action: "kart-item-rules",
-                itemRules: { version: 2, allowed: selected },
+                itemRules: { version: 2, allowed: selected, ...withLuck },
               },
               "Save expanded items",
               "kart-items",
@@ -85,7 +98,7 @@ export function KartItemControls() {
           variant="secondary"
           onClick={() =>
             void execute(
-              { action: "kart-item-rules", itemRules: { version: 1 } },
+              { action: "kart-item-rules", itemRules: { version: 1, ...withLuck } },
               "Use original items",
               "kart-items",
             )
@@ -156,8 +169,7 @@ export function KartItemControls() {
       <ol aria-label="Item rule history">
         {data.rulesHistory.map((event, index) => (
           <li key={`${event.atMs}-${index}`}>
-            {new Date(event.atMs).toLocaleTimeString("en-GB")} ·{" "}
-            {describe(event.rules.version)}
+            {new Date(event.atMs).toLocaleTimeString("en-GB")} · {describe(event.rules)}
           </li>
         ))}
       </ol>

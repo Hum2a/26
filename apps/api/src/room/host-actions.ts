@@ -77,6 +77,8 @@ export type HostActionInput = {
   handlingPreset?: unknown;
   itemRules?: unknown;
   kartTrack?: unknown;
+  kartLaps?: unknown;
+  kartCpu?: unknown;
   rehearsalConfig?: unknown;
   questionIndex?: number;
   scenario?: unknown;
@@ -102,7 +104,13 @@ export function applyHostAction(
 ): { transferCode?: string; released?: number } {
   assertKartLobbyAction(sql, input.action);
   if (input.action === "kart-track") {
-    chooseKartLobbyTrack(sql, input.kartTrack, input.nowMs);
+    chooseKartLobbyTrack(
+      sql,
+      input.kartTrack,
+      input.nowMs,
+      input.kartLaps ?? 1,
+      input.kartCpu ?? 0,
+    );
     touch(sql);
     return {};
   }

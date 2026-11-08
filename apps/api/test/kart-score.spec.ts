@@ -262,12 +262,20 @@ it("replays independent ghost-kart timelines deterministically at full-room size
   expect(reduceKartTimeline(room, [], NaN)).toBe(room);
 });
 
-it("updates new phone-driving rehearsals without rewriting the stored v1 content", () => {
-  expect(kartRehearsalVersion).toBe("kart-rehearsal-v2");
+it("updates new phone-driving rehearsals without rewriting the stored v1 or v2 content", () => {
+  expect(kartRehearsalVersion).toBe("kart-rehearsal-v3");
   expect(
     questionFor({ questionSetVersion: "kart-rehearsal-v1", questionIndex: 1 })
       ?.instructions,
   ).toContain("Watch your numbered kart on the TV");
+  expect(
+    questionFor({ questionSetVersion: "kart-rehearsal-v2", questionIndex: 1 })
+      ?.instructions,
+  ).toContain("Hold A to accelerate");
+  expect(
+    questionFor({ questionSetVersion: kartRehearsalVersion, questionIndex: 1 })
+      ?.instructions,
+  ).toContain("push up to accelerate");
   expect(
     questionFor({ questionSetVersion: kartRehearsalVersion, questionIndex: 1 })
       ?.instructions,

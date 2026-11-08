@@ -26,6 +26,7 @@ import {
   ReverseTyping,
   TranslatedOptions,
 } from "./sabotage-trolls";
+import { useTrollClip, type TrollSound } from "./troll-sound";
 
 /**
  * Phone-only gags. The server owns when they start and stop; these components
@@ -168,8 +169,12 @@ export function ScreenTroll({
   }
 }
 
-/** Replace the image at `apps/web/public/assets/netanyahu.png`. */
-const netanyahuAsset = "/assets/netanyahu.png";
+/**
+ * The cut-out face and a 4.2 second Hava Nagila clip, in `apps/web/public/assets/`.
+ * The clip fades out as the 4 second flood ends.
+ */
+const netanyahuAsset = "/assets/netanyahu.webp";
+const netanyahuSoundAsset = "/assets/netanyahu.mp3";
 const netanyahuCopies = Array.from({ length: 36 }, (_, index) => ({
   left: (index * 37) % 100,
   top: (index * 61) % 100,
@@ -178,7 +183,14 @@ const netanyahuCopies = Array.from({ length: 36 }, (_, index) => ({
   delay: (index % 12) * 0.12,
 }));
 
-export function NetanyahuFlood({ label }: { label: string }) {
+export function NetanyahuFlood({
+  label,
+  sound,
+}: {
+  label: string;
+  sound?: TrollSound;
+}) {
+  useTrollClip(netanyahuSoundAsset, sound);
   return (
     <div className="troll-flood" role="alert" aria-label={label}>
       {netanyahuCopies.map((copy, index) => (
