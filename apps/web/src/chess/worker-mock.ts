@@ -29,29 +29,31 @@ export class WorkerMock {
       throw new Error("Worker is terminated");
     }
 
-    // Simulate UCI protocol responses
-    setTimeout(() => {
-      if (this.terminated || !this.messageHandler) return;
-
-      if (data === "uci") {
-        this.simulateMessage("uciok");
-      } else if (data === "isready") {
-        this.simulateMessage("readyok");
-      } else if (data.startsWith("setoption name UCI_Elo value")) {
-        // Acknowledge Elo setting
-        setTimeout(() => this.simulateMessage("readyok"), 10);
-      } else if (data.startsWith("go movetime")) {
-        // Simulate bestmove after delay
-        setTimeout(() => {
-          if (!this.terminated && this.messageHandler) {
-            this.simulateMessage("bestmove e7e5");
-          }
-        }, 50);
-      } else if (data === "stop") {
-        // Immediate bestmove on stop
-        this.simulateMessage("bestmove e7e5");
-      }
-    }, 10);
+    // Simulate UCI protocol responses with minimal delays
+    if (data === "uci") {
+      setTimeout(() => this.simulateMessage("uciok"), 5);
+    } else if (data === "isready") {
+      setTimeout(() => this.simulateMessage("readyok"), 5);
+    } else if (data.startsWith("setoption name UCI_Elo value")) {
+      // Acknowledge Elo setting
+      setTimeout(() => this.simulateMessage("readyok"), 5);
+    } else if (data.startsWith("go movetime")) {
+      // Simulate bestmove after short delay
+      setTimeout(() => {
+        if (!this.terminated && this.messageHandler) {
+          this.simulateMessage("bestmove e7e5");
+        }
+      }, 20);
+    } else if (data === "stop") {
+      // Immediate bestmove on stop
+      setTimeout(() => {
+        if (!this.terminated && this.messageHandler) {
+          this.simulateMessage("bestmove e7e5");
+        }
+      }, 5);
+    } else if (data.startsWith("position")) {
+      // Position commands don't require response
+    }
   }
 
   private simulateMessage(data: string): void {
