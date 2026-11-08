@@ -38,6 +38,7 @@ import {
   type KartDriver,
   type KartLookHistory,
   type KartLookName,
+  type KartLaps,
   type KartRaceView,
   type KartTrackId,
 } from "./kart-race-schema.ts";
@@ -71,6 +72,11 @@ import {
   type KartContactEvent,
 } from "./kart-contacts.ts";
 import { selectNearbyNumbers } from "./kart-nearby.ts";
+import {
+  slipstreamPhase,
+  slipstreamTuning,
+  stepSlipstream,
+} from "./kart-slipstream.ts";
 import { kartSpectatorView, type KartStageMode } from "./kart-spectator.ts";
 import {
   clearOfWalls,
@@ -91,9 +97,17 @@ export type KartCompletion = {
   status: "FINISHED" | "DNF";
 };
 
+// The public lap number, lap times and slipstream are derived in projection;
+// `lap` here is the stored recap record.
 type Driver = Omit<
   KartDriver,
-  "driftCharge" | "boostRemainingMs" | "drifting" | "wrongWay"
+  | "driftCharge"
+  | "boostRemainingMs"
+  | "drifting"
+  | "wrongWay"
+  | "lap"
+  | "lapsMs"
+  | "slipstream"
 > & {
   sequence: number;
   input: KartControls;
@@ -118,6 +132,12 @@ type Driver = Omit<
   lastRecoveryAt?: number;
   lastImpact?: KartContactEvent;
   lap?: { crossingsMs: (number | null)[]; recoveries: number };
+  /** Multi-lap races: laps already completed, and the race time each ended. */
+  lapsDone?: number;
+  lapTimes?: number[];
+  /** Slipstream: draft charge and the remaining reduced-drag time. */
+  draftMs?: number;
+  slipstreamMs?: number;
 };
 export type KartRace = {
   raceId: string;
@@ -135,7 +155,10 @@ export type KartRace = {
   contactVersion?: 1;
   contactHistory?: KartContactHistoryEntry[];
   trackId?: KartTrackId;
-  timeLimitMs?: 45000 | 180000;
+  /** The course window × laps. */
+  timeLimitMs?: number;
+  /** Absent for a one-lap race. */
+  laps?: KartLaps;
   courseEnabled?: boolean;
   courseHistory?: { atMs: number; enabled: boolean }[];
   opponentsEnabled?: boolean;
@@ -161,8 +184,11 @@ export function createKartRace(
     trackId?: KartTrackId;
     handling?: KartHandling;
     itemRules?: KartItemRules;
+    laps?: KartLaps;
   } = {},
 ): KartRace {
+  const laps = options.laps ?? 1;
+  if (![1, 2, 3].includes(laps)) throw new Error("A race has one, two or three laps.");
   if (
     players.length > 100 ||
     new Set(players.map((p) => p.playerId)).size !== players.length
@@ -181,9 +207,10 @@ export function createKartRace(
     raceId,
     trackId: options.trackId ?? kartTrackId,
     timeLimitMs:
-      options.trackId === importedTrackId || options.trackId === parkTrackId
+      (options.trackId === importedTrackId || options.trackId === parkTrackId
         ? importedTrackLimitMs
-        : kartLimitMs,
+        : kartLimitMs) * laps,
+    ...(laps > 1 ? { laps } : {}),
     physicsVersion: "arcade-v2",
     ...(options.handling ? { handling: options.handling } : {}),
     contactVersion: 1,
@@ -256,6 +283,7 @@ function copyRace(race: KartRace): KartRace {
         crossingsMs: [...d.lap.crossingsMs],
         recoveries: d.lap.recoveries,
       },
+      lapTimes: d.lapTimes && [...d.lapTimes],
     })),
   };
 }
@@ -765,11 +793,15 @@ function stepDriver(
       d.power ??= createKartPowers();
       body = powerDrivingBody(body, d.power, elapsed);
     }
+    // Slipstream lowers drag, which lifts top speed without extra thrust.
+    const slipping = (d.slipstreamMs ?? 0) > 0;
     const next = stepDriving(
       body,
       input,
       ms,
-      profile,
+      slipping
+        ? { ...profile, drag: profile.drag * slipstreamTuning.dragScale }
+        : profile,
       nearbyWalls(body.x, body.z, profile.radius + Math.hypot(body.vx, body.vz) * 0.02),
       Boolean(d.power && d.power.slowedUntil > elapsed) ||
         (polyline && surfaceAt(body.x, body.z) !== "road"),
@@ -855,6 +887,19 @@ function stepDriver(
     d.driftMs = next.driftMs;
     d.boostMs = next.boostMs;
     d.wasDrifting = next.wasDrifting;
+    // Drivers already carry the fields a wake needs, so nothing is allocated
+    // per step; finished and DNF karts are stopped and leave no wake.
+    if (race && race.drivers.length > 1) {
+      const draft = stepSlipstream(
+        { draftMs: d.draftMs ?? 0, slipstreamMs: d.slipstreamMs ?? 0 },
+        d,
+        race.drivers,
+        ms,
+      );
+      // Zero is stored as absent, so a kart that never drafts keeps its old shape.
+      d.draftMs = draft.draftMs || undefined;
+      d.slipstreamMs = draft.slipstreamMs || undefined;
+    }
   } else {
     const drifting = input.drift && Math.abs(input.steer) > 0.15 && d.speed > 5;
     // A stale/disconnected controller or braking must never cash in a drift.
@@ -907,10 +952,13 @@ function stepDriver(
       ),
       recoveries: d.lap?.recoveries ?? 0,
     };
+  const laps = race?.laps ?? 1,
+    done = d.lapsDone ?? 0;
   d.angle = lap.angle;
   d.distance = lap.distance;
   d.checkpoint = lap.checkpoint;
-  d.progress = lap.progress;
+  // Whole-race progress, so standings, homing and nearby karts compare across laps.
+  d.progress = (done + lap.progress) / laps;
   if (
     version === "arcade-v2" &&
     lap.safeProgress &&
@@ -928,10 +976,31 @@ function stepDriver(
       checkpoint: d.checkpoint,
       progress: d.progress,
     };
-  if (lap.finished) {
+  if (lap.finished && done + 1 < laps) {
+    // A new lap: gates start again and recovery restarts from this line,
+    // so returning to an earlier safe point can never count the lap twice.
+    d.lapsDone = done + 1;
+    d.lapTimes = [...(d.lapTimes ?? []), elapsed];
+    d.checkpoint = 0;
+    d.distance = lap.distance - lapLength;
+    d.progress = d.lapsDone / laps;
+    if (race?.recapVersion === 1)
+      d.lap = { crossingsMs: [], recoveries: d.lap?.recoveries ?? 0 };
+    d.lastSafe = {
+      x: d.x,
+      z: d.z,
+      heading: d.heading,
+      angle: d.angle,
+      distance: d.distance,
+      checkpoint: 0,
+      progress: d.progress,
+    };
+  } else if (lap.finished) {
     d.status = "FINISHED";
+    // The finish time is the whole race.
     d.lapTimeMs = elapsed;
     d.speed = 0;
+    if (laps > 1) d.lapTimes = [...(d.lapTimes ?? []), elapsed];
   }
 }
 
@@ -1009,6 +1078,7 @@ export function projectKartRace(
     ),
     trackId: race.trackId ?? kartTrackId,
     timeLimitMs: race.timeLimitMs ?? kartLimitMs,
+    ...(race.laps && race.laps > 1 ? { laps: race.laps } : {}),
     elapsedMs: race.elapsedMs,
     ended: race.ended,
     selfPlayerId,
@@ -1067,6 +1137,10 @@ export function projectKartRace(
         wasDrifting,
         turn,
         physics,
+        lapsDone,
+        lapTimes,
+        draftMs,
+        slipstreamMs,
       }) => ({
         playerId,
         name,
@@ -1084,6 +1158,24 @@ export function projectKartRace(
         checkpoint,
         status,
         lapTimeMs,
+        ...(race.laps && race.laps > 1
+          ? {
+              lap: Math.min(race.laps, (lapsDone ?? 0) + 1),
+              ...(lapTimes?.length ? { lapsMs: lapTimes } : {}),
+            }
+          : {}),
+        ...(status === "RACING" &&
+        slipstreamPhase({
+          draftMs: draftMs ?? 0,
+          slipstreamMs: slipstreamMs ?? 0,
+        })
+          ? {
+              slipstream: slipstreamPhase({
+                draftMs: draftMs ?? 0,
+                slipstreamMs: slipstreamMs ?? 0,
+              }),
+            }
+          : {}),
         driftCharge: status === "RACING" ? Math.min(1, driftMs / 700) : 0,
         driftChargeMs: status === "RACING" ? Math.min(2400, driftMs) : 0,
         boostRemainingMs: status === "RACING" ? Math.floor(boostMs) : 0,

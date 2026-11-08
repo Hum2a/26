@@ -13,6 +13,14 @@ import { createSelfPrediction } from "./self-prediction";
 import { KartCountdown } from "./KartCountdown";
 import { useKartContactFeedback } from "./useKartContactFeedback";
 import { KartRecapPanel } from "./KartRecapPanel";
+import { KartRaceHud } from "./KartRaceHud";
+import { useRaceFeedback } from "./useRaceFeedback";
+import { ordinal, raceLaps } from "./race-callouts";
+import "./race-hud.css";
+
+const lapWords = (laps: number) => (laps === 1 ? "ONE LAP" : `${laps} LAPS`);
+const windowWords = (ms: number) =>
+  ms < 120_000 ? `${ms / 1000} SECONDS` : `${Math.round(ms / 60_000)} MINUTES`;
 
 export function GuestKart({
   snapshot,
@@ -78,6 +86,8 @@ export function GuestKart({
     snapshot.phase === "collect" && !snapshot.paused && !snapshot.held && connected;
   const driveOpen = open && viewUsable;
   const send = useKartSocket(race, driveOpen && !recoveryPending, onInput);
+  const laps = raceLaps(race);
+  const feedback = useRaceFeedback(race, { open: driveOpen && !recoveryPending });
   const contactFeedback = useKartContactFeedback({
     raceId: race?.raceId ?? "",
     elapsedMs: race?.elapsedMs ?? 0,
@@ -180,12 +190,14 @@ export function GuestKart({
       ) : null}
       <header className="kart-phone-heading">
         <p className="kart-eyebrow">
-          ONE LAP · {timeLimitMs === 180_000 ? "3 MINUTES" : "45 SECONDS"}
+          {lapWords(laps)} · {windowWords(timeLimitMs)}
         </p>
         <h1 className="phone-prompt">
           {complete
             ? self.status === "FINISHED"
-              ? "Lap complete"
+              ? laps > 1
+                ? "Race complete"
+                : "Lap complete"
               : hostEnded || earlyEnded
                 ? "Race ended"
                 : "Time’s up"
@@ -217,7 +229,7 @@ export function GuestKart({
               {complete
                 ? self.status === "FINISHED"
                   ? `Position ${place ?? "—"}`
-                  : `${Math.round(self.progress * 100)}% of the lap`
+                  : `${Math.round(self.progress * 100)}% of the ${laps > 1 ? "race" : "lap"}`
                 : `${Math.max(0, (timeLimitMs - (race?.elapsedMs ?? 0)) / 1000).toFixed(1)}s left`}
             </p>
             <p>
@@ -227,6 +239,16 @@ export function GuestKart({
             </p>
           </div>
         </div>
+      ) : null}
+      {/* Just before the view: upright phones overlay its top-left corner. */}
+      {race && self && !complete && snapshot.phase === "collect" ? (
+        <KartRaceHud
+          race={race}
+          self={self}
+          place={place}
+          banner={feedback.banner}
+          reduced={reduced}
+        />
       ) : null}
       {race && self && !complete ? (
         <KartDriverView
@@ -256,15 +278,52 @@ export function GuestKart({
           onRecover={race && onRecover ? () => onRecover(race.raceId) : undefined}
           itemDisabled={Boolean(itemPending) || !heldItem}
           recoveryDisabled={recoveryPending}
-          extraSettings={contactFeedback.settings}
+          extraSettings={
+            <>
+              {contactFeedback.settings}
+              <label>
+                <input
+                  type="checkbox"
+                  checked={feedback.soundOn}
+                  onChange={feedback.toggleSound}
+                />{" "}
+                Race sound and buzzes (engine, laps, places, finish)
+              </label>
+            </>
+          }
         />
       ) : (
         <motion.div
           className="kart-finish-card"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
+          initial={{ opacity: 0, y: reduced ? 0 : 18, scale: reduced ? 1 : 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={
+            reduced
+              ? { duration: 0.15, ease: "easeOut" }
+              : { type: "spring", stiffness: 320, damping: 24 }
+          }
         >
+          {self.status === "FINISHED" ? (
+            <>
+              <div className="kart-finish-flag" aria-hidden="true" />
+              <span className="kart-finish-place">
+                {place ? `You finished ${ordinal(place)}!` : "You finished!"}
+              </span>
+              {self.lapTimeMs !== null ? (
+                <p>Race time {(self.lapTimeMs / 1000).toFixed(2)}s</p>
+              ) : null}
+              {self.lapsMs && self.lapsMs.length > 1 ? (
+                <ol className="kart-finish-laps" aria-label="Your lap times">
+                  {self.lapsMs.map((end, i) => (
+                    <li key={i}>
+                      Lap {i + 1}:{" "}
+                      {((end - (self.lapsMs![i - 1] ?? 0)) / 1000).toFixed(2)}s
+                    </li>
+                  ))}
+                </ol>
+              ) : null}
+            </>
+          ) : null}
           <strong>{self.status === "FINISHED" ? "Chequered flag" : "DNF"}</strong>
           <p>
             {self.status === "FINISHED"

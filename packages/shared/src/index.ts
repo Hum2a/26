@@ -407,7 +407,9 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
       ...publicQuestionCore,
       kind: z.literal("kart"),
       trackId: z.enum(["party-ring-v1", "mario-circuit-v1", "26-park-v1"]),
-      timeLimitMs: z.union([z.literal(45_000), z.literal(180_000)]),
+      // The course window × laps; three laps of a three-minute course at most.
+      timeLimitMs: z.number().int().positive().max(540_000),
+      laps: z.union([z.literal(2), z.literal(3)]).optional(),
     })
     .strict(),
   z
@@ -954,6 +956,8 @@ export const kartLobbySchema = z
   .object({
     createdAt: z.number().int().nonnegative(),
     trackId: z.enum(["party-ring-v1", "mario-circuit-v1", "26-park-v1"]).optional(),
+    /** Absent means one lap. */
+    laps: z.union([z.literal(2), z.literal(3)]).optional(),
     sourceVersion: z.string().min(1).max(120).optional(),
     history: z
       .array(
@@ -961,6 +965,7 @@ export const kartLobbySchema = z
           .object({
             atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
             trackId: z.enum(["party-ring-v1", "mario-circuit-v1", "26-park-v1"]),
+            laps: z.union([z.literal(2), z.literal(3)]).optional(),
             source: z.literal("host"),
           })
           .strict(),

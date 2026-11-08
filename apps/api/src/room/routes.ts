@@ -3,6 +3,7 @@ import {
   kartLookNameSchema,
   kartHandlingSchema,
   kartItemRulesSchema,
+  kartLapsSchema,
   kartRaceSchema,
   type KartHandling,
   type KartSettingChange,
@@ -926,6 +927,7 @@ function readHostDetails(
         kartSetting?: KartSettingChange;
         itemRules?: unknown;
         kartTrack?: unknown;
+        kartLaps?: unknown;
         lookPreset?: KartLookName;
         handlingPreset?: KartHandling;
         playerId?: string;
@@ -1015,9 +1017,14 @@ function readHostDetails(
   }
   if (action === "kart-track") {
     const track = kartRaceSchema.shape.trackId.safeParse(field(body, "kartTrack"));
-    return track.success
-      ? { ok: true, fields: { kartTrack: track.data } }
-      : { ok: false, message: "Choose an installed kart course." };
+    if (!track.success)
+      return { ok: false, message: "Choose an installed kart course." };
+    const rawLaps = field(body, "kartLaps");
+    if (rawLaps === undefined) return { ok: true, fields: { kartTrack: track.data } };
+    const laps = kartLapsSchema.safeParse(rawLaps);
+    return laps.success
+      ? { ok: true, fields: { kartTrack: track.data, kartLaps: laps.data } }
+      : { ok: false, message: "Choose one, two or three laps." };
   }
   if (action === "developer-bots") {
     const count = botCountSchema.safeParse(field(body, "botCount"));

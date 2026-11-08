@@ -59,6 +59,41 @@ it("shows committed course/history, sends the scoped receipted choice and links 
       .getAttribute("href"),
   ).toBe("/admin/kart?view=tracks");
 });
+it("sends the chosen laps with the course and shows the longer race window", async () => {
+  setupControls({
+    ...playingFixture,
+    phase: "lobby",
+    kartLobby: {
+      createdAt: 100,
+      trackId: "26-park-v1",
+      laps: 3,
+      history: [{ atMs: 200, trackId: "26-park-v1", laps: 3, source: "host" }],
+    },
+  });
+  await mountControls(
+    <>
+      <h1>Live controls</h1>
+      <KartTrackControls />
+    </>,
+  );
+  expect(
+    await screen.findByText(/Saved course: 26 Park · 3 laps · 9 minutes/),
+  ).toBeTruthy();
+  expect(
+    screen.getByRole("list", { name: "Course selection history" }).textContent,
+  ).toContain("Host chose 26 Park · 3 laps");
+  fireEvent.change(screen.getByLabelText("Laps"), { target: { value: "2" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save course" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "kart-track",
+        kartTrack: "26-park-v1",
+        kartLaps: 2,
+      }),
+    ),
+  );
+});
 it("freezes controls after the start while preserving committed course and history", async () => {
   setupControls({
     ...playingFixture,

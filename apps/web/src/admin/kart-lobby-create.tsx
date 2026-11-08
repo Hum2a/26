@@ -42,10 +42,10 @@ export function KartLobbyCreate() {
     <section className="admin-current" aria-label="Kart-only lobby">
       <h2>Just the race</h2>
       <p>
-        Create a fresh join-code lobby for one lap and up to 80 racers. Mario circuit is
-        the default; choose a course and its time limit in Live controls before Start
-        kart race. Guests join before the start. The birthday running order stays as it
-        is.
+        Create a fresh join-code lobby for one to three laps and up to 80 racers. Mario
+        circuit is the default; choose a course and its time limit in Live controls
+        before Start kart race. Guests join before the start. The birthday running order
+        stays as it is.
       </p>
       <Button disabled={busy} onClick={() => void create()}>
         {busy

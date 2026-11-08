@@ -1,36 +1,44 @@
 import { Link } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { kartTrackCatalogue, type KartTrackId } from "@26/shared";
+import { kartTrackCatalogue, type KartLaps, type KartTrackId } from "@26/shared";
 import { Button } from "../ui/primitives";
 import { useAdminRoom } from "./room-provider";
 import { CommandFeedback } from "./command-feedback";
 
+const lapWords = (laps: number) => (laps === 1 ? "one lap" : `${laps} laps`);
+/** "45 seconds", "3 minutes", "9 minutes". */
+const windowWords = (ms: number) =>
+  ms < 120_000 ? `${ms / 1000} seconds` : `${Math.round(ms / 60_000)} minutes`;
+
 export function KartTrackControls() {
   const { snapshot, execute, busy, connection } = useAdminRoom();
   const saved = snapshot.kartLobby?.trackId ?? "mario-circuit-v1";
+  const savedLaps = snapshot.kartLobby?.laps ?? 1;
   if (!snapshot.kartLobby) return null;
   const track = kartTrackCatalogue.tracks.find((t) => t.id === saved)!;
   const frozen = snapshot.phase !== "lobby";
+  const locked = frozen || busy || connection !== "open";
   return (
     <section className="admin-task-section" aria-label="Kart course selection">
       <h2>Race course</h2>
       <p>
-        Saved course: {track.name} · one lap · {track.raceLimitMs / 1000} seconds.
+        Saved course: {track.name} · {lapWords(savedLaps)} ·{" "}
+        {windowWords(track.raceLimitMs * savedLaps)}.
       </p>
       <p>
         {frozen
           ? "This race's course is frozen. Create a fresh kart lobby for another race."
-          : "Choose before starting. The course and starting grid freeze when you start the race."}
+          : "Choose before starting. The course, laps and starting grid freeze when you start the race. More laps give a longer race window."}
       </p>
       <form
-        key={saved}
+        key={`${saved}-${savedLaps}`}
         onSubmit={(event) => {
           event.preventDefault();
-          const selected = new FormData(event.currentTarget).get(
-            "kartTrack",
-          ) as KartTrackId;
+          const form = new FormData(event.currentTarget);
+          const selected = form.get("kartTrack") as KartTrackId;
+          const laps = Number(form.get("kartLaps")) as KartLaps;
           void execute(
-            { action: "kart-track", kartTrack: selected },
+            { action: "kart-track", kartTrack: selected, kartLaps: laps },
             "Save course",
             "kart-track",
           );
@@ -38,19 +46,23 @@ export function KartTrackControls() {
       >
         <label>
           Course for this race{" "}
-          <select
-            name="kartTrack"
-            defaultValue={saved}
-            disabled={frozen || busy || connection !== "open"}
-          >
+          <select name="kartTrack" defaultValue={saved} disabled={locked}>
             {kartTrackCatalogue.tracks.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.name} · {t.raceLimitMs / 1000}s
+                {t.name} · {t.raceLimitMs / 1000}s a lap
               </option>
             ))}
           </select>
         </label>
-        <Button type="submit" disabled={frozen || busy || connection !== "open"}>
+        <label>
+          Laps{" "}
+          <select name="kartLaps" defaultValue={String(savedLaps)} disabled={locked}>
+            <option value="1">1 lap</option>
+            <option value="2">2 laps</option>
+            <option value="3">3 laps</option>
+          </select>
+        </label>
+        <Button type="submit" disabled={locked}>
           Save course
         </Button>
       </form>
@@ -68,6 +80,7 @@ export function KartTrackControls() {
             >
               Host chose{" "}
               {kartTrackCatalogue.tracks.find((t) => t.id === entry.trackId)!.name} ·{" "}
+              {lapWords(entry.laps ?? 1)} ·{" "}
               {new Date(entry.atMs).toLocaleTimeString("en-GB")}
             </motion.li>
           ))}

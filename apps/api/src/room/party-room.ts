@@ -1570,6 +1570,7 @@ export class PartyRoom extends DurableObject<Env> {
     handlingPreset?: unknown;
     itemRules?: unknown;
     kartTrack?: unknown;
+    kartLaps?: unknown;
     rehearsalConfig?: unknown;
     questionIndex?: number;
     scenario?: unknown;
@@ -1635,6 +1636,7 @@ export class PartyRoom extends DurableObject<Env> {
       payload.itemRules = JSON.stringify(input.itemRules);
     if (input.kartTrack !== undefined)
       payload.kartTrack = JSON.stringify(input.kartTrack);
+    if (input.kartLaps !== undefined) payload.kartLaps = JSON.stringify(input.kartLaps);
     if (input.playerId) {
       payload.playerId = input.playerId;
     }
@@ -1721,6 +1723,7 @@ export class PartyRoom extends DurableObject<Env> {
           handlingPreset: input.handlingPreset,
           itemRules: input.itemRules,
           kartTrack: input.kartTrack,
+          kartLaps: input.kartLaps,
           rehearsalConfig: input.rehearsalConfig,
           questionIndex: input.questionIndex,
           scenario: input.scenario,

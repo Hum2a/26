@@ -273,3 +273,11 @@ Treats give the holder a 600ms turbo and drop nothing. Tennis balls bounce, bomb
 Live controls show held items by player, active counts and recent accepted item history. **Stop item spawning** stops boxes and new oil/projectile use while retaining held inventory; held boosts/shields still work. **Clear track items** removes current projectiles/oil. **Resume item spawning** reopens pickups and hazards. Use the normal Pause/Resume for the entire race clock. Rehearse without guests in **Admin → Kart → Items sandbox**, including personal Treats, shields, fuses, height, full pools and restore/clear/stop. No room or score is changed by that sandbox. Mandatory hazards stay visible when decorative effects are off or graphics are Low.
 
 No deployment or physical-device certification is implied by this local implementation note.
+
+## Laps, slipstream and the race director (8 November 2026)
+
+- **Laps:** a kart-only lobby's course control has a Laps choice (1, 2 or 3). The race window becomes the course window × laps. Each full set of gates then the line counts a lap; the finish time is the whole race, and each lap time is kept. Packs, including the birthday sprint, stay one lap.
+- **Slipstream:** sit 2.5–16 m behind another kart at speed for a second and you get 1.6 s of lower drag, about 12% more top speed. It is server-authoritative; karts are still ghosts.
+- **Phone:** place, `Lap n/N`, "Drafting…"/"Slipstream!", banners for a new lap, the final lap and places gained, and a finish card with race and lap times. "Race sound and buzzes" in Controls turns on a synthesised engine note, chimes and buzzes; it is off by default and remembered on that phone.
+- **Projector:** lead changes, "Lap 2 of 3", "Final lap!" and finishers ("Amina wins!") are announced once each; standings show each driver's lap.
+- **Try it:** Admin → Kart → Create kart lobby → choose a course and laps → join two phones → Start kart race. `apps/web/e2e/kart-race-laps.spec.ts` drives a real two-lap race. Plan: [kart-race-feel-plan.md](kart-race-feel-plan.md).

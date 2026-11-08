@@ -225,7 +225,10 @@ export type AuthoredFinale = AuthorFields &
 export type KartBody = {
   kind: "kart";
   trackId: "party-ring-v1" | "mario-circuit-v1" | "26-park-v1";
-  timeLimitMs: 45_000 | 180_000;
+  /** Packs use the course window; kart-only lobbies multiply it by `laps`. */
+  timeLimitMs: number;
+  /** Only room-owned kart-lobby copies set this; packs stay one lap. */
+  laps?: 2 | 3;
 };
 export type AuthoredKart = AuthorFields & KartBody;
 export type KartQuestion = PlayableFields & KartBody;

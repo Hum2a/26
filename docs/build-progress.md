@@ -5745,3 +5745,60 @@ Commands and results:
 Not verified: neither new clip was played in a browser, and the theme sting has not been heard on the projector.
 
 Next: listen to both clips, then supply sounds from the README asset table, starting with Call from Mum.
+
+## 8 November 2026 — kart races that feel like races, and local agent sign-in
+
+Status: the plan in `docs/kart-race-feel-plan.md` (R1–R8) is built. A kart-only lobby can now run a one, two or three lap race with slipstream between karts. Phones get a race HUD, banners, a finish moment and optional sound and buzzes. The projector has a race director that announces lead changes, laps and finishers. Released packs, including the birthday one-lap sprint, are unchanged.
+
+Files and interfaces:
+
+- `packages/shared/src/kart-slipstream.ts`: `inWake`, `stepSlipstream`, `slipstreamPhase` and `slipstreamTuning`.
+  - A kart 2.5–16 m behind another, within 2.6 m of its line, pointing the same way, with both moving at least 12 m/s, charges for 1 s.
+  - Once charged, it gets 1.6 s at 0.7× drag, about 12% more top speed. Leaving the wake drains the charge twice as fast.
+  - The step uses the stored drivers directly, so there is no per-step allocation at 80 karts.
+- `packages/shared/src/kart.ts`:
+  - `createKartRace(…, { laps })` sets the race window to the course window × laps.
+  - Each line crossing after a full set of gates counts a lap: gates restart, the lap time is kept, and the recovery point moves to the line, so recovering cannot refund or repeat a lap.
+  - The last crossing finishes, with `lapTimeMs` as the total race time.
+  - `progress` is whole-race progress, so standings, homing and nearby karts compare correctly across laps.
+  - Projection adds the race's `laps`, each kart's `lap` and `lapsMs`, and a `slipstream` phase.
+  - One-lap races keep exactly the old fields. Slipstream timers are stored only when non-zero.
+- `kart-race-schema.ts` and `index.ts`: `kartLapsSchema` and `kartMaxLimitMs` (540 s). The public race and question `timeLimitMs` is now a bounded integer, and both carry optional `laps`. `kartLobbySchema` and its history carry optional `laps`.
+- API: `kart-track` takes an optional `kartLaps`, validated in `readHostDetails` and again in `chooseKartLobbyTrack`, and digested with the receipt.
+  - The room-owned question copy gets `laps`, a scaled `collectMs`/`timeLimitMs`, a lap-aware prompt and a version suffix (`-p1l3`).
+  - One-lap wording and versions are unchanged.
+  - `KartBody.timeLimitMs` is now a number with optional `laps`; pack validation still holds packs to one lap.
+- Web:
+  - `KartRaceHud` shows place, `Lap n/N`, slipstream and banners. On a sideways phone it sits bottom-centre between the pad and Drift.
+  - `useRaceFeedback` gives banners, optional sound and buzzes from this phone's own frames.
+  - `race-callouts.ts` holds `ordinal`, `stageCallouts` and `selfCues`; `race-audio.ts` is the Web Audio adapter.
+  - `KartStageCallouts` is the projector race director, and `race-hud.css` styles the new pieces.
+  - `GuestKart`: lap-aware heading and eyebrow, the finish card ("You finished 2nd!", race time, each lap), and a "Race sound and buzzes" switch in Controls.
+  - The stage standings show `Lap n/N`, and the stage heading and summary count laps.
+  - Admin: a Laps choice on the course control, with saved laps, the window and history. The kart-lobby intro copy is updated.
+- Local sign-in: the local inbox lists text only on request (`?format=text`) and renders just the newest email otherwise. The admin login page asks for text.
+
+Decisions:
+
+- Laps exist only in kart-only lobbies, so the party pack's sprint stays one lap.
+- Ghost karts stay: slipstream is the one deliberate interaction between karts. The ghost-timeline determinism spec still holds, because its compared kart has nobody to draft.
+- Race sound is off by default and remembered per phone. Buzzes follow the same switch.
+- Rocket starts, CPU racers and position-weighted items are recorded in the plan as not done: each changes race authority or fairness.
+- Local agent sign-in: email was never going through Resend on local dev. The Vite middleware already blanks `RESEND_API_KEY` and uses the local inbox. The real fault was that the inbox endpoint rendered up to 20 React Email messages on a cold dev server and outlasted the admin client's 12-second timeout. The aborted request hid the "Open the sign-in confirmation" link, which also stalled browser specs at sign-in. No new login route was needed.
+
+Commands and results:
+
+- API (`vitest-pool-workers`): `test/kart`, `test/content-preflight` and `test/room`, 24 files and 191 tests passed. These include the new `kart-race-laps` and `kart-slipstream` specs and the new lap case in `kart-track-selection`. `auth.spec.ts`: 14 passed.
+- Web: `src/kart`, `src/play` and `src/admin/kart`, 73 files and 355 tests passed. `admin-auth.test.tsx`: 27 passed.
+- `tsc` for shared, `apps/api`, the `apps/web` app and node configs, and `@26/kart-solo`: passed. Prettier and ESLint on the changed files: clean.
+- Browser (`playwright.rehearsal.config.ts`): the new `kart-race-laps.spec.ts` passed three times. It is a real two-lap ring race with a host lap choice, a racing phone, a rival left on the grid, the projector and a sideways-phone check.
+  - It verifies "Lap 1/2" then "Lap 2/2", the "Final lap!" call, "You finished 1st!" with race time and both lap times, and "Amina wins!" on stage while the rival is still on lap 1.
+  - The sideways HUD stays clear of the pad and Drift.
+  - `email-code`, `kart-track-selection` and `kart-lobby` passed. `kart-lobby` missed its first countdown beats once, then passed twice in a row.
+  - The wider kart set (`kart-inputs`, `kart`, `kart-solo`, `kart-drift`, `kart-collision`, `kart-spectator`, `kart-recap` and `kart-timetrial`) passed 21 of 22. The failure was real: at 320×568 upright, the new HUD row pushed Brake and Drift 15px below the screen. On an upright phone the HUD now overlays the driving view's empty top-left corner. After that, `kart-inputs` and `kart-race-laps` passed 4 of 4, and `kart`, `kart-drift`, `kart-recap`, `kart-timetrial` and `kart-lobby` passed 11 of 11. The screenshots of both orientations were checked.
+- Web `src/kart` after the HUD move: 43 files and 208 tests passed.
+- Manual: on a cold `npm run dev`, a fresh admin sign-in showed the confirmation links at once and reached Admin → Kart.
+
+Not verified: real phones, so the haptics and Web Audio sound have not been heard or felt. Slipstream has not been tried by people racing each other, so the 12% may need tuning. No Park or circuit race has been run with three laps. The released `kart-rehearsal-v1` instructions still say "Hold A".
+
+Next: race two phones on staging with three Park laps, tune slipstream by feel, then decide on rocket starts.

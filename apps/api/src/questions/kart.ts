@@ -395,7 +395,7 @@ export function enterKart(
         name: p.nickname,
         points: p.points,
       })),
-      { seedGrid: true, trackId: q.trackId },
+      { seedGrid: true, trackId: q.trackId, ...(q.laps ? { laps: q.laps } : {}) },
     );
     // The race starts with the room's chosen driving feel.
     const defaults = readRoomKartSettings(sql).settings;
@@ -816,6 +816,7 @@ export function projectKart(
       kind: "kart" as const,
       trackId: q.trackId,
       timeLimitMs: q.timeLimitMs,
+      ...(q.laps ? { laps: q.laps } : {}),
     },
     ...(publicRace ? { kart: publicRace } : {}),
     submissionCount: race?.drivers.filter((d) => d.status !== "RACING").length ?? 0,

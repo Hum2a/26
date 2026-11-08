@@ -38,7 +38,12 @@ export default function KartGameWrapper({
       </p>
     );
   return (
-    <section className="kart-stage" aria-label="One-lap kart sprint">
+    <section
+      className="kart-stage"
+      aria-label={
+        (race.laps ?? 1) > 1 ? `${race.laps}-lap kart race` : "One-lap kart sprint"
+      }
+    >
       <div className="kart-race-heading">
         <div>
           <p className="kart-eyebrow">THE 26 GRAND PRIX</p>
@@ -47,7 +52,11 @@ export default function KartGameWrapper({
               ? "Chequered flag"
               : paused
                 ? "Race paused"
-                : "One lap. No excuses."}
+                : race.laps === 3
+                  ? "Three laps. No excuses."
+                  : race.laps === 2
+                    ? "Two laps. No excuses."
+                    : "One lap. No excuses."}
           </h2>
         </div>
         {!race.ended ? (

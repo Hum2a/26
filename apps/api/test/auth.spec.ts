@@ -170,6 +170,12 @@ describe("administrator auth", () => {
     expect(message.html).toContain("Your backstage pass.");
     expect(message.html).toContain(code);
     expect(message.text).toContain("/admin/confirm?token=");
+    // The sign-in page asks for text only, so no email is rendered on that path.
+    const plain = (await (await send(env, "/api/dev/inbox?format=text")).json()) as {
+      messages: { text: string; html?: string }[];
+    };
+    expect(plain.messages[0]!.text).toBe(message.text);
+    expect(plain.messages[0]!.html).toBeUndefined();
     const database = await openDatabase(env);
     const records = await database.executor.query("select value from verification");
     expect(records.length).toBeGreaterThanOrEqual(2);
