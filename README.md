@@ -99,24 +99,39 @@ Passing `--env` only on `wrangler deploy` does not retarget a Vite build. The de
 
 ## Release commands
 
-These read `apps/api/.dev.vars.staging` or `apps/api/.dev.vars.production`. They do not print secret values. `--env both` runs staging and then production.
+**Recommended:** Use `bash release.sh` for production releases. It enforces clean working tree, version bumping, and runs all checks.
 
-| Command                        | What it does                                                                                       |
-| ------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `npm run secrets-sync:staging` | Upload the required Worker secrets for staging                                                     |
-| `npm run secrets-sync:prod`    | Upload the required Worker secrets for production                                                  |
-| `npm run secrets-sync:both`    | Staging secrets, then production secrets                                                           |
-| `npm run db:migrate:dev`       | Auth and archive migrations on the Neon development branch, or PGlite when `DATABASE_URL` is blank |
-| `npm run db:migrate:staging`   | Auth and archive migrations against the staging database                                           |
-| `npm run db:migrate:prod`      | Auth and archive migrations against the production database                                        |
-| `npm run deploy:staging`       | Build with `CLOUDFLARE_ENV=staging` and deploy that generated config                               |
-| `npm run deploy:prod`          | Build with `CLOUDFLARE_ENV=production` and deploy that generated config                            |
-| `npm run deploy:both`          | Staging deploy, then production deploy                                                             |
-| `npm run deploy:staging:full`  | Staging migrate, then build and deploy with the required secrets attached                          |
-| `npm run deploy:prod:full`     | Production migrate, then build and deploy with the required secrets attached                       |
-| `npm run deploy:both:full`     | Full staging release, then full production release                                                 |
+These commands read `apps/api/.dev.vars.staging` or `apps/api/.dev.vars.production`. They do not print secret values. `--env both` runs staging and then production.
+
+| Command                        | What it does                                                                                       | Notes                                                                    |
+| ------------------------------ | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `npm run secrets-sync:staging` | Upload the required Worker secrets for staging                                                     |                                                                          |
+| `npm run secrets-sync:prod`    | Upload the required Worker secrets for production                                                  | Not covered by deploy/full production guards                             |
+| `npm run secrets-sync:both`    | Staging secrets, then production secrets                                                           | Not covered by deploy/full production guards                             |
+| `npm run db:migrate:dev`       | Auth and archive migrations on the Neon development branch, or PGlite when `DATABASE_URL` is blank |                                                                          |
+| `npm run db:migrate:staging`   | Auth and archive migrations against the staging database                                           |                                                                          |
+| `npm run db:migrate:prod`      | Auth and archive migrations against the production database                                        |                                                                          |
+| `npm run deploy:staging`       | Build with `CLOUDFLARE_ENV=staging` and deploy that generated config                               |                                                                          |
+| `npm run deploy:prod`          | Build with `CLOUDFLARE_ENV=production` and deploy that generated config                            | **Requires `--confirm-production`, clean master, outside freeze period** |
+| `npm run deploy:both`          | Staging deploy, then production deploy                                                             | **Requires `--confirm-production`, clean master, outside freeze period** |
+| `npm run deploy:staging:full`  | Staging migrate, then build and deploy with the required secrets attached                          |                                                                          |
+| `npm run deploy:prod:full`     | Production migrate, then build and deploy with the required secrets attached                       | **Requires `--confirm-production`, clean master, outside freeze period** |
+| `npm run deploy:both:full`     | Full staging release, then full production release                                                 | **Requires `--confirm-production`, clean master, outside freeze period** |
 
 Add `-- --dry-run` to a secrets-sync or deploy command to check the package or secret names without uploading. A dry-run full release skips migrations.
+
+**Production deploy/full safeguards:** `deploy:prod`, `deploy:both`, `deploy:prod:full`, `deploy:both:full` enforce:
+
+- `--confirm-production` flag (explicit confirmation required)
+- Clean working tree (no uncommitted changes)
+- Master branch (no feature branches)
+- Freeze period check (20 Nov 00:00 to 22 Nov 12:00 UTC) unless `--override-freeze`
+
+**Note:** `secrets-sync` and standalone `migrate` do not call `assertDeployAllowed`. They have no confirmation, freeze, or git checks. This patch does not add those guards.
+
+Example production deploy: `npm run deploy:prod -- --confirm-production`
+
+`bash release.sh --deploy=production --confirm-production` is the recommended wrapper: it requires master and a clean tree before bumping the version, then sets `SKIP_GIT_CHECK=true` on the deploy invocation so generated check artefacts do not fail the later git check. Confirmation and freeze still apply. Direct `npm run deploy:*` routes keep the git check. There is no `release.sh --skip-git-check` flag. Set `SKIP_GIT_CHECK=true` only from a trusted wrapper that has already enforced clean master.
 
 Do not deploy the local build to staging. The script refuses a generated name of `26-humza-website-local`.
 

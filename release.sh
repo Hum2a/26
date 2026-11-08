@@ -196,12 +196,13 @@ check_live() {
 
 if [[ "$deploy" != none ]]; then
   say "Deploying v$next to $deploy"
-  # The checks above already passed (or were explicitly skipped). The common
-  # deploy entry point still owns production confirmation and the party freeze.
+  # Branch/cleanliness were required before the version bump. Checks and the
+  # bump may leave generated files, so release.ts git state is skipped here.
+  # Confirmation and freeze still go through the common deploy entry point.
   deploy_options=(--skip-checks)
   [[ "$confirm_production" == true ]] && deploy_options+=(--confirm-production)
   [[ "$override_freeze" == true ]] && deploy_options+=(--override-freeze)
-  npm run "deploy:$deploy" -- "${deploy_options[@]}"
+  SKIP_GIT_CHECK=true npm run "deploy:$deploy" -- "${deploy_options[@]}"
   say "Checking the live sites"
   ok=true
   if [[ "$deploy" == both || "$deploy" == staging ]]; then
