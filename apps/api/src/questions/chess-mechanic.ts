@@ -162,7 +162,7 @@ export function executeResignation(
  */
 export async function handleChessClockAlarm(
   sql: SqlStorage,
-  store: GameStore,
+  _store: GameStore,
   gameId: string,
   now: number,
 ): Promise<void> {
@@ -223,7 +223,8 @@ export function projectChessGameSnapshot(
     if (!playerId) throw new Error("Guest snapshot requires playerId");
     const game = loadGameByPlayer(sql, playerId);
     if (!game) return null;
-    return projectGuestSnapshot(game);
+    const room = store.readRoom();
+    return projectGuestSnapshot(game, room.paused);
   }
 
   // Load round state
@@ -244,7 +245,7 @@ export function projectChessGameSnapshot(
  * Pause all chess clocks and increment position revision.
  * This invalidates all in-flight client state (including bot engine calculations).
  */
-export function pauseChessClocks(sql: SqlStorage, store: GameStore, now: number): void {
+export function pauseChessClocks(sql: SqlStorage, store: GameStore, _now: number): void {
   const games = sql
     .exec<{ game_id: string; position_revision: number }>(
       `SELECT game_id, position_revision FROM chess_game WHERE status = 'in-progress'`,
@@ -262,7 +263,7 @@ export function pauseChessClocks(sql: SqlStorage, store: GameStore, now: number)
 
   // Cancel all pending clock alarms
   const room = store.readRoom();
-  const jobs = store.jobs().filter((job) => 
+  const jobs = store.jobs().filter((job: { payload: string; status: string; phaseGeneration: number }) => 
     job.payload.startsWith("chess-clock:") &&
     job.status === "pending" &&
     job.phaseGeneration === room.phaseGeneration

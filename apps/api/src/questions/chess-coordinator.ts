@@ -432,7 +432,7 @@ function stripCounters(fen: string): string {
 /**
  * Project guest snapshot (own game only).
  */
-export function projectGuestSnapshot(game: ChessPlayerGame): ChessGuestSnapshot {
+export function projectGuestSnapshot(game: ChessPlayerGame, paused: boolean): ChessGuestSnapshot {
   const chess = new Chess(game.fen);
 
   return {
@@ -446,6 +446,9 @@ export function projectGuestSnapshot(game: ChessPlayerGame): ChessGuestSnapshot 
     botTimeMs: game.botTimeMs,
     sideToMove: game.sideToMove,
     plyCount: game.plyCount,
+    positionRevision: game.positionRevision,
+    lastMoveAt: game.lastMoveAt,
+    paused,
     winner: game.winner,
     terminationReason: game.terminationReason,
     inCheck: chess.inCheck(),

@@ -80,6 +80,7 @@ describe("Chess Coordinator", () => {
           gameId: game.gameId,
           from: "e2",
           to: "e5", // Illegal - pawn can't move 3 squares
+          positionRevision: game.positionRevision,
         },
         now + 1000,
       );
@@ -185,7 +186,7 @@ describe("Chess Coordinator", () => {
       // Bot responds
       const result = applyBotMove(
         game,
-        { from: "e7", to: "e5", positionRevision: game.positionRevision },
+        { from: "e7", to: "e5" },
         now + 2000,
       );
 
@@ -219,7 +220,7 @@ describe("Chess Coordinator", () => {
       // Bot tries illegal move
       const result = applyBotMove(
         game,
-        { from: "e7", to: "e4", positionRevision: game.positionRevision }, // Illegal
+        { from: "e7", to: "e4" }, // Illegal
         now + 2000,
       );
 
@@ -243,7 +244,7 @@ describe("Chess Coordinator", () => {
       if ("game" in result) game = result.game;
 
       // 1... e5
-      result = applyBotMove(game, { from: "e7", to: "e5", positionRevision: game.positionRevision }, now + 2000);
+      result = applyBotMove(game, { from: "e7", to: "e5" }, now + 2000);
       expect(result).toHaveProperty("game");
       if ("game" in result) game = result.game;
 
@@ -257,7 +258,7 @@ describe("Chess Coordinator", () => {
       if ("game" in result) game = result.game;
 
       // 2... Qh4# (checkmate)
-      result = applyBotMove(game, { from: "d8", to: "h4", positionRevision: game.positionRevision }, now + 4000);
+      result = applyBotMove(game, { from: "d8", to: "h4" }, now + 4000);
 
       expect(result).toHaveProperty("game");
       if ("game" in result) {
@@ -337,7 +338,7 @@ describe("Chess Coordinator", () => {
       const state = initializeChessRound(roundId, [playerId], now);
       const game = state.games[playerId];
 
-      const snapshot = projectGuestSnapshot(game);
+      const snapshot = projectGuestSnapshot(game, false);
 
       expect(snapshot.gameId).toBe(game.gameId);
       expect(snapshot.fen).toBe(game.fen);
