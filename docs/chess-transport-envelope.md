@@ -25,12 +25,18 @@ Content-Type: application/json
 
 ### Bot Moves (Casual Trust)
 
-Bot moves use the **same** `chess-move` command. The server infers bot vs player move from gameId ownership:
+**CRITICAL SECURITY:** Every player submits moves **ONLY for their OWN game**. They submit BOTH human moves (when it's their turn) AND bot moves (when it's bot's turn).
 
-- **Player move:** `gameId` format is `{roundId}-{playerId}` where playerId matches credential
-- **Bot move:** `gameId` is opponent's game (playerId does NOT match credential)
+Bot moves use the **same** `chess-move` command. The server determines human vs bot path from `game.sideToMove`:
 
-Server validates `positionRevision` for BOTH player and bot moves. Side to move is inferred from game state, NOT trusted from client.
+- **Human move:** `game.sideToMove === game.playerColor` — validates legality as player's move
+- **Bot move:** `game.sideToMove === game.botColor` — validates legality as bot's move
+
+**Ownership validation:** Server ALWAYS validates `game.playerId === authenticatedPlayerId` BEFORE either path. Attempting to submit moves for another player's game is rejected with `"Not your game"`.
+
+**Casual trust:** Guest chooses bot moves for their OWN game (computed locally via Stockfish), never controls other players' games.
+
+Server validates `positionRevision` for BOTH player and bot moves. Stale commands are rejected regardless of path.
 
 ### Resign Command
 

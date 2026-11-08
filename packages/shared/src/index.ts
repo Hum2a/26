@@ -95,6 +95,7 @@ export type { FunFactCard, StatCard } from "./stats.ts";
 export { resultsStatusSchema } from "./archive.ts";
 export type { ResultsStatus } from "./archive.ts";
 export * from "./chess-schemas.ts";
+export * from "./chess-params.ts";
 export {
   emailVerifyTtlMs,
   galleryAttribution,
@@ -403,6 +404,15 @@ export const pushPublicSchema = z
   .strict();
 
 export const publicQuestionSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      ...publicQuestionCore,
+      kind: z.literal("chess"),
+      // 1+0 time control: 1 minute per player, no increment
+      playerTimeMs: z.literal(60000),
+      botTimeMs: z.literal(60000),
+    })
+    .strict(),
   z
     .object({
       ...publicQuestionCore,
@@ -805,6 +815,8 @@ export const playSnapshotSchema = z
   .object({
     question: publicQuestionSchema,
     kart: kartRaceSchema.optional(),
+    /** Chess: per-audience snapshot. See chess-schemas.ts. */
+    chess: z.unknown().optional(),
     submissionCount: z.number().int().nonnegative(),
     selfAnswer: selfAnswerSchema,
     selfBallot: z

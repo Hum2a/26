@@ -191,6 +191,7 @@ export default defineConfig({
             "test/kart-slipstream.spec.ts",
             "test/chess-coordinator.spec.ts",
             "test/chess-review-regressions.spec.ts",
+            "test/chess-security.spec.ts",
             "test/kart-race-laps.spec.ts",
             "test/kart-cpu.spec.ts",
             "test/kart-launch.spec.ts",

@@ -4861,30 +4861,11 @@ function acceptRoundCommand(
     if (!question || question.kind !== "chess") {
       return { ok: false, message: "Not a chess round" };
     }
-    const { executeChessMove, executeBotMove } = require("../questions/chess-mechanic.ts");
+    const { executeChessMove } = require("../questions/chess-mechanic.ts");
     
-    // Determine if this is a bot move (gameId format: roundId-playerId, move is for opponent's game)
-    // Bot moves: submitted by player whose turn it is NOT, for their opponent's game
-    const gameIdParts = command.gameId.split("-");
-    const gameOwnerId = gameIdParts.slice(1).join("-"); // Extract playerId from gameId
-    
-    if (gameOwnerId !== playerId) {
-      // Bot move: player submitting for opponent's game
-      const result = executeBotMove(
-        sql,
-        store,
-        command.gameId,
-        { from: command.from, to: command.to, promotion: command.promotion },
-        command.positionRevision,
-        now
-      );
-      if (!result.success) {
-        return { ok: false, message: result.error };
-      }
-      return { ok: true };
-    }
-    
-    // Player move: normal flow with ownership validation
+    // CRITICAL: Player can ONLY submit moves for their OWN game.
+    // Server determines human vs bot path from game.sideToMove.
+    // Casual trust: guest chooses bot moves for own game, never other players' games.
     const result = executeChessMove(sql, store, command, playerId, now);
     if (!result.success) {
       return { ok: false, message: result.error };
