@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawnSync, execSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -31,6 +31,24 @@ const argv = process.argv.slice(2);
 const command = readCommand(argv);
 const dryRun = argv.includes("--dry-run");
 
+function readGitState(): { branch: string; clean: boolean } {
+  try {
+    const branch = execSync("git rev-parse --abbrev-ref HEAD", {
+      cwd: root,
+      encoding: "utf8",
+    }).trim();
+    const status = execSync("git status --porcelain", {
+      cwd: root,
+      encoding: "utf8",
+    }).trim();
+    return { branch, clean: status === "" };
+  } catch {
+    // Git not available or not a repo - allow deploy to proceed
+    // (CI environments may not have git history)
+    return { branch: "unknown", clean: true };
+  }
+}
+
 if (command === "migrate") {
   const environment = resolveMigrateEnvironment(
     readTargetEnvironment(process.argv) ?? argv[1],
@@ -49,6 +67,7 @@ if (command === "migrate") {
         overrideFreeze: argv.includes("--override-freeze"),
       },
       Date.now(),
+      readGitState(),
     );
     if (!dryRun && !argv.includes("--skip-checks")) {
       console.log("Checking the release before any migrations or deployment.");
