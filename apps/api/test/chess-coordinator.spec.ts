@@ -7,7 +7,7 @@ import {
   calculateChessScore,
   projectGuestSnapshot,
   updateRoundAggregates,
-} from "./chess-coordinator.ts";
+} from "../src/questions/chess-coordinator.ts";
 
 describe("Chess Coordinator", () => {
   const now = Date.now();

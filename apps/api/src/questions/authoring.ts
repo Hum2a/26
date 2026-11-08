@@ -4,7 +4,6 @@ import {
   missingRequirements,
   type Answer,
   type AttributionMode,
-  type AuthoredChess,
   type AuthoredKart,
   type AuthoredChoice,
   type AuthoredDuel,
@@ -18,7 +17,6 @@ import {
   type AuthoredVote,
   type ChoiceOutcome,
   type ChoiceQuestion,
-  type ChessQuestion,
   type DuelQuestion,
   type FinaleQuestion,
   type GuessQuestion,
@@ -396,6 +394,20 @@ export function chessQuestion(
     incrementMs?: number;
   },
 ): AuthoredChess {
+  // Validate time controls - only 1+0 (60000ms, no increment) is supported
+  const initialTimeMs = input.initialTimeMs ?? 60_000;
+  const incrementMs = input.incrementMs ?? 0;
+
+  if (initialTimeMs !== 60_000) {
+    throw new Error(
+      `Chess only supports 1+0 time control. initialTimeMs must be 60000, got ${initialTimeMs}`,
+    );
+  }
+
+  if (incrementMs !== 0) {
+    throw new Error(`Chess only supports no increment. incrementMs must be 0, got ${incrementMs}`);
+  }
+
   return finish(
     {
       ...shared(
@@ -407,8 +419,8 @@ export function chessQuestion(
         input.points ?? 100,
       ),
       kind: "chess",
-      initialTimeMs: input.initialTimeMs ?? 60_000, // 1+0 default
-      incrementMs: input.incrementMs ?? 0,
+      initialTimeMs: 60_000, // Fixed 1+0
+      incrementMs: 0,
     },
     input.status,
   );

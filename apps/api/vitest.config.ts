@@ -189,6 +189,7 @@ export default defineConfig({
             // Race-feel specs added on 8 November 2026; they were not registered
             // here before, so they had not been running.
             "test/kart-slipstream.spec.ts",
+            "test/chess-coordinator.spec.ts",
             "test/kart-race-laps.spec.ts",
             "test/kart-cpu.spec.ts",
             "test/kart-launch.spec.ts",

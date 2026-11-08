@@ -5,15 +5,17 @@
 
 import { Chess } from "chess.js";
 import type {
-  ChessPlayerGame,
-  ChessRoundState,
   ChessGuestSnapshot,
   ChessStageSnapshot,
   ChessControlSnapshot,
   ChessMoveCommand,
   ChessGameStatus,
   ChessColor,
+  ChessPlayerGame,
+  ChessRoundState,
 } from "@26/shared";
+
+export type { ChessPlayerGame, ChessRoundState } from "@26/shared";
 
 /**
  * Initialize a new chess round for all active participants.
@@ -88,8 +90,17 @@ export function applyChessMove(
     return applyTimeout(game, "player", now);
   }
 
-  // Validate move with chess.js
-  const chess = new Chess(game.fen);
+  // Rehydrate chess instance with full history for repetition detection
+  const chess = new Chess();
+  // Load moves from PGN to rebuild history
+  if (game.pgn) {
+    chess.loadPgn(game.pgn);
+  } else {
+    // Initial position - load FEN
+    chess.load(game.fen);
+  }
+
+  // Apply the new move
   try {
     const move = chess.move({
       from: command.from,
@@ -109,7 +120,7 @@ export function applyChessMove(
   const newPgn = chess.pgn();
   const updatedPlayerTime = playerTimeRemaining; // Player's time after their move
 
-  // Check for terminal conditions
+  // Check for terminal conditions (chess instance has full history)
   const terminalStatus = checkTerminal(chess);
   if (terminalStatus) {
     return {
@@ -168,8 +179,15 @@ export function applyBotMove(
     return applyTimeout(game, "bot", now);
   }
 
-  // Validate move with chess.js
-  const chess = new Chess(game.fen);
+  // Rehydrate chess instance with full history for repetition detection
+  const chess = new Chess();
+  if (game.pgn) {
+    chess.loadPgn(game.pgn);
+  } else {
+    chess.load(game.fen);
+  }
+
+  // Apply bot move
   try {
     const move = chess.move({
       from: botMove.from,
@@ -188,7 +206,7 @@ export function applyBotMove(
   const newPgn = chess.pgn();
   const updatedBotTime = botTimeRemaining;
 
-  // Check for terminal conditions
+  // Check for terminal conditions (chess instance has full history)
   const terminalStatus = checkTerminal(chess);
   if (terminalStatus) {
     return {
@@ -246,6 +264,8 @@ export function resignGame(
 
 /**
  * Check for terminal game conditions.
+ * IMPORTANT: Pass the chess instance that has been used for all moves (with history).
+ * Creating a new Chess(fen) loses repetition history.
  */
 function checkTerminal(
   chess: Chess,
@@ -285,7 +305,7 @@ function checkTerminal(
     };
   }
 
-  // Threefold repetition
+  // Threefold repetition (requires full move history, not just FEN)
   if (chess.isThreefoldRepetition()) {
     return {
       status: "threefold-repetition",
@@ -494,7 +514,8 @@ export function projectControlSnapshot(
 
 function determineEvent(
   game: ChessPlayerGame,
-): "checkmate-win" | "checkmate-loss" | "draw" | "timeout" | "resign" {
+): "checkmate-win" | "checkmate-loss" | "draw" | "timeout" | "resign" | "abort" {
+  if (game.status === "aborted") return "abort";
   if (game.status === "resignation") return "resign";
   if (game.status === "timeout" || game.status === "timeout-draw") return "timeout";
   if (game.status === "checkmate") {

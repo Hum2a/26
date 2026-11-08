@@ -9,16 +9,17 @@
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
+    "@26/emails": "0.0.0",
     "@26/shared": "0.0.0",
     "@electric-sql/pglite": "0.5.8",
     "@neondatabase/serverless": "1.1.0",
     "aws4fetch": "1.0.20",
     "better-auth": "1.7.5",
+    "chess.js": "1.4.0",
     "hono": "4.13.8",
     "jpeg-js": "0.4.4",
     "kysely": "0.29.6",
-    "resend": "6.28.1",
-    "@26/emails": "0.0.0"
+    "resend": "6.28.1"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.4.11",
