@@ -79,7 +79,7 @@ describe("Chess Ownership Contract", () => {
     currentRevision = 11;
 
     // Bestmove callback must use CAPTURED revision, not current
-    const submitBotMove = (from: string, to: string, revision: number) => {
+    const submitBotMove = (_from: string, _to: string, revision: number) => {
       expect(revision).toBe(10); // Captured at dispatch, not current 11
     };
 
