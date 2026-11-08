@@ -19,6 +19,27 @@ export function hiddenAuthors(sql: SqlStorage, questionId: string): Set<string> 
 }
 
 /**
+ * Whether `authorId`'s written answer to `questionId` may be quoted on a public
+ * screen: the host has not hidden it, and, on a vote, its card is on the
+ * ballot (a shortlist answer the host never shortlisted was never public).
+ */
+export function quotableAnswer(
+  sql: SqlStorage,
+  questionId: string,
+  authorId: string,
+): boolean {
+  if (hiddenAuthors(sql, questionId).has(authorId)) return false;
+  return sql
+    .exec<{ included: number }>(
+      `SELECT included FROM vote_candidate WHERE question_id = ? AND owner_id = ?`,
+      questionId,
+      authorId,
+    )
+    .toArray()
+    .every((row) => row.included === 1);
+}
+
+/**
  * Hides or restores `authorId`'s answer and every other answer with the same
  * text (ignoring case and spacing), so hidden text cannot survive under a
  * duplicate. Returns the authors whose state changed group.
