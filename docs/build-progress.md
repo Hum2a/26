@@ -5746,6 +5746,44 @@ Not verified: neither new clip was played in a browser, and the theme sting has 
 
 Next: listen to both clips, then supply sounds from the README asset table, starting with Call from Mum.
 
+## 7 November 2026 — troll asset pack wired in
+
+Status: the supplied troll asset pack (`troll-assets-26`, from Wikimedia Commons) is wired into twelve trolls: nine phone gags and three stage cues. Not committed.
+
+What plays where:
+
+- Phone, on the target's phone only: Call from Mum (`03` photo in the call screen, `01` ringtone until Answer or Decline, `02` voice once on Answer; vibration kept), Bubble wrap (`04` per press), Notification storm (`05b` per notification, `05` if 05b fails to load), Confetti cannon (`06`), Fake crash (`07`), AirDrop spam (`08` per request), 1% battery (`09`), Fake last place (`10` as the LAST row lands), Fake exit (`11` as the exit screen appears).
+- Stage, on the projector only: Sponsor break (`12` as its cue starts), Speech! (`13` with the 8 s floor cue, then a new queued "A round of applause for …" cue with `13b`, using the same two-cue pattern as Fake exit), Zoom and enhance (`14` as its cue starts, which is when the zoom begins).
+
+Files:
+
+- `apps/web/public/assets/trolls/`: the 15 selected MP3s and `03_call-from-mum_photo_web.jpg`, with their pack names, 1.2 MB in all, plus `CREDITS.txt`. Not shipped: `02b`, `10b`, `originals/` and `preview_montage.mp3`.
+- `CREDITS.txt` (served at `/assets/trolls/CREDITS.txt`) gives each file's creator, Commons page, licence and link, and the edits made. The pack transcoded every file to 160 kbps MP3 and normalised it to −16 LUFS, trimmed `01` to 8 s of 24 s and cut `09` to one 1.2 s chirp of 37 s, and recompressed the photo at 795×1000. This project made no further edits. It keeps the CC BY-SA 3.0/4.0 notice for the adapted `01`, `04`, `12` and `14` and says the pack is not all CC0. `docs/licenses/troll-assets.md` points to it. The Gravity Sound entries in `SOURCES.md` had a dangling `[1]` origin reference, so they are credited by creator and Commons page.
+- `apps/web/src/device/audio.ts`: `layerUrl(url, { maxVoices, minGapMs })` lets short sounds overlap. It caches each decoded clip, keeps a failed load failed (so a missing file is fetched once), returns `played`, `skipped` or `failed`, and gives a failed slot back so a fallback can play at once. `stop` and `dispose` end layered voices too. `playUrl` is unchanged.
+- `apps/web/src/troll/troll-sound.ts`: `TrollSoundContext` (default: the shared phone troll output), `useTrollClip(url, delayMs)` and `useTrollLayer(limits)`. A layer's fallback runs only on `failed`, never when the limits skipped it.
+- `apps/web/src/troll/troll-assets.ts`: every phone troll file path, including the earlier Netanyahu and glass files.
+- Gags: `classic-trolls.tsx` (call, crack), `screen-trolls.tsx` (Netanyahu, bubble wrap, crash, notifications, confetti), `chrome-trolls.tsx` (battery, AirDrop), `identity-trolls.tsx` (exit, last place). `phone-gags.css` crops the painting to Mum's face in the round avatar; a failed photo falls back to the letter M.
+- `apps/api/src/troll/catalogue.ts`: `trollStageSounds` and `speechApplauseMs` (6 s). `engine.ts` sets `audioAsset` on the sponsor, zoom and speech cues and queues the applause cue.
+- The troll README's Assets table now says what each troll plays and when.
+
+Decisions:
+
+- Answered call lines are now 1.6 s apart instead of 1.4 s, so the call lasts 6.4 s and does not hang up on the 6.1 s voice line. The existing call test steps by 1.6 s to match.
+- Limits: bubble pops up to 4 at once with no gap, so every press is heard. Notification dings 2 at once and at least 0.3 s apart. AirDrop chimes 2 at once and at least 0.5 s apart.
+- Phones still have no mute or volume control; the phone's own volume and silent switch are the control. Stage sounds stay under the stage's Start show and mute. Guests never get stage sounds, and only the target's phone plays a phone gag.
+- The applause cue goes through the normal cue queue, so the stage's three-cue limit can drop it on a crowded scores screen.
+
+Commands and results:
+
+- Web: `src/troll`, `src/device/audio.test.ts`, `src/admin/troll-rehearsal.test.tsx`, `src/api/asset-cache.test.ts` and `src/admin/features.test.ts`, all passed. New tests check each gag's file and moment, ringtone to voice on Answer, stop on Decline and unmount, the delayed trombone being dropped if the gag ends early, the M fallback, layer caps, gaps, cached failures, fallback only on failure, and that `assets/trolls/` holds exactly the selected files plus credits.
+- API: `troll-theatre`, `stage-effects`, `troll-catalogue` and `content-preflight`, 17 tests passed. Speech now checks the drumroll cue plays and the applause cue is queued with `13b`; the sponsor test checks the jingle.
+- `npx tsc -b`: no errors. ESLint on the changed files: no errors; six existing fast-refresh warnings in the troll files. `npm run content:check`: passed.
+- `npm run test:unit`: 175 files, 742 tests passed, exit 0, on the final code.
+- `npm run build`: passed, including the artifact check and content preflight, with only the existing chunk-size warnings. It ran before the final tweak to the Mum photo's crop offsets in `phone-gags.css` and was not rerun after it.
+- The crop was checked by rendering the same window of the painting with ffmpeg, not in the real call screen.
+
+Not verified: no clip was played in a browser or on a phone, and no stage cue was heard on the projector. The zoom cue's beep has no test of its own.
+
 ## 8 November 2026 — kart races that feel like races, and local agent sign-in
 
 Status: the plan in `docs/kart-race-feel-plan.md` (R1–R8) is built. A kart-only lobby can now run a one, two or three lap race with slipstream between karts. Phones get a race HUD, banners, a finish moment and optional sound and buzzes. The projector has a race director that announces lead changes, laps and finishers. Released packs, including the birthday one-lap sprint, are unchanged.
@@ -5803,6 +5841,35 @@ Not verified: real phones, so the haptics and Web Audio sound have not been hear
 
 Next: race two phones on staging with three Park laps, tune slipstream by feel, then decide on rocket starts.
 
+## 8 November 2026 — host moderation and photo-wall reliability
+
+Status: implemented and uncommitted. Typed-answer screening, host hide/restore for publicly shown written answers, all-answer ballot exclusion with restore, and recovery from a wall photo that fails on the projector.
+
+Typed and written answers:
+
+- `blockedAnswer` in `packages/shared/src/moderation.ts` refuses identity slurs only. Nicknames keep their stricter list (`blockedNickname` is unchanged): swearing, explicit terms and dark jokes pass in answers. "fag" is nickname-only because it is also a cigarette. Answers match inside each word, not across the whole answer joined up ("fag got" is not a slur), join runs of single letters, catch plurals, and exempt "snigger" and "niggard".
+- `checkTypedAnswer` (`typed.ts`) and `acceptText` (`vote.ts`) refuse a match with `answerBlockedMessage`. Nothing is stored; the receipt keeps only the message, so the phone can send a new answer while the round is open.
+
+Host hide/restore (the existing `exclude`/`include` commands, now routed through `questions/answer-moderation.ts`):
+
+- Shortlist ballots: unchanged.
+- All-answer ballots (`moderateAnswer` in `vote.ts`): allowed while answers are collected and while votes are cast; refused from the reveal on (`moderationClosedMessage`), and for a bracket/awards vote once voting starts (`moderationFlowMessage`). Hiding one answer hides every answer with the same text (`passwordKey`); restoring any of them restores the group.
+- Existing ballots: kept in `vote_ballot`. While their answer is hidden they do not count, cannot make it win and are not shown; the voter keeps their single vote. Restoring before the vote closes makes them count again. Settled scores are never rewritten.
+- Typed commonness questions (the only typed format that shows answers in public): hide/restore during collect, reveal and scores. The reveal groups leave hidden text out; counts and scores are unchanged. Other typed questions return `moderationNotShownMessage`.
+- State: `round_state` `<question>` / `hidden-authors` plus the existing `vote_candidate.included`. No schema migration. `stats/source.ts` drops ballots for excluded answers, so results highlights cannot republish them.
+- Admin live console: Hide/Restore buttons where the room allows them, a "(hidden from guests and the stage)" marker, and a note on the duplicate and ballot rules. Notices now read "That answer is shown to guests and the stage." and "That answer is hidden from guests and the stage. It is still stored." (`e2e/quiz.spec.ts` updated to the new text).
+
+Photo wall:
+
+- The projector's presentation credential is the plan's "limited presentation credential", issued only through the administrator's room resume and sent only as an HttpOnly cookie. It now has one narrow command, `wall-image-failed` with a post id. The room accepts it only from the presentation socket and only for the post showing now (`reportWallImageFailed` in `wall/moderation.ts`). It brings that post's deadline forward to two seconds after it started (`wallFailedShowMs`), and `syncWall` with the `wall-advance` job moves on as normal. Repeats, stale posts, unknown ids, guest phones and the control socket are refused with `wallImageReportMessage`. No host credential is exposed and no host command check changed.
+- `FramedPhoto` keys the image by source and calls `onFailed` once per source; `StageWall` reports once per post; only `stage-page.tsx` passes the callback. Guest and admin previews just show "This photo could not be shown." A run of broken photos moves at most one every two seconds; healthy photos keep their full time.
+
+Tests added: `apps/api/test/answer-moderation.spec.ts` (8), `apps/api/test/wall-failure.spec.ts` (2), both registered in `apps/api/vitest.config.ts`; answer screening in `apps/web/src/guest/moderation.test.ts`; console controls in `live-console.test.tsx` (4); wall failure in `stage-wall.test.tsx` (3) and `stage-page.test.tsx` (1). `vote.spec.ts`: an early `include` on an all-answer ballot now returns "That answer is not in this round." instead of "The ballot is already frozen."
+
+Not changed, and still able to quote answer text on the stage: the Public vote and Misattributed troll cues read `vote_candidate.label` and `text_response.body` directly (`apps/api/src/troll/engine.ts` around lines 1216 and 1244), so they could show a hidden answer. Troll files were out of scope.
+
+Fixed while testing: the wall spotlight's entrance animated `rotate: [-8, 3, -1.5, 0]` with a spring, which Motion refuses ("Only two keyframes currently supported with spring"). The first full unit run hit it as an uncaught exception once the new tests waited on a mounted spotlight (175 files, 752 tests passed, exit 1). `rotate` now has its own tween with the same keyframes.
+
 ## 8 November 2026 — rocket starts, CPU racers, position luck and the last "hold A" wording
 
 Status: the three items the race-feel plan had left out are built (R9–R11 in `docs/kart-race-feel-plan.md`). The last user-facing "hold A" wording is gone. Each group was committed on its own, as the owner asked, with testing done at the end.
@@ -5845,3 +5912,26 @@ Status: corrections on a new branch from master `fbbf587`. PR #8 had already bee
 - Docs: the safeguard tables now cover staging-only and dry-run deploys, standalone migrate and raw vendor commands.
 
 Checks: `npm run test:release` 79 of 79 passed (was 65) on Windows. `npm run format:check`, `npm run typecheck` and ESLint on the changed scripts passed. `tsc -b` does not cover `scripts/`; an ad-hoc `tsc --ignoreConfig --strict --module nodenext --allowImportingTsExtensions --types node --allowJs` over the release scripts and tests passed. Not run: the full approved `full` route, because it reads the real `.dev.vars.<env>` secret files; a Linux run of the new harness.
+
+## 8 November 2026 — photo wall failure polish
+
+Status: uncommitted, on top of the earlier projector failure report (see "host moderation and photo-wall reliability" above), which already advanced a broken photo through the room's own rotation. This pass checked that work against the reliability brief, polished the fallback and filled the test gaps.
+
+- `FramedPhoto` (`apps/web/src/wall/framed-photo.tsx`, `wall.css`): a photo that will not load shows a Lucide "image off" icon and "This photo could not be shown." in its frame. The frame keeps its height and the card fades in (opacity only; 0.15 s under reduced motion). Only where a failure report is sent (the projector) does it add "Moving on in a moment."
+- `StageWall`: it passes a failure callback to the photo only when the projector supplies `onImageFailed`, so another screen never claims the wall is moving on.
+- Permission model, unchanged: only the projector's presentation socket may send `wall-image-failed`, only for the post showing in its own room. The room brings that post's deadline forward to two seconds after it started, and the normal `syncWall` and `wall-advance` alarm move on. Guests, the control socket, stale, repeated, unknown and other-room reports change nothing. Host Skip and Show next now are unchanged.
+- New tests. `apps/api/test/wall-failure.spec.ts` (now 6): host Skip after a report, with the next photo at full time and the skipped photo's late report ignored; the last broken photo leaving an empty wall with no wake-up; reports ignored with the wall switched off; a reconnected projector's repeat ignored; storage, the wake-up and stage and control snapshots agreeing before and after eviction; another room's projector unable to end this room's photo, and its credential refused here. `stage-wall.test.tsx`: the projector-only note, one report however many error events fire, and a late error from the previous photo never reporting the next.
+
+Checks: wall API specs (failure, queue, moderation, snapshot, results, load, upload) 7 files, 29 tests passed; `wall-engine.spec.ts` 8 passed; wall and stage web tests 5 files, 31 passed; `npm run typecheck`, `npm run build` (with content preflight) passed; ESLint on the wall and stage folders: no errors, the 3 existing fast-refresh warnings in `framed-photo.tsx`.
+
+Not built (from `docs/photo-wall-plan.md`): a 4-second timeout for a photo that never fires an error (it keeps its normal time), and a "Couldn't display" note on the host's wall page. A round pause was not tested directly; the report path does not read the pause state, and background wall jobs already run while a round is paused. Not checked in a real browser.
+
+## 8 November 2026 — staging and production release of cbd1e6c
+
+`master` at `cbd1e6c` (PR #9 merged) was deployed with `npm run deploy:both -- --confirm-production` from a clean checkout. Staging version `6317ea2b-ea31-4079-8992-8abd1d3d989d`, production version `09181ecb-af1a-48f8-96df-e33f00ee272d`. No migration ran and no secret was uploaded. `/api/health` reports `0.0.5` on both, because `npm run release` was not requested.
+
+Uncommitted work in the checkout was set aside in a tagged stash for the deploy, so only committed `master` shipped, and was restored afterwards. A first attempt stopped at the lint check before deploying anything: `eslint .` also scanned a review worktree inside `.claude/worktrees/`. That worktree was removed and the rerun passed every check: typecheck, content, unit (175 files, 725 tests), lint (0 errors, 27 warnings) and release (79 tests).
+
+Checked after deploy: health, `/`, `/join`, `/admin` and `/kart` return 200 on both sites, and `/assets/theme-song.mp3` and `/assets/netanyahu.webp` serve as audio and image. The troll pack's `/assets/trolls/` files were not in this release (that path serves the app page).
+
+The troll pack, host moderation and photo-wall recovery were then committed on `master` (`23bea04`, `2609b5d`, `809f9c1`) and are not deployed. `npm run format:check` still fails on `apps/web/e2e/kart-solo.spec.ts`, as on `master` before; the deploy checks do not run it.
