@@ -356,7 +356,7 @@ function persistGame(sql: SqlStorage, game: ChessPlayerGame): void {
       status, winner, terminated_at, termination_reason, scored
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     game.gameId,
-    game.gameId.split("-")[0], // Extract roundId
+    game.gameId.slice(0, game.gameId.length - game.playerId.length - 1), // Extract roundId
     game.playerId,
     game.fen,
     game.pgn,
