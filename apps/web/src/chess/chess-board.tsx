@@ -138,7 +138,6 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
                   aria-label={`${file}${rank}${piece ? ` ${getPieceName(piece)}` : ""}`}
                 >
                   {piece && <span className="chess-piece">{getPieceSymbol(piece)}</span>}
-                  {isLegalMove && <span className="legal-move-indicator" />}
                 </button>
               );
             })}
