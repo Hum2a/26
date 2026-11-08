@@ -29,15 +29,15 @@ export function ChessAdminPage() {
     );
   }
 
+  // ChessStageSnapshot shape: { totalGames, inProgress, finished, results: { playerWins, botWins, draws, aborts } }
   const { 
     totalGames, 
-    gamesInProgress, 
-    gamesFinished,
-    whiteWins,
-    blackWins,
-    draws,
-    aborts 
+    inProgress: gamesInProgress, 
+    finished: gamesFinished,
+    results,
   } = chessSnapshot;
+  
+  const { playerWins, botWins, draws, aborts } = results;
 
   return (
     <Panel title="Chess Round" display="admin">
@@ -66,11 +66,11 @@ export function ChessAdminPage() {
             <dl className="grid grid-cols-4 gap-4">
               <div>
                 <dt className="text-sm text-muted-foreground">Player Wins</dt>
-                <dd className="text-2xl font-bold">{whiteWins}</dd>
+                <dd className="text-2xl font-bold">{playerWins}</dd>
               </div>
               <div>
                 <dt className="text-sm text-muted-foreground">Bot Wins</dt>
-                <dd className="text-2xl font-bold">{blackWins}</dd>
+                <dd className="text-2xl font-bold">{botWins}</dd>
               </div>
               <div>
                 <dt className="text-sm text-muted-foreground">Draws</dt>
