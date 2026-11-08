@@ -827,13 +827,14 @@ export function openRoomSocket(options: {
       requestId: crypto.randomUUID(),
       command: {
         kind: "chess-move",
+        requestId: crypto.randomUUID(),
         gameId: params.gameId,
         from: params.from,
         to: params.to,
         ...(params.promotion ? { promotion: params.promotion } : {}),
         positionRevision: params.positionRevision,
       },
-    });
+    } as any);
   }
 
   function submitChessResign(params: ChessResignParams): string {
@@ -842,9 +843,10 @@ export function openRoomSocket(options: {
       requestId: crypto.randomUUID(),
       command: {
         kind: "chess-resign",
+        requestId: crypto.randomUUID(),
         gameId: params.gameId,
       },
-    });
+    } as any);
   }
 
   function close() {

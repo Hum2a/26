@@ -69,7 +69,6 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
         // Let parent handle promotion detection and chooser
         onMove(selectedSquare, square);
         setSelectedSquare(null);
-        setLegalMoves([]);
         return;
       }
 
@@ -79,16 +78,12 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
         const pieceColor = clickedPiece === clickedPiece.toUpperCase() ? "white" : "black";
         if (pieceColor === snapshot.playerColor) {
           setSelectedSquare(square);
-          // Note: legal moves would need server API or client chess.js instance
-          // For now, selection visual only - server validates legality
-          setLegalMoves([]);
           return;
         }
       }
 
       // Deselect
       setSelectedSquare(null);
-      setLegalMoves([]);
     },
     [isInteractive, selectedSquare, board, snapshot, onMove],
   );
@@ -130,7 +125,6 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
               const piece = getPieceAt(board, square);
               const isLight = (files.indexOf(file) + rank) % 2 === 0;
               const isSelected = selectedSquare === square;
-              const isLegalMove = legalMoves.includes(square);
 
               return (
                 <button
@@ -138,13 +132,12 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
                   type="button"
                   className={`chess-square ${isLight ? "light" : "dark"} ${
                     isSelected ? "selected" : ""
-                  } ${isLegalMove ? "legal-move" : ""}`}
+                  }`}
                   onClick={() => handleSquareClick(file, rank)}
                   disabled={!isInteractive}
                   aria-label={`${file}${rank}${piece ? ` ${getPieceName(piece)}` : ""}`}
                 >
                   {piece && <span className="chess-piece">{getPieceSymbol(piece)}</span>}
-                  {isLegalMove && <span className="legal-move-indicator" />}
                 </button>
               );
             })}

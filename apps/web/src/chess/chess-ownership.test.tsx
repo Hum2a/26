@@ -79,7 +79,7 @@ describe("Chess Ownership Contract", () => {
     currentRevision = 11;
 
     // Bestmove callback must use CAPTURED revision, not current
-    const submitBotMove = (from: string, to: string, revision: number) => {
+    const submitBotMove = (_from: string, _to: string, revision: number) => {
       expect(revision).toBe(10); // Captured at dispatch, not current 11
     };
 
@@ -108,16 +108,17 @@ describe("Chess Ownership Contract", () => {
       isGameOver: false,
     };
 
-    const mockSubmit = vi.fn((gameId: string, _from: string, _to: string) => {
+    const mockSubmit = vi.fn((submittedGameId: string) => {
       // CRITICAL: gameId must be ownGameId, NEVER opponentGameId
-      expect(gameId).toBe(ownGameId);
-      expect(gameId).not.toBe(opponentGameId);
+      expect(submittedGameId).toBe(ownGameId);
+      expect(submittedGameId).not.toBe(opponentGameId);
+      return crypto.randomUUID();
     });
 
     // Bot move submission
-    mockSubmit(snapshot.gameId, "e7", "e5");
+    mockSubmit(snapshot.gameId);
 
-    expect(mockSubmit).toHaveBeenCalledWith(ownGameId, "e7", "e5");
+    expect(mockSubmit).toHaveBeenCalledWith(ownGameId);
   });
 
   it("rejects stale bot move with old positionRevision", () => {

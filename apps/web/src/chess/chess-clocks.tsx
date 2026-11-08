@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import type { ChessGuestSnapshot } from "@26/shared";
-import { useServerTimeOffset } from "../live/server-clock";
+import { serverOffset } from "../live/server-clock";
 
 /**
  * Running chess clocks with server-time interpolation.
- * Uses lastMoveAt + server time offset to avoid drift.
+ * Uses lastMoveAt + serverOffset to avoid drift.
  */
 export function ChessClocks({ snapshot }: { snapshot: ChessGuestSnapshot }) {
-  const serverOffset = useServerTimeOffset();
   const [now, setNow] = useState(Date.now);
 
   useEffect(() => {
@@ -15,8 +14,9 @@ export function ChessClocks({ snapshot }: { snapshot: ChessGuestSnapshot }) {
     return () => clearInterval(timer);
   }, []);
 
-  // Calculate elapsed time since last move using server time
-  const serverNow = now + serverOffset;
+  // Calculate elapsed time since last move using server clock
+  const offset = serverOffset(now) ?? 0;
+  const serverNow = now + offset;
   const elapsed = snapshot.paused ? 0 : Math.max(0, serverNow - snapshot.lastMoveAt);
 
   // Subtract elapsed from the active clock
