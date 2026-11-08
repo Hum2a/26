@@ -105,6 +105,7 @@ import {
   transferLimitMessage,
   transferTtlMs,
   transferUsedMessage,
+  wallImageReportMessage,
 } from "./limits.ts";
 import {
   acceptAnswer,
@@ -188,7 +189,7 @@ import { wallMediaViewable } from "../wall/access.ts";
 import { wallSnapshot } from "../wall/snapshot.ts";
 import { syncWall } from "../wall/queue.ts";
 import { seedSampleRoom, type SampleMedia } from "./sample.ts";
-import type { WallSettingsChange } from "../wall/moderation.ts";
+import { reportWallImageFailed, type WallSettingsChange } from "../wall/moderation.ts";
 
 type WallCommand =
   | {
@@ -2535,6 +2536,15 @@ export class PartyRoom extends DurableObject<Env> {
     if (!command) {
       return;
     }
+    if (command.name === "wall-image-failed") {
+      await this.acceptWallImageFailure(
+        ws,
+        attachment,
+        command.requestId,
+        command.postId,
+      );
+      return;
+    }
     if (command.name === "kart-recover" || command.name === "kart-use-item") {
       await this.acceptKartAction(
         ws,
@@ -2851,6 +2861,36 @@ export class PartyRoom extends DurableObject<Env> {
     }
     this.broadcast();
     return result;
+  }
+
+  /**
+   * The projector's report that the wall photo it was told to show did not
+   * load. Only the presentation socket may send it; a guest or the control
+   * screen is refused. It cannot pick a photo: the room checks the post is the
+   * one showing and ends it through the normal rotation (`reportWallImageFailed`).
+   */
+  private async acceptWallImageFailure(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    requestId: string,
+    postId: unknown,
+  ): Promise<void> {
+    let accepted = false;
+    if (attachment.role === "presentation") {
+      await commitAndArm(this.ctx.storage, (sql) => {
+        accepted = reportWallImageFailed(sql, postId, Date.now());
+      });
+    }
+    this.send(ws, {
+      kind: "ack",
+      scope: "private",
+      requestId,
+      accepted,
+      ...(accepted ? {} : { error: wallImageReportMessage }),
+    });
+    if (accepted) {
+      this.broadcast();
+    }
   }
 
   private async acceptKartAction(
@@ -4847,6 +4887,7 @@ function readCommand(body: unknown):
       keep: unknown;
     }
   | { requestId: string; name: "wall-withdraw"; postId: unknown }
+  | { requestId: string; name: "wall-image-failed"; postId: unknown }
   | {
       requestId: string;
       name: "wall-react";
@@ -4959,6 +5000,13 @@ function readCommand(body: unknown):
     return {
       requestId: record.requestId,
       name: "wall-withdraw",
+      postId: record.postId,
+    };
+  }
+  if (record.name === "wall-image-failed") {
+    return {
+      requestId: record.requestId,
+      name: "wall-image-failed",
       postId: record.postId,
     };
   }

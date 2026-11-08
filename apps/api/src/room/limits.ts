@@ -137,6 +137,8 @@ export const wallPostMissingMessage = "That photo is no longer on the wall.";
 export const wallFrameMessage = "Choose one of the frames.";
 export const wallDecidedMessage = "That photo has already been dealt with.";
 export const wallNothingShowingMessage = "Nothing is on the photo wall right now.";
+/** The projector reported a photo that is no longer on screen, or reported it twice. */
+export const wallImageReportMessage = "That photo is no longer on screen.";
 export const wallSettingsMessage = "Those photo wall settings were not accepted.";
 export const wallReactionsPerPhoto = 20;
 export const wallReactionGapMs = 300;

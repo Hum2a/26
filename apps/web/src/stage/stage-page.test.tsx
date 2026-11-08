@@ -45,6 +45,7 @@ beforeEach(() => {
     submitWallPost: vi.fn(),
     submitWallWithdraw: vi.fn(),
     submitWallReact: vi.fn(),
+    reportWallImageFailed: vi.fn(),
   });
 });
 function socket() {
@@ -218,4 +219,36 @@ it("does not resume a different room", async () => {
   await screen.findByRole("heading", { name: "Projector setup" });
   await new Promise((resolve) => setTimeout(resolve, 20));
   expect(lookupStage).not.toHaveBeenCalled();
+});
+
+it("tells the room when the wall photo on the projector fails to load", async () => {
+  const postId = "00000000-0000-4000-8000-0000000000a1";
+  await present();
+  act(() =>
+    socket().onSnapshot({
+      ...roomFixture,
+      wall: {
+        enabled: true,
+        placement: "breaks",
+        waiting: 0,
+        next: null,
+        now: {
+          postId,
+          mediaId: "00000000-0000-4000-8000-0000000000a2",
+          nickname: "Amina",
+          caption: null,
+          frame: "polaroid",
+          untilAt: Date.now() + 8_000,
+          reactions: [],
+        },
+      },
+    }),
+  );
+  fireEvent.error(await screen.findByRole("img", { name: "Photo from Amina" }));
+  const handle = vi.mocked(openRoomSocket).mock.results.at(-1)!.value as ReturnType<
+    typeof openRoomSocket
+  >;
+  expect(handle.reportWallImageFailed).toHaveBeenCalledTimes(1);
+  expect(handle.reportWallImageFailed).toHaveBeenCalledWith(postId);
+  expect(screen.getByText("This photo could not be shown.")).toBeTruthy();
 });

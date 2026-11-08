@@ -95,6 +95,7 @@ export function setupControls(snapshot: LobbySnapshot = playingFixture) {
     submitWallPost: vi.fn(),
     submitWallWithdraw: vi.fn(),
     submitWallReact: vi.fn(),
+    reportWallImageFailed: vi.fn(),
   });
   // jsdom does not implement native dialog methods; reflect browser open/close semantics.
   HTMLDialogElement.prototype.showModal = function () {

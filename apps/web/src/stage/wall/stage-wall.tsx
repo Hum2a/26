@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AnimatePresence,
   motion,
@@ -18,16 +18,35 @@ type Now = NonNullable<Wall["now"]>;
  * The photo wall on the projector. In a break the photo takes the screen
  * (spotlight); with corner placement during a question it sits small in a
  * corner. Nothing here decides what shows or for how long: that is the room.
+ *
+ * `onImageFailed` tells the room the photo on screen did not load, once per
+ * post. Only the projector passes it, and the room accepts it only from the
+ * projector's own credential for the post it is showing; it then ends that
+ * photo after a short "could not be shown" card through the normal rotation.
  */
 export function StageWall({
   wall,
   gameId,
   phase,
+  onImageFailed,
 }: {
   wall: Wall;
   gameId: string;
   phase: string;
+  onImageFailed?: (postId: string) => void;
 }) {
+  const reported = useRef(new Set<string>());
+  const report = useCallback(
+    (postId: string) => {
+      if (!onImageFailed || reported.current.has(postId)) return;
+      reported.current.add(postId);
+      onImageFailed(postId);
+    },
+    [onImageFailed],
+  );
+  const nowId = wall.now?.postId;
+  // Only a screen that reports failures says the wall is moving on.
+  const failed = nowId && onImageFailed ? () => report(nowId) : undefined;
   const src = (mediaId: string) =>
     withClientApiKey(`/api/rooms/${gameId}/media/${mediaId}`);
   const inQuestion = (wallQuestionPhases as readonly string[]).includes(phase);
@@ -40,7 +59,12 @@ export function StageWall({
       ) : null}
       <AnimatePresence mode="wait">
         {wall.now && !corner ? (
-          <Spotlight key={wall.now.postId} now={wall.now} src={src(wall.now.mediaId)} />
+          <Spotlight
+            key={wall.now.postId}
+            now={wall.now}
+            src={src(wall.now.mediaId)}
+            onFailed={failed}
+          />
         ) : null}
         {wall.now && corner ? (
           <motion.div
@@ -56,6 +80,7 @@ export function StageWall({
               nickname={wall.now.nickname}
               caption={wall.now.caption}
               size="corner"
+              onFailed={failed}
             />
           </motion.div>
         ) : null}
@@ -78,7 +103,15 @@ export function StageWall({
   );
 }
 
-function Spotlight({ now, src }: { now: Now; src: string }) {
+function Spotlight({
+  now,
+  src,
+  onFailed,
+}: {
+  now: Now;
+  src: string;
+  onFailed?: () => void;
+}) {
   const reduce = useReducedMotion();
   const meter = useMotionValue(1);
   useEffect(() => {
@@ -129,7 +162,19 @@ function Spotlight({ now, src }: { now: Now; src: string }) {
         transition={
           reduce
             ? { duration: 0.3 }
-            : { type: "spring", stiffness: 140, damping: 14, filter: { duration: 1.6 } }
+            : {
+                type: "spring",
+                stiffness: 140,
+                damping: 14,
+                filter: { duration: 1.6 },
+                // A spring takes two keyframes only; the wobble is a timed tween.
+                rotate: {
+                  type: "tween",
+                  duration: 0.9,
+                  ease: "easeOut",
+                  times: [0, 0.45, 0.75, 1],
+                },
+              }
         }
       >
         <FramedPhoto
@@ -138,6 +183,7 @@ function Spotlight({ now, src }: { now: Now; src: string }) {
           nickname={now.nickname}
           caption={now.caption}
           size="stage"
+          onFailed={onFailed}
         />
       </motion.div>
       <Reactions now={now} reduce={Boolean(reduce)} />

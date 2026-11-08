@@ -31,6 +31,7 @@ beforeEach(() => {
     submitWallPost: vi.fn(),
     submitWallWithdraw: vi.fn(),
     submitWallReact: vi.fn(),
+    reportWallImageFailed: vi.fn(),
   });
 });
 function Probe() {

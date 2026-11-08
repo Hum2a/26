@@ -72,6 +72,52 @@ export function pullWallPost(sql: SqlStorage, postId: string | undefined, now: n
   syncWall(sql, "tick", now);
 }
 
+/**
+ * A photo that failed to load stays on its "could not be shown" card for this
+ * long before the wall moves on. A run of broken photos therefore steps along
+ * at most one every two seconds instead of flashing past.
+ */
+export const wallFailedShowMs = 2_000;
+
+/**
+ * The projector reports that the photo the room told it to show did not load.
+ * The room accepts this from the presentation socket only. It ends that photo
+ * early through the normal rotation: the photo's deadline is brought forward
+ * to `wallFailedShowMs` after it started, and `syncWall` moves on when it
+ * passes. A report for any other post, a repeat, or one that would not bring
+ * the end forward changes nothing and returns false.
+ */
+export function reportWallImageFailed(
+  sql: SqlStorage,
+  postId: unknown,
+  now: number,
+): boolean {
+  if (typeof postId !== "string" || !/^[0-9a-f-]{36}$/i.test(postId)) {
+    return false;
+  }
+  const showing = sql
+    .exec<{ shown_at: number | null; until_at: number | null }>(
+      `SELECT shown_at, until_at FROM wall_post WHERE status = 'showing' AND post_id = ?`,
+      postId,
+    )
+    .toArray()[0];
+  if (!showing || showing.until_at === null) {
+    return false;
+  }
+  const end = Math.max(now, (showing.shown_at ?? now) + wallFailedShowMs);
+  if (end >= showing.until_at) {
+    return false;
+  }
+  sql.exec(
+    `UPDATE wall_post SET until_at = ? WHERE post_id = ? AND status = 'showing'`,
+    end,
+    postId,
+  );
+  touch(sql);
+  syncWall(sql, "tick", now);
+  return true;
+}
+
 /** Ends the photo on screen early. `next` also starts one during a question. */
 export function moveWallOn(sql: SqlStorage, how: "skip" | "next", now: number) {
   const showing = sql

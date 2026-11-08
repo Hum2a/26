@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Icon } from "@iconify/react/dist/offline";
+import imageOff from "@iconify-icons/lucide/image-off";
 import type { WallFrame, WallReaction } from "@26/shared";
 import "./wall.css";
 
@@ -33,6 +35,12 @@ export const reactionLabels: Record<WallReaction, string> = {
  * A wall photo in its frame. The frame is drawn here with CSS, never burned
  * into the image. Used for the phone preview and the projector, so a guest
  * sees exactly what the room will see.
+ *
+ * A photo that fails to load shows a "could not be shown" card in its frame
+ * and calls `onFailed` once for that source. Only the projector passes
+ * `onFailed`; there the card also says the wall is moving on, because the room
+ * then ends that photo early. The image is keyed by its source, so a late
+ * error from a replaced or unmounted image never reaches the new one.
  */
 export function FramedPhoto({
   src,
@@ -40,12 +48,14 @@ export function FramedPhoto({
   nickname,
   caption,
   size = "phone",
+  onFailed,
 }: {
   src: string;
   frame: WallFrame;
   nickname: string;
   caption: string | null;
   size?: "phone" | "stage" | "corner" | "thumb";
+  onFailed?: () => void;
 }) {
   const [failedSource, setFailedSource] = useState<string>();
   const alt = caption
@@ -62,12 +72,27 @@ export function FramedPhoto({
       ) : null}
       <div className="wall-frame-image">
         {failedSource === src ? (
-          <p className="wall-frame-missing">This photo could not be shown.</p>
+          <div className="wall-frame-missing" role="status">
+            <Icon
+              icon={imageOff}
+              aria-hidden="true"
+              className="wall-frame-missing-icon"
+            />
+            <p>This photo could not be shown.</p>
+            {onFailed ? (
+              <p className="wall-frame-missing-note">Moving on in a moment.</p>
+            ) : null}
+          </div>
         ) : (
           <img
+            key={src}
             src={src}
             alt={alt}
-            onError={() => setFailedSource(src)}
+            onError={() => {
+              if (failedSource === src) return;
+              setFailedSource(src);
+              onFailed?.();
+            }}
             draggable={false}
           />
         )}

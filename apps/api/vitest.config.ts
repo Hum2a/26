@@ -103,6 +103,7 @@ export default defineConfig({
             "test/drivers-room.spec.ts",
             "test/wall-upload.spec.ts",
             "test/wall-queue.spec.ts",
+            "test/wall-failure.spec.ts",
             "test/wall-moderation.spec.ts",
             "test/wall-snapshot.spec.ts",
             "test/wall-results.spec.ts",

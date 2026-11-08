@@ -156,6 +156,7 @@ type CommandBody =
       mediaId?: string;
     }
   | { kind: "command"; requestId: string; name: "troll-escape"; effectId: string }
+  | { kind: "command"; requestId: string; name: "wall-image-failed"; postId: string }
   | {
       kind: "command";
       requestId: string;
@@ -230,6 +231,8 @@ export function openRoomSocket(options: {
   }) => string;
   submitWallWithdraw: (postId: string) => string;
   submitWallReact: (postId: string, reaction: WallReaction) => string;
+  /** Projector only: the wall photo it was told to show did not load. */
+  reportWallImageFailed: (postId: string) => string;
   reconnectNow: () => void;
   close: () => void;
 } {
@@ -783,6 +786,15 @@ export function openRoomSocket(options: {
     });
   }
 
+  function reportWallImageFailed(postId: string): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      name: "wall-image-failed",
+      postId,
+    });
+  }
+
   function submitReaction(targetId: string, reaction: "like" | "dislike"): string {
     return sendCommand({
       kind: "command",
@@ -859,6 +871,7 @@ export function openRoomSocket(options: {
     submitWallPost,
     submitWallWithdraw,
     submitWallReact,
+    reportWallImageFailed,
     close,
   };
 }

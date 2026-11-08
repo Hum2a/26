@@ -1,5 +1,5 @@
 import { phaseLabel } from "../live/phase-label";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 import type { LobbySnapshot } from "@26/shared";
@@ -55,6 +55,11 @@ export function StagePage() {
   // After a reload mid-show, reconnect and present again without a setup visit.
   const resume = useRef(false);
   const wasPresenting = useRef(false);
+  const roomSocket = useRef<ReturnType<typeof openRoomSocket> | null>(null);
+  // The projector tells the room when the wall photo it was sent fails to load.
+  const reportWallImageFailed = useCallback((postId: string) => {
+    roomSocket.current?.reportWallImageFailed(postId);
+  }, []);
   const show = useStageShow();
   usePreloadQuestion(snapshot, "stage");
   useEffect(() => {
@@ -89,7 +94,11 @@ export function StagePage() {
         );
       },
     });
-    return () => socket.close();
+    roomSocket.current = socket;
+    return () => {
+      if (roomSocket.current === socket) roomSocket.current = null;
+      socket.close();
+    };
   }, [gameId, connectionAttempt]);
   const rehearsalCode = params.get("rehearsal") === "1" ? params.get("code") : null;
   useEffect(() => {
@@ -226,6 +235,7 @@ export function StagePage() {
               wall={snapshot.wall}
               gameId={snapshot.gameId}
               phase={snapshot.phase}
+              onImageFailed={reportWallImageFailed}
             />
           ) : null}
         </>

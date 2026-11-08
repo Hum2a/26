@@ -39,7 +39,14 @@ export async function setup() {
       action,
       ...extra,
     });
-  return { gameId: created.result.gameId, stub, join, host };
+  return {
+    gameId: created.result.gameId,
+    stub,
+    join,
+    host,
+    control: created.result.control,
+    presentation: created.result.presentation,
+  };
 }
 
 export async function upload(
