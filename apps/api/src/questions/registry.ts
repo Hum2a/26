@@ -92,7 +92,8 @@ released.set(kartRehearsalVersion, {
     {
       ...rehearsalKart,
       instructions:
-        "Race on your phone held sideways. Slide the pad to steer, push up to accelerate, pull down to brake and hold R to drift. Upright, use the slider with A and B. The big screen shows the live map and race order.",
+        // Question text is capped at 200 characters.
+        "Race on your phone held sideways: slide the pad to steer, push up to accelerate, pull down to brake, hold R to drift. Upright, use the slider with A and B. The big screen shows the race.",
       prompt:
         "Illustrative rehearsal: one lap, 45 seconds. Race on your phone; follow the field on the big screen.",
     },
