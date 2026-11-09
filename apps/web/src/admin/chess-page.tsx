@@ -9,13 +9,12 @@ export function ChessAdminPage() {
   const { snapshot } = useAdminRoom();
   const play = snapshot.play;
   
-  // Admin reads aggregate projection (ChessStageSnapshot), not guest schema (ChessGuestSnapshot)
-  // Backend projects play.chess as stage aggregate with totalGames, gamesInProgress, etc.
+  // Admin reads control projection (ChessControlSnapshot) with aggregate fields
   const chessSnapshot = play?.question.kind === "chess" && play.chess ? play.chess : null;
 
   if (!chessSnapshot) {
     return (
-      <Panel title="Chess Round" display="admin">
+      <Panel title="Chess Round">
         <p>No active chess round. Chess rounds show aggregate game status here.</p>
         <h3>Rehearsal</h3>
         <p>When a chess round is active, this view shows:</p>
@@ -29,7 +28,11 @@ export function ChessAdminPage() {
     );
   }
 
-  // ChessStageSnapshot shape: { totalGames, inProgress, finished, results: { playerWins, botWins, draws, aborts } }
+  // Narrow union: control/stage snapshots have totalGames, guest snapshot does not
+  if (!("totalGames" in chessSnapshot)) {
+    return <Panel title="Chess Round"><p>Guest snapshot received (unexpected in admin)</p></Panel>;
+  }
+
   const { 
     totalGames, 
     inProgress: gamesInProgress, 
@@ -40,7 +43,7 @@ export function ChessAdminPage() {
   const { playerWins, botWins, draws, aborts } = results;
 
   return (
-    <Panel title="Chess Round" display="admin">
+    <Panel title="Chess Round">
       <div className="grid gap-4">
         <section>
           <h2 className="text-xl font-semibold mb-2">Game Status</h2>

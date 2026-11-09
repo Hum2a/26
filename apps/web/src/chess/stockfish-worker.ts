@@ -22,8 +22,8 @@ export class StockfishEngine {
   // Reserved for future message queueing: private _pendingMessages: string[] = [];
   private options: Required<StockfishOptions>;
   private currentPosition = "";
-  private searchGeneration = 0; // Tracks current search; increments on each go/stop
-  private expectedGeneration = 0; // Only fire callback if bestmove matches this generation
+  private searchGeneration = 0; // Increments on each go()
+  private expectedBestmoveGeneration: number | null = null; // Which generation's bestmove is expected
 
   constructor(options: StockfishOptions = {}) {
     this.options = {
@@ -101,7 +101,7 @@ export class StockfishEngine {
   /**
    * Request the engine to find the best move.
    * Time limit is bounded by options.moveTimeMs.
-   * Increments search generation to invalidate stale callbacks from previous searches.
+   * New search invalidates old expectedBestmoveGeneration; late bestmove from old search ignored.
    */
   go(timeMs?: number): void {
     if (!this.ready) {
@@ -114,9 +114,11 @@ export class StockfishEngine {
       return;
     }
 
-    // Invalidate any in-flight search
+    // New search expects bestmove with THIS generation
+    // Old expectedBestmoveGeneration is now invalid
     this.searchGeneration++;
-    this.expectedGeneration = this.searchGeneration;
+    const thisSearchGeneration = this.searchGeneration;
+    this.expectedBestmoveGeneration = thisSearchGeneration;
 
     // Set position
     this.sendCommand(this.currentPosition);
@@ -128,12 +130,10 @@ export class StockfishEngine {
 
   /**
    * Stop the current search.
-   * Increments generation so any late bestmove from stopped search is ignored.
+   * Bestmove from stopped search is still accepted (stop returns current best).
    */
   stop(): void {
     if (this.worker && this.ready) {
-      // Increment generation before stop so the stopped search's bestmove is still valid
-      // (stop is meant to return current best move)
       this.sendCommand("stop");
     }
   }
@@ -171,7 +171,8 @@ export class StockfishEngine {
 
   /**
    * Handle messages from the engine.
-   * Filters stale bestmove responses from invalidated searches.
+   * Filters stale bestmove: UCI bestmove implicitly belongs to last go() generation.
+   * Only accept if matches expectedBestmoveGeneration.
    */
   private handleMessage(line: string): void {
     // Parse bestmove response
@@ -184,11 +185,12 @@ export class StockfishEngine {
         return;
       }
 
-      // Check if this bestmove is from current search generation
-      // (If a new go() or stop() happened, expectedGeneration changed)
-      const currentGeneration = this.searchGeneration;
-      if (currentGeneration !== this.expectedGeneration) {
-        // Stale bestmove from old search - ignore
+      // UCI bestmove implicitly belongs to most recent go() command
+      // Check if it matches the generation we're waiting for
+      const belongsToGeneration = this.searchGeneration;
+      
+      if (this.expectedBestmoveGeneration !== belongsToGeneration) {
+        // Stale bestmove from old search that was superseded - IGNORE
         return;
       }
 
@@ -196,6 +198,9 @@ export class StockfishEngine {
       const from = move.substring(0, 2);
       const to = move.substring(2, 4);
       const promotion = move.length > 4 ? move.substring(4, 5) : undefined;
+
+      // Clear expected generation so duplicate bestmove ignored
+      this.expectedBestmoveGeneration = null;
 
       this.options.onBestMove(from, to, promotion);
     }
