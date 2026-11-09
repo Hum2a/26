@@ -6,7 +6,7 @@ import {
   reduceKart,
   type KartRace,
 } from "@26/shared";
-import { parkTrackId } from "../../../packages/shared/src/kart-park.ts";
+import { parkTrackId } from "../../../packages/shared/src/kart/kart-park.ts";
 
 function race(launches = true, cpu = 0): KartRace {
   const created = createKartRace("r", [{ playerId: "a", name: "Amina" }], {

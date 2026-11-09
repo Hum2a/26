@@ -3,7 +3,7 @@
  * Handles game initialization, move processing, clock alarms, and scoring.
  */
 
-import type { GameStore } from "../room/lifecycle.ts";
+import type { GameStore } from "../../room/lifecycle.ts";
 import {
   initializeChessRound,
   applyChessMove,

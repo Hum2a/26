@@ -5,7 +5,7 @@ import {
   kartRaceSchema,
   kartSpectatorView,
 } from "@26/shared";
-import { changeKartStage } from "../src/questions/kart";
+import { changeKartStage } from "../src/questions/kart/kart";
 
 it("selects from accepted race time, stable roster order and active progress without changing race results", () => {
   const race = createKartRace(

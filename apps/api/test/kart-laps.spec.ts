@@ -5,7 +5,7 @@ import {
   importedRoute,
   importedTrackProgress,
   importedTrackPoint,
-} from "../../../packages/shared/src/kart-route.ts";
+} from "../../../packages/shared/src/kart/kart-route.ts";
 
 const start: KartLapCursor = { angle: 0, distance: 0, checkpoint: 0 };
 it("samples public navigation markers at the same eight ordered circuit gates", () => {

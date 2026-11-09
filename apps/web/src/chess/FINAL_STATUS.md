@@ -170,7 +170,7 @@
 - `apps/web/src/admin/controls.test-support.tsx` (mock socket)
 
 **Not Modified (Backend Owned):**
-- `packages/shared/src/chess-schemas.ts` (read-only)
+- `packages/shared/src/chess/chess-schemas.ts` (read-only)
 - `apps/api/**` (backend-only changes)
 - Lockfiles preserved
 

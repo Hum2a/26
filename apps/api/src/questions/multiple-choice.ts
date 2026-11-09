@@ -5,9 +5,9 @@ import {
   pushPoints,
   readRaid,
 } from "./push-luck.ts";
-import { enterKart, tickKart, kartScores, projectKart } from "./kart.ts";
+import { enterKart, tickKart, kartScores, projectKart } from "./kart/kart.ts";
 import { enterRehearsalPhase, tickRehearsal } from "../developer/rehearsal.ts";
-import { projectChessGameSnapshot } from "./chess-mechanic.ts";
+import { projectChessGameSnapshot } from "./chess/chess-mechanic.ts";
 import { playSnapshotSchema, type PlaySnapshot } from "@26/shared";
 import {
   submissionGate,
@@ -21,7 +21,7 @@ import { createSqlStore } from "../room/sql-store.ts";
 import { queueFinalExport } from "../archive/schedule.ts";
 import { purgeDetailedTelemetry } from "../device/store.ts";
 import { funFactTotal } from "../stats/fun-source.ts";
-import { readKartLobby } from "../room/kart-lobby.ts";
+import { readKartLobby } from "../room/kart/kart-lobby.ts";
 import { syncWall } from "../wall/queue.ts";
 import { demoQuestionSetVersion, liveSampleSize } from "../room/limits.ts";
 import {
@@ -55,7 +55,7 @@ import {
   wordleReveal,
   wordleScores,
   wordleProgress,
-} from "./wordle.ts";
+} from "./wordle/wordle.ts";
 import { attachAudienceFields, publicQuestionCore } from "./project.ts";
 import { questionFor, requirePlayable } from "./registry.ts";
 import {

@@ -34,12 +34,12 @@ import {
   type GameStore,
   type ScheduledJob,
   type RoomClock,
-} from "../room/lifecycle.ts";
-import { readRoundState, writeRoundState } from "./round-state.ts";
-import type { KartQuestion } from "./definition.ts";
-import { publicQuestionCore } from "./project.ts";
-import { createSqlStore } from "../room/sql-store.ts";
-import { questionFor } from "./registry.ts";
+} from "../../room/lifecycle.ts";
+import { readRoundState, writeRoundState } from "../round-state.ts";
+import type { KartQuestion } from "../definition.ts";
+import { publicQuestionCore } from "../project.ts";
+import { createSqlStore } from "../../room/sql-store.ts";
+import { questionFor } from "../registry.ts";
 
 const key = "kart-race";
 export const readKart = (sql: SqlStorage, id: string) =>

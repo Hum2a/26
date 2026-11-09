@@ -10,7 +10,7 @@ import {
   type KartSettingChange,
   type KartLookName,
 } from "@26/shared";
-import { rejectOldKartTrackClient } from "./kart-track-compatibility.ts";
+import { rejectOldKartTrackClient } from "./kart/kart-track-compatibility.ts";
 import {
   gameIdSchema,
   botCountSchema,

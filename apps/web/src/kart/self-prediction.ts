@@ -24,7 +24,7 @@ import {
 import {
   importedSurfaceAt,
   nearbyImportedWalls,
-} from "../../../../packages/shared/src/kart-track";
+} from "../../../../packages/shared/src/kart/kart-track";
 
 /**
  * Cosmetic prediction of this phone's own kart.

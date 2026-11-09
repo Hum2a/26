@@ -1,6 +1,6 @@
 import { useRef } from "react";
-import { buzz } from "../device/haptics";
-import { Button } from "../ui/primitives";
+import { buzz } from "../../device/haptics";
+import { Button } from "../../ui/primitives";
 import "./slider.css";
 
 const tickGapMs = 50;

@@ -57,7 +57,7 @@ import {
   changeKartItemRules,
   changeKartItemsSafety,
   changeKartStage,
-} from "../questions/kart.ts";
+} from "../questions/kart/kart.ts";
 import { changePhotoBias } from "../media/photo-bias.ts";
 import { setBotCount } from "../developer/bots.ts";
 import { changeAdmission } from "./admission.ts";
@@ -65,7 +65,7 @@ import {
   assertKartLobbyAction,
   readKartLobby,
   chooseKartLobbyTrack,
-} from "./kart-lobby.ts";
+} from "./kart/kart-lobby.ts";
 import { startRound } from "./lifecycle.ts";
 
 const shownPhases = new Set(["reveal", "scores", "final", "podium"]);

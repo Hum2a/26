@@ -1,6 +1,6 @@
 import { useEffect, useRef, type Ref } from "react";
-import { PhoneDock } from "../controller/phone-dock";
-import { Button } from "../ui/primitives";
+import { PhoneDock } from "../../controller/phone-dock";
+import { Button } from "../../ui/primitives";
 import type { SubmitState } from "./submit-state";
 import "./submit.css";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";

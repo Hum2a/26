@@ -20,7 +20,7 @@ accessor bounds and source URL are in `artifacts/phase8-park/alternate-audit.jso
 
 ## Original 26 Park
 
-`packages/shared/src/kart-park.ts` defines a24m-wide closed road with40m sweeping
+`packages/shared/src/kart/kart-park.ts` defines a24m-wide closed road with40m sweeping
 bends, two broad straights and a gentle S section. A single mitered ribbon supplies
 the rendered road, SVG map, road classification and swept-collision boundaries.
 The existing pure driving, ordered lap cursor, recovery, item and projection code

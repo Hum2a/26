@@ -2,8 +2,8 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import NumberFlow from "@number-flow/react";
 import { useReducedMotion, type Transition } from "motion/react";
 import type { PlaySnapshot } from "@26/shared";
-import { SubmitButton } from "../../rounds/SubmitButton";
-import { roundSubmitState } from "../../rounds/submit-state";
+import { SubmitButton } from "../controls/SubmitButton";
+import { roundSubmitState } from "../controls/submit-state";
 import type { PhoneControls } from "../presentation";
 import "./kit.css";
 

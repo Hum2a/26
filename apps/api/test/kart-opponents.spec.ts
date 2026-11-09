@@ -5,7 +5,7 @@ import {
   reduceKart,
   selectNearbyNumbers,
 } from "@26/shared";
-import { phoneRaceView } from "../src/questions/kart";
+import { phoneRaceView } from "../src/questions/kart/kart";
 
 const poses = (count: number) =>
   Array.from({ length: count }, (_, i) => ({

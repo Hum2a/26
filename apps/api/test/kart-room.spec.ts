@@ -18,7 +18,7 @@ import {
   readRoomKartSettings,
   changeKartHandling,
   readRoomKartHandling,
-} from "../src/questions/kart.ts";
+} from "../src/questions/kart/kart.ts";
 import { questionFor } from "../src/questions/registry.ts";
 import { kartNeutral, createDrivingBody, reduceKart } from "@26/shared";
 

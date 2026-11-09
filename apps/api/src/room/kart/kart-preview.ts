@@ -4,7 +4,7 @@ import {
   kartRehearsalBeatSchema,
   kartRehearsalSchema,
 } from "@26/shared";
-import { phoneRaceView } from "../questions/kart.ts";
+import { phoneRaceView } from "../../questions/kart/kart.ts";
 
 /** Explicit public sample poses, not a room, result or guest-action adapter. */
 export function kartPreview(value: unknown) {

@@ -18,7 +18,7 @@ import {
   parkItemBoxes,
   parkCourse,
   parkLanePoint,
-} from "../../../packages/shared/src/kart-park.ts";
+} from "../../../packages/shared/src/kart/kart-park.ts";
 it("shares a closed original road strip with clear centreline, sectors, boxes and optional course features", () => {
   expect(parkRoute.lapLength).toBeGreaterThan(600);
   expect(parkRoute.lapLength).toBeLessThan(800);

@@ -272,7 +272,7 @@ Each started birthday room stores its frozen private question script in existing
   The existing registry creation receipt stores the chosen kind, including while
   bootstrap is pending. Reusing the request for a different kind is refused.
   Old receipts without a kind retain ordinary-party behaviour.
-- The existing room `round_state` stores `__room/kart-lobby` with the creation
+- The existing room `round_state` stores `__room/kart/kart-lobby` with the creation
   timestamp and `__pack/birthday-script` with the frozen, private kart question.
   Only that room's version is selected; the saved birthday running order is not
   written. No new table, external service or player identity is introduced.
@@ -412,7 +412,7 @@ Room race JSON now optionally copies frozen itemRules version2 (unique allowed c
 
 Locally verified live-course selection: kart-only lobbies may
 store optional trackId/sourceVersion and at most20 `{atMs, trackId, source:"host"}`
-entries in the existing `__room/kart-lobby` record. The selected course changes only
+entries in the existing `__room/kart/kart-lobby` record. The selected course changes only
 that room's pre-start script copy/version, then freezes on Start; source question
 files and underway races remain unchanged. This metadata is control-only and uses
 existing room destruction/retention. HTTP and WS clients advertise course contract2;
@@ -423,7 +423,7 @@ The code-versioned kart-tracks-v2 catalogue derives counts/lengths from driving,
 
 ## Kart race laps, slipstream and race sound (8 November 2026)
 
-- `__room/kart-lobby` may now hold `laps` (2 or 3; absent means one) and each
+- `__room/kart/kart-lobby` may now hold `laps` (2 or 3; absent means one) and each
   host history entry may carry the laps chosen. It stays control-only. The
   room-owned kart question copy stores `laps` and the scaled window; released
   packs are unchanged.
@@ -444,7 +444,7 @@ The code-versioned kart-tracks-v2 catalogue derives counts/lengths from driving,
 
 ## CPU racers, rocket starts and position luck (8 November 2026)
 
-- `__room/kart-lobby` may hold `cpu` (1–7) and history entries may carry it; it
+- `__room/kart/kart-lobby` may hold `cpu` (1–7) and history entries may carry it; it
   stays control-only. The room-owned kart question copy stores `cpuRacers`.
 - The kart race JSON adds CPU drivers (`playerId` `cpu-1` to `cpu-7`, a fixed
   name, `cpu`, `skill` and a `stuckMs` timer), `launchVersion`, and per driver

@@ -1,9 +1,9 @@
 import { GuestOrdered } from "./guest-ordered";
 import { useState } from "react";
 import type { PlaySnapshot } from "@26/shared";
-import { SubmitButton } from "../rounds/SubmitButton";
-import { roundSubmitState } from "../rounds/submit-state";
-import { TierAssign, type TierPlacement } from "../rounds/TierAssign";
+import { SubmitButton } from "./controls/SubmitButton";
+import { roundSubmitState } from "./controls/submit-state";
+import { TierAssign, type TierPlacement } from "./controls/TierAssign";
 
 export function GuestRank({
   play,

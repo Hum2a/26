@@ -24,7 +24,7 @@ The final result has three related experiences:
 
 1. [Original Mario-Kart-3.js source](https://github.com/mustache-dev/Mario-Kart-3.js/tree/83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7), main at **83c3a8bb5aeab18b3d5f13084c5fba4a99cb78f7**, last commit 18 December 2025, inspected 3 November 2026. The former Lunakepio project now resolves to mustache-dev.
 2. [The fork our solo engine uses](https://github.com/Nathan-Richard-21/mario-kart-js/tree/0f7a4305981206193c5efba64bc90755e6e85773), **0f7a4305981206193c5efba64bc90755e6e85773**. Keep this reference distinct from the original repository.
-3. Current local implementation: apps/kart-solo, apps/web/src/kart, packages/shared/src/kart*.ts, apps/api/src/questions/kart.ts, and Admin Kart/Live controls. See apps/kart-solo/UPSTREAM.md and THIRD_PARTY_NOTICES.md.
+3. Current local implementation: apps/kart-solo, apps/web/src/kart, packages/shared/src/kart*.ts, apps/api/src/questions/kart/kart.ts, and Admin Kart/Live controls. See apps/kart-solo/UPSTREAM.md and THIRD_PARTY_NOTICES.md.
 
 The accompanying inventory records upstream paths, git blob hashes, asset sizes and coverage groups. It is an inventory of these pinned revisions, not a claim about every independent fork or future upstream change.
 
@@ -115,7 +115,7 @@ The accompanying inventory records upstream paths, git blob hashes, asset sizes 
 
 ### Extend the existing engine
 
-Keep packages/shared/src/kart.ts as race progression and packages/shared/src/kart-driving.ts as driving physics. Extend kart-powers, kart-course, kart-route and kart-track rather than creating another reducer. apps/api/src/questions/kart.ts remains the persistence/projection boundary. The single room scheduler owns collection deadlines, countdown transitions and ticks.
+Keep packages/shared/src/kart/kart.ts as race progression and packages/shared/src/kart/kart-driving.ts as driving physics. Extend kart-powers, kart-course, kart-route and kart-track rather than creating another reducer. apps/api/src/questions/kart/kart.ts remains the persistence/projection boundary. The single room scheduler owns collection deadlines, countdown transitions and ticks.
 
 Use versioned rules for physics, items, tracks and race settings. Freeze the selected versions when a room starts. Existing stored races continue under their original rules; do not change an underway race by deploying a new tuning constant.
 

@@ -34,7 +34,7 @@ import { JoinRoomCode } from "../join/JoinRoomCode";
 import { NicknameField } from "../join/Nickname";
 import { rememberNickname } from "../join/nickname-storage";
 import { roomCodeFromQuery } from "../join/room-code";
-import { ReconnectBanner } from "../net/ReconnectBanner";
+import { ReconnectBanner } from "../live/ReconnectBanner";
 import { deadlinePassed } from "../live/server-clock";
 import { usePreloadQuestion } from "../play/preload";
 import { DriverPicker } from "../kart/DriverPicker";

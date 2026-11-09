@@ -7,9 +7,9 @@ import {
   contentVersionSchema,
   type KartTrackId,
 } from "@26/shared";
-import { freezeBirthdayOrder } from "../questions/birthday-order.ts";
-import { readRoundState, writeRoundState } from "../questions/round-state.ts";
-import { createSqlStore } from "./sql-store.ts";
+import { freezeBirthdayOrder } from "../../questions/birthday-order.ts";
+import { readRoundState, writeRoundState } from "../../questions/round-state.ts";
+import { createSqlStore } from "../sql-store.ts";
 
 /** A room-owned copy only. Released question files and underway races never change. */
 export function chooseKartLobbyTrack(

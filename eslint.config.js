@@ -28,7 +28,43 @@ const webAuthImportRestriction = {
     "better-auth/adapters/*",
     "better-auth/api",
   ],
-  message: "The web app cannot import server auth code.",
+  message: "The web app cannot import server auth code or Worker internals.",
+};
+
+const sharedPurityRestriction = {
+  group: [
+    "**/apps/**",
+    "react",
+    "react-dom",
+    "react/*",
+    "hono",
+    "hono/*",
+    "three",
+    "three/*",
+    "stockfish",
+    "better-auth",
+    "better-auth/*",
+  ],
+  message:
+    "packages/shared stays pure (Zod and TypeScript). App, React, Hono, Three and auth stay out.",
+};
+
+const noChessOrTroll = {
+  group: ["**/src/chess/**", "**/src/troll/**"],
+  message:
+    "Kart must not import chess or troll internals. Shared types go through @26/shared.",
+};
+
+const noKartOrTroll = {
+  group: ["**/src/kart/**", "**/src/troll/**"],
+  message:
+    "Chess must not import kart or troll internals. Shared types go through @26/shared.",
+};
+
+const noKartOrChess = {
+  group: ["**/src/kart/**", "**/src/chess/**"],
+  message:
+    "Troll must not import kart or chess internals. Shared types go through @26/shared.",
 };
 
 const heavyClientModules = {
@@ -99,7 +135,33 @@ export default tseslint.config(
           paths: heavyClientModules.paths.filter((item) =>
             item.name.startsWith("stockfish"),
           ),
-          patterns: [webAuthImportRestriction],
+          patterns: [webAuthImportRestriction, noChessOrTroll],
+        },
+      ],
+    },
+  },
+  {
+    files: ["apps/web/src/chess/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: heavyClientModules.paths.filter((item) =>
+            item.name.startsWith("three"),
+          ),
+          patterns: [webAuthImportRestriction, noKartOrTroll],
+        },
+      ],
+    },
+  },
+  {
+    files: ["apps/web/src/troll/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: heavyClientModules.paths,
+          patterns: [webAuthImportRestriction, noKartOrChess],
         },
       ],
     },
@@ -120,6 +182,39 @@ export default tseslint.config(
     files: ["packages/shared/src/**/*.ts"],
     rules: {
       "no-restricted-syntax": ["error", processEnvRestriction, injectedNowRestriction],
+      "no-restricted-imports": ["error", { patterns: [sharedPurityRestriction] }],
+    },
+  },
+  {
+    files: ["apps/api/src/questions/kart/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/questions/chess/**", "**/questions/wordle/**"],
+              message: "Kart mechanic code must not import chess or wordle internals.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["apps/api/src/questions/chess/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/questions/kart/**", "**/questions/wordle/**"],
+              message: "Chess mechanic code must not import kart or wordle internals.",
+            },
+          ],
+        },
+      ],
     },
   },
   eslintConfigPrettier,

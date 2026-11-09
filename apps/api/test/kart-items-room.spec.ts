@@ -2,7 +2,7 @@ import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
 import { payloadDigest } from "../src/room/digest.ts";
 import { createSqlStore } from "../src/room/sql-store.ts";
-import { readKart, useKartItem } from "../src/questions/kart.ts";
+import { readKart, useKartItem } from "../src/questions/kart/kart.ts";
 import { questionFor } from "../src/questions/registry.ts";
 import { writeRoundState } from "../src/questions/round-state.ts";
 import { createKartPowers, createDrivingBody } from "@26/shared";

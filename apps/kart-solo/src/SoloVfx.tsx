@@ -8,7 +8,7 @@ import { usePrefersReducedMotion } from "../../web/src/anim/use-reduced-motion";
 import { themes, DEFAULT_THEME_ID } from "../../web/src/theme/themes";
 import { useGraphicsTier } from "../../web/src/kart/graphics-preferences";
 import { useGameStore } from "./upstream/store.js";
-import { importedGroundAt } from "../../../packages/shared/src/kart-track";
+import { importedGroundAt } from "../../../packages/shared/src/kart/kart-track";
 
 type SceneView = ReturnType<ReturnType<typeof createKartVfxPool>["view"]>;
 type SoloRenderer = Omit<ReturnType<typeof createNativeKartVfx>, "render"> & {

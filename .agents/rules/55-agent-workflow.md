@@ -7,7 +7,7 @@ trigger: always_on
 
 This party must feel instant on mid-range phones and the projector with about **80 concurrent guests**. Zero perceptible slowdown is the goal: a tap, a phase change, a reconnect, and a kart frame must not hitch, freeze, or wait on work that belongs off the main thread or off the live room path.
 
-Do not reorganise folders in a performance-rules change. Path names here are the current tree and will be updated when a later PR moves code. Prefer a module's job (`openRoomSocket`, `PartyRoom`, `KartCanvas`) over a brittle deep path when both would do.
+Do not reorganise folders in a performance-rules change. The layout is `.agents/rules/05-structure.md`. Prefer a module's job (`openRoomSocket`, `PartyRoom`, `KartCanvas`) over a brittle deep path when both would do. After a structural move, update this file's globs and `05-structure.md` in the same PR.
 
 Detailed, file-scoped rules live in `.agents/rules/60-perf-*.md` (synced to `.cursor/rules/*.mdc`). Edit `.agents`, then run `npm run agents:sync`. Do not hand-edit generated copies. `CLAUDE.md` only points at `AGENTS.md`.
 
@@ -37,7 +37,8 @@ Detailed, file-scoped rules live in `.agents/rules/60-perf-*.md` (synced to `.cu
 
 ```bash
 npm run typecheck
-npm run lint
+npm run lint            # ESLint plus scripts/check-structure.mjs
+npm run check:structure
 npm run test:unit
 npm run test -w @26/api
 npm run build          # includes secrets scan and bundle budget

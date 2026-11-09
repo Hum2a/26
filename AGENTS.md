@@ -59,9 +59,94 @@ Every later prompt starts by reading this file.
 - Implement, run relevant checks, fix failures and update documentation. Do not rewrite unrelated work or weaken checks to obtain a pass.
 - No deployments, paid resource creation or changes to unrelated remote resources are implied by Prompts 01-18. Missing external credentials should not prevent completing locally testable work; report precisely what remains unverified.
 - Agent instructions are edited in `.agents`. Run `npm run agents:sync` afterwards. Do not hand-edit the generated copies.
-- Performance and workflow: `.agents/rules/55-agent-workflow.md` plus `60-perf-*.md`. Goal: zero perceptible slowdown for about 80 phones. Do not restructure the tree in a rules-only change.
+- Layout: `.agents/rules/05-structure.md`. Performance and workflow: `.agents/rules/55-agent-workflow.md` plus `60-perf-*.md`. Goal: zero perceptible slowdown for about 80 phones. Do not restructure the tree in a rules-only change.
 - At the end of every stage update `docs/build-progress.md`: status, files/interfaces added, decisions/defaults, commands and results, manual verification, unresolved issues and the exact next stage. Never label an unrun check as passed.
 - Final response for each stage: what now works, how to run/try it, what was verified and any concrete remaining limitation. Do not automatically begin the next prompt.
+
+# Codebase structure
+
+This tree is **feature-first**. A new round, screen, or message type has one obvious home. Do not add a parallel store, socket client, scheduler, or score engine. Prefer `git mv` for moves. After a layout change, update this file, the perf-rule globs (`60-perf-*.md`), `apps/web/src/admin/features.ts`, and run `npm run agents:sync`.
+
+`scripts/check-structure.mjs` (`npm run check:structure`, also part of `npm run lint`) enforces the top-level allowlists and the import boundaries below.
+
+## Workspaces
+
+| Path              | Role                                                                                                                          |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api`        | One Cloudflare Worker (Hono) plus Durable Object `PartyRoom`. Server authority.                                               |
+| `apps/web`        | React 19 + Vite. Phones `/play` (`/` guest join), projector `/host` (`/screen`), host `/admin`.                               |
+| `apps/kart-solo`  | Isolated kart practice engine. Built into `apps/web/public/kart-engine/` on web prebuild. Do not relocate that public output. |
+| `packages/shared` | Pure Zod schemas and reducers. No DOM, Worker, Hono, React, or `apps/*` imports.                                              |
+| `packages/emails` | React Email templates (Resend). Outside the live guest-action path.                                                           |
+| `scripts/`        | Repo tooling. `<domain>:<action>` npm names. Colocate a `*.test.ts` next to a new checker.                                    |
+| `docs/`           | Human guides. Agent rules live in `.agents/rules`, not here.                                                                  |
+
+Tests: web and shared-adjacent UI tests are **colocated** (`*.test.ts` next to the module). Worker/room specs stay in `apps/api/test/` until a later colocation pass. Do not add Playwright specs.
+
+## `packages/shared/src`
+
+Public API is `packages/shared/src/index.ts` (`@26/shared`). Feature folders:
+
+- `kart/` — race reducer, physics, tracks, items (filenames keep the `kart-` prefix).
+- `chess/` — schemas, clocks, capture scoring.
+- `wordle/` — board reducer.
+
+Cross-cutting files stay at `src/` (`rate-limit.ts`, `party-scoring.ts`, `wall.ts`, …). Do not put round UI or Durable Object code here.
+
+Kart canvas may deep-import track geometry (`packages/shared/src/kart/kart-track.ts`, `kart-circuit.json`) so the phone does not pull the whole reducer. New shared **logic** still goes through `@26/shared`.
+
+## `apps/api/src`
+
+Top-level folders are domains: `room`, `questions`, `troll`, `media`, `wall`, `auth`, `credentials`, `archive`, `results`, `stats`, `device`, `security`, `developer`.
+
+- **Room shell:** `room/party-room.ts` is the Durable Object. `room/routes.ts` HTTP. `room/lifecycle.ts` phases. Kart _room_ helpers live in `room/kart/` (ingress, lobby, preview, track compatibility).
+- **Mechanics:** `questions/<mechanic>/` for kart, chess, wordle (dictionary under `questions/wordle/dictionary/`). Ordinary quiz scoring (`multiple-choice.ts`, `slider.ts`, `rank.ts`, `vote.ts`, `duel.ts`, …) still sits beside them until a later grouping.
+- **Packs:** `questions/packs/birthday/<id>.ts` and `packs/demo/`. No CMS. No client-side pack.
+- **Trolls / media / wall:** their own folders. Neon and email stay out of the live tap path.
+
+## `apps/web/src`
+
+| Folder                                                         | What goes here                                                                                                                                    |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `play/`                                                        | Ordinary question phone/stage renderers (`guest-*.tsx`, `stage-play.tsx`), `designs/`, shared question chrome. Round widgets in `play/controls/`. |
+| `kart/`                                                        | Three.js canvas, controllers, race HUD. Lazy-loaded from play/stage.                                                                              |
+| `chess/`                                                       | Board UI and Stockfish worker wrapper. Lazy-loaded.                                                                                               |
+| `troll/`                                                       | Phone gags and picker.                                                                                                                            |
+| `guest/` `stage/` `admin/` `join/` `lobby/` `home/` `results/` | Surfaces.                                                                                                                                         |
+| `live/`                                                        | The **only** room socket (`room-socket.ts`), room HTTP client, reconnect chrome.                                                                  |
+| `theme/` `ui/` `anim/`                                         | Palette/skin, primitives, motion.                                                                                                                 |
+| `media/` `photo/` `wall/`                                      | Uploads, capture, photo wall UI.                                                                                                                  |
+| `api/`                                                         | Browser `fetch` helpers (not the Worker).                                                                                                         |
+| `controller/` `device/` `developer/`                           | Phone chrome, telemetry, rehearsal tools.                                                                                                         |
+
+Do not recreate `src/rounds` or `src/net`. Connection UI belongs in `live/`. Answer widgets belong in `play/controls/`.
+
+## Naming
+
+- Folders: lowercase kebab or a single mechanic word (`kart`, `wordle`).
+- Modules: kebab-case (`room-socket.ts`, `submit-state.ts`). React components may be PascalCase (`GuestKart.tsx`).
+- Tests: `*.test.ts` / `*.test.tsx` next to web code; `apps/api/test/<topic>.spec.ts` for the Worker.
+- British English in guest/stage copy.
+
+## Import boundaries (also ESLint)
+
+- `apps/web` must not import `apps/api` or server auth (`create-auth`, `better-auth/db`).
+- `packages/shared` must not import `apps/*`, React, Hono, Three, or Stockfish.
+- `kart`, `chess`, and `troll` must not import each other's internals. Shared types go through `@26/shared`. Play/stage may `lazy()` a round renderer.
+- `three` only from `apps/web/src/kart`. Stockfish npm package is forbidden; use `apps/web/src/chess/stockfish-worker.ts` and `/chess-engine/`.
+- One socket: `openRoomSocket`. One room object: `PartyRoom`.
+
+## How to add a new round
+
+1. **Mechanic** — Reuse `choice` / `typed` / `slider` / `rank` / `vote` / `guess` / `duel` / `finale` / `wordle` / `kart` / `chess` if it fits. Read `docs/question-authoring.md`.
+2. **Pack file** — `apps/api/src/questions/packs/birthday/<id>.ts` with the helper in `authoring.ts`. Register on `catalogue` only (not `order` while drafting).
+3. **Server runtime** — If it needs new scoring or persistence, add or extend `apps/api/src/questions/<mechanic>/` (or the existing quiz module). Wire `PartyRoom` through the existing plugin/command path. Persist before ack.
+4. **Shared contract** — Zod + pure reducer in `packages/shared/src/<mechanic>/` if phones and the Worker share shapes. Export from `index.ts`. Keep secrets off the public snapshot.
+5. **Phone + stage** — Ordinary UI in `apps/web/src/play/` (widgets in `play/controls/`). Custom look: `play/designs/<slug>.tsx` + `customPresentationIds`. Heavy engine: `apps/web/src/<mechanic>/` and `React.lazy` from `guest-play.tsx` / `stage-play.tsx`.
+6. **Host** — Admin see/manage/rehearse in the same change (`adminFeatures` `owns` the folders). Host-only fields only for `audience === "control"`.
+7. **Check** — `npm run content:check`, unit tests, `npm run typecheck`, `npm run lint` (includes structure), `npm run budget:web` if the client graph changed.
+
+Do not start a second WebSocket, a client-side score, or a new question CMS.
 
 # Admin coverage
 
@@ -102,7 +187,7 @@ Shared plumbing that is not a feature goes in `adminExempt` with a reason. Do no
 ## Checklist for a new feature
 
 1. Build the feature.
-2. Add or extend its entry in `adminFeatures`, with `owns` covering its folders.
+2. Add or extend its entry in `adminFeatures`, with `owns` covering its folders. A new top-level `apps/web/src/<domain>` or `apps/api/src/<domain>` folder also needs the allowlist in `.agents/rules/05-structure.md` and `scripts/check-structure.mjs`.
 3. Add the route in `apps/web/src/routes.tsx`, and the path to `admin-return.ts`.
 4. Build the see, manage and rehearse view.
 5. Add the tests above, and run `features.test.ts`.
@@ -112,7 +197,7 @@ Shared plumbing that is not a feature goes in `adminExempt` with a reason. Do no
 
 This party must feel instant on mid-range phones and the projector with about **80 concurrent guests**. Zero perceptible slowdown is the goal: a tap, a phase change, a reconnect, and a kart frame must not hitch, freeze, or wait on work that belongs off the main thread or off the live room path.
 
-Do not reorganise folders in a performance-rules change. Path names here are the current tree and will be updated when a later PR moves code. Prefer a module's job (`openRoomSocket`, `PartyRoom`, `KartCanvas`) over a brittle deep path when both would do.
+Do not reorganise folders in a performance-rules change. The layout is `.agents/rules/05-structure.md`. Prefer a module's job (`openRoomSocket`, `PartyRoom`, `KartCanvas`) over a brittle deep path when both would do. After a structural move, update this file's globs and `05-structure.md` in the same PR.
 
 Detailed, file-scoped rules live in `.agents/rules/60-perf-*.md` (synced to `.cursor/rules/*.mdc`). Edit `.agents`, then run `npm run agents:sync`. Do not hand-edit generated copies. `CLAUDE.md` only points at `AGENTS.md`.
 
@@ -142,7 +227,8 @@ Detailed, file-scoped rules live in `.agents/rules/60-perf-*.md` (synced to `.cu
 
 ```bash
 npm run typecheck
-npm run lint
+npm run lint            # ESLint plus scripts/check-structure.mjs
+npm run check:structure
 npm run test:unit
 npm run test -w @26/api
 npm run build          # includes secrets scan and bundle budget
@@ -545,7 +631,7 @@ useEffect(() => {
 
 ### WebSocket messages, patches, reconnect, and 80-player fan-out
 
-Applies to `apps/web/src/live/**/*.ts` and `apps/web/src/net/**/*.ts` and `apps/web/src/net/**/*.tsx` and `apps/web/src/kart/useKartSocket.ts` and `apps/web/src/device/**/*.ts` and `apps/api/src/room/**/*.ts` and `packages/shared/src/**/*.ts`.
+Applies to `apps/web/src/live/**/*.ts` and `apps/web/src/live/**/*.tsx` and `apps/web/src/kart/useKartSocket.ts` and `apps/web/src/device/**/*.ts` and `apps/api/src/room/**/*.ts` and `packages/shared/src/**/*.ts`.
 
 # Realtime messages (~80 phones)
 
@@ -612,7 +698,7 @@ Persist, then ack (`requestId`). Retries reuse the same idempotency key. The pho
 
 ### Durable Object hot path, storage, alarms, and live-guest cost
 
-Applies to `apps/api/**/*.ts` and `packages/shared/**/*.ts`.
+Applies to `apps/api/**/*.ts` and `apps/api/src/questions/kart/**/*.ts` and `apps/api/src/questions/chess/**/*.ts` and `apps/api/src/room/kart/**/*.ts` and `packages/shared/**/*.ts`.
 
 # Durable Object server hot path
 
@@ -678,7 +764,7 @@ Read bindings from the request env. `no-restricted-syntax` already forbids `proc
 
 ### requestAnimationFrame, kart/chess/troll loops, workers and WASM
 
-Applies to `apps/web/src/kart/**/*.ts` and `apps/web/src/kart/**/*.tsx` and `apps/web/src/chess/**/*.ts` and `apps/web/src/chess/**/*.tsx` and `apps/web/src/troll/**/*.ts` and `apps/web/src/troll/**/*.tsx` and `apps/web/src/play/**/*.ts` and `apps/web/src/play/**/*.tsx` and `apps/web/public/chess-engine/**` and `apps/web/public/kart-engine/**`.
+Applies to `apps/web/src/kart/**/*.ts` and `apps/web/src/kart/**/*.tsx` and `apps/web/src/chess/**/*.ts` and `apps/web/src/chess/**/*.tsx` and `apps/web/src/troll/**/*.ts` and `apps/web/src/troll/**/*.tsx` and `apps/web/src/play/**/*.ts` and `apps/web/src/play/**/*.tsx` and `apps/web/public/chess-engine/**` and `apps/web/public/kart-engine/**` and `packages/shared/src/kart/**/*.ts` and `packages/shared/src/chess/**/*.ts`.
 
 # Game loops, workers, and WASM
 

@@ -4,10 +4,14 @@
 
 Validation schemas used by the Worker and the web app.
 
-| File           | Purpose                                                                            |
-| -------------- | ---------------------------------------------------------------------------------- |
-| `src/index.ts` | Environment, health, API error, administrator session, and room-credential schemas |
+| Path | Purpose |
+| --- | --- |
+| `src/index.ts` | Public `@26/shared` barrel (environment, lobby, credentials, and re-exports) |
+| `src/kart/` | Race reducer, physics, tracks, items |
+| `src/chess/` | Board schemas and capture scoring |
+| `src/wordle/` | Guess-board reducer |
+| `src/*.ts` | Cross-cutting schemas (wall, stats, rate limit, archive, …) |
 
 `gameIdSchema` checks the shape of an id. It does not resolve a room. The room-credential schemas name the control and presentation roles. They do not verify a secret.
 
-Question, scoring, and device schemas belong to later prompts. Do not add them here until that stage needs them.
+This package stays pure: Zod and TypeScript only. Round UI lives in `apps/web`. Durable Object code lives in `apps/api`. See `.agents/rules/05-structure.md`.

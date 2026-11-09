@@ -179,7 +179,7 @@ Individual simultaneous 1+0 blitz chess games for up to 80 concurrent players ag
 ### Unit Tests (18/18 passing)
 
 ```bash
-$ npx vitest run apps/api/src/questions/chess-coordinator.test.ts
+$ npx vitest run apps/api/src/questions/chess/chess-coordinator.test.ts
 
  ✓ Chess Coordinator (18)
    ✓ initializeChessRound (2)
@@ -210,9 +210,9 @@ All TypeScript compilation passes:
 
 - `apps/web/public/chess-engine/stockfish-19-lite-single.{wasm,js}`
 - `apps/web/public/chess-engine/README.md`
-- `packages/shared/src/chess-schemas.ts`
-- `apps/api/src/questions/chess-coordinator.ts`
-- `apps/api/src/questions/chess-coordinator.test.ts`
+- `packages/shared/src/chess/chess-schemas.ts`
+- `apps/api/src/questions/chess/chess-coordinator.ts`
+- `apps/api/src/questions/chess/chess-coordinator.test.ts`
 - `apps/api/src/questions/packs/birthday/chess-battle.ts`
 - `apps/web/src/chess/stockfish-worker.ts`
 - `apps/web/src/chess/chess-board.tsx`
@@ -242,7 +242,7 @@ All TypeScript compilation passes:
 npm run typecheck
 
 # Unit tests
-npx vitest run apps/api/src/questions/chess-coordinator.test.ts
+npx vitest run apps/api/src/questions/chess/chess-coordinator.test.ts
 
 # Content check
 npm run content:check

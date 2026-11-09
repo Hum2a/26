@@ -1,9 +1,9 @@
 import { expect, it } from "vitest";
-import geometry from "../../../../packages/shared/src/kart-circuit.json";
+import geometry from "../../../../packages/shared/src/kart/kart-circuit.json";
 import {
   importedGroundAt,
   importedSurfaceAt,
-} from "../../../../packages/shared/src/kart-track";
+} from "../../../../packages/shared/src/kart/kart-track";
 
 it("interpolates measured mesh heights and upward normals in each renderer's coordinate space", () => {
   for (const triangle of [geometry.road[0]!, geometry.dirt[0]!]) {

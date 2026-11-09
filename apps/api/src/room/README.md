@@ -50,7 +50,7 @@ The newest guest socket for a player closes the older ones. One stage socket rep
 
 Stage snapshots include public nicknames, the join code, the lobby phase, the pinned `unreleased` versions, and the state version. They omit credential hashes, transfer codes, the admin email, and audit payloads. `stateVersion` increments on accepted public changes. A gap in that version asks the client for a snapshot. It is not treated as a missed private acknowledgement.
 
-The browser client is `apps/web/src/live/room-socket.ts`. It is the only `WebSocket` constructor. It reconnects with backoff and jitter, replaces lobby state from snapshots, tracks commands as pending, sent, or accepted, and removes listeners on close. It does not reconnect after `This game is open in a newer tab.`, `This session was moved to another device.`, or `This phone was removed from the game.`
+Kart lobby, ingress cache, admin preview and track-compatibility helpers live in `kart/`. The browser client is `apps/web/src/live/room-socket.ts`. It is the only `WebSocket` constructor. It reconnects with backoff and jitter, replaces lobby state from snapshots, tracks commands as pending, sent, or accepted, and removes listeners on close. It does not reconnect after `This game is open in a newer tab.`, `This session was moved to another device.`, or `This phone was removed from the game.`
 
 ## Name votes and host controls
 

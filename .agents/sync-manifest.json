@@ -68,6 +68,7 @@
     ".codex/skills/neon/references/parse-env.md",
     ".codex/skills/neon/references/sdk.md",
     ".cursor/rules/00-project.mdc",
+    ".cursor/rules/05-structure.mdc",
     ".cursor/rules/10-questions.mdc",
     ".cursor/rules/15-question-authoring.mdc",
     ".cursor/rules/20-worker.mdc",

@@ -25,7 +25,7 @@ import type { KartVfxPreset, KartVfxKind } from "@26/shared";
 import {
   importedSurfaceAt,
   importedGroundAt,
-} from "../../../../packages/shared/src/kart-track";
+} from "../../../../packages/shared/src/kart/kart-track";
 import type { GraphicsTier } from "./graphics";
 
 type Palette = Record<

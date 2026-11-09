@@ -63,12 +63,7 @@ export const adminFeatures: readonly AdminFeature[] = [
     summary:
       "Manage the birthday running order and inspect questions, answers, readiness and media.",
     rehearsal: "Each question opens on a rehearsal phone and stage with no room.",
-    owns: [
-      "apps/api/src/questions",
-      "apps/web/src/play",
-      "apps/web/src/rounds",
-      "apps/web/src/photo",
-    ],
+    owns: ["apps/api/src/questions", "apps/web/src/play", "apps/web/src/photo"],
   },
   {
     id: "kart",
@@ -111,12 +106,7 @@ export const adminFeatures: readonly AdminFeature[] = [
       "Start, pause, advance and fix the running game, end it early or destroy the room.",
     rehearsal:
       "Start the illustrative demo, or the kart rehearsal, with no guests. Try End game now and Destroy room on a throwaway lobby with bots.",
-    owns: [
-      "apps/api/src/room",
-      "apps/web/src/live",
-      "apps/web/src/stage",
-      "apps/web/src/net",
-    ],
+    owns: ["apps/api/src/room", "apps/web/src/live", "apps/web/src/stage"],
     status: (snapshot) =>
       snapshot.play
         ? `Question ${snapshot.play.question.index} of ${snapshot.play.question.total}`

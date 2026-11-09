@@ -10,7 +10,7 @@ export const mapZ = (trackId: KartRaceView["trackId"], z: number) =>
 import {
   importedLapLength,
   importedTrackPoint,
-} from "../../../../packages/shared/src/kart-route";
+} from "../../../../packages/shared/src/kart/kart-route";
 
 export function mapHeadingPath(heading: number) {
   const x = Math.cos(heading),

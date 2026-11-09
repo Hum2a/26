@@ -4,7 +4,7 @@ Phase 1 implementation, 4 November 2026. [Plan](kart-evolution-plan.md) · [Chec
 
 ## Asset inventory and readiness
 
-The versioned source of truth is packages/shared/src/kart-assets.json, validated by kartAssetManifestSchema in kart-assets.ts. It covers the five installed model/decoder files, their exact sizes and SHA-256, source/notice links, usage and retention status. Eighteen image textures embedded in the two GLBs have individual byte counts and fingerprints. No kart audio is currently installed. The Node inventory test reads only original public sources and checks every file and embedded texture against the manifest; generated build copies stay closed.
+The versioned source of truth is packages/shared/src/kart/kart-assets.json, validated by kartAssetManifestSchema in kart-assets.ts. It covers the five installed model/decoder files, their exact sizes and SHA-256, source/notice links, usage and retention status. Eighteen image textures embedded in the two GLBs have individual byte counts and fingerprints. No kart audio is currently installed. The Node inventory test reads only original public sources and checks every file and embedded texture against the manifest; generated build copies stay closed.
 
 Both renderer adapters use kartAssetPaths. Their bundles retain separate pinned Three versions. Shared descriptions contain numbers and plain arrays, never Three instances, materials, textures or scene objects.
 

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { PlaySnapshot } from "@26/shared";
-import { SubmitButton } from "../rounds/SubmitButton";
+import { SubmitButton } from "./controls/SubmitButton";
 import { TextField } from "../ui/primitives";
 
 export function GuestText({

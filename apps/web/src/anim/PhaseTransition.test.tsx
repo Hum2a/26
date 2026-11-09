@@ -3,7 +3,7 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhaseTransition } from "./PhaseTransition";
 import { PhoneDockTarget } from "../controller/phone-dock";
-import { SubmitButton } from "../rounds/SubmitButton";
+import { SubmitButton } from "../play/controls/SubmitButton";
 
 function matchMedia(matches: boolean) {
   return vi.fn((query: string) => {
