@@ -82,8 +82,16 @@ export function executeChessMove(
   // Bot move: it's the bot's turn (sideToMove === botColor)
   const isHumanTurn = game.sideToMove === game.playerColor;
 
+  // Validate position revision BEFORE either branch (human or bot)
+  if (command.positionRevision !== game.positionRevision) {
+    return { 
+      success: false, 
+      error: `Position revision mismatch: expected ${game.positionRevision}, got ${command.positionRevision}` 
+    };
+  }
+
   if (isHumanTurn) {
-    // Human move: apply through coordinator (validates revision)
+    // Human move: apply through coordinator
     const result = applyChessMove(game, command, now);
     if ("error" in result) {
       return { success: false, error: result.error };
@@ -98,7 +106,7 @@ export function executeChessMove(
     }
     return { success: true };
   } else {
-    // Bot move: apply through bot coordinator (validates revision)
+    // Bot move: apply through bot coordinator
     const result = applyBotMove(
       game,
       { from: command.from, to: command.to, promotion: command.promotion },
@@ -274,22 +282,47 @@ export function projectChessGameSnapshot(
 
 /**
  * Pause all chess clocks and increment position revision.
+ * Settles active elapsed time at pause moment, freezing clock state.
  * This invalidates all in-flight client state (including bot engine calculations).
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function pauseChessClocks(sql: SqlStorage, store: GameStore, _now: number): void {
+export function pauseChessClocks(sql: SqlStorage, store: GameStore, now: number): void {
   const games = sql
-    .exec<{ game_id: string; position_revision: number }>(
-      `SELECT game_id, position_revision FROM chess_game WHERE status = 'in-progress'`,
+    .exec<{ 
+      game_id: string; 
+      position_revision: number;
+      last_move_at: number;
+      side_to_move: string;
+      player_time_ms: number;
+      bot_time_ms: number;
+    }>(
+      `SELECT game_id, position_revision, last_move_at, side_to_move, player_time_ms, bot_time_ms 
+       FROM chess_game WHERE status = 'in-progress'`,
     )
     .toArray();
 
-  for (const { game_id, position_revision } of games) {
-    // Increment position revision to reject pre-pause commands
+  for (const game of games) {
+    // Settle elapsed time at pause moment
+    const elapsed = now - game.last_move_at;
+    const newPlayerTime = game.side_to_move === "white" 
+      ? game.player_time_ms - elapsed 
+      : game.player_time_ms;
+    const newBotTime = game.side_to_move === "black" 
+      ? game.bot_time_ms - elapsed 
+      : game.bot_time_ms;
+
+    // Update: freeze clocks, increment revision, set last_move_at to pause time
     sql.exec(
-      `UPDATE chess_game SET position_revision = ? WHERE game_id = ?`,
-      position_revision + 1,
-      game_id,
+      `UPDATE chess_game 
+       SET position_revision = ?,
+           player_time_ms = ?,
+           bot_time_ms = ?,
+           last_move_at = ?
+       WHERE game_id = ?`,
+      game.position_revision + 1,
+      Math.max(0, newPlayerTime),
+      Math.max(0, newBotTime),
+      now,
+      game.game_id,
     );
   }
 
@@ -308,27 +341,38 @@ export function pauseChessClocks(sql: SqlStorage, store: GameStore, _now: number
 
 /**
  * Resume all chess clocks.
- * Clocks are already paused (no alarm modifications during pause).
- * Reschedule alarms based on current clock state.
+ * Uses frozen clock values from pause, excludes paused duration.
+ * Sets last_move_at to resume time and reschedules alarms.
  */
 export function resumeChessClocks(sql: SqlStorage, store: GameStore, now: number): void {
   const games = sql
-    .exec<{ game_id: string; last_move_at: number; side_to_move: string; player_time_ms: number; bot_time_ms: number }>(
-      `SELECT game_id, last_move_at, side_to_move, player_time_ms, bot_time_ms FROM chess_game WHERE status = 'in-progress'`,
+    .exec<{ game_id: string; side_to_move: string; player_time_ms: number; bot_time_ms: number }>(
+      `SELECT game_id, side_to_move, player_time_ms, bot_time_ms FROM chess_game WHERE status = 'in-progress'`,
     )
     .toArray();
 
   const room = store.readRoom();
 
   for (const game of games) {
-    const elapsed = now - game.last_move_at;
+    // Set last_move_at to resume time (excludes paused duration)
+    sql.exec(
+      `UPDATE chess_game SET last_move_at = ? WHERE game_id = ?`,
+      now,
+      game.game_id,
+    );
+
+    // Use frozen clock values from pause
     const remainingTime =
       game.side_to_move === "white"
-        ? game.player_time_ms - elapsed
-        : game.bot_time_ms - elapsed;
+        ? game.player_time_ms
+        : game.bot_time_ms;
 
     if (remainingTime > 0) {
       scheduleClockAlarm(store, game.game_id, now + remainingTime, room.phaseGeneration, room.scopeGeneration);
+    } else {
+      // Clock already expired during pause - flag immediately
+      const { handleChessClockAlarm } = require("./chess-mechanic.ts");
+      handleChessClockAlarm(sql, store, game.game_id, now);
     }
   }
 }
