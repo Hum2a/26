@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { initializeChessRound, applyChessMove } from "../src/questions/chess-coordinator.ts";
+import {
+  initializeChessRound,
+  applyChessMove,
+  applyBotMove,
+} from "../src/questions/chess-coordinator.ts";
 
 /**
  * CRITICAL security tests: guests cannot control other players' games.
@@ -104,7 +108,6 @@ describe("Chess Security: Cross-Player Isolation", () => {
     // Now bot's turn - Alice submits bot move for her own game (casual trust)
     // This will be routed through applyBotMove by executeChessMove
     // But we're testing coordinator here, so we manually call applyBotMove
-    const { applyBotMove } = require("../src/questions/chess-coordinator.ts");
     const botMove = applyBotMove(game, { from: "e7", to: "e5" }, now + 2000);
 
     expect(botMove).toHaveProperty("game");

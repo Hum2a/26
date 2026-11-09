@@ -68,11 +68,14 @@ export class WorkerMock {
     this.errorHandler = null;
   }
 
-  addEventListener(type: string, listener: any): void {
+  addEventListener(
+    type: string,
+    listener: ((event: MessageEvent) => void) | ((event: ErrorEvent) => void),
+  ): void {
     if (type === "message") {
-      this.onmessage = listener;
+      this.onmessage = listener as (event: MessageEvent) => void;
     } else if (type === "error") {
-      this.onerror = listener;
+      this.onerror = listener as (event: ErrorEvent) => void;
     }
   }
 

@@ -18,6 +18,14 @@ import {
 } from "../questions/kart.ts";
 import { readRoundState } from "../questions/round-state.ts";
 import { readAdmission } from "./admission.ts";
+import { 
+  handleChessClockAlarm, 
+  createChessRound, 
+  pauseChessClocks, 
+  resumeChessClocks,
+  executeChessMove,
+  executeResignation
+} from "../questions/chess-mechanic.ts";
 import { assertKartLobbyAction, freezeKartLobby, readKartLobby } from "./kart-lobby.ts";
 import { writeRoundState } from "../questions/round-state.ts";
 import { freezeBirthdayOrder } from "../questions/birthday-order.ts";
@@ -906,24 +914,35 @@ export class PartyRoom extends DurableObject<Env> {
 
   /** Runs every due job in one transaction that also arms the next alarm. */
   private async runDueJobs(now: number, raceTick: (only: boolean) => void) {
-    await commitAndArm(this.ctx.storage, async (sql) => {
+    await commitAndArm(this.ctx.storage, (sql) => {
       this.flushKartInputs(sql);
       const baseStore = createGameStore(sql);
-      // Extend store with chess callbacks
+      // Compose chess callbacks with existing lifecycle callbacks
+      const baseOnScheduledJob = baseStore.onScheduledJob;
+      const baseOnEnterPhase = baseStore.onEnterPhase;
+      
       const store: GameStore = {
         ...baseStore,
-        onScheduledJob: async (job, now) => {
+        onScheduledJob: (job, now) => {
+          // Call base handler first (kart-tick, trolls)
+          if (baseOnScheduledJob) {
+            baseOnScheduledJob(job, now);
+          }
+          // Then handle chess-specific jobs
           if (job.payload.startsWith("chess-clock:")) {
             const gameId = job.payload.substring("chess-clock:".length);
-            const { handleChessClockAlarm } = await import("../questions/chess-mechanic.ts");
-            await handleChessClockAlarm(sql, store, gameId, now);
+            handleChessClockAlarm(sql, store, gameId, now);
           }
         },
         onEnterPhase: (room, now) => {
+          // Call base handler first (scoring, trolls, wall, export, etc.)
+          if (baseOnEnterPhase) {
+            baseOnEnterPhase(room, now);
+          }
+          // Then handle chess-specific phase entry
           if (room.phase === "collect") {
             const question = questionFor(room);
             if (question?.kind === "chess") {
-              const { createChessRound } = require("../questions/chess-mechanic.ts");
               const participants = sql
                 .exec<{ player_id: string }>(
                   `SELECT player_id FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
@@ -943,7 +962,7 @@ export class PartyRoom extends DurableObject<Env> {
           now,
         )
         .toArray();
-      await onAlarm(store, now);
+      onAlarm(store, now);
       const after = store.readRoom();
       // A tick that only moved the race goes out as a kart frame, not a full snapshot.
       raceTick(
@@ -1248,7 +1267,6 @@ export class PartyRoom extends DurableObject<Env> {
       if (question?.kind === "kart")
         releaseKartInputs(sql, store, question, input.nowMs);
       if (question?.kind === "chess") {
-        const { pauseChessClocks } = require("../questions/chess-mechanic.ts");
         pauseChessClocks(sql, store, input.nowMs);
       }
       pause(store, input.nowMs);
@@ -1273,7 +1291,6 @@ export class PartyRoom extends DurableObject<Env> {
       const store = createSqlStore(sql);
       const question = questionFor(store.readRoom());
       if (question?.kind === "chess") {
-        const { resumeChessClocks } = require("../questions/chess-mechanic.ts");
         resumeChessClocks(sql, store, input.nowMs);
       }
       resume(store, input.nowMs);
@@ -3600,6 +3617,7 @@ export class PartyRoom extends DurableObject<Env> {
         sql,
         createSqlStore(sql),
         attachment.principalId,
+        requestId,
         command,
         now,
         question,
@@ -4803,6 +4821,7 @@ function acceptRoundCommand(
   sql: SqlStorage,
   store: GameStore,
   playerId: string,
+  requestId: string,
   command:
     | { name: "estimate"; value: unknown }
     | { name: "rank"; placements: unknown }
@@ -4861,12 +4880,20 @@ function acceptRoundCommand(
     if (!question || question.kind !== "chess") {
       return { ok: false, message: "Not a chess round" };
     }
-    const { executeChessMove } = require("../questions/chess-mechanic.ts");
     
     // CRITICAL: Player can ONLY submit moves for their OWN game.
     // Server determines human vs bot path from game.sideToMove.
     // Casual trust: guest chooses bot moves for own game, never other players' games.
-    const result = executeChessMove(sql, store, command, playerId, now);
+    const chessMoveCommand = {
+      kind: "chess-move" as const,
+      requestId,
+      gameId: command.gameId,
+      from: command.from,
+      to: command.to,
+      positionRevision: command.positionRevision,
+      ...(command.promotion ? { promotion: command.promotion as "q" | "r" | "b" | "n" } : {}),
+    };
+    const result = executeChessMove(sql, store, chessMoveCommand, playerId, now);
     if (!result.success) {
       return { ok: false, message: result.error };
     }
@@ -4876,8 +4903,12 @@ function acceptRoundCommand(
     if (!question || question.kind !== "chess") {
       return { ok: false, message: "Not a chess round" };
     }
-    const { executeResignation } = require("../questions/chess-mechanic.ts");
-    const result = executeResignation(sql, command, playerId, now);
+    const chessResignCommand = {
+      kind: "chess-resign" as const,
+      requestId,
+      gameId: command.gameId,
+    };
+    const result = executeResignation(sql, chessResignCommand, playerId, now);
     if (!result.success) {
       return { ok: false, message: result.error };
     }
