@@ -103,18 +103,18 @@ Passing `--env` only on `wrangler deploy` does not retarget a Vite build. The de
 
 These commands read `apps/api/.dev.vars.staging` or `apps/api/.dev.vars.production`. They do not print secret values. `--env both` runs staging and then production.
 
-| Command                        | What it does                                                                                       | Notes                                                                    |
-| ------------------------------ | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `npm run secrets-sync:staging` | Upload the required Worker secrets for staging                                                     |                                                                          |
-| `npm run secrets-sync:prod`    | Upload the required Worker secrets for production                                                  | Not covered by deploy/full production guards                             |
-| `npm run secrets-sync:both`    | Staging secrets, then production secrets                                                           | Not covered by deploy/full production guards                             |
-| `npm run db:migrate:dev`       | Auth and archive migrations on the Neon development branch, or PGlite when `DATABASE_URL` is blank |                                                                          |
-| `npm run db:migrate:staging`   | Auth and archive migrations against the staging database                                           |                                                                          |
-| `npm run db:migrate:prod`      | Auth and archive migrations against the production database                                        | Not covered by deploy/full production guards                             |
-| `npm run deploy:staging`       | Build with `CLOUDFLARE_ENV=staging` and deploy that generated config                               |                                                                          |
+| Command                        | What it does                                                                                       | Notes                                            |
+| ------------------------------ | -------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `npm run secrets-sync:staging` | Upload the required Worker secrets for staging                                                     |                                                  |
+| `npm run secrets-sync:prod`    | Upload the required Worker secrets for production                                                  | Not covered by deploy/full production guards     |
+| `npm run secrets-sync:both`    | Staging secrets, then production secrets                                                           | Not covered by deploy/full production guards     |
+| `npm run db:migrate:dev`       | Auth and archive migrations on the Neon development branch, or PGlite when `DATABASE_URL` is blank |                                                  |
+| `npm run db:migrate:staging`   | Auth and archive migrations against the staging database                                           |                                                  |
+| `npm run db:migrate:prod`      | Auth and archive migrations against the production database                                        | Not covered by deploy/full production guards     |
+| `npm run deploy:staging`       | Build with `CLOUDFLARE_ENV=staging` and deploy that generated config                               |                                                  |
 | `npm run deploy:prod`          | Build with `CLOUDFLARE_ENV=production` and deploy that generated config                            | **Requires clean master, outside freeze period** |
 | `npm run deploy:both`          | Staging deploy, then production deploy                                                             | **Requires clean master, outside freeze period** |
-| `npm run deploy:staging:full`  | Staging migrate, then build and deploy with the required secrets attached                          |                                                                          |
+| `npm run deploy:staging:full`  | Staging migrate, then build and deploy with the required secrets attached                          |                                                  |
 | `npm run deploy:prod:full`     | Production migrate, then build and deploy with the required secrets attached                       | **Requires clean master, outside freeze period** |
 | `npm run deploy:both:full`     | Full staging release, then full production release                                                 | **Requires clean master, outside freeze period** |
 
@@ -137,6 +137,8 @@ Do not deploy the local build to staging. The script refuses a generated name of
 ## Agent instructions
 
 `.agents` is the source of truth for coding-agent rules, skills, and the shared exclusion list. Edit those files, then run `npm run agents:sync`. The command copies them into the files Cursor, Antigravity, Claude, ChatGPT, and Copilot read. Those generated directories are gitignored; run the command after a clone. Destinations are listed in [.agents/README.md](.agents/README.md).
+
+Performance and workflow rules (`55-agent-workflow`, `60-perf-*`) tell agents how to keep ~80 guest phones and the projector feeling instant. After a web build, `npm run budget:web` checks Vite gzip budgets in `scripts/web-bundle-budget.json`.
 
 ## Secrets
 

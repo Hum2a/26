@@ -1,0 +1,7 @@
+{
+  "entryJsGzipBytes": 260000,
+  "entryCssGzipBytes": 28000,
+  "totalJsGzipBytes": 1650000,
+  "anyJsGzipBytes": 600000,
+  "notes": "Gzip of Vite apps/web/dist/client/assets (Cloudflare Vite client build). Measured on master-equivalent client graph ~216kB entry JS / ~21kB entry CSS / ~1.38MB total JS / ~497kB largest chunk (kart-track). Headroom is about 20%. Raise in the same PR with a reason if a real feature needs more."
+}

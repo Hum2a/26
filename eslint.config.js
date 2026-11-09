@@ -10,6 +10,47 @@ const processEnvRestriction = {
   message: "Read Worker bindings from the request environment, not process.env.",
 };
 
+const injectedNowRestriction = {
+  selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+  message:
+    "Inject now: number into shared logic. Date.now() belongs at the Durable Object edge, not in reducers.",
+};
+
+const webAuthImportRestriction = {
+  group: [
+    "**/apps/api/**",
+    "**/create-auth",
+    "**/create-auth.ts",
+    "better-auth/plugins",
+    "better-auth/db",
+    "better-auth/db/*",
+    "better-auth/adapters",
+    "better-auth/adapters/*",
+    "better-auth/api",
+  ],
+  message: "The web app cannot import server auth code.",
+};
+
+const heavyClientModules = {
+  paths: [
+    {
+      name: "three",
+      message:
+        "Import three only from apps/web/src/kart. Lazy-load KartCanvas from guest and stage play.",
+    },
+    {
+      name: "three/webgpu",
+      message: "Three.js stays inside the kart canvas bundle.",
+    },
+    {
+      name: "stockfish",
+      message:
+        "Do not import the stockfish npm package. Use apps/web/src/chess/stockfish-worker.ts and /chess-engine/.",
+    },
+  ],
+  patterns: [webAuthImportRestriction],
+};
+
 export default tseslint.config(
   {
     ignores: [
@@ -46,25 +87,19 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.flat.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      "no-restricted-imports": ["error", heavyClientModules],
+    },
+  },
+  {
+    files: ["apps/web/src/kart/**/*.{ts,tsx}"],
+    rules: {
       "no-restricted-imports": [
         "error",
         {
-          patterns: [
-            {
-              group: [
-                "**/apps/api/**",
-                "**/create-auth",
-                "**/create-auth.ts",
-                "better-auth/plugins",
-                "better-auth/db",
-                "better-auth/db/*",
-                "better-auth/adapters",
-                "better-auth/adapters/*",
-                "better-auth/api",
-              ],
-              message: "The web app cannot import server auth code.",
-            },
-          ],
+          paths: heavyClientModules.paths.filter((item) =>
+            item.name.startsWith("stockfish"),
+          ),
+          patterns: [webAuthImportRestriction],
         },
       ],
     },
@@ -76,9 +111,15 @@ export default tseslint.config(
     },
   },
   {
-    files: ["apps/api/src/**/*.ts", "packages/shared/src/**/*.ts"],
+    files: ["apps/api/src/**/*.ts"],
     rules: {
       "no-restricted-syntax": ["error", processEnvRestriction],
+    },
+  },
+  {
+    files: ["packages/shared/src/**/*.ts"],
+    rules: {
+      "no-restricted-syntax": ["error", processEnvRestriction, injectedNowRestriction],
     },
   },
   eslintConfigPrettier,

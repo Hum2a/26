@@ -59,6 +59,7 @@ Every later prompt starts by reading this file.
 - Implement, run relevant checks, fix failures and update documentation. Do not rewrite unrelated work or weaken checks to obtain a pass.
 - No deployments, paid resource creation or changes to unrelated remote resources are implied by Prompts 01-18. Missing external credentials should not prevent completing locally testable work; report precisely what remains unverified.
 - Agent instructions are edited in `.agents`. Run `npm run agents:sync` afterwards. Do not hand-edit the generated copies.
+- Performance and workflow: `.agents/rules/55-agent-workflow.md` plus `60-perf-*.md`. Goal: zero perceptible slowdown for about 80 phones. Do not restructure the tree in a rules-only change.
 - At the end of every stage update `docs/build-progress.md`: status, files/interfaces added, decisions/defaults, commands and results, manual verification, unresolved issues and the exact next stage. Never label an unrun check as passed.
 - Final response for each stage: what now works, how to run/try it, what was verified and any concrete remaining limitation. Do not automatically begin the next prompt.
 
@@ -106,6 +107,48 @@ Shared plumbing that is not a feature goes in `adminExempt` with a reason. Do no
 4. Build the see, manage and rehearse view.
 5. Add the tests above, and run `features.test.ts`.
 6. Update `docs/data-inventory.md` if it stores anything new, and `docs/build-progress.md`.
+
+# Agent workflow and performance contract
+
+This party must feel instant on mid-range phones and the projector with about **80 concurrent guests**. Zero perceptible slowdown is the goal: a tap, a phase change, a reconnect, and a kart frame must not hitch, freeze, or wait on work that belongs off the main thread or off the live room path.
+
+Do not reorganise folders in a performance-rules change. Path names here are the current tree and will be updated when a later PR moves code. Prefer a module's job (`openRoomSocket`, `PartyRoom`, `KartCanvas`) over a brittle deep path when both would do.
+
+Detailed, file-scoped rules live in `.agents/rules/60-perf-*.md` (synced to `.cursor/rules/*.mdc`). Edit `.agents`, then run `npm run agents:sync`. Do not hand-edit generated copies. `CLAUDE.md` only points at `AGENTS.md`.
+
+## Workflow guardrails
+
+- **Small, focused PRs.** One concern per branch. Do not mix a mechanic change with a folder move, a dependency bump, and a visual rewrite.
+- **Never push to `master` or `main`.** Open a PR against `master`. Do not merge unless the owner asked.
+- **No force-push** to shared branches. No `--force` / `--force-with-lease` on `master`.
+- **Do not deploy**, create paid cloud resources, or change staging/production secrets unless the owner asked in this turn.
+- **Do not add Playwright or other E2E/browser runners.** The owner has prohibited them. Prove behaviour with typecheck, lint, Vitest (jsdom / workers pool), and existing Node script tests.
+- **Before finishing:** `npm run typecheck`, `npm run lint`, and the unit tests that cover what you touched (`npm run test:unit` and/or `npm run test -w @26/api`). Run `npm run build` when the client graph, public assets, or Vite config changed so `budget:web` runs.
+- **Do not delete, rewrite, or “clean up” unrelated code** to make a diff look tidy. Do not skip, `.only`, or delete a failing test to get green.
+- **Ask (or stop and report) before a large refactor**, a new state store, a second socket client, a new scheduler, or a competing score engine. Work in the existing modules.
+- **Do not copy LifeSmart**, pupil-specific rules, or unrelated repos into this tree.
+- British English in guest/stage copy. Keep secrets, answer keys, and personal diagnostics off the projector.
+
+## Performance contract (every feature)
+
+1. **Server is authoritative.** Phones send intents. They do not compute scores, timers, or phase changes. Optimistic UI may show _sending_, never _accepted_, until the ack.
+2. **Hot paths stay hot.** Guest answers, kart inputs, and broadcasts stay inside the Durable Object. Neon, email, R2 processing, and archives stay off that path.
+3. **Eighty phones are the load model.** A message, query, or render that is cheap for one guest is expensive when it runs eighty times. Batch, patch, and reuse.
+4. **Main thread stays interactive.** Stockfish, image decode, GLB parse, and heavy JSON do not run on the UI thread during a question. Game loops use `requestAnimationFrame` and refs, not React state every frame.
+5. **Join stays thin.** `/play` and `/screen` must not download kart, chess, or admin. Lazy-load per round. Warm during the intro beat, not on first tap of “send”.
+6. **Perceived speed.** Instant press feedback, stable layout (no CLS), reconnect with jitter, skeletons that match the final chrome. The dock send button never waits on a bundle.
+
+## Commands
+
+```bash
+npm run typecheck
+npm run lint
+npm run test:unit
+npm run test -w @26/api
+npm run build          # includes secrets scan and bundle budget
+npm run budget:web     # Vite dist gzip budgets; needs a prior web build
+npm run agents:sync    # after editing .agents
+```
 
 ## Scoped rules
 
@@ -169,6 +212,7 @@ Applies to `apps/api/**/*.ts` and `packages/shared/**/*.ts`.
 # Worker and room
 
 - One Worker serves the application and API. One SQLite-backed Durable Object owns each room. One durable scheduler owns all room alarms.
+- Live-path cost: follow `.agents/rules/61-perf-realtime.md` and `62-perf-server.md`. About 80 phones share one object; batch writes, patch snapshots, keep kart ticks off full fan-out.
 - Persist an accepted action before its success acknowledgement. Retries use the same idempotency key.
 - Neon, email, and image or audio processing stay outside the live guest-action path.
 - Read configuration from Worker bindings. Do not read `process.env` in `apps/api/src` or `packages/shared/src`.
@@ -182,6 +226,7 @@ Applies to `apps/web/**/*.ts` and `apps/web/**/*.tsx`.
 # Web app
 
 - Use British English, accessible controls, and clear phone states. Support reduced motion. Keep audio optional.
+- Keep phones and the projector instant: `.agents/rules/60-perf-web.md`, `63-perf-game-loops.md`, `64-perf-assets.md`. Lazy-load kart/chess, no per-frame React state, terminate workers.
 - Follow the design and motion rules. Open the live library docs listed there before copying a component; ease every visible change.
 - Keep secrets and personal diagnostics off the projector and the stage screen.
 - Do not import server auth modules into the web app.
@@ -386,6 +431,368 @@ The favicon stays the 26 basic mark.
 - `npx tsc -b apps/web`
 - `npx vitest run src/theme` in `apps/web` (skins and deep skins)
 - Preview with `?theme=its-id` and confirm the ground, corners, mark, and finish are visible while the question text stays readable. If the theme has a motif, the icon shows in the margin and a point on the heading still hits the heading.
+
+### Render budgets, memoisation, layout, perceived performance, phone UX
+
+Applies to `apps/web/**/*.ts` and `apps/web/**/*.tsx` and `apps/web/**/*.css`.
+
+# Web rendering and phone UX
+
+Target: mid-range Android/iPhone on venue Wi-Fi. A question, lobby, or score beat must stay at **60 fps** when the phone is idle-to-tapping, and must not drop the tap-to-paint of the send control below one frame. The projector follows the same rule with larger type.
+
+## State placement and re-renders
+
+Put **high-frequency values in refs**, not in React state. Kart pose, clock remainder, pointer position, and Stockfish search flags update too often to re-render the tree.
+
+```tsx
+// ❌ BAD — every race tick rebuilds React
+function Hud({ race }: { race: KartRaceView }) {
+  const [now, setNow] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 50);
+    return () => clearInterval(id);
+  }, []);
+  return <p>{now}</p>;
+}
+
+// ✅ GOOD — KartCanvas already keeps `live.current = race` and draws in rAF
+useEffect(() => {
+  live.current = race;
+}, [race]);
+```
+
+Good pattern: `apps/web/src/kart/KartCanvas.tsx` (refs + rAF). Good pattern: `applySnapshotPatch` in `apps/web/src/live/room-socket.ts` keeps unchanged snapshot field identities so a clock patch does not redraw every player and option.
+
+```tsx
+// ❌ BAD — new object/function every snapshot, even when play is unchanged
+<GuestPlay snapshot={snapshot} onSubmit={() => submit()} />;
+
+// ✅ GOOD — stable handlers; split context so a kart frame does not refresh the dock
+const onSubmit = useCallback(
+  () => socket.submitAnswer(selectedId),
+  [socket, selectedId],
+);
+```
+
+Do not lift the whole `LobbySnapshot` through a provider that wraps chrome + question + trolls + media. Split by change rate: connection, play, self answer, trolls.
+
+`memo` is for **lists of 80** (name cloud, standings, wall) and for round controls whose parent updates on patches. It is not a default wrapper for every file.
+
+## Layout thrash
+
+Do not read layout and write style in the same frame (`offsetWidth` then `style.left`, `getBoundingClientRect` in render, `scrollHeight` loops). Animate with Motion / CSS transforms, not top/left. Reserve space for images, avatars, and the phone dock so options do not jump (CLS).
+
+```css
+/* ❌ BAD */
+.option img {
+  height: auto;
+}
+
+/* ✅ GOOD — question option images have a known box before decode */
+.option img {
+  aspect-ratio: 1;
+  width: 100%;
+  height: auto;
+}
+```
+
+Good pattern: `preloadImages` / `usePreloadQuestion` in `apps/web/src/play/preload.ts` fetch the **current** question’s pictures during intro, not the rest of the pack.
+
+## Perceived performance
+
+- Press, select, and send must change paint in the same gesture. Pending vs accepted stays distinct; never label a local tap “locked in”.
+- Route and round `Suspense` fallbacks are real chrome (status text in the question frame), not a blank screen.
+- Reconnect copy lives in `ReconnectBanner`: keep retrying, tell the guest after 1.5s, offer a manual retry later. Do not block the last known question behind a full-screen spinner.
+- Honour `prefers-reduced-motion`. Loops, parallax, and layout travel belong off the answering controls.
+
+## Touch and readability
+
+- Primary hit targets stay large (existing dock and option tiles). `touch-action: manipulation` on tap controls so iOS does not wait for a double-tap zoom.
+- Check 320 / 390 / 430px widths, safe areas, and a short landscape viewport. Do not shrink essential text to avoid scrolling; scroll vertically rather than clip.
+- Do not `preventDefault` on `touchmove` unless you are the kart stick, and then only on that element.
+- Projector type stays readable across a room. Secrets, host diagnostics, and answer keys never render on `/screen`.
+
+## Lists of eighty
+
+Keys are stable player ids, never array index. Do not run `layout` / `popLayout` animations on every tick for the full lobby. Name-cloud springs on **join/leave** are fine; animating size of all 80 bubbles every like-patch is not.
+
+```tsx
+// ❌ BAD — new array + index keys on every snapshot
+names.map((name, i) => <li key={i}>{name.nickname}</li>)
+
+// ✅ GOOD — NameCloud keys `name.playerId` and uses AnimatePresence for enter/exit
+<CloudItem key={name.playerId} layout={!reduced ? "position" : false} />
+```
+
+## Effects, listeners, leaks
+
+Every `addEventListener`, socket, `setTimeout`, rAF, `Worker`, `AudioContext`, wake lock, and `getUserMedia` stream is cleared in the same effect’s teardown. Do not subscribe in render. `openRoomSocket` already drops heartbeats and window listeners on close — call `close()` on unmount.
+
+```tsx
+// ❌ BAD
+useEffect(() => {
+  const engine = new StockfishEngine();
+  void engine.initialize();
+}, []);
+
+// ✅ GOOD — chess-game must terminate the engine when the round or page goes away
+useEffect(() => {
+  const engine = new StockfishEngine({ onBestMove });
+  void engine.initialize();
+  return () => engine.terminate();
+}, []);
+```
+
+### WebSocket messages, patches, reconnect, and 80-player fan-out
+
+Applies to `apps/web/src/live/**/*.ts` and `apps/web/src/net/**/*.ts` and `apps/web/src/net/**/*.tsx` and `apps/web/src/kart/useKartSocket.ts` and `apps/web/src/device/**/*.ts` and `apps/api/src/room/**/*.ts` and `packages/shared/src/**/*.ts`.
+
+# Realtime messages (~80 phones)
+
+There is **one** socket client: `openRoomSocket` in `apps/web/src/live/room-socket.ts`. There is **one** room object: `PartyRoom`. Do not add a second WebSocket, EventSource, or polling loop for live play.
+
+Clients send **intents**. The room sends **snapshots, patches, kart frames, and acks**. Phones never invent phase, score, or clock.
+
+## Size and shape
+
+- Guest command bodies stay inside `maxPayloadBytes` (4 KiB) in `apps/api/src/room/limits.ts`. Do not attach photos, WAVs, or GLBs to a socket message; those go through the media upload path.
+- Public snapshots are a **projection**. Guest and stage payloads must not include host-only fields, answer keys, or other players’ chess boards. Chess already splits guest / stage / control schemas — keep that split.
+- Prefer a **patch** of changed top-level snapshot fields. `PartyRoom` already sends `kind: "patch"` when the patch is smaller than ~80% of a full snapshot. Do not add a new ad-hoc “delta” format beside it.
+- A kart tick is `kind: "kart"`, merged with `mergeKartFrame`. It must not carry the lobby, media list, or question text. If the phone has no matching race snapshot, request a full snapshot — do not guess.
+
+```ts
+// ❌ BAD — 80 phones × full lobby on every race tick
+send(ws, { kind: "snapshot", snapshot: buildSnapshot("guest", playerId) });
+
+// ✅ GOOD — PartyRoom.broadcastKart + mergeKartFrame on the client
+send(ws, { kind: "kart", ...frame });
+```
+
+## Frequency and batching
+
+| Path                  | Budget                                                                                                                      |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Guest answers / votes | Token bucket `commandRateLimit` (burst 30, 3/s)                                                                             |
+| Live drafts           | Debounce 200ms on the phone (`submitDraft`); `draftRateLimit` on the room                                                   |
+| Kart inputs           | Client drops when `bufferedAmount >= 8192`; room `KartInputBuffer` keeps ≤4 per driver, ≥80ms apart, flush on the race tick |
+| Clock probes          | Five on open, then with the 20s heartbeat (`timeRateLimit`)                                                                 |
+| Device telemetry      | Phase change, resize (debounced), once a minute (`telemetryRateLimit`)                                                      |
+| Broadcast coalescing  | `broadcastWindowMs = 30` so clustered writes share one fan-out                                                              |
+
+```ts
+// ❌ BAD — emit a draft on every keystroke
+socket.send(JSON.stringify({ kind: "command", name: "draft", text }));
+
+// ✅ GOOD — existing submitDraft leading-edge 200ms timer
+```
+
+Do not `requestSnapshot` in a loop, on every focus, or from a `setInterval`. The socket already asks once after a failed patch or a stale kart frame.
+
+## Fan-out
+
+Build **shared snapshot parts once per audience**, then specialise per guest (self answer, self chess, self troll). `snapshotParts` + `buildSnapshot` already do this. Do not run eighty identical SQL queries in a `for (const ws of sockets)` loop.
+
+Eighty reconnects after a Wi-Fi blip must **jitter**. `reconnectDelay` uses full jitter capped at 8s. Do not reconnect on a fixed 100ms timer.
+
+```ts
+// ❌ BAD
+setTimeout(connect, 100);
+
+// ✅ GOOD
+setTimeout(connect, reconnectDelay(attempt));
+```
+
+## Acks and optimism
+
+Persist, then ack (`requestId`). Retries reuse the same idempotency key. The phone may show “sending”; it may not show “accepted” until `onAck`. Kart steering is the exception: local prediction in the canvas, room still owns the race.
+
+## Diagnostics
+
+`createRealtimeMeter` counts messages in memory for the host health view. Do not write those counters to SQLite on every send. Do not log full snapshots.
+
+### Durable Object hot path, storage, alarms, and live-guest cost
+
+Applies to `apps/api/**/*.ts` and `packages/shared/**/*.ts`.
+
+# Durable Object server hot path
+
+One Worker, one SQLite-backed Durable Object per room (`PartyRoom`), one durable scheduler for alarms. Neon, Resend, and image/audio work stay **outside** the live guest-action path.
+
+`packages/shared` logic takes `now: number`. Never call `Date.now()` inside reducers, scoring, or rate limits. The DO may read the clock at the edge and pass it in.
+
+## Transactions and storage
+
+SQLite on a DO is durable and not free. Each `storage.transactionSync` / SQL batch is work that **blocks the object** for every guest.
+
+- Persist an accepted action **before** the success ack. Group the writes for one intent into **one** transaction (receipt, answer row, `state_version`, next alarm).
+- Do not start a nested transaction per player in a fan-out.
+- Memory is a cache (`KartIngressCache`, `KartInputBuffer`, rate buckets, last views). After a restart, rebuild from SQL; do not require the cache for correctness.
+- Rate buckets live in memory (`maxRateBuckets = 400` for 80 phones × several names). Do not persist token buckets.
+
+```ts
+// ❌ BAD — SQL per socket while broadcasting
+for (const ws of sockets) {
+  const nickname = sql.exec("SELECT nickname FROM player WHERE player_id = ?", id);
+  send(ws, nickname);
+}
+
+// ✅ GOOD — snapshotParts loads players once; buildSnapshot reuses parts
+const parts = this.snapshotParts("guest", statistics);
+```
+
+`KartIngressCache` exists so unacked kart controls do not re-parse the roster. Do not delete it to “simplify”. Do not use it as authority for scoring.
+
+## Alarms and ticks
+
+`alarm()` runs due jobs in one `commitAndArm` transaction. A **kart race tick** (five times a second) must stay `raceTickOnly`: flush inputs, step the race, skip archive queries, and prefer `broadcastKart()` over a full snapshot.
+
+```ts
+// ❌ BAD — settle archive and rebuild guest snapshots 5×/s during a race
+await settleArchive(...);
+this.broadcast();
+
+// ✅ GOOD — existing alarm() short-circuit
+if (!raceTickOnly || !this.broadcastKart()) {
+  this.broadcast(true);
+}
+```
+
+Do not add a second `setTimeout` scheduler beside the durable alarm. Do not use `Date.now()` inside `reduceKart` / chess / troll reducers.
+
+## CPU on the object
+
+The DO is single-threaded for the room. A 20ms stall is 20ms of lag for 80 phones.
+
+- Keep JSON.parse/stringify and Zod at the boundary, once per message.
+- Do not run Stockfish, image codecs, or `jpeg-js` on the room object for a live tap.
+- Chess move validation belongs in the mechanic; engine search belongs in the **phone worker**.
+- Load tests: `npm run load:realtime -w @26/api`. A new broadcast or per-input SQL needs a thought for 80 senders.
+
+## Effects after reduce
+
+Shared helpers return `{ state, effects }`. The DO executes effects (broadcast, alarm, persist). Do not hide a broadcast inside a domain function that also writes SQL in a surprising second pass.
+
+## Config
+
+Read bindings from the request env. `no-restricted-syntax` already forbids `process.env` in `apps/api/src` and `packages/shared/src`. Local fakes must refuse to succeed when `APP_ENV` is `staging` or `production`.
+
+### requestAnimationFrame, kart/chess/troll loops, workers and WASM
+
+Applies to `apps/web/src/kart/**/*.ts` and `apps/web/src/kart/**/*.tsx` and `apps/web/src/chess/**/*.ts` and `apps/web/src/chess/**/*.tsx` and `apps/web/src/troll/**/*.ts` and `apps/web/src/troll/**/*.tsx` and `apps/web/src/play/**/*.ts` and `apps/web/src/play/**/*.tsx` and `apps/web/public/chess-engine/**` and `apps/web/public/kart-engine/**`.
+
+# Game loops, workers, and WASM
+
+React renders **beats** (intro, collect, reveal). Canvas, Stockfish, and particle systems render **frames**. Do not mix them.
+
+## requestAnimationFrame
+
+One rAF (or one Three.js `setAnimationLoop`) per visible canvas. Pause it when the tab is hidden, the round is paused, or the component unmounts. Never `setState` inside the frame callback.
+
+```ts
+// ❌ BAD
+function tick() {
+  setPose(readPose());
+  requestAnimationFrame(tick);
+}
+
+// ✅ GOOD — KartCanvas: mutate Three objects from `live.current`, then render
+renderer.setAnimationLoop(() => {
+  const race = live.current;
+  // ...update meshes from race / prediction refs
+  renderer.render(scene, camera);
+});
+```
+
+`useKartControls` may poll gamepads in rAF; it must cancel the frame on disable. Troll overlays that use rAF (`screen-trolls`) must stop on effect cleanup and on reduced motion.
+
+Clamp delta time so a backgrounded tab does not step 5s of physics on wake. The **room** still owns race time; the phone only interpolates public poses plus local self-prediction.
+
+## Kart (Three.js)
+
+- Import `three` only from `apps/web/src/kart/**`. Guest and stage entry must `lazy()` the canvas (`GuestPlay`, `KartDriverView`, `KartStageView`, `stage-play`).
+- `warmKart()` during the kart **intro**, not at `/play` join (`usePreloadQuestion`).
+- Bound work to **self + nearby** racers (`graphicsProfiles.nearbyLimit`). Do not draw 80 full vehicle rigs at phone resolution.
+- Respect `safeGraphicsProfile` / frame probe: drop pixel ratio, sparks, and trails when the canvas is strained. Decoration never changes race state.
+- On unmount: dispose geometries, materials, textures, renderer, and the animation loop (`KartCanvas` already disposes look, circuit, renderer).
+- `powerPreference: "low-power"` on phones. No antialias on mobile.
+
+## Chess (Stockfish WASM)
+
+- Engine code stays in `apps/web/src/chess/stockfish-worker.ts` and `/chess-engine/`. Do not import the `stockfish` npm package from guest-play, stage, or admin chrome.
+- Run UCI on a **Worker**. Never on the window thread.
+- One init worker per mounted game. `terminate()` it on unmount, on round exit, and before creating a replacement. Isolate in-flight searches so a stale `bestmove` cannot apply; still **tear down** workers so a long game does not accumulate them.
+- Warm the engine on chess intro / first board paint, with a visible “Loading chess engine…” fallback. Do not fetch the WASM on `/join`.
+- The room validates moves and scores captures. The phone worker is a bot, not authority.
+
+```ts
+// ❌ BAD — leave workers alive when the guest leaves the round
+await engine.initialize();
+
+// ✅ GOOD
+useEffect(() => {
+  void engine.initialize();
+  return () => engine.terminate();
+}, [engine]);
+```
+
+## Trolls and VFX
+
+Stage VFX and phone troll overlays must budget particles (`vfx-budget`, `kartVfxBudgets`). A troll that runs on 80 phones cannot allocate unbounded canvases or decode a unique video per guest. Prefer CSS/Motion on the phone; keep WebGL on the projector unless the troll is explicitly a phone effect.
+
+Reduced motion: no loops, no screen shake that hides the question, no colour-only meaning.
+
+### Bundle size, code-splitting, assets, caching, and startup
+
+Applies to `apps/web/src/routes.tsx` and `apps/web/src/main.tsx` and `apps/web/src/play/**/*.ts` and `apps/web/src/play/**/*.tsx` and `apps/web/src/guest/**/*.ts` and `apps/web/src/guest/**/*.tsx` and `apps/web/src/stage/**/*.ts` and `apps/web/src/stage/**/*.tsx` and `apps/web/vite.config.ts` and `apps/web/index.html` and `apps/web/public/**/*` and `packages/shared/src/**/*.ts`.
+
+# Bundle, assets, and startup
+
+Phones join on flaky venue Wi-Fi. The **first** JavaScript they need is: theme, join/play chrome, socket client, and the current ordinary question. Kart, chess, admin, Three, and Stockfish stay out of that graph.
+
+## Code splitting
+
+`apps/web/src/routes.tsx` already `lazy()`s `/play`, `/screen`, `/admin`, `/kart`, `/chess`. Keep it that way. A new round that pulls a heavy engine uses `React.lazy` **inside** the play renderer as well, like `GuestKart` / `GuestChess` in `guest-play.tsx`.
+
+```tsx
+// ❌ BAD — Three.js in the guest question module
+import { KartCanvas } from "../kart/KartCanvas";
+
+// ✅ GOOD
+const GuestKart = lazy(() =>
+  import("../kart/GuestKart").then((kart) => ({ default: kart.GuestKart })),
+);
+```
+
+Do not import `apps/web/src/admin/**` from guest or stage. Do not import `apps/web/src/kart/**` or `apps/web/src/chess/**` from `main.tsx`, `routes.tsx` (except the dedicated `/kart` and `/chess` route factories), or the always-on theme install.
+
+If you add a library, pin it, keep the lockfile, and check `npm run budget:web`. A new always-on import that blows the **entry JS gzip** budget is a failed change, not a warning to ignore.
+
+Shared Zod schemas used on the phone must stay small. Do not re-export Node, Worker, or pack-private answer keys through `packages/shared/src/index.ts`.
+
+## Images, audio, fonts
+
+- Option images: current question only (`questionImages` / `preloadImages`). `decoding="async"`, width/height or aspect-ratio to avoid CLS.
+- Do not ship new webfont files for a theme. Themes use system stacks in the deep skin. Existing `@fontsource` on the party chrome is enough; do not add a third family to the critical path without a budget pass.
+- Audio is optional and behind a user gesture. Do not autoplay on join. Decode / fetch the sting when the round that needs it is announced.
+- Photos go through the media pipeline and R2, not as base64 on the socket.
+- Iconify: import **one** icon module at a time from `@iconify-icons/*` and render `@iconify/react/dist/offline`. Do not load the Iconify CDN.
+
+## Caching and public engines
+
+`/chess-engine/` and `/kart-engine/` are static. They must remain cache-friendly (stable filenames hashed or versioned by the build that copies them). Fetch them only when that round is active or warming.
+
+Do not commit generated `apps/web/public/kart-engine/` output; the web `prebuild` rebuilds it.
+
+## Startup / TTI
+
+- `/play` must paint join or the current beat without waiting for kart WASM/GLB or Stockfish.
+- Avoid giant JSON in the first module. Question packs stay on the server; the phone receives the projected question in the snapshot.
+- Service workers: do not add one unless the owner asked. A stale SW on 80 phones is worse than a cold load.
+- Measure with `npm run perf:audit` against a preview when you change the entry graph. Do not add Playwright specs for it.
+
+## Budget gate
+
+`scripts/check-bundle-budget.mjs` (via `npm run build` / `npm run budget:web`) reads `apps/web/dist/client` and fails CI when gzip sizes exceed `scripts/web-bundle-budget.json`. If a genuine feature needs more bytes, **raise the budget in the same PR** and say why in the PR body. Do not delete the check.
 
 ## Paths to leave closed
 

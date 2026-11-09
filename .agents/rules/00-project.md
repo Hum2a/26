@@ -62,5 +62,6 @@ Every later prompt starts by reading this file.
 - Implement, run relevant checks, fix failures and update documentation. Do not rewrite unrelated work or weaken checks to obtain a pass.
 - No deployments, paid resource creation or changes to unrelated remote resources are implied by Prompts 01-18. Missing external credentials should not prevent completing locally testable work; report precisely what remains unverified.
 - Agent instructions are edited in `.agents`. Run `npm run agents:sync` afterwards. Do not hand-edit the generated copies.
+- Performance and workflow: `.agents/rules/55-agent-workflow.md` plus `60-perf-*.md`. Goal: zero perceptible slowdown for about 80 phones. Do not restructure the tree in a rules-only change.
 - At the end of every stage update `docs/build-progress.md`: status, files/interfaces added, decisions/defaults, commands and results, manual verification, unresolved issues and the exact next stage. Never label an unrun check as passed.
 - Final response for each stage: what now works, how to run/try it, what was verified and any concrete remaining limitation. Do not automatically begin the next prompt.
