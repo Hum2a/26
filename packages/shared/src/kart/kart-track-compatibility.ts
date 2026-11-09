@@ -1,4 +1,4 @@
-import type { LobbySnapshot } from "./index.ts";
+import type { LobbySnapshot } from "../index.ts";
 export const kartTrackCapabilityHeader = "x-26-kart-tracks";
 export const kartTrackRefreshMessage =
   "The kart courses have updated. Refresh this tab to join the race.";

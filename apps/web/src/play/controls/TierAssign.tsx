@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "../ui/primitives";
+import { Button } from "../../ui/primitives";
 import { OptionText } from "./OptionText";
 import "./option-text.css";
 

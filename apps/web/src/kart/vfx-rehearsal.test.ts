@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { createKartRace, projectKartRace } from "@26/shared";
-import { importedSurfaceAt } from "../../../../packages/shared/src/kart-track";
+import { importedSurfaceAt } from "../../../../packages/shared/src/kart/kart-track";
 import { vfxRehearsalRace, vfxScripts } from "./vfx-rehearsal";
 const sample = () =>
   projectKartRace(

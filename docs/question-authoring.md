@@ -37,6 +37,8 @@ A new idea becomes a draft in the birthday catalogue. It is not added to a live 
 
 Create `apps/api/src/questions/packs/birthday/<id>.ts`. The id is a stable lowercase slug, such as `childhood-photo`. Do not put a running-order number in the id or the filename.
 
+Runtime for a round does not live in the pack file. Shared schemas and reducers go in `packages/shared/src/<mechanic>/` and are exported from `packages/shared/src/index.ts`. Worker scoring for kart, chess and Wordle lives in `apps/api/src/questions/<mechanic>/`. Ordinary quiz scoring still sits in `apps/api/src/questions/multiple-choice.ts` (and slider, rank, vote, duel). Phone and stage UI for ordinary questions lives in `apps/web/src/play/` (shared widgets in `play/controls/`). A heavy engine (kart, chess) lives in `apps/web/src/<mechanic>/` and is lazy-loaded from play. The live socket stays in `apps/web/src/live/`. See `.agents/rules/05-structure.md`.
+
 Register that export in `catalogue` inside `apps/api/src/questions/packs/birthday/manifest.ts`. Leave it out of `order` until it is ready and you have explicitly included it.
 
 Helpers live in `apps/api/src/questions/authoring.ts`. Defaults live only in `apps/api/src/questions/defaults.ts`.

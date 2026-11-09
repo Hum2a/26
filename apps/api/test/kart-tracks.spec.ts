@@ -15,7 +15,7 @@ import {
   importedSurfaceAt,
   importedTrackPoint,
   importedLapLength,
-} from "../../../packages/shared/src/kart-track.ts";
+} from "../../../packages/shared/src/kart/kart-track.ts";
 for (const track of kartTrackCatalogue.tracks)
   it(`${track.id}: every public grid/recovery slot uses actual clear driving geometry`, () => {
     const race = createKartRace(

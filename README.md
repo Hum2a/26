@@ -66,7 +66,7 @@ npx playwright install chromium
 npm run smoke
 ```
 
-`npm run build` creates the production assets and then checks that the output does not contain secret files. `npm run smoke` opens the preview at http://localhost:4173 and needs that build first.
+`npm run lint` runs ESLint and `scripts/check-structure.mjs` (folder allowlists and import boundaries). `npm run build` creates the production assets and then checks that the output does not contain secret files and that the web gzip budget still holds. `npm run smoke` opens the preview at http://localhost:4173 and needs that build first.
 
 `npm run preview` serves the production build locally.
 

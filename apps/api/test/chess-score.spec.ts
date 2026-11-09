@@ -14,7 +14,7 @@ import {
   capturedBlackMaterial,
   calculateChessScore,
   initializeChessRound,
-} from "../src/questions/chess-coordinator.ts";
+} from "../src/questions/chess/chess-coordinator.ts";
 
 const now = 1_700_000_000_000;
 const roundId = "score-round";

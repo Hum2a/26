@@ -5,7 +5,7 @@ import {
   slipstreamTuning,
   stepSlipstream,
   type SlipstreamKart,
-} from "../../../packages/shared/src/kart-slipstream.ts";
+} from "../../../packages/shared/src/kart/kart-slipstream.ts";
 
 const kart = (patch: Partial<SlipstreamKart> = {}): SlipstreamKart => ({
   playerId: "me",

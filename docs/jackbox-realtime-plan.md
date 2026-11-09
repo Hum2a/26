@@ -198,7 +198,7 @@ This is the most important design choice for smoothness.
 | Throttled live drafts (200 ms client, `draftGapMs` server) | `text-map` cursor sync      | `room-socket.ts:405`, `party-room.ts:2961`                        |
 | Kart input backpressure (`bufferedAmount < 8192`)          | —                           | `room-socket.ts:394`                                              |
 | Kart poses interpolated on the client                      | Talkshow local timeline     | `apps/web/src/kart/KartCanvas.tsx:7`                              |
-| Reconnect banner delayed 1.5 s so blips do not flash       | `connectingDurationTrouble` | `apps/web/src/net/ReconnectBanner.tsx:4`                          |
+| Reconnect banner delayed 1.5 s so blips do not flash       | `connectingDurationTrouble` | `apps/web/src/live/ReconnectBanner.tsx:4`                          |
 
 ### 2.2 Gaps, ordered by impact
 
@@ -211,7 +211,7 @@ This is the most important design choice for smoothness.
 
 **G2. Kart ticks trigger full broadcasts at 5 Hz.**
 
-- `tickKart` bumps `state_version` every `kartTickMs = 200` (`questions/kart.ts:197`, `shared/src/kart.ts:5`).
+- `tickKart` bumps `state_version` every `kartTickMs = 200` (`questions/kart/kart.ts:197`, `shared/src/kart.ts:5`).
 - Every alarm ends with `this.broadcast()` (`party-room.ts:706`).
 - **The cost (Inferred):** during a race with 80 players, that is about 410 full snapshot builds per second, on one single-threaded object, while it also takes inputs. This is the most likely source of jank or CPU-limit errors at full room size.
 
@@ -312,7 +312,7 @@ The phases are ordered so each one is measurable, and so the biggest risk to eve
    - `KartCanvas` already interpolates. Add a fixed render delay of about 1.5 frame intervals, 150 ms, using the existing server clock. Phones then always interpolate between two known frames and never extrapolate across a dropped packet.
    - Keep `bufferedAmount` backpressure. Add "latest input wins": if the previous publish is still buffered, replace it rather than queue it.
 
-**Files:** `apps/api/src/questions/kart.ts`, `party-room.ts:1745-1762` and `alarm()`, `packages/shared/src/kart.ts` (frame schema), `apps/web/src/kart/*`, `apps/web/src/live/room-socket.ts` (new `onKartFrame`).
+**Files:** `apps/api/src/questions/kart/kart.ts`, `party-room.ts:1745-1762` and `alarm()`, `packages/shared/src/kart/kart.ts` (frame schema), `apps/web/src/kart/*`, `apps/web/src/live/room-socket.ts` (new `onKartFrame`).
 
 **Done when:**
 
@@ -385,7 +385,7 @@ The phases are ordered so each one is measurable, and so the biggest risk to eve
 4. **Hold on stage loss as well, as a setting.** `notePresence` holds on controller loss today. Add an optional hold on **stage** loss, because a projector that is offline means the room cannot see the question. Jackbox pauses the host when ecast drops.
 5. **Add a debug disconnect.** In local and staging, add an admin "drop all sockets" and a per-socket "drop me" button, like `disconnectForDebugPurposes`, to rehearse reconnects before the party.
 
-**Files:** `room-socket.ts`, `apps/web/src/net/ReconnectBanner.tsx`, `apps/web/src/stage/*`, `apps/api/src/room/lifecycle.ts`, `admin/health-page.tsx`.
+**Files:** `room-socket.ts`, `apps/web/src/live/ReconnectBanner.tsx`, `apps/web/src/stage/*`, `apps/api/src/room/lifecycle.ts`, `admin/health-page.tsx`.
 
 ### Phase 7: Better clock sync and local presentation timeline (1–2 days)
 

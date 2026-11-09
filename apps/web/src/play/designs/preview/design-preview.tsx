@@ -12,7 +12,7 @@ import {
 import { GuestPlay } from "../../guest-play";
 import { StagePlay } from "../../stage-play";
 import { SafeArea } from "../../../stage/SafeArea";
-import type { TierPlacement } from "../../../rounds/TierAssign";
+import type { TierPlacement } from "../../controls/TierAssign";
 import { previewQuestions, previewReveal } from "./fixtures";
 import "../../../stage/projector.css";
 

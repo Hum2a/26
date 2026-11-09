@@ -8,7 +8,7 @@ import {
   type KartTrial,
   type KartTrialConfig,
 } from "@26/shared";
-import { importedRoute } from "../../../packages/shared/src/kart-route.ts";
+import { importedRoute } from "../../../packages/shared/src/kart/kart-route.ts";
 const config: KartTrialConfig = {
   version: 1,
   track: "mario-circuit-v1",

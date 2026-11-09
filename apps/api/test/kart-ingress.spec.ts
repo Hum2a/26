@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { KartIngressCache, type KartIngressClock } from "../src/room/kart-ingress.ts";
+import { KartIngressCache, type KartIngressClock } from "../src/room/kart/kart-ingress.ts";
 const clock: KartIngressClock = {
   phase: "collect",
   paused: 0,

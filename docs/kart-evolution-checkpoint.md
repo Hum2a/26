@@ -391,7 +391,7 @@ artifacts/phase7-projectile-storage/results.json/logs before any duplicate run;
 API/browser/root/build still pending at this checkpoint. Source frozen; do not
 mark this increment complete until all gates/format/screenshot results saved.
 
-Integration survey for the next increment: enterKart in questions/kart.ts creates
+Integration survey for the next increment: enterKart in questions/kart/kart.ts creates
 the grid and copies room defaults; versioned item rules should freeze there.
 useKartItem already catches up queued inputs then calls the shared use-power
 reducer and writes before ack; preserve that path, recheck end state after catch-up

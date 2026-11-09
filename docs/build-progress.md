@@ -1770,8 +1770,8 @@ A guest who opens `/?room=` skips typing the room code. The nickname field remem
 - `apps/web/src/join/JoinRoomCode.tsx` reads `?room=` and `/j/:code`. A complete code hides the field. Typed codes are uppercased and limited to `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`.
 - The room QR in `apps/web/src/lobby/join-mark.tsx` now points at `/?room=`.
 - `apps/web/src/join/Nickname.tsx` prefills `26-nickname` from localStorage, shows `n/24`, and focuses the field when the join error mentions the nickname.
-- `apps/web/src/net/ReconnectBanner.tsx` shows “Reconnecting…” after 1.5 seconds disconnected, disables inputs, then clears that banner and shows “Back in ✓” when a snapshot arrives.
-- `apps/web/src/net/ConnectionDot.tsx` sits with the existing connection sentence.
+- `apps/web/src/live/ReconnectBanner.tsx` shows “Reconnecting…” after 1.5 seconds disconnected, disables inputs, then clears that banner and shows “Back in ✓” when a snapshot arrives.
+- `apps/web/src/live/ConnectionDot.tsx` sits with the existing connection sentence.
 
 ### Decisions and defaults
 
@@ -1811,10 +1811,10 @@ The phone slider shows a large value with its unit and ticks on each step. Ranki
 
 ### Files and interfaces
 
-- `apps/web/src/rounds/Slider.tsx` is the estimate control: a display readout, a large thumb, and a haptic tick at most once every 50ms. `GuestSlider` uses it.
-- `apps/web/src/rounds/TierAssign.tsx` is tap-to-assign. The selected item uses `tier-selected`. “Undo last” restores the previous placements. Each tier button keeps its name and shows a `tier-count` badge.
-- `apps/web/src/rounds/SubmitButton.tsx` is idle, sending (spinner, disabled), or “Locked in ✓”. A second tap does not call `onClick` again. Choice, slider, rank, text, ballot, guess, duel, and finale send through it.
-- `apps/web/src/rounds/OptionText.tsx` wraps option labels. More than three measured lines adds `option-text-small`.
+- `apps/web/src/play/controls/Slider.tsx` is the estimate control: a display readout, a large thumb, and a haptic tick at most once every 50ms. `GuestSlider` uses it.
+- `apps/web/src/play/controls/TierAssign.tsx` is tap-to-assign. The selected item uses `tier-selected`. “Undo last” restores the previous placements. Each tier button keeps its name and shows a `tier-count` badge.
+- `apps/web/src/play/controls/SubmitButton.tsx` is idle, sending (spinner, disabled), or “Locked in ✓”. A second tap does not call `onClick` again. Choice, slider, rank, text, ballot, guess, duel, and finale send through it.
+- `apps/web/src/play/controls/OptionText.tsx` wraps option labels. More than three measured lines adds `option-text-small`.
 
 ### Decisions and defaults
 
@@ -1827,7 +1827,7 @@ The phone slider shows a large value with its unit and ticks on each step. Ranki
 
 - `npm run test:unit` passed: 12 files, 25 tests.
 - `npm run typecheck` passed.
-- `npx eslint` on `apps/web/src/rounds` and the guest round components passed.
+- `npx eslint` on `apps/web/src/play/controls` and the guest round components passed.
 
 ### Manual verification
 
@@ -3156,7 +3156,7 @@ Status: complete locally and verified. All **23 former drafts** are now ready, c
 - Saved all eight new concepts, including five Council/Dystopia rounds. Broadwater Farm, Blackbird Leys and Thamesmead South have council/primary references; Redoubt is the user's invented dystopia. The apology scenario is explicitly fictional and uses the working tournament. `Ferrier Sector` remains a draft because Royal Greenwich documents **Ferrier Estate**; the supplied exact name has not been authenticated. The Tribunal, Nextdoor and property rounds still need genuine source material. Group-chat double self-vote scoring, spoken debate pairing and push-your-luck raids remain disabled mechanic drafts. Exact ids, gaps and sources: [docs/content/tribunal-and-chaos.md](content/tribunal-and-chaos.md).
 - Added `KartGameWrapper.tsx`, `useKartSocket.ts`, `TouchController.tsx` and the lazy Three.js stage canvas. These TypeScript versions match the repository. Default phones load a lightweight SVG HUD and A/B/R plus analog steering; the TV draws numbered ghost karts and live standings. Pointer cancellation, blur, hidden tabs, disconnection, pause and unmount release controls. Reduced motion, safe scrolling, keyboard controls and optional existing stage audio are retained.
 - Inspected `Nathan-Richard-21/mario-kart-js` at `0f7a4305981206193c5efba64bc90755e6e85773` and the related upstream Mario Kart 3.js source. Ported the damped driving/release-boost model into pure server physics with a procedural party circuit. No upstream Nintendo artwork, music, original track, landing page, Playroom store or effect stack is bundled. Preserved the selected fork's declared permission notice in `THIRD_PARTY_NOTICES.md`; this is a documented party adaptation, not an untouched upstream engine build. Three.js/types are pinned and the lockfile retained.
-- `packages/shared/src/kart.ts` owns pure input/tick/end reduction, eight ordered gates, timing and rankings. `apps/api/src/questions/kart.ts` persists frozen participants, bounded per-driver input queues, replay cursors, simulation and ledger results. Race ids include room id and phase generation. Only authenticated normalised inputs are accepted, at most one per 80ms. No client time, frames, position or hash can grant a lap. A guest sees its own kart and the leading results; the stage sees all participants. Reconnect cursors do not depend on a phone's clock.
+- `packages/shared/src/kart/kart.ts` owns pure input/tick/end reduction, eight ordered gates, timing and rankings. `apps/api/src/questions/kart/kart.ts` persists frozen participants, bounded per-driver input queues, replay cursors, simulation and ledger results. Race ids include room id and phase generation. Only authenticated normalised inputs are accepted, at most one per 80ms. No client time, frames, position or hash can grant a lap. A guest sees its own kart and the leading results; the stage sees all participants. Reconnect cursors do not depend on a phone's clock.
 - The existing durable scheduler owns a 200ms auxiliary race tick and the 45-second cutoff; physics substeps are at most 50ms. A finishing tick cannot double-advance with a due cutoff. Pause saves active-time remainders. Finishing times rank ahead of DNF, ties share place, DNF scores zero; finishers get `round(points × (participants − place + 1) / participants)`. The existing reveal/scores/next-question/final/podium phases handle the rest.
 - Added an explicit authenticated **local** quiz → kart → podium rehearsal start. It pins `kart-rehearsal-v1`, is hidden in production builds and rejected by staging/production bindings, and never releases the birthday pack. Question packs remains an isolated controller-layout preview. Socket.io message semantics are mapped to the existing native WebSocket snapshots/inputs in [docs/kart-minigame.md](kart-minigame.md); no second transport or client-selected winner is introduced.
 - Browser rehearsal exposed stop/start steering sensitivity: turning now scales with speed, as in the upstream model, and the boundary allows a recoverable slide. It also caught generic “No answer was received” race copy, duplicate timers, radial direction arrows and small race numbers. These were corrected, with regression checks for variable-speed laps, race result copy and server-confirmed completion callbacks.
@@ -3284,7 +3284,7 @@ Final local setup: dependency installation in E: completed successfully and the 
 
 Applied the plan in [docs/jackbox-realtime-plan.md](jackbox-realtime-plan.md), which compares 26 with the shipped Jackbox Party Pack 11 network client. All phases are built locally. Status, deviations and reasons are in that file's implementation table. Before and after figures are in [docs/verification-report.md](verification-report.md): at 80 guests the stage's worst wait between race updates fell from 31.8 seconds to 317 ms, and answer acknowledgement p95 fell from 3.1 s to 785 ms.
 
-Files/interfaces: `room/realtime-meter.ts` (room health traffic), `packages/shared/src/rate-limit.ts`, `kartFrameSchema`, `acceptKartInputs` and `kartFrames` in `questions/kart.ts`, patch/resume views in `PartyRoom`, `live/server-clock.ts`, `play/preload.ts`, `device/error-reporter.ts`, `npm run load:realtime` with `apps/api/vitest.load.config.ts`. Socket messages added: `kart` frames, opt-in `patch` messages (`patches=1`, resume with `since=`), and `time:` clock samples. Room health gains Socket traffic and Phone errors, with the build id.
+Files/interfaces: `room/realtime-meter.ts` (room health traffic), `packages/shared/src/rate-limit.ts`, `kartFrameSchema`, `acceptKartInputs` and `kartFrames` in `questions/kart/kart.ts`, patch/resume views in `PartyRoom`, `live/server-clock.ts`, `play/preload.ts`, `device/error-reporter.ts`, `npm run load:realtime` with `apps/api/vitest.load.config.ts`. Socket messages added: `kart` frames, opt-in `patch` messages (`patches=1`, resume with `since=`), and `time:` clock samples. Room health gains Socket traffic and Phone errors, with the build id.
 
 Decisions: controls stay durable before the tick reads them, as `kart-room.spec.ts` records; they are written once per tick with their own arrival times. The lifetime caps of 100 commands and 60 telemetry reports per phone are replaced by token buckets, because drafts counted towards the cap and could lock a phone out. The stage still hides a question at once on disconnect, and the room does not pause itself when the stage drops. Patches are opt-in, so a phone on an older cached build keeps full snapshots during a deploy. No future question's images are preloaded.
 
@@ -3298,7 +3298,7 @@ Deployed-site follow-up (21 October 2026): staging showed the real cause of "We 
 
 Status: implementation and logic/runtime checks complete; end-to-end browser rehearsal remains unverified. This stage hardens the existing connected ring circuit. The imported `/kart` circuit remains solo practice; no deployment, birthday release, external resource creation or unrelated Jackbox changes were made.
 
-Files/interfaces: `questions/kart.ts` gains a bounded per-driver transient input buffer and saved pause-boundary release; `PartyRoom` validates collection/race/roster before buffering, flushes arrivals before host phase commands and retains the existing tick transaction. The pure shared kart reducer gains a trusted `release` event, with no WebSocket wire change or storage migration. `room-socket.ts` rejects backwards race time, old room/race frames, paused/non-collecting frames and attempts to reopen ended results. Existing kart API/scoring and socket test files cover these changes. Updated [docs/kart-minigame.md](kart-minigame.md) documents the transport and pause behaviour.
+Files/interfaces: `questions/kart/kart.ts` gains a bounded per-driver transient input buffer and saved pause-boundary release; `PartyRoom` validates collection/race/roster before buffering, flushes arrivals before host phase commands and retains the existing tick transaction. The pure shared kart reducer gains a trusted `release` event, with no WebSocket wire change or storage migration. `room-socket.ts` rejects backwards race time, old room/race frames, paused/non-collecting frames and attempts to reopen ended results. Existing kart API/scoring and socket test files cover these changes. Updated [docs/kart-minigame.md](kart-minigame.md) documents the transport and pause behaviour.
 
 Decisions: at most four transient controls per driver, at least 80ms between arrivals, maximum 80 roster members. Invalid inputs and one noisy driver cannot evict another driver's queue. These controls remain unacknowledged until the existing durable tick processes them; eviction can lose transient arrivals. Pause catches up to its boundary, releases held controls and drift charge, clears pending histories and preserves reconnect sequence cursors. Existing speed/active boost, track, 45-second deadline, scoring, private phone projection and single room socket/scheduler remain in use.
 
@@ -3344,7 +3344,7 @@ Try: sign in at `https://26.humza.website/admin/kart` or choose Kart in the admi
 
 Status: implementation complete locally for imported solo driving and newly created connected ring races. Added a shared pure velocity/steering/grip model with bounded 20 ms steps, swept-circle wall/end-point contacts and sliding, braking before reverse, deliberate fresh-input drift boosts and collision cancellation of charge/boost. The ring keeps server authority, scoring, eight ordered gates and its existing scheduler/socket. New races store private physicsVersion arcade-v2; saved unversioned races continue using their original simulation. Wrong-way feedback uses resolved velocity. Public snapshot fields remain compatible with existing clients.
 
-Files/interfaces: packages/shared/src/kart-driving.ts; versioned driver body/safe-pose/recovery state in kart.ts; generated solo track/colliders.json and its spatial index; reproducible scripts/kart-colliders.mjs / npm run kart:colliders; adapted solo PlayerController, surface sampling, render interpolation, cosmetic hop, gamepad adapter, toolbar/status and compact phone actions. The unchanged imported GLB SHA-256 is recorded in generated data and UPSTREAM.md. Solid fence/scenery meshes were sliced at body height and their projected edges visually audited against road/dirt geometry. Low kerbs, overhead signs and distant backdrop are excluded. No new obstacles, items, kart-to-kart impacts or imported-track multiplayer were added.
+Files/interfaces: packages/shared/src/kart/kart-driving.ts; versioned driver body/safe-pose/recovery state in kart.ts; generated solo track/colliders.json and its spatial index; reproducible scripts/kart-colliders.mjs / npm run kart:colliders; adapted solo PlayerController, surface sampling, render interpolation, cosmetic hop, gamepad adapter, toolbar/status and compact phone actions. The unchanged imported GLB SHA-256 is recorded in generated data and UPSTREAM.md. Solid fence/scenery meshes were sliced at body height and their projected edges visually audited against road/dirt geometry. Low kerbs, overhead signs and distant backdrop are excluded. No new obstacles, items, kart-to-kart impacts or imported-track multiplayer were added.
 
 Back to track restores the last road pose with clearance to steer, removes velocity/drift/boost and requires fresh controls. Solo Reset kart remains a separate grid reset. Connected recovery uses the existing tracked command/receipt path with raceId/requestId, authenticated player identity, live collect validation, two-second active-race cooldown, pending-input clearing and durable commit before acknowledgement. It restores checkpoint/progress with no time/progress gain. Added recovery persistence/eviction, spectator/stale-race/cooldown, legacy-race, immutability, swept impact/corner/reverse/ring-boundary, drift-release, velocity-feedback, pending-control and socket-replay tests. Browser rehearsal also found and fixed keyboard key-up being ignored after focus moved to the steering slider; a regression test covers that release.
 
@@ -3378,7 +3378,7 @@ Implemented turbo, bubble shields and oil slicks for both imported solo practice
 
 Turbo lasts 1.2 seconds, shield lasts five seconds and blocks one slick, and oil lasts eight seconds and applies a 1.6-second slowdown/cancels charge/boost. Owner grace is 750 ms and each slick hits a kart once. Maximum active slicks: 64. Use is an existing tracked command/receipt action (kart-use-item, raceId/requestId), validated against the racing authenticated principal and collect phase, caught up and persisted before acknowledgement. Retries reuse the original id. Using an item preserves held driving input. Manual recovery retains inventory and clears active effects; solo reset clears the full practice inventory/world. No client chooses an item, hit, player target, position, timer or score in a connected race.
 
-Files/interfaces: packages/shared/src/kart-powers.ts and existing kart reducer/projection; API kart helper and shared kart action receipt path; room socket/guest acknowledgement wiring; reusable PowerUpControl; solo TrackItems and existing session/store/controller; ring scene and SVG map. Boxes/oil/shields use shared or instanced geometry, palette roles and reduced-motion fallbacks. Finish-line tiles were batched to offset the new draw objects. Solo inventory is isolated from per-frame React rerenders. Added kart-powers.spec.ts, room persistence/privacy/rejection coverage, item pending controls, socket replay, render-instance coverage and a real solo e2e pickup/use/reset scenario.
+Files/interfaces: packages/shared/src/kart/kart-powers.ts and existing kart reducer/projection; API kart helper and shared kart action receipt path; room socket/guest acknowledgement wiring; reusable PowerUpControl; solo TrackItems and existing session/store/controller; ring scene and SVG map. Boxes/oil/shields use shared or instanced geometry, palette roles and reduced-motion fallbacks. Finish-line tiles were batched to offset the new draw objects. Solo inventory is isolated from per-frame React rerenders. Added kart-powers.spec.ts, room persistence/privacy/rejection coverage, item pending controls, socket replay, render-instance coverage and a real solo e2e pickup/use/reset scenario.
 
 Verification: focused API tests passed **4 files / 30 tests** (kart-powers, kart-driving, kart-score, kart-room). Typecheck including solo and production build passed; build stripping/artefact and existing content preflights passed. Focused ESLint passed after correcting one prefer-const error; one solo updater parameter needed an explicit type. The real solo Playwright power-up scenario passed **1 test / 9.1 seconds**, including actual road collection, use, spent slot, reset, 390px layout and no page errors. Its first attempt expected generic use text when the shield correctly displayed its active status; the assertion now accepts the actual item-specific feedback.
 
@@ -3390,7 +3390,7 @@ Try npm run dev → Admin → Kart → Drive, drive straight through a glowing b
 
 Implemented drivers in the karts, chosen in the lobby, with an optional guest photo on the driver's face. Details and decisions are in [docs/kart-minigame.md](kart-minigame.md) under "Drivers and guest faces".
 
-Files/interfaces: `packages/shared/src/kart-driver.ts` (roster, `driverChoiceSchema`, `lobbyDriverSchema`); `apps/api/src/room/drivers.ts`; `driver` socket command in `PartyRoom`; media `purpose` column with face rules in `media/records.ts`; exclusions in stats, trolls, the archive gallery and stage media; admin media face marker. Web: `DriverPicker`, `DriverBadge`, `driver-face.ts`, `drivers-context.ts`, `KartDriversProvider`, `driver-rig.ts`, `media/face-upload.ts`, `media/photo-prepare.ts`; circuit, canvas, map and leaderboard wiring.
+Files/interfaces: `packages/shared/src/kart/kart-driver.ts` (roster, `driverChoiceSchema`, `lobbyDriverSchema`); `apps/api/src/room/drivers.ts`; `driver` socket command in `PartyRoom`; media `purpose` column with face rules in `media/records.ts`; exclusions in stats, trolls, the archive gallery and stage media; admin media face marker. Web: `DriverPicker`, `DriverBadge`, `driver-face.ts`, `drivers-context.ts`, `KartDriversProvider`, `driver-rig.ts`, `media/face-upload.ts`, `media/photo-prepare.ts`; circuit, canvas, map and leaderboard wiring.
 
 Checks: `test/drivers-room.spec.ts` (3), `driver-rig.test.ts` (9), `driver-picker.test.tsx` (4), and the updated `circuit.test.ts` budget, which now also asserts the same draw-object count for one driver as for eighty. Full web unit suite 74 files / 306 tests passed before the final refactor; the related 17 files / 104 tests passed after it. The relevant API specs passed (10 files / 56 tests). Typecheck passed; lint has no errors. A headless Chromium render of all six styles, with and without a face, and of the look-back and finish poses, was reviewed. Not checked: a live room in the browser, physical phones and the projector.
 
@@ -3400,7 +3400,7 @@ This work shares files with the kart power-ups work in progress in the same chec
 
 Status: implemented locally. Fixed charge being lost when steering returns to neutral before the drift button is released. Shared arcade driving now latches drift direction, permits counter-steering without clearing the bank, has separate entry/sustain speed thresholds and builds charge faster while steering into the corner. Three charge tiers (700/1400/2400 charge-ms) award 600/900/1200 ms turbos with faster acceleration and no additive stacking. Grip recovery, stale controls, brake/throttle cancellation, dirt, impact and recovery retain explicit handling. Compact ring steering is tuned separately from the full solo circuit. Legacy races keep their original branch.
 
-Files/interfaces: `packages/shared/src/kart-driving.ts` (`driftSide`, profile `driftTurnBase`, `drivingDriftLevel`); driving regression tests; presentation-only `driftPose` and test; solo controller, DriftEffects, upstream Kart/constants, charge-tier HUD/CSS; solo browser regression; kart guide/provenance. Solo now follows the physics for every input source, with eased slip yaw/lean, entry hop, turbo camera distance/FOV and a 32-particle world-space spark wake. Existing eight wheel particles remain. Reduced motion removes travel/camera/body effects and retains stationary wheel feedback. No new dependencies, audio, assets, sockets or score engines.
+Files/interfaces: `packages/shared/src/kart/kart-driving.ts` (`driftSide`, profile `driftTurnBase`, `drivingDriftLevel`); driving regression tests; presentation-only `driftPose` and test; solo controller, DriftEffects, upstream Kart/constants, charge-tier HUD/CSS; solo browser regression; kart guide/provenance. Solo now follows the physics for every input source, with eased slip yaw/lean, entry hop, turbo camera distance/FOV and a 32-particle world-space spark wake. Existing eight wheel particles remain. Reduced motion removes travel/camera/body effects and retains stationary wheel feedback. No new dependencies, audio, assets, sockets or score engines.
 
 Verification so far: `npm run test:unit -- -- --maxWorkers=2` passed 75 files / 311 tests; `npm run typecheck` passed including solo; focused ESLint passed. `npm run test -w @26/api -- test/kart-driving.spec.ts test/kart-score.spec.ts test/kart-powers.spec.ts` passed 3 files / 27 tests, including after the final solo turn-base adjustment. Solo production builds passed (including the browser server's final predev rebuild); existing large-bundle advisory remains. Final `npm run build` also passed, including generated-secret stripping, 527-file artefact checks and content preflights; existing draft-content notices remain. `git diff --check` passed. Browser verification result is recorded below when complete. First attempt timed out starting the dev server; another hit a Windows watcher lock. An interrupted run was replaced after tuning. A screenshot during an earlier driving run delayed release until the kart entered dirt, correctly cancelling the bank; this is not a successful drift/boost rehearsal. The off-road screenshot was inspected for layout only.
 
@@ -3512,7 +3512,7 @@ Status: complete locally. The shared arcade driving model, both kart renderers a
 
 - Replaced forward target-speed damping with acceleration, power per unit mass, rolling resistance and aerodynamic drag. Boost expiry removes thrust without pulling the kart towards a speed cap. Kept bounded reverse and stronger resistance for stale controls. Swept-wall queries now use actual velocity.
 - Mini, Super and Ultra drift releases now differ in thrust as well as duration. Added the shared `DriftGauge`, explicit ready/active tier labels and speed in km/h. Kept the older first-tier `driftCharge` wire field and added full-bank milliseconds/tier fields.
-- Added `packages/shared/src/kart-course.ts`: deterministic moving sweepers, floor boosts, ramps, height/vertical velocity, glide/descent and independent per-feature cooldowns, so a boost can feed directly into a ramp. Physics and rendered hazards use the existing active race clock, including after recovery. Airborne karts skip floor items/oil; boundary walls remain solid.
+- Added `packages/shared/src/kart/kart-course.ts`: deterministic moving sweepers, floor boosts, ramps, height/vertical velocity, glide/descent and independent per-feature cooldowns, so a boost can feed directly into a ramp. Physics and rendered hazards use the existing active race clock, including after recovery. Airborne karts skip floor items/oil; boundary walls remain solid.
 - Integrated course props, deployed wings and flight height into solo, connected 3D and the SVG map. Kept shared geometry and disposal budgets. Corrected the upstream chassis calculation so flight raises wheels and body together.
 - Admin → Kart → Drive has real-engine course switches, clear/restore, return to grid and direct boost/ramp/sweeper rehearsals. Configuration changes reset and pause practice. Imported rehearsal starts use verified road surface.
 - Live controls show course status, airborne/boosting counts, on/off commands and history. New connected races default to course off. Turning it off lands karts and clears course boost. Commands use existing validation, transaction rollback and persisted receipts. The latest 20 changes are host-only `kartCourseHistory`; guest/stage snapshots omit it.
@@ -3977,7 +3977,7 @@ below. No deployment, new dependency or paid resource.
 - **Request:** create a new lobby that plays just the existing Mario kart race.
 - **Implementation:** `POST /api/rooms` accepts validated `kind: "kart"`; the
   registry persists it in the existing pending/completed creation receipt and
-  refuses cross-kind reuse. `room/kart-lobby.ts` freezes only the existing
+  refuses cross-kind reuse. `room/kart/kart-lobby.ts` freezes only the existing
   `kart-sprint`, using a content-derived `kart-birthday-r0-…` room version. The
   saved birthday order and question files are unchanged. The existing room
   bootstrap transaction writes both the private script and mode timestamp before
@@ -4651,7 +4651,7 @@ Phase 0 follow-up evidence in this turn:
 
 Input-path change and completed regression evidence:
 
-- Added phase-scoped KartIngressCache in apps/api/src/room/kart-ingress.ts and used it in PartyRoom. Each control still checks fresh durable phase/pause/hold fields; the frozen roster is read once per scope/phase/question/version. Durable flush validation remains authoritative. No new commands, public fields, persisted data, host controls or game rules; existing Room admin coverage/ownership remains.
+- Added phase-scoped KartIngressCache in apps/api/src/room/kart/kart-ingress.ts and used it in PartyRoom. Each control still checks fresh durable phase/pause/hold fields; the frozen roster is read once per scope/phase/question/version. Durable flush validation remains authoritative. No new commands, public fields, persisted data, host controls or game rules; existing Room admin coverage/ownership remains.
 - Added kart-ingress.spec.ts: all 10 cache eligibility/invalidation tests passed. Kart pure tests passed 4 files / 35 tests; kart room/lobby passed 2 files / 12 tests after the change.
 - Full web suite passed 116 files / 457 tests on Node 22 with normal two workers (135.79s). Includes admin feature ownership and kart renderer/controller tests. Earlier 240s outer-process timeout was not counted as a pass; individual test limits were unchanged.
 - Post-cache neutral local sample improved 50/80 racers to 4.2/1.7 stage updates/s, p95 gaps 308/2820ms. Compared with previous neutral 3.5/0.4 and 552/6323ms. Keep the sample and runtime variability limitations; 80-racer capacity is still unresolved.
@@ -5024,7 +5024,7 @@ Launched SEQUENTIAL root-only full rerun phase4-serial-full-unit.log, no browser
 - **Trolls never block answers** (`586c185`): separate troll request and pending state in `guest/guest-page.tsx`.
 - **Polls are just for fun** (`14388a0`): `awardsPoints()` in `multiple-choice.ts`; `selfAward` is null for rounds that cannot score; phone shows "Just for fun"; Ranks no longer repeats the previous round's points. Adds `npm run safe-env -- <cmd>` (`scripts/test-safe-env.mjs`), which blanks `DATABASE_URL` in `apps/api/.dev.vars` for a command and always restores it.
 - **Live desk misclicks** (`c6659f0`): every start (birthday, kart, demo) confirms; the demo start is labelled as a rehearsal alternative; bots are refused in a room running the birthday script unless it is a rehearsal room (`liveBirthdayGame`).
-- **Kart driving feel** (`d9d49b0`, `7db8d39`): one receipted `kart-setting` host command and `packages/shared/src/kart-settings.ts`; settings `prediction` (off/on/conservative), `glide`, `steering` (strip/slider/fixed-centre pad), `frameCap` (30/60/auto), `countdown` (3-2-1-GO/none). Room default in `round_state` `__kart/settings`, copied into new races; public `race.settings`; control-only 20-entry history; Admin Live controls → Driving feel. Prediction keeps a pedal held as a race begins.
+- **Kart driving feel** (`d9d49b0`, `7db8d39`): one receipted `kart-setting` host command and `packages/shared/src/kart/kart-settings.ts`; settings `prediction` (off/on/conservative), `glide`, `steering` (strip/slider/fixed-centre pad), `frameCap` (30/60/auto), `countdown` (3-2-1-GO/none). Room default in `round_state` `__kart/settings`, copied into new races; public `race.settings`; control-only 20-entry history; Admin Live controls → Driving feel. Prediction keeps a pedal held as a race begins.
 - **Race countdown** (`7db8d39`): `kart/countdown.ts`, `KartCountdown` on phones and the stage, 3-2-1 over the last three seconds of the prompt then GO, from the room's deadline; no rule change. The versioned in-collect "grid hold" option is deferred to Phase 6 (F6) because it changes race rules and question versions.
 - **Kart-only rooms** (`31a792c`): public `mode: "kart"` on snapshots; landscape lobby, hidden nickname cloud, race wording.
 - **Projector** (`c30ca99`): dropped full screen keeps presenting with a hint (Escape still opens setup); reload mid-show reconnects and presents; setup button fades when idle; plain phase labels (`live/phase-label.ts`). The runbook's D/? stage shortcuts do not exist by design (a test forbids operator diagnostics on the projector); runbook correction is in Stage B.
@@ -5306,7 +5306,7 @@ Final Phase5 owned Prettier and git diff --check PASSED exit0. Machine-readable 
 
 ## Phase6 shared lap foundation — 6 November 2026,09:10UTC, verification in progress
 
-Extracted the existing authoritative circuit/legacy-ring checkpoint calculation into packages/shared/src/kart-laps.ts, exported through the shared package and used directly by stepDriver. Same arithmetic, eight gates, projection-distance/speed bounds, reverse/start wrapping, safe recovery eligibility and finish trigger; no public snapshot, host action, score, room timing or gameplay change. This is a preparatory refactor, not a completed time-trial feature. Existing Admin sees/manages/rehearses the same actual room/practice; new time-trial UI and admin rehearsal remain next.
+Extracted the existing authoritative circuit/legacy-ring checkpoint calculation into packages/shared/src/kart/kart-laps.ts, exported through the shared package and used directly by stepDriver. Same arithmetic, eight gates, projection-distance/speed bounds, reverse/start wrapping, safe recovery eligibility and finish trigger; no public snapshot, host action, score, room timing or gameplay change. This is a preparatory refactor, not a completed time-trial feature. Existing Admin sees/manages/rehearses the same actual room/practice; new time-trial UI and admin rehearsal remain next.
 
 Added named kart-laps.spec.ts to the existing plain Node API test project: ordered crossings, reverse/start oscillation, teleport/missed gates, off-route crossing, legacy ring, actual baked route/serialisation and legitimate recovery cursor. Initial focused3files40tests39passed/1failed: legacy-ring fixture stopped within floating-point rounding before the finish (progress0.9999999999999999). Corrected the new fixture to physically cross the line by one simulation sample, retaining the finish assertion and original production arithmetic. No test deadline/assertion or implementation tolerance changed.
 
@@ -5645,7 +5645,7 @@ Next: a two-phone room race on staging, then the kart evolution next action in `
 
 ## 7 November 2026 — page weight, projector standings and second release
 
-Every page was downloading a 3.4MB chunk holding the kart course. The race schemas moved to `packages/shared/src/kart-race-schema.ts`, `@26/shared` is marked `sideEffects: false`, and `GuestKart`, solo practice, the stage scoreboard, kart countdown and fun facts load lazily. No script budget was raised. Measured on production: `/` 3,954,597 to 679,080 bytes, `/join` 4,282,280 to 946,295, `/host` 4,130,932 to 848,535, `/admin/login` 3,959,501 to 684,007.
+Every page was downloading a 3.4MB chunk holding the kart course. The race schemas moved to `packages/shared/src/kart/kart-race-schema.ts`, `@26/shared` is marked `sideEffects: false`, and `GuestKart`, solo practice, the stage scoreboard, kart countdown and fun facts load lazily. No script budget was raised. Measured on production: `/` 3,954,597 to 679,080 bytes, `/join` 4,282,280 to 946,295, `/host` 4,130,932 to 848,535, `/admin/login` 3,959,501 to 684,007.
 
 At 1080p the podium pushed the standings list and its paging off the projector. On screens at least 64rem wide and 4:3 or wider, the podium now sits beside the list and scales with screen height. Narrow screens stay stacked. Checked at 1920×1080 and 1280×720 with fifty players.
 
@@ -5790,11 +5790,11 @@ Status: the plan in `docs/kart-race-feel-plan.md` (R1–R8) is built. A kart-onl
 
 Files and interfaces:
 
-- `packages/shared/src/kart-slipstream.ts`: `inWake`, `stepSlipstream`, `slipstreamPhase` and `slipstreamTuning`.
+- `packages/shared/src/kart/kart-slipstream.ts`: `inWake`, `stepSlipstream`, `slipstreamPhase` and `slipstreamTuning`.
   - A kart 2.5–16 m behind another, within 2.6 m of its line, pointing the same way, with both moving at least 12 m/s, charges for 1 s.
   - Once charged, it gets 1.6 s at 0.7× drag, about 12% more top speed. Leaving the wake drains the charge twice as fast.
   - The step uses the stored drivers directly, so there is no per-step allocation at 80 karts.
-- `packages/shared/src/kart.ts`:
+- `packages/shared/src/kart/kart.ts`:
   - `createKartRace(…, { laps })` sets the race window to the course window × laps.
   - Each line crossing after a full set of gates counts a lap: gates restart, the lap time is kept, and the recovery point moves to the line, so recovering cannot refund or repeat a lap.
   - The last crossing finishes, with `lapTimeMs` as the total race time.
@@ -5878,7 +5878,7 @@ Status: the three items the race-feel plan had left out are built (R9–R11 in `
 - **Position luck** (`33bc183`): optional `luck: "position"` on kart item rules (both versions), set from a checkbox beside the item controls and off by default.
   - `kartItemWeight` and `pickKartItem` make a deterministic weighted pick. Leaders mostly get oil, shields and tennis balls; the back of the field mostly gets turbos, homing shots and bombs.
   - `stepKartPowers` asks for the standing only when a box is collected.
-- **CPU racers** (`8ecc8b6`): `packages/shared/src/kart-cpu.ts`. Up to seven, chosen beside the course and laps (`kartCpu` on `kart-track`, validated in routes and again in the lobby domain, and digested with the receipt).
+- **CPU racers** (`8ecc8b6`): `packages/shared/src/kart/kart-cpu.ts`. Up to seven, chosen beside the course and laps (`kartCpu` on `kart-track`, validated in routes and again in the lobby domain, and digested with the receipt).
   - They start behind the guests and steer by aiming a little ahead on the course's own route, lifting for bends and holding their own top speed (skill 0.80–0.95).
   - A CPU stuck for 2.5 s returns to its last safe point. They skip item boxes, take places (tagged CPU) and never score: points are shared by guest rank.
   - The race ends when the guests are done, and CPUs never count as answers.
@@ -5997,12 +5997,12 @@ Review and merge the `event-readiness` PR; deploy per the runbook when the owner
 
 Status: implemented on a branch from master. Chess remains catalogue-only (not in the birthday running order). No deploy.
 
-- Scoring is capture-based and server-authoritative. `chessRoundScore` in `packages/shared/src/chess-score.ts` awards queen 10 / rook 5 / bishop 3 / knight 3 / pawn 1 for Black pieces White captured. Stockfish captures do not subtract. Checkmate of the bot is `max(captured, 40)`. Other terminals keep captures. `calculateChessScore` reads chess.js verbose history from the validated PGN.
+- Scoring is capture-based and server-authoritative. `chessRoundScore` in `packages/shared/src/chess/chess-score.ts` awards queen 10 / rook 5 / bishop 3 / knight 3 / pawn 1 for Black pieces White captured. Stockfish captures do not subtract. Checkmate of the bot is `max(captured, 40)`. Other terminals keep captures. `calculateChessScore` reads chess.js verbose history from the validated PGN.
 - Guest, stage and host snapshots carry `capturedPoints` and `score`. Phone and projector copy no longer mention win 100 / draw 50. Ledger `detail` stores captured points with the result. Party totals still sum `score_ledger.points`.
 - Home page `Practise chess solo →` opens `/chess`, gated the same way as kart (always offered, no join code, no running-order change). Admin phone preview for `chess-battle` links the same path.
 - `chess-game.tsx` engine start no longer calls `setState` synchronously inside the effect (CI lint).
 
-Files: `packages/shared/src/chess-score.ts`, `chess-schemas.ts`; `apps/api/src/questions/chess-coordinator.ts`, `chess-mechanic.ts`, `packs/birthday/chess-battle.ts`; `apps/api/test/chess-score.spec.ts`; `apps/web/src/chess/*` solo page; home, routes, phone preview.
+Files: `packages/shared/src/chess/chess-score.ts`, `chess-schemas.ts`; `apps/api/src/questions/chess/chess-coordinator.ts`, `chess-mechanic.ts`, `packs/birthday/chess-battle.ts`; `apps/api/test/chess-score.spec.ts`; `apps/web/src/chess/*` solo page; home, routes, phone preview.
 
 Checks (this pass):
 
@@ -6033,3 +6033,34 @@ Status: rules and cheap gates on a branch from master after PR16. No folder move
 ### Exact next stage
 
 Phase 2 (separate PR) may reorganise folders. Update globs in `.agents/rules` then, not in this change. Do not start that automatically.
+
+## 9 November 2026 — Codebase structure and enforcement
+
+Status: structural-only reorg on a branch from master after PR17. No behaviour rewrite, no deploy, no Playwright.
+
+Highest-value folder grouping completed (not a full split of `party-room.ts` or colocation of `apps/api/test/`):
+
+- `packages/shared/src/{kart,chess,wordle}/` — public API still `@26/shared` via `index.ts`
+- `apps/api/src/questions/{kart,chess,wordle}/` (Wordle dictionary at `wordle/dictionary/`)
+- `apps/api/src/room/kart/`
+- `apps/web/src/rounds` → `apps/web/src/play/controls`
+- `apps/web/src/net` → `apps/web/src/live`
+- `public/kart-engine` left in place (build copies it)
+
+Enforcement: always-on `.agents/rules/05-structure.md` (recipe for a new round); perf-rule globs updated; `npm run agents:sync`. `scripts/check-structure.mjs` allowlists plus import boundaries; wired into `npm run lint` and `test:release`. ESLint: web ↛ api, shared stays pure, kart/chess/troll must not import each other.
+
+### Commands and results
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 27 existing react-refresh warnings; structure check passed
+- `npm run test:release` — passed (includes structure unit tests)
+- `npm run test:unit` — 789 passed; 3 pre-existing Stockfish worker isolation failures on master (chess files not logically changed)
+- API specs for moved modules (`kart-room`, `kart-ingress`, `kart-lobby`, `kart-items-room`, `chess-coordinator`, `chess-score`, `chess-alarm`, `wordle-score`, `wordle-room`) — passed
+- Two pre-existing catalogue assertions still fail on master (`chess` in birthday catalogue vs expected mechanic list; all-ready birthday pack)
+- `npm run build` — secrets scan passed; budget green: entry JS gzip 216265, entry CSS 20634, total JS 1375368, largest `kart-track` 496695
+- `npm run content:check` — passed (same incomplete birthday drafts)
+- Playwright / E2E — not run (prohibited)
+
+### Exact next stage
+
+Follow-up structure work (do not start automatically): group remaining quiz mechanics under `questions/`, colocate `apps/api/test/`, nest `apps/web/src/kart` internals, split `party-room.ts` only with tests, re-export track geometry through `@26/shared` to drop deep JSON imports.

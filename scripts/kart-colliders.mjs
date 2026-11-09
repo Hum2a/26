@@ -105,7 +105,7 @@ const output = {
   edges,
 };
 fs.mkdirSync(new URL("packages/shared/src/", root), { recursive: true });
-const circuitPath = new URL("packages/shared/src/kart-circuit.json", root);
+const circuitPath = new URL("packages/shared/src/kart/kart-circuit.json", root);
 fs.writeFileSync(
   circuitPath,
   await format(JSON.stringify({ ...output, road: audit.road, dirt: audit.dirt }), {

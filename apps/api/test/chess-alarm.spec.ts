@@ -66,7 +66,7 @@ it("mechanic: handleChessClockAlarm flags games and scores exactly once", async 
     });
 
     // Initialize chess round with very short clocks for test (100ms)
-    const { createChessRound } = await import("../src/questions/chess-mechanic.ts");
+    const { createChessRound } = await import("../src/questions/chess/chess-mechanic.ts");
     const participants = [alice.playerId, bob.playerId];
     
     // Override question times - pass directly to createChessRound
@@ -97,7 +97,7 @@ it("mechanic: handleChessClockAlarm flags games and scores exactly once", async 
   await runInDurableObject(stub, async (_instance, state) => {
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
-    const { handleChessClockAlarm } = await import("../src/questions/chess-mechanic.ts");
+    const { handleChessClockAlarm } = await import("../src/questions/chess/chess-mechanic.ts");
     
     // Get game details for debugging
     const before = sql
@@ -203,7 +203,7 @@ it("mechanic: paused clock increments revision, handler respects cancellation", 
       roundId: "pause-round",
     });
 
-    const { createChessRound } = await import("../src/questions/chess-mechanic.ts");
+    const { createChessRound } = await import("../src/questions/chess/chess-mechanic.ts");
     createChessRound(sql, store, question, [charlie.playerId], now, 500, 60000);
 
     // Get initial revision
@@ -215,7 +215,7 @@ it("mechanic: paused clock increments revision, handler respects cancellation", 
       .toArray()[0];
 
     // Pause
-    const { pauseChessClocks } = await import("../src/questions/chess-mechanic.ts");
+    const { pauseChessClocks } = await import("../src/questions/chess/chess-mechanic.ts");
     pauseChessClocks(sql, store, now);
 
     // Verify revision incremented

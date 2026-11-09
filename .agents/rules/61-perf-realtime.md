@@ -3,8 +3,7 @@ description: WebSocket messages, patches, reconnect, and 80-player fan-out
 trigger: glob
 globs:
   - apps/web/src/live/**/*.ts
-  - apps/web/src/net/**/*.ts
-  - apps/web/src/net/**/*.tsx
+  - apps/web/src/live/**/*.tsx
   - apps/web/src/kart/useKartSocket.ts
   - apps/web/src/device/**/*.ts
   - apps/api/src/room/**/*.ts

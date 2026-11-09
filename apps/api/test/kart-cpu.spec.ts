@@ -11,9 +11,9 @@ import {
   isKartCpuId,
   kartCpuInput,
   kartCpuNames,
-} from "../../../packages/shared/src/kart-cpu.ts";
-import { parkRoute, parkTrackId } from "../../../packages/shared/src/kart-park.ts";
-import { importedTrackId } from "../../../packages/shared/src/kart-route.ts";
+} from "../../../packages/shared/src/kart/kart-cpu.ts";
+import { parkRoute, parkTrackId } from "../../../packages/shared/src/kart/kart-park.ts";
+import { importedTrackId } from "../../../packages/shared/src/kart/kart-route.ts";
 
 const guest = [{ playerId: "a", name: "Amina" }];
 

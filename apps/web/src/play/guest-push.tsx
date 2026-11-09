@@ -2,8 +2,8 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import NumberFlow from "@number-flow/react";
 import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
 import { usePhaseCountdown } from "../live/use-phase-countdown";
-import { SubmitButton } from "../rounds/SubmitButton";
-import { roundSubmitState } from "../rounds/submit-state";
+import { SubmitButton } from "./controls/SubmitButton";
+import { roundSubmitState } from "./controls/submit-state";
 import "./guest-push.css";
 
 type Push = NonNullable<Extract<PlaySnapshot["question"], { kind: "choice" }>["push"]>;

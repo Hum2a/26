@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import type { KartRaceView, KartVfxPreset } from "@26/shared";
-import { importedRoute } from "../../../../packages/shared/src/kart-route";
+import { importedRoute } from "../../../../packages/shared/src/kart/kart-route";
 import { createCircuit } from "./circuit";
 import type { SelfPrediction } from "./self-prediction";
 import type { KartRenderState } from "./view-readiness";

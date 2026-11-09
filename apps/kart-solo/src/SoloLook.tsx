@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { DrivingBody, KartLookPreset } from "@26/shared";
-import { importedGroundAt } from "../../../packages/shared/src/kart-track";
+import { importedGroundAt } from "../../../packages/shared/src/kart/kart-track";
 import {
   createNativeKartLook,
   type KartLookFrame,

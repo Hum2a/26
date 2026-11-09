@@ -42,7 +42,7 @@ Shared plumbing that is not a feature goes in `adminExempt` with a reason. Do no
 ## Checklist for a new feature
 
 1. Build the feature.
-2. Add or extend its entry in `adminFeatures`, with `owns` covering its folders.
+2. Add or extend its entry in `adminFeatures`, with `owns` covering its folders. A new top-level `apps/web/src/<domain>` or `apps/api/src/<domain>` folder also needs the allowlist in `.agents/rules/05-structure.md` and `scripts/check-structure.mjs`.
 3. Add the route in `apps/web/src/routes.tsx`, and the path to `admin-return.ts`.
 4. Build the see, manage and rehearse view.
 5. Add the tests above, and run `features.test.ts`.

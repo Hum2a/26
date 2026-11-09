@@ -1,4 +1,4 @@
-import { KartIngressCache, type KartIngressClock } from "./kart-ingress.ts";
+import { KartIngressCache, type KartIngressClock } from "./kart/kart-ingress.ts";
 import { kartRaceRecap } from "@26/shared";
 import {
   kartRehearsalVersion,
@@ -15,7 +15,7 @@ import {
   readRoomKartSettings,
   kartHandlingDetails,
   kartItemsDetails,
-} from "../questions/kart.ts";
+} from "../questions/kart/kart.ts";
 import { readRoundState } from "../questions/round-state.ts";
 import { readAdmission } from "./admission.ts";
 import { 
@@ -25,8 +25,8 @@ import {
   resumeChessClocks,
   executeChessMove,
   executeResignation
-} from "../questions/chess-mechanic.ts";
-import { assertKartLobbyAction, freezeKartLobby, readKartLobby } from "./kart-lobby.ts";
+} from "../questions/chess/chess-mechanic.ts";
+import { assertKartLobbyAction, freezeKartLobby, readKartLobby } from "./kart/kart-lobby.ts";
 import { writeRoundState } from "../questions/round-state.ts";
 import { freezeBirthdayOrder } from "../questions/birthday-order.ts";
 import { DurableObject } from "cloudflare:workers";
@@ -247,7 +247,7 @@ import {
 import { acceptMultiple } from "../questions/multiple.ts";
 import { acceptRanking, wrongKindRank } from "../questions/rank.ts";
 import { acceptEstimate, wrongKindEstimate } from "../questions/slider.ts";
-import { acceptWordleGuess } from "../questions/wordle.ts";
+import { acceptWordleGuess } from "../questions/wordle/wordle.ts";
 import { acceptTypedAnswer } from "../questions/typed.ts";
 import {
   acceptBallot,

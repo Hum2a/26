@@ -2,7 +2,7 @@ import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
 import { payloadDigest } from "../src/room/digest.ts";
 import { applyHostAction } from "../src/room/host-actions.ts";
-import { assertKartLobbyAction } from "../src/room/kart-lobby.ts";
+import { assertKartLobbyAction } from "../src/room/kart/kart-lobby.ts";
 
 it("creates a durable kart-only lobby once without changing the birthday order", async () => {
   const registry = env.ROOM_CODE_REGISTRY.getByName("codes");

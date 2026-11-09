@@ -1,4 +1,4 @@
-import { importedRoute } from "../../../../packages/shared/src/kart-route";
+import { importedRoute } from "../../../../packages/shared/src/kart/kart-route";
 import { useId, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {

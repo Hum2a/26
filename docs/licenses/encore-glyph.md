@@ -2,7 +2,7 @@
 
 The classic five-letter marking algorithm and allowed-word list were adapted from the user-provided sibling Encore project. The phone layout is rebuilt with 26’s shared components and motion kit; Encore’s answer-bearing puzzle state is never sent to guests. No multi-board, daily puzzle, drill or hard-mode features are included.
 
-Sources: `packages/game-glyph/src/mark.ts`, `play.ts`, `dictionary/validity-words.ts`, and the shared `apps/web/src/games/letter-guess` board/keyboard in Encore. The dictionary is copied verbatim; its ordering has no scoring significance here. Original word-list attribution is preserved beside it in `apps/api/src/questions/wordle-dictionary/LICENSE.txt`, with the full upstream [SCOWL notice](https://github.com/jacksonrayhamilton/wordlist-english/blob/master/Copyright) in `SCOWL-Copyright.txt`.
+Sources: `packages/game-glyph/src/mark.ts`, `play.ts`, `dictionary/validity-words.ts`, and the shared `apps/web/src/games/letter-guess` board/keyboard in Encore. The dictionary is copied verbatim; its ordering has no scoring significance here. Original word-list attribution is preserved beside it in `apps/api/src/questions/wordle/dictionary/LICENSE.txt`, with the full upstream [SCOWL notice](https://github.com/jacksonrayhamilton/wordlist-english/blob/master/Copyright) in `SCOWL-Copyright.txt`.
 
 Encore licence:
 

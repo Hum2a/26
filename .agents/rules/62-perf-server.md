@@ -3,6 +3,9 @@ description: Durable Object hot path, storage, alarms, and live-guest cost
 trigger: glob
 globs:
   - apps/api/**/*.ts
+  - apps/api/src/questions/kart/**/*.ts
+  - apps/api/src/questions/chess/**/*.ts
+  - apps/api/src/room/kart/**/*.ts
   - packages/shared/**/*.ts
 ---
 

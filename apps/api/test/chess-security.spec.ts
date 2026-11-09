@@ -3,7 +3,7 @@ import {
   initializeChessRound,
   applyChessMove,
   applyBotMove,
-} from "../src/questions/chess-coordinator.ts";
+} from "../src/questions/chess/chess-coordinator.ts";
 
 /**
  * CRITICAL security tests: guests cannot control other players' games.

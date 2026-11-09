@@ -2,11 +2,11 @@ import {
   importedTrackProgress,
   importedLapLength,
   importedRoute,
-} from "../../../packages/shared/src/kart-route.ts";
+} from "../../../packages/shared/src/kart/kart-route.ts";
 import {
   importedSurfaceAt,
   nearbyImportedWalls,
-} from "../../../packages/shared/src/kart-track.ts";
+} from "../../../packages/shared/src/kart/kart-track.ts";
 import { reduceKartTimeline, projectKartRace } from "@26/shared";
 import { expect, it } from "vitest";
 import { createKartRace, ringWalls, clearOfWalls } from "@26/shared";

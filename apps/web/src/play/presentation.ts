@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { CustomPresentationId, PlaySnapshot, RoomPhaseName } from "@26/shared";
-import type { TierPlacement } from "../rounds/TierAssign";
+import type { TierPlacement } from "./controls/TierAssign";
 import { designs } from "./designs/registry";
 
 /** What a phone design may do. The server still decides whether an answer is accepted. */

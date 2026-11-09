@@ -1,9 +1,9 @@
 import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
 import { payloadDigest } from "../src/room/digest.ts";
-import { chooseKartLobbyTrack } from "../src/room/kart-lobby.ts";
+import { chooseKartLobbyTrack } from "../src/room/kart/kart-lobby.ts";
 import { createSqlStore } from "../src/room/sql-store.ts";
-import { rejectOldKartTrackClient } from "../src/room/kart-track-compatibility.ts";
+import { rejectOldKartTrackClient } from "../src/room/kart/kart-track-compatibility.ts";
 
 async function lobby() {
   const now = Date.now() + 60000;

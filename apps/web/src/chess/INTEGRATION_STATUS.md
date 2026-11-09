@@ -49,7 +49,7 @@ ChessGuestSnapshot {
 }
 ```
 
-**Actual schema** (`packages/shared/src/chess-schemas.ts:110`):
+**Actual schema** (`packages/shared/src/chess/chess-schemas.ts:110`):
 ```typescript
 export const chessGuestSnapshotSchema = z.object({
   gameId: z.string(),
@@ -263,9 +263,9 @@ if (searchState.fen !== snapshot.fen) {
 - Documentation in `apps/web/src/chess/`
 
 ### Backend-Owned (Do Not Modify)
-- `packages/shared/src/chess-schemas.ts`
-- `apps/api/src/questions/chess-mechanic.ts`
-- `apps/api/src/questions/chess-coordinator.ts`
+- `packages/shared/src/chess/chess-schemas.ts`
+- `apps/api/src/questions/chess/chess-mechanic.ts`
+- `apps/api/src/questions/chess/chess-coordinator.ts`
 - `apps/api/test/chess-*.spec.ts`
 - Backend lockfile
 

@@ -7,7 +7,7 @@ import {
   reduceKart,
   type KartRace,
 } from "@26/shared";
-import { parkRoute, parkTrackId } from "../../../packages/shared/src/kart-park.ts";
+import { parkRoute, parkTrackId } from "../../../packages/shared/src/kart/kart-park.ts";
 
 const L = parkRoute.lapLength;
 const players = [

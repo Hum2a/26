@@ -4,12 +4,15 @@
 
 React screens for the party. Vite builds them, and the API Worker serves the build.
 
-| Folder    | Route        | Purpose                        |
-| --------- | ------------ | ------------------------------ |
-| `guest`   | `/`          | Phone controller shell         |
-| `stage`   | `/host`      | Projector shell                |
-| `admin`   | `/admin`     | Operator shell                 |
-| `results` | `/r/:gameId` | Results shell                  |
-| `ui`      | Shared       | Controls used by those screens |
+| Folder | Route / role | Purpose |
+| --- | --- | --- |
+| `guest` | `/` | Phone controller shell |
+| `stage` | `/host` | Projector shell |
+| `admin` | `/admin` | Operator shell |
+| `results` | `/r/:gameId` | Results shell |
+| `play` | Question UI | Phone and stage renderers, `designs/`, widgets in `play/controls/` |
+| `kart` `chess` `troll` | Round engines | Lazy-loaded; do not import each other |
+| `live` | Socket | `openRoomSocket` and reconnect chrome |
+| `ui` `theme` `anim` | Shared | Controls, palettes, motion |
 
-`game`, `media`, and `stats` folders are intentionally absent. Add each one in the prompt that first needs it.
+A new top-level folder must be owned in `admin/features.ts` (or `adminExempt`) and listed in `.agents/rules/05-structure.md`. Do not add `rounds` or `net`; those merged into `play/controls` and `live`.

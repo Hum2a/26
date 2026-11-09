@@ -12,6 +12,8 @@ globs:
   - apps/web/src/play/**/*.tsx
   - apps/web/public/chess-engine/**
   - apps/web/public/kart-engine/**
+  - packages/shared/src/kart/**/*.ts
+  - packages/shared/src/chess/**/*.ts
 ---
 
 # Game loops, workers, and WASM

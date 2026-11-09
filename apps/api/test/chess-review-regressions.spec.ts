@@ -12,7 +12,7 @@ import {
   projectStageSnapshot,
   calculateChessScore,
   type ChessPlayerGame,
-} from "../src/questions/chess-coordinator.ts";
+} from "../src/questions/chess/chess-coordinator.ts";
 import { Chess } from "chess.js";
 
 describe("Chess Review Regressions", () => {

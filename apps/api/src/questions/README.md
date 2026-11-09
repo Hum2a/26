@@ -16,6 +16,7 @@ Questions are versioned TypeScript. There is no CMS and no client-side pack. The
 | `packs/demo/`                                                      | One file per illustrative question, plus `manifest.ts`              |
 | `packs/birthday/manifest.ts`                                       | Humza's catalogue. Empty, and not pinned to a room                  |
 | `demo-set.ts`                                                      | Re-exports the demo pack and the shared types                       |
+| `kart/` `chess/` `wordle/`                                         | Heavy-round Worker runtime (Wordle dictionary under `wordle/dictionary/`) |
 | `multiple-choice.ts`, `slider.ts`, `rank.ts`, `vote.ts`, `duel.ts` | Scoring and phases. They do not own the question text               |
 
 A room plays the pack named by its stored `question_set_version`. `demo-2026-09-22` is the illustrative pack. `unreleased` is the lobby. `birthday-draft` is not playable. An unknown version is unavailable and is not replaced with the demo pack.

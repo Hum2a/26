@@ -99,7 +99,7 @@ Recommend defer to post-MVP unless host visibility critical.
 - `FRONTEND_PROTOCOL_NEEDS.md` (new - root level docs)
 
 ## Files NOT Modified (Backend Ownership)
-- ❌ `packages/shared/src/chess-schemas.ts`
+- ❌ `packages/shared/src/chess/chess-schemas.ts`
 - ❌ `apps/api/**`
 - ❌ `package.json` / `package-lock.json`
 - ❌ Backend tests

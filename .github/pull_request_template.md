@@ -12,7 +12,7 @@ How this keeps ~80 phones and the projector feeling instant. Say what you measur
 ## Checks run
 
 - [ ] `npm run typecheck`
-- [ ] `npm run lint`
+- [ ] `npm run lint` (ESLint and `check:structure`)
 - [ ] Targeted unit tests (not Playwright / E2E)
 - [ ] `npm run build` when the client graph or public assets changed
 - [ ] `npm run agents:sync` after editing `.agents`
@@ -20,4 +20,5 @@ How this keeps ~80 phones and the projector feeling instant. Say what you measur
 ## Guardrails
 
 - [ ] Not targeting `master` for a direct push; no force-push
-- [ ] No deploy, no Playwright specs, no unrelated rewrite or folder move
+- [ ] No deploy, no Playwright specs, no unrelated rewrite
+- [ ] Folder moves follow `.agents/rules/05-structure.md` and are not mixed with behaviour changes

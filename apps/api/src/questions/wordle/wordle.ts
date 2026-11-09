@@ -4,11 +4,11 @@ import {
   wordleBoardSchema,
   type WordleBoard,
 } from "@26/shared";
-import type { GameStore } from "../room/lifecycle.ts";
-import type { WordleQuestion } from "./definition.ts";
-import { publicQuestionCore } from "./project.ts";
-import { collectDeadline, gateMessage } from "./slider.ts";
-import { VALIDITY_WORDS } from "./wordle-dictionary/validity-words.ts";
+import type { GameStore } from "../../room/lifecycle.ts";
+import type { WordleQuestion } from "../definition.ts";
+import { publicQuestionCore } from "../project.ts";
+import { collectDeadline, gateMessage } from "../slider.ts";
+import { VALIDITY_WORDS } from "./dictionary/validity-words.ts";
 
 const words = new Set(VALIDITY_WORDS);
 export const isWordleWord = (word: string) => words.has(word);

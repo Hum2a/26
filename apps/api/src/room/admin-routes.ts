@@ -14,7 +14,7 @@ import {
 } from "../credentials/cookies.ts";
 import { credentialLifetimeMs } from "../credentials/verify.ts";
 import { rejectUnlessRoomCreator } from "./access.ts";
-import { rejectOldKartTrackClient } from "./kart-track-compatibility.ts";
+import { rejectOldKartTrackClient } from "./kart/kart-track-compatibility.ts";
 
 // This cookie is a location hint, never authority. Every read verifies control
 // credentials against the selected room; tampering cannot select another room.

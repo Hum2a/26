@@ -15,7 +15,7 @@ import { authFailure, jsonData } from "../auth/http.ts";
 import { missingRequirements } from "../questions/definition.ts";
 import { questionPacks } from "../questions/registry.ts";
 import { rejectUnlessRoomCreator } from "./access.ts";
-import { kartPreview } from "./kart-preview.ts";
+import { kartPreview } from "./kart/kart-preview.ts";
 import { adminQuestion } from "./admin-question.ts";
 import { previewWordle, readWordlePreviewBody } from "./wordle-preview.ts";
 import { questionPreview } from "./question-preview.ts";
