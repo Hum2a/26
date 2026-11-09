@@ -50,10 +50,12 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
   const searchStateRef = useRef<SearchState | null>(null);
   const searchGenerationRef = useRef(0);
 
-  // Update refs when props change (before effects)
-  latestSnapshotRef.current = snapshot;
-  latestOnMoveRef.current = onMove;
-  
+  // Keep callback refs current without reading them during render.
+  useEffect(() => {
+    latestSnapshotRef.current = snapshot;
+    latestOnMoveRef.current = onMove;
+  });
+
   // Engine lifecycle - stable init, no self-invalidating deps
   useEffect(() => {
     // Mark effect as active
@@ -78,12 +80,9 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
           elo: 1425,
           moveTimeMs: 2000,
           onReady: () => {
-            // Only install if this effect still owns the lifecycle
-            if (!cancelled && mountedRef.current && !engineInstanceRef.current) {
-              setEngineReady(true);
-              // Clear error on successful init (does not trigger effect)
-              setEngineError(null);
-            }
+            // Handshake confirmation only. Ready state is set after this
+            // effect still owns the instance and has stored it — never from
+            // a callback that could race the effect's dependency array.
           },
           onBestMove: (from, to, promotion) => {
             if (!mountedRef.current) return;
@@ -125,10 +124,13 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
         capturedEngine = newEngine;
 
         await newEngine.initialize();
-        
-        // Only install if effect not cancelled and still mounted
+
+        // Install the captured instance, then mark ready. Bot search depends
+        // on engineReady; the ref must already be set when that state flips.
         if (!cancelled && mountedRef.current) {
           engineInstanceRef.current = newEngine;
+          setEngineReady(true);
+          setEngineError(null);
         } else {
           newEngine.terminate();
         }

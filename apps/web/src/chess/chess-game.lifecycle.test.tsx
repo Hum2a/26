@@ -1,42 +1,68 @@
 /**
  * Chess engine lifecycle unit test.
- * Verifies init+ready does NOT terminate engine, bot turn uses engine, unmount/retry ignores late init.
+ * Verifies init+ready does NOT terminate engine, bot turn uses engine,
+ * unmount ignores late init, and clicking Retry after failure reaches ready
+ * without terminating/recreating the successful engine.
  */
 
-import { render, waitFor } from "@testing-library/react";
+import { fireEvent, render, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ChessGame } from "./chess-game";
-import type { ChessGuestSnapshot } from "@26/shared";
+import type { ChessGuestSnapshot, ChessPromotionPiece } from "@26/shared";
 
-// Simple engine state tracker
-const engines: any[] = [];
+type EngineCallbacks = {
+  onReady: () => void;
+  onBestMove: (from: string, to: string, promotion?: ChessPromotionPiece) => void;
+  onError: (error: string) => void;
+};
 
-// Mock StockfishEngine
+type MockEngine = {
+  id: number;
+  terminated: boolean;
+  initialize: () => Promise<void>;
+  setPosition: (fen: string) => void;
+  go: (timeMs?: number) => void;
+  stop: () => void;
+  terminate: () => void;
+};
+
+const { engineControl } = vi.hoisted(() => ({
+  engineControl: {
+    failNext: 0,
+    instances: [] as MockEngine[],
+  },
+}));
+
 vi.mock("./stockfish-worker", () => {
   return {
     StockfishEngine: class MockStockfishEngine {
+      id: number;
       private _terminated = false;
-      private _callbacks: any;
-      public id: number;
+      private _callbacks: EngineCallbacks;
 
-      constructor(config: any) {
+      constructor(config: EngineCallbacks) {
         this._callbacks = config;
-        this.id = engines.length + 1;
-        engines.push(this);
+        this.id = engineControl.instances.length + 1;
+        engineControl.instances.push(this);
       }
 
       async initialize() {
-        await new Promise(resolve => setTimeout(resolve, 10));
-        if (!this._terminated) {
-          this._callbacks.onReady();
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        if (this._terminated) return;
+        if (engineControl.failNext > 0) {
+          engineControl.failNext -= 1;
+          this._callbacks.onError("Simulated init failure");
+          throw new Error("Simulated init failure");
         }
+        this._callbacks.onReady();
       }
 
-      setPosition(_fen: string) {
-        // noop
+      setPosition(fen: string) {
+        void fen;
       }
 
-      go(_timeMs?: number) {
+      go(timeMs?: number) {
+        void timeMs;
         setTimeout(() => {
           if (!this._terminated) {
             this._callbacks.onBestMove("e7", "e5");
@@ -80,7 +106,8 @@ describe("ChessGame engine lifecycle", () => {
   });
 
   beforeEach(() => {
-    engines.length = 0;
+    engineControl.failNext = 0;
+    engineControl.instances.length = 0;
   });
 
   it("init+ready does NOT terminate engine", async () => {
@@ -93,19 +120,15 @@ describe("ChessGame engine lifecycle", () => {
         onMove={onMove}
         onResign={vi.fn()}
         disabled={false}
-      />
+      />,
     );
 
-    // Wait for engine to be created AND ready (not just created)
     await waitFor(() => {
-      expect(engines.length).toBe(1);
-      // Ready when loading message disappears
+      expect(engineControl.instances.length).toBe(1);
       expect(queryByText(/Loading chess engine/i)).toBeNull();
-    }, { timeout: 200 });
-    
-    const engine = engines[0];
-    
-    // Verify engine was NOT terminated after ready
+    });
+
+    const engine = engineControl.instances[0]!;
     expect(engine.terminated).toBe(false);
 
     unmount();
@@ -113,7 +136,7 @@ describe("ChessGame engine lifecycle", () => {
 
   it("bot turn uses engine for move calculation", async () => {
     const onMove = vi.fn();
-    const snapshot = createSnapshot({ sideToMove: "black" }); // Bot's turn
+    const snapshot = createSnapshot({ sideToMove: "black" });
 
     render(
       <ChessGame
@@ -121,15 +144,13 @@ describe("ChessGame engine lifecycle", () => {
         onMove={onMove}
         onResign={vi.fn()}
         disabled={false}
-      />
+      />,
     );
 
-    // Wait for engine init + bot move
     await waitFor(() => {
       expect(onMove).toHaveBeenCalled();
-    }, { timeout: 500 });
+    });
 
-    // Verify bot move was submitted with correct revision
     expect(onMove).toHaveBeenCalledWith("e7", "e5", undefined, 1);
   });
 
@@ -143,70 +164,48 @@ describe("ChessGame engine lifecycle", () => {
         onMove={onMove}
         onResign={vi.fn()}
         disabled={false}
-      />
+      />,
     );
 
-    // Unmount immediately, before init completes
     unmount();
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
-    // Wait for async init to attempt completion
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
-    // Verify engine was created and terminated
-    expect(engines.length).toBe(1);
-    const engine = engines[0];
-    expect(engine.terminated).toBe(true);
+    expect(engineControl.instances.length).toBe(1);
+    expect(engineControl.instances[0]!.terminated).toBe(true);
   });
 
-  it("retry after failure preserves successful engine and completes bot move", async () => {
+  it("click Retry after engine failure reaches ready and bot move without terminating successful engine", async () => {
+    engineControl.failNext = 1;
     const onMove = vi.fn();
-    const snapshot = createSnapshot({ sideToMove: "black" }); // Bot's turn
+    const snapshot = createSnapshot({ sideToMove: "black" });
 
-    const { rerender, queryByText } = render(
+    const { getByRole, queryByText } = render(
       <ChessGame
         snapshot={snapshot}
         onMove={onMove}
         onResign={vi.fn()}
         disabled={false}
-      />
+      />,
     );
 
-    // Wait for first init to complete
     await waitFor(() => {
-      expect(engines.length).toBe(1);
+      expect(engineControl.instances.length).toBe(1);
+      expect(getByRole("button", { name: /Retry loading engine/i })).toBeTruthy();
+    });
+
+    const failedEngine = engineControl.instances[0]!;
+    fireEvent.click(getByRole("button", { name: /Retry loading engine/i }));
+
+    await waitFor(() => {
+      expect(engineControl.instances.length).toBe(2);
       expect(queryByText(/Loading chess engine/i)).toBeNull();
-    }, { timeout: 200 });
+      expect(onMove).toHaveBeenCalled();
+    });
 
-    const firstEngine = engines[0];
-    expect(firstEngine.terminated).toBe(false);
-
-    // Simulate retry scenario by forcing a new retryAttempt via unmount/remount
-    // (In production, this happens when user clicks retry button after error)
-    const onMoveSpy = vi.fn();
-    
-    // Remount with fresh state (simulates retry)
-    rerender(
-      <ChessGame
-        snapshot={snapshot}
-        onMove={onMoveSpy}
-        onResign={vi.fn()}
-        disabled={false}
-      />
-    );
-
-    // Wait for potential second engine (should not create one)
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
-    // Critical assertion: After retry trigger (remount), successful engine preserved
-    // Only 1 engine total (no new engine created after successful init)
-    expect(engines.length).toBe(1);
-    expect(firstEngine.terminated).toBe(false);
-    
-    // Verify bot move completed using preserved engine
-    await waitFor(() => {
-      expect(onMoveSpy).toHaveBeenCalled();
-    }, { timeout: 500 });
-    
-    expect(onMoveSpy).toHaveBeenCalledWith("e7", "e5", undefined, 1);
+    const successfulEngine = engineControl.instances[1]!;
+    expect(successfulEngine.id).not.toBe(failedEngine.id);
+    expect(successfulEngine.terminated).toBe(false);
+    expect(engineControl.instances.length).toBe(2);
+    expect(onMove).toHaveBeenCalledWith("e7", "e5", undefined, 1);
   });
 });
