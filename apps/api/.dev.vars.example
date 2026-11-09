@@ -25,6 +25,8 @@
 # Shared with VITE_CLIENT_API_KEY in .env.{env}. Rotate with npm run client-api-key:rotate.
 CLIENT_API_KEY=
 
+# Comma-separated administrator allow-list (a single address still works).
+# After adding an address, run `npm run auth:seed -- --env <env>`.
 ADMIN_EMAIL=
 BETTER_AUTH_SECRET=
 # Staging: https://26-staging.humza.website

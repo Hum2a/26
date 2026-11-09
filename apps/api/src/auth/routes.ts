@@ -13,7 +13,7 @@ import {
 import type { Hono } from "hono";
 import {
   authBindingsFromEnv,
-  configuredAdminEmail,
+  configuredAdminEmails,
   presentBinding,
   type AuthBindings,
 } from "./bindings.ts";
@@ -34,7 +34,7 @@ import { credentialLifetimeMs, verifyRoomCredential } from "../credentials/verif
 type ReadyAuth = {
   bindings: AuthBindings;
   origin: string;
-  adminEmail: string;
+  adminEmails: readonly string[];
   database: AppDatabase;
   email: EmailSender;
   auth: Auth;
@@ -72,7 +72,7 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>): void {
       accepted: true,
       delivery: ready.email.kind === "local-inbox" ? "local-inbox" : "email",
     });
-    if (!email || email !== ready.adminEmail) {
+    if (!email || !ready.adminEmails.includes(email)) {
       return jsonData(acceptance);
     }
     const response = await ready.auth.handler(
@@ -122,7 +122,7 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>): void {
     if (!response.ok) {
       return authFailure("invalid", 400);
     }
-    const email = await readVerifiedEmail(response, ready.adminEmail);
+    const email = await readVerifiedEmail(response, ready.adminEmails);
     if (!email) {
       return authFailure("invalid", 400);
     }
@@ -139,16 +139,21 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>): void {
     const ready = await readyAuth(c.env, c.req.url);
     if (ready instanceof Response) return ready;
     const body = await readJson(c.req.raw);
-    if (
-      !body ||
-      typeof body !== "object" ||
-      !("email" in body) ||
-      !("code" in body) ||
-      typeof body.email !== "string" ||
-      typeof body.code !== "string" ||
-      body.email.trim().toLowerCase() !== ready.adminEmail ||
-      !/^\d{6}$/.test(body.code.trim())
-    ) {
+    const email =
+      body &&
+      typeof body === "object" &&
+      "email" in body &&
+      typeof body.email === "string"
+        ? body.email.trim().toLowerCase()
+        : "";
+    const code =
+      body &&
+      typeof body === "object" &&
+      "code" in body &&
+      typeof body.code === "string"
+        ? body.code.trim()
+        : "";
+    if (!ready.adminEmails.includes(email) || !/^\d{6}$/.test(code)) {
       return authFailure("invalid", 400);
     }
     const headers = new Headers(c.req.raw.headers);
@@ -158,15 +163,15 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>): void {
       new Request(new URL("/api/auth/sign-in/email-otp", ready.origin), {
         method: "POST",
         headers,
-        body: JSON.stringify({ email: ready.adminEmail, otp: body.code.trim() }),
+        body: JSON.stringify({ email, otp: code }),
       }),
     );
     if (!response.ok)
       return authFailure("invalid", response.status === 429 ? 429 : 400);
-    const email = await readVerifiedEmail(response, ready.adminEmail);
-    if (!email) return authFailure("invalid", 400);
+    const verified = await readVerifiedEmail(response, ready.adminEmails);
+    if (!verified) return authFailure("invalid", 400);
     return jsonData(
-      adminSessionSchema.parse({ signedIn: true, email }),
+      adminSessionSchema.parse({ signedIn: true, email: verified }),
       200,
       copyCookies(response),
     );
@@ -386,9 +391,9 @@ function rejectCrossSite(request: Request): Response | undefined {
 
 async function readyAuth(env: Env, requestUrl: string): Promise<ReadyAuth | Response> {
   const bindings = authBindingsFromEnv(env);
-  const adminEmail = configuredAdminEmail(bindings);
+  const adminEmails = configuredAdminEmails(bindings);
   const origin = resolvePublicOrigin(bindings, requestUrl);
-  if (!adminEmail || !resolveAuthSecret(bindings) || !origin) {
+  if (adminEmails.length === 0 || !resolveAuthSecret(bindings) || !origin) {
     return authFailure("misconfigured", 503);
   }
   if (bindings.APP_ENV !== "local" && !presentBinding(bindings.DATABASE_URL)) {
@@ -396,7 +401,7 @@ async function readyAuth(env: Env, requestUrl: string): Promise<ReadyAuth | Resp
   }
   try {
     const ready = await authForRequest({ ...bindings, ...env }, origin);
-    return { bindings, origin, adminEmail, ...ready };
+    return { bindings, origin, adminEmails, ...ready };
   } catch (error) {
     logAuthFailure(error);
     return authFailure("misconfigured", 503);
@@ -417,7 +422,7 @@ function credentialFailure(
 
 async function readVerifiedEmail(
   response: Response,
-  adminEmail: string,
+  adminEmails: readonly string[],
 ): Promise<string | undefined> {
   const body: unknown = await response.json();
   if (!body || typeof body !== "object" || !("user" in body)) {
@@ -432,7 +437,8 @@ async function readVerifiedEmail(
   ) {
     return undefined;
   }
-  return user.email.toLowerCase() === adminEmail ? user.email : undefined;
+  const email = user.email.toLowerCase();
+  return adminEmails.includes(email) ? email : undefined;
 }
 
 export async function administratorForRequest(
@@ -488,7 +494,8 @@ async function readAdministrator(
   ) {
     return undefined;
   }
-  return user.email.toLowerCase() === ready.adminEmail ? user.email : undefined;
+  const email = user.email.toLowerCase();
+  return ready.adminEmails.includes(email) ? email : undefined;
 }
 
 async function readEmailBody(request: Request): Promise<string | undefined> {

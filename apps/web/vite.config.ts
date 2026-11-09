@@ -269,7 +269,8 @@ function localAuthEnv() {
   };
   return {
     APP_ENV: "local",
-    ADMIN_EMAIL: readDevVar("ADMIN_EMAIL") || "humzab1711@hotmail.com",
+    ADMIN_EMAIL:
+      readDevVar("ADMIN_EMAIL") || "humzab1711@hotmail.com,adenreh@gmail.com",
     BETTER_AUTH_SECRET: "",
     BETTER_AUTH_URL: "",
     DATABASE_URL: "",

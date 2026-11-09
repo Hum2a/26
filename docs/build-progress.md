@@ -6064,3 +6064,29 @@ Enforcement: always-on `.agents/rules/05-structure.md` (recipe for a new round);
 ### Exact next stage
 
 Follow-up structure work (do not start automatically): group remaining quiz mechanics under `questions/`, colocate `apps/api/test/`, nest `apps/web/src/kart` internals, split `party-room.ts` only with tests, re-export track geometry through `@26/shared` to drop deep JSON imports.
+
+## 9 November 2026 — Second administrator on ADMIN_EMAIL
+
+Status: implemented on a branch from master. No deploy, no Cloudflare secret change, no Playwright.
+
+`ADMIN_EMAIL` is a comma-separated allow-list. A single address still works. Local wrangler defaults to `humzab1711@hotmail.com,adenreh@gmail.com`. Magic link, email OTP, user-create hooks, and session checks accept every listed address and still reject anyone else. `seedAdministrator` creates a verified user for each listed address that is missing; existing Humza is not renamed; Aden is seeded as "Aden". Operators must re-seed after adding an address. Staging and production still use the `ADMIN_EMAIL` secret name — a human updates those secrets and runs `npm run auth:seed -- --env staging` and `--env production` after this lands.
+
+### Files and interfaces
+
+- `apps/api/src/auth/bindings.ts` — `parseAdminEmails`, `configuredAdminEmails`, `isConfiguredAdminEmail`, `defaultLocalAdminEmails`
+- `apps/api/src/auth/create-auth.ts`, `routes.ts`, `prepare.ts` — allow-list checks; OTP verify uses the requested address, not the first listed admin
+- `apps/api/wrangler.jsonc`, `apps/web/vite.config.ts`, `scripts/env-sync.ts`, `scripts/auth-target.ts`, `apps/api/.dev.vars.example`
+- Docs: `apps/api/src/auth/README.md`, `docs/deployment.md`, `docs/event-runbook.md`, `docs/data-inventory.md`, `docs/party-game-plan.md`
+
+### Commands and results
+
+- `npm run cf-typegen` — passed; `ADMIN_EMAIL` union now includes the comma-separated local default
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 27 existing react-refresh warnings; structure check passed
+- `npm run test -w @26/api -- test/auth.spec.ts` — 17 passed
+- `npm run test:unit -w @26/web -- src/admin/admin-auth.test.tsx` — 27 passed
+- Playwright / E2E — not run (prohibited)
+
+### Exact next stage
+
+A human updates the staging and production `ADMIN_EMAIL` secrets to the comma-separated list and re-seeds those databases. Do not start that from this change.
