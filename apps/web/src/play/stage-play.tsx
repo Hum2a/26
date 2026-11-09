@@ -84,9 +84,8 @@ export function StagePlay({
         </Suspense>
       </KartDriversProvider>
     );
-  if (play.question.kind === "chess" && play.chess) {
-    // Type assertion needed: discriminated union doesn't narrow automatically
-    return <ChessStage snapshot={play.chess as any} />;
+  if (play.question.kind === "chess" && play.chess && "totalGames" in play.chess) {
+    return <ChessStage snapshot={play.chess} />;
   }
   const leadBoard =
     snapshot.phase === "scores" ||

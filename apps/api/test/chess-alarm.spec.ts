@@ -73,9 +73,13 @@ it("mechanic: handleChessClockAlarm flags games and scores exactly once", async 
     createChessRound(sql, store, question, participants, now, 100, 60000);
 
     // Verify games created
-    const games = sql.exec("SELECT game_id, player_id, status FROM chess_game").toArray();
+    const games = sql
+      .exec<{ game_id: string; player_id: string; status: string }>(
+        "SELECT game_id, player_id, status FROM chess_game",
+      )
+      .toArray();
     expect(games).toHaveLength(2);
-    expect(games.every((g: any) => g.status === "in-progress")).toBe(true);
+    expect(games.every((g) => g.status === "in-progress")).toBe(true);
 
     // Verify alarms scheduled - check dueAt
     const jobs = sql

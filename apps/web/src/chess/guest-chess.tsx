@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { LobbySnapshot, ChessGuestSnapshot } from "@26/shared";
+import type { LobbySnapshot } from "@26/shared";
 import { ChessGame } from "./chess-game";
 import { ChessClocks } from "./chess-clocks";
 import { QuestionExperience } from "../play/question-experience";
@@ -17,9 +17,16 @@ export function GuestChess({
   onChessResign: (params: ChessResignParams) => void;
 }) {
   const play = snapshot.play;
-  const chessSnapshot = play?.chess as ChessGuestSnapshot | undefined;
+  const chessSnapshot =
+    play?.chess && "fen" in play.chess ? play.chess : undefined;
   const [engineError, setEngineError] = useState<string>();
   const pendingMoveRef = useRef<string | null>(null);
+  const snapshotFen = chessSnapshot?.fen;
+  const snapshotStatus = chessSnapshot?.status;
+
+  useEffect(() => {
+    pendingMoveRef.current = null;
+  }, [snapshotFen, snapshotStatus]);
 
   // Block play if no chess snapshot yet (backend not ready)
   if (!chessSnapshot) {
@@ -75,11 +82,6 @@ export function GuestChess({
       gameId: chessSnapshot.gameId,
     });
   }
-
-  // Clear pending flag when snapshot updates
-  useEffect(() => {
-    pendingMoveRef.current = null;
-  }, [chessSnapshot?.fen, chessSnapshot?.status]);
 
   return (
     <QuestionExperience snapshot={snapshot} pending={pending}>

@@ -14,7 +14,7 @@ describe("Chess Engine Lifecycle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Install faithful Worker mock as constructor
-    (globalThis as any).Worker = WorkerMock;
+    vi.stubGlobal("Worker", WorkerMock);
   });
 
   it("cancels in-flight search on terminate", async () => {
