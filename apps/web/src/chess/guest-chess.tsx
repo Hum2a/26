@@ -21,6 +21,10 @@ export function GuestChess({
   const [engineError, setEngineError] = useState<string>();
   const pendingMoveRef = useRef<string | null>(null);
 
+  useEffect(() => {
+    pendingMoveRef.current = null;
+  }, [chessSnapshot?.fen, chessSnapshot?.status]);
+
   // Block play if no chess snapshot yet (backend not ready)
   if (!chessSnapshot) {
     return (
@@ -76,11 +80,6 @@ export function GuestChess({
     });
   }
 
-  // Clear pending flag when snapshot updates
-  useEffect(() => {
-    pendingMoveRef.current = null;
-  }, [chessSnapshot?.fen, chessSnapshot?.status]);
-
   return (
     <QuestionExperience snapshot={snapshot} pending={pending}>
       <div className="chess-phone-container">
@@ -115,7 +114,8 @@ export function GuestChess({
               ? "You won!"
               : chessSnapshot.winner === "bot"
                 ? "Computer won"
-                : "Draw"}
+                : "Draw"}{" "}
+            Final score: {chessSnapshot.score} pts
           </p>
         ) : null}
       </div>

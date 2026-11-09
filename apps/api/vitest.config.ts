@@ -192,6 +192,7 @@ export default defineConfig({
             // here before, so they had not been running.
             "test/kart-slipstream.spec.ts",
             "test/chess-coordinator.spec.ts",
+            "test/chess-score.spec.ts",
             "test/chess-review-regressions.spec.ts",
             "test/chess-security.spec.ts",
             "test/kart-race-laps.spec.ts",

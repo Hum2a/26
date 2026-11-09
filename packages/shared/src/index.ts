@@ -96,6 +96,7 @@ export { resultsStatusSchema } from "./archive.ts";
 export type { ResultsStatus } from "./archive.ts";
 export * from "./chess-schemas.ts";
 export * from "./chess-params.ts";
+export * from "./chess-score.ts";
 import {
   chessGuestSnapshotSchema,
   chessStageSnapshotSchema,

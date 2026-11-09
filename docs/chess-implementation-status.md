@@ -15,12 +15,14 @@ Individual simultaneous 1+0 blitz chess games for up to 80 concurrent players ag
 ### ✅ Complete
 
 #### Phase 1: Assets & Dependencies (commit b5c9764)
+
 - [x] Vendor Stockfish 19 WASM assets (1.8 MB + 28 KB)
 - [x] GPL-3.0 compliance documentation
 - [x] Install chess.js@1.4.0 and stockfish@19.0.1
 - [x] Source provenance in THIRD_PARTY_NOTICES.md
 
 #### Phase 2: Server Logic (commits f3d95f1, 96b149f, 9fc72fe)
+
 - [x] Chess schemas in packages/shared
   - Game state, moves, clocks, snapshots
   - Wire protocol for commands
@@ -45,6 +47,7 @@ Individual simultaneous 1+0 blitz chess games for up to 80 concurrent players ag
   - Aggregates
 
 #### Phase 3: Client Foundation (commit 4359af2)
+
 - [x] **Stockfish Web Worker wrapper** (204 lines)
   - UCI protocol handshake
   - UCI_LimitStrength + UCI_Elo configuration
@@ -67,6 +70,7 @@ Individual simultaneous 1+0 blitz chess games for up to 80 concurrent players ag
 ### 🚧 Remaining Work
 
 #### Phase 3b: Client Integration
+
 - [ ] Wire chess board to Stockfish worker
 - [ ] Handle bot move responses
 - [ ] Legal move highlighting (query server or client chess.js)
@@ -77,6 +81,7 @@ Individual simultaneous 1+0 blitz chess games for up to 80 concurrent players ag
 - [ ] Worker cleanup on unmount/route change
 
 #### Phase 4: Projector & Admin
+
 - [ ] Projector aggregate view
   - Win/draw/loss counts
   - Games in progress
@@ -93,6 +98,7 @@ Individual simultaneous 1+0 blitz chess games for up to 80 concurrent players ag
   - Isolated (no live room/socket)
 
 #### Phase 5: Room/DO Integration
+
 - [ ] Add chess commands to PartyRoom
   - `chess-move`, `chess-resign`
 - [ ] Room state management
@@ -114,6 +120,7 @@ Individual simultaneous 1+0 blitz chess games for up to 80 concurrent players ag
 - [ ] Frozen participant roster
 
 #### Phase 6: Testing & Verification
+
 - [ ] Engine smoke test
   - Real UCI handshake with Stockfish 19
   - Verify UCI_Elo 1425 accepted
@@ -160,8 +167,8 @@ Individual simultaneous 1+0 blitz chess games for up to 80 concurrent players ag
 
 1. **Client engine with casual trust:** Server validates legality but not bot strength. Accepted risk of weak legal move selection in party context.
 2. **Everyone White:** Identical opportunity and UX consistency.
-3. **Standard 26 scoring:** Win 100, draw 50, loss 0. Abort 0 distinct from played loss.
-4. **No material scoring:** Prevents deadline farming. Game must reach terminal state.
+3. **Capture scoring:** Queen 10, rook 5, bishop 3, knight 3, pawn 1, from White’s captures of Black. Checkmate scores at least 40.
+4. **No points from the result alone:** Draws, losses, timeouts, resignations and aborts keep captured material only.
 5. **Server clocks:** Authoritative time tracking despite client engines. No extra time on reconnect.
 6. **UCI_Elo 1425:** Nominal strength. Not calibrated to Chess.com. Within documented 1320-3190 range.
 7. **Repetition history:** Full position history persisted for threefold repetition after eviction.
@@ -192,6 +199,7 @@ $ npx vitest run apps/api/src/questions/chess-coordinator.test.ts
 ### Type Safety
 
 All TypeScript compilation passes:
+
 - `packages/shared` types
 - `apps/api` coordinator and question
 - `apps/web` Stockfish worker and board component
@@ -199,6 +207,7 @@ All TypeScript compilation passes:
 ## Files
 
 **Added:**
+
 - `apps/web/public/chess-engine/stockfish-19-lite-single.{wasm,js}`
 - `apps/web/public/chess-engine/README.md`
 - `packages/shared/src/chess-schemas.ts`
@@ -209,6 +218,7 @@ All TypeScript compilation passes:
 - `apps/web/src/chess/chess-board.tsx`
 
 **Modified:**
+
 - `THIRD_PARTY_NOTICES.md`
 - `packages/shared/src/index.ts`
 - `apps/api/src/questions/definition.ts`
@@ -244,6 +254,7 @@ npm run build
 ## Deployment Blockers
 
 Before merge:
+
 - [ ] Complete remaining phases
 - [ ] All tests passing (unit + integration + browser)
 - [ ] 80-player server simulation

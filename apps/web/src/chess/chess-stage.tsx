@@ -1,16 +1,24 @@
-import type { ChessStageSnapshot } from "@26/shared";
+import type { ChessControlSnapshot, ChessStageSnapshot } from "@26/shared";
 import { motion, AnimatePresence } from "motion/react";
 import "./chess.css";
 
-export function ChessStage({ snapshot }: { snapshot: ChessStageSnapshot }) {
-  const { totalGames, inProgress, finished, results, recentEvents } = snapshot;
+export function ChessStage({
+  snapshot,
+}: {
+  snapshot: ChessStageSnapshot | ChessControlSnapshot;
+}) {
+  const { totalGames, inProgress, finished, results, recentEvents, standings } =
+    snapshot;
   const latestEvents = recentEvents.slice(-5).reverse();
+  const control = "gameStatuses" in snapshot ? snapshot : null;
 
   return (
     <div className="chess-stage-container">
       <div className="chess-stage-header">
         <h1 className="chess-stage-title">Chess Round</h1>
-        <p className="chess-stage-subtitle">Everyone vs Stockfish • 1+0 Blitz</p>
+        <p className="chess-stage-subtitle">
+          Everyone vs Stockfish • 1+0 • Capture Black pieces for points
+        </p>
       </div>
 
       <div className="chess-stage-stats">
@@ -27,6 +35,40 @@ export function ChessStage({ snapshot }: { snapshot: ChessStageSnapshot }) {
           <div className="chess-stat-label">Finished</div>
         </div>
       </div>
+
+      {standings.length > 0 ? (
+        <div className="chess-stage-standings">
+          <h2 className="chess-results-title">Captured points</h2>
+          <ol className="chess-standings-list">
+            {standings.map((row) => (
+              <li key={row.playerId} className="chess-standing-row">
+                <span className="chess-standing-name">{row.nickname}</span>
+                <span className="chess-standing-points">
+                  {row.finished
+                    ? `${row.score} pts`
+                    : `Captured: ${row.capturedPoints} pts`}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+
+      {control ? (
+        <div className="chess-stage-standings">
+          <h2 className="chess-results-title">Boards</h2>
+          <ol className="chess-standings-list">
+            {control.gameStatuses.map((row) => (
+              <li key={row.playerId} className="chess-standing-row">
+                <span className="chess-standing-name">{row.nickname}</span>
+                <span className="chess-standing-points">
+                  Captured: {row.capturedPoints} pts · {row.score} pts
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
 
       <div className="chess-stage-results">
         <h2 className="chess-results-title">Results</h2>
@@ -76,6 +118,7 @@ export function ChessStage({ snapshot }: { snapshot: ChessStageSnapshot }) {
                           : event.event === "resign"
                             ? "Resigned"
                             : "Aborted"}
+                  {` · ${event.score} pts`}
                 </div>
               </motion.div>
             ))}

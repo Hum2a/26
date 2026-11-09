@@ -130,6 +130,10 @@ export const chessGuestSnapshotSchema = z.object({
   // Can request legal moves from server for UI hints
   inCheck: z.boolean(),
   isGameOver: z.boolean(),
+  /** Running material taken from Black (Stockfish). */
+  capturedPoints: z.number().int().min(0),
+  /** Current round score: captures, or at least 40 on checkmate. */
+  score: z.number().int().min(0),
 });
 export type ChessGuestSnapshot = z.infer<typeof chessGuestSnapshotSchema>;
 
@@ -151,8 +155,26 @@ export const chessStageSnapshotSchema = z.object({
     z.object({
       playerId: z.string(),
       nickname: z.string(),
-      event: z.enum(["checkmate-win", "checkmate-loss", "draw", "timeout", "resign", "abort"]),
+      event: z.enum([
+        "checkmate-win",
+        "checkmate-loss",
+        "draw",
+        "timeout",
+        "resign",
+        "abort",
+      ]),
       timestamp: z.number(),
+      capturedPoints: z.number().int().min(0),
+      score: z.number().int().min(0),
+    }),
+  ),
+  standings: z.array(
+    z.object({
+      playerId: z.string(),
+      nickname: z.string(),
+      capturedPoints: z.number().int().min(0),
+      score: z.number().int().min(0),
+      finished: z.boolean(),
     }),
   ),
 });
@@ -175,8 +197,26 @@ export const chessControlSnapshotSchema = z.object({
     z.object({
       playerId: z.string(),
       nickname: z.string(),
-      event: z.enum(["checkmate-win", "checkmate-loss", "draw", "timeout", "resign", "abort"]),
+      event: z.enum([
+        "checkmate-win",
+        "checkmate-loss",
+        "draw",
+        "timeout",
+        "resign",
+        "abort",
+      ]),
       timestamp: z.number(),
+      capturedPoints: z.number().int().min(0),
+      score: z.number().int().min(0),
+    }),
+  ),
+  standings: z.array(
+    z.object({
+      playerId: z.string(),
+      nickname: z.string(),
+      capturedPoints: z.number().int().min(0),
+      score: z.number().int().min(0),
+      finished: z.boolean(),
     }),
   ),
   // Individual game statuses for monitoring
@@ -188,6 +228,8 @@ export const chessControlSnapshotSchema = z.object({
       plyCount: z.number().int(),
       playerTimeMs: z.number().int(),
       botTimeMs: z.number().int(),
+      capturedPoints: z.number().int().min(0),
+      score: z.number().int().min(0),
     }),
   ),
 });

@@ -79,6 +79,16 @@ export function HomePage() {
               Practise kart solo →
             </LinkButton>
           </div>
+          <div className="home-kart home-chess">
+            <div>
+              <p className="entry-eyebrow">While you wait</p>
+              <h2>Fancy a game?</h2>
+              <p>Play White against the Humza bot. No code needed.</p>
+            </div>
+            <LinkButton to="/chess" variant="secondary">
+              Practise chess solo →
+            </LinkButton>
+          </div>
           <div className="home-admin">
             <p>Running the night?</p>
             <Link className="entry-text-link" to={adminPath}>

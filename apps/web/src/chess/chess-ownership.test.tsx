@@ -3,11 +3,11 @@ import type { ChessGuestSnapshot } from "@26/shared";
 
 /**
  * CRITICAL OWNERSHIP CONTRACT TEST
- * 
+ *
  * Each phone owns ONE game and submits BOTH player AND bot moves for that SAME gameId.
  * Server distinguishes player vs bot move using sideToMove from game state, NOT by
  * comparing gameId owner to credential.
- * 
+ *
  * This test proves the frontend correctly:
  * 1. Uses snapshot.gameId for BOTH human and bot moves
  * 2. Captures positionRevision at search dispatch time
@@ -36,6 +36,8 @@ describe("Chess Ownership Contract", () => {
       paused: false,
       inCheck: false,
       isGameOver: false,
+      capturedPoints: 0,
+      score: 0,
     };
 
     // Simulate player move
@@ -56,7 +58,7 @@ describe("Chess Ownership Contract", () => {
     mockOnMove("e7", "e5", undefined, botSnapshot.positionRevision);
 
     expect(mockOnMove).toHaveBeenCalledWith("e7", "e5", undefined, mockRevision + 1);
-    
+
     // Verify all moves used the SAME gameId (implicit in the fact that
     // both moves come from the same snapshot.gameId)
     // This test would fail if we tried to construct a different gameId for bot moves
@@ -106,6 +108,8 @@ describe("Chess Ownership Contract", () => {
       paused: false,
       inCheck: false,
       isGameOver: false,
+      capturedPoints: 0,
+      score: 0,
     };
 
     const mockSubmit = vi.fn((submittedGameId: string) => {

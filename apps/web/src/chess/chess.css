@@ -8,6 +8,36 @@
   max-width: 100%;
 }
 
+.chess-captured {
+  margin: 0;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.chess-captured-final {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.chess-standings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.chess-standing-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--surface);
+  color: var(--surface-foreground);
+  border-radius: var(--radius-panel);
+}
+
 .engine-status {
   padding: 0.75rem;
   border-radius: 0.5rem;
@@ -319,7 +349,7 @@
   .chess-square {
     font-size: 1.75rem;
   }
-  
+
   .promotion-choices {
     grid-template-columns: 1fr;
   }
@@ -332,12 +362,12 @@
   .chess-resign-button {
     transition: none;
   }
-  
+
   .thinking-spinner {
     animation: none;
     border-right-color: currentColor;
   }
-  
+
   .promotion-choice:hover {
     transform: none;
   }

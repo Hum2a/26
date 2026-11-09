@@ -4,14 +4,17 @@
  */
 
 import { Chess } from "chess.js";
-import type {
-  ChessGuestSnapshot,
-  ChessStageSnapshot,
-  ChessControlSnapshot,
-  ChessMoveCommand,
-  ChessGameStatus,
-  ChessPlayerGame,
-  ChessRoundState,
+import {
+  capturedBlackPieces,
+  chessCapturedPoints,
+  chessRoundScore,
+  type ChessGuestSnapshot,
+  type ChessStageSnapshot,
+  type ChessControlSnapshot,
+  type ChessMoveCommand,
+  type ChessGameStatus,
+  type ChessPlayerGame,
+  type ChessRoundState,
 } from "@26/shared";
 
 export type { ChessPlayerGame, ChessRoundState } from "@26/shared";
@@ -76,7 +79,9 @@ export function applyChessMove(
 
   // Validate position revision - reject stale moves from old position
   if (command.positionRevision !== game.positionRevision) {
-    return { error: `Position revision mismatch: expected ${game.positionRevision}, got ${command.positionRevision}` };
+    return {
+      error: `Position revision mismatch: expected ${game.positionRevision}, got ${command.positionRevision}`,
+    };
   }
 
   // Check game is in progress
@@ -256,10 +261,7 @@ export function applyBotMove(
 /**
  * Handle resignation.
  */
-export function resignGame(
-  game: ChessPlayerGame,
-  now: number,
-): ChessPlayerGame {
+export function resignGame(game: ChessPlayerGame, now: number): ChessPlayerGame {
   if (game.status !== "in-progress") {
     return game;
   }
@@ -278,15 +280,11 @@ export function resignGame(
  * IMPORTANT: Pass the chess instance that has been used for all moves (with history).
  * Creating a new Chess(fen) loses repetition history.
  */
-function checkTerminal(
-  chess: Chess,
-):
-  | {
-      status: ChessGameStatus;
-      winner?: "player" | "bot" | "draw";
-      reason: string;
-    }
-  | null {
+function checkTerminal(chess: Chess): {
+  status: ChessGameStatus;
+  winner?: "player" | "bot" | "draw";
+  reason: string;
+} | null {
   // Checkmate
   if (chess.isCheckmate()) {
     // Current side to move is in checkmate, so previous mover won
@@ -434,8 +432,12 @@ function stripCounters(fen: string): string {
 /**
  * Project guest snapshot (own game only).
  */
-export function projectGuestSnapshot(game: ChessPlayerGame, paused: boolean): ChessGuestSnapshot {
+export function projectGuestSnapshot(
+  game: ChessPlayerGame,
+  paused: boolean,
+): ChessGuestSnapshot {
   const chess = new Chess(game.fen);
+  const scoring = chessScoreView(game);
 
   return {
     gameId: game.gameId,
@@ -455,6 +457,8 @@ export function projectGuestSnapshot(game: ChessPlayerGame, paused: boolean): Ch
     terminationReason: game.terminationReason,
     inCheck: chess.inCheck(),
     isGameOver: game.status !== "in-progress" && game.status !== "waiting",
+    capturedPoints: scoring.capturedPoints,
+    score: scoring.score,
   };
 }
 
@@ -485,12 +489,30 @@ export function projectStageSnapshot(
     .filter((g) => g.terminatedAt !== undefined)
     .sort((a, b) => (b.terminatedAt ?? 0) - (a.terminatedAt ?? 0))
     .slice(0, 10)
-    .map((g) => ({
-      playerId: g.playerId,
-      nickname: nicknameMap.get(g.playerId) ?? "Guest",
-      event: determineEvent(g),
-      timestamp: g.terminatedAt!,
-    }));
+    .map((g) => {
+      const scoring = chessScoreView(g);
+      return {
+        playerId: g.playerId,
+        nickname: nicknameMap.get(g.playerId) ?? "Guest",
+        event: determineEvent(g),
+        timestamp: g.terminatedAt!,
+        capturedPoints: scoring.capturedPoints,
+        score: scoring.score,
+      };
+    });
+
+  const standings = games
+    .map((g) => {
+      const scoring = chessScoreView(g);
+      return {
+        playerId: g.playerId,
+        nickname: nicknameMap.get(g.playerId) ?? "Guest",
+        capturedPoints: scoring.capturedPoints,
+        score: scoring.score,
+        finished: g.status !== "in-progress" && g.status !== "waiting",
+      };
+    })
+    .sort((a, b) => b.score - a.score || b.capturedPoints - a.capturedPoints);
 
   return {
     totalGames: games.length,
@@ -498,6 +520,7 @@ export function projectStageSnapshot(
     finished: state.gamesFinished,
     results,
     recentEvents,
+    standings,
   };
 }
 
@@ -511,14 +534,19 @@ export function projectControlSnapshot(
   const stageSnapshot = projectStageSnapshot(state, nicknameMap);
   const games = Object.values(state.games);
 
-  const gameStatuses = games.map((g) => ({
-    playerId: g.playerId,
-    nickname: nicknameMap.get(g.playerId) ?? "Guest",
-    status: g.status,
-    plyCount: g.plyCount,
-    playerTimeMs: g.playerTimeMs,
-    botTimeMs: g.botTimeMs,
-  }));
+  const gameStatuses = games.map((g) => {
+    const scoring = chessScoreView(g);
+    return {
+      playerId: g.playerId,
+      nickname: nicknameMap.get(g.playerId) ?? "Guest",
+      status: g.status,
+      plyCount: g.plyCount,
+      playerTimeMs: g.playerTimeMs,
+      botTimeMs: g.botTimeMs,
+      capturedPoints: scoring.capturedPoints,
+      score: scoring.score,
+    };
+  });
 
   return {
     ...stageSnapshot,
@@ -544,8 +572,9 @@ function determineEvent(
 export function updateRoundAggregates(state: ChessRoundState): ChessRoundState {
   const games = Object.values(state.games);
   const inProgress = games.filter((g) => g.status === "in-progress").length;
-  const finished = games.filter((g) => g.status !== "in-progress" && g.status !== "waiting")
-    .length;
+  const finished = games.filter(
+    (g) => g.status !== "in-progress" && g.status !== "waiting",
+  ).length;
 
   return {
     ...state,
@@ -556,10 +585,36 @@ export function updateRoundAggregates(state: ChessRoundState): ChessRoundState {
 }
 
 /**
- * Calculate final score for a completed game.
+ * Black (bot) material captured by White, from the server-validated PGN.
+ */
+export function capturedBlackMaterial(pgn: string): number {
+  const chess = new Chess();
+  if (pgn) {
+    chess.loadPgn(pgn);
+  }
+  return chessCapturedPoints(capturedBlackPieces(chess.history({ verbose: true })));
+}
+
+export function chessScoreView(
+  game: Pick<ChessPlayerGame, "pgn" | "status" | "winner">,
+): {
+  capturedPoints: number;
+  score: number;
+} {
+  const capturedPoints = capturedBlackMaterial(game.pgn);
+  return {
+    capturedPoints,
+    score: chessRoundScore({
+      capturedPoints,
+      status: game.status,
+      winner: game.winner,
+    }),
+  };
+}
+
+/**
+ * Calculate final score for a completed game from validated move history.
  */
 export function calculateChessScore(game: ChessPlayerGame): number {
-  if (game.winner === "player") return 100;
-  if (game.winner === "draw") return 50;
-  return 0; // Loss or abort
+  return chessScoreView(game).score;
 }

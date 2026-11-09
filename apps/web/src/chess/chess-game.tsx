@@ -8,12 +8,18 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { ChessBoard } from "./chess-board.tsx";
 import { StockfishEngine } from "./stockfish-worker.ts";
 import { PromotionChooser } from "./promotion-chooser.tsx";
+import { ChessCapturedScore } from "./chess-captured.tsx";
 import type { ChessGuestSnapshot, ChessPromotionPiece } from "@26/shared";
 
 export type ChessGameProps = {
   snapshot: ChessGuestSnapshot;
   onEngineError?: (error: string) => void;
-  onMove: (from: string, to: string, promotion?: ChessPromotionPiece, positionRevision?: number) => void;
+  onMove: (
+    from: string,
+    to: string,
+    promotion?: ChessPromotionPiece,
+    positionRevision?: number,
+  ) => void;
   onResign: () => void;
   disabled?: boolean;
 };
@@ -31,98 +37,111 @@ type SearchState = {
   startedAt: number;
 };
 
-export function ChessGame({ snapshot, onMove, onResign, disabled = false }: ChessGameProps) {
+export function ChessGame({
+  snapshot,
+  onMove,
+  onResign,
+  disabled = false,
+}: ChessGameProps) {
   const [engine, setEngine] = useState<StockfishEngine | null>(null);
   const [engineReady, setEngineReady] = useState(false);
   const [engineError, setEngineError] = useState<string | null>(null);
-  const [initializingEngine, setInitializingEngine] = useState(false);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [showPromotionChooser, setShowPromotionChooser] = useState(false);
-  
+  const initializingEngine = !snapshot.isGameOver && !engineReady && !engineError;
+
   // Search generation tracking - prevents stale bestmove from old searches
   const searchStateRef = useRef<SearchState | null>(null);
   const searchGenerationRef = useRef(0);
-  
+  const onMoveRef = useRef(onMove);
+  const snapshotRef = useRef(snapshot);
+
+  useEffect(() => {
+    onMoveRef.current = onMove;
+    snapshotRef.current = snapshot;
+  });
+
   // Engine lifecycle - one worker per active phone
   useEffect(() => {
-    if (snapshot.isGameOver || engineReady || initializingEngine || engineError) {
+    if (snapshot.isGameOver || engineError) {
       return;
     }
 
     let mounted = true;
-    setInitializingEngine(true);
+    let created: StockfishEngine | null = null;
 
     const initEngine = async () => {
       try {
         const newEngine = new StockfishEngine({
           elo: 1425,
           moveTimeMs: 2000, // Default, overridden per-move
-          onReady: () => {
-            if (mounted) {
-              setEngineReady(true);
-              setInitializingEngine(false);
-            }
-          },
           onBestMove: (from, to, promotion) => {
             if (!mounted) return;
-            
+            const live = snapshotRef.current;
+
             // Verify this bestmove is for current search
             const currentSearch = searchStateRef.current;
             if (!currentSearch) {
-              console.warn('[Chess] Bestmove arrived but no active search');
+              console.warn("[Chess] Bestmove arrived but no active search");
               return;
             }
 
             // Guard: only process if position unchanged since search started
-            if (currentSearch.fen !== snapshot.fen || 
-                currentSearch.positionRevision !== snapshot.positionRevision) {
-              console.warn('[Chess] Stale bestmove - position changed', {
+            if (
+              currentSearch.fen !== live.fen ||
+              currentSearch.positionRevision !== live.positionRevision
+            ) {
+              console.warn("[Chess] Stale bestmove - position changed", {
                 searchFen: currentSearch.fen,
-                currentFen: snapshot.fen,
+                currentFen: live.fen,
                 searchRevision: currentSearch.positionRevision,
-                currentRevision: snapshot.positionRevision
+                currentRevision: live.positionRevision,
               });
               return;
             }
 
             // Submit bot move to server with captured positionRevision
-            onMove(from, to, promotion as ChessPromotionPiece | undefined, currentSearch.positionRevision);
+            onMoveRef.current(
+              from,
+              to,
+              promotion as ChessPromotionPiece | undefined,
+              currentSearch.positionRevision,
+            );
             searchStateRef.current = null;
           },
           onError: (error) => {
             if (mounted) {
-              console.error('[Chess] Engine error:', error);
+              console.error("[Chess] Engine error:", error);
               setEngineError(error);
             }
-          }
+          },
         });
 
+        created = newEngine;
         await newEngine.initialize();
-        
+
         if (mounted) {
           setEngine(newEngine);
+          setEngineReady(true);
         } else {
           newEngine.terminate();
         }
       } catch (error) {
         if (mounted) {
           const message = error instanceof Error ? error.message : String(error);
-          console.error('[Chess] Engine init failed:', message);
+          console.error("[Chess] Engine init failed:", message);
           setEngineError(message);
-          setInitializingEngine(false);
         }
       }
     };
 
-    initEngine();
+    void initEngine();
 
     return () => {
       mounted = false;
-      if (engine) {
-        engine.terminate();
-      }
+      created?.terminate();
     };
-  }, [snapshot.isGameOver, engineReady, initializingEngine, engineError]);
+  }, [snapshot.isGameOver, engineError]);
 
   // Bot move trigger - when bot's turn and engine ready
   useEffect(() => {
@@ -146,7 +165,7 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
         generation: searchGenerationRef.current,
         positionRevision: snapshot.positionRevision,
         fen: snapshot.fen,
-        startedAt: Date.now()
+        startedAt: Date.now(),
       };
 
       // Set position and start search
@@ -156,7 +175,7 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
       // Watchdog: cancel if no response within reasonable time
       const watchdog = setTimeout(() => {
         if (searchStateRef.current?.generation === searchGenerationRef.current) {
-          console.warn('[Chess] Search watchdog timeout');
+          console.warn("[Chess] Search watchdog timeout");
           engine.stop();
           searchStateRef.current = null;
         }
@@ -166,8 +185,16 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
         clearTimeout(watchdog);
       };
     }
-  }, [snapshot.fen, snapshot.positionRevision, snapshot.sideToMove, snapshot.botColor, 
-      snapshot.isGameOver, snapshot.botTimeMs, engine, engineReady]);
+  }, [
+    snapshot.fen,
+    snapshot.positionRevision,
+    snapshot.sideToMove,
+    snapshot.botColor,
+    snapshot.isGameOver,
+    snapshot.botTimeMs,
+    engine,
+    engineReady,
+  ]);
 
   // Clear search state on unmount or position change
   useEffect(() => {
@@ -179,33 +206,44 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
     };
   }, [snapshot.positionRevision]);
 
-  const handleSquareClick = useCallback((from: string, to: string) => {
-    if (disabled || snapshot.isGameOver || snapshot.sideToMove !== snapshot.playerColor) {
-      return;
-    }
+  const handleSquareClick = useCallback(
+    (from: string, to: string) => {
+      if (
+        disabled ||
+        snapshot.isGameOver ||
+        snapshot.sideToMove !== snapshot.playerColor
+      ) {
+        return;
+      }
 
-    // Check if move needs promotion (pawn to 8th/1st rank)
-    const piece = getPieceAt(snapshot.fen, from);
-    const isPromotion = piece?.toLowerCase() === 'p' && 
-                       ((snapshot.playerColor === 'white' && to[1] === '8') ||
-                        (snapshot.playerColor === 'black' && to[1] === '1'));
+      // Check if move needs promotion (pawn to 8th/1st rank)
+      const piece = getPieceAt(snapshot.fen, from);
+      const isPromotion =
+        piece?.toLowerCase() === "p" &&
+        ((snapshot.playerColor === "white" && to[1] === "8") ||
+          (snapshot.playerColor === "black" && to[1] === "1"));
 
-    if (isPromotion) {
-      setPendingMove({ from, to, needsPromotion: true });
-      setShowPromotionChooser(true);
-    } else {
-      // Submit immediately with current positionRevision
-      onMove(from, to, undefined, snapshot.positionRevision);
-    }
-  }, [disabled, snapshot, onMove]);
+      if (isPromotion) {
+        setPendingMove({ from, to, needsPromotion: true });
+        setShowPromotionChooser(true);
+      } else {
+        // Submit immediately with current positionRevision
+        onMove(from, to, undefined, snapshot.positionRevision);
+      }
+    },
+    [disabled, snapshot, onMove],
+  );
 
-  const handlePromotion = useCallback((piece: ChessPromotionPiece) => {
-    if (pendingMove) {
-      onMove(pendingMove.from, pendingMove.to, piece, snapshot.positionRevision);
-      setPendingMove(null);
-      setShowPromotionChooser(false);
-    }
-  }, [pendingMove, snapshot.positionRevision, onMove]);
+  const handlePromotion = useCallback(
+    (piece: ChessPromotionPiece) => {
+      if (pendingMove) {
+        onMove(pendingMove.from, pendingMove.to, piece, snapshot.positionRevision);
+        setPendingMove(null);
+        setShowPromotionChooser(false);
+      }
+    },
+    [pendingMove, snapshot.positionRevision, onMove],
+  );
 
   const handleCancelPromotion = useCallback(() => {
     setPendingMove(null);
@@ -213,9 +251,13 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
   }, []);
 
   // Engine status display
-  const engineStatus = engineError ? 'error' : 
-                      initializingEngine ? 'loading' :
-                      engineReady ? 'ready' : 'idle';
+  const engineStatus = engineError
+    ? "error"
+    : initializingEngine
+      ? "loading"
+      : engineReady
+        ? "ready"
+        : "idle";
 
   return (
     <div className="chess-game">
@@ -230,10 +272,14 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
         </div>
       )}
 
+      <ChessCapturedScore snapshot={snapshot} />
+
       <ChessBoard
         snapshot={snapshot}
         onMove={handleSquareClick}
-        disabled={disabled || !engineReady || snapshot.sideToMove !== snapshot.playerColor}
+        disabled={
+          disabled || !engineReady || snapshot.sideToMove !== snapshot.playerColor
+        }
       />
 
       {/* Promotion chooser modal */}
@@ -257,7 +303,7 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
             Resign
           </button>
         )}
-        
+
         {snapshot.isGameOver && (
           <div className="chess-game-over">
             <p className="result">{formatGameResult(snapshot)}</p>
@@ -272,14 +318,14 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
 }
 
 function getPieceAt(fen: string, square: string): string | null {
-  const [position] = fen.split(' ');
-  const ranks = position.split('/');
-  const file = square.charCodeAt(0) - 'a'.charCodeAt(0);
+  const [position] = fen.split(" ");
+  const ranks = position.split("/");
+  const file = square.charCodeAt(0) - "a".charCodeAt(0);
   const rank = 8 - parseInt(square[1], 10);
-  
+
   let fileIndex = 0;
   for (const char of ranks[rank]) {
-    if (char >= '1' && char <= '8') {
+    if (char >= "1" && char <= "8") {
       fileIndex += parseInt(char, 10);
     } else {
       if (fileIndex === file) {
@@ -292,8 +338,9 @@ function getPieceAt(fen: string, square: string): string | null {
 }
 
 function formatGameResult(snapshot: ChessGuestSnapshot): string {
-  if (snapshot.winner === 'player') return '🎉 You won!';
-  if (snapshot.winner === 'bot') return '😔 Bot wins';
-  if (snapshot.winner === 'draw') return '🤝 Draw';
-  return 'Game over';
+  const score = `${snapshot.score} pts`;
+  if (snapshot.winner === "player") return `🎉 You won! ${score}`;
+  if (snapshot.winner === "bot") return `😔 Bot wins · ${score}`;
+  if (snapshot.winner === "draw") return `🤝 Draw · ${score}`;
+  return `Game over · ${score}`;
 }

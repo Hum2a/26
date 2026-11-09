@@ -5992,3 +5992,24 @@ Plain `playwright.config.ts` and `github-actions:check` were not run.
 ### Exact next stage
 
 Review and merge the `event-readiness` PR; deploy per the runbook when the owner asks; complete physical rehearsal. Do not start the next prompt automatically.
+
+## 9 November 2026 — chess capture scoring and solo practice
+
+Status: implemented on a branch from master. Chess remains catalogue-only (not in the birthday running order). No deploy.
+
+- Scoring is capture-based and server-authoritative. `chessRoundScore` in `packages/shared/src/chess-score.ts` awards queen 10 / rook 5 / bishop 3 / knight 3 / pawn 1 for Black pieces White captured. Stockfish captures do not subtract. Checkmate of the bot is `max(captured, 40)`. Other terminals keep captures. `calculateChessScore` reads chess.js verbose history from the validated PGN.
+- Guest, stage and host snapshots carry `capturedPoints` and `score`. Phone and projector copy no longer mention win 100 / draw 50. Ledger `detail` stores captured points with the result. Party totals still sum `score_ledger.points`.
+- Home page `Practise chess solo →` opens `/chess`, gated the same way as kart (always offered, no join code, no running-order change). Admin phone preview for `chess-battle` links the same path.
+- `chess-game.tsx` engine start no longer calls `setState` synchronously inside the effect (CI lint).
+
+Files: `packages/shared/src/chess-score.ts`, `chess-schemas.ts`; `apps/api/src/questions/chess-coordinator.ts`, `chess-mechanic.ts`, `packs/birthday/chess-battle.ts`; `apps/api/test/chess-score.spec.ts`; `apps/web/src/chess/*` solo page; home, routes, phone preview.
+
+Checks (this pass):
+
+- `npm run typecheck` — passed
+- `npx vitest run` (API) `chess-score`, `chess-coordinator`, `chess-review-regressions`, `chess-security` — 43 passed; worker `chess-alarm` + `chess-scheduler` — 7 passed
+- `npm run test:unit -w @26/web -- src/chess src/home/home-page.test.tsx` — 6 files, 24 passed
+- `eslint apps/web/src/chess/chess-game.tsx` — the set-state-in-effect error is gone; remaining repo `eslint .` errors are pre-existing outside this change (party-room `require()`, chess-mechanic `any`, etc.)
+- Playwright / E2E — not run (prohibited)
+
+Not verified: Stockfish on a real phone, a full party chess round, or projector readability across a room.
