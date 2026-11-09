@@ -53,7 +53,7 @@ describe("Chess Review Regressions", () => {
     it("projects abort event for aborted game", () => {
       const now = Date.now();
       const state = initializeChessRound("test-round", ["p1", "p2"], now);
-      
+
       // Abort one game
       state.games["p1"] = {
         ...state.games["p1"],
@@ -73,7 +73,10 @@ describe("Chess Review Regressions", () => {
 
       const snapshot = projectStageSnapshot(
         state,
-        new Map([["p1", "Alice"], ["p2", "Bob"]]),
+        new Map([
+          ["p1", "Alice"],
+          ["p2", "Bob"],
+        ]),
       );
 
       expect(snapshot.recentEvents).toHaveLength(2);
@@ -84,7 +87,7 @@ describe("Chess Review Regressions", () => {
       expect(drawEvent?.event).toBe("draw");
     });
 
-    it("scores abort as 0 points, not draw 50", () => {
+    it("scores abort from captures only, never as a 50-point draw", () => {
       const now = Date.now();
       const state = initializeChessRound("test-round", ["p1"], now);
 
@@ -102,7 +105,7 @@ describe("Chess Review Regressions", () => {
       };
 
       expect(calculateChessScore(abortedGame)).toBe(0);
-      expect(calculateChessScore(drawGame)).toBe(50);
+      expect(calculateChessScore(drawGame)).toBe(0);
     });
   });
 
@@ -146,7 +149,7 @@ describe("Chess Review Regressions", () => {
       // Verify PGN history is built
       expect(game.pgn).toContain("e4");
       expect(game.pgn).toContain("Nf3");
-      
+
       // Verify history can be reloaded for repetition detection
       const chess = new Chess();
       chess.loadPgn(game.pgn);
@@ -215,7 +218,7 @@ describe("Chess Review Regressions", () => {
       }
 
       const _pgnBeforeEviction = game.pgn;
-    void _pgnBeforeEviction;
+      void _pgnBeforeEviction;
       const fenBeforeEviction = game.fen;
 
       // Simulate eviction: serialize game state (PGN + FEN)

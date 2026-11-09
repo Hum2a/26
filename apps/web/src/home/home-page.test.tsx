@@ -67,3 +67,14 @@ it("offers the solo kart circuit without a join code", () => {
     screen.getByRole("link", { name: /Practise kart solo/ }).getAttribute("href"),
   ).toBe("/kart");
 });
+
+it("offers solo chess without a join code", () => {
+  render(
+    <MemoryRouter>
+      <HomePage />
+    </MemoryRouter>,
+  );
+  expect(
+    screen.getByRole("link", { name: /Practise chess solo/ }).getAttribute("href"),
+  ).toBe("/chess");
+});

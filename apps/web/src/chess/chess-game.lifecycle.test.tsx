@@ -102,6 +102,8 @@ describe("ChessGame engine lifecycle", () => {
     paused: false,
     inCheck: false,
     isGameOver: false,
+    capturedPoints: 0,
+    score: 0,
     ...overrides,
   });
 

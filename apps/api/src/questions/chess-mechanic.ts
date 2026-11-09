@@ -9,7 +9,7 @@ import {
   applyChessMove,
   applyBotMove,
   resignGame,
-  calculateChessScore,
+  chessScoreView,
   projectGuestSnapshot,
   projectStageSnapshot,
   projectControlSnapshot,
@@ -52,7 +52,13 @@ export function createChessRound(
 
   // Schedule initial clock alarms for all games (all start on player's turn)
   for (const game of Object.values(state.games)) {
-    scheduleClockAlarm(store, game.gameId, now + game.playerTimeMs, room.phaseGeneration, room.scopeGeneration);
+    scheduleClockAlarm(
+      store,
+      game.gameId,
+      now + game.playerTimeMs,
+      room.phaseGeneration,
+      room.scopeGeneration,
+    );
   }
 }
 
@@ -102,7 +108,13 @@ export function executeChessMove(
     } else {
       // Schedule alarm for bot's clock
       const room = store.readRoom();
-      scheduleClockAlarm(store, result.game.gameId, now + result.game.botTimeMs, room.phaseGeneration, room.scopeGeneration);
+      scheduleClockAlarm(
+        store,
+        result.game.gameId,
+        now + result.game.botTimeMs,
+        room.phaseGeneration,
+        room.scopeGeneration,
+      );
     }
     return { success: true };
   } else {
@@ -110,7 +122,7 @@ export function executeChessMove(
     const result = applyBotMove(
       game,
       { from: command.from, to: command.to, promotion: command.promotion },
-      now
+      now,
     );
     if ("error" in result) {
       return { success: false, error: result.error };
@@ -121,7 +133,13 @@ export function executeChessMove(
     } else {
       // Schedule alarm for player's clock
       const room = store.readRoom();
-      scheduleClockAlarm(store, result.game.gameId, now + result.game.playerTimeMs, room.phaseGeneration, room.scopeGeneration);
+      scheduleClockAlarm(
+        store,
+        result.game.gameId,
+        now + result.game.playerTimeMs,
+        room.phaseGeneration,
+        room.scopeGeneration,
+      );
     }
     return { success: true };
   }
@@ -146,7 +164,10 @@ export function executeBotMove(
 
   // CRITICAL: Validate position revision before applying bot move
   if (positionRevision !== game.positionRevision) {
-    return { success: false, error: `Bot position revision mismatch: expected ${game.positionRevision}, got ${positionRevision}` };
+    return {
+      success: false,
+      error: `Bot position revision mismatch: expected ${game.positionRevision}, got ${positionRevision}`,
+    };
   }
 
   const result = applyBotMove(game, move, now);
@@ -164,7 +185,13 @@ export function executeBotMove(
   } else {
     // Schedule alarm for player's clock
     const room = store.readRoom();
-    scheduleClockAlarm(store, result.game.gameId, now + result.game.playerTimeMs, room.phaseGeneration, room.scopeGeneration);
+    scheduleClockAlarm(
+      store,
+      result.game.gameId,
+      now + result.game.playerTimeMs,
+      room.phaseGeneration,
+      room.scopeGeneration,
+    );
   }
 
   return { success: true };
@@ -328,11 +355,14 @@ export function pauseChessClocks(sql: SqlStorage, store: GameStore, now: number)
 
   // Cancel all pending clock alarms
   const room = store.readRoom();
-  const jobs = store.jobs().filter((job: { payload: string; status: string; phaseGeneration: number }) => 
-    job.payload.startsWith("chess-clock:") &&
-    job.status === "pending" &&
-    job.phaseGeneration === room.phaseGeneration
-  );
+  const jobs = store
+    .jobs()
+    .filter(
+      (job: { payload: string; status: string; phaseGeneration: number }) =>
+        job.payload.startsWith("chess-clock:") &&
+        job.status === "pending" &&
+        job.phaseGeneration === room.phaseGeneration,
+    );
 
   for (const job of jobs) {
     store.saveJob({ ...job, status: "cancelled", dueAt: null, remainingMs: null });
@@ -344,7 +374,11 @@ export function pauseChessClocks(sql: SqlStorage, store: GameStore, now: number)
  * Uses frozen clock values from pause, excludes paused duration.
  * Sets last_move_at to resume time and reschedules alarms.
  */
-export function resumeChessClocks(sql: SqlStorage, store: GameStore, now: number): void {
+export function resumeChessClocks(
+  sql: SqlStorage,
+  store: GameStore,
+  now: number,
+): void {
   const games = sql
     .exec<{ game_id: string; side_to_move: string; player_time_ms: number; bot_time_ms: number }>(
       `SELECT game_id, side_to_move, player_time_ms, bot_time_ms FROM chess_game WHERE status = 'in-progress'`,
@@ -377,11 +411,13 @@ export function resumeChessClocks(sql: SqlStorage, store: GameStore, now: number
 }
 
 /**
- * Force-end all remaining games (abort, score 0).
+ * Force-end all remaining games (abort; keep captured material).
  */
 export function forceEndChessRound(sql: SqlStorage, now: number): void {
   const active = sql
-    .exec<{ game_id: string }>(`SELECT game_id FROM chess_game WHERE status = 'in-progress'`)
+    .exec<{ game_id: string }>(
+      `SELECT game_id FROM chess_game WHERE status = 'in-progress'`,
+    )
     .toArray();
 
   for (const { game_id } of active) {
@@ -397,7 +433,7 @@ export function forceEndChessRound(sql: SqlStorage, now: number): void {
     };
 
     persistGame(sql, aborted);
-    scoreGameOnce(sql, aborted); // Score 0
+    scoreGameOnce(sql, aborted);
   }
 }
 
@@ -526,14 +562,17 @@ function loadRoundState(sql: SqlStorage): ChessRoundState | null {
 function scoreGameOnce(sql: SqlStorage, game: ChessPlayerGame): void {
   // Check if already scored
   const existing = sql
-    .exec<{ scored: number }>(`SELECT scored FROM chess_game WHERE game_id = ?`, game.gameId)
+    .exec<{ scored: number }>(
+      `SELECT scored FROM chess_game WHERE game_id = ?`,
+      game.gameId,
+    )
     .toArray()[0];
 
   if (existing && existing.scored === 1) {
     return; // Already scored
   }
 
-  const score = calculateChessScore(game);
+  const { capturedPoints, score } = chessScoreView(game);
 
   // Write to score_ledger (exactly once)
   const questionId = game.gameId.split("-")[0];
@@ -544,7 +583,12 @@ function scoreGameOnce(sql: SqlStorage, game: ChessPlayerGame): void {
     questionId,
     game.playerId,
     score,
-    JSON.stringify({ result: game.winner, status: game.status }),
+    JSON.stringify({
+      result: game.winner,
+      status: game.status,
+      capturedPoints,
+      score,
+    }),
     Date.now(),
   );
 
@@ -561,7 +605,7 @@ function scheduleClockAlarm(
 ): void {
   const jobId = `chess-clock:${gameId}`;
   const room = store.readRoom();
-  
+
   store.saveJob({
     jobId,
     jobType: "gameplay",

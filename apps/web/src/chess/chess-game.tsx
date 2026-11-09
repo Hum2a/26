@@ -8,6 +8,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { ChessBoard } from "./chess-board.tsx";
 import { StockfishEngine } from "./stockfish-worker.ts";
 import { PromotionChooser } from "./promotion-chooser.tsx";
+import { ChessCapturedScore } from "./chess-captured.tsx";
 import type { ChessGuestSnapshot, ChessPromotionPiece } from "@26/shared";
 
 export type ChessGameProps = {
@@ -62,8 +63,6 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
     mountedRef.current = true;
 
     if (snapshot.isGameOver) {
-      setEngineReady(false);
-      return;
       return;
     }
 
@@ -301,6 +300,8 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
         </div>
       )}
 
+      <ChessCapturedScore snapshot={snapshot} />
+
       <ChessBoard
         snapshot={snapshot}
         onMove={handleSquareClick}
@@ -364,8 +365,9 @@ function getPieceAt(fen: string, square: string): string | null {
 }
 
 function formatGameResult(snapshot: ChessGuestSnapshot): string {
-  if (snapshot.winner === 'player') return '🎉 You won!';
-  if (snapshot.winner === 'bot') return '😔 Bot wins';
-  if (snapshot.winner === 'draw') return '🤝 Draw';
-  return 'Game over';
+  const score = `${snapshot.score} pts`;
+  if (snapshot.winner === 'player') return `🎉 You won! ${score}`;
+  if (snapshot.winner === 'bot') return `😔 Bot wins · ${score}`;
+  if (snapshot.winner === 'draw') return `🤝 Draw · ${score}`;
+  return `Game over · ${score}`;
 }

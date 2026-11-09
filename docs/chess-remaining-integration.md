@@ -7,11 +7,12 @@
 ✅ Chess coordinator with full rules (565 lines, chess.js)  
 ✅ 18 unit tests (moves, terminals, clocks, aggregates)  
 ✅ Stockfish Web Worker wrapper (204 lines)  
-✅ Chess board component (256 lines)  
+✅ Chess board component (256 lines)
 
 ## Discovered Integration Scope
 
 ### PartyRoom Architecture (5,103 lines)
+
 - SQLite-backed Durable Object
 - Complex phase graph: lobby → intro → prompt → predict → collect → vote → reveal → scores → final → facts → podium
 - Job scheduler with scope/phase generations
@@ -22,17 +23,20 @@
 ### Required Integration Points
 
 #### 1. Chess Mechanic Handler (`apps/api/src/questions/chess.ts`)
+
 Similar to `kart.ts` (referenced 5 times in party-room):
+
 - `initializeChessRound(sql, store, question, participants, now)` - Create games in SQLite
 - `acceptChessMove(sql, store, command, playerId, now)` - Validate and apply move
 - `acceptBotMove(sql, store, gameId, move, now)` - Server-trusted bot move (casual trust)
 - `projectChessSnapshot(sql, audience, playerId?)` - Guest/stage/control snapshots
-- `scoreChessRound(sql, store)` - Terminal scoring (win 100, draw 50, loss/abort 0)
+- `scoreChessRound(sql, store)` - Terminal scoring from captured Black material (checkmate at least 40)
 - `readChessGame(sql, playerId)` - Recover game from SQLite
 - `freezeChessState(sql)` - Persist on eviction
 - `recoverChess(sql, now)` - Rehydrate after eviction with history for repetition
 
 **Complexity:**
+
 - SQLite schema for games table (FEN, PGN, clocks, history, terminal state)
 - Per-player game isolation
 - History persistence for threefold repetition (not just FEN)
@@ -41,9 +45,11 @@ Similar to `kart.ts` (referenced 5 times in party-room):
 - Exactly-once scoring after terminal/reconnect/eviction
 
 #### 2. PartyRoom Integration (`apps/api/src/room/party-room.ts`)
+
 5+ integration points mirroring kart:
 
 **a) Command Registration (line ~412)**
+
 ```typescript
 if (input.kind === "chess-move" || input.kind === "chess-resign") {
   // Validate ownership, round, game, phase, ply
@@ -52,6 +58,7 @@ if (input.kind === "chess-move" || input.kind === "chess-resign") {
 ```
 
 **b) Round Start (line ~1222)**
+
 ```typescript
 if (question?.kind === "chess") {
   await initializeChessRound(sql, store, question, activeParticipants, now);
@@ -60,6 +67,7 @@ if (question?.kind === "chess") {
 ```
 
 **c) Snapshot Projection (line ~2501)**
+
 ```typescript
 if (question?.kind === "chess") {
   return projectChessSnapshot(sql, audience, playerId);
@@ -67,6 +75,7 @@ if (question?.kind === "chess") {
 ```
 
 **d) Alarm Handler (line ~2931)**
+
 ```typescript
 if (question?.kind === "chess") {
   // Check for timeout flags
@@ -76,6 +85,7 @@ if (question?.kind === "chess") {
 ```
 
 **e) Arrival/Reconnection (line ~2973)**
+
 ```typescript
 if (question?.kind === "chess") {
   // Recover player's game from SQLite
@@ -85,6 +95,7 @@ if (question?.kind === "chess") {
 ```
 
 **f) Pause/Resume**
+
 ```typescript
 // Freeze all active game clocks
 // Cancel pending engine callbacks (invalidate pre-pause ply)
@@ -92,12 +103,14 @@ if (question?.kind === "chess") {
 ```
 
 **g) Score Integration**
+
 ```typescript
 // scoreChessRound: iterate games, calculate scores, write ledger
 // Exactly once per game (check scored flag)
 ```
 
 #### 3. SQLite Schema (`apps/api/src/room/schema.ts`)
+
 ```sql
 CREATE TABLE chess_games (
   game_id TEXT PRIMARY KEY,
@@ -128,6 +141,7 @@ CREATE TABLE chess_clock_alarms (
 #### 4. Client Wiring (`apps/web/src/chess/`)
 
 **chess-controller.tsx** - Connect board, worker, server:
+
 ```typescript
 - useStockfishEngine() hook
 - Engine preload on question load
@@ -141,6 +155,7 @@ CREATE TABLE chess_clock_alarms (
 ```
 
 **Integration with existing phone flow:**
+
 - Register chess in question renderer
 - Handle "chess" snapshot type
 - Send commands via existing WebSocket
@@ -148,6 +163,7 @@ CREATE TABLE chess_clock_alarms (
 #### 5. Projector View (`apps/web/src/stage/`)
 
 **chess-projector.tsx**:
+
 ```typescript
 - Aggregate counts: in progress, wins, draws, losses
 - Recent events (last 10 terminals with nickname)
@@ -158,6 +174,7 @@ CREATE TABLE chess_clock_alarms (
 #### 6. Admin Controls (`apps/web/src/admin/`)
 
 **chess-admin.tsx**:
+
 ```typescript
 - Start button (check engine readiness first)
 - Pause/Resume (freeze clocks + engines)
@@ -168,6 +185,7 @@ CREATE TABLE chess_clock_alarms (
 ```
 
 Register in `apps/web/src/admin/features.ts`:
+
 ```typescript
 {
   id: "chess",
@@ -184,6 +202,7 @@ Register in `apps/web/src/admin/features.ts`:
 #### 7. Comprehensive Testing
 
 **Engine Smoke Test** (`apps/web/src/chess/stockfish-worker.test.ts`):
+
 ```typescript
 // Requires actual browser environment
 describe("Stockfish 19 Real Engine", () => {
@@ -200,7 +219,9 @@ describe("Stockfish 19 Real Engine", () => {
   it("returns legal move for starting position", async () => {
     engine.setPosition("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     let bestMove: string | undefined;
-    engine.options.onBestMove = (from, to) => { bestMove = `${from}${to}`; };
+    engine.options.onBestMove = (from, to) => {
+      bestMove = `${from}${to}`;
+    };
     engine.go(1000);
     await wait(1500);
     expect(bestMove).toMatch(/^[a-h][1-8][a-h][1-8]$/);
@@ -210,6 +231,7 @@ describe("Stockfish 19 Real Engine", () => {
 ```
 
 **DO Room Tests** (`apps/api/src/room/chess-room.test.ts`):
+
 ```typescript
 using isolate = await env.PARTY_ROOM.get(...);
 
@@ -275,6 +297,7 @@ it("forced end scores abort (0 points), not material", async () => {
 ```
 
 **Browser Tests** (`apps/web/src/chess/chess.spec.ts`):
+
 ```typescript
 // Playwright
 test("loads engine and makes human move", async ({ page }) => {
@@ -311,6 +334,7 @@ test("reconnection recovers game", async ({ page }) => {
 ```
 
 **80-Player Load Simulation** (`apps/api/src/room/chess-load.test.ts`):
+
 ```typescript
 it("simulates 80 concurrent games", async () => {
   const players = Array.from({ length: 80 }, (_, i) => `player${i}`);
@@ -328,6 +352,7 @@ it("simulates 80 concurrent games", async () => {
 ### Estimated Remaining Effort
 
 **Implementation Lines:**
+
 - Chess mechanic handler: ~600 lines
 - PartyRoom integration: ~200 lines across 7 points
 - SQLite schema + migrations: ~100 lines
@@ -337,6 +362,7 @@ it("simulates 80 concurrent games", async () => {
 - **Total: ~1,750 implementation lines**
 
 **Test Lines:**
+
 - Engine smoke: ~150 lines
 - DO room tests: ~500 lines
 - Browser tests: ~300 lines
@@ -344,6 +370,7 @@ it("simulates 80 concurrent games", async () => {
 - **Total: ~1,150 test lines**
 
 **Integration Complexity:**
+
 - 7 PartyRoom integration points
 - SQLite schema evolution
 - Alarm coordination for 80 games
@@ -369,6 +396,7 @@ it("simulates 80 concurrent games", async () => {
 ### Testing Gaps in Foundation
 
 The 18 unit tests cover **pure coordinator logic** only:
+
 - ❌ No SQLite persistence
 - ❌ No eviction recovery
 - ❌ No alarm scheduling
@@ -392,6 +420,7 @@ This is **not a lack of willingness** but an honest engineering assessment of pr
 ## Recommended Path Forward
 
 ### Option A: Continue Foundation → Minimal Viable (50-60k tokens)
+
 - Create chess mechanic handler (persistence, recovery)
 - Wire ONE integration point (moves only, no alarms yet)
 - Basic projector view
@@ -399,12 +428,14 @@ This is **not a lack of willingness** but an honest engineering assessment of pr
 - Document what's stubbed
 
 ### Option B: Pause for Planning
+
 - Current branch preserves all foundation work
 - Document precise integration specification
 - User or future agent continues with full context
 - No lost work, clean handoff
 
 ### Option C: Simplified Chess (40-50k tokens)
+
 - Remove clock alarms (fixed 2-minute max per game)
 - Simpler SQLite schema (no history, accept repetition limitation)
 - No pause/resume (complexity reduction)
@@ -423,6 +454,7 @@ This is **not a lack of willingness** but an honest engineering assessment of pr
 ## Blockers
 
 None for continuing foundation work. Integration requires:
+
 - Careful PartyRoom modification (5103-line critical path)
 - SQLite schema coordination
 - Alarm scheduler understanding

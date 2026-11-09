@@ -406,7 +406,9 @@ export function chessQuestion(
   }
 
   if (incrementMs !== 0) {
-    throw new Error(`Chess only supports no increment. incrementMs must be 0, got ${incrementMs}`);
+    throw new Error(
+      `Chess only supports no increment. incrementMs must be 0, got ${incrementMs}`,
+    );
   }
 
   return finish(
@@ -417,7 +419,7 @@ export function chessQuestion(
           collectMs: input.collectMs ?? 15_000, // Default collection time
           attribution: input.attribution ?? "never",
         },
-        input.points ?? 100,
+        input.points ?? 40,
       ),
       kind: "chess",
       initialTimeMs: 60_000, // Fixed 1+0

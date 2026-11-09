@@ -117,7 +117,8 @@ export function GuestChess({
               ? "You won!"
               : chessSnapshot.winner === "bot"
                 ? "Computer won"
-                : "Draw"}
+                : "Draw"}{" "}
+            Final score: {chessSnapshot.score} pts
           </p>
         ) : null}
       </div>

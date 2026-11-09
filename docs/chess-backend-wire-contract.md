@@ -5,6 +5,7 @@
 ## Server Commands (Authenticated Guest → Room)
 
 ### Move Command
+
 ```typescript
 {
   kind: "command",
@@ -19,6 +20,7 @@
 ```
 
 **Server validates:**
+
 - Ownership (gameId contains player's ID)
 - Position revision matches current game state (rejects stale/delayed commands)
 - Side to move (must be player's turn)
@@ -28,12 +30,14 @@
 **Returns:** `{ ok: true }` or `{ ok: false, message: string }`
 
 **Side effects on success:**
+
 - Game state updated with new FEN, PGN, incremented ply, incremented positionRevision
 - Clock updated (player time decreased by elapsed)
 - If terminal: scores written to ledger exactly once
 - If not terminal: bot move needed, schedule bot clock alarm
 
 ### Resign Command
+
 ```typescript
 {
   kind: "chess-resign",
@@ -49,10 +53,11 @@
 ## Server Snapshots (Room → Client)
 
 ### Guest Snapshot (Own Game Only)
+
 ```typescript
 {
   gameId: string,
-  status: "in-progress" | "checkmate-win" | "checkmate-loss" | "timeout" | 
+  status: "in-progress" | "checkmate-win" | "checkmate-loss" | "timeout" |
           "timeout-draw" | "draw" | "resigned" | "aborted",
   fen: string,              // Current position
   playerTimeMs: number,     // Remaining time (decreases in real-time)
@@ -69,6 +74,7 @@
 **Note:** PGN and positionHistory are server-only (not sent to guest)
 
 ### Stage/Control Aggregate Snapshot
+
 ```typescript
 {
   totalGames: number,
@@ -101,11 +107,13 @@
 ## Bot Move Flow (Casual Trust with Revision Validation)
 
 **Frontend responsibility:**
+
 1. Guest receives snapshot with `positionRevision: N`
 2. Client engine calculates move for `N` (must capture revision when dispatching search)
 3. Client submits bot move via separate endpoint (TBD - likely server-side processing)
 
 **Server MUST validate:**
+
 ```typescript
 // Bot move command (server-side processing)
 {
@@ -116,6 +124,7 @@
 ```
 
 **Rejection scenarios:**
+
 - Position changed (player resigned, timeout, pause incremented revision)
 - Stale response from pre-pause engine calculation
 - Cross-game contamination (wrong gameId)
@@ -123,12 +132,14 @@
 ## Clock Authority & Alarms
 
 **Server-authoritative clocks:**
+
 - Clocks tick server-side via PartyRoom job scheduler
 - Alarm fires even with NO inbound messages (silent flag)
 - Job payload: `"chess-clock:{gameId}"`
 - Scheduled at: `now + remainingTime` for side to move
 
 **Timeout handling:**
+
 - On alarm: check elapsed time vs remaining
 - If flagged: determine outcome (timeout vs timeout-draw based on mate material)
 - Update game status, score once, broadcast snapshot
@@ -136,15 +147,18 @@
 ## Pause/Resume Behavior
 
 **Pause (Host Command):**
+
 1. Increment `positionRevision` for ALL active games (even if FEN/ply unchanged)
 2. Cancel all pending chess-clock jobs
 3. Reject any subsequent move commands with old revision
 
 **Resume (Host Command):**
+
 1. Reschedule clock alarms based on current state
 2. Clocks resume from paused state (elapsed time during pause not counted)
 
 **Critical:** Position revision increment invalidates ALL in-flight client state:
+
 - Pending engine calculations
 - Queued move submissions
 - Any cached position data
@@ -152,36 +166,45 @@
 ## Round Lifecycle
 
 **Initialization (Enter Collect Phase):**
+
 - Create game for each frozen participant
 - Initial state: FEN = starting position, clocks = 60000ms each, positionRevision = 0
 - Schedule initial clock alarm for all games (player to move first)
 
 **Termination:**
+
 - Game terminal when: checkmate, stalemate, insufficient material, 50-move rule, timeout (if opponent has mate material), resignation
 - Force-end (host): all active games → status "aborted", score 0
 
 **Scoring:**
-- Win: 100 points
-- Draw (any type): 50 points  
-- Loss / Abort: 0 points
-- Written to score_ledger exactly once (dedup via `scored` flag)
+
+- Result (win/draw/loss/timeout/resign/abort) awards no points by itself
+- Score = material value of Black (Stockfish) pieces captured by White: queen 10, rook 5, bishop 3, knight 3, pawn 1
+- Captures by Stockfish do not subtract. En passant counts as a pawn. Promoted Black pieces count at their promoted value
+- Checkmate of Stockfish scores `max(captured, 40)`
+- Other terminals keep captured points so far
+- Computed from the server-validated PGN via chess.js, then written to score_ledger exactly once (dedup via `scored` flag)
 
 ## Error Handling & Edge Cases
 
 **Position Revision Mismatch:**
+
 - Error: `"Position revision mismatch: expected X, got Y"`
 - Client must fetch fresh snapshot and retry
 
 **Clock Expired:**
+
 - Handled by server alarm, no client action needed
 - Timeout result depends on opponent's mate material
 
 **Engine Timeout/Failure (Frontend):**
+
 - Client should handle locally (cancel search, show error)
 - Do NOT submit malformed or invented moves
 - Server will eventually timeout via clock if no bot move received
 
 **Eviction Recovery:**
+
 - Game state persisted to SQLite (FEN, PGN, clocks, revision)
 - PGN preserved for threefold repetition detection
 - Alarms rescheduled on room wake-up
@@ -221,22 +244,26 @@ CREATE TABLE chess_game (
 ## Frontend Handoff Notes
 
 **Stockfish Worker:**
+
 - MUST capture `positionRevision` when dispatching search
 - Check revision still valid before submitting result
 - Handle position changed during search (discard stale result)
 - Implement UCIstop drainage for cancellation
 
 **Guest UI:**
+
 - Display `positionRevision` for debugging
 - Validate server snapshot before rendering (check revision sequence)
 - Handle revision mismatch errors gracefully (refetch snapshot)
 
 **Pause Detection:**
+
 - Position revision jumps without position change = pause occurred
 - Discard any in-flight engine work
 - Wait for fresh snapshot after resume
 
 **80-Game Isolation:**
+
 - Server handles per-player games independently
 - No cross-game contamination (gameId enforced)
 - Concurrent games proven via integration tests (TODO)

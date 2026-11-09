@@ -184,11 +184,7 @@ describe("Chess Coordinator", () => {
       if ("game" in move1) game = move1.game;
 
       // Bot responds
-      const result = applyBotMove(
-        game,
-        { from: "e7", to: "e5" },
-        now + 2000,
-      );
+      const result = applyBotMove(game, { from: "e7", to: "e5" }, now + 2000);
 
       expect(result).toHaveProperty("game");
       if ("game" in result) {
@@ -237,7 +233,14 @@ describe("Chess Coordinator", () => {
       // 1. f3
       let result = applyChessMove(
         game,
-        { kind: "chess-move", requestId: "1", gameId: game.gameId, from: "f2", to: "f3", positionRevision: game.positionRevision },
+        {
+          kind: "chess-move",
+          requestId: "1",
+          gameId: game.gameId,
+          from: "f2",
+          to: "f3",
+          positionRevision: game.positionRevision,
+        },
         now + 1000,
       );
       expect(result).toHaveProperty("game");
@@ -251,7 +254,14 @@ describe("Chess Coordinator", () => {
       // 2. g4
       result = applyChessMove(
         game,
-        { kind: "chess-move", requestId: "2", gameId: game.gameId, from: "g2", to: "g4", positionRevision: game.positionRevision },
+        {
+          kind: "chess-move",
+          requestId: "2",
+          gameId: game.gameId,
+          from: "g2",
+          to: "g4",
+          positionRevision: game.positionRevision,
+        },
         now + 3000,
       );
       expect(result).toHaveProperty("game");
@@ -282,7 +292,14 @@ describe("Chess Coordinator", () => {
       // Any move will trigger insufficient material detection
       const result = applyChessMove(
         game,
-        { kind: "chess-move", requestId: "1", gameId: game.gameId, from: "d2", to: "d3", positionRevision: game.positionRevision },
+        {
+          kind: "chess-move",
+          requestId: "1",
+          gameId: game.gameId,
+          from: "d2",
+          to: "d3",
+          positionRevision: game.positionRevision,
+        },
         now + 1000,
       );
 
@@ -308,25 +325,33 @@ describe("Chess Coordinator", () => {
   });
 
   describe("calculateChessScore", () => {
-    it("awards 100 points for win", () => {
+    it("does not award points for a win with nothing captured", () => {
       const state = initializeChessRound(roundId, [playerId], now);
-      const game = { ...state.games[playerId], winner: "player" as const };
-      expect(calculateChessScore(game)).toBe(100);
+      const game = {
+        ...state.games[playerId],
+        winner: "player" as const,
+        status: "timeout" as const,
+      };
+      expect(calculateChessScore(game)).toBe(0);
     });
 
-    it("awards 50 points for draw", () => {
+    it("does not award draw points with nothing captured", () => {
       const state = initializeChessRound(roundId, [playerId], now);
-      const game = { ...state.games[playerId], winner: "draw" as const };
-      expect(calculateChessScore(game)).toBe(50);
+      const game = {
+        ...state.games[playerId],
+        winner: "draw" as const,
+        status: "stalemate" as const,
+      };
+      expect(calculateChessScore(game)).toBe(0);
     });
 
-    it("awards 0 points for loss", () => {
+    it("awards 0 points for a loss with nothing captured", () => {
       const state = initializeChessRound(roundId, [playerId], now);
       const game = { ...state.games[playerId], winner: "bot" as const };
       expect(calculateChessScore(game)).toBe(0);
     });
 
-    it("awards 0 points for abort", () => {
+    it("awards 0 points for an abort with nothing captured", () => {
       const state = initializeChessRound(roundId, [playerId], now);
       const game = { ...state.games[playerId], status: "aborted" as const };
       expect(calculateChessScore(game)).toBe(0);
@@ -347,6 +372,8 @@ describe("Chess Coordinator", () => {
       expect(snapshot.playerTimeMs).toBe(60_000);
       expect(snapshot.isGameOver).toBe(false);
       expect(snapshot.inCheck).toBe(false);
+      expect(snapshot.capturedPoints).toBe(0);
+      expect(snapshot.score).toBe(0);
     });
   });
 
@@ -355,7 +382,11 @@ describe("Chess Coordinator", () => {
       const state = initializeChessRound(roundId, ["p1", "p2", "p3"], now);
 
       // Finish one game
-      state.games["p1"] = { ...state.games["p1"], status: "checkmate", winner: "player" };
+      state.games["p1"] = {
+        ...state.games["p1"],
+        status: "checkmate",
+        winner: "player",
+      };
 
       const updated = updateRoundAggregates(state);
 
@@ -367,8 +398,16 @@ describe("Chess Coordinator", () => {
     it("detects all games complete", () => {
       const state = initializeChessRound(roundId, ["p1", "p2"], now);
 
-      state.games["p1"] = { ...state.games["p1"], status: "checkmate", winner: "player" };
-      state.games["p2"] = { ...state.games["p2"], status: "resignation", winner: "bot" };
+      state.games["p1"] = {
+        ...state.games["p1"],
+        status: "checkmate",
+        winner: "player",
+      };
+      state.games["p2"] = {
+        ...state.games["p2"],
+        status: "resignation",
+        winner: "bot",
+      };
 
       const updated = updateRoundAggregates(state);
 
