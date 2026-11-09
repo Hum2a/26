@@ -402,7 +402,7 @@ export function notePresence(
   }
 }
 
-export async function onAlarm(store: GameStore, now: number): Promise<void> {
+export function onAlarm(store: GameStore, now: number): void {
   const room = store.readRoom();
   const due = store
     .jobs()

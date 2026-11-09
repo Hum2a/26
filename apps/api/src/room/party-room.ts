@@ -906,20 +906,33 @@ export class PartyRoom extends DurableObject<Env> {
 
   /** Runs every due job in one transaction that also arms the next alarm. */
   private async runDueJobs(now: number, raceTick: (only: boolean) => void) {
-    await commitAndArm(this.ctx.storage, async (sql) => {
+    await commitAndArm(this.ctx.storage, (sql) => {
       this.flushKartInputs(sql);
       const baseStore = createGameStore(sql);
-      // Extend store with chess callbacks
+      // Compose chess callbacks with existing lifecycle callbacks
+      const baseOnScheduledJob = baseStore.onScheduledJob;
+      const baseOnEnterPhase = baseStore.onEnterPhase;
+      
       const store: GameStore = {
         ...baseStore,
-        onScheduledJob: async (job, now) => {
+        onScheduledJob: (job, now) => {
+          // Call base handler first (kart-tick, trolls)
+          if (baseOnScheduledJob) {
+            baseOnScheduledJob(job, now);
+          }
+          // Then handle chess-specific jobs
           if (job.payload.startsWith("chess-clock:")) {
             const gameId = job.payload.substring("chess-clock:".length);
-            const { handleChessClockAlarm } = await import("../questions/chess-mechanic.ts");
-            await handleChessClockAlarm(sql, store, gameId, now);
+            const { handleChessClockAlarm } = require("../questions/chess-mechanic.ts");
+            handleChessClockAlarm(sql, store, gameId, now);
           }
         },
         onEnterPhase: (room, now) => {
+          // Call base handler first (scoring, trolls, wall, export, etc.)
+          if (baseOnEnterPhase) {
+            baseOnEnterPhase(room, now);
+          }
+          // Then handle chess-specific phase entry
           if (room.phase === "collect") {
             const question = questionFor(room);
             if (question?.kind === "chess") {
@@ -943,7 +956,7 @@ export class PartyRoom extends DurableObject<Env> {
           now,
         )
         .toArray();
-      await onAlarm(store, now);
+      onAlarm(store, now);
       const after = store.readRoom();
       // A tick that only moved the race goes out as a kart frame, not a full snapshot.
       raceTick(

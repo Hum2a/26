@@ -189,13 +189,14 @@ export function executeResignation(
 /**
  * Handle clock alarm - check for timeouts when alarm fires.
  * Called from PartyRoom onAlarm when chess-clock job is due.
+ * Must be synchronous for SQLite transaction compatibility.
  */
-export async function handleChessClockAlarm(
+export function handleChessClockAlarm(
   sql: SqlStorage,
   _store: GameStore,
   gameId: string,
   now: number,
-): Promise<void> {
+): void {
   const game = loadGame(sql, gameId);
   if (!game || game.status !== "in-progress") {
     return;
@@ -211,7 +212,7 @@ export async function handleChessClockAlarm(
   if (remainingTime <= 0) {
     // Timeout!
     const flagged = game.sideToMove === "white" ? "player" : "bot";
-    const { Chess } = await import("chess.js");
+    const { Chess } = require("chess.js");
     const chess = new Chess();
     if (game.pgn) {
       chess.loadPgn(game.pgn);
