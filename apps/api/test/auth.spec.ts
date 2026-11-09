@@ -3,13 +3,20 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { clientApiKeyHeader } from "@26/shared";
+import { isConfiguredAdminEmail, parseAdminEmails } from "../src/auth/bindings.ts";
 import { createEmail } from "../src/auth/create-email.ts";
 import { openDatabase } from "../src/auth/create-database.ts";
-import { ensurePrepared, authForRequest } from "../src/auth/prepare.ts";
+import {
+  administratorDisplayName,
+  authForRequest,
+  ensurePrepared,
+  seedAdministrator,
+} from "../src/auth/prepare.ts";
 import { app } from "../src/index.ts";
 
 const roomId = "ABCDEFGH";
 const adminEmail = "humzab1711@hotmail.com";
+const secondAdminEmail = "adenreh@gmail.com";
 const origin = "http://example.com";
 
 function unusedRoomNamespace<T>(): T {
@@ -535,6 +542,104 @@ describe("administrator auth", () => {
       production.send({ to: adminEmail, subject: "Sign in to 26", text: "confirm" }),
     ).rejects.toThrow("Email delivery is not configured.");
   });
+
+  it("parses ADMIN_EMAIL as a comma-separated allow-list", () => {
+    expect(parseAdminEmails("humzab1711@hotmail.com")).toEqual([adminEmail]);
+    expect(parseAdminEmails(` ${adminEmail} , AdenReh@gmail.com `)).toEqual([
+      adminEmail,
+      secondAdminEmail,
+    ]);
+    expect(parseAdminEmails("a@b.com,a@b.com,not-an-email,")).toEqual(["a@b.com"]);
+    expect(parseAdminEmails("")).toEqual([]);
+    expect(parseAdminEmails(undefined)).toEqual([]);
+    const listed = {
+      APP_ENV: "local" as const,
+      ADMIN_EMAIL: `${adminEmail},${secondAdminEmail}`,
+    };
+    expect(isConfiguredAdminEmail(listed, adminEmail)).toBe(true);
+    expect(isConfiguredAdminEmail(listed, "AdenReh@gmail.com")).toBe(true);
+    expect(isConfiguredAdminEmail(listed, "guest@example.com")).toBe(false);
+    expect(administratorDisplayName(adminEmail)).toBe("Humza");
+    expect(administratorDisplayName(secondAdminEmail)).toBe("Aden");
+    expect(administratorDisplayName("jane.doe@example.com")).toBe("Jane");
+  });
+
+  it("lets every listed administrator sign in and rejects a third address", async () => {
+    const env = localEnv(`two-admins-${crypto.randomUUID()}`);
+    env.ADMIN_EMAIL = `${adminEmail}, ${secondAdminEmail}`;
+
+    const stranger = await send(env, "/api/admin/magic-link", {
+      method: "POST",
+      body: { email: "guest@example.com" },
+    });
+    expect(stranger.status).toBe(200);
+    expect(await stranger.json()).toEqual({ accepted: true, delivery: "local-inbox" });
+    expect(await (await send(env, "/api/dev/inbox")).json()).toEqual({ messages: [] });
+
+    for (const email of [adminEmail, secondAdminEmail]) {
+      expect(
+        (
+          await send(env, "/api/admin/magic-link", {
+            method: "POST",
+            body: { email },
+          })
+        ).status,
+      ).toBe(200);
+    }
+
+    const inbox = (await (await send(env, "/api/dev/inbox")).json()) as {
+      messages: { text: string; recipient: string }[];
+    };
+    expect(inbox.messages.map((row) => row.recipient).sort()).toEqual(
+      [adminEmail, secondAdminEmail].sort(),
+    );
+
+    for (const email of [adminEmail, secondAdminEmail]) {
+      const message = inbox.messages.find((row) => row.recipient === email);
+      const code = message?.text.match(/Your sign-in code: (\d{6})/)?.[1];
+      expect(code).toBeTruthy();
+      const confirmed = await send(env, "/api/admin/email-code/verify", {
+        method: "POST",
+        body: { email, code },
+      });
+      expect(confirmed.status).toBe(200);
+      expect(await confirmed.json()).toMatchObject({ signedIn: true, email });
+    }
+
+    expect(
+      (
+        await send(env, "/api/admin/email-code/verify", {
+          method: "POST",
+          body: { email: "guest@example.com", code: "123456" },
+        })
+      ).status,
+    ).toBe(400);
+  }, 30_000);
+
+  it("seeds every configured administrator without renaming an existing Humza user", async () => {
+    const env = localEnv(`seed-admins-${crypto.randomUUID()}`);
+    const first = await authForRequest(env, origin);
+    const before = await first.database.executor.query(
+      `select email, name from "user" order by email`,
+    );
+    expect(before).toEqual([{ email: adminEmail, name: "Humza" }]);
+
+    env.ADMIN_EMAIL = `${adminEmail},${secondAdminEmail}`;
+    const updated = await authForRequest(env, origin);
+    await seedAdministrator(updated.auth, env);
+    const after = await first.database.executor.query(
+      `select email, name, "emailVerified" from "user" order by email`,
+    );
+    expect(after).toEqual([
+      { email: secondAdminEmail, name: "Aden", emailVerified: true },
+      { email: adminEmail, name: "Humza", emailVerified: true },
+    ]);
+
+    await seedAdministrator(updated.auth, env);
+    const again = await first.database.executor.query(`select email, name from "user"`);
+    expect(again).toHaveLength(2);
+    expect(again.find((row) => row.email === adminEmail)?.name).toBe("Humza");
+  }, 30_000);
 
   it("keeps server auth out of the web source", () => {
     const webSrc = path.resolve(

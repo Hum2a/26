@@ -8,9 +8,12 @@
   // Local development. Staging and production override the name and APP_ENV.
   // The media bucket binding is local simulation. This stage does not create a
   // remote bucket. Blank strings are unset. A local .dev.vars file overrides them.
+  // ADMIN_EMAIL is a comma-separated allow-list. A single address still works.
+  // After adding an address, run `npm run auth:seed -- --env local` (and the
+  // matching command for staging/production after updating that secret).
   "vars": {
     "APP_ENV": "local",
-    "ADMIN_EMAIL": "humzab1711@hotmail.com",
+    "ADMIN_EMAIL": "humzab1711@hotmail.com,adenreh@gmail.com",
     "BETTER_AUTH_SECRET": "",
     "BETTER_AUTH_URL": "",
     "DATABASE_URL": "",

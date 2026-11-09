@@ -26,7 +26,7 @@ Baseer presents. Humza operates the administrator screen. Guests play on their o
 
 **The day before (20 November):** production is frozen — `npm run release` refuses production deploys from 20 November until midday 22 November. In the Neon console, switch off autosuspend (scale to zero) on the production branch for the night so host commands never wait for a cold database. Print [docs/content/birthday-answer-key.md](content/birthday-answer-key.md) and [docs/content/birthday-running-order.md](content/birthday-running-order.md); refresh them first with `npm run content:export` if the order changed.
 
-1. Open https://26.humza.website/admin on the control laptop and sign in with the magic link. Confirm with the Sign in button. Opening the link page does not sign in.
+1. Open https://26.humza.website/admin on the control laptop and sign in with the magic link or email code sent to a configured administrator address (Humza or Aden). Confirm with the Sign in button. Opening the link page does not sign in.
 2. **Question packs → Running order:** check the order and the estimated show length. _Suggest a mixed order_ spreads out same-series rounds; review, then save or discard. A started game never changes.
 3. Create the lobby. Leave that admin tab open. It holds the control connection and stays authorised for twelve hours.
 4. **Live controls → Driving feel** (kart round): defaults are prediction on, other karts glide, sideways steering strip, auto frame rate, 3-2-1-GO countdown. If karts rubber-band on the venue Wi-Fi, choose _Conservative_ or _Off_; changes reach phones at once.

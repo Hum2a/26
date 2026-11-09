@@ -1,5 +1,5 @@
 import { getMigrations } from "better-auth/db/migration";
-import { configuredAdminEmail, type AuthBindings } from "./bindings.ts";
+import { configuredAdminEmails, type AuthBindings } from "./bindings.ts";
 import { createAuth, resolveAuthSecret, type Auth } from "./create-auth.ts";
 import { openDatabase, type AppDatabase } from "./create-database.ts";
 import { createEmail, type EmailSender } from "./create-email.ts";
@@ -70,26 +70,48 @@ export async function applyExtraSchema(
   }
 }
 
+const knownAdministratorNames: Record<string, string> = {
+  "humzab1711@hotmail.com": "Humza",
+  "adenreh@gmail.com": "Aden",
+};
+
+/** Display name for a newly seeded administrator. Existing users are not renamed. */
+export function administratorDisplayName(email: string): string {
+  const normalised = email.trim().toLowerCase();
+  const known = knownAdministratorNames[normalised];
+  if (known) {
+    return known;
+  }
+  const local = normalised.split("@")[0] ?? "";
+  const token = local.split(/[._+-]/)[0] ?? "";
+  if (!token) {
+    return "Administrator";
+  }
+  return token.charAt(0).toUpperCase() + token.slice(1);
+}
+
 export async function seedAdministrator(auth: Auth, env: AuthBindings): Promise<void> {
-  const adminEmail = configuredAdminEmail(env);
-  if (!adminEmail || !resolveAuthSecret(env)) {
-    throw new Error("The administrator address is not configured.");
+  const adminEmails = configuredAdminEmails(env);
+  if (adminEmails.length === 0 || !resolveAuthSecret(env)) {
+    throw new Error("No administrator addresses are configured.");
   }
   const context = await auth.$context;
-  const existing = await context.internalAdapter.findUserByEmail(adminEmail);
-  if (existing?.user) {
-    return;
-  }
-  const created = await context.internalAdapter.createUser(
-    {
-      email: adminEmail,
-      name: "Humza",
-      emailVerified: true,
-    },
-    { method: "admin" },
-  );
-  if (!created) {
-    throw new Error("The administrator account was not created.");
+  for (const adminEmail of adminEmails) {
+    const existing = await context.internalAdapter.findUserByEmail(adminEmail);
+    if (existing?.user) {
+      continue;
+    }
+    const created = await context.internalAdapter.createUser(
+      {
+        email: adminEmail,
+        name: administratorDisplayName(adminEmail),
+        emailVerified: true,
+      },
+      { method: "admin" },
+    );
+    if (!created) {
+      throw new Error(`The administrator account for ${adminEmail} was not created.`);
+    }
   }
 }
 

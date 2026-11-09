@@ -154,9 +154,9 @@ npm run db:migrate:staging
 npm run db:migrate:prod
 ```
 
-Those commands run `auth:migrate` and `archive:migrate` for one environment. Seed remains separate: `npm run auth:seed -- --env staging`. Replace `staging` with `production` only for the production database. Archive migration is additive: version 1 gains the delivery tables and becomes version 2. A frozen publication is not rewritten. Do not run `archive:retain` during the event. That command deletes old archive rows and is not a recovery tool.
+Those commands run `auth:migrate` and `archive:migrate` for one environment. Seed remains separate: `npm run auth:seed -- --env staging`. Replace `staging` with `production` only for the production database. After adding an address to `ADMIN_EMAIL`, run seed again for that environment; existing administrator users are left unchanged. Archive migration is additive: version 1 gains the delivery tables and becomes version 2. A frozen publication is not rewritten. Do not run `archive:retain` during the event. That command deletes old archive rows and is not a recovery tool.
 
-Neon project `26` in `aws-eu-west-2` has a `development`, `staging`, and `production` branch. Better Auth tables, `room_credential`, and the verified administrator are applied on all three. The development branch also has the local inbox table. Each gitignored vars file holds that branch's pooled `DATABASE_URL`. `BETTER_AUTH_URL` is still blank, so staging and production auth stays unavailable until it matches the public origin.
+Neon project `26` in `aws-eu-west-2` has a `development`, `staging`, and `production` branch. Better Auth tables, `room_credential`, and the verified administrator users are applied on all three. The development branch also has the local inbox table. Each gitignored vars file holds that branch's pooled `DATABASE_URL`. `BETTER_AUTH_URL` is still blank, so staging and production auth stays unavailable until it matches the public origin.
 
 ## R2
 
@@ -175,7 +175,7 @@ The `IMAGES` binding is declared on the staging and production environments. It 
 
 Names only. Prefer `npm run secrets-sync:staging` after filling `apps/api/.dev.vars.staging`. To set one name by hand, use `npx wrangler secret put NAME --env staging` and paste the value on stdin. Do not put the value on the command line or in `wrangler.jsonc`.
 
-- `ADMIN_EMAIL`
+- `ADMIN_EMAIL` — comma-separated administrator allow-list (`humzab1711@hotmail.com,adenreh@gmail.com`). A single address still works. After changing it, upload the secret and run `npm run auth:seed -- --env staging` (or `--env production`).
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
 - `DATABASE_URL`
