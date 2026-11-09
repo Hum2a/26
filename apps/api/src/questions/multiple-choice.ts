@@ -7,6 +7,7 @@ import {
 } from "./push-luck.ts";
 import { enterKart, tickKart, kartScores, projectKart } from "./kart.ts";
 import { enterRehearsalPhase, tickRehearsal } from "../developer/rehearsal.ts";
+import { projectChessGameSnapshot } from "./chess-mechanic.ts";
 import { playSnapshotSchema, type PlaySnapshot } from "@26/shared";
 import {
   submissionGate,
@@ -604,8 +605,46 @@ export function projectPlay(
     return projectDuel(sql, room, audience, selfPlayerId, question, scored);
   }
   if (question.kind === "chess") {
-    // Chess projections handled by chess-mechanic
-    return null;
+    // Chess: project proper audience snapshot (guest/stage/control, no board leaks)
+    const chessSnapshot = projectChessGameSnapshot(sql, createSqlStore(sql), audience, selfPlayerId);
+    if (!chessSnapshot) return null;
+    
+    const index = room.questionIndex + 1;
+    const total = room.questionCount;
+    
+    return parsePlay(
+      {
+        question: {
+          kind: "chess" as const,
+          id: question.id,
+          index,
+          total,
+          prompt: question.prompt,
+          instructions: question.instructions,
+          points: question.points,
+          illustrative: question.illustrative,
+          attribution: question.attribution,
+          presentation: question.presentation,
+          playerTimeMs: question.initialTimeMs,
+          botTimeMs: question.initialTimeMs,
+        },
+        chess: chessSnapshot,
+        submissionCount: 0,
+        selfAnswer: null,
+        selfBallot: null,
+        ballot: null,
+        duel: null,
+        reveal: null,
+        selfAward: null,
+        selfStanding: null,
+        standings: null,
+        liveSample: null,
+        attributions: null,
+      },
+      question,
+      audience,
+      scored,
+    );
   }
   if (question.kind !== "choice") {
     return projectSpecial(sql, room, audience, selfPlayerId, question, scored);

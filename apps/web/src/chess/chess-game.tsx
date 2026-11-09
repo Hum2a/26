@@ -32,38 +32,62 @@ type SearchState = {
 };
 
 export function ChessGame({ snapshot, onMove, onResign, disabled = false }: ChessGameProps) {
-  const [engine, setEngine] = useState<StockfishEngine | null>(null);
   const [engineReady, setEngineReady] = useState(false);
   const [engineError, setEngineError] = useState<string | null>(null);
+  const [retryAttempt, setRetryAttempt] = useState(0);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [showPromotionChooser, setShowPromotionChooser] = useState(false);
   
-  // Search generation tracking - prevents stale bestmove from old searches
+  // Instance refs (stable, not in dependencies)
+  const engineInstanceRef = useRef<StockfishEngine | null>(null);
+  const mountedRef = useRef(true);
+  
+  // Latest authoritative snapshot/handlers (for callbacks)
+  const latestSnapshotRef = useRef(snapshot);
+  const latestOnMoveRef = useRef(onMove);
+  
+  // Search state tracking
   const searchStateRef = useRef<SearchState | null>(null);
   const searchGenerationRef = useRef(0);
-  const initStartedRef = useRef(false);
-  
-  // Engine lifecycle - one worker per active phone
+
+  // Keep callback refs current without reading them during render.
   useEffect(() => {
-    if (snapshot.isGameOver || engineReady || engineError || initStartedRef.current) {
+    latestSnapshotRef.current = snapshot;
+    latestOnMoveRef.current = onMove;
+  });
+
+  // Engine lifecycle - stable init, no self-invalidating deps
+  useEffect(() => {
+    // Mark effect as active
+    mountedRef.current = true;
+
+    if (snapshot.isGameOver) {
+      setEngineReady(false);
+      return;
       return;
     }
 
-    let mounted = true;
-    initStartedRef.current = true;
+    // Guard: only one init attempt per mount+retry
+    if (engineInstanceRef.current) {
+      return;
+    }
+
+    // Effect-local cancellation tracking
+    let cancelled = false;
+    let capturedEngine: StockfishEngine | null = null;
 
     const initEngine = async () => {
       try {
         const newEngine = new StockfishEngine({
           elo: 1425,
-          moveTimeMs: 2000, // Default, overridden per-move
+          moveTimeMs: 2000,
           onReady: () => {
-            if (mounted) {
-              setEngineReady(true);
-            }
+            // Handshake confirmation only. Ready state is set after this
+            // effect still owns the instance and has stored it — never from
+            // a callback that could race the effect's dependency array.
           },
           onBestMove: (from, to, promotion) => {
-            if (!mounted) return;
+            if (!mountedRef.current) return;
             
             // Verify this bestmove is for current search
             const currentSearch = searchStateRef.current;
@@ -72,43 +96,51 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
               return;
             }
 
-            // Guard: only process if position unchanged since search started
-            if (currentSearch.fen !== snapshot.fen || 
-                currentSearch.positionRevision !== snapshot.positionRevision) {
+            // Guard: compare against captured immutable search state
+            // AND verify latest snapshot still matches
+            const latestSnap = latestSnapshotRef.current;
+            if (currentSearch.fen !== latestSnap.fen || 
+                currentSearch.positionRevision !== latestSnap.positionRevision) {
               console.warn('[Chess] Stale bestmove - position changed', {
                 searchFen: currentSearch.fen,
-                currentFen: snapshot.fen,
+                latestFen: latestSnap.fen,
                 searchRevision: currentSearch.positionRevision,
-                currentRevision: snapshot.positionRevision
+                latestRevision: latestSnap.positionRevision
               });
               return;
             }
 
-            // Submit bot move to server with captured positionRevision
-            onMove(from, to, promotion as ChessPromotionPiece | undefined, currentSearch.positionRevision);
+            // Submit with captured revision using latest handler
+            latestOnMoveRef.current(from, to, promotion as ChessPromotionPiece | undefined, currentSearch.positionRevision);
             searchStateRef.current = null;
           },
           onError: (error) => {
-            if (mounted) {
+            if (mountedRef.current) {
               console.error('[Chess] Engine error:', error);
               setEngineError(error);
             }
           }
         });
 
+        // Capture instance BEFORE await
+        capturedEngine = newEngine;
+
         await newEngine.initialize();
-        
-        if (mounted) {
-          setEngine(newEngine);
+
+        // Install the captured instance, then mark ready. Bot search depends
+        // on engineReady; the ref must already be set when that state flips.
+        if (!cancelled && mountedRef.current) {
+          engineInstanceRef.current = newEngine;
+          setEngineReady(true);
+          setEngineError(null);
         } else {
           newEngine.terminate();
         }
       } catch (error) {
-        if (mounted) {
+        if (!cancelled && mountedRef.current) {
           const message = error instanceof Error ? error.message : String(error);
           console.error('[Chess] Engine init failed:', message);
           setEngineError(message);
-          initStartedRef.current = false;
         }
       }
     };
@@ -116,15 +148,38 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
     initEngine();
 
     return () => {
-      mounted = false;
-      if (engine) {
-        engine.terminate();
+      // Mark effect as cancelled
+      cancelled = true;
+      mountedRef.current = false;
+      
+      // Terminate captured instance if init is pending
+      if (capturedEngine) {
+        capturedEngine.terminate();
+      }
+      
+      // Clear ref only if it still holds this effect's instance
+      if (engineInstanceRef.current === capturedEngine) {
+        engineInstanceRef.current = null;
       }
     };
-  }, [snapshot.isGameOver, engineReady, engineError]);
+  }, [snapshot.isGameOver, retryAttempt]);
+
+  // Retry handler - clears error and triggers new init
+  const handleRetryEngine = useCallback(() => {
+    setEngineError(null);
+    setEngineReady(false);
+    setRetryAttempt((prev) => prev + 1);
+    
+    // Terminate failed instance if exists
+    if (engineInstanceRef.current) {
+      engineInstanceRef.current.terminate();
+      engineInstanceRef.current = null;
+    }
+  }, []);
 
   // Bot move trigger - when bot's turn and engine ready
   useEffect(() => {
+    const engine = engineInstanceRef.current;
     if (!engine || !engineReady || snapshot.isGameOver) {
       return;
     }
@@ -140,7 +195,7 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
       const botTimeRemaining = snapshot.botTimeMs;
       const moveTime = Math.max(100, Math.min(botTimeRemaining - 100, 2000));
 
-      // Capture search state AT DISPATCH - not when bestmove returns
+      // Capture search state AT DISPATCH - immutable
       searchStateRef.current = {
         generation: searchGenerationRef.current,
         positionRevision: snapshot.positionRevision,
@@ -166,11 +221,12 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
       };
     }
   }, [snapshot.fen, snapshot.positionRevision, snapshot.sideToMove, snapshot.botColor, 
-      snapshot.isGameOver, snapshot.botTimeMs, engine, engineReady]);
+      snapshot.isGameOver, snapshot.botTimeMs, engineReady]);
 
-  // Clear search state on unmount or position change
+  // Clear search state on position change
   useEffect(() => {
     return () => {
+      const engine = engineInstanceRef.current;
       if (engine) {
         engine.stop();
       }
@@ -211,19 +267,36 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
     setShowPromotionChooser(false);
   }, []);
 
-  // Engine status display
-  const engineStatus = engineError ? 'error' :
-                      engineReady ? 'ready' : 'loading';
-
   return (
     <div className="chess-game">
       {/* Engine status indicator */}
       {!snapshot.isGameOver && (
-        <div className={`engine-status engine-status-${engineStatus}`} role="status">
-          {engineError && <span>⚠️ Engine error: {engineError}</span>}
-          {!engineReady && !engineError && <span>Loading chess engine...</span>}
+        <div className="engine-status" role="status" aria-live="polite">
+          {engineError && (
+            <div className="engine-status-error">
+              <p className="text-destructive">
+                <span role="img" aria-label="warning">⚠️</span> Engine failed: {engineError}
+              </p>
+              <button
+                type="button"
+                onClick={handleRetryEngine}
+                className="engine-retry-button"
+                aria-label="Retry loading engine"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {!engineReady && !engineError && (
+            <div className="engine-status-loading">
+              <span role="img" aria-label="loading">⏳</span> Loading chess engine...
+              {retryAttempt > 0 && <span> (attempt {retryAttempt + 1})</span>}
+            </div>
+          )}
           {engineReady && snapshot.sideToMove === snapshot.botColor && (
-            <span>🤖 Bot thinking...</span>
+            <div className="engine-status-thinking">
+              <span role="img" aria-label="bot thinking">🤖</span> Bot thinking...
+            </div>
           )}
         </div>
       )}
@@ -251,16 +324,17 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
             onClick={onResign}
             disabled={disabled}
             className="chess-resign-button"
+            aria-label="Resign from game"
           >
             Resign
           </button>
         )}
         
         {snapshot.isGameOver && (
-          <div className="chess-game-over">
+          <div className="chess-game-over" role="status">
             <p className="result">{formatGameResult(snapshot)}</p>
             {snapshot.terminationReason && (
-              <p className="reason">{snapshot.terminationReason}</p>
+              <p className="reason text-muted">{snapshot.terminationReason}</p>
             )}
           </div>
         )}
