@@ -831,28 +831,22 @@ export function openRoomSocket(options: {
     return sendCommand({
       kind: "command",
       requestId: crypto.randomUUID(),
-      command: {
-        kind: "chess-move",
-        requestId: crypto.randomUUID(),
-        gameId: params.gameId,
-        from: params.from,
-        to: params.to,
-        ...(params.promotion ? { promotion: params.promotion } : {}),
-        positionRevision: params.positionRevision,
-      },
-    } as any);
+      name: "chess-move",
+      gameId: params.gameId,
+      from: params.from,
+      to: params.to,
+      ...(params.promotion ? { promotion: params.promotion } : {}),
+      positionRevision: params.positionRevision,
+    });
   }
 
   function submitChessResign(params: ChessResignParams): string {
     return sendCommand({
       kind: "command",
       requestId: crypto.randomUUID(),
-      command: {
-        kind: "chess-resign",
-        requestId: crypto.randomUUID(),
-        gameId: params.gameId,
-      },
-    } as any);
+      name: "chess-resign",
+      gameId: params.gameId,
+    });
   }
 
   function close() {

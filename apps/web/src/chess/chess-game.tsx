@@ -35,22 +35,22 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
   const [engine, setEngine] = useState<StockfishEngine | null>(null);
   const [engineReady, setEngineReady] = useState(false);
   const [engineError, setEngineError] = useState<string | null>(null);
-  const [initializingEngine, setInitializingEngine] = useState(false);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [showPromotionChooser, setShowPromotionChooser] = useState(false);
   
   // Search generation tracking - prevents stale bestmove from old searches
   const searchStateRef = useRef<SearchState | null>(null);
   const searchGenerationRef = useRef(0);
+  const initStartedRef = useRef(false);
   
   // Engine lifecycle - one worker per active phone
   useEffect(() => {
-    if (snapshot.isGameOver || engineReady || initializingEngine || engineError) {
+    if (snapshot.isGameOver || engineReady || engineError || initStartedRef.current) {
       return;
     }
 
     let mounted = true;
-    setInitializingEngine(true);
+    initStartedRef.current = true;
 
     const initEngine = async () => {
       try {
@@ -60,7 +60,6 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
           onReady: () => {
             if (mounted) {
               setEngineReady(true);
-              setInitializingEngine(false);
             }
           },
           onBestMove: (from, to, promotion) => {
@@ -109,7 +108,7 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
           const message = error instanceof Error ? error.message : String(error);
           console.error('[Chess] Engine init failed:', message);
           setEngineError(message);
-          setInitializingEngine(false);
+          initStartedRef.current = false;
         }
       }
     };
@@ -122,7 +121,7 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
         engine.terminate();
       }
     };
-  }, [snapshot.isGameOver, engineReady, initializingEngine, engineError]);
+  }, [snapshot.isGameOver, engineReady, engineError]);
 
   // Bot move trigger - when bot's turn and engine ready
   useEffect(() => {
@@ -213,9 +212,8 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
   }, []);
 
   // Engine status display
-  const engineStatus = engineError ? 'error' : 
-                      initializingEngine ? 'loading' :
-                      engineReady ? 'ready' : 'idle';
+  const engineStatus = engineError ? 'error' :
+                      engineReady ? 'ready' : 'loading';
 
   return (
     <div className="chess-game">
@@ -223,7 +221,7 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
       {!snapshot.isGameOver && (
         <div className={`engine-status engine-status-${engineStatus}`} role="status">
           {engineError && <span>⚠️ Engine error: {engineError}</span>}
-          {initializingEngine && <span>Loading chess engine...</span>}
+          {!engineReady && !engineError && <span>Loading chess engine...</span>}
           {engineReady && snapshot.sideToMove === snapshot.botColor && (
             <span>🤖 Bot thinking...</span>
           )}
