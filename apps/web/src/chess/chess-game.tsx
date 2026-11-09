@@ -32,39 +32,48 @@ type SearchState = {
 };
 
 export function ChessGame({ snapshot, onMove, onResign, disabled = false }: ChessGameProps) {
-  const [engine, setEngine] = useState<StockfishEngine | null>(null);
   const [engineReady, setEngineReady] = useState(false);
   const [engineError, setEngineError] = useState<string | null>(null);
-  const [initializingEngine, setInitializingEngine] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [showPromotionChooser, setShowPromotionChooser] = useState(false);
   
-  // Search generation tracking - prevents stale bestmove from old searches
-  const searchStateRef = useRef<SearchState | null>(null);
-  const searchGenerationRef = useRef(0);
+  // Instance refs (stable, not in dependencies)
+  const engineInstanceRef = useRef<StockfishEngine | null>(null);
   const mountedRef = useRef(true);
   
-  // Engine lifecycle - one worker per active phone, with retry on failure
+  // Latest authoritative snapshot/handlers (for callbacks)
+  const latestSnapshotRef = useRef(snapshot);
+  const latestOnMoveRef = useRef(onMove);
+  
+  // Search state tracking
+  const searchStateRef = useRef<SearchState | null>(null);
+  const searchGenerationRef = useRef(0);
+
+  // Update refs when props change (before effects)
+  latestSnapshotRef.current = snapshot;
+  latestOnMoveRef.current = onMove;
+  
+  // Engine lifecycle - stable init, no self-invalidating deps
   useEffect(() => {
-    if (snapshot.isGameOver || engineReady || initializingEngine) {
+    if (snapshot.isGameOver || engineReady) {
       return;
     }
 
-    mountedRef.current = true;
-    setInitializingEngine(true);
-    setEngineError(null);
+    // Guard: only one init attempt per mount+retry
+    if (engineInstanceRef.current) {
+      return;
+    }
 
     const initEngine = async () => {
       try {
         const newEngine = new StockfishEngine({
           elo: 1425,
-          moveTimeMs: 2000, // Default, overridden per-move
+          moveTimeMs: 2000,
           onReady: () => {
             if (mountedRef.current) {
               setEngineReady(true);
-              setInitializingEngine(false);
-              setRetryAttempt(0); // Reset on success
+              setRetryAttempt(0);
             }
           },
           onBestMove: (from, to, promotion) => {
@@ -77,27 +86,28 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
               return;
             }
 
-            // Guard: only process if position unchanged since search started
-            if (currentSearch.fen !== snapshot.fen || 
-                currentSearch.positionRevision !== snapshot.positionRevision) {
+            // Guard: compare against captured immutable search state
+            // AND verify latest snapshot still matches
+            const latestSnap = latestSnapshotRef.current;
+            if (currentSearch.fen !== latestSnap.fen || 
+                currentSearch.positionRevision !== latestSnap.positionRevision) {
               console.warn('[Chess] Stale bestmove - position changed', {
                 searchFen: currentSearch.fen,
-                currentFen: snapshot.fen,
+                latestFen: latestSnap.fen,
                 searchRevision: currentSearch.positionRevision,
-                currentRevision: snapshot.positionRevision
+                latestRevision: latestSnap.positionRevision
               });
               return;
             }
 
-            // Submit bot move to server with captured positionRevision
-            onMove(from, to, promotion as ChessPromotionPiece | undefined, currentSearch.positionRevision);
+            // Submit with captured revision using latest handler
+            latestOnMoveRef.current(from, to, promotion as ChessPromotionPiece | undefined, currentSearch.positionRevision);
             searchStateRef.current = null;
           },
           onError: (error) => {
             if (mountedRef.current) {
               console.error('[Chess] Engine error:', error);
               setEngineError(error);
-              setInitializingEngine(false);
             }
           }
         });
@@ -105,7 +115,7 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
         await newEngine.initialize();
         
         if (mountedRef.current) {
-          setEngine(newEngine);
+          engineInstanceRef.current = newEngine;
         } else {
           newEngine.terminate();
         }
@@ -114,7 +124,6 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
           const message = error instanceof Error ? error.message : String(error);
           console.error('[Chess] Engine init failed:', message);
           setEngineError(message);
-          setInitializingEngine(false);
         }
       }
     };
@@ -122,29 +131,31 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
     initEngine();
 
     return () => {
-      mountedRef.current = false;
-      if (engine) {
-        engine.terminate();
+      // Cleanup captures CURRENT instance from ref
+      const currentInstance = engineInstanceRef.current;
+      if (currentInstance) {
+        currentInstance.terminate();
+        engineInstanceRef.current = null;
       }
     };
-  }, [snapshot.isGameOver, engineReady, initializingEngine, retryAttempt]);
+  }, [snapshot.isGameOver, engineReady, retryAttempt]);
 
   // Retry handler - clears error and triggers new init
   const handleRetryEngine = useCallback(() => {
     setEngineError(null);
     setEngineReady(false);
-    setInitializingEngine(false);
     setRetryAttempt((prev) => prev + 1);
     
-    // Terminate failed engine if exists
-    if (engine) {
-      engine.terminate();
-      setEngine(null);
+    // Terminate failed instance if exists
+    if (engineInstanceRef.current) {
+      engineInstanceRef.current.terminate();
+      engineInstanceRef.current = null;
     }
-  }, [engine]);
+  }, []);
 
   // Bot move trigger - when bot's turn and engine ready
   useEffect(() => {
+    const engine = engineInstanceRef.current;
     if (!engine || !engineReady || snapshot.isGameOver) {
       return;
     }
@@ -160,7 +171,7 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
       const botTimeRemaining = snapshot.botTimeMs;
       const moveTime = Math.max(100, Math.min(botTimeRemaining - 100, 2000));
 
-      // Capture search state AT DISPATCH - not when bestmove returns
+      // Capture search state AT DISPATCH - immutable
       searchStateRef.current = {
         generation: searchGenerationRef.current,
         positionRevision: snapshot.positionRevision,
@@ -186,11 +197,12 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
       };
     }
   }, [snapshot.fen, snapshot.positionRevision, snapshot.sideToMove, snapshot.botColor, 
-      snapshot.isGameOver, snapshot.botTimeMs, engine, engineReady]);
+      snapshot.isGameOver, snapshot.botTimeMs, engineReady]);
 
-  // Clear search state on unmount or position change
+  // Clear search state on position change
   useEffect(() => {
     return () => {
+      const engine = engineInstanceRef.current;
       if (engine) {
         engine.stop();
       }
@@ -251,7 +263,7 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
               </button>
             </div>
           )}
-          {initializingEngine && (
+          {!engineReady && !engineError && (
             <div className="engine-status-loading">
               <span role="img" aria-label="loading">⏳</span> Loading chess engine...
               {retryAttempt > 0 && <span> (attempt {retryAttempt + 1})</span>}
