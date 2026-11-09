@@ -62,6 +62,8 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
     mountedRef.current = true;
 
     if (snapshot.isGameOver) {
+      setEngineReady(false);
+      return;
       return;
     }
 
