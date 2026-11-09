@@ -128,31 +128,21 @@ export class StockfishEngine {
     
     // Track UCI handshake state for this Worker
     let uciComplete = false;
-    let strengthSet = false;
-    let eloSet = false;
 
     // Handler for THIS Worker's messages only
     searchWorker.onmessage = (event) => {
       const line = event.data as string;
 
-      // UCI handshake sequence (MUST complete before search)
+      // UCI handshake: uci → uciok → setoption(both) → isready → readyok → position+go
+      // CRITICAL: UCI setoption has NO ack/confirmation message
       if (line === "uciok") {
         uciComplete = true;
+        // Send BOTH options then isready (options have no ack)
         searchWorker.postMessage("setoption name UCI_LimitStrength value true");
-      } else if (line.startsWith("info string UCI_LimitStrength")) {
-        strengthSet = true;
-      } else if (line === "readyok" && !strengthSet) {
-        // After UCI_LimitStrength set
-        strengthSet = true;
         searchWorker.postMessage(`setoption name UCI_Elo value ${this.options.elo}`);
-      } else if (line.startsWith("info string UCI_Elo")) {
-        eloSet = true;
-      } else if (line === "readyok" && strengthSet && !eloSet) {
-        // After UCI_Elo set
-        eloSet = true;
         searchWorker.postMessage("isready");
-      } else if (line === "readyok" && uciComplete && strengthSet && eloSet) {
-        // Full handshake complete, NOW send position + go
+      } else if (line === "readyok" && uciComplete) {
+        // Engine ready after options set, NOW send search
         searchWorker.postMessage(capturedPosition);
         searchWorker.postMessage(`go movetime ${capturedMoveTime}`);
       }
