@@ -19,11 +19,9 @@ export type StockfishOptions = {
 export class StockfishEngine {
   private worker: Worker | null = null;
   private ready = false;
-  // Reserved for future message queueing: private _pendingMessages: string[] = [];
   private options: Required<StockfishOptions>;
   private currentPosition = "";
-  private searchGeneration = 0; // Increments on each go()
-  private expectedBestmoveGeneration: number | null = null; // Which generation's bestmove is expected
+  private activeSearchWorker: Worker | null = null; // Current search's isolated Worker
 
   constructor(options: StockfishOptions = {}) {
     this.options = {
@@ -100,8 +98,8 @@ export class StockfishEngine {
 
   /**
    * Request the engine to find the best move.
-   * Time limit is bounded by options.moveTimeMs.
-   * New search invalidates old expectedBestmoveGeneration; late bestmove from old search ignored.
+   * Terminates old search Worker, creates fresh Worker for new search.
+   * Immutable Worker isolation prevents stale bestmove delivery.
    */
   go(timeMs?: number): void {
     if (!this.ready) {
@@ -114,27 +112,73 @@ export class StockfishEngine {
       return;
     }
 
-    // New search expects bestmove with THIS generation
-    // Old expectedBestmoveGeneration is now invalid
-    this.searchGeneration++;
-    const thisSearchGeneration = this.searchGeneration;
-    this.expectedBestmoveGeneration = thisSearchGeneration;
+    // Terminate any in-flight search Worker (different Worker = no stale callbacks)
+    if (this.activeSearchWorker) {
+      this.activeSearchWorker.terminate();
+      this.activeSearchWorker = null;
+    }
 
-    // Set position
-    this.sendCommand(this.currentPosition);
+    // Create fresh Worker for THIS search only
+    const searchWorker = new Worker("/chess-engine/stockfish-19-lite-single.js");
+    this.activeSearchWorker = searchWorker;
 
-    // Start search with time limit
-    const moveTime = timeMs ?? this.options.moveTimeMs;
-    this.sendCommand(`go movetime ${moveTime}`);
+    // Capture callback for THIS Worker's bestmove only
+    searchWorker.onmessage = (event) => {
+      const line = event.data as string;
+
+      // Parse bestmove response
+      if (line.startsWith("bestmove ")) {
+        const parts = line.split(" ");
+        const move = parts[1];
+
+        if (move === "(none)" || move === "0000") {
+          this.options.onError("Engine returned no move");
+          return;
+        }
+
+        // Parse UCI move format
+        const from = move.substring(0, 2);
+        const to = move.substring(2, 4);
+        const promotion = move.length > 4 ? move.substring(4, 5) : undefined;
+
+        // Callback delivered only if this Worker still active
+        if (this.activeSearchWorker === searchWorker) {
+          this.options.onBestMove(from, to, promotion);
+        }
+        // Otherwise: stale Worker, callback suppressed
+      }
+
+      // Handle UCI handshake for this Worker
+      if (line === "uciok") {
+        searchWorker.postMessage("setoption name UCI_LimitStrength value true");
+        searchWorker.postMessage(`setoption name UCI_Elo value ${this.options.elo}`);
+        searchWorker.postMessage("isready");
+      }
+
+      if (line === "readyok") {
+        // Worker ready, dispatch position + go
+        searchWorker.postMessage(this.currentPosition);
+        const moveTime = timeMs ?? this.options.moveTimeMs;
+        searchWorker.postMessage(`go movetime ${moveTime}`);
+      }
+    };
+
+    searchWorker.onerror = (error) => {
+      this.options.onError(`Search worker error: ${error.message}`);
+    };
+
+    // Start UCI handshake
+    searchWorker.postMessage("uci");
   }
 
   /**
    * Stop the current search.
-   * Bestmove from stopped search is still accepted (stop returns current best).
+   * Terminates active search Worker.
    */
   stop(): void {
-    if (this.worker && this.ready) {
-      this.sendCommand("stop");
+    if (this.activeSearchWorker) {
+      this.activeSearchWorker.terminate();
+      this.activeSearchWorker = null;
     }
   }
 
@@ -146,7 +190,10 @@ export class StockfishEngine {
       this.worker.terminate();
       this.worker = null;
       this.ready = false;
-      // this._pendingMessages = [];
+    }
+    if (this.activeSearchWorker) {
+      this.activeSearchWorker.terminate();
+      this.activeSearchWorker = null;
     }
   }
 
@@ -170,46 +217,11 @@ export class StockfishEngine {
   }
 
   /**
-   * Handle messages from the engine.
-   * Filters stale bestmove: UCI bestmove implicitly belongs to last go() generation.
-   * Only accept if matches expectedBestmoveGeneration.
+   * Handle messages from the init worker.
    */
-  private handleMessage(line: string): void {
-    // Parse bestmove response
-    if (line.startsWith("bestmove ")) {
-      const parts = line.split(" ");
-      const move = parts[1];
-
-      if (move === "(none)" || move === "0000") {
-        this.options.onError("Engine returned no move");
-        return;
-      }
-
-      // UCI bestmove implicitly belongs to most recent go() command
-      // Check if it matches the generation we're waiting for
-      const belongsToGeneration = this.searchGeneration;
-      
-      if (this.expectedBestmoveGeneration !== belongsToGeneration) {
-        // Stale bestmove from old search that was superseded - IGNORE
-        return;
-      }
-
-      // Parse UCI move format (e.g., "e2e4", "e7e8q" for promotion)
-      const from = move.substring(0, 2);
-      const to = move.substring(2, 4);
-      const promotion = move.length > 4 ? move.substring(4, 5) : undefined;
-
-      // Clear expected generation so duplicate bestmove ignored
-      this.expectedBestmoveGeneration = null;
-
-      this.options.onBestMove(from, to, promotion);
-    }
-
-    // Log info lines for debugging (can be removed in production)
-    if (line.startsWith("info ")) {
-      // Optional: parse score, depth, etc.
-      // For now, we just pass through
-    }
+  private handleMessage(_line: string): void {
+    // Init worker only handles UCI handshake, not searches
+    // Search workers handle their own bestmove via go() closure
   }
 
   /**
