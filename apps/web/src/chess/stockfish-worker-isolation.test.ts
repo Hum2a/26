@@ -19,10 +19,20 @@ describe("StockfishEngine Worker isolation", () => {
     postMessage(data: string): void {
       if (this.terminated) return;
 
-      // Simulate UCI responses
+      // Simulate UCI handshake sequence
       if (data === "uci") {
         setTimeout(() => {
           this.onmessage?.({ data: "uciok" } as MessageEvent);
+        }, 10);
+      } else if (data.startsWith("setoption name UCI_LimitStrength")) {
+        setTimeout(() => {
+          this.onmessage?.({ data: "info string UCI_LimitStrength set" } as MessageEvent);
+          this.onmessage?.({ data: "readyok" } as MessageEvent);
+        }, 10);
+      } else if (data.startsWith("setoption name UCI_Elo")) {
+        setTimeout(() => {
+          this.onmessage?.({ data: "info string UCI_Elo set" } as MessageEvent);
+          this.onmessage?.({ data: "readyok" } as MessageEvent);
         }, 10);
       } else if (data === "isready") {
         setTimeout(() => {

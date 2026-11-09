@@ -98,7 +98,7 @@ export class StockfishEngine {
 
   /**
    * Request the engine to find the best move.
-   * Terminates old search Worker, creates fresh Worker for new search.
+   * Each fresh Worker completes full UCI handshake BEFORE search.
    * Immutable Worker isolation prevents stale bestmove delivery.
    */
   go(timeMs?: number): void {
@@ -112,7 +112,7 @@ export class StockfishEngine {
       return;
     }
 
-    // Terminate any in-flight search Worker (different Worker = no stale callbacks)
+    // Terminate any in-flight search Worker
     if (this.activeSearchWorker) {
       this.activeSearchWorker.terminate();
       this.activeSearchWorker = null;
@@ -122,9 +122,40 @@ export class StockfishEngine {
     const searchWorker = new Worker("/chess-engine/stockfish-19-lite-single.js");
     this.activeSearchWorker = searchWorker;
 
-    // Capture callback for THIS Worker's bestmove only
+    // Capture position and movetime for this search
+    const capturedPosition = this.currentPosition;
+    const capturedMoveTime = timeMs ?? this.options.moveTimeMs;
+    
+    // Track UCI handshake state for this Worker
+    let uciComplete = false;
+    let strengthSet = false;
+    let eloSet = false;
+
+    // Handler for THIS Worker's messages only
     searchWorker.onmessage = (event) => {
       const line = event.data as string;
+
+      // UCI handshake sequence (MUST complete before search)
+      if (line === "uciok") {
+        uciComplete = true;
+        searchWorker.postMessage("setoption name UCI_LimitStrength value true");
+      } else if (line.startsWith("info string UCI_LimitStrength")) {
+        strengthSet = true;
+      } else if (line === "readyok" && !strengthSet) {
+        // After UCI_LimitStrength set
+        strengthSet = true;
+        searchWorker.postMessage(`setoption name UCI_Elo value ${this.options.elo}`);
+      } else if (line.startsWith("info string UCI_Elo")) {
+        eloSet = true;
+      } else if (line === "readyok" && strengthSet && !eloSet) {
+        // After UCI_Elo set
+        eloSet = true;
+        searchWorker.postMessage("isready");
+      } else if (line === "readyok" && uciComplete && strengthSet && eloSet) {
+        // Full handshake complete, NOW send position + go
+        searchWorker.postMessage(capturedPosition);
+        searchWorker.postMessage(`go movetime ${capturedMoveTime}`);
+      }
 
       // Parse bestmove response
       if (line.startsWith("bestmove ")) {
@@ -132,7 +163,10 @@ export class StockfishEngine {
         const move = parts[1];
 
         if (move === "(none)" || move === "0000") {
-          this.options.onError("Engine returned no move");
+          // Callback suppressed if Worker no longer active
+          if (this.activeSearchWorker === searchWorker) {
+            this.options.onError("Engine returned no move");
+          }
           return;
         }
 
@@ -141,33 +175,22 @@ export class StockfishEngine {
         const to = move.substring(2, 4);
         const promotion = move.length > 4 ? move.substring(4, 5) : undefined;
 
-        // Callback delivered only if this Worker still active
+        // Deliver callback only if this Worker still active
         if (this.activeSearchWorker === searchWorker) {
           this.options.onBestMove(from, to, promotion);
         }
         // Otherwise: stale Worker, callback suppressed
       }
-
-      // Handle UCI handshake for this Worker
-      if (line === "uciok") {
-        searchWorker.postMessage("setoption name UCI_LimitStrength value true");
-        searchWorker.postMessage(`setoption name UCI_Elo value ${this.options.elo}`);
-        searchWorker.postMessage("isready");
-      }
-
-      if (line === "readyok") {
-        // Worker ready, dispatch position + go
-        searchWorker.postMessage(this.currentPosition);
-        const moveTime = timeMs ?? this.options.moveTimeMs;
-        searchWorker.postMessage(`go movetime ${moveTime}`);
-      }
     };
 
     searchWorker.onerror = (error) => {
-      this.options.onError(`Search worker error: ${error.message}`);
+      // Error callback only if this Worker still active
+      if (this.activeSearchWorker === searchWorker) {
+        this.options.onError(`Search worker error: ${error.message}`);
+      }
     };
 
-    // Start UCI handshake
+    // Start UCI handshake (uci → uciok → strength → elo → isready → readyok → position+go)
     searchWorker.postMessage("uci");
   }
 

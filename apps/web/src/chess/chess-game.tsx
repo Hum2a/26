@@ -36,21 +36,24 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
   const [engineReady, setEngineReady] = useState(false);
   const [engineError, setEngineError] = useState<string | null>(null);
   const [initializingEngine, setInitializingEngine] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [showPromotionChooser, setShowPromotionChooser] = useState(false);
   
   // Search generation tracking - prevents stale bestmove from old searches
   const searchStateRef = useRef<SearchState | null>(null);
   const searchGenerationRef = useRef(0);
+  const mountedRef = useRef(true);
   
-  // Engine lifecycle - one worker per active phone
+  // Engine lifecycle - one worker per active phone, with retry on failure
   useEffect(() => {
-    if (snapshot.isGameOver || engineReady || initializingEngine || engineError) {
+    if (snapshot.isGameOver || engineReady || initializingEngine) {
       return;
     }
 
-    let mounted = true;
+    mountedRef.current = true;
     setInitializingEngine(true);
+    setEngineError(null);
 
     const initEngine = async () => {
       try {
@@ -58,13 +61,14 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
           elo: 1425,
           moveTimeMs: 2000, // Default, overridden per-move
           onReady: () => {
-            if (mounted) {
+            if (mountedRef.current) {
               setEngineReady(true);
               setInitializingEngine(false);
+              setRetryAttempt(0); // Reset on success
             }
           },
           onBestMove: (from, to, promotion) => {
-            if (!mounted) return;
+            if (!mountedRef.current) return;
             
             // Verify this bestmove is for current search
             const currentSearch = searchStateRef.current;
@@ -90,22 +94,23 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
             searchStateRef.current = null;
           },
           onError: (error) => {
-            if (mounted) {
+            if (mountedRef.current) {
               console.error('[Chess] Engine error:', error);
               setEngineError(error);
+              setInitializingEngine(false);
             }
           }
         });
 
         await newEngine.initialize();
         
-        if (mounted) {
+        if (mountedRef.current) {
           setEngine(newEngine);
         } else {
           newEngine.terminate();
         }
       } catch (error) {
-        if (mounted) {
+        if (mountedRef.current) {
           const message = error instanceof Error ? error.message : String(error);
           console.error('[Chess] Engine init failed:', message);
           setEngineError(message);
@@ -117,12 +122,26 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
     initEngine();
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       if (engine) {
         engine.terminate();
       }
     };
-  }, [snapshot.isGameOver, engineReady, initializingEngine, engineError]);
+  }, [snapshot.isGameOver, engineReady, initializingEngine, retryAttempt]);
+
+  // Retry handler - clears error and triggers new init
+  const handleRetryEngine = useCallback(() => {
+    setEngineError(null);
+    setEngineReady(false);
+    setInitializingEngine(false);
+    setRetryAttempt((prev) => prev + 1);
+    
+    // Terminate failed engine if exists
+    if (engine) {
+      engine.terminate();
+      setEngine(null);
+    }
+  }, [engine]);
 
   // Bot move trigger - when bot's turn and engine ready
   useEffect(() => {
@@ -212,20 +231,36 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
     setShowPromotionChooser(false);
   }, []);
 
-  // Engine status display
-  const engineStatus = engineError ? 'error' : 
-                      initializingEngine ? 'loading' :
-                      engineReady ? 'ready' : 'idle';
-
   return (
     <div className="chess-game">
       {/* Engine status indicator */}
       {!snapshot.isGameOver && (
-        <div className={`engine-status engine-status-${engineStatus}`} role="status">
-          {engineError && <span>⚠️ Engine error: {engineError}</span>}
-          {initializingEngine && <span>Loading chess engine...</span>}
+        <div className="engine-status" role="status" aria-live="polite">
+          {engineError && (
+            <div className="engine-status-error">
+              <p className="text-destructive">
+                <span role="img" aria-label="warning">⚠️</span> Engine failed: {engineError}
+              </p>
+              <button
+                type="button"
+                onClick={handleRetryEngine}
+                className="engine-retry-button"
+                aria-label="Retry loading engine"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {initializingEngine && (
+            <div className="engine-status-loading">
+              <span role="img" aria-label="loading">⏳</span> Loading chess engine...
+              {retryAttempt > 0 && <span> (attempt {retryAttempt + 1})</span>}
+            </div>
+          )}
           {engineReady && snapshot.sideToMove === snapshot.botColor && (
-            <span>🤖 Bot thinking...</span>
+            <div className="engine-status-thinking">
+              <span role="img" aria-label="bot thinking">🤖</span> Bot thinking...
+            </div>
           )}
         </div>
       )}
@@ -251,18 +286,19 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
           <button
             type="button"
             onClick={onResign}
-            disabled={disabled}
+            disabled={disabled || !engineReady}
             className="chess-resign-button"
+            aria-label="Resign from game"
           >
             Resign
           </button>
         )}
         
         {snapshot.isGameOver && (
-          <div className="chess-game-over">
+          <div className="chess-game-over" role="status">
             <p className="result">{formatGameResult(snapshot)}</p>
             {snapshot.terminationReason && (
-              <p className="reason">{snapshot.terminationReason}</p>
+              <p className="reason text-muted">{snapshot.terminationReason}</p>
             )}
           </div>
         )}
