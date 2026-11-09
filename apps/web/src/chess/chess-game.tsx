@@ -56,7 +56,10 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
   
   // Engine lifecycle - stable init, no self-invalidating deps
   useEffect(() => {
-    if (snapshot.isGameOver || engineReady) {
+    // Mark effect as active
+    mountedRef.current = true;
+
+    if (snapshot.isGameOver) {
       return;
     }
 
@@ -65,13 +68,18 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
       return;
     }
 
+    // Effect-local cancellation tracking
+    let cancelled = false;
+    let capturedEngine: StockfishEngine | null = null;
+
     const initEngine = async () => {
       try {
         const newEngine = new StockfishEngine({
           elo: 1425,
           moveTimeMs: 2000,
           onReady: () => {
-            if (mountedRef.current) {
+            // Only install if this effect still owns the lifecycle
+            if (!cancelled && mountedRef.current && !engineInstanceRef.current) {
               setEngineReady(true);
               setRetryAttempt(0);
             }
@@ -112,15 +120,19 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
           }
         });
 
+        // Capture instance BEFORE await
+        capturedEngine = newEngine;
+
         await newEngine.initialize();
         
-        if (mountedRef.current) {
+        // Only install if effect not cancelled and still mounted
+        if (!cancelled && mountedRef.current) {
           engineInstanceRef.current = newEngine;
         } else {
           newEngine.terminate();
         }
       } catch (error) {
-        if (mountedRef.current) {
+        if (!cancelled && mountedRef.current) {
           const message = error instanceof Error ? error.message : String(error);
           console.error('[Chess] Engine init failed:', message);
           setEngineError(message);
@@ -131,14 +143,21 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
     initEngine();
 
     return () => {
-      // Cleanup captures CURRENT instance from ref
-      const currentInstance = engineInstanceRef.current;
-      if (currentInstance) {
-        currentInstance.terminate();
+      // Mark effect as cancelled
+      cancelled = true;
+      mountedRef.current = false;
+      
+      // Terminate captured instance if init is pending
+      if (capturedEngine) {
+        capturedEngine.terminate();
+      }
+      
+      // Clear ref only if it still holds this effect's instance
+      if (engineInstanceRef.current === capturedEngine) {
         engineInstanceRef.current = null;
       }
     };
-  }, [snapshot.isGameOver, engineReady, retryAttempt]);
+  }, [snapshot.isGameOver, retryAttempt]);
 
   // Retry handler - clears error and triggers new init
   const handleRetryEngine = useCallback(() => {
