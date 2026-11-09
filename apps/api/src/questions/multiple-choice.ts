@@ -7,6 +7,7 @@ import {
 } from "./push-luck.ts";
 import { enterKart, tickKart, kartScores, projectKart } from "./kart.ts";
 import { enterRehearsalPhase, tickRehearsal } from "../developer/rehearsal.ts";
+import { projectChessGameSnapshot } from "./chess-mechanic.ts";
 import { playSnapshotSchema, type PlaySnapshot } from "@26/shared";
 import {
   submissionGate,
@@ -605,7 +606,6 @@ export function projectPlay(
   }
   if (question.kind === "chess") {
     // Chess: project proper audience snapshot (guest/stage/control, no board leaks)
-    const { projectChessGameSnapshot } = require("./chess-mechanic.ts");
     const chessSnapshot = projectChessGameSnapshot(sql, createSqlStore(sql), audience, selfPlayerId);
     if (!chessSnapshot) return null;
     

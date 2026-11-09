@@ -371,7 +371,6 @@ export function resumeChessClocks(sql: SqlStorage, store: GameStore, now: number
       scheduleClockAlarm(store, game.game_id, now + remainingTime, room.phaseGeneration, room.scopeGeneration);
     } else {
       // Clock already expired during pause - flag immediately
-      const { handleChessClockAlarm } = require("./chess-mechanic.ts");
       handleChessClockAlarm(sql, store, game.game_id, now);
     }
   }
