@@ -18,6 +18,9 @@ import {
 } from "./chess-coordinator.ts";
 import type { ChessMoveCommand, ChessResignCommand } from "@26/shared";
 
+// Re-export projection functions for test and integration use
+export { projectGuestSnapshot, projectStageSnapshot, projectControlSnapshot };
+
 /**
  * Initialize a new chess round in SQLite and schedule clock alarms.
  */
