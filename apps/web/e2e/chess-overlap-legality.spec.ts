@@ -10,9 +10,9 @@ test.describe("Chess WASM Overlap with Legality", () => {
     await page.goto("/");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error -- Playwright browser context typing
       const { StockfishEngine } = await import("/src/chess/stockfish-worker.ts");
-      // @ts-ignore
+      // @ts-expect-error -- Playwright browser context typing
       const { Chess } = await import("chess.js");
 
       type SearchRecord = {

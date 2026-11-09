@@ -232,7 +232,8 @@ export class StockfishEngine {
   /**
    * Handle messages from the init worker.
    */
-  private handleMessage(_line: string): void {
+  private handleMessage(line: string): void {
+    void line;
     // Init worker only handles UCI handshake, not searches
     // Search workers handle their own bestmove via go() closure
   }

@@ -17,7 +17,7 @@ test.describe("Stockfish WASM Binary Smoke", () => {
 
     // Inject test harness using actual production adapter
     const result = await page.evaluate(async () => {
-      // @ts-ignore - dynamic import in browser context
+      // @ts-expect-error -- Playwright browser context typing - dynamic import in browser context
       const { StockfishEngine } = await import("/src/chess/stockfish-worker.ts");
 
       const events: string[] = [];
@@ -83,7 +83,7 @@ test.describe("Stockfish WASM Binary Smoke", () => {
     await page.goto("/");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error -- Playwright browser context typing
       const { StockfishEngine } = await import("/src/chess/stockfish-worker.ts");
 
       let callbackCount = 0;
@@ -125,7 +125,7 @@ test.describe("Stockfish WASM Binary Smoke", () => {
     await page.goto("/");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error -- Playwright browser context typing
       const { StockfishEngine } = await import("/src/chess/stockfish-worker.ts");
 
       type SearchCallback = {
@@ -205,7 +205,7 @@ test.describe("Stockfish WASM Binary Smoke", () => {
     await page.goto("/");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error -- Playwright browser context typing
       const { StockfishEngine } = await import("/src/chess/stockfish-worker.ts");
 
       const callbacks: string[] = [];

@@ -61,7 +61,7 @@ describe("StockfishEngine Worker isolation", () => {
     originalWorker = globalThis.Worker;
     createdWorkers = [];
 
-    // @ts-ignore - Mock Worker constructor
+    // @ts-expect-error -- Mock Worker constructor
     globalThis.Worker = class {
       constructor() {
         const worker = new MockWorker();
