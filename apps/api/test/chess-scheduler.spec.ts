@@ -1,6 +1,7 @@
 import { env, runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
 import { payloadDigest } from "../src/room/digest.ts";
+import type { ChessGuestSnapshot, ChessStageSnapshot } from "@26/shared";
 
 /**
  * Real PartyRoom scheduler integration: prove DO alarm() fires chess-clock jobs.
@@ -80,10 +81,10 @@ it("real DO alarm dispatch: fires chess-clock jobs, flags games silently, scores
   // Verify chess round initialized and alarm armed
   await runInDurableObject(stub, async (_instance, state) => {
     const games = state.storage.sql
-      .exec("SELECT game_id, status FROM chess_game")
+      .exec<{ game_id: string; status: string }>("SELECT game_id, status FROM chess_game")
       .toArray();
     expect(games).toHaveLength(2);
-    expect(games.every((g: any) => g.status === "in-progress")).toBe(true);
+    expect(games.every((g) => g.status === "in-progress")).toBe(true);
 
     // Verify alarms scheduled
     const jobs = state.storage.sql
@@ -118,6 +119,7 @@ it("real DO alarm dispatch: fires chess-clock jobs, flags games silently, scores
   });
 
   // Manually invoke PartyRoom.runDueJobs with future time (simulates alarm firing at futureNow)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   await runInDurableObject(stub, async (instance, _state) => {
     // @ts-expect-error - accessing private method for test
     await instance.runDueJobs(futureNow, () => {});
@@ -334,11 +336,11 @@ it("80-player server simulation: real PartyRoom round, scheduler expiry, exactly
 
   await runInDurableObject(stub, async (_instance, state) => {
     const games = state.storage.sql
-      .exec("SELECT game_id, status, scored FROM chess_game")
+      .exec<{ game_id: string; status: string; scored: number }>("SELECT game_id, status, scored FROM chess_game")
       .toArray();
     expect(games).toHaveLength(80);
-    expect(games.every((g: any) => g.status === "in-progress")).toBe(true);
-    expect(games.every((g: any) => g.scored === 0)).toBe(true);
+    expect(games.every((g) => g.status === "in-progress")).toBe(true);
+    expect(games.every((g) => g.scored === 0)).toBe(true);
 
     const jobs = state.storage.sql
       .exec<{ job_id: string; payload: string; status: string; due_at: number }>(
@@ -380,9 +382,9 @@ it("80-player server simulation: real PartyRoom round, scheduler expiry, exactly
 
     expect(playerASnapshot).toBeDefined();
     expect(playerBSnapshot).toBeDefined();
-    expect((playerASnapshot as any).gameId).not.toBe((playerBSnapshot as any).gameId);
-    expect((playerASnapshot as any).fen).toBeDefined();
-    expect((playerBSnapshot as any).fen).toBeDefined();
+    expect((playerASnapshot as ChessGuestSnapshot).gameId).not.toBe((playerBSnapshot as ChessGuestSnapshot).gameId);
+    expect((playerASnapshot as ChessGuestSnapshot).fen).toBeDefined();
+    expect((playerBSnapshot as ChessGuestSnapshot).fen).toBeDefined();
     // Each guest sees only their own game
   });
 
@@ -393,7 +395,7 @@ it("80-player server simulation: real PartyRoom round, scheduler expiry, exactly
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
 
-    const stageSnapshot = projectChessGameSnapshot(sql, store, "stage") as any;
+    const stageSnapshot = projectChessGameSnapshot(sql, store, "stage") as ChessStageSnapshot;
     expect(stageSnapshot).toBeDefined();
     expect(stageSnapshot.totalGames).toBe(80);
     expect(stageSnapshot.inProgress).toBe(80);
@@ -410,6 +412,7 @@ it("80-player server simulation: real PartyRoom round, scheduler expiry, exactly
   await makeDue(stub);
 
   // Trigger scheduler with real alarm dispatch
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   await runInDurableObject(stub, async (instance, _state) => {
     // @ts-expect-error - accessing private method for test
     await instance.runDueJobs(futureNow, () => {});
@@ -458,7 +461,7 @@ it("80-player server simulation: real PartyRoom round, scheduler expiry, exactly
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
 
-    const stageSnapshot = projectChessGameSnapshot(sql, store, "stage") as any;
+    const stageSnapshot = projectChessGameSnapshot(sql, store, "stage") as ChessStageSnapshot;
     expect(stageSnapshot).toBeDefined();
     expect(stageSnapshot.totalGames).toBe(80);
     expect(stageSnapshot.inProgress).toBe(0);
@@ -856,7 +859,7 @@ it("persisted round recovers clocks and position after DO restart", async () => 
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
 
-    const snapshot = projectChessGameSnapshot(sql, store, "guest", eve.playerId) as any;
+    const snapshot = projectChessGameSnapshot(sql, store, "guest", eve.playerId) as ChessGuestSnapshot;
     expect(snapshot).toBeDefined();
     expect(snapshot.gameId).toBe(gameId);
     expect(snapshot.fen).toBe(fenAfterMove);

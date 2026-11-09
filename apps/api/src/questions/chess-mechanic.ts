@@ -17,6 +17,7 @@ import {
   type ChessRoundState,
 } from "./chess-coordinator.ts";
 import type { ChessMoveCommand, ChessResignCommand } from "@26/shared";
+import { Chess, type Chess as ChessInstance } from "chess.js";
 
 // Re-export projection functions for test and integration use
 export { projectGuestSnapshot, projectStageSnapshot, projectControlSnapshot };
@@ -87,8 +88,16 @@ export function executeChessMove(
   // Bot move: it's the bot's turn (sideToMove === botColor)
   const isHumanTurn = game.sideToMove === game.playerColor;
 
+  // Validate position revision BEFORE either branch (human or bot)
+  if (command.positionRevision !== game.positionRevision) {
+    return { 
+      success: false, 
+      error: `Position revision mismatch: expected ${game.positionRevision}, got ${command.positionRevision}` 
+    };
+  }
+
   if (isHumanTurn) {
-    // Human move: apply through coordinator (validates revision)
+    // Human move: apply through coordinator
     const result = applyChessMove(game, command, now);
     if ("error" in result) {
       return { success: false, error: result.error };
@@ -109,7 +118,7 @@ export function executeChessMove(
     }
     return { success: true };
   } else {
-    // Bot move: apply through bot coordinator (validates revision)
+    // Bot move: apply through bot coordinator
     const result = applyBotMove(
       game,
       { from: command.from, to: command.to, promotion: command.promotion },
@@ -216,13 +225,14 @@ export function executeResignation(
 /**
  * Handle clock alarm - check for timeouts when alarm fires.
  * Called from PartyRoom onAlarm when chess-clock job is due.
+ * Must be synchronous for SQLite transaction compatibility.
  */
-export async function handleChessClockAlarm(
+export function handleChessClockAlarm(
   sql: SqlStorage,
   _store: GameStore,
   gameId: string,
   now: number,
-): Promise<void> {
+): void {
   const game = loadGame(sql, gameId);
   if (!game || game.status !== "in-progress") {
     return;
@@ -238,7 +248,6 @@ export async function handleChessClockAlarm(
   if (remainingTime <= 0) {
     // Timeout!
     const flagged = game.sideToMove === "white" ? "player" : "bot";
-    const { Chess } = await import("chess.js");
     const chess = new Chess();
     if (game.pgn) {
       chess.loadPgn(game.pgn);
@@ -300,25 +309,47 @@ export function projectChessGameSnapshot(
 
 /**
  * Pause all chess clocks and increment position revision.
+ * Settles active elapsed time at pause moment, freezing clock state.
  * This invalidates all in-flight client state (including bot engine calculations).
  */
-export function pauseChessClocks(
-  sql: SqlStorage,
-  store: GameStore,
-  _now: number,
-): void {
+export function pauseChessClocks(sql: SqlStorage, store: GameStore, now: number): void {
   const games = sql
-    .exec<{ game_id: string; position_revision: number }>(
-      `SELECT game_id, position_revision FROM chess_game WHERE status = 'in-progress'`,
+    .exec<{ 
+      game_id: string; 
+      position_revision: number;
+      last_move_at: number;
+      side_to_move: string;
+      player_time_ms: number;
+      bot_time_ms: number;
+    }>(
+      `SELECT game_id, position_revision, last_move_at, side_to_move, player_time_ms, bot_time_ms 
+       FROM chess_game WHERE status = 'in-progress'`,
     )
     .toArray();
 
-  for (const { game_id, position_revision } of games) {
-    // Increment position revision to reject pre-pause commands
+  for (const game of games) {
+    // Settle elapsed time at pause moment
+    const elapsed = now - game.last_move_at;
+    const newPlayerTime = game.side_to_move === "white" 
+      ? game.player_time_ms - elapsed 
+      : game.player_time_ms;
+    const newBotTime = game.side_to_move === "black" 
+      ? game.bot_time_ms - elapsed 
+      : game.bot_time_ms;
+
+    // Update: freeze clocks, increment revision, set last_move_at to pause time
     sql.exec(
-      `UPDATE chess_game SET position_revision = ? WHERE game_id = ?`,
-      position_revision + 1,
-      game_id,
+      `UPDATE chess_game 
+       SET position_revision = ?,
+           player_time_ms = ?,
+           bot_time_ms = ?,
+           last_move_at = ?
+       WHERE game_id = ?`,
+      game.position_revision + 1,
+      Math.max(0, newPlayerTime),
+      Math.max(0, newBotTime),
+      now,
+      game.game_id,
     );
   }
 
@@ -340,8 +371,8 @@ export function pauseChessClocks(
 
 /**
  * Resume all chess clocks.
- * Clocks are already paused (no alarm modifications during pause).
- * Reschedule alarms based on current clock state.
+ * Uses frozen clock values from pause, excludes paused duration.
+ * Sets last_move_at to resume time and reschedules alarms.
  */
 export function resumeChessClocks(
   sql: SqlStorage,
@@ -349,34 +380,32 @@ export function resumeChessClocks(
   now: number,
 ): void {
   const games = sql
-    .exec<{
-      game_id: string;
-      last_move_at: number;
-      side_to_move: string;
-      player_time_ms: number;
-      bot_time_ms: number;
-    }>(
-      `SELECT game_id, last_move_at, side_to_move, player_time_ms, bot_time_ms FROM chess_game WHERE status = 'in-progress'`,
+    .exec<{ game_id: string; side_to_move: string; player_time_ms: number; bot_time_ms: number }>(
+      `SELECT game_id, side_to_move, player_time_ms, bot_time_ms FROM chess_game WHERE status = 'in-progress'`,
     )
     .toArray();
 
   const room = store.readRoom();
 
   for (const game of games) {
-    const elapsed = now - game.last_move_at;
+    // Set last_move_at to resume time (excludes paused duration)
+    sql.exec(
+      `UPDATE chess_game SET last_move_at = ? WHERE game_id = ?`,
+      now,
+      game.game_id,
+    );
+
+    // Use frozen clock values from pause
     const remainingTime =
       game.side_to_move === "white"
-        ? game.player_time_ms - elapsed
-        : game.bot_time_ms - elapsed;
+        ? game.player_time_ms
+        : game.bot_time_ms;
 
     if (remainingTime > 0) {
-      scheduleClockAlarm(
-        store,
-        game.game_id,
-        now + remainingTime,
-        room.phaseGeneration,
-        room.scopeGeneration,
-      );
+      scheduleClockAlarm(store, game.game_id, now + remainingTime, room.phaseGeneration, room.scopeGeneration);
+    } else {
+      // Clock already expired during pause - flag immediately
+      handleChessClockAlarm(sql, store, game.game_id, now);
     }
   }
 }
@@ -437,10 +466,28 @@ function persistGame(sql: SqlStorage, game: ChessPlayerGame): void {
   );
 }
 
+interface ChessGameRow {
+  game_id: string;
+  round_id: string;
+  player_id: string;
+  fen: string;
+  pgn: string;
+  position_history: string;
+  player_time_ms: number;
+  bot_time_ms: number;
+  last_move_at: number;
+  side_to_move: string;
+  ply_count: number;
+  position_revision: number;
+  status: string;
+  winner: string | null;
+  terminated_at: number | null;
+  termination_reason: string | null;
+  scored: number;
+}
+
 function loadGame(sql: SqlStorage, gameId: string): ChessPlayerGame | null {
-  const row = sql
-    .exec<any>(`SELECT * FROM chess_game WHERE game_id = ?`, gameId)
-    .toArray()[0];
+  const row = sql.exec(`SELECT * FROM chess_game WHERE game_id = ?`, gameId).toArray()[0] as unknown as ChessGameRow | undefined;
 
   if (!row) return null;
 
@@ -455,13 +502,13 @@ function loadGame(sql: SqlStorage, gameId: string): ChessPlayerGame | null {
     playerTimeMs: row.player_time_ms,
     botTimeMs: row.bot_time_ms,
     lastMoveAt: row.last_move_at,
-    sideToMove: row.side_to_move,
+    sideToMove: row.side_to_move as "white" | "black",
     plyCount: row.ply_count,
     positionRevision: row.position_revision,
-    status: row.status,
-    winner: row.winner,
-    terminatedAt: row.terminated_at,
-    terminationReason: row.termination_reason,
+    status: row.status as "waiting" | "in-progress" | "checkmate" | "stalemate" | "insufficient-material" | "threefold-repetition" | "fifty-move-rule" | "timeout" | "timeout-draw" | "resignation" | "aborted",
+    winner: (row.winner as "player" | "bot" | "draw" | null) ?? undefined,
+    terminatedAt: row.terminated_at ?? undefined,
+    terminationReason: row.termination_reason ?? undefined,
   };
 }
 
@@ -479,7 +526,9 @@ function loadGameByPlayer(sql: SqlStorage, playerId: string): ChessPlayerGame | 
 
 function loadRoundState(sql: SqlStorage): ChessRoundState | null {
   // Chess round state is reconstructed from chess_game rows
-  const gameRows = sql.exec<any>(`SELECT * FROM chess_game ORDER BY game_id`).toArray();
+  const gameRows = sql
+    .exec(`SELECT * FROM chess_game ORDER BY game_id`)
+    .toArray() as unknown as ChessGameRow[];
 
   if (gameRows.length === 0) return null;
 
@@ -496,12 +545,12 @@ function loadRoundState(sql: SqlStorage): ChessRoundState | null {
     }
   }
 
-  const inProgress = gameRows.filter((r: any) => r.status === "in-progress").length;
+  const inProgress = gameRows.filter((r) => r.status === "in-progress").length;
   const finished = gameRows.length - inProgress;
 
   return {
     roundId,
-    startedAt: Math.min(...gameRows.map((r: any) => r.last_move_at)),
+    startedAt: Math.min(...gameRows.map((r) => r.last_move_at)),
     frozenParticipants: Array.from(participants),
     games,
     gamesInProgress: inProgress,
@@ -582,7 +631,7 @@ function buildNicknameMap(sql: SqlStorage): Map<string, string> {
   return new Map(rows.map((r) => [r.player_id, r.nickname]));
 }
 
-function hasMateMaterial(chess: any, color: "w" | "b"): boolean {
+function hasMateMaterial(chess: ChessInstance, color: "w" | "b"): boolean {
   const board = chess.board();
   let queens = 0;
   let rooks = 0;

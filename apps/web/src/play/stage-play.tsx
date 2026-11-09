@@ -84,7 +84,7 @@ export function StagePlay({
         </Suspense>
       </KartDriversProvider>
     );
-  if (play.question.kind === "chess" && play.chess && "standings" in play.chess) {
+  if (play.question.kind === "chess" && play.chess && "totalGames" in play.chess) {
     return <ChessStage snapshot={play.chess} />;
   }
   const leadBoard =
