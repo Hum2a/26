@@ -112,7 +112,7 @@ export function isTrollPayload(payload: string): boolean {
 }
 
 export function isRoundJobPayload(payload: string): boolean {
-  return isTrollPayload(payload) || payload === "kart-tick";
+  return isTrollPayload(payload) || payload === "kart-tick" || payload.startsWith("chess-clock:");
 }
 
 export type RoundPlugin = {
@@ -402,7 +402,7 @@ export function notePresence(
   }
 }
 
-export function onAlarm(store: GameStore, now: number): void {
+export async function onAlarm(store: GameStore, now: number): Promise<void> {
   const room = store.readRoom();
   const due = store
     .jobs()
@@ -440,6 +440,21 @@ export function onAlarm(store: GameStore, now: number): void {
 
   for (const job of due) {
     if (job.jobType !== "gameplay" || !isRoundJobPayload(job.payload)) {
+      continue;
+    }
+    // Chess clock alarm - handled via onScheduledJob callback
+    if (job.payload.startsWith("chess-clock:")) {
+      if (
+        job.phaseGeneration !== room.phaseGeneration ||
+        job.scopeGeneration !== room.scopeGeneration ||
+        job.phase !== room.phase ||
+        room.hold
+      ) {
+        store.saveJob({ ...job, status: "cancelled", dueAt: null, remainingMs: null });
+        continue;
+      }
+      store.saveJob({ ...job, status: "done", dueAt: null, remainingMs: null });
+      store.onScheduledJob?.(job, now);
       continue;
     }
     if (

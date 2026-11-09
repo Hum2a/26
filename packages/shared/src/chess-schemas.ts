@@ -38,6 +38,8 @@ export const chessMoveCommandSchema = z
     from: z.string().regex(/^[a-h][1-8]$/), // e.g. "e2"
     to: z.string().regex(/^[a-h][1-8]$/), // e.g. "e4"
     promotion: chessPromotionPieceSchema.optional(), // Required for pawn promotion
+    // Server-issued position revision; incremented on every position change (move/pause/resume)
+    positionRevision: z.number().int().nonnegative(),
   })
   .strict();
 export type ChessMoveCommand = z.infer<typeof chessMoveCommandSchema>;
@@ -78,6 +80,8 @@ export const chessPlayerGameSchema = z.object({
   sideToMove: chessColorSchema,
   // Move count (ply number)
   plyCount: z.number().int().min(0),
+  // Position revision: incremented on every change (move, pause, resume) to reject stale client state
+  positionRevision: z.number().int().nonnegative(),
   // Terminal result details
   terminatedAt: z.number().int().optional(),
   terminationReason: z.string().optional(),
@@ -114,6 +118,12 @@ export const chessGuestSnapshotSchema = z.object({
   botTimeMs: z.number().int().min(0),
   sideToMove: chessColorSchema,
   plyCount: z.number().int().min(0),
+  // Position revision - REQUIRED for client to echo in move commands
+  positionRevision: z.number().int().nonnegative(),
+  // Server timestamp for clock interpolation
+  lastMoveAt: z.number().int(),
+  // Pause state affects clock countdown
+  paused: z.boolean(),
   // Terminal state
   winner: z.enum(["player", "bot", "draw"]).optional(),
   terminationReason: z.string().optional(),
@@ -141,7 +151,7 @@ export const chessStageSnapshotSchema = z.object({
     z.object({
       playerId: z.string(),
       nickname: z.string(),
-      event: z.enum(["checkmate-win", "checkmate-loss", "draw", "timeout", "resign"]),
+      event: z.enum(["checkmate-win", "checkmate-loss", "draw", "timeout", "resign", "abort"]),
       timestamp: z.number(),
     }),
   ),
@@ -165,7 +175,7 @@ export const chessControlSnapshotSchema = z.object({
     z.object({
       playerId: z.string(),
       nickname: z.string(),
-      event: z.enum(["checkmate-win", "checkmate-loss", "draw", "timeout", "resign"]),
+      event: z.enum(["checkmate-win", "checkmate-loss", "draw", "timeout", "resign", "abort"]),
       timestamp: z.number(),
     }),
   ),

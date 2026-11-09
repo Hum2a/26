@@ -54,6 +54,7 @@ describe("Chess Coordinator", () => {
           gameId: game.gameId,
           from: "e2",
           to: "e4",
+          positionRevision: 0,
         },
         now + 1000,
       );
@@ -79,6 +80,7 @@ describe("Chess Coordinator", () => {
           gameId: game.gameId,
           from: "e2",
           to: "e5", // Illegal - pawn can't move 3 squares
+          positionRevision: game.positionRevision,
         },
         now + 1000,
       );
@@ -99,6 +101,7 @@ describe("Chess Coordinator", () => {
           gameId: game.gameId,
           from: "e2",
           to: "e4",
+          positionRevision: game.positionRevision,
         },
         now + 1000,
       );
@@ -114,6 +117,7 @@ describe("Chess Coordinator", () => {
           gameId: game.gameId,
           from: "d2",
           to: "d4",
+          positionRevision: game.positionRevision,
         },
         now + 2000,
       );
@@ -145,6 +149,7 @@ describe("Chess Coordinator", () => {
           from: "e7",
           to: "e8",
           promotion: "q",
+          positionRevision: game.positionRevision,
         },
         now + 1000,
       );
@@ -171,6 +176,7 @@ describe("Chess Coordinator", () => {
           gameId: game.gameId,
           from: "e2",
           to: "e4",
+          positionRevision: game.positionRevision,
         },
         now + 1000,
       );
@@ -205,6 +211,7 @@ describe("Chess Coordinator", () => {
           gameId: game.gameId,
           from: "e2",
           to: "e4",
+          positionRevision: game.positionRevision,
         },
         now + 1000,
       );
@@ -230,7 +237,7 @@ describe("Chess Coordinator", () => {
       // 1. f3
       let result = applyChessMove(
         game,
-        { kind: "chess-move", requestId: "1", gameId: game.gameId, from: "f2", to: "f3" },
+        { kind: "chess-move", requestId: "1", gameId: game.gameId, from: "f2", to: "f3", positionRevision: game.positionRevision },
         now + 1000,
       );
       expect(result).toHaveProperty("game");
@@ -244,7 +251,7 @@ describe("Chess Coordinator", () => {
       // 2. g4
       result = applyChessMove(
         game,
-        { kind: "chess-move", requestId: "2", gameId: game.gameId, from: "g2", to: "g4" },
+        { kind: "chess-move", requestId: "2", gameId: game.gameId, from: "g2", to: "g4", positionRevision: game.positionRevision },
         now + 3000,
       );
       expect(result).toHaveProperty("game");
@@ -275,7 +282,7 @@ describe("Chess Coordinator", () => {
       // Any move will trigger insufficient material detection
       const result = applyChessMove(
         game,
-        { kind: "chess-move", requestId: "1", gameId: game.gameId, from: "d2", to: "d3" },
+        { kind: "chess-move", requestId: "1", gameId: game.gameId, from: "d2", to: "d3", positionRevision: game.positionRevision },
         now + 1000,
       );
 
@@ -331,7 +338,7 @@ describe("Chess Coordinator", () => {
       const state = initializeChessRound(roundId, [playerId], now);
       const game = state.games[playerId];
 
-      const snapshot = projectGuestSnapshot(game);
+      const snapshot = projectGuestSnapshot(game, false);
 
       expect(snapshot.gameId).toBe(game.gameId);
       expect(snapshot.fen).toBe(game.fen);

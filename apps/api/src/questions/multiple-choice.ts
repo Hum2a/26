@@ -376,19 +376,19 @@ export function recordRevealScores(
   }
   if (question.kind === "chess") {
     // Chess has its own scoring mechanism
-    return new Map();
+    return;
   }
   if (question.kind === "duel" || question.kind === "finale") {
     scoreDuelQuestion(sql, question, now);
-    return new Map();
+    return;
   }
   if (question.kind === "wordle") {
     wordleScores(sql, question, now);
-    return new Map();
+    return;
   }
   if (question.kind === "typed") {
     typedScores(sql, question, now);
-    return new Map();
+    return;
   }
   const players = sql
     .exec<{ player_id: string }>(
@@ -602,6 +602,10 @@ export function projectPlay(
   }
   if (question.kind === "duel" || question.kind === "finale") {
     return projectDuel(sql, room, audience, selfPlayerId, question, scored);
+  }
+  if (question.kind === "chess") {
+    // Chess projections handled by chess-mechanic
+    return null;
   }
   if (question.kind !== "choice") {
     return projectSpecial(sql, room, audience, selfPlayerId, question, scored);

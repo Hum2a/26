@@ -832,6 +832,16 @@ export function GuestPage({
                   kartItemNotice={kartItemNotice}
                   kartRecoveryPending={kartRecoveryPending}
                   kartRecoveryNotice={kartRecoveryNotice}
+                  onChessMove={(params) => {
+                    if (!beginSend(true)) return;
+                    pendingRequest.current =
+                      socketRef.current?.submitChessMove(params) ?? null;
+                  }}
+                  onChessResign={(params) => {
+                    if (!beginSend(true)) return;
+                    pendingRequest.current =
+                      socketRef.current?.submitChessResign(params) ?? null;
+                  }}
                   snapshot={snapshot}
                   selectedId={selectedId}
                   pending={pending}

@@ -906,9 +906,35 @@ export class PartyRoom extends DurableObject<Env> {
 
   /** Runs every due job in one transaction that also arms the next alarm. */
   private async runDueJobs(now: number, raceTick: (only: boolean) => void) {
-    await commitAndArm(this.ctx.storage, (sql) => {
+    await commitAndArm(this.ctx.storage, async (sql) => {
       this.flushKartInputs(sql);
-      const store = createGameStore(sql);
+      const baseStore = createGameStore(sql);
+      // Extend store with chess callbacks
+      const store: GameStore = {
+        ...baseStore,
+        onScheduledJob: async (job, now) => {
+          if (job.payload.startsWith("chess-clock:")) {
+            const gameId = job.payload.substring("chess-clock:".length);
+            const { handleChessClockAlarm } = await import("../questions/chess-mechanic.ts");
+            await handleChessClockAlarm(sql, store, gameId, now);
+          }
+        },
+        onEnterPhase: (room, now) => {
+          if (room.phase === "collect") {
+            const question = questionFor(room);
+            if (question?.kind === "chess") {
+              const { createChessRound } = require("../questions/chess-mechanic.ts");
+              const participants = sql
+                .exec<{ player_id: string }>(
+                  `SELECT player_id FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
+                )
+                .toArray()
+                .map((r) => r.player_id);
+              createChessRound(sql, store, question, participants, now);
+            }
+          }
+        },
+      };
       const before = store.readRoom();
       const due = sql
         .exec<{ payload: string }>(
@@ -917,7 +943,7 @@ export class PartyRoom extends DurableObject<Env> {
           now,
         )
         .toArray();
-      onAlarm(store, now);
+      await onAlarm(store, now);
       const after = store.readRoom();
       // A tick that only moved the race goes out as a kart frame, not a full snapshot.
       raceTick(
@@ -1221,6 +1247,10 @@ export class PartyRoom extends DurableObject<Env> {
       const question = questionFor(store.readRoom());
       if (question?.kind === "kart")
         releaseKartInputs(sql, store, question, input.nowMs);
+      if (question?.kind === "chess") {
+        const { pauseChessClocks } = require("../questions/chess-mechanic.ts");
+        pauseChessClocks(sql, store, input.nowMs);
+      }
       pause(store, input.nowMs);
     });
   }
@@ -1240,7 +1270,13 @@ export class PartyRoom extends DurableObject<Env> {
       return allowed;
     }
     return this.phaseCommand(input.requestId, { action: "resume" }, (sql) => {
-      resume(createSqlStore(sql), input.nowMs);
+      const store = createSqlStore(sql);
+      const question = questionFor(store.readRoom());
+      if (question?.kind === "chess") {
+        const { resumeChessClocks } = require("../questions/chess-mechanic.ts");
+        resumeChessClocks(sql, store, input.nowMs);
+      }
+      resume(store, input.nowMs);
     });
   }
 
@@ -4775,6 +4811,8 @@ function acceptRoundCommand(
     | { name: "duel"; value: unknown }
     | { name: "troll"; kind: unknown; targetId: unknown; mediaId?: string }
     | { name: "troll-escape"; effectId: unknown }
+    | { name: "chess-move"; gameId: string; from: string; to: string; promotion?: string; positionRevision: number }
+    | { name: "chess-resign"; gameId: string }
     | WallCommand,
   now: number,
   question: Question | undefined,
@@ -4818,6 +4856,32 @@ function acceptRoundCommand(
   }
   if (command.name === "troll-escape") {
     return escapeTroll(sql, store, playerId, command.effectId, now);
+  }
+  if (command.name === "chess-move") {
+    if (!question || question.kind !== "chess") {
+      return { ok: false, message: "Not a chess round" };
+    }
+    const { executeChessMove } = require("../questions/chess-mechanic.ts");
+    
+    // CRITICAL: Player can ONLY submit moves for their OWN game.
+    // Server determines human vs bot path from game.sideToMove.
+    // Casual trust: guest chooses bot moves for own game, never other players' games.
+    const result = executeChessMove(sql, store, command, playerId, now);
+    if (!result.success) {
+      return { ok: false, message: result.error };
+    }
+    return { ok: true };
+  }
+  if (command.name === "chess-resign") {
+    if (!question || question.kind !== "chess") {
+      return { ok: false, message: "Not a chess round" };
+    }
+    const { executeResignation } = require("../questions/chess-mechanic.ts");
+    const result = executeResignation(sql, command, playerId, now);
+    if (!result.success) {
+      return { ok: false, message: result.error };
+    }
+    return { ok: true };
   }
   if (command.name === "wall-react") {
     return reactToWall(sql, playerId, command, now);
@@ -4870,6 +4934,16 @@ function readCommand(body: unknown):
   | { requestId: string; name: "ballot"; candidateId: unknown; epoch?: unknown }
   | { requestId: string; name: "duel"; value: unknown }
   | { requestId: string; name: "draft"; text: string }
+  | {
+      requestId: string;
+      name: "chess-move";
+      gameId: string;
+      from: string;
+      to: string;
+      promotion?: string;
+      positionRevision: number;
+    }
+  | { requestId: string; name: "chess-resign"; gameId: string }
   | {
       requestId: string;
       name: "troll";
@@ -4985,6 +5059,42 @@ function readCommand(body: unknown):
   }
   if (record.name === "duel") {
     return { requestId: record.requestId, name: "duel", value: record.value };
+  }
+  if (record.name === "chess-move") {
+    if (
+      typeof record.gameId !== "string" ||
+      typeof record.from !== "string" ||
+      typeof record.to !== "string" ||
+      !/^[a-h][1-8]$/.test(record.from) ||
+      !/^[a-h][1-8]$/.test(record.to) ||
+      typeof record.positionRevision !== "number" ||
+      record.positionRevision < 0 ||
+      !Number.isInteger(record.positionRevision)
+    ) {
+      return null;
+    }
+    if (record.promotion && !["q", "r", "b", "n"].includes(record.promotion as string)) {
+      return null;
+    }
+    return {
+      requestId: record.requestId,
+      name: "chess-move",
+      gameId: record.gameId,
+      from: record.from,
+      to: record.to,
+      promotion: record.promotion as "q" | "r" | "b" | "n" | undefined,
+      positionRevision: record.positionRevision,
+    };
+  }
+  if (record.name === "chess-resign") {
+    if (typeof record.gameId !== "string") {
+      return null;
+    }
+    return {
+      requestId: record.requestId,
+      name: "chess-resign",
+      gameId: record.gameId,
+    };
   }
   if (record.name === "wall-post") {
     return {

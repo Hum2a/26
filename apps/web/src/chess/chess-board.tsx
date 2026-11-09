@@ -6,14 +6,15 @@
 import { useState, useCallback } from "react";
 import type { ChessGuestSnapshot } from "@26/shared";
 
-type Square = {
-  file: string;
-  rank: number;
-  piece: string | null;
-  isLight: boolean;
-  isSelected: boolean;
-  isLegalMove: boolean;
-};
+// Reserved for future rich board interaction
+// type BoardSquare = {
+//   file: string;
+//   rank: number;
+//   piece: string | null;
+//   isLight: boolean;
+//   isSelected: boolean;
+//   isLegalMove: boolean;
+// };
 
 type ChessBoardProps = {
   snapshot: ChessGuestSnapshot;
@@ -47,21 +48,8 @@ function parseFen(fen: string): (string | null)[][] {
   return board;
 }
 
-/**
- * Get legal moves for a piece (simplified - real implementation would query server/chess.js).
- * For MVP, we'll validate on server and show error if illegal.
- */
-function getLegalMoves(from: string, fen: string): string[] {
-  // TODO: In production, either:
-  // 1. Request legal moves from server for this square
-  // 2. Use client-side chess.js instance to compute
-  // For now, return empty array (server will validate)
-  return [];
-}
-
 export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
-  const [legalMoves, setLegalMoves] = useState<string[]>([]);
 
   const board = parseFen(snapshot.fen);
   const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -76,25 +64,11 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
 
       const square = `${file}${rank}`;
 
-      // If a square is selected and this is a legal move, execute move
-      if (selectedSquare && legalMoves.includes(square)) {
-        // Check if this is a pawn promotion
-        const piece = getPieceAt(board, selectedSquare);
-        const isPromotion =
-          piece?.toLowerCase() === "p" &&
-          ((snapshot.playerColor === "white" && rank === 8) ||
-            (snapshot.playerColor === "black" && rank === 1));
-
-        if (isPromotion) {
-          // TODO: Show promotion chooser modal
-          // For now, default to queen
-          onMove(selectedSquare, square, "q");
-        } else {
-          onMove(selectedSquare, square);
-        }
-
+      // If a square is selected, attempt move
+      if (selectedSquare) {
+        // Let parent handle promotion detection and chooser
+        onMove(selectedSquare, square);
         setSelectedSquare(null);
-        setLegalMoves([]);
         return;
       }
 
@@ -104,17 +78,14 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
         const pieceColor = clickedPiece === clickedPiece.toUpperCase() ? "white" : "black";
         if (pieceColor === snapshot.playerColor) {
           setSelectedSquare(square);
-          const moves = getLegalMoves(square, snapshot.fen);
-          setLegalMoves(moves);
           return;
         }
       }
 
       // Deselect
       setSelectedSquare(null);
-      setLegalMoves([]);
     },
-    [isInteractive, selectedSquare, legalMoves, board, snapshot, onMove],
+    [isInteractive, selectedSquare, board, snapshot, onMove],
   );
 
   return (
@@ -154,7 +125,6 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
               const piece = getPieceAt(board, square);
               const isLight = (files.indexOf(file) + rank) % 2 === 0;
               const isSelected = selectedSquare === square;
-              const isLegalMove = legalMoves.includes(square);
 
               return (
                 <button
@@ -162,13 +132,12 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
                   type="button"
                   className={`chess-square ${isLight ? "light" : "dark"} ${
                     isSelected ? "selected" : ""
-                  } ${isLegalMove ? "legal-move" : ""}`}
+                  }`}
                   onClick={() => handleSquareClick(file, rank)}
                   disabled={!isInteractive}
                   aria-label={`${file}${rank}${piece ? ` ${getPieceName(piece)}` : ""}`}
                 >
                   {piece && <span className="chess-piece">{getPieceSymbol(piece)}</span>}
-                  {isLegalMove && <span className="legal-move-indicator" />}
                 </button>
               );
             })}

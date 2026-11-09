@@ -234,6 +234,7 @@ export const adminExempt: Readonly<Record<string, string>> = {
   "apps/web/src/admin": "The admin workspace itself.",
   "apps/web/src/anim": "Shared animation helpers used by every surface.",
   "apps/web/src/api": "Shared request helpers.",
+  "apps/web/src/chess": "Chess mechanic (admin view pending, catalogue-only).",
   "apps/web/src/ui": "Shared primitives and layout.",
 };
 

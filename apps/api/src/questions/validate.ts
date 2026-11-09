@@ -777,6 +777,10 @@ function checkPlayable(question: Question): ContentIssue[] {
     }
     return [];
   }
+  if (question.kind === "chess") {
+    // Chess questions have no additional validation
+    return [];
+  }
   if (question.kind === "finale") {
     if (question.contestants.length !== 2) {
       return [

@@ -102,6 +102,28 @@ const scheduleStatements = [
     created_at INTEGER NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS schedule_job_due ON schedule_job (status, due_at)`,
+  `CREATE TABLE IF NOT EXISTS chess_game (
+    game_id TEXT PRIMARY KEY,
+    round_id TEXT NOT NULL,
+    player_id TEXT NOT NULL,
+    fen TEXT NOT NULL,
+    pgn TEXT NOT NULL,
+    position_history TEXT NOT NULL,
+    player_time_ms INTEGER NOT NULL,
+    bot_time_ms INTEGER NOT NULL,
+    last_move_at INTEGER NOT NULL,
+    side_to_move TEXT NOT NULL,
+    ply_count INTEGER NOT NULL,
+    position_revision INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    winner TEXT,
+    terminated_at INTEGER,
+    termination_reason TEXT,
+    scored INTEGER NOT NULL DEFAULT 0
+  )`,
+  `CREATE INDEX IF NOT EXISTS chess_game_player ON chess_game (player_id)`,
+  `CREATE INDEX IF NOT EXISTS chess_game_round ON chess_game (round_id)`,
+  `CREATE INDEX IF NOT EXISTS chess_game_status ON chess_game (status)`,
   `CREATE TABLE IF NOT EXISTS room_archive (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     final_revision INTEGER NOT NULL,

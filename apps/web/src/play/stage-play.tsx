@@ -3,6 +3,7 @@ const KartGameWrapper = lazy(() => import("../kart/KartGameWrapper"));
 import { motion } from "motion/react";
 import type { LobbySnapshot, PlaySnapshot, RoomPhaseName } from "@26/shared";
 import { QuestionOptionImage } from "./question-option-image";
+import { ChessStage } from "../chess/chess-stage";
 import { Panel } from "../ui/primitives";
 import { Glyph } from "./designs/glyph";
 import { AnswerNames } from "./attributions";
@@ -83,6 +84,10 @@ export function StagePlay({
         </Suspense>
       </KartDriversProvider>
     );
+  if (play.question.kind === "chess" && play.chess) {
+    // Type assertion needed: discriminated union doesn't narrow automatically
+    return <ChessStage snapshot={play.chess as any} />;
+  }
   const leadBoard =
     snapshot.phase === "scores" ||
     snapshot.phase === "final" ||
@@ -174,6 +179,12 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
   if (play.question.kind === "duel" || play.question.kind === "finale") {
     return <DuelView play={play} omitBoard={omitBoard} />;
   }
+  
+  // Only choice questions have options
+  if (play.question.kind !== "choice") {
+    return <p>Unsupported question type for this view</p>;
+  }
+  
   const reveal = play.reveal?.kind === "choice" ? play.reveal : undefined;
   const options = play.question.options;
   const answer = reveal

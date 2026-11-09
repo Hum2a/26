@@ -11,7 +11,11 @@ import {
   type DriverStyle,
   type WallFrame,
   type WallReaction,
+  type ChessMoveParams,
+  type ChessResignParams,
 } from "@26/shared";
+
+export type { ChessMoveParams, ChessResignParams };
 import {
   noteRtt,
   noteSubmissionRetries,
@@ -187,6 +191,22 @@ type CommandBody =
       name: "driver";
       style: DriverStyle;
       faceMediaId: string | null;
+    }
+  | {
+      kind: "command";
+      requestId: string;
+      name: "chess-move";
+      gameId: string;
+      from: string;
+      to: string;
+      promotion?: "q" | "r" | "b" | "n";
+      positionRevision: number;
+    }
+  | {
+      kind: "command";
+      requestId: string;
+      name: "chess-resign";
+      gameId: string;
     };
 
 type TrackedCommand = {
@@ -233,6 +253,8 @@ export function openRoomSocket(options: {
   submitWallReact: (postId: string, reaction: WallReaction) => string;
   /** Projector only: the wall photo it was told to show did not load. */
   reportWallImageFailed: (postId: string) => string;
+  submitChessMove: (params: ChessMoveParams) => string;
+  submitChessResign: (params: ChessResignParams) => string;
   reconnectNow: () => void;
   close: () => void;
 } {
@@ -805,6 +827,34 @@ export function openRoomSocket(options: {
     });
   }
 
+  function submitChessMove(params: ChessMoveParams): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      command: {
+        kind: "chess-move",
+        requestId: crypto.randomUUID(),
+        gameId: params.gameId,
+        from: params.from,
+        to: params.to,
+        ...(params.promotion ? { promotion: params.promotion } : {}),
+        positionRevision: params.positionRevision,
+      },
+    } as any);
+  }
+
+  function submitChessResign(params: ChessResignParams): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      command: {
+        kind: "chess-resign",
+        requestId: crypto.randomUUID(),
+        gameId: params.gameId,
+      },
+    } as any);
+  }
+
   function close() {
     stopped = true;
     clearTimer();
@@ -872,6 +922,8 @@ export function openRoomSocket(options: {
     submitWallWithdraw,
     submitWallReact,
     reportWallImageFailed,
+    submitChessMove,
+    submitChessResign,
     close,
   };
 }

@@ -19,7 +19,7 @@ export type StockfishOptions = {
 export class StockfishEngine {
   private worker: Worker | null = null;
   private ready = false;
-  private pendingMessages: string[] = [];
+  // Reserved for future message queueing: private _pendingMessages: string[] = [];
   private options: Required<StockfishOptions>;
   private currentPosition = "";
 
@@ -37,7 +37,11 @@ export class StockfishEngine {
    * Initialize and load the Stockfish worker.
    * Returns a promise that resolves when the engine is ready.
    */
-  async initialize(): Promise<void> {
+  async   initialize(): Promise<void> {
+    if (this.ready) {
+      return Promise.reject(new Error("Engine already initialized"));
+    }
+    
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error("Stockfish initialization timeout (10s)"));
@@ -132,7 +136,7 @@ export class StockfishEngine {
       this.worker.terminate();
       this.worker = null;
       this.ready = false;
-      this.pendingMessages = [];
+      // this._pendingMessages = [];
     }
   }
 

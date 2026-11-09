@@ -4,6 +4,7 @@ import {
   missingRequirements,
   type Answer,
   type AttributionMode,
+  type AuthoredChess,
   type AuthoredKart,
   type AuthoredChoice,
   type AuthoredDuel,

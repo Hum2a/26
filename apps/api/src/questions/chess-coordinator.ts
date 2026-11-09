@@ -10,7 +10,6 @@ import type {
   ChessControlSnapshot,
   ChessMoveCommand,
   ChessGameStatus,
-  ChessColor,
   ChessPlayerGame,
   ChessRoundState,
 } from "@26/shared";
@@ -24,6 +23,8 @@ export function initializeChessRound(
   roundId: string,
   participantIds: string[],
   now: number,
+  playerTimeMs = 60_000,
+  botTimeMs = 60_000,
 ): ChessRoundState {
   const games: Record<string, ChessPlayerGame> = {};
 
@@ -39,12 +40,13 @@ export function initializeChessRound(
       fen: chess.fen(),
       pgn: "",
       status: "in-progress",
-      playerTimeMs: 60_000, // 1+0: 60 seconds
-      botTimeMs: 60_000,
+      playerTimeMs,
+      botTimeMs,
       lastMoveAt: now,
       positionHistory: [chess.fen()],
       sideToMove: "white",
       plyCount: 0,
+      positionRevision: 0, // Incremented on every position change (move/pause/resume)
     };
   }
 
@@ -70,6 +72,11 @@ export function applyChessMove(
   // Validate game ownership
   if (command.gameId !== game.gameId) {
     return { error: "Game ID mismatch" };
+  }
+
+  // Validate position revision - reject stale moves from old position
+  if (command.positionRevision !== game.positionRevision) {
+    return { error: `Position revision mismatch: expected ${game.positionRevision}, got ${command.positionRevision}` };
   }
 
   // Check game is in progress
@@ -135,6 +142,7 @@ export function applyChessMove(
         positionHistory: [...game.positionHistory, stripCounters(newFen)],
         sideToMove: "black",
         plyCount: game.plyCount + 1,
+        positionRevision: game.positionRevision + 1,
         terminatedAt: now,
         terminationReason: terminalStatus.reason,
       },
@@ -152,6 +160,7 @@ export function applyChessMove(
       positionHistory: [...game.positionHistory, stripCounters(newFen)],
       sideToMove: "black",
       plyCount: game.plyCount + 1,
+      positionRevision: game.positionRevision + 1,
     },
   };
 }
@@ -221,6 +230,7 @@ export function applyBotMove(
         positionHistory: [...game.positionHistory, stripCounters(newFen)],
         sideToMove: "white",
         plyCount: game.plyCount + 1,
+        positionRevision: game.positionRevision + 1,
         terminatedAt: now,
         terminationReason: terminalStatus.reason,
       },
@@ -238,6 +248,7 @@ export function applyBotMove(
       positionHistory: [...game.positionHistory, stripCounters(newFen)],
       sideToMove: "white",
       plyCount: game.plyCount + 1,
+      positionRevision: game.positionRevision + 1,
     },
   };
 }
@@ -423,7 +434,7 @@ function stripCounters(fen: string): string {
 /**
  * Project guest snapshot (own game only).
  */
-export function projectGuestSnapshot(game: ChessPlayerGame): ChessGuestSnapshot {
+export function projectGuestSnapshot(game: ChessPlayerGame, paused: boolean): ChessGuestSnapshot {
   const chess = new Chess(game.fen);
 
   return {
@@ -437,6 +448,9 @@ export function projectGuestSnapshot(game: ChessPlayerGame): ChessGuestSnapshot 
     botTimeMs: game.botTimeMs,
     sideToMove: game.sideToMove,
     plyCount: game.plyCount,
+    positionRevision: game.positionRevision,
+    lastMoveAt: game.lastMoveAt,
+    paused,
     winner: game.winner,
     terminationReason: game.terminationReason,
     inCheck: chess.inCheck(),
