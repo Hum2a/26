@@ -81,7 +81,8 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
             // Only install if this effect still owns the lifecycle
             if (!cancelled && mountedRef.current && !engineInstanceRef.current) {
               setEngineReady(true);
-              setRetryAttempt(0);
+              // Clear error on successful init (does not trigger effect)
+              setEngineError(null);
             }
           },
           onBestMove: (from, to, promotion) => {
