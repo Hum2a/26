@@ -286,7 +286,7 @@ export function ChessGame({ snapshot, onMove, onResign, disabled = false }: Ches
           <button
             type="button"
             onClick={onResign}
-            disabled={disabled || !engineReady}
+            disabled={disabled}
             className="chess-resign-button"
             aria-label="Resign from game"
           >
