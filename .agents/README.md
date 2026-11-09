@@ -14,7 +14,7 @@ The generated copies in `.cursor`, `.claude`, `.codex`, `.github/skills`, `.gith
 
 ## Rules
 
-Hand-written rules are `.agents/rules/*.md`. Each file has frontmatter:
+Hand-written rules are `.agents/rules/*.md`. Numbered prefixes keep always-on project rules first (`00`, `50`, `55`) and glob rules after. Performance rules are `60-perf-web`, `61-perf-realtime`, `62-perf-server`, `63-perf-game-loops`, and `64-perf-assets`. Each file has frontmatter:
 
 ```yaml
 ---

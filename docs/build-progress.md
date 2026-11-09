@@ -6013,3 +6013,23 @@ Checks (this pass):
 - Playwright / E2E — not run (prohibited)
 
 Not verified: Stockfish on a real phone, a full party chess round, or projector readability across a room.
+
+## 9 November 2026 — Phase 1 agent performance and UX rules
+
+Status: rules and cheap gates on a branch from master after PR16. No folder moves, no deploy, no Playwright.
+
+- Source of truth remains `.agents/rules`. New always-on workflow/perf contract: `55-agent-workflow.md`. File-scoped rules: `60-perf-web.md`, `61-perf-realtime.md`, `62-perf-server.md`, `63-perf-game-loops.md`, `64-perf-assets.md`. Run `npm run agents:sync` so `AGENTS.md` / `CLAUDE.md` / generated `.cursor/rules/*.mdc` update. Do not hand-edit generated copies.
+- Enforcement: ESLint forbids `three` / `stockfish` imports outside kart (and `Date.now()` in `packages/shared/src`). `npm run build` runs `scripts/check-bundle-budget.mjs` against `scripts/web-bundle-budget.json`. PR template asks for a perf note. `budget:web` is the same check standalone.
+- Existing hot-path patterns cited: `openRoomSocket` patches and reconnect jitter, `PartyRoom` snapshotParts / kart ticks / 30ms broadcast window, `KartInputBuffer`, `KartCanvas` rAF refs, `preloadImages`, route-level `lazy()`.
+
+### Commands and results
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 27 existing react-refresh warnings
+- `node --experimental-strip-types --test scripts/check-bundle-budget.test.ts` — 3 passed
+- `npm run build` — kart-solo + web client built; secrets scan passed; `budget:web` on `apps/web/dist/client` measured entry JS gzip 216337, entry CSS 20634, total JS 1375446, largest `assets/kart-track-*.js` 496695; budgets set with ~20% headroom
+- Playwright / E2E — not run (prohibited)
+
+### Exact next stage
+
+Phase 2 (separate PR) may reorganise folders. Update globs in `.agents/rules` then, not in this change. Do not start that automatically.
