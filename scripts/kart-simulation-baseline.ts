@@ -1,5 +1,8 @@
 import { performance } from "node:perf_hooks";
-import { createKartRace, reduceKartTimeline } from "../packages/shared/src/kart/kart.ts";
+import {
+  createKartRace,
+  reduceKartTimeline,
+} from "../packages/shared/src/kart/kart.ts";
 
 // Pure simulation only: no sockets, SQLite, Worker runtime or physical renderer.
 for (const size of [50, 80]) {

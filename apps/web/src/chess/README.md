@@ -7,6 +7,7 @@
 ## Components Implemented
 
 ### Core Game Components
+
 - **chess-game.tsx** - Main phone UI controller
   - Server-authoritative state (never sets FEN/clock/result)
   - Engine lifecycle: one worker per active phone
@@ -40,6 +41,7 @@
 ## Tests Implemented
 
 ### Component Tests (chess-game.test.tsx)
+
 - ✅ Stale bestmove rejection (positionRevision mismatch)
 - ✅ Search generation tracking
 - ✅ Promotion trigger
@@ -50,6 +52,7 @@
 - ✅ Disabled states
 
 ### Smoke Tests (stockfish-engine.smoke.test.ts)
+
 - ✅ Real WASM binary UCI handshake
 - ✅ Legal move generation (chess.js validation)
 - ✅ 1425 Elo acceptance
@@ -59,6 +62,7 @@
 - ✅ Movetime respect
 
 Run smoke tests:
+
 ```bash
 npx vitest run --browser.enabled --browser.name=chromium stockfish-engine.smoke.test.ts
 ```
@@ -66,7 +70,9 @@ npx vitest run --browser.enabled --browser.name=chromium stockfish-engine.smoke.
 ## Protocol Needs (see FRONTEND_PROTOCOL_NEEDS.md)
 
 ### Blocking for Clock Interpolation
+
 Current `ChessGuestSnapshot` lacks:
+
 ```typescript
 serverTime: number,        // Server timestamp when snapshot generated
 lastMoveAt: number,        // When last move occurred
@@ -74,22 +80,27 @@ paused: boolean           // Is game currently paused?
 ```
 
 Without this, clocks will:
+
 - Drift from network latency
 - Show incorrect time on reconnect
 - Not handle pause correctly
 
 ### Room Transport
+
 Need verification of command envelope format for:
+
 - `chess-move` commands
 - `chess-resign` commands
 
 Currently assumes standard room transport mechanism.
 
 ### Readiness Commands (Optional)
+
 No engine readiness reporting to server. Engine failures handled client-side only.
 Recommend defer to post-MVP unless host visibility critical.
 
 ## Files Modified
+
 - `apps/web/src/chess/chess-game.tsx` (new)
 - `apps/web/src/chess/promotion-chooser.tsx` (new)
 - `apps/web/src/chess/chess-board.tsx` (updated)
@@ -99,6 +110,7 @@ Recommend defer to post-MVP unless host visibility critical.
 - `FRONTEND_PROTOCOL_NEEDS.md` (new - root level docs)
 
 ## Files NOT Modified (Backend Ownership)
+
 - ❌ `packages/shared/src/chess/chess-schemas.ts`
 - ❌ `apps/api/**`
 - ❌ `package.json` / `package-lock.json`

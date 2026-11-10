@@ -112,7 +112,11 @@ export function isTrollPayload(payload: string): boolean {
 }
 
 export function isRoundJobPayload(payload: string): boolean {
-  return isTrollPayload(payload) || payload === "kart-tick" || payload.startsWith("chess-clock:");
+  return (
+    isTrollPayload(payload) ||
+    payload === "kart-tick" ||
+    payload.startsWith("chess-clock:")
+  );
 }
 
 export type RoundPlugin = {

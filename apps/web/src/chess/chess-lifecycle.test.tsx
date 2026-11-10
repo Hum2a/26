@@ -6,7 +6,7 @@ import { WorkerMock } from "./worker-mock";
  * Worker lifecycle and stale search cancellation tests.
  * Tests the REAL imported worker adapter with faithful Worker mock.
  * Mock simulates UCI protocol without WASM; tests verify adapter behavior.
- * 
+ *
  * @vitest-environment jsdom
  */
 
@@ -56,7 +56,7 @@ describe("Chess Engine Lifecycle", () => {
 
     // Callback should fire with bestmove
     expect(onBestMove).toHaveBeenCalledWith("e7", "e5", undefined);
-    
+
     engine.terminate();
   });
 
@@ -68,7 +68,7 @@ describe("Chess Engine Lifecycle", () => {
 
     // Second init should reject (already initialized)
     await expect(engine.initialize()).rejects.toThrow(/already/i);
-    
+
     engine.terminate();
   });
 
@@ -90,7 +90,7 @@ describe("Chess Engine Lifecycle", () => {
 
     // Callback may fire; component must validate FEN/revision
     // (This tests that adapter doesn't crash on position changes)
-    
+
     engine.terminate();
   });
 
@@ -100,7 +100,7 @@ describe("Chess Engine Lifecycle", () => {
 
     await engine.initialize();
     expect(engine.isReady()).toBe(true);
-    
+
     engine.setPosition("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
     engine.go(2000);
 

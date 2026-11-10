@@ -20,12 +20,14 @@ export function ChessClocks({ snapshot }: { snapshot: ChessGuestSnapshot }) {
   const elapsed = snapshot.paused ? 0 : Math.max(0, serverNow - snapshot.lastMoveAt);
 
   // Subtract elapsed from the active clock
-  const playerTime = snapshot.sideToMove === snapshot.playerColor
-    ? Math.max(0, snapshot.playerTimeMs - elapsed)
-    : snapshot.playerTimeMs;
-  const botTime = snapshot.sideToMove === snapshot.botColor
-    ? Math.max(0, snapshot.botTimeMs - elapsed)
-    : snapshot.botTimeMs;
+  const playerTime =
+    snapshot.sideToMove === snapshot.playerColor
+      ? Math.max(0, snapshot.playerTimeMs - elapsed)
+      : snapshot.playerTimeMs;
+  const botTime =
+    snapshot.sideToMove === snapshot.botColor
+      ? Math.max(0, snapshot.botTimeMs - elapsed)
+      : snapshot.botTimeMs;
 
   const formatTime = (ms: number) => {
     const seconds = Math.floor(ms / 1000);

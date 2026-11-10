@@ -168,7 +168,10 @@ test("solo practice fits phones and landscape, with held touch input and clean r
       await expect(drift).toHaveAttribute("aria-pressed", "true");
       await expect(thumbPad).toHaveAttribute("data-pedal", "gas");
       // Lifting both thumbs releases the drift and the throttle.
-      await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchEnd",
+        touchPoints: [],
+      });
       await expect(drift).toHaveAttribute("aria-pressed", "false");
       await expect(thumbPad).toHaveAttribute("data-pedal", "none");
       // A fresh touch pulled down past its landing point brakes.

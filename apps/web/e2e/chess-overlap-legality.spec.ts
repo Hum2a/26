@@ -6,7 +6,9 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Chess WASM Overlap with Legality", () => {
-  test("two rapid searches: each bestmove legal for its captured FEN", async ({ page }) => {
+  test("two rapid searches: each bestmove legal for its captured FEN", async ({
+    page,
+  }) => {
     await page.goto("/");
 
     const result = await page.evaluate(async () => {
@@ -37,7 +39,7 @@ test.describe("Chess WASM Overlap with Legality", () => {
           // Validate with chess.js
           const game = new Chess(capturedFen);
           const expectedTurn = game.turn();
-          
+
           const moveResult = game.move({
             from,
             to,

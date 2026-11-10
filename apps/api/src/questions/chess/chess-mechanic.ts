@@ -90,9 +90,9 @@ export function executeChessMove(
 
   // Validate position revision BEFORE either branch (human or bot)
   if (command.positionRevision !== game.positionRevision) {
-    return { 
-      success: false, 
-      error: `Position revision mismatch: expected ${game.positionRevision}, got ${command.positionRevision}` 
+    return {
+      success: false,
+      error: `Position revision mismatch: expected ${game.positionRevision}, got ${command.positionRevision}`,
     };
   }
 
@@ -314,8 +314,8 @@ export function projectChessGameSnapshot(
  */
 export function pauseChessClocks(sql: SqlStorage, store: GameStore, now: number): void {
   const games = sql
-    .exec<{ 
-      game_id: string; 
+    .exec<{
+      game_id: string;
       position_revision: number;
       last_move_at: number;
       side_to_move: string;
@@ -330,12 +330,12 @@ export function pauseChessClocks(sql: SqlStorage, store: GameStore, now: number)
   for (const game of games) {
     // Settle elapsed time at pause moment
     const elapsed = now - game.last_move_at;
-    const newPlayerTime = game.side_to_move === "white" 
-      ? game.player_time_ms - elapsed 
-      : game.player_time_ms;
-    const newBotTime = game.side_to_move === "black" 
-      ? game.bot_time_ms - elapsed 
-      : game.bot_time_ms;
+    const newPlayerTime =
+      game.side_to_move === "white"
+        ? game.player_time_ms - elapsed
+        : game.player_time_ms;
+    const newBotTime =
+      game.side_to_move === "black" ? game.bot_time_ms - elapsed : game.bot_time_ms;
 
     // Update: freeze clocks, increment revision, set last_move_at to pause time
     sql.exec(
@@ -380,7 +380,12 @@ export function resumeChessClocks(
   now: number,
 ): void {
   const games = sql
-    .exec<{ game_id: string; side_to_move: string; player_time_ms: number; bot_time_ms: number }>(
+    .exec<{
+      game_id: string;
+      side_to_move: string;
+      player_time_ms: number;
+      bot_time_ms: number;
+    }>(
       `SELECT game_id, side_to_move, player_time_ms, bot_time_ms FROM chess_game WHERE status = 'in-progress'`,
     )
     .toArray();
@@ -397,12 +402,16 @@ export function resumeChessClocks(
 
     // Use frozen clock values from pause
     const remainingTime =
-      game.side_to_move === "white"
-        ? game.player_time_ms
-        : game.bot_time_ms;
+      game.side_to_move === "white" ? game.player_time_ms : game.bot_time_ms;
 
     if (remainingTime > 0) {
-      scheduleClockAlarm(store, game.game_id, now + remainingTime, room.phaseGeneration, room.scopeGeneration);
+      scheduleClockAlarm(
+        store,
+        game.game_id,
+        now + remainingTime,
+        room.phaseGeneration,
+        room.scopeGeneration,
+      );
     } else {
       // Clock already expired during pause - flag immediately
       handleChessClockAlarm(sql, store, game.game_id, now);
@@ -487,7 +496,9 @@ interface ChessGameRow {
 }
 
 function loadGame(sql: SqlStorage, gameId: string): ChessPlayerGame | null {
-  const row = sql.exec(`SELECT * FROM chess_game WHERE game_id = ?`, gameId).toArray()[0] as unknown as ChessGameRow | undefined;
+  const row = sql
+    .exec(`SELECT * FROM chess_game WHERE game_id = ?`, gameId)
+    .toArray()[0] as unknown as ChessGameRow | undefined;
 
   if (!row) return null;
 
@@ -505,7 +516,18 @@ function loadGame(sql: SqlStorage, gameId: string): ChessPlayerGame | null {
     sideToMove: row.side_to_move as "white" | "black",
     plyCount: row.ply_count,
     positionRevision: row.position_revision,
-    status: row.status as "waiting" | "in-progress" | "checkmate" | "stalemate" | "insufficient-material" | "threefold-repetition" | "fifty-move-rule" | "timeout" | "timeout-draw" | "resignation" | "aborted",
+    status: row.status as
+      | "waiting"
+      | "in-progress"
+      | "checkmate"
+      | "stalemate"
+      | "insufficient-material"
+      | "threefold-repetition"
+      | "fifty-move-rule"
+      | "timeout"
+      | "timeout-draw"
+      | "resignation"
+      | "aborted",
     winner: (row.winner as "player" | "bot" | "draw" | null) ?? undefined,
     terminatedAt: row.terminated_at ?? undefined,
     terminationReason: row.termination_reason ?? undefined,

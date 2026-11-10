@@ -479,11 +479,9 @@ describe("release.ts freeze survives a git bypass", () => {
   ] as const) {
     it(`still refuses the party freeze with ${label}`, () => {
       for (const command of ["deploy", "full"]) {
-        const result = runRelease(
-          [command, "--env", "production", ...flag],
-          bypass,
-          { nowMs: insideFreeze },
-        );
+        const result = runRelease([command, "--env", "production", ...flag], bypass, {
+          nowMs: insideFreeze,
+        });
         assert.equal(result.status, 1, command);
         assert.match(result.stderr, /frozen for the party weekend/);
         assert.equal(loggedCommands(result.log, "NPM").length, 0);

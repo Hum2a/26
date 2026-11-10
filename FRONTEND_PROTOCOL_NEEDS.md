@@ -6,6 +6,7 @@
 ## Current Implementation Status
 
 Frontend implements:
+
 - ✅ Chess game UI with board and engine integration
 - ✅ Promotion chooser (all 4 pieces including underpromotion)
 - ✅ Search generation tracking to prevent stale bestmoves
@@ -16,6 +17,7 @@ Frontend implements:
 ## Missing from ChessGuestSnapshot for Clock Interpolation
 
 **Current schema** (chess-schemas.ts lines 105-125):
+
 ```typescript
 export const chessGuestSnapshotSchema = z.object({
   gameId: z.string(),
@@ -36,6 +38,7 @@ export const chessGuestSnapshotSchema = z.object({
 ```
 
 **MISSING for correct clock interpolation:**
+
 ```typescript
 // Need ONE of these approaches:
 
@@ -43,7 +46,7 @@ export const chessGuestSnapshotSchema = z.object({
 serverTime: z.number().int(), // Timestamp when snapshot was generated
 lastMoveAt: z.number().int(), // Timestamp of last move (for elapsed calculation)
 
-// Option B: Pre-calculated elapsed approach  
+// Option B: Pre-calculated elapsed approach
 elapsedSinceLastMove: z.number().int().min(0), // Ms elapsed since last move
 
 // Also need:
@@ -51,6 +54,7 @@ paused: z.boolean(), // Is game currently paused? (clocks frozen)
 ```
 
 **Problem without this:** Client cannot accurately interpolate running clocks. Using wall-clock time from snapshot receipt will:
+
 - Drift due to network latency
 - Show incorrect time on reconnection
 - Not handle pause/resume correctly
@@ -60,6 +64,7 @@ paused: z.boolean(), // Is game currently paused? (clocks frozen)
 ## Missing Readiness Command Protocol
 
 **Engine states that need backend handling:**
+
 1. Engine initialization failed → Guest needs UI showing they cannot play
 2. Engine ready → Allow round start
 3. Engine error during game → Need recovery or abort
@@ -67,6 +72,7 @@ paused: z.boolean(), // Is game currently paused? (clocks frozen)
 **Potential approaches:**
 
 ### Option 1: Client-side readiness only (no server command)
+
 - Frontend shows loading/error states locally
 - Server starts round regardless of client readiness
 - Games where client can't load engine just timeout naturally
@@ -74,6 +80,7 @@ paused: z.boolean(), // Is game currently paused? (clocks frozen)
 - **Con:** Poor UX for guests with load failures
 
 ### Option 2: Explicit readiness reporting (needs backend)
+
 ```typescript
 // New command schema needed:
 {
@@ -83,6 +90,7 @@ paused: z.boolean(), // Is game currently paused? (clocks frozen)
   error?: string // If ready=false
 }
 ```
+
 Host view could show: "23/80 guests ready, 2 loading, 1 failed"
 
 **Current implementation:** Frontend handles engine state locally, no server readiness command. Recommend Option 1 for initial release unless readiness visibility is critical for host.
@@ -90,12 +98,13 @@ Host view could show: "23/80 guests ready, 2 loading, 1 failed"
 ## Room Transport Envelope
 
 **Need to verify:** Actual command sending mechanism. Is it:
+
 ```typescript
 // Direct command?
 socket.send({ kind: "chess-move", gameId, from, to, positionRevision, promotion? })
 
 // Or wrapped in envelope?
-socket.send({ 
+socket.send({
   requestId: generateId(),
   command: { kind: "chess-move", gameId, from, to, positionRevision, promotion? }
 })
@@ -112,6 +121,7 @@ socket.send({
 ## Stage/Control Snapshots
 
 **Confirmed structure** (chess-schemas.ts lines 127-184):
+
 ```typescript
 ChessStageSnapshot: {
   totalGames: number,
@@ -133,6 +143,7 @@ ChessControlSnapshot: extends ChessStageSnapshot + {
 **Confirmed:** Backend increments positionRevision on pause/resume (per report).
 
 **Frontend handling:**
+
 ```typescript
 // On snapshot update:
 if (snapshot.positionRevision !== searchState.positionRevision) {
@@ -148,14 +159,17 @@ if (snapshot.positionRevision !== searchState.positionRevision) {
 ## Summary of Integration Needs
 
 ### Blocking for accurate clocks:
+
 1. **Add to ChessGuestSnapshot:** `serverTime` + `lastMoveAt` (or `elapsedSinceLastMove`)
 2. **Add to ChessGuestSnapshot:** `paused` boolean
 
 ### Optional enhancements:
+
 3. **Readiness command:** `chess-ready` for engine load tracking (recommend defer to post-MVP)
 4. **Room transport:** Verify command envelope format matches existing room patterns
 
 ### Already handled by backend (per report):
+
 - ✅ Move command parsing (`chess-move`, `chess-resign`)
 - ✅ Position revision increment on pause
 - ✅ Stage/control aggregate snapshots

@@ -39,6 +39,7 @@ Chess round uses Stockfish 19 compiled to WebAssembly, distributed via npm packa
 The full GPL-3.0 license text is available in `node_modules/stockfish/Copying.txt`. Stockfish is copyright The Stockfish developers.
 
 Per GPL-3.0 requirements:
+
 - Source code is available at the repositories above
 - This distribution includes the compiled WebAssembly binary and JavaScript wrapper unmodified from the npm package
 - Recipients have the same rights to use, modify, and distribute under GPL-3.0-or-later

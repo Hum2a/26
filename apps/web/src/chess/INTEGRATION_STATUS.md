@@ -8,6 +8,7 @@
 ## ✅ Completed Frontend Implementation
 
 ### Core Components
+
 - `chess-game.tsx` - Main game controller with engine lifecycle management
 - `promotion-chooser.tsx` - Underpromotion modal (Q/R/B/N)
 - `chess-board.tsx` - Interactive FEN board with accessible controls
@@ -15,15 +16,18 @@
 - `stockfish-worker.ts` - Web Worker wrapper (already existed)
 
 ### Tests
+
 - `chess-game.test.tsx` - Component tests (11 passing, 1 type issue)
 - `stockfish-engine.smoke.test.ts` - Real WASM browser tests (browser mode needed)
 
 ### Documentation
+
 - `README.md` - Implementation overview and integration guide
 - `PROTOCOL_REQUIREMENTS.md` - Detailed protocol gaps and needs
 - `INTEGRATION_STATUS.md` - This file
 
 ### Features Implemented
+
 ✅ Stockfish 19 lite single-threaded WASM engine  
 ✅ UCI protocol (uciok, setoption, isready, position, go, stop)  
 ✅ 1425 Elo constraint  
@@ -36,11 +40,12 @@
 ✅ Responsive design (320px+)  
 ✅ Reduced motion support  
 ✅ Theme integration  
-✅ Watchdog timers for engine hangs  
+✅ Watchdog timers for engine hangs
 
 ## ⚠️ Schema Discrepancy Found
 
 **Wire contract doc** (`docs/chess-backend-wire-contract.md`) shows:
+
 ```typescript
 ChessGuestSnapshot {
   positionRevision: number,  // ✅ In doc
@@ -50,6 +55,7 @@ ChessGuestSnapshot {
 ```
 
 **Actual schema** (`packages/shared/src/chess/chess-schemas.ts:110`):
+
 ```typescript
 export const chessGuestSnapshotSchema = z.object({
   gameId: z.string(),
@@ -77,20 +83,22 @@ export const chessGuestSnapshotSchema = z.object({
 ```typescript
 export const chessGuestSnapshotSchema = z.object({
   // ... existing fields ...
-  
+
   // ADD THESE:
-  positionRevision: z.number().int().nonnegative(),  // For command validation
-  lastMoveAt: z.number().int(),                      // For clock interpolation
-  paused: z.boolean(),                               // For pause handling
+  positionRevision: z.number().int().nonnegative(), // For command validation
+  lastMoveAt: z.number().int(), // For clock interpolation
+  paused: z.boolean(), // For pause handling
 });
 ```
 
 **Why needed:**
+
 1. **positionRevision** - Frontend must echo this in `chess-move` commands (already required in command schema)
 2. **lastMoveAt** - Frontend needs this to interpolate running clocks without drift
 3. **paused** - Frontend needs this to stop clock countdown during pause
 
 **Current impact:**
+
 - Frontend cannot capture positionRevision from snapshot (must track separately)
 - Frontend cannot smoothly interpolate clocks
 - Clocks will appear static between snapshots
@@ -103,9 +111,11 @@ export const chessGuestSnapshotSchema = z.object({
 **Status:** Route exists per wire contract, but confirmation needed
 
 **Wire contract says:**
+
 > Bot moves use SAME `chess-move` command. Server infers side from `sideToMove`.
 
 **Frontend ready to send:**
+
 ```typescript
 {
   kind: "chess-move",
@@ -118,6 +128,7 @@ export const chessGuestSnapshotSchema = z.object({
 ```
 
 **Unknown:**
+
 - Exact room transport envelope (how to send command via WebSocket)
 - Whether guest credential/auth is required for bot moves
 - Error response format
@@ -129,16 +140,18 @@ export const chessGuestSnapshotSchema = z.object({
 **Status:** Fields missing from schema
 
 **Frontend needs:**
-```typescript
-const elapsed = snapshot.paused 
-  ? 0 
-  : (Date.now() - serverTime) + (serverTime - snapshot.lastMoveAt);
 
-const currentPlayerTime = snapshot.playerTimeMs - 
-  (snapshot.sideToMove === 'white' ? elapsed : 0);
+```typescript
+const elapsed = snapshot.paused
+  ? 0
+  : Date.now() - serverTime + (serverTime - snapshot.lastMoveAt);
+
+const currentPlayerTime =
+  snapshot.playerTimeMs - (snapshot.sideToMove === "white" ? elapsed : 0);
 ```
 
 **Current workaround:**
+
 - Clocks show snapshot values only
 - No countdown animation
 - Acceptable but poor UX
@@ -148,6 +161,7 @@ const currentPlayerTime = snapshot.playerTimeMs -
 **Status:** Format unknown
 
 **Need to know:**
+
 - How to send commands via existing room WebSocket
 - Request/response envelope format
 - Error handling mechanism
@@ -162,6 +176,7 @@ const currentPlayerTime = snapshot.playerTimeMs -
 **Current error:** `Worker is not defined` (tests running in Node)
 
 **Fix needed:**
+
 ```bash
 # Tests require browser mode for WASM + Web Worker
 npx vitest run src/chess/stockfish-engine.smoke.test.ts \
@@ -175,6 +190,7 @@ npx vitest run src/chess/stockfish-engine.smoke.test.ts \
 ## ✅ Independent Testing Completed
 
 ### Component Tests
+
 - ✅ Basic rendering
 - ✅ Game-over states
 - ✅ Promotion chooser trigger
@@ -186,6 +202,7 @@ npx vitest run src/chess/stockfish-engine.smoke.test.ts \
 - ✅ Error handling
 
 ### Smoke Tests (Verified via Playwright)
+
 - ✅ Engine initialization (~110ms cold start)
 - ✅ UCI handshake (uciok)
 - ✅ Elo constraint (1425)
@@ -197,6 +214,7 @@ npx vitest run src/chess/stockfish-engine.smoke.test.ts \
 ## 📋 Remaining Work
 
 ### Frontend (This Branch)
+
 1. ⚠️ Fix component test type errors (mock types, snapshot schema mismatch)
 2. ⚠️ Configure browser test mode for smoke tests
 3. 🔲 Implement projector aggregate view (`chess-projector.tsx`)
@@ -206,6 +224,7 @@ npx vitest run src/chess/stockfish-engine.smoke.test.ts \
 7. 🔲 Integration tests with mock server
 
 ### Backend (Separate PR)
+
 1. 🚧 Add `positionRevision`, `lastMoveAt`, `paused` to `ChessGuestSnapshot` schema
 2. 🚧 Document exact WebSocket command envelope format
 3. 🚧 Verify bot move submission works via `chess-move` command
@@ -213,6 +232,7 @@ npx vitest run src/chess/stockfish-engine.smoke.test.ts \
 5. 🚧 Finish timeout tests (24/26 passing currently)
 
 ### Integration (After Both Complete)
+
 1. 🔲 Connect frontend WebSocket to room
 2. 🔲 Test full command roundtrip
 3. 🔲 Test clock interpolation
@@ -223,13 +243,14 @@ npx vitest run src/chess/stockfish-engine.smoke.test.ts \
 ## 📝 Key Implementation Notes
 
 ### Search Generation Guard
+
 ```typescript
 // Captured AT DISPATCH - not when bestmove returns
 searchStateRef.current = {
   generation: searchGenerationRef.current,
-  positionRevision: snapshot.positionRevision,  // When available
+  positionRevision: snapshot.positionRevision, // When available
   fen: snapshot.fen,
-  startedAt: Date.now()
+  startedAt: Date.now(),
 };
 
 // Later, when bestmove arrives:
@@ -242,6 +263,7 @@ if (searchState.fen !== snapshot.fen) {
 ```
 
 ### Engine Lifecycle
+
 - Single worker per game
 - Created on component mount
 - Terminated on unmount
@@ -249,6 +271,7 @@ if (searchState.fen !== snapshot.fen) {
 - Error callbacks for failed init
 
 ### Casual Trust Model
+
 - Client generates bot moves
 - Server validates legality via chess.js
 - Server validates positionRevision matches
@@ -258,11 +281,13 @@ if (searchState.fen !== snapshot.fen) {
 ## 🔗 Related Files
 
 ### Owned by Frontend (This Branch)
+
 - `apps/web/src/chess/**/*`
 - `apps/web/src/chess/*.test.tsx`
 - Documentation in `apps/web/src/chess/`
 
 ### Backend-Owned (Do Not Modify)
+
 - `packages/shared/src/chess/chess-schemas.ts`
 - `apps/api/src/questions/chess/chess-mechanic.ts`
 - `apps/api/src/questions/chess/chess-coordinator.ts`
@@ -281,6 +306,7 @@ E2E:              Not started
 ## 🎯 Definition of Done
 
 **Frontend branch ready for PR when:**
+
 - ✅ Core game component implemented
 - ✅ Engine lifecycle managed
 - ✅ Tests written (type errors acceptable until schema fixed)
@@ -290,6 +316,7 @@ E2E:              Not started
 - 🔲 Browser tests passing
 
 **Integration ready when:**
+
 - Backend adds missing schema fields
 - Backend documents WebSocket format
 - Backend bot submission route verified working
@@ -299,6 +326,7 @@ E2E:              Not started
 ## 🚀 How to Test (Current State)
 
 ### Run Component Tests
+
 ```bash
 cd apps/web
 npx vitest run src/chess/chess-game.test.tsx
@@ -306,6 +334,7 @@ npx vitest run src/chess/chess-game.test.tsx
 ```
 
 ### Run Smoke Tests (Browser Mode)
+
 ```bash
 cd apps/web
 npx vitest run src/chess/stockfish-engine.smoke.test.ts \
@@ -316,22 +345,23 @@ npx vitest run src/chess/stockfish-engine.smoke.test.ts \
 ```
 
 ### Manual Testing
+
 ```typescript
 // In browser console or standalone test page:
-import { StockfishEngine } from './chess/stockfish-worker';
+import { StockfishEngine } from "./chess/stockfish-worker";
 
 const engine = new StockfishEngine({
   elo: 1425,
   onBestMove: (from, to, promotion) => {
-    console.log('Bot move:', from, to, promotion);
+    console.log("Bot move:", from, to, promotion);
   },
-  onError: console.error
+  onError: console.error,
 });
 
 await engine.initialize(); // ~110ms
-console.log('Ready:', engine.isReady());
+console.log("Ready:", engine.isReady());
 
-engine.setPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+engine.setPosition("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 engine.go(1000); // Bot thinks for 1000ms
 ```
 
@@ -347,7 +377,7 @@ engine.go(1000); // Bot thinks for 1000ms
 
 **Frontend work complete:** 2026-11-08 23:04 UTC  
 **Backend status:** ~75% (24/26 tests passing, round-init/timeout in progress)  
-**Integration blocked until:** Backend schema update + transport format documented  
+**Integration blocked until:** Backend schema update + transport format documented
 
 ---
 

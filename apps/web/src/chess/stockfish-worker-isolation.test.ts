@@ -26,7 +26,9 @@ describe("StockfishEngine Worker isolation", () => {
         }, 10);
       } else if (data.startsWith("setoption name UCI_LimitStrength")) {
         setTimeout(() => {
-          this.onmessage?.({ data: "info string UCI_LimitStrength set" } as MessageEvent);
+          this.onmessage?.({
+            data: "info string UCI_LimitStrength set",
+          } as MessageEvent);
           this.onmessage?.({ data: "readyok" } as MessageEvent);
         }, 10);
       } else if (data.startsWith("setoption name UCI_Elo")) {

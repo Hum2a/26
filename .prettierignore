@@ -21,8 +21,10 @@ blob-report
 .github/skills
 # Vendored Draco decoder, kept byte-for-byte with upstream.
 apps/kart-solo/public/draco
+# Vendored Stockfish engine build, kept byte-for-byte with upstream.
+apps/web/public/chess-engine/*.js
 # Generated files: regenerate them rather than reformat.
-apps/api/src/questions/wordle-dictionary/validity-words.ts
+apps/api/src/questions/wordle/dictionary/validity-words.ts
 docs/loc-report.md
 scripts/env-files.d.ts
 

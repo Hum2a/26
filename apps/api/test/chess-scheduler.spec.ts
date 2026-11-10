@@ -9,7 +9,9 @@ import type { ChessGuestSnapshot, ChessStageSnapshot } from "@26/shared";
  * and time advancement (UPDATE due_at) to verify silent timeout without guest commands.
  */
 
-async function makeDue(stub: ReturnType<typeof env.PARTY_ROOM.getByName>): Promise<void> {
+async function makeDue(
+  stub: ReturnType<typeof env.PARTY_ROOM.getByName>,
+): Promise<void> {
   await runInDurableObject(stub, async (_instance, state) => {
     state.storage.sql.exec(
       `UPDATE schedule_job SET due_at = ? WHERE status = 'pending' AND payload LIKE 'chess-clock:%'`,
@@ -61,7 +63,8 @@ it("real DO alarm dispatch: fires chess-clock jobs, flags games silently, scores
     });
 
     // Initialize chess round
-    const { createChessRound } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { createChessRound } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const question = {
       kind: "chess" as const,
       id: "test-chess",
@@ -81,7 +84,9 @@ it("real DO alarm dispatch: fires chess-clock jobs, flags games silently, scores
   // Verify chess round initialized and alarm armed
   await runInDurableObject(stub, async (_instance, state) => {
     const games = state.storage.sql
-      .exec<{ game_id: string; status: string }>("SELECT game_id, status FROM chess_game")
+      .exec<{ game_id: string; status: string }>(
+        "SELECT game_id, status FROM chess_game",
+      )
       .toArray();
     expect(games).toHaveLength(2);
     expect(games.every((g) => g.status === "in-progress")).toBe(true);
@@ -201,7 +206,8 @@ it("paused chess: clocks cancel and revision increments (prevents stale moves)",
       questionSetVersion: "test-chess",
     });
 
-    const { createChessRound } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { createChessRound } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const question = {
       kind: "chess" as const,
       id: "test-chess",
@@ -223,7 +229,8 @@ it("paused chess: clocks cancel and revision increments (prevents stale moves)",
   // Directly pause chess clocks (bypassing questionFor lookup)
   await runInDurableObject(stub, async (_instance, state) => {
     const { createSqlStore } = await import("../src/room/sql-store.ts");
-    const { pauseChessClocks } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { pauseChessClocks } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
 
@@ -308,7 +315,8 @@ it("80-player server simulation: real PartyRoom round, scheduler expiry, exactly
       questionSetVersion: "test-chess-80",
     });
 
-    const { createChessRound } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { createChessRound } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const question = {
       kind: "chess" as const,
       id: "test-chess-80",
@@ -336,7 +344,9 @@ it("80-player server simulation: real PartyRoom round, scheduler expiry, exactly
 
   await runInDurableObject(stub, async (_instance, state) => {
     const games = state.storage.sql
-      .exec<{ game_id: string; status: string; scored: number }>("SELECT game_id, status, scored FROM chess_game")
+      .exec<{ game_id: string; status: string; scored: number }>(
+        "SELECT game_id, status, scored FROM chess_game",
+      )
       .toArray();
     expect(games).toHaveLength(80);
     expect(games.every((g) => g.status === "in-progress")).toBe(true);
@@ -355,7 +365,8 @@ it("80-player server simulation: real PartyRoom round, scheduler expiry, exactly
     expect(armed).not.toBeNull();
 
     // Measure snapshot payload bytes (before expiry)
-    const { projectChessGameSnapshot } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { projectChessGameSnapshot } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const { createSqlStore } = await import("../src/room/sql-store.ts");
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
@@ -372,17 +383,30 @@ it("80-player server simulation: real PartyRoom round, scheduler expiry, exactly
 
   // Privacy: guest A should not see guest B's board
   await runInDurableObject(stub, async (_instance, state) => {
-    const { projectChessGameSnapshot } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { projectChessGameSnapshot } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const { createSqlStore } = await import("../src/room/sql-store.ts");
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
 
-    const playerASnapshot = projectChessGameSnapshot(sql, store, "guest", playerIds[0]!);
-    const playerBSnapshot = projectChessGameSnapshot(sql, store, "guest", playerIds[1]!);
+    const playerASnapshot = projectChessGameSnapshot(
+      sql,
+      store,
+      "guest",
+      playerIds[0]!,
+    );
+    const playerBSnapshot = projectChessGameSnapshot(
+      sql,
+      store,
+      "guest",
+      playerIds[1]!,
+    );
 
     expect(playerASnapshot).toBeDefined();
     expect(playerBSnapshot).toBeDefined();
-    expect((playerASnapshot as ChessGuestSnapshot).gameId).not.toBe((playerBSnapshot as ChessGuestSnapshot).gameId);
+    expect((playerASnapshot as ChessGuestSnapshot).gameId).not.toBe(
+      (playerBSnapshot as ChessGuestSnapshot).gameId,
+    );
     expect((playerASnapshot as ChessGuestSnapshot).fen).toBeDefined();
     expect((playerBSnapshot as ChessGuestSnapshot).fen).toBeDefined();
     // Each guest sees only their own game
@@ -390,12 +414,17 @@ it("80-player server simulation: real PartyRoom round, scheduler expiry, exactly
 
   // Privacy: stage should not expose individual boards
   await runInDurableObject(stub, async (_instance, state) => {
-    const { projectChessGameSnapshot } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { projectChessGameSnapshot } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const { createSqlStore } = await import("../src/room/sql-store.ts");
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
 
-    const stageSnapshot = projectChessGameSnapshot(sql, store, "stage") as ChessStageSnapshot;
+    const stageSnapshot = projectChessGameSnapshot(
+      sql,
+      store,
+      "stage",
+    ) as ChessStageSnapshot;
     expect(stageSnapshot).toBeDefined();
     expect(stageSnapshot.totalGames).toBe(80);
     expect(stageSnapshot.inProgress).toBe(80);
@@ -431,7 +460,9 @@ it("80-player server simulation: real PartyRoom round, scheduler expiry, exactly
     expect(games).toHaveLength(80);
     for (const game of games) {
       expect(game.status).not.toBe("in-progress"); // Terminal
-      expect(game.status).toMatch(/^(timeout|timeout-draw|checkmate|stalemate|resignation|aborted|insufficient-material|threefold-repetition|fifty-move-rule)$/);
+      expect(game.status).toMatch(
+        /^(timeout|timeout-draw|checkmate|stalemate|resignation|aborted|insufficient-material|threefold-repetition|fifty-move-rule)$/,
+      );
       expect(game.scored).toBe(1); // Exactly once
     }
 
@@ -456,12 +487,17 @@ it("80-player server simulation: real PartyRoom round, scheduler expiry, exactly
 
   // Verify aggregate projection shows 80 finished
   await runInDurableObject(stub, async (_instance, state) => {
-    const { projectChessGameSnapshot } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { projectChessGameSnapshot } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const { createSqlStore } = await import("../src/room/sql-store.ts");
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
 
-    const stageSnapshot = projectChessGameSnapshot(sql, store, "stage") as ChessStageSnapshot;
+    const stageSnapshot = projectChessGameSnapshot(
+      sql,
+      store,
+      "stage",
+    ) as ChessStageSnapshot;
     expect(stageSnapshot).toBeDefined();
     expect(stageSnapshot.totalGames).toBe(80);
     expect(stageSnapshot.inProgress).toBe(0);
@@ -499,7 +535,8 @@ it("80-player server simulation: real PartyRoom round, scheduler expiry, exactly
   let finalControlBytes = 0;
 
   await runInDurableObject(stub, async (_instance, state) => {
-    const { projectChessGameSnapshot } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { projectChessGameSnapshot } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const { createSqlStore } = await import("../src/room/sql-store.ts");
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
@@ -567,7 +604,8 @@ it("resume invalidates pre-pause move commands via position revision", async () 
       questionSetVersion: "test-chess",
     });
 
-    const { createChessRound } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { createChessRound } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const question = {
       kind: "chess" as const,
       id: "test-chess-resume",
@@ -597,7 +635,8 @@ it("resume invalidates pre-pause move commands via position revision", async () 
   // Pause chess clocks (increments position revision)
   await runInDurableObject(stub, async (_instance, state) => {
     const { createSqlStore } = await import("../src/room/sql-store.ts");
-    const { pauseChessClocks } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { pauseChessClocks } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
     pauseChessClocks(sql, store, now + 1000);
@@ -615,13 +654,17 @@ it("resume invalidates pre-pause move commands via position revision", async () 
 
   // Simulate stale move command with pre-pause revision (should be rejected)
   await runInDurableObject(stub, async (_instance, state) => {
-    const { executeChessMove } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { executeChessMove } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const { createSqlStore } = await import("../src/room/sql-store.ts");
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
 
     const game = sql
-      .exec<{ game_id: string }>("SELECT game_id FROM chess_game WHERE player_id = ?", dave.playerId)
+      .exec<{ game_id: string }>(
+        "SELECT game_id FROM chess_game WHERE player_id = ?",
+        dave.playerId,
+      )
       .toArray()[0];
 
     // Attempt move with stale revision 0 (pre-pause)
@@ -649,7 +692,8 @@ it("resume invalidates pre-pause move commands via position revision", async () 
   // Resume (does NOT increment revision - only pause does)
   await runInDurableObject(stub, async (_instance, state) => {
     const { createSqlStore } = await import("../src/room/sql-store.ts");
-    const { resumeChessClocks } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { resumeChessClocks } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
     resumeChessClocks(sql, store, now + 3000);
@@ -667,13 +711,17 @@ it("resume invalidates pre-pause move commands via position revision", async () 
 
   // Attempt move with initial revision (still stale - pause incremented it to 1)
   await runInDurableObject(stub, async (_instance, state) => {
-    const { executeChessMove } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { executeChessMove } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const { createSqlStore } = await import("../src/room/sql-store.ts");
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
 
     const game = sql
-      .exec<{ game_id: string }>("SELECT game_id FROM chess_game WHERE player_id = ?", dave.playerId)
+      .exec<{ game_id: string }>(
+        "SELECT game_id FROM chess_game WHERE player_id = ?",
+        dave.playerId,
+      )
       .toArray()[0];
 
     const result = executeChessMove(
@@ -699,13 +747,17 @@ it("resume invalidates pre-pause move commands via position revision", async () 
 
   // Move with current revision (pausedRevision = 1) should succeed
   await runInDurableObject(stub, async (_instance, state) => {
-    const { executeChessMove } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { executeChessMove } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const { createSqlStore } = await import("../src/room/sql-store.ts");
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
 
     const game = sql
-      .exec<{ game_id: string }>("SELECT game_id FROM chess_game WHERE player_id = ?", dave.playerId)
+      .exec<{ game_id: string }>(
+        "SELECT game_id FROM chess_game WHERE player_id = ?",
+        dave.playerId,
+      )
       .toArray()[0];
 
     const result = executeChessMove(
@@ -767,7 +819,8 @@ it("persisted round recovers clocks and position after DO restart", async () => 
       questionSetVersion: "test-chess",
     });
 
-    const { createChessRound } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { createChessRound } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const question = {
       kind: "chess" as const,
       id: "test-chess-recovery",
@@ -785,11 +838,15 @@ it("persisted round recovers clocks and position after DO restart", async () => 
 
     // Make one move
     const game = sql
-      .exec<{ game_id: string }>("SELECT game_id FROM chess_game WHERE player_id = ?", eve.playerId)
+      .exec<{ game_id: string }>(
+        "SELECT game_id FROM chess_game WHERE player_id = ?",
+        eve.playerId,
+      )
       .toArray()[0];
     gameId = game.game_id;
 
-    const { executeChessMove } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { executeChessMove } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const moveResult = executeChessMove(
       sql,
       store,
@@ -817,14 +874,22 @@ it("persisted round recovers clocks and position after DO restart", async () => 
     playerTimeAfterMove = afterMove.player_time_ms;
     botTimeAfterMove = afterMove.bot_time_ms;
 
-    expect(fenAfterMove).not.toBe("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); // Not starting position
+    expect(fenAfterMove).not.toBe(
+      "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    ); // Not starting position
     expect(playerTimeAfterMove).toBeLessThan(60000); // Clock ran
   });
 
   // Simulate DO restart by reading state fresh (alarm already armed, clocks persisted)
   await runInDurableObject(stub, async (_instance, state) => {
     const recovered = state.storage.sql
-      .exec<{ game_id: string; fen: string; player_time_ms: number; bot_time_ms: number; status: string }>(
+      .exec<{
+        game_id: string;
+        fen: string;
+        player_time_ms: number;
+        bot_time_ms: number;
+        status: string;
+      }>(
         "SELECT game_id, fen, player_time_ms, bot_time_ms, status FROM chess_game WHERE game_id = ?",
         gameId,
       )
@@ -854,12 +919,18 @@ it("persisted round recovers clocks and position after DO restart", async () => 
 
   // Verify guest snapshot projects recovered state correctly
   await runInDurableObject(stub, async (_instance, state) => {
-    const { projectChessGameSnapshot } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { projectChessGameSnapshot } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const { createSqlStore } = await import("../src/room/sql-store.ts");
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
 
-    const snapshot = projectChessGameSnapshot(sql, store, "guest", eve.playerId) as ChessGuestSnapshot;
+    const snapshot = projectChessGameSnapshot(
+      sql,
+      store,
+      "guest",
+      eve.playerId,
+    ) as ChessGuestSnapshot;
     expect(snapshot).toBeDefined();
     expect(snapshot.gameId).toBe(gameId);
     expect(snapshot.fen).toBe(fenAfterMove);

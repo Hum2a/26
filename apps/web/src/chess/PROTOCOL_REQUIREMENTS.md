@@ -11,6 +11,7 @@
 **Status:** TBD per backend report, not yet implemented
 
 **Frontend needs:**
+
 ```typescript
 // Bot move must use SAME command as human move
 {
@@ -24,17 +25,20 @@
 ```
 
 **Server must:**
+
 - Accept bot moves via same `chess-move` command
 - Infer side (player vs bot) from `sideToMove` in game state
 - Validate positionRevision matches current game state
 - Reject stale moves (positionRevision mismatch)
 
 **Frontend behavior:**
+
 - Engine generates bestmove on bot's turn
 - Frontend sends `chess-move` command with bot's from/to
 - Server validates and applies, then sends updated snapshot
 
 **Alternative if separate bot route required:**
+
 ```typescript
 {
   kind: "chess-bot-move",  // Different kind?
@@ -47,6 +51,7 @@
 ```
 
 **Question for backend:**
+
 - Is `chess-move` command sufficient for both player AND bot?
 - Or does bot need separate command kind?
 - What is exact room transport envelope format?
@@ -56,6 +61,7 @@
 ### 2. CLOCK INTERPOLATION FIELDS (BLOCKING)
 
 **Current ChessGuestSnapshot missing:**
+
 ```typescript
 // Option A: Server timestamp approach (RECOMMENDED)
 {
@@ -72,19 +78,23 @@
 ```
 
 **Why needed:**
+
 - Current implementation cannot interpolate running clocks
 - Using wall-clock from snapshot receipt causes drift
 - Reconnection shows incorrect time
 - Pause/resume handling broken
 
 **Frontend calculation with Option A:**
+
 ```typescript
-const elapsed = paused ? 0 : (Date.now() - serverTime) + (serverTime - lastMoveAt);
-const playerTimeRemaining = snapshot.playerTimeMs - (sideToMove === 'white' ? elapsed : 0);
-const botTimeRemaining = snapshot.botTimeMs - (sideToMove === 'black' ? elapsed : 0);
+const elapsed = paused ? 0 : Date.now() - serverTime + (serverTime - lastMoveAt);
+const playerTimeRemaining =
+  snapshot.playerTimeMs - (sideToMove === "white" ? elapsed : 0);
+const botTimeRemaining = snapshot.botTimeMs - (sideToMove === "black" ? elapsed : 0);
 ```
 
 **Impact if not added:**
+
 - Clocks will appear static (snapshot values only)
 - No countdown animation
 - Poor UX, but game still playable
@@ -96,12 +106,14 @@ const botTimeRemaining = snapshot.botTimeMs - (sideToMove === 'black' ? elapsed 
 **Status:** Not implemented, client-side only
 
 **Current behavior:**
+
 - Engine init/errors shown only to local guest
 - No server notification
 - Game proceeds regardless of client readiness
 - Guests with failed engines will timeout naturally
 
 **Potential server commands:**
+
 ```typescript
 // If host needs visibility:
 {
@@ -113,17 +125,20 @@ const botTimeRemaining = snapshot.botTimeMs - (sideToMove === 'black' ? elapsed 
 ```
 
 **Host could display:**
+
 - "23/80 guests ready"
 - "2 guests loading engine"
 - "1 guest engine failed"
 
 **Recommendation:**
+
 - **Defer to post-MVP** - adds complexity
 - Current approach: engine failures are invisible to host
 - Failed engines → natural timeout → 0 points
 - Acceptable for casual trust model
 
 **If implementing:**
+
 - Add `chess-engine-status` command to room
 - Frontend sends on init complete/error
 - Host control snapshot includes readiness counts
@@ -136,6 +151,7 @@ const botTimeRemaining = snapshot.botTimeMs - (sideToMove === 'black' ? elapsed 
 **Unknown:** Exact format for sending commands
 
 **Possibilities:**
+
 ```typescript
 // A) Direct command (unlikely)
 socket.send({ kind: "chess-move", gameId, from, to, ... })
@@ -158,11 +174,13 @@ socket.send({
 ```
 
 **Frontend assumption:**
+
 - Commands sent via existing room transport
 - Likely similar to kart input submission
 - Needs verification from backend
 
 **Action needed:**
+
 - Backend document exact command sending mechanism
 - Frontend will adapt to match existing room patterns
 
@@ -173,6 +191,7 @@ socket.send({
 **Question:** Where does gameId come from?
 
 **Options:**
+
 ```typescript
 // A) In initial snapshot
 ChessGuestSnapshot {
@@ -191,6 +210,7 @@ gameId = `${roundId}-${playerId}`
 **Current schema has gameId** in ChessGuestSnapshot ✅
 
 **Frontend will:**
+
 - Extract gameId from snapshot
 - Use that gameId in all commands
 - No client-side construction
@@ -200,6 +220,7 @@ gameId = `${roundId}-${playerId}`
 ### 6. RESIGN COMMAND
 
 **Confirmed in schema:**
+
 ```typescript
 {
   kind: "chess-resign",
@@ -217,6 +238,7 @@ gameId = `${roundId}-${playerId}`
 **Confirmed:** Backend increments positionRevision on pause/resume
 
 **Frontend handling:** ✅ Already implemented
+
 - On snapshot with new positionRevision:
   - Cancel any in-flight search
   - Clear searchStateRef
@@ -229,12 +251,14 @@ gameId = `${roundId}-${playerId}`
 **Question:** How often does server send snapshots?
 
 **Scenarios:**
+
 - After every move (player or bot)?
 - On timer (e.g. every 100ms for clock updates)?
 - Only on state changes?
 - Mixed (state changes + periodic for clocks)?
 
 **Frontend impact:**
+
 - If only on moves: clocks are static between moves
 - If periodic: smooth countdown animation possible
 - Current implementation handles any frequency
@@ -244,15 +268,18 @@ gameId = `${roundId}-${playerId}`
 ## Summary for Backend Integration
 
 ### Must Have (Blocking)
+
 1. **Bot move submission route** - which command? same as player or different?
 2. **Clock interpolation fields** - serverTime/lastMoveAt/paused
 3. **Command envelope format** - how to send commands via room transport
 
 ### Nice to Have (Post-MVP)
+
 4. Engine readiness reporting - defer unless host visibility critical
 5. Snapshot frequency clarity - works either way, just affects UX
 
 ### Already Handled
+
 - ✅ Position revision tracking
 - ✅ Pause/resume invalidation
 - ✅ Resign command schema
@@ -263,6 +290,7 @@ gameId = `${roundId}-${playerId}`
 ## Testing Without Backend
 
 **Currently testable:**
+
 - ✅ Engine initialization
 - ✅ UCI protocol
 - ✅ Legal move generation
@@ -272,12 +300,14 @@ gameId = `${roundId}-${playerId}`
 - ✅ Component state management
 
 **Blocked without backend:**
+
 - ❌ Full command roundtrip (no server to accept commands)
 - ❌ Snapshot updates (no server sending snapshots)
 - ❌ Multi-game isolation (need real room)
 - ❌ Clock interpolation (missing fields)
 
 **Workaround for integration testing:**
+
 - Mock server responses with proper schema
 - Test command formatting independently
 - Verify UI state transitions

@@ -198,7 +198,7 @@ This is the most important design choice for smoothness.
 | Throttled live drafts (200 ms client, `draftGapMs` server) | `text-map` cursor sync      | `room-socket.ts:405`, `party-room.ts:2961`                        |
 | Kart input backpressure (`bufferedAmount < 8192`)          | —                           | `room-socket.ts:394`                                              |
 | Kart poses interpolated on the client                      | Talkshow local timeline     | `apps/web/src/kart/KartCanvas.tsx:7`                              |
-| Reconnect banner delayed 1.5 s so blips do not flash       | `connectingDurationTrouble` | `apps/web/src/live/ReconnectBanner.tsx:4`                          |
+| Reconnect banner delayed 1.5 s so blips do not flash       | `connectingDurationTrouble` | `apps/web/src/live/ReconnectBanner.tsx:4`                         |
 
 ### 2.2 Gaps, ordered by impact
 

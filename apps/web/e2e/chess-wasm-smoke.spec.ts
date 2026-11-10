@@ -5,13 +5,15 @@ import { test, expect } from "@playwright/test";
  * Tests actual stockfish-worker.ts via Vite, not copied logic.
  * Validates: init at elo 1425, move generation, terminate safety,
  * stale callback prevention with overlapping searches.
- * 
+ *
  * Note: Legal move validation handled by barrier unit test + production chess.js in app.
  * Browser test focuses on WASM execution and generation barrier with real worker.
  */
 
 test.describe("Stockfish WASM Binary Smoke", () => {
-  test("initializes at elo 1425 and generates move in valid UCI format", async ({ page }) => {
+  test("initializes at elo 1425 and generates move in valid UCI format", async ({
+    page,
+  }) => {
     // Navigate to home (any page with Vite module access)
     await page.goto("/");
 
@@ -142,7 +144,7 @@ test.describe("Stockfish WASM Binary Smoke", () => {
         elo: 1425,
         onBestMove: (from, to, promotion) => {
           const moveUci = `${from}${to}${promotion || ""}`;
-          
+
           // Capture which search this callback belongs to
           const searchId = currentSearchId;
           const searchFen = searchId === 1 ? fen1 : fen2;
@@ -162,10 +164,10 @@ test.describe("Stockfish WASM Binary Smoke", () => {
       currentSearchId = nextSearchId++;
       engine.setPosition(fen1);
       engine.go(2000);
-      
+
       // Let search start
       await new Promise((resolve) => setTimeout(resolve, 50));
-      
+
       // Stop first search
       engine.stop();
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -175,7 +177,7 @@ test.describe("Stockfish WASM Binary Smoke", () => {
       currentSearchId = nextSearchId++;
       engine.setPosition(fen2);
       engine.go(150);
-      
+
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       engine.terminate();
@@ -192,7 +194,7 @@ test.describe("Stockfish WASM Binary Smoke", () => {
 
     // Should have at least 2 callbacks (one per search)
     expect(result.totalCallbacks).toBeGreaterThanOrEqual(2);
-    
+
     // Verify FEN correlation
     const search1Callbacks = result.callbacks.filter((cb) => cb.fen === result.fen1);
     const search2Callbacks = result.callbacks.filter((cb) => cb.fen === result.fen2);

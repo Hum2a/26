@@ -66,9 +66,10 @@ it("mechanic: handleChessClockAlarm flags games and scores exactly once", async 
     });
 
     // Initialize chess round with very short clocks for test (100ms)
-    const { createChessRound } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { createChessRound } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     const participants = [alice.playerId, bob.playerId];
-    
+
     // Override question times - pass directly to createChessRound
     createChessRound(sql, store, question, participants, now, 100, 60000);
 
@@ -97,29 +98,40 @@ it("mechanic: handleChessClockAlarm flags games and scores exactly once", async 
   await runInDurableObject(stub, async (_instance, state) => {
     const sql = state.storage.sql;
     const store = createSqlStore(sql);
-    const { handleChessClockAlarm } = await import("../src/questions/chess/chess-mechanic.ts");
-    
+    const { handleChessClockAlarm } =
+      await import("../src/questions/chess/chess-mechanic.ts");
+
     // Get game details for debugging
     const before = sql
-      .exec<{ game_id: string; status: string; player_time_ms: number; bot_time_ms: number; last_move_at: number }>(
-        "SELECT game_id, status, player_time_ms, bot_time_ms, last_move_at FROM chess_game"
+      .exec<{
+        game_id: string;
+        status: string;
+        player_time_ms: number;
+        bot_time_ms: number;
+        last_move_at: number;
+      }>(
+        "SELECT game_id, status, player_time_ms, bot_time_ms, last_move_at FROM chess_game",
       )
       .toArray();
-    
+
     const futureTime = now + 200; // Past the 100ms player clock
     for (const game of before) {
       if (game.status === "in-progress") {
         await handleChessClockAlarm(sql, store, game.game_id, futureTime);
       }
     }
-    
+
     // Check if games changed
     const after = sql
-      .exec<{ game_id: string; status: string }>("SELECT game_id, status FROM chess_game")
+      .exec<{ game_id: string; status: string }>(
+        "SELECT game_id, status FROM chess_game",
+      )
       .toArray();
-    
-    if (after.every(g => g.status === "in-progress")) {
-      throw new Error(`Alarm handler did not flag games. Before: ${JSON.stringify(before)}, after: ${JSON.stringify(after)}, futureTime: ${futureTime}`);
+
+    if (after.every((g) => g.status === "in-progress")) {
+      throw new Error(
+        `Alarm handler did not flag games. Before: ${JSON.stringify(before)}, after: ${JSON.stringify(after)}, futureTime: ${futureTime}`,
+      );
     }
   });
 
@@ -203,7 +215,8 @@ it("mechanic: paused clock increments revision, handler respects cancellation", 
       roundId: "pause-round",
     });
 
-    const { createChessRound } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { createChessRound } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     createChessRound(sql, store, question, [charlie.playerId], now, 500, 60000);
 
     // Get initial revision
@@ -215,7 +228,8 @@ it("mechanic: paused clock increments revision, handler respects cancellation", 
       .toArray()[0];
 
     // Pause
-    const { pauseChessClocks } = await import("../src/questions/chess/chess-mechanic.ts");
+    const { pauseChessClocks } =
+      await import("../src/questions/chess/chess-mechanic.ts");
     pauseChessClocks(sql, store, now);
 
     // Verify revision incremented
@@ -244,7 +258,10 @@ it("mechanic: paused clock increments revision, handler respects cancellation", 
   await runInDurableObject(stub, async (_instance, state) => {
     const sql = state.storage.sql;
     const game = sql
-      .exec<{ status: string }>("SELECT status FROM chess_game WHERE player_id = ?", charlie.playerId)
+      .exec<{ status: string }>(
+        "SELECT status FROM chess_game WHERE player_id = ?",
+        charlie.playerId,
+      )
       .toArray()[0];
 
     expect(game.status).toBe("in-progress");

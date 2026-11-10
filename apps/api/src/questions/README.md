@@ -4,20 +4,20 @@
 
 Questions are versioned TypeScript. There is no CMS and no client-side pack. The authoring workflow is [docs/question-authoring.md](../../../../docs/question-authoring.md).
 
-| Path                                                               | What it holds                                                       |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------- |
-| `definition.ts`                                                    | Question types, missing requirements, and the answer wrapper        |
-| `defaults.ts`                                                      | Ordinary defaults used when a setting is omitted                    |
-| `authoring.ts`                                                     | Helpers for the seven existing mechanics                            |
-| `registry.ts`                                                      | Resolves a room's stored version to one pack                        |
-| `validate.ts`                                                      | Content checks. `preflight.ts` re-exports them                      |
-| `project.ts`                                                       | Public fields, and the split between guest, stage, and control      |
-| `presentation.ts`                                                  | Presentation ids the server will accept. `standard` is the only one |
-| `packs/demo/`                                                      | One file per illustrative question, plus `manifest.ts`              |
-| `packs/birthday/manifest.ts`                                       | Humza's catalogue. Empty, and not pinned to a room                  |
-| `demo-set.ts`                                                      | Re-exports the demo pack and the shared types                       |
+| Path                                                               | What it holds                                                             |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| `definition.ts`                                                    | Question types, missing requirements, and the answer wrapper              |
+| `defaults.ts`                                                      | Ordinary defaults used when a setting is omitted                          |
+| `authoring.ts`                                                     | Helpers for the seven existing mechanics                                  |
+| `registry.ts`                                                      | Resolves a room's stored version to one pack                              |
+| `validate.ts`                                                      | Content checks. `preflight.ts` re-exports them                            |
+| `project.ts`                                                       | Public fields, and the split between guest, stage, and control            |
+| `presentation.ts`                                                  | Presentation ids the server will accept. `standard` is the only one       |
+| `packs/demo/`                                                      | One file per illustrative question, plus `manifest.ts`                    |
+| `packs/birthday/manifest.ts`                                       | Humza's catalogue. Empty, and not pinned to a room                        |
+| `demo-set.ts`                                                      | Re-exports the demo pack and the shared types                             |
 | `kart/` `chess/` `wordle/`                                         | Heavy-round Worker runtime (Wordle dictionary under `wordle/dictionary/`) |
-| `multiple-choice.ts`, `slider.ts`, `rank.ts`, `vote.ts`, `duel.ts` | Scoring and phases. They do not own the question text               |
+| `multiple-choice.ts`, `slider.ts`, `rank.ts`, `vote.ts`, `duel.ts` | Scoring and phases. They do not own the question text                     |
 
 A room plays the pack named by its stored `question_set_version`. `demo-2026-09-22` is the illustrative pack. `unreleased` is the lobby. `birthday-draft` is not playable. An unknown version is unavailable and is not replaced with the demo pack.
 

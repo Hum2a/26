@@ -78,6 +78,7 @@ POST /rooms/{gameId}/play
 ```
 
 **Common error reasons:**
+
 - `"Not your game"` — ownership validation failed
 - `"Position revision mismatch: expected X, got Y"` — stale command, client must fetch fresh snapshot
 - `"Not a chess round"` — wrong question type or phase
@@ -97,7 +98,7 @@ Snapshots arrive via WebSocket as broadcast messages:
     gameId: string,
     fen: string,
     pgn: string,
-    status: "waiting" | "in-progress" | "checkmate" | "stalemate" | 
+    status: "waiting" | "in-progress" | "checkmate" | "stalemate" |
             "insufficient-material" | "threefold-repetition" | "fifty-move-rule" |
             "timeout" | "timeout-draw" | "resignation" | "aborted",
     playerColor: "white" | "black",
