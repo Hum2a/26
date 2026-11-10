@@ -6130,3 +6130,20 @@ Not verified: a real selfie on a phone camera, the board on a projector across a
 ### Exact next stage
 
 Try the board with the developer bots (Admin → Developer, then Vote board), and a real selfie from a second phone. Decide whether slider, rank and vote rounds should get their own on-screen picks next.
+
+## 10 November 2026 — Stockfish search fix (release checks unblocked)
+
+Status: branch `fix/stockfish-search-once` from master. No deploy.
+
+`npm run deploy:both` stopped at its release checks because 3 web tests failed (`stockfish-worker-isolation` ×2, `chess-lifecycle` "stops search on explicit stop command"). Root causes in `apps/web/src/chess/stockfish-worker.ts`:
+
+- Each search Worker started `position` + `go` on every `readyok` after `uciok`, so any extra `readyok` started the same search again and delivered several best moves. A search now starts once and answers once, then its Worker is released.
+- `stop()` killed the Worker instead of sending UCI `stop`. It now asks a running search for its best move so far, and a search still in its handshake never starts. `chess-game.tsx` already drops an answer that arrives with no active search or a changed position, so its cancel paths (new turn, watchdog, position change) behave as before. A stopped search that never answers is ended by the next `go()` or `terminate()`.
+
+### Commands and results
+
+- `npx vitest run src/chess` — 7 files, 27 passed (the 3 previously failing tests included)
+- Release check sequence: `typecheck`, `content:check`, `lint` (0 errors, 27 existing warnings) passed; `test:unit` 805 of 805 passed; `test:release` 80 of 80 passed
+- Not changed: the 2 API catalogue assertions, which only run with `--full-checks`
+
+Not verified: a real Stockfish game on a phone.
