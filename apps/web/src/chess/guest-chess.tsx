@@ -17,8 +17,7 @@ export function GuestChess({
   onChessResign: (params: ChessResignParams) => void;
 }) {
   const play = snapshot.play;
-  const chessSnapshot =
-    play?.chess && "fen" in play.chess ? play.chess : undefined;
+  const chessSnapshot = play?.chess && "fen" in play.chess ? play.chess : undefined;
   const [engineError, setEngineError] = useState<string>();
   const pendingMoveRef = useRef<string | null>(null);
   const snapshotFen = chessSnapshot?.fen;

@@ -86,7 +86,9 @@ vi.mock("./stockfish-worker", () => {
 });
 
 describe("ChessGame engine lifecycle", () => {
-  const createSnapshot = (overrides: Partial<ChessGuestSnapshot> = {}): ChessGuestSnapshot => ({
+  const createSnapshot = (
+    overrides: Partial<ChessGuestSnapshot> = {},
+  ): ChessGuestSnapshot => ({
     gameId: "test-game",
     fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
     pgn: "",

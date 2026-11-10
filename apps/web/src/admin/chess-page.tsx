@@ -8,9 +8,10 @@ import { Panel } from "../ui/primitives";
 export function ChessAdminPage() {
   const { snapshot } = useAdminRoom();
   const play = snapshot.play;
-  
+
   // Admin reads control projection (ChessControlSnapshot) with aggregate fields
-  const chessSnapshot = play?.question.kind === "chess" && play.chess ? play.chess : null;
+  const chessSnapshot =
+    play?.question.kind === "chess" && play.chess ? play.chess : null;
 
   if (!chessSnapshot) {
     return (
@@ -30,16 +31,20 @@ export function ChessAdminPage() {
 
   // Narrow union: control/stage snapshots have totalGames, guest snapshot does not
   if (!("totalGames" in chessSnapshot)) {
-    return <Panel title="Chess Round"><p>Guest snapshot received (unexpected in admin)</p></Panel>;
+    return (
+      <Panel title="Chess Round">
+        <p>Guest snapshot received (unexpected in admin)</p>
+      </Panel>
+    );
   }
 
-  const { 
-    totalGames, 
-    inProgress: gamesInProgress, 
+  const {
+    totalGames,
+    inProgress: gamesInProgress,
     finished: gamesFinished,
     results,
   } = chessSnapshot;
-  
+
   const { playerWins, botWins, draws, aborts } = results;
 
   return (

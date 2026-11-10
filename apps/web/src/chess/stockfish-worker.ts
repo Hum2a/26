@@ -37,11 +37,11 @@ export class StockfishEngine {
    * Initialize and load the Stockfish worker.
    * Returns a promise that resolves when the engine is ready.
    */
-  async   initialize(): Promise<void> {
+  async initialize(): Promise<void> {
     if (this.ready) {
       return Promise.reject(new Error("Engine already initialized"));
     }
-    
+
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error("Stockfish initialization timeout (10s)"));
@@ -125,7 +125,7 @@ export class StockfishEngine {
     // Capture position and movetime for this search
     const capturedPosition = this.currentPosition;
     const capturedMoveTime = timeMs ?? this.options.moveTimeMs;
-    
+
     // Track UCI handshake state for this Worker
     let uciComplete = false;
 

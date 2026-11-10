@@ -56,7 +56,10 @@ test("Windows bash prefers Git Bash and skips the System32 WSL stub", () => {
       }),
     /Cannot find Git Bash/,
   );
-  assert.equal(resolveBash({ platform: "linux", env: {}, exists: () => false }), "bash");
+  assert.equal(
+    resolveBash({ platform: "linux", env: {}, exists: () => false }),
+    "bash",
+  );
 });
 
 test("Windows npm shims use Node with literal argument boundaries", () => {

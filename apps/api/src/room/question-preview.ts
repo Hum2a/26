@@ -31,7 +31,11 @@ export function questionPreview(
       fields = { kind: q.kind, trackId: q.trackId, timeLimitMs: q.timeLimitMs };
       break;
     case "chess":
-      fields = { kind: q.kind, initialTimeMs: q.initialTimeMs, incrementMs: q.incrementMs };
+      fields = {
+        kind: q.kind,
+        initialTimeMs: q.initialTimeMs,
+        incrementMs: q.incrementMs,
+      };
       break;
     case "choice":
       fields = {

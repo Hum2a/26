@@ -15,7 +15,7 @@ const pieces: Array<{ value: ChessPromotionPiece; label: string; symbol: string 
   { value: "q", label: "Queen", symbol: "♕" },
   { value: "r", label: "Rook", symbol: "♖" },
   { value: "b", label: "Bishop", symbol: "♗" },
-  { value: "n", label: "Knight", symbol: "♘" }
+  { value: "n", label: "Knight", symbol: "♘" },
 ];
 
 export function PromotionChooser({ color, onChoose, onCancel }: PromotionChooserProps) {
@@ -47,18 +47,14 @@ export function PromotionChooser({ color, onChoose, onCancel }: PromotionChooser
                 onClick={() => onChoose(piece.value)}
                 aria-label={`Promote to ${piece.label}`}
               >
-                <span className={`piece ${isWhite ? 'white' : 'black'}`}>
+                <span className={`piece ${isWhite ? "white" : "black"}`}>
                   {isWhite ? piece.symbol : piece.symbol.toLowerCase()}
                 </span>
                 <span className="piece-label">{piece.label}</span>
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            className="promotion-cancel"
-            onClick={onCancel}
-          >
+          <button type="button" className="promotion-cancel" onClick={onCancel}>
             Cancel
           </button>
         </motion.div>

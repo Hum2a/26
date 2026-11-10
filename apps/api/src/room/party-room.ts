@@ -18,15 +18,19 @@ import {
 } from "../questions/kart/kart.ts";
 import { readRoundState } from "../questions/round-state.ts";
 import { readAdmission } from "./admission.ts";
-import { 
-  handleChessClockAlarm, 
-  createChessRound, 
-  pauseChessClocks, 
+import {
+  handleChessClockAlarm,
+  createChessRound,
+  pauseChessClocks,
   resumeChessClocks,
   executeChessMove,
-  executeResignation
+  executeResignation,
 } from "../questions/chess/chess-mechanic.ts";
-import { assertKartLobbyAction, freezeKartLobby, readKartLobby } from "./kart/kart-lobby.ts";
+import {
+  assertKartLobbyAction,
+  freezeKartLobby,
+  readKartLobby,
+} from "./kart/kart-lobby.ts";
 import { writeRoundState } from "../questions/round-state.ts";
 import { freezeBirthdayOrder } from "../questions/birthday-order.ts";
 import { DurableObject } from "cloudflare:workers";
@@ -922,7 +926,7 @@ export class PartyRoom extends DurableObject<Env> {
       // Compose chess callbacks with existing lifecycle callbacks
       const baseOnScheduledJob = baseStore.onScheduledJob;
       const baseOnEnterPhase = baseStore.onEnterPhase;
-      
+
       const store: GameStore = {
         ...baseStore,
         onScheduledJob: (job, now) => {
@@ -4873,7 +4877,14 @@ function acceptRoundCommand(
     | { name: "duel"; value: unknown }
     | { name: "troll"; kind: unknown; targetId: unknown; mediaId?: string }
     | { name: "troll-escape"; effectId: unknown }
-    | { name: "chess-move"; gameId: string; from: string; to: string; promotion?: string; positionRevision: number }
+    | {
+        name: "chess-move";
+        gameId: string;
+        from: string;
+        to: string;
+        promotion?: string;
+        positionRevision: number;
+      }
     | { name: "chess-resign"; gameId: string }
     | WallCommand,
   now: number,
@@ -4923,7 +4934,7 @@ function acceptRoundCommand(
     if (!question || question.kind !== "chess") {
       return { ok: false, message: "Not a chess round" };
     }
-    
+
     // CRITICAL: Player can ONLY submit moves for their OWN game.
     // Server determines human vs bot path from game.sideToMove.
     // Casual trust: guest chooses bot moves for own game, never other players' games.
@@ -4934,7 +4945,9 @@ function acceptRoundCommand(
       from: command.from,
       to: command.to,
       positionRevision: command.positionRevision,
-      ...(command.promotion ? { promotion: command.promotion as "q" | "r" | "b" | "n" } : {}),
+      ...(command.promotion
+        ? { promotion: command.promotion as "q" | "r" | "b" | "n" }
+        : {}),
     };
     const result = executeChessMove(sql, store, chessMoveCommand, playerId, now);
     if (!result.success) {
@@ -5152,7 +5165,10 @@ function readCommand(body: unknown):
     ) {
       return null;
     }
-    if (record.promotion && !["q", "r", "b", "n"].includes(record.promotion as string)) {
+    if (
+      record.promotion &&
+      !["q", "r", "b", "n"].includes(record.promotion as string)
+    ) {
       return null;
     }
     return {

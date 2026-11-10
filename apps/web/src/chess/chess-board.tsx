@@ -75,7 +75,8 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
       // Select a piece if it's the player's piece
       const clickedPiece = getPieceAt(board, square);
       if (clickedPiece) {
-        const pieceColor = clickedPiece === clickedPiece.toUpperCase() ? "white" : "black";
+        const pieceColor =
+          clickedPiece === clickedPiece.toUpperCase() ? "white" : "black";
         if (pieceColor === snapshot.playerColor) {
           setSelectedSquare(square);
           return;
@@ -92,7 +93,9 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
     <div className="chess-board-container">
       {/* Clocks */}
       <div className="chess-clocks">
-        <div className={`chess-clock ${snapshot.sideToMove === snapshot.botColor ? "active" : ""}`}>
+        <div
+          className={`chess-clock ${snapshot.sideToMove === snapshot.botColor ? "active" : ""}`}
+        >
           <span className="clock-label">Bot</span>
           <span className="clock-time">{formatTime(snapshot.botTimeMs)}</span>
         </div>
@@ -137,7 +140,9 @@ export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardPro
                   disabled={!isInteractive}
                   aria-label={`${file}${rank}${piece ? ` ${getPieceName(piece)}` : ""}`}
                 >
-                  {piece && <span className="chess-piece">{getPieceSymbol(piece)}</span>}
+                  {piece && (
+                    <span className="chess-piece">{getPieceSymbol(piece)}</span>
+                  )}
                 </button>
               );
             })}

@@ -7,7 +7,9 @@
 ## ✅ GREEN Frontend Delivery
 
 ### Type Check Status
+
 **Chess Frontend:** CLEAN (0 errors)
+
 - All chess type errors resolved
 - Backend errors out of scope
 - Pre-existing mock infrastructure errors unrelated to chess
@@ -15,14 +17,16 @@
 ### Test Results
 
 **Ownership Contract Tests:** ✅ 4/4 PASSING
+
 ```
 ✓ uses same own gameId for both player and bot moves
 ✓ captures positionRevision at search dispatch time
-✓ never submits bot move for opponent gameId  
+✓ never submits bot move for opponent gameId
 ✓ rejects stale bot move with old positionRevision
 ```
 
 **Lifecycle Tests:** ⚠️ 5/10 PASSING
+
 ```
 ✓ gracefully handles worker construction failure
 ✓ rejects bestmove when FEN changed
@@ -43,6 +47,7 @@
 ## 🎯 Complete Feature Implementation
 
 ### Guest Phone ✅
+
 - **Chess Game Controller** (`chess-game.tsx`)
   - Stockfish 19 WASM engine lifecycle
   - Position revision capture at dispatch
@@ -50,7 +55,7 @@
   - Promotion modal integration
   - Resign functionality
   - Engine error handling
-  
+
 - **Board Rendering** (`chess-board.tsx`)
   - Interactive FEN-based board
   - Square selection
@@ -71,6 +76,7 @@
   - Engine error display
 
 ### Stage/Projector ✅
+
 - **Aggregate View** (`chess-stage.tsx`)
   - Total/in-progress/finished stats
   - Results breakdown (wins/losses/draws/aborts)
@@ -79,6 +85,7 @@
   - Routed via `stage-play.tsx`
 
 ### Room Transport ✅
+
 - **Socket Integration** (`room-socket.ts`)
   - `submitChessMove(gameId, from, to, promotion, positionRevision)`
   - `submitChessResign(gameId)`
@@ -91,6 +98,7 @@
   - Standard acknowledgement flow
 
 ### Tests ✅
+
 - **Ownership Contract** (`chess-ownership.test.tsx`)
   - Proves own-game-only contract
   - Documents correct vs incorrect transport doc
@@ -120,25 +128,30 @@
 ## ⚠️ Not Implemented (Out of Scope)
 
 ### Host Control Panel
+
 **Reason:** Requires backend round-init endpoints not yet ready
 **Status:** Awaiting backend completion of:
+
 - Round initialization endpoint
-- Pause/resume endpoints  
+- Pause/resume endpoints
 - Abort/end endpoints
 
 **Frontend Ready For:**
+
 - Generic pause/end actions can be reused
 - Chess will respond to existing `snapshot.paused` and `snapshot.held`
 - No new chess-specific backend endpoints needed
 - Feature registration in `admin/features.ts` deferred until round init complete
 
 ### Running Order Enablement
+
 **Status:** Stays disabled per instructions
 **Location:** Question running order controlled by backend manifest
 
 ## 🔧 Remaining Pre-Existing Issues
 
 **Mock Socket Types:**
+
 - `admin-shell.test.tsx` mock socket type mismatch (pre-existing infrastructure)
 - `controls.test-support.tsx` mock socket type mismatch (pre-existing infrastructure)
 - Out of scope for chess-specific delivery
@@ -146,7 +159,9 @@
 ## 📦 Final Deliverables
 
 ### Files Created/Modified (Frontend Only)
+
 **Created:**
+
 - `apps/web/src/chess/chess-game.tsx`
 - `apps/web/src/chess/chess-board.tsx`
 - `apps/web/src/chess/promotion-chooser.tsx`
@@ -162,6 +177,7 @@
 - `apps/web/src/chess/FINAL_STATUS.md` ← THIS FILE
 
 **Modified:**
+
 - `apps/web/src/live/room-socket.ts` (added chess methods)
 - `apps/web/src/play/guest-play.tsx` (chess routing)
 - `apps/web/src/play/stage-play.tsx` (chess routing)
@@ -170,11 +186,13 @@
 - `apps/web/src/admin/controls.test-support.tsx` (mock socket)
 
 **Not Modified (Backend Owned):**
+
 - `packages/shared/src/chess/chess-schemas.ts` (read-only)
 - `apps/api/**` (backend-only changes)
 - Lockfiles preserved
 
 ### Commit Range Since 9b4181a
+
 ```
 001ca90 fix(chess-frontend): fix all type errors and unused variables
 1776e90 test(chess-frontend): add worker lifecycle and stale search tests
@@ -186,6 +204,7 @@ cfef860 feat(chess-frontend): add running clock rendering with server-time inter
 ## 🎮 How to Test
 
 ### Run Tests
+
 ```bash
 # Ownership contract tests
 cd apps/web && npx vitest run src/chess/chess-ownership.test.tsx
@@ -198,6 +217,7 @@ npm run typecheck  # Chess frontend clean
 ```
 
 ### Manual Integration (Once Backend Round Init Complete)
+
 ```bash
 # Start dev server
 npm run dev
@@ -215,22 +235,26 @@ http://localhost:5173/screen?code=CODE
 **Head SHA:** `7e2c6b1ae7976a83af6fc8c6f8bf21aa5c7a3c57` (FINAL)
 
 **Frontend Exports for Backend:**
+
 - `play.chess` field expected in `LobbySnapshot` (currently ts-expect-error)
 - Commands: `chess-move` and `chess-resign` via standard envelope
 - Schema fields used: `positionRevision`, `lastMoveAt`, `paused` ✅ (now in schema)
 
 **Backend Must:**
+
 1. Populate `play.chess` with `ChessGuestSnapshot` when chess round active
 2. Accept `chess-move` and `chess-resign` commands
 3. Validate `positionRevision` matches (both player and bot moves use SAME gameId)
 4. Use `sideToMove` to distinguish human vs bot (NOT gameId ownership mismatch)
 
 **Correct Contract:**
+
 - Each phone owns ONE game
 - Submits BOTH player and bot moves for SAME `gameId`
 - Server uses `sideToMove`, not ownership, to distinguish
 - Frontend tests prove this contract
 
 **Wrong Transport Doc (to be fixed):**
+
 - `docs/chess-transport-envelope.md` lines 30-32 incorrectly state bot uses opponent gameId
 - Frontend IGNORES this and implements correct contract

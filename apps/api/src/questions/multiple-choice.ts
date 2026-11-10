@@ -607,12 +607,17 @@ export function projectPlay(
   }
   if (question.kind === "chess") {
     // Chess: project proper audience snapshot (guest/stage/control, no board leaks)
-    const chessSnapshot = projectChessGameSnapshot(sql, createSqlStore(sql), audience, selfPlayerId);
+    const chessSnapshot = projectChessGameSnapshot(
+      sql,
+      createSqlStore(sql),
+      audience,
+      selfPlayerId,
+    );
     if (!chessSnapshot) return null;
-    
+
     const index = room.questionIndex + 1;
     const total = room.questionCount;
-    
+
     return parsePlay(
       {
         question: {

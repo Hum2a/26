@@ -29,13 +29,15 @@ export function quotableAnswer(
   authorId: string,
 ): boolean {
   if (hiddenAuthors(sql, questionId).has(authorId)) return false;
-  return sql
-    .exec<{ included: number }>(
-      `SELECT included FROM vote_candidate WHERE question_id = ? AND owner_id = ?`,
-      questionId,
-      authorId,
-    )
-    .toArray()[0]?.included === 1;
+  return (
+    sql
+      .exec<{ included: number }>(
+        `SELECT included FROM vote_candidate WHERE question_id = ? AND owner_id = ?`,
+        questionId,
+        authorId,
+      )
+      .toArray()[0]?.included === 1
+  );
 }
 
 /**
