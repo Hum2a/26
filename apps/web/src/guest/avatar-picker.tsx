@@ -69,8 +69,8 @@ export function AvatarPicker({
           <h2 id={titleId}>{avatarMediaId ? "Your photo" : "Add your face"}</h2>
           <p>
             {avatarMediaId
-              ? "Your photo sits beside your name: on the big screen when you pick an answer, in the standings and on your kart."
-              : "Optional. Take a selfie so the big screen shows your face when you pick an answer, not just your initials."}
+              ? "Your photo sits beside your name: in the standings, on your kart and on the big screen whenever the host shows who picked what."
+              : "Optional. Take a selfie so your face, not just your initials, appears beside your name, including on the big screen when the host shows who picked what."}
           </p>
         </div>
       </header>

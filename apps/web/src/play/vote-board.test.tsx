@@ -8,7 +8,10 @@ const amina = "00000000-0000-4000-8000-000000000001";
 const bilal = "00000000-0000-4000-8000-000000000002";
 const cara = "00000000-0000-4000-8000-000000000003";
 
-function play(overrides: Partial<PlaySnapshot> = {}, attribution = "live"): PlaySnapshot {
+function play(
+  overrides: Partial<PlaySnapshot> = {},
+  attribution = "live",
+): PlaySnapshot {
   return {
     question: {
       kind: "choice",
@@ -55,7 +58,11 @@ function draw(snapshot: PlaySnapshot) {
     <RosterProvider
       gameId="ABCDEFGH"
       players={[
-        { playerId: amina, nickname: "Amina", avatarMediaId: "00000000-0000-4000-8000-0000000000f1" },
+        {
+          playerId: amina,
+          nickname: "Amina",
+          avatarMediaId: "00000000-0000-4000-8000-0000000000f1",
+        },
         { playerId: bilal, nickname: "Bilal" },
         { playerId: cara, nickname: "Cara" },
       ]}
@@ -72,10 +79,15 @@ function option(label: string) {
 describe("vote board", () => {
   it("fills each option with its voters' faces and grows the leader", () => {
     draw(play());
-    expect(within(option("One")).getByRole("list", { name: "Picked by Amina, Bilal" }))
-      .toBeTruthy();
-    expect(within(option("Two")).getByRole("list", { name: "Picked by Cara" })).toBeTruthy();
-    expect(within(option("Three")).getByRole("list", { name: "No picks yet" })).toBeTruthy();
+    expect(
+      within(option("One")).getByRole("list", { name: "Picked by Amina, Bilal" }),
+    ).toBeTruthy();
+    expect(
+      within(option("Two")).getByRole("list", { name: "Picked by Cara" }),
+    ).toBeTruthy();
+    expect(
+      within(option("Three")).getByRole("list", { name: "No picks yet" }),
+    ).toBeTruthy();
     // A face is drawn from the roster's photo; others keep their initials.
     expect(option("One").querySelector("img")?.getAttribute("src")).toContain(
       "/api/rooms/ABCDEFGH/media/00000000-0000-4000-8000-0000000000f1",

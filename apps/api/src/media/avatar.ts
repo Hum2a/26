@@ -1,8 +1,4 @@
-import {
-  avatarPhotoMessage,
-  playerActiveMessage,
-  playerMissingMessage,
-} from "../room/limits.ts";
+import { avatarPhotoMessage, playerMissingMessage } from "../room/limits.ts";
 
 /**
  * A guest's profile photo. It is a `face` media row the guest uploaded and
@@ -92,7 +88,7 @@ export function clearAvatar(sql: SqlStorage, playerId: string): boolean {
     throw new Error(playerMissingMessage);
   }
   if (row.revoked_at) {
-    throw new Error(playerActiveMessage);
+    throw new Error(playerMissingMessage);
   }
   if (!row.avatar_media_id) {
     return false;

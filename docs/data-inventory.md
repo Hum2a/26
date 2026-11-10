@@ -170,8 +170,8 @@ These tables cover the hosts only. Guests never sign in.
 
 ## Cloudflare R2
 
-| Store          | Holds                                                                                                                                                                                                    |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Store          | Holds                                                                                                                                                                                                                                                                                              |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `MEDIA_BUCKET` | Photos and voice clips that guests deliberately upload during rounds, plus face photos: a guest's optional profile photo (shown beside their nickname on every screen) and kart driver faces. Each file is first held under a temporary key, then given a final key. The host can hide any upload. |
 
 ## Not stored anywhere

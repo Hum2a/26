@@ -207,6 +207,8 @@ function PlateStage({
           )}
         </ul>
       </LayoutGroup>
+      {/* The answer plate moves onto the car, so its voters follow it here. */}
+      {answer ? <StageVoters play={play} optionId={answer.id} /> : null}
       <p className="design-stage-line">
         {answer ? (
           <>Registered: {answer.label}.</>

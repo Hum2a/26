@@ -120,7 +120,8 @@ export const roomMediaSlots = 80;
 export const playerFaceSlots = 8;
 export const roomFaceSlots = 600;
 export const faceQuotaMessage = "You have used your photo retakes.";
-export const avatarPhotoMessage = "That photo is not your profile photo. Take it again.";
+export const avatarPhotoMessage =
+  "That photo is not your profile photo. Take it again.";
 export const avatarClearedMessage = "That player has no profile photo to remove.";
 
 /** Photo wall. See `docs/photo-wall-plan.md`. */

@@ -129,13 +129,18 @@ it("draws picks for the stage and host only, from the reveal of an `after` quest
   const { gameId, stub, join, control } = await setup();
   const amina = await join("Amina");
   const bilal = await join("Bilal");
-  await stub.startDemo({ ...control, requestId: crypto.randomUUID(), nowMs: Date.now() });
+  await stub.startDemo({
+    ...control,
+    requestId: crypto.randomUUID(),
+    nowMs: Date.now(),
+  });
   await untilPhase(stub, control, "collect");
 
   const aminaPhone = await connect(stub, gameId, amina);
   const bilalPhone = await connect(stub, gameId, bilal);
   const stagePlay = (await stub.snapshotFor("stage")).play;
-  if (stagePlay?.question.kind !== "choice") throw new Error("Expected a choice question");
+  if (stagePlay?.question.kind !== "choice")
+    throw new Error("Expected a choice question");
   // The first demo question keeps its picks until the reveal.
   expect(stagePlay.question.attribution).toBe("after");
   const [first, second] = stagePlay.question.options;
@@ -165,7 +170,11 @@ it("draws picks for the stage and host only, from the reveal of an `after` quest
 it("hides picks room-wide from the host switch, refuses bad credentials, and replays", async () => {
   const { gameId, stub, join, control } = await setup();
   const amina = await join("Amina");
-  await stub.startDemo({ ...control, requestId: crypto.randomUUID(), nowMs: Date.now() });
+  await stub.startDemo({
+    ...control,
+    requestId: crypto.randomUUID(),
+    nowMs: Date.now(),
+  });
   await untilPhase(stub, control, "collect");
   const phone = await connect(stub, gameId, amina);
   const play = (await stub.snapshotFor("stage")).play;
@@ -173,6 +182,7 @@ it("hides picks room-wide from the host switch, refuses bad credentials, and rep
   expect((await phone.answer(play.question.options[0]!.id)).accepted).toBe(true);
   await untilPhase(stub, control, "reveal");
   expect((await stub.snapshotFor("stage")).play?.voters).not.toBeNull();
+  expect((await stub.snapshotFor("stage")).play?.attributions).not.toBeNull();
 
   const hide = {
     ...control,
@@ -183,7 +193,15 @@ it("hides picks room-wide from the host switch, refuses bad credentials, and rep
   expect((await stub.hostAction({ ...hide, secret: "incorrect" })).ok).toBe(false);
   const first = await stub.hostAction(hide);
   expect(first.ok).toBe(true);
-  expect((await stub.snapshotFor("stage")).play?.voters).toBeNull();
+  // Hidden means no names anywhere on a screen: not the board, not the name lists.
+  for (const view of [
+    await stub.snapshotFor("stage"),
+    await stub.snapshotFor("guest", amina.playerId),
+  ]) {
+    expect(view.play?.voters ?? null).toBeNull();
+    expect(view.play?.attributions).toBeNull();
+    expect(view.play?.liveSample).toBeNull();
+  }
   const host = await stub.snapshotFor("control");
   expect(host.voterDisplay?.mode).toBe("hidden");
   expect(host.voterDisplay?.history).toHaveLength(1);

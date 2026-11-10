@@ -236,6 +236,7 @@ function BallotStage({
                 <Count value={row.votes} />
                 <small>{Math.round(share * 100)}%</small>
               </span>
+              <StageVoters play={play} optionId={row.id} />
             </motion.li>
           );
         })}

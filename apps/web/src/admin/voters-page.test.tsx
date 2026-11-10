@@ -66,7 +66,9 @@ it("mirrors the live board and removes a guest's photo by player id", async () =
   const board = screen.getByRole("region", { name: "Board right now" });
   expect(within(board).getByText("A test question?", { exact: false })).toBeTruthy();
   expect(within(board).getByRole("list", { name: /Picked by Amina/ })).toBeTruthy();
-  expect(screen.getByText("1 of 2 players have a photo.", { exact: false })).toBeTruthy();
+  expect(
+    screen.getByText("1 of 2 players have a photo.", { exact: false }),
+  ).toBeTruthy();
   // Only a player with a photo can have it removed.
   expect(screen.getAllByRole("button", { name: "Remove photo" })).toHaveLength(1);
   fireEvent.click(screen.getByRole("button", { name: "Remove photo" }));
@@ -84,8 +86,9 @@ it("rehearses the real board with stand-ins and never calls the room", async () 
   fireEvent.click(within(rehearsal).getByRole("button", { name: "Add a vote" }));
   fireEvent.click(within(rehearsal).getByRole("button", { name: "Add a vote" }));
   expect(within(rehearsal).getByText(/2 of 24 stand-ins have picked/)).toBeTruthy();
-  expect(within(rehearsal).getAllByRole("list", { name: /Picked by Stand-in/ }).length)
-    .toBeGreaterThan(0);
+  expect(
+    within(rehearsal).getAllByRole("list", { name: /Picked by Stand-in/ }).length,
+  ).toBeGreaterThan(0);
   fireEvent.click(within(rehearsal).getByRole("button", { name: "Reveal" }));
   expect(within(rehearsal).getByText("Correct")).toBeTruthy();
   expect(playRoom).not.toHaveBeenCalled();

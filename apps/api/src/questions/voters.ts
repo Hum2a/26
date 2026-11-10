@@ -27,7 +27,8 @@ export function readVoterDisplay(sql: SqlStorage): {
       voter_display_history: string;
     }>(`SELECT voter_display, voter_display_history FROM room`)
     .toArray()[0];
-  const mode: VoterDisplayMode = row?.voter_display === "hidden" ? "hidden" : "question";
+  const mode: VoterDisplayMode =
+    row?.voter_display === "hidden" ? "hidden" : "question";
   let history: { atMs: number; mode: VoterDisplayMode }[] = [];
   try {
     const parsed = JSON.parse(row?.voter_display_history ?? "[]") as unknown;
@@ -73,7 +74,11 @@ export function changeVoterDisplay(
   mode: VoterDisplayMode,
   now: number,
 ): void {
-  if ((mode !== "question" && mode !== "hidden") || !Number.isSafeInteger(now) || now < 0) {
+  if (
+    (mode !== "question" && mode !== "hidden") ||
+    !Number.isSafeInteger(now) ||
+    now < 0
+  ) {
     throw new Error(voterDisplayMessage);
   }
   const previous = readVoterDisplay(sql);

@@ -1232,9 +1232,12 @@
 .voters-rehearsal-stage .vote-option-total {
   font-size: 1.75rem;
 }
-.voters-live-stage .vote-option,
-.voters-rehearsal-stage .vote-option {
-  min-height: 11rem;
+/* Stage-sized cards only where the preview is wide; narrow previews stack. */
+@container (min-width: 641px) {
+  .voters-live-stage .vote-option,
+  .voters-rehearsal-stage .vote-option {
+    min-height: 11rem;
+  }
 }
 .voters-photo-list {
   display: grid;

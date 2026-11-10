@@ -107,7 +107,9 @@ export function DriverPicker({
         <p>
           Optional. Your photo is shown on your kart and on the big screen during the
           race. The host can remove it, and it is not added to the photo gallery.
-          {borrowed ? " Your profile photo is on the driver now; take another to use a different one." : ""}
+          {borrowed
+            ? " Your profile photo is on the driver now; take another to use a different one."
+            : ""}
         </p>
         <div className="driver-picker-actions">
           <Button

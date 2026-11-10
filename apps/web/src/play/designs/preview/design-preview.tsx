@@ -67,8 +67,14 @@ export function DesignPreview() {
   const question = previewQuestions[id];
   const revealed = phase === "reveal";
   // Stand-in voters for the stage vote board, spread by the reshuffle seed.
+  // They appear when the room would send them: `live` from answering, `after`
+  // from the reveal, `never` not at all, and never during the prompt.
+  const showsVoters =
+    question.attribution === "live"
+      ? phase !== "prompt"
+      : question.attribution === "after" && revealed;
   const voters =
-    question.kind === "choice"
+    question.kind === "choice" && showsVoters
       ? question.options.map((option, index) => ({
           optionId: option.id,
           playerIds: standIns
@@ -110,9 +116,7 @@ export function DesignPreview() {
     trolls: { active: [] },
   } as unknown as LobbySnapshot;
 
-  function reset(
-    next: Partial<{ id: BenchId; phase: (typeof phases)[number] }>,
-  ) {
+  function reset(next: Partial<{ id: BenchId; phase: (typeof phases)[number] }>) {
     if (next.id) {
       setId(next.id);
       setSelectedId(undefined);
@@ -130,9 +134,7 @@ export function DesignPreview() {
           Design{" "}
           <select
             value={id}
-            onChange={(event) =>
-              reset({ id: event.target.value as BenchId })
-            }
+            onChange={(event) => reset({ id: event.target.value as BenchId })}
           >
             {benchIds.map((option) => (
               <option key={option} value={option}>

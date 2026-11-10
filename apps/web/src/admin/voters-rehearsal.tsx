@@ -76,11 +76,21 @@ export function VotersRehearsal() {
     });
   }
 
-  function reset() {
+  /** Stops a wave still landing, so nobody votes after the reveal. */
+  function stopWave() {
     for (const timer of timers.current) window.clearTimeout(timer);
     timers.current = [];
+  }
+
+  function reset() {
+    stopWave();
     setPicks([]);
     setPhase("collect");
+  }
+
+  function toggleReveal() {
+    if (phase === "collect") stopWave();
+    setPhase(phase === "reveal" ? "collect" : "reveal");
   }
 
   const play = rehearsalPlay(picks, mode, phase, answer);
@@ -130,12 +140,7 @@ export function VotersRehearsal() {
         >
           Change a mind
         </Button>
-        <Button
-          variant="secondary"
-          onClick={() =>
-            setPhase((current) => (current === "reveal" ? "collect" : "reveal"))
-          }
-        >
+        <Button variant="secondary" onClick={toggleReveal}>
           {phase === "reveal" ? "Back to answering" : "Reveal"}
         </Button>
         <Button variant="secondary" onClick={reset}>

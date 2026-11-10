@@ -57,7 +57,7 @@ import {
   wordleProgress,
 } from "./wordle/wordle.ts";
 import { attachAudienceFields, publicQuestionCore } from "./project.ts";
-import { choiceVoters } from "./voters.ts";
+import { choiceVoters, readVoterDisplay } from "./voters.ts";
 import { questionFor, requirePlayable } from "./registry.ts";
 import {
   publicRankQuestion,
@@ -672,6 +672,7 @@ export function projectPlay(
   const selfRow = selfPlayerId
     ? totals.find((row) => row.playerId === selfPlayerId)
     : undefined;
+  const picksHidden = readVoterDisplay(sql).mode === "hidden";
   const view = {
     question: {
       ...publicQuestionCore(question, room.questionIndex + 1, room.questionCount),
@@ -727,8 +728,9 @@ export function projectPlay(
         ? { place: selfRow.place, points: selfRow.points, players: totals.length }
         : null,
     standings: showStanding ? audienceStandings(totals, audience) : null,
-    liveSample: liveNames(sql, question, room),
-    attributions: publicAttributions(sql, question, room),
+    // The host's room switch keeps every name off the screens, not just the board.
+    liveSample: picksHidden ? null : liveNames(sql, question, room),
+    attributions: picksHidden ? null : publicAttributions(sql, question, room),
     // Stage and host only: eighty phones are never sent the board.
     ...(audience === "guest"
       ? {}

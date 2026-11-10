@@ -147,7 +147,7 @@ export function CaptureFlow({
                   className="block w-full min-w-0 max-w-full min-h-12 overflow-hidden font-normal"
                   type="file"
                   accept="image/*"
-                  capture
+                  capture={startFacing}
                   onChange={(event) => {
                     const file = event.target.files?.[0];
                     event.target.value = "";

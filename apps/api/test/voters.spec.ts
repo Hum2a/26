@@ -24,10 +24,13 @@ describe("vote board numbers", () => {
   });
 
   it("lets every tied option lead, and nobody lead an empty board", () => {
-    const tied = voteShares(["x", "y"], [
-      { optionId: "x", playerIds: [a] },
-      { optionId: "y", playerIds: [b] },
-    ]);
+    const tied = voteShares(
+      ["x", "y"],
+      [
+        { optionId: "x", playerIds: [a] },
+        { optionId: "y", playerIds: [b] },
+      ],
+    );
     expect(tied.every((row) => row.leading)).toBe(true);
     const empty = voteShares(["x", "y"], null);
     expect(empty.some((row) => row.leading)).toBe(false);

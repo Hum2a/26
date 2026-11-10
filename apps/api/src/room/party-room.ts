@@ -3801,8 +3801,13 @@ export class PartyRoom extends DurableObject<Env> {
     requestId: string,
     mediaId: unknown,
   ): Promise<void> {
-    await this.acceptPlayerChoice(ws, attachment, requestId, "avatar", { mediaId }, (sql) =>
-      saveAvatar(sql, { playerId: attachment.principalId, mediaId }),
+    await this.acceptPlayerChoice(
+      ws,
+      attachment,
+      requestId,
+      "avatar",
+      { mediaId },
+      (sql) => saveAvatar(sql, { playerId: attachment.principalId, mediaId }),
     );
   }
 
