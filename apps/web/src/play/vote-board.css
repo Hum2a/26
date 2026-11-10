@@ -54,7 +54,8 @@
   align-content: start;
   gap: clamp(0.3rem, 1vh, 0.75rem);
   flex: 1 1 0;
-  min-width: 0;
+  /* Growth never squeezes a label below a readable width. */
+  min-width: min(14rem, 100%);
   min-height: clamp(9rem, 26vh, 22rem);
   padding: clamp(0.75rem, 1.6vw, 1.5rem);
   overflow: hidden;
@@ -103,13 +104,18 @@
 }
 
 .vote-option-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5em;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    "letter . mark"
+    "label label label";
+  align-items: center;
+  gap: 0.35em 0.5em;
   min-width: 0;
 }
 .vote-option-letter {
   display: inline-grid;
+  grid-area: letter;
   flex: none;
   place-items: center;
   width: 1.5em;
@@ -122,16 +128,18 @@
   line-height: 1;
 }
 .vote-option-label {
-  flex: 1 1 auto;
+  grid-area: label;
   min-width: 0;
   font-weight: 800;
   font-size: max(40px, 2.6vw);
   line-height: 1.1;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 .vote-option-crown,
 .vote-option-badge {
   display: inline-grid;
+  grid-area: mark;
   flex: none;
   place-items: center;
   width: 1.4em;

@@ -1,4 +1,12 @@
-import type { CustomPresentationId, PlaySnapshot } from "@26/shared";
+import {
+  customPresentationIds,
+  type CustomPresentationId,
+  type PlaySnapshot,
+} from "@26/shared";
+
+function customPresentationIdsForBench(): CustomPresentationId[] {
+  return [...customPresentationIds];
+}
 
 /**
  * Development-only preview data. Public question fields only: no answer keys.
@@ -21,7 +29,29 @@ const choice = {
   suppressSpeedBonus: false,
 };
 
-export const previewQuestions: Record<CustomPresentationId, PublicQuestion> = {
+export type BenchId = CustomPresentationId | "standard";
+
+/** Every bench entry. `standard` is the ordinary stage, with its vote board. */
+export const benchIds: readonly BenchId[] = [
+  "standard",
+  ...customPresentationIdsForBench(),
+];
+
+export const previewQuestions: Record<BenchId, PublicQuestion> = {
+  standard: {
+    ...core,
+    ...choice,
+    id: "standard-preview",
+    presentation: "standard",
+    attribution: "live",
+    prompt: "Which stand-in snack wins the night?",
+    options: [
+      { id: "a", label: "Stand-in crisps" },
+      { id: "b", label: "Stand-in samosas" },
+      { id: "c", label: "Stand-in cake" },
+      { id: "d", label: "Stand-in fruit" },
+    ],
+  },
   "who-said-it": {
     ...core,
     ...choice,

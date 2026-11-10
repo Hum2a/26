@@ -79,6 +79,7 @@ export const sharedFiles = [
   "results.ts",
   "stats.ts",
   "version.ts",
+  "voters.ts",
   "wall.ts",
 ];
 

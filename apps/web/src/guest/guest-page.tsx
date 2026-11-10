@@ -43,8 +43,9 @@ import { PhoneShell, type PhoneTab } from "./phone-shell";
 import { PhoneTimer } from "./phone-timer";
 import { RanksTab } from "./ranks-tab";
 import { YouMenu } from "./you-menu";
-import { AvatarPicker, avatarPromptSkipped, skipAvatarPrompt } from "./avatar-picker";
-import { avatarUrl } from "../ui/player-avatar";
+import { AvatarPicker } from "./avatar-picker";
+import { avatarPromptSkipped, skipAvatarPrompt } from "./avatar-prompt";
+import { avatarUrl } from "../ui/roster-context";
 import { RosterProvider } from "../ui/roster";
 import { TrollTab } from "../troll/troll-tab";
 import { ThemePicker } from "../theme/theme-picker";
@@ -671,278 +672,281 @@ export function GuestPage({
       players={snapshot?.players ?? []}
       revision={snapshot?.mediaDisplayRevision}
     >
-    <ControllerRoot
-      allowLandscape={
-        snapshot?.play?.question.kind === "kart" || snapshot?.mode === "kart"
-      }
-    >
-      <PhoneShell
-        nickname={nickname}
-        connection={connection}
-        held={reconnecting}
-        immersive={Boolean(questionVisible)}
-        scrollKey={`${snapshot?.play?.question.id ?? "join"}/${snapshot?.phase ?? "lobby"}`}
-        timer={<PhoneTimer snapshot={snapshot} observedAt={observedAt} />}
-        menu={
-          <YouMenu
-            playerId={session.playerId}
-            nickname={nickname ?? session.nickname}
-            faceSrc={selfAvatar ? avatarUrl(session.gameId, selfAvatar) : null}
-          >
-            {!rehearsalCredential ? (
-              <Disclosure title={selfAvatar ? "Your photo" : "Add your photo"}>
-                {avatarPicker("menu")}
-              </Disclosure>
-            ) : null}
-            <div className="you-menu-row">
-              <span>Theme</span>
-              <ThemePicker />
-            </div>
-            {!rehearsalCredential ? (
-              <TransferPhone
-                busy={busy}
-                code={transferCode}
-                onCode={setTransferCode}
-                onSubmit={(event) => void onRedeem(event)}
-              />
-            ) : null}
-          </YouMenu>
+      <ControllerRoot
+        allowLandscape={
+          snapshot?.play?.question.kind === "kart" || snapshot?.mode === "kart"
         }
-        overlays={
-          snapshot && snapshot.phase !== "lobby" ? (
-            <GuestTrolls
-              snapshot={snapshot}
-              gameId={session.gameId}
-              selfId={session.playerId}
-              pending={trollPending}
-              onEscape={onTrollEscape}
-            />
-          ) : null
-        }
-        tabs={{
-          active: tab,
-          onChange: (next) => {
-            setTab(next);
-            if (next === "ranks") setRanksFresh(false);
-          },
-          badges,
-          pages: {
-            ranks: (
-              <>
-                <RanksTab snapshot={snapshot} nickname={nickname ?? session.nickname} />
-                {snapshot?.recap && snapshot.recap.length > 0 ? (
-                  <Panel title="Your recap">
-                    <ul className="grid gap-3">
-                      {snapshot.recap.map((card) => (
-                        <li key={card.id}>
-                          {card.illustrative ? (
-                            <p className="font-bold">Illustrative</p>
-                          ) : null}
-                          <p className="break-words">{card.results}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </Panel>
-                ) : null}
-              </>
-            ),
-            troll: snapshot ? (
-              <TrollTab
+      >
+        <PhoneShell
+          nickname={nickname}
+          connection={connection}
+          held={reconnecting}
+          immersive={Boolean(questionVisible)}
+          scrollKey={`${snapshot?.play?.question.id ?? "join"}/${snapshot?.phase ?? "lobby"}`}
+          timer={<PhoneTimer snapshot={snapshot} observedAt={observedAt} />}
+          menu={
+            <YouMenu
+              playerId={session.playerId}
+              nickname={nickname ?? session.nickname}
+              faceSrc={selfAvatar ? avatarUrl(session.gameId, selfAvatar) : null}
+            >
+              {!rehearsalCredential ? (
+                <Disclosure title={selfAvatar ? "Your photo" : "Add your photo"}>
+                  {avatarPicker("menu")}
+                </Disclosure>
+              ) : null}
+              <div className="you-menu-row">
+                <span>Theme</span>
+                <ThemePicker />
+              </div>
+              {!rehearsalCredential ? (
+                <TransferPhone
+                  busy={busy}
+                  code={transferCode}
+                  onCode={setTransferCode}
+                  onSubmit={(event) => void onRedeem(event)}
+                />
+              ) : null}
+            </YouMenu>
+          }
+          overlays={
+            snapshot && snapshot.phase !== "lobby" ? (
+              <GuestTrolls
                 snapshot={snapshot}
                 gameId={session.gameId}
                 selfId={session.playerId}
                 pending={trollPending}
-                onSend={onTroll}
+                onEscape={onTrollEscape}
               />
-            ) : null,
-            snap: (
-              <div className="snap-tab">
-                <header className="phone-tab-head">
-                  <p className="entry-eyebrow">Photos and sound</p>
-                  <h1 className="phone-tab-title">Snap</h1>
-                </header>
-                {!snapVisited ? null : rehearsalCredential ? (
-                  <p className="text-muted">
-                    Live test phone. Use an ordinary second-browser guest for photos.
-                  </p>
-                ) : (
-                  <>
-                    {snapshot?.wall ? (
+            ) : null
+          }
+          tabs={{
+            active: tab,
+            onChange: (next) => {
+              setTab(next);
+              if (next === "ranks") setRanksFresh(false);
+            },
+            badges,
+            pages: {
+              ranks: (
+                <>
+                  <RanksTab
+                    snapshot={snapshot}
+                    nickname={nickname ?? session.nickname}
+                  />
+                  {snapshot?.recap && snapshot.recap.length > 0 ? (
+                    <Panel title="Your recap">
+                      <ul className="grid gap-3">
+                        {snapshot.recap.map((card) => (
+                          <li key={card.id}>
+                            {card.illustrative ? (
+                              <p className="font-bold">Illustrative</p>
+                            ) : null}
+                            <p className="break-words">{card.results}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </Panel>
+                  ) : null}
+                </>
+              ),
+              troll: snapshot ? (
+                <TrollTab
+                  snapshot={snapshot}
+                  gameId={session.gameId}
+                  selfId={session.playerId}
+                  pending={trollPending}
+                  onSend={onTroll}
+                />
+              ) : null,
+              snap: (
+                <div className="snap-tab">
+                  <header className="phone-tab-head">
+                    <p className="entry-eyebrow">Photos and sound</p>
+                    <h1 className="phone-tab-title">Snap</h1>
+                  </header>
+                  {!snapVisited ? null : rehearsalCredential ? (
+                    <p className="text-muted">
+                      Live test phone. Use an ordinary second-browser guest for photos.
+                    </p>
+                  ) : (
+                    <>
+                      {snapshot?.wall ? (
+                        <section
+                          className="snap-card glass"
+                          aria-label="Send to the big screen"
+                        >
+                          <h2>Send to the big screen</h2>
+                          <GuestWall
+                            wall={snapshot.wall}
+                            gameId={session.gameId}
+                            selfNickname={selfPlayer?.nickname ?? "You"}
+                            onPost={(post) => socketRef.current?.submitWallPost(post)}
+                            onWithdraw={(postId) =>
+                              socketRef.current?.submitWallWithdraw(postId)
+                            }
+                            onReact={(postId, reaction) =>
+                              socketRef.current?.submitWallReact(postId, reaction)
+                            }
+                          />
+                        </section>
+                      ) : null}
                       <section
                         className="snap-card glass"
-                        aria-label="Send to the big screen"
+                        aria-label="Photos and sound for the game"
                       >
-                        <h2>Send to the big screen</h2>
-                        <GuestWall
-                          wall={snapshot.wall}
-                          gameId={session.gameId}
-                          selfNickname={selfPlayer?.nickname ?? "You"}
-                          onPost={(post) => socketRef.current?.submitWallPost(post)}
-                          onWithdraw={(postId) =>
-                            socketRef.current?.submitWallWithdraw(postId)
-                          }
-                          onReact={(postId, reaction) =>
-                            socketRef.current?.submitWallReact(postId, reaction)
-                          }
-                        />
+                        <h2>Photos &amp; sound for the game</h2>
+                        <GuestMedia gameId={session.gameId} active={tab === "snap"} />
                       </section>
-                    ) : null}
-                    <section
-                      className="snap-card glass"
-                      aria-label="Photos and sound for the game"
-                    >
-                      <h2>Photos &amp; sound for the game</h2>
-                      <GuestMedia gameId={session.gameId} active={tab === "snap"} />
-                    </section>
-                  </>
-                )}
-              </div>
-            ),
-          },
-        }}
-      >
-        {questionVisible ? null : (
-          <h1 className="phone-prompt">
-            {!snapshot
-              ? "Connecting…"
-              : snapshot.phase === "lobby"
-                ? "In the lobby"
-                : "This phone"}
-          </h1>
-        )}
-        <StatusMessage>{status}</StatusMessage>
-        {rehearsalCredential ? (
-          <p className="text-sm text-muted">
-            Live test phone. Use an ordinary second-browser guest for photos and phone
-            transfer.
-          </p>
-        ) : null}
-        {replacedNotice && !rehearsalSession ? (
-          <Button
-            onClick={() => {
-              setReplacedNotice(undefined);
-              setSession(undefined);
-              setNotice("You have not joined a room.");
-            }}
-          >
-            Join another room
-          </Button>
-        ) : null}
-        <ReconnectBanner
-          disconnected={reconnecting}
-          snapshotId={snapshotPulse}
-          onRetry={() => socketRef.current?.reconnectNow()}
+                    </>
+                  )}
+                </div>
+              ),
+            },
+          }}
         >
-          <div className="grid gap-4">
-            {snapshot?.phase === "lobby" ? (
-              <div className="grid gap-4">
-                <AnimatePresence initial={false}>
-                  {avatarCard ? (
-                    <motion.div
-                      key="avatar"
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.24, ease: [0.2, 0, 0, 1] }}
-                    >
-                      {avatarPicker("welcome")}
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-                <Disclosure title="Invite a friend">
-                  <JoinMark code={snapshot.joinCode} allowCopy />
-                </Disclosure>
-                {snapshot.namesReveal ? (
-                  <NameReveal reveal={snapshot.namesReveal} />
-                ) : null}
-                {/* A kart-only lobby never reveals the name votes, so it does not ask for them. */}
-                {snapshot.mode !== "kart" ? (
-                  <NameCloud
-                    names={snapshot.cloud}
-                    selfId={session.playerId}
-                    reactions={snapshot.selfReactions}
-                    onReact={onReact}
-                    minRem={0.875}
-                  />
-                ) : null}
-                {!rehearsalCredential ? (
-                  <DriverPicker
-                    gameId={snapshot.gameId}
-                    nickname={nickname ?? session.nickname}
-                    driver={selfPlayer?.driver}
-                    avatarMediaId={selfAvatar}
-                    pending={driverPending}
-                    onChoose={onDriver}
-                  />
-                ) : null}
-              </div>
-            ) : null}
-            <PhaseTransition
-              phase={snapshot?.phase ?? "lobby"}
-              scene={kartRaceScene(snapshot)}
+          {questionVisible ? null : (
+            <h1 className="phone-prompt">
+              {!snapshot
+                ? "Connecting…"
+                : snapshot.phase === "lobby"
+                  ? "In the lobby"
+                  : "This phone"}
+            </h1>
+          )}
+          <StatusMessage>{status}</StatusMessage>
+          {rehearsalCredential ? (
+            <p className="text-sm text-muted">
+              Live test phone. Use an ordinary second-browser guest for photos and phone
+              transfer.
+            </p>
+          ) : null}
+          {replacedNotice && !rehearsalSession ? (
+            <Button
+              onClick={() => {
+                setReplacedNotice(undefined);
+                setSession(undefined);
+                setNotice("You have not joined a room.");
+              }}
             >
-              {snapshot?.phase === "facts" && snapshot.funFact ? (
-                <FunFactPhone fact={snapshot.funFact} />
-              ) : snapshot ? (
-                <GuestPlay
-                  connected={connection === "open"}
-                  onKartInput={(input) => socketRef.current?.submitKartInput(input)}
-                  onKartRecover={(raceId) => {
-                    const requestId = socketRef.current?.submitKartRecovery?.(raceId);
-                    if (requestId) {
-                      kartRecoveryRequest.current = requestId;
-                      setKartRecoveryPending(true);
-                      setKartRecoveryNotice("");
-                    }
-                  }}
-                  onKartUseItem={(raceId) => {
-                    const id = socketRef.current?.submitKartItem?.(raceId);
-                    if (id) {
-                      kartItemRequest.current = id;
-                      setKartItemPending(true);
-                      setKartItemNotice("");
-                    }
-                  }}
-                  kartItemPending={kartItemPending}
-                  kartItemNotice={kartItemNotice}
-                  kartRecoveryPending={kartRecoveryPending}
-                  kartRecoveryNotice={kartRecoveryNotice}
-                  onChessMove={(params) => {
-                    if (!beginSend(true)) return;
-                    pendingRequest.current =
-                      socketRef.current?.submitChessMove(params) ?? null;
-                  }}
-                  onChessResign={(params) => {
-                    if (!beginSend(true)) return;
-                    pendingRequest.current =
-                      socketRef.current?.submitChessResign(params) ?? null;
-                  }}
-                  snapshot={snapshot}
-                  selectedId={selectedId}
-                  pending={pending}
-                  onSelect={setSelectedId}
-                  onSubmit={onSubmit}
-                  onChoose={onChoose}
-                  observedAt={observedAt}
-                  onEstimate={onEstimate}
-                  onRank={onRank}
-                  onText={onText}
-                  onDraft={(body) => socketRef.current?.submitDraft(body)}
-                  onBallot={onBallot}
-                  onDuel={onDuel}
-                />
-              ) : (
-                <p>Connecting to the room…</p>
-              )}
-              {snapshot &&
-              guestRoundCopy(snapshot) === "Waiting for the next question." ? (
-                <WaitingNext />
+              Join another room
+            </Button>
+          ) : null}
+          <ReconnectBanner
+            disconnected={reconnecting}
+            snapshotId={snapshotPulse}
+            onRetry={() => socketRef.current?.reconnectNow()}
+          >
+            <div className="grid gap-4">
+              {snapshot?.phase === "lobby" ? (
+                <div className="grid gap-4">
+                  <AnimatePresence initial={false}>
+                    {avatarCard ? (
+                      <motion.div
+                        key="avatar"
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.24, ease: [0.2, 0, 0, 1] }}
+                      >
+                        {avatarPicker("welcome")}
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                  <Disclosure title="Invite a friend">
+                    <JoinMark code={snapshot.joinCode} allowCopy />
+                  </Disclosure>
+                  {snapshot.namesReveal ? (
+                    <NameReveal reveal={snapshot.namesReveal} />
+                  ) : null}
+                  {/* A kart-only lobby never reveals the name votes, so it does not ask for them. */}
+                  {snapshot.mode !== "kart" ? (
+                    <NameCloud
+                      names={snapshot.cloud}
+                      selfId={session.playerId}
+                      reactions={snapshot.selfReactions}
+                      onReact={onReact}
+                      minRem={0.875}
+                    />
+                  ) : null}
+                  {!rehearsalCredential ? (
+                    <DriverPicker
+                      gameId={snapshot.gameId}
+                      nickname={nickname ?? session.nickname}
+                      driver={selfPlayer?.driver}
+                      avatarMediaId={selfAvatar}
+                      pending={driverPending}
+                      onChoose={onDriver}
+                    />
+                  ) : null}
+                </div>
               ) : null}
-            </PhaseTransition>
-          </div>
-        </ReconnectBanner>
-      </PhoneShell>
-    </ControllerRoot>
+              <PhaseTransition
+                phase={snapshot?.phase ?? "lobby"}
+                scene={kartRaceScene(snapshot)}
+              >
+                {snapshot?.phase === "facts" && snapshot.funFact ? (
+                  <FunFactPhone fact={snapshot.funFact} />
+                ) : snapshot ? (
+                  <GuestPlay
+                    connected={connection === "open"}
+                    onKartInput={(input) => socketRef.current?.submitKartInput(input)}
+                    onKartRecover={(raceId) => {
+                      const requestId = socketRef.current?.submitKartRecovery?.(raceId);
+                      if (requestId) {
+                        kartRecoveryRequest.current = requestId;
+                        setKartRecoveryPending(true);
+                        setKartRecoveryNotice("");
+                      }
+                    }}
+                    onKartUseItem={(raceId) => {
+                      const id = socketRef.current?.submitKartItem?.(raceId);
+                      if (id) {
+                        kartItemRequest.current = id;
+                        setKartItemPending(true);
+                        setKartItemNotice("");
+                      }
+                    }}
+                    kartItemPending={kartItemPending}
+                    kartItemNotice={kartItemNotice}
+                    kartRecoveryPending={kartRecoveryPending}
+                    kartRecoveryNotice={kartRecoveryNotice}
+                    onChessMove={(params) => {
+                      if (!beginSend(true)) return;
+                      pendingRequest.current =
+                        socketRef.current?.submitChessMove(params) ?? null;
+                    }}
+                    onChessResign={(params) => {
+                      if (!beginSend(true)) return;
+                      pendingRequest.current =
+                        socketRef.current?.submitChessResign(params) ?? null;
+                    }}
+                    snapshot={snapshot}
+                    selectedId={selectedId}
+                    pending={pending}
+                    onSelect={setSelectedId}
+                    onSubmit={onSubmit}
+                    onChoose={onChoose}
+                    observedAt={observedAt}
+                    onEstimate={onEstimate}
+                    onRank={onRank}
+                    onText={onText}
+                    onDraft={(body) => socketRef.current?.submitDraft(body)}
+                    onBallot={onBallot}
+                    onDuel={onDuel}
+                  />
+                ) : (
+                  <p>Connecting to the room…</p>
+                )}
+                {snapshot &&
+                guestRoundCopy(snapshot) === "Waiting for the next question." ? (
+                  <WaitingNext />
+                ) : null}
+              </PhaseTransition>
+            </div>
+          </ReconnectBanner>
+        </PhoneShell>
+      </ControllerRoot>
     </RosterProvider>
   );
 }

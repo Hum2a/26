@@ -258,6 +258,8 @@
 
 /* Voter faces inside a custom design's stage option (see StageVoters). */
 .design-voters {
+  /* Spans the whole option when a design lays it out as a grid. */
+  grid-column: 1 / -1;
   margin-top: 0.5rem;
 }
 .design-voters .vote-bubble .player-avatar {

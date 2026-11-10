@@ -91,7 +91,7 @@ Public API is `packages/shared/src/index.ts` (`@26/shared`). Feature folders:
 - `chess/` — schemas, clocks, capture scoring.
 - `wordle/` — board reducer.
 
-Cross-cutting files stay at `src/` (`rate-limit.ts`, `party-scoring.ts`, `wall.ts`, …). Do not put round UI or Durable Object code here.
+Cross-cutting files stay at `src/` (`rate-limit.ts`, `party-scoring.ts`, `voters.ts`, `wall.ts`, …). Do not put round UI or Durable Object code here.
 
 Kart canvas may deep-import track geometry (`packages/shared/src/kart/kart-track.ts`, `kart-circuit.json`) so the phone does not pull the whole reducer. New shared **logic** still goes through `@26/shared`.
 

@@ -6090,3 +6090,42 @@ Status: implemented on a branch from master. No deploy, no Cloudflare secret cha
 ### Exact next stage
 
 A human updates the staging and production `ADMIN_EMAIL` secrets to the comma-separated list and re-seeds those databases. Do not start that from this change.
+
+## 10 November 2026 — Live vote board and guest profile photos
+
+Status: feature branch `feature/live-voters-and-avatars`, master merged in. No deploy, no Playwright.
+
+What now works:
+
+- **Vote board on the big screen.** Choice rounds show who is picking what. Each option grows with its share of the room (eased `flex-grow`), bumps with a "+1" when a vote lands, fills from the bottom with its share, and holds the voters' face bubbles (newest kept visible, the rest folded into "+N" within a ~72-bubble board budget). The leader gets a crown; at the reveal the answer lights up and the rest step back without being hidden. Reduced motion keeps short fades only. The seven custom choice designs place the same bubbles in their own options through `StageVoters` in the design kit.
+- **Per question, and a room switch.** Choice questions now default to `attribution: "live"` (`ordinaryDefaults.choiceAttribution`). `after` shows picks from the reveal, `never` keeps them off the screen; push-your-luck keeps its own ladder. The host can hide picks for every question from Admin → Vote board (`voters-hidden` / `voters-question`, receipted, with a 20-entry history).
+- **Never on phones.** `play.voters` (option → player ids, arrival order) is built only for the stage and host audiences, once per audience per broadcast; guest snapshots do not carry the key, so 80 phones are not sent the board and nobody can copy the room.
+- **Profile photos.** After joining, the lobby shows a photo card: take a selfie (front camera, mirrored preview, square crop) or choose from the library, or "Not now". It is also under the You menu all game. The photo is a `face` upload (384px edge) saved with a receipted `avatar` socket command after the room checks it is the guest's own accepted, visible photo. A `RosterProvider` on the phone and stage makes every `PlayerAvatar` (lobby cloud, ranks, troll picker, standings, vote bubbles) show it. A kart driver with no face of its own uses it. The host can remove any photo (hides the upload and clears the pointer); hiding it in Media removes it too.
+
+Files and interfaces:
+
+- Shared: `packages/shared/src/voters.ts` (`voteShares`, `bubbleLimit`, `visibleVoters`, `newVoters`); `lobbyPlayer.avatarMediaId`, `play.voters`, host-only `voterDisplay`.
+- API: `apps/api/src/questions/voters.ts` (`showsVoters`, `choiceVoters`, switch), `apps/api/src/media/avatar.ts`; room columns `player.avatar_media_id`, `room.voter_display`, `room.voter_display_history`; host actions `voters-question`, `voters-hidden`, `avatar-clear`; guest command `avatar`. `acceptDriver` and the new `acceptAvatar` share one receipted `acceptPlayerChoice`. Face quota is now 8 per guest (profile and driver share it).
+- Web: `play/vote-board.tsx`, `guest/avatar-picker.tsx`, `ui/roster.tsx` + `ui/roster-context.ts`, `admin/voters-page.tsx` + rehearsal; `CaptureFlow` gains `facing`, `library` and `square`; `useCamera` takes a starting facing.
+- Admin: new room feature "Vote board" (`/admin/rooms/:gameId/voters`): the switch and history, the live board as the projector draws it, every player's photo with Remove, and a stand-in rehearsal of the real board (add a vote, a wave, change a mind, reveal) that never touches the room.
+
+Decisions:
+
+- Picks are live by default for choice rounds because the owner set on-screen attribution as a constant for every round, with per-question opt-out. Other mechanics keep their existing `after` default for now.
+- Face photos keep the existing `no-store` media policy (the photo-bias spec requires that a cached image never outlives the room's visibility check), so phones may refetch a face; profile photos are sent at 384px to keep that cheap.
+
+### Commands and results
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 27 existing react-refresh warnings (none new); structure check passed
+- `npm run test:unit` — see the PR for the final count
+- API: `voters.spec.ts` 8 passed; room `voters-room`, `drivers-room`, `quiz`, `photo-bias-room`, `media`, `patch-room`, `player-control` — 33 passed
+- `npm run content:check` — passed (existing incomplete birthday drafts)
+- `npm run build` — budget green: entry JS gzip 216761, entry CSS 20643, total JS 1383433, largest 496695
+- Playwright / E2E — not run (prohibited)
+
+Not verified: a real selfie on a phone camera, the board on a projector across a room, or 80 live voters on venue Wi-Fi.
+
+### Exact next stage
+
+Try the board with the developer bots (Admin → Developer, then Vote board), and a real selfie from a second phone. Decide whether slider, rank and vote rounds should get their own on-screen picks next.

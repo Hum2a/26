@@ -7,7 +7,8 @@ vi.mock("../photo/CaptureFlow", () => ({
     </p>
   ),
 }));
-import { AvatarPicker, avatarPromptSkipped, skipAvatarPrompt } from "./avatar-picker";
+import { AvatarPicker } from "./avatar-picker";
+import { avatarPromptSkipped, skipAvatarPrompt } from "./avatar-prompt";
 
 const playerId = "00000000-0000-4000-8000-000000000001";
 const photo = "00000000-0000-4000-8000-0000000000f1";
@@ -56,7 +57,8 @@ it("says it is saving, and holds the buttons, until the room acknowledges", () =
   draw({ avatarMediaId: photo, pending: true });
   expect(screen.getByRole("status").textContent).toBe("Saving your photo…");
   expect(
-    (screen.getByRole("button", { name: "Remove my photo" }) as HTMLButtonElement).disabled,
+    (screen.getByRole("button", { name: "Remove my photo" }) as HTMLButtonElement)
+      .disabled,
   ).toBe(true);
 });
 

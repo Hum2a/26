@@ -3,6 +3,14 @@ import { beforeEach, expect, it, vi } from "vitest";
 vi.mock("./rooms-api", () => ({ readAdminRoom: vi.fn() }));
 vi.mock("../live/room-socket", () => ({ openRoomSocket: vi.fn() }));
 vi.mock("../live/room-api", () => ({ playRoom: vi.fn(), issueTransfer: vi.fn() }));
+vi.mock("@number-flow/react", () => ({
+  default: ({ value, suffix }: { value: number; suffix?: string }) => (
+    <span>
+      {value}
+      {suffix}
+    </span>
+  ),
+}));
 import { playRoom } from "../live/room-api";
 import { VotersPage } from "./voters-page";
 import {

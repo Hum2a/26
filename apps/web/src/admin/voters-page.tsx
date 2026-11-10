@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "../ui/primitives";
-import { avatarUrl, PlayerAvatar } from "../ui/player-avatar";
+import { PlayerAvatar } from "../ui/player-avatar";
+import { avatarUrl } from "../ui/roster-context";
 import { RosterProvider } from "../ui/roster";
 import { VoteBoard } from "../play/vote-board";
 import { useAdminRoom } from "./room-provider";
@@ -42,7 +43,10 @@ export function VotersPage() {
       </p>
       <CommandFeedback scope="voters" />
 
-      <section className="skin-panel p-4 space-y-3" aria-label="Picks on the big screen">
+      <section
+        className="skin-panel p-4 space-y-3"
+        aria-label="Picks on the big screen"
+      >
         <h2>Picks on the big screen</h2>
         <p>
           {hidden
@@ -108,8 +112,8 @@ export function VotersPage() {
       <section className="skin-panel p-4 space-y-3" aria-label="Profile photos">
         <h2>Profile photos</h2>
         <p>
-          {withPhotos.length} of {snapshot.players.length} players have a photo. Removing
-          one takes it off every screen at once; the guest may take a new one.
+          {withPhotos.length} of {snapshot.players.length} players have a photo.
+          Removing one takes it off every screen at once; the guest may take a new one.
         </p>
         {snapshot.players.length === 0 ? (
           <p>No players yet.</p>

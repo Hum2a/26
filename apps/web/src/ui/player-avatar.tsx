@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react/dist/offline";
 import botIcon from "@iconify-icons/lucide/bot";
-import { withClientApiKey } from "../api/client-key";
 import { useRosterEntry } from "./roster-context";
 import "./player-avatar.css";
 
@@ -24,11 +23,6 @@ export function initials(nickname: string): string {
       ? `${words[0]![0]}${words[1]![0]}`
       : [...(words[0] ?? "?")].slice(0, 2).join("");
   return letters.toLocaleUpperCase("en-GB");
-}
-
-/** URL of a guest's profile photo. Same authenticated route as other room media. */
-export function avatarUrl(gameId: string, mediaId: string): string {
-  return withClientApiKey(`/api/rooms/${gameId}/media/${mediaId}`);
 }
 
 export function PlayerAvatar({

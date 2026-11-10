@@ -4,7 +4,6 @@ import {
   customPresentationIds,
   emptyWordleBoard,
   reduceWordle,
-  type CustomPresentationId,
   type LobbySnapshot,
   type PlaySnapshot,
   type RoomPhaseName,
@@ -13,13 +12,19 @@ import { GuestPlay } from "../../guest-play";
 import { StagePlay } from "../../stage-play";
 import { SafeArea } from "../../../stage/SafeArea";
 import type { TierPlacement } from "../../controls/TierAssign";
-import { previewQuestions, previewReveal } from "./fixtures";
+import { benchIds, previewQuestions, previewReveal, type BenchId } from "./fixtures";
 import "../../../stage/projector.css";
 
 /**
  * Development-only design bench at `/design`. It drives the real phone and
  * stage components with a fake snapshot. Nothing here reaches a room.
  */
+/** Stand-in players for the vote board. Initials only; no real guest or photo. */
+const standIns = Array.from({ length: 40 }, (_, index) => ({
+  playerId: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+  nickname: `Stand-in ${index + 1}`,
+}));
+
 const phases = [
   "prompt",
   "collect",
@@ -38,8 +43,8 @@ function readParams() {
   const q = params.get("q");
   const phase = params.get("phase");
   return {
-    id: (customPresentationIds as readonly string[]).includes(q ?? "")
-      ? (q as CustomPresentationId)
+    id: (benchIds as readonly string[]).includes(q ?? "")
+      ? (q as BenchId)
       : customPresentationIds[0],
     surface:
       params.get("surface") === "stage" ? ("stage" as const) : ("phone" as const),
@@ -51,7 +56,7 @@ function readParams() {
 
 export function DesignPreview() {
   const initial = useMemo(() => readParams(), []);
-  const [id, setId] = useState<CustomPresentationId>(initial.id);
+  const [id, setId] = useState<BenchId>(initial.id);
   const [surface, setSurface] = useState(initial.surface);
   const [phase, setPhase] = useState<(typeof phases)[number]>(initial.phase);
   const [selectedId, setSelectedId] = useState<string>();
@@ -61,6 +66,20 @@ export function DesignPreview() {
 
   const question = previewQuestions[id];
   const revealed = phase === "reveal";
+  // Stand-in voters for the stage vote board, spread by the reshuffle seed.
+  const voters =
+    question.kind === "choice"
+      ? question.options.map((option, index) => ({
+          optionId: option.id,
+          playerIds: standIns
+            .slice(0, Math.min(count, standIns.length))
+            .filter(
+              (_, order) =>
+                (order * 7 + seed + (order % 3)) % question.options.length === index,
+            )
+            .map((player) => player.playerId),
+        }))
+      : undefined;
   const play: PlaySnapshot = {
     question,
     submissionCount: count,
@@ -74,12 +93,15 @@ export function DesignPreview() {
     standings: null,
     liveSample: null,
     attributions: null,
+    ...(voters ? { voters } : {}),
     explanation:
       revealed && id === "scripture"
         ? "The full verse is printed here at the reveal (preview text)."
         : null,
   };
   const snapshot = {
+    gameId: "DESIGNXX",
+    players: standIns,
     phase,
     paused: false,
     held: false,
@@ -89,7 +111,7 @@ export function DesignPreview() {
   } as unknown as LobbySnapshot;
 
   function reset(
-    next: Partial<{ id: CustomPresentationId; phase: (typeof phases)[number] }>,
+    next: Partial<{ id: BenchId; phase: (typeof phases)[number] }>,
   ) {
     if (next.id) {
       setId(next.id);
@@ -109,10 +131,10 @@ export function DesignPreview() {
           <select
             value={id}
             onChange={(event) =>
-              reset({ id: event.target.value as CustomPresentationId })
+              reset({ id: event.target.value as BenchId })
             }
           >
-            {customPresentationIds.map((option) => (
+            {benchIds.map((option) => (
               <option key={option} value={option}>
                 {option}
               </option>

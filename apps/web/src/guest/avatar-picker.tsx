@@ -3,13 +3,12 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Icon } from "@iconify/react/dist/offline";
 import camera from "@iconify-icons/lucide/camera";
 import { Button } from "../ui/primitives";
-import { avatarUrl, PlayerAvatar } from "../ui/player-avatar";
+import { PlayerAvatar } from "../ui/player-avatar";
+import { avatarUrl } from "../ui/roster-context";
 import { CaptureFlow } from "../photo/CaptureFlow";
 import { sendFacePhoto } from "../media/face-upload";
+import { avatarEdge } from "./avatar-prompt";
 import "./avatar-picker.css";
-
-/** Profile photos are drawn small (bubbles, standings), so they are sent small. */
-export const avatarEdge = 384;
 
 /**
  * The guest's profile photo: a selfie or a photo from their library, shown
@@ -43,11 +42,7 @@ export function AvatarPicker({
   const titleId = `avatar-picker-${variant}`;
 
   return (
-    <section
-      className="avatar-picker"
-      data-variant={variant}
-      aria-labelledby={titleId}
-    >
+    <section className="avatar-picker" data-variant={variant} aria-labelledby={titleId}>
       <header className="avatar-picker-head">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span
@@ -57,10 +52,17 @@ export function AvatarPicker({
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
             exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.6 }}
             transition={
-              reduce ? { duration: 0.2 } : { type: "spring", stiffness: 420, damping: 20 }
+              reduce
+                ? { duration: 0.2 }
+                : { type: "spring", stiffness: 420, damping: 20 }
             }
           >
-            <PlayerAvatar playerId={playerId} nickname={nickname} faceSrc={face} size="xl" />
+            <PlayerAvatar
+              playerId={playerId}
+              nickname={nickname}
+              faceSrc={face}
+              size="xl"
+            />
           </motion.span>
         </AnimatePresence>
         <div className="min-w-0">
@@ -81,7 +83,11 @@ export function AvatarPicker({
           onClick={() => setTaking((value) => !value)}
         >
           <Icon icon={camera} aria-hidden="true" />{" "}
-          {taking ? "Close camera" : avatarMediaId ? "Change my photo" : "Take a selfie"}
+          {taking
+            ? "Close camera"
+            : avatarMediaId
+              ? "Change my photo"
+              : "Take a selfie"}
         </Button>
         {avatarMediaId ? (
           <Button variant="secondary" disabled={pending} onClick={() => onChoose(null)}>
@@ -124,7 +130,12 @@ export function AvatarPicker({
               library
               square
               upload={async (file, setStatus) => {
-                const mediaId = await sendFacePhoto(gameId, file, setStatus, avatarEdge);
+                const mediaId = await sendFacePhoto(
+                  gameId,
+                  file,
+                  setStatus,
+                  avatarEdge,
+                );
                 if (!mediaId) return false;
                 onChoose(mediaId);
                 setTaking(false);
@@ -139,21 +150,4 @@ export function AvatarPicker({
       </AnimatePresence>
     </section>
   );
-}
-
-/** Whether this phone has already put off the welcome card for this game. */
-export function avatarPromptSkipped(gameId: string): boolean {
-  try {
-    return window.sessionStorage.getItem(`avatar-skip:${gameId.toUpperCase()}`) === "1";
-  } catch {
-    return false;
-  }
-}
-
-export function skipAvatarPrompt(gameId: string): void {
-  try {
-    window.sessionStorage.setItem(`avatar-skip:${gameId.toUpperCase()}`, "1");
-  } catch {
-    // Private mode: the card simply shows again next visit.
-  }
 }

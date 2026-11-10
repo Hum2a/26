@@ -12,7 +12,8 @@ import {
   type PlaySnapshot,
   type VoteShare,
 } from "@26/shared";
-import { RosterAvatar, useRoster } from "../ui/roster";
+import { RosterAvatar } from "../ui/roster";
+import { useRoster } from "../ui/roster-context";
 import { QuestionOptionImage } from "./question-option-image";
 import "./vote-board.css";
 
@@ -168,7 +169,7 @@ const VoteOption = memo(function VoteOption({
     "--vote-share": String(sized ? share.share : 0),
     "--vote-grow": String(sized ? share.grow : 0),
     "--vote-tone": String(index % 6),
-    flexGrow: sized ? 1 + share.grow * 1.6 : 1,
+    flexGrow: sized ? 1 + share.grow * 1.2 : 1,
   } as CSSProperties;
   const { shown, overflow } = visibleVoters(share.playerIds, limit);
 
@@ -194,10 +195,16 @@ const VoteOption = memo(function VoteOption({
             <motion.span
               key="correct"
               className="vote-option-badge"
-              initial={{ opacity: 0, scale: reduce ? 1 : 0.4, rotate: reduce ? 0 : -20 }}
+              initial={{
+                opacity: 0,
+                scale: reduce ? 1 : 0.4,
+                rotate: reduce ? 0 : -20,
+              }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               transition={
-                reduce ? { duration: 0.2 } : { type: "spring", stiffness: 420, damping: 18 }
+                reduce
+                  ? { duration: 0.2 }
+                  : { type: "spring", stiffness: 420, damping: 18 }
               }
             >
               <Icon icon={check} aria-hidden="true" />
