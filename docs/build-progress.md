@@ -6118,8 +6118,9 @@ Decisions:
 
 - `npm run typecheck` — passed
 - `npm run lint` — 0 errors, 27 existing react-refresh warnings (none new); structure check passed
-- `npm run test:unit` — see the PR for the final count
-- API: `voters.spec.ts` 8 passed; room `voters-room`, `drivers-room`, `quiz`, `photo-bias-room`, `media`, `patch-room`, `player-control` — 33 passed
+- `npm run test:unit` — 802 passed; 3 Stockfish worker tests fail as already recorded on master (chess files are not changed here)
+- `npm run test -w @26/api` — 764 passed, including `voters.spec.ts` (8) and `voters-room.spec.ts` (4); the 2 catalogue assertions already failing on master (`admin-rooms-auth`, `party-concepts`) still fail, confirmed against master's source
+- `/design?q=standard&surface=stage` (new bench entry) checked in the browser at 1600×1000: growth, crowns, face bubbles at 10 and 32 votes, reveal tick and dimming, no console errors; custom design bubbles checked on `who-said-it`
 - `npm run content:check` — passed (existing incomplete birthday drafts)
 - `npm run build` — budget green: entry JS gzip 216761, entry CSS 20643, total JS 1383433, largest 496695
 - Playwright / E2E — not run (prohibited)
