@@ -421,9 +421,11 @@ export function GuestPage({
     inFlight.current = false;
     trollRequest.current = null;
     setTrollPending(false);
-    // The old socket's photo save will never be acknowledged on the new one.
+    // The old socket's photo and driver saves will never be acknowledged on the new one.
     avatarRequest.current = null;
     setAvatarPending(false);
+    driverRequest.current = null;
+    setDriverPending(false);
     setSession(redeemed);
     setReplacedNotice(undefined);
     // Recovery may keep both IDs. Replace the existing socket after the cookie
