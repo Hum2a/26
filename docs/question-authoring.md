@@ -110,6 +110,7 @@ That file is a draft. The photo and the person are still required. Nothing here 
 When an ordinary setting is omitted, the helper uses `apps/api/src/questions/defaults.ts`:
 
 - 20 seconds to answer, attribution `after`, presentation `standard`, no score modifier, no speed bonus.
+- Choice: attribution `live`. The big screen shows who is picking what as it happens (the vote board): options grow with their share and fill with the voters' faces. Set `attribution: "after"` to keep picks hidden until the reveal, or `"never"` to keep them off the screen. Guest phones never receive other people's picks, and the host can hide picks for every question from Admin → Vote board.
 - Choice: 100 points, 2 to 6 options. A poll is 0 points, cannot have a speed bonus, and may list up to 16 options.
 - Typed: 100 points, a 60-character box (at most 80).
 - Slider: 100 points, with full points for an exact value.

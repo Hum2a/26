@@ -2,7 +2,8 @@ import { lazy, Suspense } from "react";
 const KartGameWrapper = lazy(() => import("../kart/KartGameWrapper"));
 import { motion } from "motion/react";
 import type { LobbySnapshot, PlaySnapshot, RoomPhaseName } from "@26/shared";
-import { QuestionOptionImage } from "./question-option-image";
+import { VoteBoard } from "./vote-board";
+import { RosterProvider } from "../ui/roster";
 import { ChessStage } from "../chess/chess-stage";
 import { Panel } from "../ui/primitives";
 import { Glyph } from "./designs/glyph";
@@ -54,6 +55,25 @@ export function StagePlay({
 }: {
   snapshot: LobbySnapshot;
   /** When this snapshot arrived, for screens that follow the room's clock. */
+  observedAt?: number;
+}) {
+  // Faces for the vote board, standings and designs, keyed by player id.
+  return (
+    <RosterProvider
+      gameId={snapshot.gameId}
+      players={snapshot.players}
+      revision={snapshot.mediaDisplayRevision}
+    >
+      <StageBeat snapshot={snapshot} observedAt={observedAt} />
+    </RosterProvider>
+  );
+}
+
+function StageBeat({
+  snapshot,
+  observedAt,
+}: {
+  snapshot: LobbySnapshot;
   observedAt?: number;
 }) {
   if (snapshot.phase === "facts" && snapshot.funFact) {
@@ -189,11 +209,6 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
   const answer = reveal
     ? options.find((option) => option.id === reveal.correctOptionId)
     : undefined;
-  const count = (optionId: string) =>
-    reveal?.tally?.find((row) => row.optionId === optionId)?.count;
-  const countLabel =
-    play.submissionCount === 1 ? "1 answer in." : `${play.submissionCount} answers in.`;
-
   return (
     <div className="grid gap-4">
       <p>
@@ -201,26 +216,9 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
         Question {play.question.index} of {play.question.total}.
       </p>
       <p className="stage-prompt">{play.question.prompt}</p>
-      <ul
-        className={
-          options.length > 6 ? "stage-option-grid" : "stage-options grid gap-3"
-        }
-      >
-        {options.map((option) => {
-          const votes = count(option.id);
-          return (
-            <li key={option.id} className="stage-option">
-              {option.image ? <QuestionOptionImage src={option.image} /> : null}
-              {option.label}
-              {votes === undefined
-                ? ""
-                : ` — ${votes} ${votes === 1 ? "vote" : "votes"}`}
-            </li>
-          );
-        })}
-      </ul>
-      <p>{countLabel}</p>
-      <AnswerNames play={play} />
+      <VoteBoard play={play} />
+      {/* The board shows faces; names stay for a round whose picks are not on it. */}
+      {play.voters ? null : <AnswerNames play={play} />}
       {answer ? <p className="stage-answer">The answer is {answer.label}.</p> : null}
       {reveal && !answer ? (
         <p className="stage-answer">{outcomeLine(reveal, options)}</p>

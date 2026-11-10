@@ -9,6 +9,7 @@ import {
   LiveCount,
   QuestionTag,
   StagePrompt,
+  StageVoters,
   useDesignMotion,
 } from "./kit";
 import "./ballot-paper.css";
@@ -175,7 +176,10 @@ function BallotStage({
         </div>
         <ul className="ballot-candidates" aria-label="Parties">
           {view.question.options.map((option) => (
-            <li key={option.id}>{option.label}</li>
+            <li key={option.id}>
+              {option.label}
+              <StageVoters play={play} optionId={option.id} />
+            </li>
           ))}
         </ul>
       </div>

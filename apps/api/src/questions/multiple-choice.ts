@@ -57,6 +57,7 @@ import {
   wordleProgress,
 } from "./wordle/wordle.ts";
 import { attachAudienceFields, publicQuestionCore } from "./project.ts";
+import { choiceVoters } from "./voters.ts";
 import { questionFor, requirePlayable } from "./registry.ts";
 import {
   publicRankQuestion,
@@ -728,6 +729,10 @@ export function projectPlay(
     standings: showStanding ? audienceStandings(totals, audience) : null,
     liveSample: liveNames(sql, question, room),
     attributions: publicAttributions(sql, question, room),
+    // Stage and host only: eighty phones are never sent the board.
+    ...(audience === "guest"
+      ? {}
+      : { voters: choiceVoters(sql, question, room, audience) }),
     ...(audience === "control"
       ? question.outcome.kind === "multiple"
         ? {

@@ -20,18 +20,22 @@ export function DriverPicker({
   driver,
   pending,
   onChoose,
+  avatarMediaId,
 }: {
   gameId: string;
   nickname: string;
   driver: LobbyDriver | undefined;
   pending: boolean;
   onChoose: (style: DriverStyle, faceMediaId: string | null) => void;
+  /** The guest's profile photo; a driver with no photo of its own uses it. */
+  avatarMediaId?: string;
 }) {
   const reduced = useReducedMotion();
   const [taking, setTaking] = useState(false);
   const [practice, setPractice] = useState(false);
   const style = driver?.style ?? "racer";
   const face = driver?.faceMediaId ?? null;
+  const borrowed = face !== null && face === avatarMediaId;
 
   return (
     <section className="driver-picker" aria-labelledby="driver-picker-title">
@@ -103,6 +107,7 @@ export function DriverPicker({
         <p>
           Optional. Your photo is shown on your kart and on the big screen during the
           race. The host can remove it, and it is not added to the photo gallery.
+          {borrowed ? " Your profile photo is on the driver now; take another to use a different one." : ""}
         </p>
         <div className="driver-picker-actions">
           <Button
@@ -113,7 +118,7 @@ export function DriverPicker({
           >
             {taking ? "Close camera" : face ? "Retake my photo" : "Use my photo"}
           </Button>
-          {face ? (
+          {face && !borrowed ? (
             <Button
               variant="secondary"
               disabled={pending}

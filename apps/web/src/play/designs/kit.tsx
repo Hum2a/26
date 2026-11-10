@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import NumberFlow from "@number-flow/react";
 import { useReducedMotion, type Transition } from "motion/react";
-import type { PlaySnapshot } from "@26/shared";
+import { bubbleLimit, visibleVoters, type PlaySnapshot } from "@26/shared";
 import { SubmitButton } from "../controls/SubmitButton";
+import { VoterBubbles } from "../vote-board";
 import { roundSubmitState } from "../controls/submit-state";
 import type { PhoneControls } from "../presentation";
 import "./kit.css";
@@ -63,6 +64,34 @@ export function choiceView(play: PlaySnapshot, selectedId?: string) {
     count: (optionId: string) =>
       reveal?.tally?.find((row) => row.optionId === optionId)?.count ?? 0,
   };
+}
+
+/**
+ * The faces of one option's voters, for a custom design's stage. Draws nothing
+ * when the room keeps picks off the screen (no `play.voters`), so a design can
+ * place it inside every option without checking the question's attribution.
+ */
+export function StageVoters({
+  play,
+  optionId,
+  className,
+}: {
+  play: PlaySnapshot;
+  optionId: string;
+  className?: string;
+}) {
+  const row = play.voters?.find((entry) => entry.optionId === optionId);
+  if (!row) return null;
+  const options = play.question.kind === "choice" ? play.question.options.length : 2;
+  const { shown, overflow } = visibleVoters(row.playerIds, bubbleLimit(options));
+  return (
+    <VoterBubbles
+      playerIds={shown}
+      overflow={overflow}
+      total={row.playerIds.length}
+      className={`design-voters${className ? ` ${className}` : ""}`}
+    />
+  );
 }
 
 export function ChoiceSend({

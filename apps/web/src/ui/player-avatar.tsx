@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Icon } from "@iconify/react/dist/offline";
 import botIcon from "@iconify-icons/lucide/bot";
+import { withClientApiKey } from "../api/client-key";
+import { useRosterEntry } from "./roster-context";
 import "./player-avatar.css";
 
 /** A stable 0–5 hue for a player, so they keep one colour all night. */
@@ -23,6 +26,11 @@ export function initials(nickname: string): string {
   return letters.toLocaleUpperCase("en-GB");
 }
 
+/** URL of a guest's profile photo. Same authenticated route as other room media. */
+export function avatarUrl(gameId: string, mediaId: string): string {
+  return withClientApiKey(`/api/rooms/${gameId}/media/${mediaId}`);
+}
+
 export function PlayerAvatar({
   playerId,
   nickname,
@@ -31,20 +39,34 @@ export function PlayerAvatar({
 }: {
   playerId: string;
   nickname: string;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  /** A photo URL, `null` for none, or omitted to use the roster's photo for this player. */
   faceSrc?: string | null;
 }) {
   const bot = looksLikeBot(nickname);
+  const rostered = useRosterEntry(playerId)?.faceSrc ?? null;
+  const src = faceSrc === undefined ? rostered : faceSrc;
+  // A photo that fails to load (removed, offline) falls back to initials.
+  const [broken, setBroken] = useState<string | null>(null);
+  const showFace = Boolean(src) && broken !== src;
   return (
     <span
       className="player-avatar"
       data-size={size}
       data-hue={playerHue(playerId)}
       data-bot={bot || undefined}
+      data-face={showFace || undefined}
       aria-hidden="true"
     >
-      {faceSrc ? (
-        <img src={faceSrc} alt="" />
+      {showFace ? (
+        <img
+          src={src!}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          onError={() => setBroken(src)}
+        />
       ) : bot ? (
         <span className="player-avatar-bot">
           <Icon icon={botIcon} />

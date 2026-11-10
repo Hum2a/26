@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { useCamera } from "../device/camera";
+import { useCamera, type CameraFacing } from "../device/camera";
 import { Button } from "../ui/primitives";
 import { captureFrame } from "./capture-frame";
 
@@ -14,10 +14,19 @@ type Shot = { file: File; url: string };
 export function CaptureFlow({
   upload,
   active = true,
+  facing: startFacing = "environment",
+  library = false,
+  square = false,
 }: {
   upload: PhotoUpload;
   /** False while the page is out of view: the camera is released, state kept. */
   active?: boolean;
+  /** The camera to open first. A selfie starts on the front camera. */
+  facing?: CameraFacing;
+  /** Also offer a photo from the phone's library while the camera is open. */
+  library?: boolean;
+  /** Show the square crop the photo will be sent as (a profile photo). */
+  square?: boolean;
 }) {
   const [shot, setShot] = useState<Shot | null>(null);
   const [mode, setMode] = useState<"live" | "preview" | "sending" | "sent" | "failed">(
@@ -28,7 +37,8 @@ export function CaptureFlow({
   const streamRef = useRef<MediaStream | null>(null);
   const sending = useRef(false);
   const holding = mode === "live" || mode === "preview";
-  const camera = useCamera(holding && active);
+  const camera = useCamera(holding && active, startFacing);
+  const mirrored = camera.facing === "user";
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   useEffect(() => {
@@ -152,7 +162,9 @@ export function CaptureFlow({
               <>
                 <video
                   ref={setVideo}
-                  className="aspect-[3/4] w-full rounded-3xl bg-surface object-cover"
+                  className={`${square ? "aspect-square" : "aspect-[3/4]"} w-full rounded-3xl bg-surface object-cover`}
+                  // A selfie preview reads like a mirror; the photo itself is not flipped.
+                  style={mirrored ? { transform: "scaleX(-1)" } : undefined}
                   aria-label="Camera"
                   autoPlay
                   muted
@@ -176,6 +188,21 @@ export function CaptureFlow({
                 </div>
               </>
             )}
+            {library && !camera.fallback ? (
+              <label className="grid min-w-0 gap-2 font-bold">
+                <span>Or choose one from your photos</span>
+                <input
+                  className="block w-full min-w-0 max-w-full min-h-12 overflow-hidden font-normal"
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (file) remember(file);
+                  }}
+                />
+              </label>
+            ) : null}
           </motion.div>
         ) : shot ? (
           <motion.div
@@ -188,7 +215,7 @@ export function CaptureFlow({
           >
             <img
               alt="Preview"
-              className="aspect-[3/4] w-full rounded-3xl bg-surface object-cover"
+              className={`${square ? "aspect-square" : "aspect-[3/4]"} w-full rounded-3xl bg-surface object-cover`}
               src={shot.url}
             />
             <div className="flex flex-wrap gap-3">

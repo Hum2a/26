@@ -2,11 +2,13 @@ import { noteUpload } from "../device/connection-log";
 import { finalise, putWithProgress, requestSlot } from "./media-transfer";
 import { compactJpeg, isHeic } from "./photo-prepare";
 
-/** A kart driver's face: a square crop around the centre, sent as a `face` photo. */
+/** A face (profile photo or kart driver): a square crop around the centre, sent as a `face` photo. */
 export async function sendFacePhoto(
   gameId: string,
   file: File,
   setStatus: (status: string) => void,
+  /** Longest edge in pixels. A profile photo is drawn small, so it is sent smaller. */
+  maxEdge = 512,
 ): Promise<string | null> {
   if (isHeic(file)) {
     setStatus(
@@ -17,7 +19,7 @@ export async function sendFacePhoto(
   setStatus("Preparing the photo.");
   let blob: Blob;
   try {
-    blob = await compactJpeg(file, 512, true);
+    blob = await compactJpeg(file, maxEdge, true);
   } catch {
     setStatus(
       "Choose a JPEG or PNG, or take a new photo. This phone cannot read HEIC.",

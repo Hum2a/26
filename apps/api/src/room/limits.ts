@@ -113,10 +113,15 @@ export const voiceMaxBytes = 400_000;
 export const voiceMaxMs = 3_000;
 export const playerMediaSlots = 8;
 export const roomMediaSlots = 80;
-/** Driver face photos, counted apart from question media. Retakes are expected. */
-export const playerFaceSlots = 5;
-export const roomFaceSlots = 400;
-export const faceQuotaMessage = "You have used your driver photo retakes.";
+/**
+ * Face photos (profile photo and kart driver), counted apart from question
+ * media. Retakes are expected, so each guest has a few.
+ */
+export const playerFaceSlots = 8;
+export const roomFaceSlots = 600;
+export const faceQuotaMessage = "You have used your photo retakes.";
+export const avatarPhotoMessage = "That photo is not your profile photo. Take it again.";
+export const avatarClearedMessage = "That player has no profile photo to remove.";
 
 /** Photo wall. See `docs/photo-wall-plan.md`. */
 export const playerWallSlots = 15;

@@ -1,0 +1,268 @@
+/*
+ * The live vote board. Colours come only from the theme variables, so every
+ * theme dresses it. Options grow with `--vote-grow` (flex-grow eases in CSS),
+ * fill with `--vote-share`, and carry the voters' face bubbles.
+ */
+.vote-board {
+  --vote-ease: var(--ease-party, cubic-bezier(0.2, 0, 0, 1));
+  display: grid;
+  gap: clamp(0.5rem, 1.4vh, 1rem);
+  min-width: 0;
+}
+
+.vote-board-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+}
+.vote-board-count,
+.vote-board-note {
+  margin: 0;
+}
+.vote-board-count {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.vote-board-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  color: var(--stage-muted, var(--muted));
+}
+
+.vote-board-rows {
+  display: grid;
+  gap: clamp(0.6rem, 1.6vh, 1.25rem);
+}
+.vote-board-row {
+  display: flex;
+  gap: clamp(0.6rem, 1.4vw, 1.25rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.vote-option {
+  --tone: var(--accent);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  align-content: start;
+  gap: clamp(0.3rem, 1vh, 0.75rem);
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: clamp(9rem, 26vh, 22rem);
+  padding: clamp(0.75rem, 1.6vw, 1.5rem);
+  overflow: hidden;
+  border: 3px solid color-mix(in srgb, var(--tone) 55%, var(--line));
+  border-radius: var(--radius-panel, 1.5rem);
+  background: color-mix(in srgb, var(--surface) 88%, var(--tone));
+  color: var(--surface-foreground, var(--foreground));
+  transform-origin: center bottom;
+  transition:
+    flex-grow 0.7s var(--vote-ease),
+    border-color 0.4s var(--vote-ease),
+    box-shadow 0.4s var(--vote-ease),
+    opacity 0.4s var(--vote-ease),
+    filter 0.4s var(--vote-ease);
+  will-change: flex-grow;
+}
+.vote-option[data-tone="1"] {
+  --tone: var(--highlight);
+}
+.vote-option[data-tone="2"] {
+  --tone: color-mix(in oklch, var(--accent) 50%, var(--highlight));
+}
+.vote-option[data-tone="3"] {
+  --tone: color-mix(in oklch, var(--accent) 70%, var(--foreground));
+}
+.vote-option[data-tone="4"] {
+  --tone: color-mix(in oklch, var(--highlight) 70%, var(--foreground));
+}
+.vote-option[data-tone="5"] {
+  --tone: color-mix(in oklch, var(--accent) 35%, var(--mark, var(--highlight)));
+}
+
+/* The share of the room rises from the bottom of the card. */
+.vote-option-fill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--tone) 42%, transparent),
+    color-mix(in srgb, var(--tone) 16%, transparent)
+  );
+  transform: scaleY(var(--vote-share, 0));
+  transform-origin: bottom;
+  transition: transform 0.8s var(--vote-ease);
+}
+
+.vote-option-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+  min-width: 0;
+}
+.vote-option-letter {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: var(--radius-control, 0.6em);
+  background: var(--tone);
+  color: var(--accent-foreground, var(--background));
+  font-weight: 900;
+  font-size: 0.8em;
+  line-height: 1;
+}
+.vote-option-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 800;
+  font-size: max(40px, 2.6vw);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.vote-option-crown,
+.vote-option-badge {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.4em;
+  height: 1.4em;
+  border-radius: 50%;
+}
+.vote-option-crown {
+  color: var(--tone);
+}
+.vote-option-badge {
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+}
+
+.vote-option-stats {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  font-variant-numeric: tabular-nums;
+}
+.vote-option-total {
+  font-weight: 900;
+  font-size: max(48px, 3.2vw);
+  line-height: 1;
+}
+.vote-option-share {
+  color: var(--stage-muted, var(--muted));
+}
+.vote-option-plus {
+  position: absolute;
+  inset-inline-start: 0;
+  top: -0.2em;
+  padding: 0.05em 0.45em;
+  border-radius: 999px;
+  background: var(--tone);
+  color: var(--accent-foreground, var(--background));
+  font-weight: 900;
+  pointer-events: none;
+}
+
+/* The leader glows; at the reveal the answer lights up and the rest step back. */
+.vote-option[data-leading] {
+  border-color: var(--tone);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--tone) 45%, transparent),
+    0 18px 40px -22px var(--tone);
+}
+.vote-option[data-result="correct"] {
+  border-color: var(--highlight);
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--highlight) 55%, transparent),
+    0 24px 60px -24px var(--highlight);
+}
+.vote-option[data-result="wrong"] {
+  opacity: 0.62;
+  filter: saturate(0.5);
+}
+.vote-option[data-empty] {
+  border-style: dashed;
+}
+
+/* Face bubbles. A busy option shrinks them and overlaps a little. */
+.vote-bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+.vote-bubbles[data-density="packed"] {
+  gap: 0.15rem;
+}
+.vote-bubble {
+  display: inline-flex;
+  border-radius: 50%;
+}
+.vote-bubbles[data-density="packed"] .vote-bubble + .vote-bubble {
+  margin-inline-start: -0.4rem;
+}
+.vote-bubble .player-avatar {
+  box-shadow:
+    0 0 0 3px var(--surface),
+    0 8px 18px -10px color-mix(in srgb, black 80%, transparent);
+}
+.vote-bubble-more {
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding-inline: 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tone, var(--accent)) 30%, var(--surface));
+  font-weight: 900;
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A phone-width preview (admin rehearsal) stacks the options. */
+@container (max-width: 640px) {
+  .vote-board-row {
+    flex-direction: column;
+  }
+  .vote-option {
+    min-height: 6rem;
+  }
+}
+@media (max-width: 640px) {
+  .vote-board-row {
+    flex-direction: column;
+  }
+  .vote-option {
+    min-height: 6rem;
+  }
+  .vote-option-label {
+    font-size: 1.25rem;
+  }
+  .vote-option-total {
+    font-size: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vote-option,
+  .vote-option-fill {
+    transition-duration: 0.2s;
+  }
+  .vote-option {
+    will-change: auto;
+  }
+}

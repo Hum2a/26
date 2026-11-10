@@ -448,6 +448,9 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "wall-mute",
       "wall-unmute",
       "hide-media",
+      "voters-question",
+      "voters-hidden",
+      "avatar-clear",
       "retry-archive",
       "release-stuck-media",
       "retry-delivery",
@@ -1047,6 +1050,9 @@ function readHostDetails(
   if (action === "photo-bias-on" || action === "photo-bias-off") {
     return { ok: true, fields: {} };
   }
+  if (action === "voters-question" || action === "voters-hidden") {
+    return { ok: true, fields: {} };
+  }
   if (action === "open-joining" || action === "close-joining") {
     return { ok: true, fields: {} };
   }
@@ -1060,6 +1066,7 @@ function readHostDetails(
     "exclude",
     "wall-mute",
     "wall-unmute",
+    "avatar-clear",
   ].includes(action);
   const playerId = z.uuid().safeParse(field(body, "playerId"));
   if (needsPlayer && !playerId.success) {

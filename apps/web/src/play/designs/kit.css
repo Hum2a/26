@@ -255,3 +255,13 @@
     max-width: 100%;
   }
 }
+
+/* Voter faces inside a custom design's stage option (see StageVoters). */
+.design-voters {
+  margin-top: 0.5rem;
+}
+.design-voters .vote-bubble .player-avatar {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--background) 80%, transparent),
+    0 8px 18px -10px color-mix(in srgb, black 80%, transparent);
+}

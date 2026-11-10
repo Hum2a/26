@@ -43,6 +43,9 @@ import { PhoneShell, type PhoneTab } from "./phone-shell";
 import { PhoneTimer } from "./phone-timer";
 import { RanksTab } from "./ranks-tab";
 import { YouMenu } from "./you-menu";
+import { AvatarPicker, avatarPromptSkipped, skipAvatarPrompt } from "./avatar-picker";
+import { avatarUrl } from "../ui/player-avatar";
+import { RosterProvider } from "../ui/roster";
 import { TrollTab } from "../troll/troll-tab";
 import { ThemePicker } from "../theme/theme-picker";
 import { EntryFrame, EntryHeading, EntryNotice } from "../ui/entry-frame";
@@ -94,6 +97,10 @@ export function GuestPage({
   const reactionRequest = useRef<string | null>(null);
   const driverRequest = useRef<string | null>(null);
   const [driverPending, setDriverPending] = useState(false);
+  const avatarRequest = useRef<string | null>(null);
+  const [avatarPending, setAvatarPending] = useState(false);
+  // Bumped when the guest puts off the photo card, so the stored choice is read again.
+  const [, setAvatarSkips] = useState(0);
   const kartRecoveryRequest = useRef<string | null>(null);
   const [kartRecoveryPending, setKartRecoveryPending] = useState(false);
   const [kartRecoveryNotice, setKartRecoveryNotice] = useState("");
@@ -256,6 +263,14 @@ export function GuestPage({
           }
           return;
         }
+        if (ack.requestId === avatarRequest.current) {
+          avatarRequest.current = null;
+          setAvatarPending(false);
+          if (!ack.accepted) {
+            setNotice(ack.error ?? "That photo was not saved.");
+          }
+          return;
+        }
         if (ack.requestId === driverRequest.current) {
           driverRequest.current = null;
           setDriverPending(false);
@@ -285,6 +300,8 @@ export function GuestPage({
         setRejection(undefined);
       },
       onReplaced(message) {
+        avatarRequest.current = null;
+        setAvatarPending(false);
         trollRequest.current = null;
         setTrollPending(false);
         kartItemRequest.current = null;
@@ -414,6 +431,12 @@ export function GuestPage({
   function onReact(targetId: string, reaction: "like" | "dislike") {
     reactionRequest.current =
       socketRef.current?.submitReaction(targetId, reaction) ?? null;
+  }
+
+  function onAvatar(mediaId: string | null) {
+    const requestId = socketRef.current?.submitAvatar(mediaId) ?? null;
+    avatarRequest.current = requestId;
+    setAvatarPending(requestId !== null);
   }
 
   function onDriver(style: DriverStyle, faceMediaId: string | null) {
@@ -617,8 +640,37 @@ export function GuestPage({
   const badges: Partial<Record<PhoneTab, string>> = {};
   if (trollReady && tab !== "troll") badges.troll = "1";
   if (ranksFresh && tab !== "ranks") badges.ranks = "!";
+  const selfAvatar = selfPlayer?.avatarMediaId;
+  const avatarCard =
+    !rehearsalCredential &&
+    snapshot?.phase === "lobby" &&
+    (Boolean(selfAvatar) || !avatarPromptSkipped(session.gameId));
+  const avatarPicker = (variant: "welcome" | "menu") => (
+    <AvatarPicker
+      variant={variant}
+      gameId={session.gameId}
+      playerId={session.playerId}
+      nickname={nickname ?? session.nickname}
+      avatarMediaId={selfAvatar}
+      pending={avatarPending}
+      onChoose={onAvatar}
+      onSkip={
+        variant === "welcome"
+          ? () => {
+              skipAvatarPrompt(session.gameId);
+              setAvatarSkips((count) => count + 1);
+            }
+          : undefined
+      }
+    />
+  );
 
   return (
+    <RosterProvider
+      gameId={session.gameId}
+      players={snapshot?.players ?? []}
+      revision={snapshot?.mediaDisplayRevision}
+    >
     <ControllerRoot
       allowLandscape={
         snapshot?.play?.question.kind === "kart" || snapshot?.mode === "kart"
@@ -632,7 +684,16 @@ export function GuestPage({
         scrollKey={`${snapshot?.play?.question.id ?? "join"}/${snapshot?.phase ?? "lobby"}`}
         timer={<PhoneTimer snapshot={snapshot} observedAt={observedAt} />}
         menu={
-          <YouMenu playerId={session.playerId} nickname={nickname ?? session.nickname}>
+          <YouMenu
+            playerId={session.playerId}
+            nickname={nickname ?? session.nickname}
+            faceSrc={selfAvatar ? avatarUrl(session.gameId, selfAvatar) : null}
+          >
+            {!rehearsalCredential ? (
+              <Disclosure title={selfAvatar ? "Your photo" : "Add your photo"}>
+                {avatarPicker("menu")}
+              </Disclosure>
+            ) : null}
             <div className="you-menu-row">
               <span>Theme</span>
               <ThemePicker />
@@ -775,6 +836,19 @@ export function GuestPage({
           <div className="grid gap-4">
             {snapshot?.phase === "lobby" ? (
               <div className="grid gap-4">
+                <AnimatePresence initial={false}>
+                  {avatarCard ? (
+                    <motion.div
+                      key="avatar"
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.24, ease: [0.2, 0, 0, 1] }}
+                    >
+                      {avatarPicker("welcome")}
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
                 <Disclosure title="Invite a friend">
                   <JoinMark code={snapshot.joinCode} allowCopy />
                 </Disclosure>
@@ -796,6 +870,7 @@ export function GuestPage({
                     gameId={snapshot.gameId}
                     nickname={nickname ?? session.nickname}
                     driver={selfPlayer?.driver}
+                    avatarMediaId={selfAvatar}
                     pending={driverPending}
                     onChoose={onDriver}
                   />
@@ -868,6 +943,7 @@ export function GuestPage({
         </ReconnectBanner>
       </PhoneShell>
     </ControllerRoot>
+    </RosterProvider>
   );
 }
 

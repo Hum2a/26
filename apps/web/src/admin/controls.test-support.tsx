@@ -92,6 +92,7 @@ export function setupControls(snapshot: LobbySnapshot = playingFixture) {
     submitReaction: vi.fn(),
     reconnectNow: vi.fn(),
     submitDriver: vi.fn(),
+    submitAvatar: vi.fn(),
     submitWallPost: vi.fn(),
     submitWallWithdraw: vi.fn(),
     submitWallReact: vi.fn(),

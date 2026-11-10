@@ -8,6 +8,7 @@ import {
   LiveCount,
   QuestionTag,
   StagePrompt,
+  StageVoters,
   useDesignMotion,
 } from "./kit";
 import "./scripture.css";
@@ -159,6 +160,7 @@ function ScriptureStage({
                   ) : null}
                   <span className="scr-drop">{verseLetter(index)}</span>
                   <span className="scr-text">{option.label}</span>
+                  <StageVoters play={play} optionId={option.id} />
                 </motion.div>
               );
             })}

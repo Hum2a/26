@@ -6,10 +6,13 @@ import { PlayerAvatar } from "../ui/player-avatar";
 export function YouMenu({
   playerId,
   nickname,
+  faceSrc,
   children,
 }: {
   playerId: string;
   nickname: string;
+  /** This guest's profile photo, or null for initials. */
+  faceSrc?: string | null;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -51,7 +54,7 @@ export function YouMenu({
         aria-label={`You: ${nickname}`}
         onClick={() => setOpen((value) => !value)}
       >
-        <PlayerAvatar playerId={playerId} nickname={nickname} size="sm" />
+        <PlayerAvatar playerId={playerId} nickname={nickname} faceSrc={faceSrc} size="sm" />
       </button>
       <AnimatePresence>
         {open ? (
@@ -70,7 +73,7 @@ export function YouMenu({
             }
           >
             <div className="you-menu-who">
-              <PlayerAvatar playerId={playerId} nickname={nickname} size="lg" />
+              <PlayerAvatar playerId={playerId} nickname={nickname} faceSrc={faceSrc} size="lg" />
               <div className="min-w-0">
                 <p className="entry-eyebrow">Playing as</p>
                 <p className="you-menu-name">{nickname}</p>

@@ -23,6 +23,8 @@ export * from "./kart/kart-nearby.ts";
 export * from "./kart/kart-settings.ts";
 export * from "./moderation.ts";
 export * from "./rate-limit.ts";
+export * from "./voters.ts";
+import { voterDisplayModes } from "./voters.ts";
 import { z } from "zod";
 export const kartRehearsalBeatSchema = z.enum(["grid", "turn", "boost", "finish"]);
 export const kartRehearsalSchema = z
@@ -283,6 +285,8 @@ export const lobbyPlayerSchema = z
     nickname: z.string().min(1).max(24),
     // Optional so a phone on an older build still reads newer snapshots.
     driver: lobbyDriverSchema.optional(),
+    /** The guest's own photo, shown beside their nickname all game. The host can remove it. */
+    avatarMediaId: z.uuid().optional(),
   })
   .strict();
 
@@ -563,6 +567,20 @@ export const wordlePreviewResultSchema = z.discriminatedUnion("ok", [
   z.object({ ok: z.literal(false), message: z.string() }).strict(),
 ]);
 export type AdminQuestionPreview = z.infer<typeof adminQuestionPreviewSchema>;
+
+export const voterDisplayModeSchema = z.enum(voterDisplayModes);
+
+/** Each option's voters in arrival order. Stage and host only. */
+export const optionVotersSchema = z
+  .array(
+    z
+      .object({
+        optionId: publicOptionIdSchema,
+        playerIds: z.array(z.uuid()).max(100),
+      })
+      .strict(),
+  )
+  .max(contentLimits.pollOptionMax);
 
 const selfAnswerSchema = z
   .discriminatedUnion("kind", [
@@ -883,6 +901,12 @@ export const playSnapshotSchema = z
       )
       .max(contentLimits.pollOptionMax)
       .nullable(),
+    /**
+     * Stage and host only: who picked each option, for the live vote board.
+     * Guest phones never receive it. Null when the question or the host keeps
+     * picks off the screen.
+     */
+    voters: optionVotersSchema.nullable().optional(),
     hostAnswers: z
       .array(
         z
@@ -1257,6 +1281,25 @@ export const lobbySnapshotSchema = z
       .int()
       .nonnegative()
       .max(Number.MAX_SAFE_INTEGER)
+      .optional(),
+    /** Host-only: whether picks may reach the projector, and when that changed. */
+    voterDisplay: z
+      .object({
+        mode: voterDisplayModeSchema,
+        history: z
+          .array(
+            z
+              .object({
+                atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+                mode: voterDisplayModeSchema,
+              })
+              .strict(),
+          )
+          .max(20),
+        /** Players with a visible profile photo. */
+        avatars: z.number().int().min(0).max(100),
+      })
+      .strict()
       .optional(),
     /** Host-only photo policy, counts and change history. */
     photoBias: z

@@ -3,12 +3,13 @@ import { useEffect, useRef, useState } from "react";
 export type CameraFacing = "user" | "environment";
 
 /**
- * Opens the phone camera. Rear (`environment`) is the default.
+ * Opens the phone camera. Rear (`environment`) is the default; a selfie starts
+ * on the front (`user`) camera.
  * A rejected stream sets `fallback` so the photo control can use a file input.
  * Tracks stop when the hook unmounts, when the facing changes, and when `release` runs.
  */
-export function useCamera(active = true) {
-  const [facing, setFacing] = useState<CameraFacing>("environment");
+export function useCamera(active = true, initialFacing: CameraFacing = "environment") {
+  const [facing, setFacing] = useState<CameraFacing>(initialFacing);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [rejected, setRejected] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);

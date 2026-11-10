@@ -117,6 +117,15 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "hide-media") {
     return "That photo or voice clip is hidden from the stage and the gallery.";
   }
+  if (action === "voters-question") {
+    return "Picks show on the big screen again, as each question allows.";
+  }
+  if (action === "voters-hidden") {
+    return "Picks are hidden on the big screen for every question. Phones are unchanged.";
+  }
+  if (action === "avatar-clear") {
+    return "That profile photo was removed from every screen. The guest can take a new one.";
+  }
   if (action === "show") {
     return "The stage content is visible.";
   }

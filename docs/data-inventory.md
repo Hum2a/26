@@ -172,7 +172,7 @@ These tables cover the host only. Guests never sign in.
 
 | Store          | Holds                                                                                                                                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MEDIA_BUCKET` | Photos and voice clips that guests deliberately upload during rounds, plus kart driver face photos. Each file is first held under a temporary key, then given a final key. The host can hide any upload. |
+| `MEDIA_BUCKET` | Photos and voice clips that guests deliberately upload during rounds, plus face photos: a guest's optional profile photo (shown beside their nickname on every screen) and kart driver faces. Each file is first held under a temporary key, then given a final key. The host can hide any upload. |
 
 ## Not stored anywhere
 
@@ -207,6 +207,15 @@ Each started birthday room stores its frozen private question script in existing
   presentation hint remains with the upload after detailed telemetry expires;
   it never grants identity, access or scoring authority. Admin media rows expose
   the hint; public snapshots do not.
+- Each player row may point at one profile photo (`avatar_media_id`), a `face`
+  upload the guest chose. Snapshots name it only while the upload is accepted
+  and not hidden; the host's "Remove photo" hides the upload and clears the
+  pointer. A kart driver with no face of its own uses it.
+- The room stores `voter_display` (`question` by default, or `hidden`) and a
+  bounded history of the latest 20 switches. Host snapshots include it with a
+  count of visible profile photos. Stage and host snapshots carry each
+  option's voter ids for the vote board when the question allows; guest
+  snapshots never do.
 - The room stores `photo_bias_enabled` (default on), `photo_bias_revision` and a
   bounded history of the latest 20 switches (time and enabled state). Host
   snapshots include the setting, history and accepted-photo counts by family.

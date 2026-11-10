@@ -6,6 +6,7 @@ import {
   LiveCount,
   QuestionTag,
   StagePrompt,
+  StageVoters,
   useDesignMotion,
 } from "./kit";
 import "./number-plate.css";
@@ -200,6 +201,7 @@ function PlateStage({
                 }}
               >
                 <Plate label={option.label} size="stage" />
+                <StageVoters play={play} optionId={option.id} />
               </motion.li>
             ),
           )}
