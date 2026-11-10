@@ -22,6 +22,8 @@ export class StockfishEngine {
   private options: Required<StockfishOptions>;
   private currentPosition = "";
   private activeSearchWorker: Worker | null = null; // Current search's isolated Worker
+  // The search worker asked to stop: it reports its best move but must not start a search.
+  private stoppingWorker: Worker | null = null;
 
   constructor(options: StockfishOptions = {}) {
     this.options = {
@@ -117,6 +119,7 @@ export class StockfishEngine {
       this.activeSearchWorker.terminate();
       this.activeSearchWorker = null;
     }
+    this.stoppingWorker = null;
 
     // Create fresh Worker for THIS search only
     const searchWorker = new Worker("/chess-engine/stockfish-19-lite-single.js");
@@ -128,6 +131,9 @@ export class StockfishEngine {
 
     // Track UCI handshake state for this Worker
     let uciComplete = false;
+    // One search and one answer per Worker, however many `readyok` lines arrive.
+    let searchStarted = false;
+    let answered = false;
 
     // Handler for THIS Worker's messages only
     searchWorker.onmessage = (event) => {
@@ -141,14 +147,25 @@ export class StockfishEngine {
         searchWorker.postMessage("setoption name UCI_LimitStrength value true");
         searchWorker.postMessage(`setoption name UCI_Elo value ${this.options.elo}`);
         searchWorker.postMessage("isready");
-      } else if (line === "readyok" && uciComplete) {
-        // Engine ready after options set, NOW send search
+      } else if (
+        line === "readyok" &&
+        uciComplete &&
+        !searchStarted &&
+        this.stoppingWorker !== searchWorker
+      ) {
+        // Engine ready after options set, NOW send search. A stray second
+        // `readyok` must not start the same search again.
+        searchStarted = true;
         searchWorker.postMessage(capturedPosition);
         searchWorker.postMessage(`go movetime ${capturedMoveTime}`);
       }
 
       // Parse bestmove response
       if (line.startsWith("bestmove ")) {
+        if (answered) return;
+        answered = true;
+        // The search is over: release its WASM Worker once this answer is handled.
+        queueMicrotask(() => this.finishSearch(searchWorker));
         const parts = line.split(" ");
         const move = parts[1];
 
@@ -185,14 +202,30 @@ export class StockfishEngine {
   }
 
   /**
-   * Stop the current search.
-   * Terminates active search Worker.
+   * Stop the current search (UCI `stop`): a search in progress reports its
+   * best move so far through `onBestMove`, and a search still in its
+   * handshake never starts. Callers that only want to cancel drop that late
+   * answer (chess-game checks its search state); `go()` and `terminate()`
+   * end the Worker either way.
    */
   stop(): void {
-    if (this.activeSearchWorker) {
-      this.activeSearchWorker.terminate();
-      this.activeSearchWorker = null;
+    const worker = this.activeSearchWorker;
+    if (!worker) return;
+    this.stoppingWorker = worker;
+    try {
+      worker.postMessage("stop");
+    } catch {
+      // A Worker that cannot take messages any more has nothing to report.
+      this.finishSearch(worker);
     }
+  }
+
+  /** Ends one search Worker, if it is still the current one. */
+  private finishSearch(worker: Worker): void {
+    if (this.stoppingWorker === worker) this.stoppingWorker = null;
+    if (this.activeSearchWorker !== worker) return;
+    worker.terminate();
+    this.activeSearchWorker = null;
   }
 
   /**
@@ -208,6 +241,7 @@ export class StockfishEngine {
       this.activeSearchWorker.terminate();
       this.activeSearchWorker = null;
     }
+    this.stoppingWorker = null;
   }
 
   /**
