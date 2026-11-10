@@ -2,12 +2,13 @@
 
 [Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
 
-One Better Auth instance for Humza. There are no guest accounts. Public email sign-up is disabled, and both magic-link/email-OTP plugins have `disableSignUp: true`. A user row is created only by `npm run auth:seed`, and `databaseHooks.user.create.before` rejects every other address.
+One Better Auth instance for the configured administrators. There are no guest accounts. Public email sign-up is disabled, and both magic-link/email-OTP plugins have `disableSignUp: true`. User rows are created only by `npm run auth:seed`, and `databaseHooks.user.create.before` rejects every address that is not on the `ADMIN_EMAIL` allow-list.
 
 <details>
 <summary>On this page</summary>
 
 - [Factories](#factories)
+- [Administrator allow-list](#administrator-allow-list)
 - [Magic links and email scanners](#magic-links-and-email-scanners)
 - [Migrations](#migrations)
 - [Email codes and the shared email design](#email-codes-and-the-shared-email-design)
@@ -25,6 +26,20 @@ One Better Auth instance for Humza. There are no guest accounts. Public email si
 Staging and production without `DATABASE_URL` return 503. They never open PGlite. The local inbox route exists only when `APP_ENV` is `local`.
 
 `BETTER_AUTH_SECRET` is required outside local development. Local development uses a fixed development secret when the binding is blank. That secret is not accepted for staging or production.
+
+## Administrator allow-list
+
+`ADMIN_EMAIL` is a comma-separated list of addresses that may be seeded and may receive a magic link or email code. A single address is still valid. Tokens are trimmed and compared in lowercase. Unlisted addresses get the same acceptance response and no mail.
+
+Local development defaults to `humzab1711@hotmail.com,adenreh@gmail.com` in `wrangler.jsonc`. A local `apps/api/.dev.vars` `ADMIN_EMAIL` overrides that default, so an existing single-address vars file still needs updating. Staging and production keep the same secret name: put the comma-separated list in the `ADMIN_EMAIL` Cloudflare secret (and in the matching gitignored vars file). After adding an address, re-run seed or the new user is never created:
+
+```bash
+npm run auth:seed -- --env local
+npm run auth:seed -- --env staging
+npm run auth:seed -- --env production
+```
+
+Seed creates a verified user for every listed address that does not already exist. Existing users are left unchanged, including Humza's name. New users get a display name from the local part of the address, with known names for Humza and Aden.
 
 ## Magic links and email scanners
 
@@ -53,7 +68,7 @@ Node commands store that database in `apps/api/.data/local-auth`. PGlite cannot 
 
 ## Email codes and the shared email design
 
-The existing `/api/admin/magic-link` request now sends one email with a six-digit code and the scanner-safe confirmation link. Both expire after five minutes. Codes use Better Auth 1.7.5's email-OTP plugin and server-only `createVerificationOTP` API, hashed storage, a five-attempt limit and disabled sign-up. `POST /api/admin/email-code/verify` checks same-origin and the configured administrator, then delegates verification/session cookies to the same Better Auth handler. The latest emailed code replaces earlier values. Each method consumes its own credential; using a code does not consume the separate magic-link token. No new identity store, secret or database table is required.
+The existing `/api/admin/magic-link` request now sends one email with a six-digit code and the scanner-safe confirmation link. Both expire after five minutes. Codes use Better Auth 1.7.5's email-OTP plugin and server-only `createVerificationOTP` API, hashed storage, a five-attempt limit and disabled sign-up. `POST /api/admin/email-code/verify` checks same-origin and the configured administrator allow-list, then delegates verification/session cookies to the same Better Auth handler. The latest emailed code replaces earlier values. Each method consumes its own credential; using a code does not consume the separate magic-link token. No new identity store, secret or database table is required.
 
 The sign-in page reads the local inbox with `?format=text`, which skips rendering the emails; a cold React Email render on a fresh dev server could outlast the admin client's 12-second timeout and hide the confirmation link. Without that query only the newest message is rendered as HTML. Local development never sends sign-in mail through Resend: the Vite middleware blanks `RESEND_API_KEY` for local auth.
 

@@ -160,13 +160,13 @@ A guest's email address exists only if that guest asks for their results by emai
 
 ### Admin sign-in
 
-These tables cover the host only. Guests never sign in.
+These tables cover the hosts only. Guests never sign in.
 
-| Table                                        | Holds                                                                                                                                    |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `user`, `session`, `account`, `verification` | Better Auth sign-in for the admin. The `session` table records the admin's IP address and user agent, which Better Auth does by default. |
-| `room_credential`                            | Hashed room credentials for the admin's rooms                                                                                            |
-| `dev_inbox`                                  | Development only: emails caught locally instead of being sent                                                                            |
+| Table                                        | Holds                                                                                                                                                    |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `user`, `session`, `account`, `verification` | Better Auth sign-in for configured administrators. The `session` table records the admin's IP address and user agent, which Better Auth does by default. |
+| `room_credential`                            | Hashed room credentials for the admin's rooms                                                                                                            |
+| `dev_inbox`                                  | Development only: emails caught locally instead of being sent                                                                                            |
 
 ## Cloudflare R2
 
