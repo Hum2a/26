@@ -12,6 +12,7 @@ import {
   LiveCount,
   QuestionTag,
   StagePrompt,
+  StageVoters,
   useDesignMotion,
 } from "./kit";
 import "./red-blue-pill.css";
@@ -251,6 +252,7 @@ function PillStage({
                     </>
                   ) : null}
                 </span>
+                <StageVoters play={play} optionId={option.id} />
                 {lost ? <Icon icon={heartPulse} className="pill-flatline" /> : null}
               </motion.div>
             );

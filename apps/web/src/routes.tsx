@@ -146,6 +146,12 @@ const routes: RouteObject[] = [
             }),
           },
           {
+            path: "voters",
+            lazy: async () => ({
+              Component: (await import("./admin/voters-page")).VotersPage,
+            }),
+          },
+          {
             path: "results",
             lazy: async () => ({
               Component: (await import("./admin/results-page")).AdminResultsPage,

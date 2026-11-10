@@ -195,6 +195,12 @@ type CommandBody =
   | {
       kind: "command";
       requestId: string;
+      name: "avatar";
+      mediaId: string | null;
+    }
+  | {
+      kind: "command";
+      requestId: string;
       name: "chess-move";
       gameId: string;
       from: string;
@@ -243,6 +249,8 @@ export function openRoomSocket(options: {
   submitTrollEscape: (effectId: string) => string;
   submitReaction: (targetId: string, reaction: "like" | "dislike") => string;
   submitDriver: (style: DriverStyle, faceMediaId: string | null) => string;
+  /** Set or remove (null) this guest's profile photo. Returns the request id. */
+  submitAvatar: (mediaId: string | null) => string;
   submitWallPost: (post: {
     mediaId: string;
     caption: string;
@@ -775,6 +783,15 @@ export function openRoomSocket(options: {
     });
   }
 
+  function submitAvatar(mediaId: string | null): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      name: "avatar",
+      mediaId,
+    });
+  }
+
   function submitWallPost(post: {
     mediaId: string;
     caption: string;
@@ -912,6 +929,7 @@ export function openRoomSocket(options: {
     submitTrollEscape,
     submitReaction,
     submitDriver,
+    submitAvatar,
     submitWallPost,
     submitWallWithdraw,
     submitWallReact,

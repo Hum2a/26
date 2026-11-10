@@ -137,6 +137,27 @@ export const adminFeatures: readonly AdminFeature[] = [
     status: (snapshot) => `${snapshot.media.length} question photos and clips`,
   },
   {
+    id: "voters",
+    label: "Vote board",
+    scope: "room",
+    path: "voters",
+    summary:
+      "Who is picking what on the big screen, the room-wide switch, and every guest's profile photo.",
+    rehearsal:
+      "Run the real stage vote board with stand-in players: add votes one by one or in a wave, change a mind, then reveal. Nothing is sent to the room.",
+    // The board's code lives with questions (projection) and media (photos);
+    // this page is their shared host view.
+    owns: [],
+    status: (snapshot) => {
+      const display = snapshot.voterDisplay;
+      if (!display) return "Unavailable";
+      const photos = `${display.avatars} of ${snapshot.players.length} with photos`;
+      return display.mode === "hidden"
+        ? `Picks hidden on screen · ${photos}`
+        : `Picks follow each question · ${photos}`;
+    },
+  },
+  {
     id: "wall",
     label: "Photo wall",
     scope: "room",

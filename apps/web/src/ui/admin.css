@@ -1214,3 +1214,48 @@
 .admin-troll-rehearsal-note {
   color: var(--muted);
 }
+
+/* Vote board page: the live mirror and the rehearsal draw the real stage board. */
+.voters-live-stage,
+.voters-rehearsal-stage {
+  container-type: inline-size;
+  padding: 1rem;
+  border-radius: var(--radius-panel, 1rem);
+  background: var(--background);
+  font-size: 1.1rem;
+}
+.voters-live-stage .vote-option-label,
+.voters-rehearsal-stage .vote-option-label {
+  font-size: 1.35rem;
+}
+.voters-live-stage .vote-option-total,
+.voters-rehearsal-stage .vote-option-total {
+  font-size: 1.75rem;
+}
+/* Stage-sized cards only where the preview is wide; narrow previews stack. */
+@container (min-width: 641px) {
+  .voters-live-stage .vote-option,
+  .voters-rehearsal-stage .vote-option {
+    min-height: 11rem;
+  }
+}
+.voters-photo-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.voters-photo-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.voters-photo-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}

@@ -48,7 +48,7 @@ it("uses the actual projector question and options without guest inputs or inven
   expect(await screen.findByRole("heading", { name: "Answers are open" })).toBeTruthy();
   expect(readQuestionPreview).toHaveBeenCalledWith("fixture-pack", "fixture");
   expect(screen.getByText("Choose a test shape").className).toContain("stage-prompt");
-  expect(screen.getByText("Test circle").className).toContain("stage-option");
+  expect(screen.getByText("Test circle").className).toContain("vote-option-label");
   expect(screen.getByText(/Phone actions stay in the phone preview/)).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Send answer" })).toBeNull();
   expect(screen.queryByText(/The answer is/)).toBeNull();

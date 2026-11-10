@@ -18,7 +18,8 @@ export function readDrivers(sql: SqlStorage): Map<string, LobbyDriver> {
       face: string | null;
       ordinal: number;
     }>(
-      `SELECT p.player_id, p.driver_style, m.media_id AS face,
+      // A guest with no driver photo races with their profile photo.
+      `SELECT p.player_id, p.driver_style, COALESCE(m.media_id, a.media_id) AS face,
               ROW_NUMBER() OVER (ORDER BY p.rowid) - 1 AS ordinal
        FROM player p
        LEFT JOIN media_upload m
@@ -27,6 +28,12 @@ export function readDrivers(sql: SqlStorage): Map<string, LobbyDriver> {
         AND m.purpose = 'face'
         AND m.status = 'accepted'
         AND m.hidden = 0
+       LEFT JOIN media_upload a
+         ON a.media_id = p.avatar_media_id
+        AND a.player_id = p.player_id
+        AND a.purpose = 'face'
+        AND a.status = 'accepted'
+        AND a.hidden = 0
        WHERE p.revoked_at IS NULL`,
     )
     .toArray();

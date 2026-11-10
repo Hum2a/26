@@ -136,7 +136,13 @@ export function choiceQuestion(
       : ordinaryDefaults.choicePoints);
   return finish(
     {
-      ...shared(input, points),
+      ...shared(
+        {
+          ...input,
+          attribution: input.attribution ?? ordinaryDefaults.choiceAttribution,
+        },
+        points,
+      ),
       kind: "choice",
       outcome,
       options: input.options ?? [],

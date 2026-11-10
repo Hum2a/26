@@ -28,6 +28,7 @@ import { syncWall } from "../wall/queue.ts";
 import { moderateCurrentAnswer } from "../questions/answer-moderation.ts";
 import { featureCandidate } from "../questions/vote.ts";
 import {
+  avatarClearedMessage,
   hideClosedMessage,
   demoScoringVersion,
   mediaMissingMessage,
@@ -67,6 +68,8 @@ import {
   chooseKartLobbyTrack,
 } from "./kart/kart-lobby.ts";
 import { startRound } from "./lifecycle.ts";
+import { changeVoterDisplay } from "../questions/voters.ts";
+import { clearAvatar } from "../media/avatar.ts";
 
 const shownPhases = new Set(["reveal", "scores", "final", "podium"]);
 
@@ -278,6 +281,23 @@ export function applyHostAction(
     }
     hideUpload(sql, input.mediaId);
     noteArchiveCorrection(sql, input.nowMs);
+    return {};
+  }
+  if (input.action === "voters-question" || input.action === "voters-hidden") {
+    changeVoterDisplay(
+      sql,
+      input.action === "voters-hidden" ? "hidden" : "question",
+      input.nowMs,
+    );
+    return {};
+  }
+  if (input.action === "avatar-clear") {
+    if (!input.playerId) {
+      throw new Error(playerMissingMessage);
+    }
+    if (!clearAvatar(sql, input.playerId)) {
+      throw new Error(avatarClearedMessage);
+    }
     return {};
   }
   if (input.action === "rename") {

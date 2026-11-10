@@ -176,6 +176,8 @@ import {
   type MediaPurpose,
 } from "../media/records.ts";
 import { readDrivers, saveDriver } from "./drivers.ts";
+import { readAvatars, saveAvatar } from "../media/avatar.ts";
+import { voterDisplayDetails } from "../questions/voters.ts";
 import { draftGapMs } from "../troll/catalogue.ts";
 import {
   acceptDeviceReport,
@@ -2706,6 +2708,10 @@ export class PartyRoom extends DurableObject<Env> {
       });
       return;
     }
+    if (command.name === "avatar") {
+      await this.acceptAvatar(ws, attachment, command.requestId, command.mediaId);
+      return;
+    }
     const digest = await payloadDigest({ name: command.name });
     const prior = this.readReceipt(attachment.principalId, command.requestId);
     if (prior && prior.digest !== digest) {
@@ -3779,6 +3785,44 @@ export class PartyRoom extends DurableObject<Env> {
     requestId: string,
     choice: { style: unknown; faceMediaId: unknown },
   ): Promise<void> {
+    await this.acceptPlayerChoice(ws, attachment, requestId, "driver", choice, (sql) =>
+      saveDriver(sql, {
+        playerId: attachment.principalId,
+        choice,
+        phase: createSqlStore(sql).readRoom().phase,
+      }),
+    );
+  }
+
+  /** A guest sets or removes their profile photo. Saved before the acknowledgement. */
+  private async acceptAvatar(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    requestId: string,
+    mediaId: unknown,
+  ): Promise<void> {
+    await this.acceptPlayerChoice(
+      ws,
+      attachment,
+      requestId,
+      "avatar",
+      { mediaId },
+      (sql) => saveAvatar(sql, { playerId: attachment.principalId, mediaId }),
+    );
+  }
+
+  /**
+   * A guest's own setting (driver, profile photo): one receipted transaction,
+   * then the guest's snapshot, the room broadcast and the acknowledgement.
+   */
+  private async acceptPlayerChoice(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    requestId: string,
+    name: "driver" | "avatar",
+    payload: Record<string, unknown>,
+    save: (sql: SqlStorage) => { ok: true } | { ok: false; message: string },
+  ): Promise<void> {
     const reply = (accepted: boolean, error?: string) =>
       this.send(ws, {
         kind: "ack",
@@ -3791,7 +3835,7 @@ export class PartyRoom extends DurableObject<Env> {
       reply(false, answerRoleMessage);
       return;
     }
-    const digest = await payloadDigest({ name: "driver", ...choice });
+    const digest = await payloadDigest({ name, ...payload });
     let accepted = false;
     let error: string | undefined;
     let mismatch = false;
@@ -3807,18 +3851,13 @@ export class PartyRoom extends DurableObject<Env> {
         error = stored.error;
         return;
       }
-      const room = createSqlStore(sql).readRoom();
-      const result = saveDriver(sql, {
-        playerId: attachment.principalId,
-        choice,
-        phase: room.phase,
-      });
+      const result = save(sql);
       accepted = result.ok;
       error = result.ok ? undefined : result.message;
       this.writeReceipt(attachment.principalId, requestId, digest, {
         accepted,
         error,
-        name: "driver",
+        name,
       });
     });
     if (mismatch) {
@@ -3946,6 +3985,7 @@ export class PartyRoom extends DurableObject<Env> {
     }
     const sql = this.ctx.storage.sql;
     const drivers = readDrivers(sql);
+    const avatars = readAvatars(sql);
     const players = sql
       .exec<{ player_id: string; nickname: string }>(
         `SELECT player_id, nickname FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
@@ -3953,10 +3993,12 @@ export class PartyRoom extends DurableObject<Env> {
       .toArray()
       .map((row) => {
         const driver = drivers.get(row.player_id);
+        const avatar = avatars.get(row.player_id);
         return {
           playerId: row.player_id,
           nickname: displayNickname(sql, row.player_id, row.nickname),
           ...(driver ? { driver } : {}),
+          ...(avatar ? { avatarMediaId: avatar } : {}),
         };
       });
     const store = createSqlStore(sql);
@@ -4099,6 +4141,7 @@ export class PartyRoom extends DurableObject<Env> {
             },
             hostEffects: hostTrollRows(this.ctx.storage.sql),
             photoBias: photoBiasDetails(this.ctx.storage.sql),
+            voterDisplay: voterDisplayDetails(this.ctx.storage.sql),
             developerTools: {
               ...developerDetails(this.ctx.storage.sql),
               rehearsal: rehearsalDetails(this.ctx.storage.sql, Date.now()),
@@ -5006,6 +5049,7 @@ function readCommand(body: unknown):
       reaction: "like" | "dislike";
     }
   | { requestId: string; name: "driver"; style: unknown; faceMediaId: unknown }
+  | { requestId: string; name: "avatar"; mediaId: unknown }
   | { requestId: string; name: "device"; reason: string; report: unknown }
   | {
       requestId: string;
@@ -5051,6 +5095,10 @@ function readCommand(body: unknown):
     };
   if (record.name === "snapshot") {
     return { requestId: record.requestId, name: "snapshot" };
+  }
+  if (record.name === "avatar") {
+    // Checked again (and against the guest's own photos) by saveAvatar.
+    return { requestId: record.requestId, name: "avatar", mediaId: record.mediaId };
   }
   if (
     record.name === "answer" &&

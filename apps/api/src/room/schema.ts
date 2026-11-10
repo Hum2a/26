@@ -467,6 +467,10 @@ export function ensurePartySchema(sql: SqlStorage): void {
   addColumn(sql, "media_upload", "purpose", "TEXT NOT NULL DEFAULT 'round'");
   addColumn(sql, "player", "driver_style", "TEXT");
   addColumn(sql, "player", "driver_face_media_id", "TEXT");
+  // A guest's profile photo (a `face` media row) and the host's projector switch.
+  addColumn(sql, "player", "avatar_media_id", "TEXT");
+  addColumn(sql, "room", "voter_display", "TEXT NOT NULL DEFAULT 'question'");
+  addColumn(sql, "room", "voter_display_history", "TEXT NOT NULL DEFAULT '[]'");
   addColumn(sql, "connection_summary", "script_errors", "INTEGER NOT NULL DEFAULT 0");
   addColumn(sql, "connection_summary", "last_script_error", "TEXT");
   addColumn(sql, "connection_summary", "last_script_error_at", "TEXT");
