@@ -202,7 +202,7 @@ export function LiveConsole() {
     <section className="admin-section live-console">
       <header className="admin-page-heading">
         <div>
-          <p className="entry-eyebrow">Only on your control screen</p>
+          <p className="entry-eyebrow">Tonight</p>
           <h1>Live controls</h1>
         </div>
         <Link className="entry-text-link" to="../players">

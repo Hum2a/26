@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { RouteObject } from "react-router";
 import { appRoutes } from "../routes";
-import { adminExempt, adminFeatures, featurePath } from "./features";
+import { adminExempt, adminFeatures, adminNavGroups, featurePath } from "./features";
 
 /**
  * The admin coverage rule (.agents/rules/50-admin-coverage.md): every feature
@@ -84,9 +84,11 @@ describe("admin coverage", () => {
   it("describes what each feature shows and what the host can rehearse", () => {
     const ids = adminFeatures.map((feature) => feature.id);
     expect(new Set(ids).size).toBe(ids.length);
+    const groups = new Set(adminNavGroups.map((group) => group.id));
     for (const feature of adminFeatures) {
       expect(feature.summary.length, feature.id).toBeGreaterThan(10);
       expect(feature.rehearsal.length, feature.id).toBeGreaterThan(10);
+      expect(groups.has(feature.group), feature.id).toBe(true);
     }
     for (const reason of Object.values(adminExempt)) {
       expect(reason.length).toBeGreaterThan(10);

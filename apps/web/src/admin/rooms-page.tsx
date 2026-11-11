@@ -90,30 +90,35 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
   }
   return (
     <section className="admin-section">
-      <p className="entry-eyebrow">Your night, in one place</p>
-      <h1>{overview ? "Your night." : "Rooms"}</h1>
-      <p>
-        Pick up where you left off, or open a fresh lobby for the guests. Creating or
-        switching rooms selects one room for this browser, including its stage access.
+      <header className="admin-page-heading">
+        <div>
+          <p className="entry-eyebrow">Control room</p>
+          <h1>{overview ? "Dashboard" : "Rooms"}</h1>
+        </div>
+        <div className="admin-actions">
+          <Button disabled={busy || loading} onClick={() => void create()}>
+            {busy ? "Working…" : "Create a lobby"}
+          </Button>
+          <LinkButton variant="secondary" to="/admin/kart?view=multiplayer">
+            Kart-only lobby
+          </LinkButton>
+          <Button
+            variant="secondary"
+            disabled={loading || busy}
+            onClick={() => {
+              setLoading(true);
+              setReload((value) => value + 1);
+            }}
+          >
+            Refresh rooms
+          </Button>
+        </div>
+      </header>
+      <p className="admin-lede">
+        {overview
+          ? "See the selected room, open a lobby, or jump into tonight’s controls. Creating or switching rooms selects one room for this browser, including its stage."
+          : "Every saved lobby, newest first. Opening a room selects it for this browser, including its stage."}
       </p>
-      <div className="admin-actions">
-        <Button disabled={busy || loading} onClick={() => void create()}>
-          {busy ? "Working…" : "Create a lobby"}
-        </Button>
-        <LinkButton variant="secondary" to="/admin/kart?view=multiplayer">
-          Kart-only lobby
-        </LinkButton>
-        <Button
-          variant="secondary"
-          disabled={loading || busy}
-          onClick={() => {
-            setLoading(true);
-            setReload((value) => value + 1);
-          }}
-        >
-          Refresh rooms
-        </Button>
-      </div>
       <EntryNotice message={loading ? "Finding your rooms…" : notice} />
       {notice ? (
         <LinkButton variant="secondary" to="/admin/login?returnTo=%2Fadmin%2Frooms">
@@ -122,17 +127,48 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
       ) : null}
       {current ? (
         <div className="admin-current">
-          <p className="entry-eyebrow">Selected in this browser</p>
-          <h2>Room {current.joinCode}</h2>
-          <p>
-            Last checked: {current.phase}
-            {current.paused ? ", paused" : ""} · {current.players.length} players
-          </p>
-          <LinkButton to={`/admin/rooms/${current.gameId}`}>Return to room</LinkButton>
+          <div className="admin-page-heading">
+            <div>
+              <p className="entry-eyebrow">Selected in this browser</p>
+              <h2>Room {current.joinCode}</h2>
+            </div>
+            <span className="admin-badge" data-tone={current.paused ? "warn" : "ok"}>
+              {current.phase}
+              {current.paused ? " · paused" : ""}
+            </span>
+          </div>
+          <dl className="admin-stat-grid">
+            <div className="admin-stat">
+              <dt>Players</dt>
+              <dd>{current.players.length}</dd>
+            </div>
+            <div className="admin-stat">
+              <dt>Phones</dt>
+              <dd>{current.connections?.guests ?? "—"}</dd>
+            </div>
+            <div className="admin-stat">
+              <dt>Stage</dt>
+              <dd>{current.connections?.stage ?? "—"}</dd>
+            </div>
+          </dl>
+          <div className="admin-actions">
+            <LinkButton to={`/admin/rooms/${current.gameId}`}>Return to room</LinkButton>
+            <LinkButton variant="secondary" to={`/admin/rooms/${current.gameId}/live`}>
+              Live controls
+            </LinkButton>
+            <a
+              className="entry-text-link"
+              href={`/host?code=${current.joinCode}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open the stage ↗
+            </a>
+          </div>
         </div>
       ) : null}
       {!loading && rooms.length === 0 && !notice ? (
-        <div className="admin-current">
+        <div className="admin-empty">
           <h2>Your first room starts here.</h2>
           <p>
             Create a lobby to get a join code. Existing rooms will appear here whenever
@@ -200,12 +236,12 @@ function EverythingGrid({ roomId }: { roomId: string | null }) {
       feature.id !== "home" && feature.id !== "rooms" && feature.id !== "overview",
   );
   return (
-    <section aria-label="Everything you can manage" className="grid gap-3">
-      <h2>Everything you can manage</h2>
-      <p>
+    <section aria-label="Shortcuts" className="grid gap-3">
+      <h2>Shortcuts</h2>
+      <p className="admin-lede">
         {roomId
-          ? "Room tools open in your selected room."
-          : "Room tools need a room: create a lobby or open one above."}
+          ? "Room tools open in your selected room. Each page can be rehearsed without guests."
+          : "Catalogue tools work any time. Room tools need a lobby first."}
       </p>
       <ul className="admin-feature-grid">
         {listed.map((feature) => {
@@ -221,9 +257,6 @@ function EverythingGrid({ roomId }: { roomId: string | null }) {
                     : "Open a room to use this"}
               </span>
               <span>{feature.summary}</span>
-              <span className="admin-feature-rehearse">
-                Try it: {feature.rehearsal}
-              </span>
             </>
           );
           return (
@@ -309,18 +342,28 @@ export function RoomOverview() {
   const { snapshot, connection, notice } = useAdminRoom();
   return (
     <section className="admin-section">
-      <p className="entry-eyebrow">Room overview</p>
-      <h1>
-        {snapshot.phase === "lobby"
-          ? "Ready for the room."
-          : snapshot.phase === "podium"
-            ? "The night, completed."
-            : "Your room, live."}
-      </h1>
-      <p>
+      <header className="admin-page-heading">
+        <div>
+          <p className="entry-eyebrow">This room</p>
+          <h1>
+            {snapshot.phase === "lobby"
+              ? "Ready for the room."
+              : snapshot.phase === "podium"
+                ? "The night, completed."
+                : "Your room, live."}
+          </h1>
+        </div>
+        <span
+          className="admin-badge"
+          data-tone={connection === "open" ? "ok" : "warn"}
+        >
+          {connection === "open" ? "Live" : "Reconnecting"}
+        </span>
+      </header>
+      <p className="admin-lede">
         {connection === "open"
-          ? "Connected. Room details update live."
-          : "Reconnecting. Room details may be out of date; live controls are unavailable until connected."}
+          ? "Connected. Room details update as guests join and you advance the show."
+          : "Reconnecting. Room details may be out of date; live controls wait until connected."}
       </p>
       <EntryNotice message={notice} />
       {snapshot.kartLobby ? (
@@ -338,11 +381,11 @@ export function RoomOverview() {
         </section>
       ) : null}
       <div className="admin-current">
-        <p>Guests join with this code</p>
+        <p className="entry-eyebrow">Guests join with this code</p>
         <p className="admin-room-code" aria-label={`Join code ${snapshot.joinCode}`}>
           {snapshot.joinCode}
         </p>
-        <p>{snapshot.gameId}</p>
+        <p className="admin-meta">{snapshot.gameId}</p>
         <div className="admin-actions">
           <a
             className="entry-text-link"
@@ -362,28 +405,28 @@ export function RoomOverview() {
           </Dialog>
         </div>
       </div>
-      <dl className="admin-room-facts">
-        <div>
-          <dt>Current phase</dt>
+      <dl className="admin-stat-grid">
+        <div className="admin-stat">
+          <dt>Phase</dt>
           <dd>
             {snapshot.phase}
             {snapshot.paused ? " · paused" : ""}
           </dd>
         </div>
-        <div>
+        <div className="admin-stat">
           <dt>Players</dt>
           <dd>{snapshot.players.length}</dd>
         </div>
-        <div>
+        <div className="admin-stat">
           <dt>Connected now</dt>
           <dd>
             {snapshot.connections
-              ? `${snapshot.connections.guests} phones · ${snapshot.connections.stage} stage · ${snapshot.connections.control} control`
-              : "Connection counts unavailable"}
+              ? `${snapshot.connections.guests} phones · ${snapshot.connections.stage} stage`
+              : "Unavailable"}
           </dd>
         </div>
-        <div>
-          <dt>Question pack</dt>
+        <div className="admin-stat">
+          <dt>Pack</dt>
           <dd>{snapshot.questionSetVersion}</dd>
         </div>
       </dl>
@@ -403,7 +446,7 @@ export function RoomOverview() {
       </div>
       {snapshot.players.length === 0 ? <SampleSeed gameId={snapshot.gameId} /> : null}
       <section aria-label="Everything in this room" className="grid gap-3">
-        <h2>Everything in this room</h2>
+        <h2>In this room</h2>
         <ul className="admin-feature-grid">
           {roomFeatures
             .filter((feature) => feature.id !== "overview")
@@ -420,9 +463,6 @@ export function RoomOverview() {
                     </span>
                   ) : null}
                   <span>{feature.summary}</span>
-                  <span className="admin-feature-rehearse">
-                    Try it: {feature.rehearsal}
-                  </span>
                 </Link>
               </li>
             ))}

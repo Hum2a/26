@@ -73,3 +73,16 @@ Use Motion springs or shared duration/easing tokens. Prefer enter/exit and layou
 ## Reduced motion and stage safety
 
 Honour `prefers-reduced-motion`. Turn off loops, parallax, blur storms, and layout thrash. Keep a short opacity or colour fade for state changes so the UI still does not pop. Motion must never hide a question, option, score, or answer on the projector, and must never put secrets or personal diagnostics on stage.
+
+## Admin workspace (Humza's control room)
+
+The party phone and projector stay loud: large type, generous tap targets, theme skins. **`/admin` is a different product surface.** It is a dense operator console for one person, often on a phone, and must stay understandable under pressure.
+
+Do not copy guest/stage chrome into admin. Specifically:
+
+- Group navigation from `adminFeatures[].group` (`apps/web/src/admin/features.ts`). Do not dump every page as a flat list of huge buttons.
+- Use compact primary / secondary / danger controls inside `.admin-workspace`. Guest `Button` size (`min-h-12`, `text-lg`) is for phones answering questions, not for the host desk.
+- Page titles are sentence-sized, with a one-line description of what the screen does. Status uses badges and short live lines, not essays on overview cards.
+- Confirm destructive actions. Show command results with the existing `CommandFeedback` / notices. Include empty and loading copy.
+- Keep rehearsal, but fold long how-to text away from the first glance. Overview cards show `summary` and live `status`; full `rehearsal` lives on the feature page.
+- Admin must work at phone width: a menu drawer, not a wrapped sidebar of oversized links. Do not send answer keys or personal diagnostics to `/screen`.

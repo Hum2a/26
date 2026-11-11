@@ -12,10 +12,13 @@ Every feature ships with its admin view in the same change. A feature is not don
 `apps/web/src/admin/features.ts` lists every feature (`adminFeatures`). The sidebar, the page titles and the room overview cards are built from it. Each entry has:
 
 - `id`, `label`, `scope` (`global` under `/admin`, `room` under `/admin/rooms/:gameId`) and `path`.
-- `summary`: what the page shows, in one sentence.
+- `group`: which sidebar section it belongs to (`start`, `catalogue`, `tonight`, `screens`, `after`, `you`). The shell renders `adminNavGroups` from this; do not hard-code a second nav list.
+- `summary`: what the page shows, in one sentence. Overview cards and shortcuts use this, not the full rehearsal text.
 - `rehearsal`: what the host can try with no guests (a preview, sample, demo or dry run). Be concrete. "None" is not acceptable. If something truly needs live guests, say how to do it with a second browser tab.
 - `owns`: the top-level source folders the feature lives in (`apps/api/src/<domain>`, `apps/web/src/<domain>`). Each folder belongs to exactly one feature.
 - `status` (room features): a short live line for the overview card, read from the host snapshot.
+
+Admin visual rules (compact chrome, grouped nav, phone drawer) live in `.agents/rules/40-design.md`. Coverage here is still see / manage / rehearse — a redesign must not drop a host action.
 
 Shared plumbing that is not a feature goes in `adminExempt` with a reason. Do not exempt something to avoid building its view.
 
