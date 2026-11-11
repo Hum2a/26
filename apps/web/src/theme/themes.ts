@@ -1826,6 +1826,14 @@ export const contentColours = {
   /** A redaction bar is black ink with paper-white text in every theme. */
   redactionInk: "#0c0c0c",
   redactionText: "#f4f1e8",
+  /** The "Who's that Pokémon?" bumper: red burst, yellow title, blue outline. */
+  pokeRed: "#e3350d",
+  pokeRedDeep: "#8f1206",
+  pokeYellow: "#ffcb05",
+  pokeBlue: "#2a5fb4",
+  pokeInk: "#101318",
+  pokeCream: "#f8f4e6",
+  pokeBurst: "#fff3b0",
   /** The chess table: carved ivory and ebony on wood, gold accents. */
   chessInk: "#1c140c",
   chessIvory: "#efe4d0",

@@ -27,6 +27,7 @@ import { trolleyYourMum } from "./trolley-your-mum.ts";
 import { trolleyMamdaniAfrica } from "./trolley-mamdani-africa.ts";
 import { trolleyFreddoMultiverse } from "./trolley-freddo-multiverse.ts";
 import { favouritePokemon } from "./favourite-pokemon.ts";
+import { whosThatPokemon } from "./whos-that-pokemon.ts";
 import { howItalianIsHumza } from "./how-italian-is-humza.ts";
 import { christianityBranches } from "./christianity-branches.ts";
 import { inflationFreddo } from "./inflation-freddo.ts";
@@ -164,6 +165,7 @@ export const birthdayPack: QuestionPack = {
     realNameVinDiesel,
     realNameJamieFoxx,
     favouritePokemon,
+    whosThatPokemon,
     commonPassword,
     completeAWordle,
     inflationFreddo,

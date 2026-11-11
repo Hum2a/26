@@ -6148,6 +6148,26 @@ Status: branch `fix/stockfish-search-once` from master. No deploy.
 
 Not verified: a real Stockfish game on a phone.
 
+## 11 November 2026 — "Who's that Pokémon?" round (draft) and design
+
+Status: branch `feature/whos-that-pokemon` from master. No deploy.
+
+- New draft `apps/api/src/questions/packs/birthday/whos-that-pokemon.ts`: a choice question with `presentation: "whos-that-pokemon"`, on the catalogue but not in `order`. The four similar-looking Pokémon, the answer and the pictures are recorded as missing, not invented.
+- New design `apps/web/src/play/designs/whos-that-pokemon.tsx` (+ CSS, test, bench fixture, `customPresentationIds` entry). It keeps its own look in every theme (colours in `contentColours`): red burst, yellow title with a blue outline, cream battle-menu box with a ▶ cursor, "I choose you!" send button. The stage shows the voter faces in each name.
+- Pictures: `apps/web/public/assets/questions/<question id>/silhouette.png` is shown while answers are open (a "?" stands in until it exists). Each option's colour PNG goes in its `image` field; the design draws option pictures only at the reveal, when the answer's picture flashes in with "It's …!". The silhouette is its own file, so the page never darkens the answer's picture itself.
+- Limit: the four colour PNGs are ordinary static files, so someone who guesses the URLs could compare them with the silhouette. That matches the existing option-image mechanism.
+
+### Commands and results
+
+- `npm run typecheck`, `npm run format:check` — passed; `npm run lint` — 0 errors, 27 existing warnings; structure check passed
+- `npm run test:unit` — 811 of 811 passed (5 new in `whos-that-pokemon.test.tsx`)
+- API `question-authoring`, `content-preflight`, `birthday-order`, `birthday-assets-prices` — 33 passed; `npm run content:check` — passed, listing the new draft as incomplete
+- `/design?q=whos-that-pokemon` checked in the browser: stage collect and reveal, phone at 375px, no console errors
+
+### Exact next stage
+
+Supply the four Pokémon, the answer and the five PNGs, then "make this question ready" and add it to the running order.
+
 ## 11 November 2026 — Chess interface rebuild
 
 Status: branch `feature/chess-interface` from master. No deploy.
