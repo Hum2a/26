@@ -46,3 +46,11 @@ Per GPL-3.0 requirements:
 - No warranty is provided
 
 The 26 birthday game project uses Stockfish as a separate work; the entire project is not licensed under GPL. Only the Stockfish chess engine components are GPL-licensed.
+
+## Chess board artwork and sounds
+
+Files in `apps/web/public/assets/chess/`. Full details, source links and the licence text are in `apps/web/public/assets/chess/CREDITS.md`.
+
+- Chess pieces: based on the Cburnett set by Colin M. L. Burnett, used under its 3-clause BSD licence option, with carved shading added.
+- Board and table textures: White Maple Veneer and American Walnut Veneer by Jenelle van Heerden, and Brown Leather by Rob Tuytel, via Poly Haven (CC0).
+- Sounds: original, generated for this project (CC0).

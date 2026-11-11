@@ -6167,3 +6167,15 @@ Status: branch `feature/whos-that-pokemon` from master. No deploy.
 ### Exact next stage
 
 Supply the four Pokémon, the answer and the five PNGs, then "make this question ready" and add it to the running order.
+
+## 11 November 2026 — Chess interface rebuild
+
+Status: branch `feature/chess-interface` from master. No deploy.
+
+- **Phone board** (`apps/web/src/chess/chess-board.tsx`, `board-model.ts`): carved SVG pieces on maple and walnut squares in a framed board on a leather table. Pieces keep their identity between positions, so a move slides, a taken piece shrinks away, castling moves both pieces and a promotion changes the pawn in place. Tap a piece to see its legal squares (dots, rings on captures) or drag it; the last move, the selected square and a king in check are highlighted. The board turns round for Black.
+- **Around the board** (`chess-game.tsx`, `chess-clocks.tsx`, `chess-captured.tsx`, `promotion-chooser.tsx`): a plate for each side with captured pieces and a clock that shows tenths and turns red under ten seconds; a status line; a result card over the board with confetti on a win; a promotion picker drawn with the piece art.
+- **Sound** (`chess-sound.ts`): move, capture, castle, promote, check, win, lose and a low-time tick, through the existing screen audio adapter. Nothing plays until the guest touches the board; Sound on/off is remembered on the phone.
+- **Sending** stays honest: the player own move is drawn at once and marked as sending while the room confirms it, and falls back if the room refuses it. Legal-move hints come from chess.js on the phone; the room still validates every move.
+- **Big screen** (`chess-stage.tsx`, `chess-stage.css`): a tournament hall on the same table: live counts, a points table with faces and bars, and recent finishes. The room still sends totals only, never a board.
+- **Assets**: `apps/web/public/assets/chess/` (12 pieces, 8 sounds, 3 textures, `CREDITS.md`), credited in `THIRD_PARTY_NOTICES.md`. The supplied `board/win.json` Lottie file is not used or committed: it would need a new animation library, and the confetti is drawn in CSS instead.
+- Colours live in `contentColours` (`chess*`). The engine, the socket, scoring and the snapshot contracts are unchanged.

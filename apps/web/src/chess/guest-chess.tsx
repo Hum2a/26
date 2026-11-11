@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { LobbySnapshot } from "@26/shared";
 import { ChessGame } from "./chess-game";
-import { ChessClocks } from "./chess-clocks";
 import { QuestionExperience } from "../play/question-experience";
 import type { ChessMoveParams, ChessResignParams } from "../live/room-socket";
 
@@ -85,8 +84,6 @@ export function GuestChess({
   return (
     <QuestionExperience snapshot={snapshot} pending={pending}>
       <div className="chess-phone-container">
-        <ChessClocks snapshot={chessSnapshot} />
-
         {engineError ? (
           <div className="chess-engine-error">
             <p className="text-destructive">{engineError}</p>
@@ -101,24 +98,15 @@ export function GuestChess({
           onMove={handleMove}
           onResign={handleResign}
           disabled={!open || pending}
+          pending={pending}
           onEngineError={setEngineError}
         />
 
-        {pending ? (
-          <p className="chess-status">Sending your move...</p>
-        ) : snapshot.paused ? (
+        {/* Sending and the result are drawn on the board itself. */}
+        {snapshot.paused ? (
           <p className="chess-status">Game paused</p>
         ) : snapshot.held ? (
           <p className="chess-status">Round paused</p>
-        ) : chessSnapshot.isGameOver ? (
-          <p className="chess-status">
-            {chessSnapshot.winner === "player"
-              ? "You won!"
-              : chessSnapshot.winner === "bot"
-                ? "Computer won"
-                : "Draw"}{" "}
-            Final score: {chessSnapshot.score} pts
-          </p>
         ) : null}
       </div>
     </QuestionExperience>

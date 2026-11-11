@@ -4,11 +4,30 @@
  * Client engine for bot moves only (casual trust).
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type CSSProperties } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { contentColours } from "../theme/themes";
 import { ChessBoard } from "./chess-board.tsx";
+import { ChessClock } from "./chess-clocks.tsx";
 import { StockfishEngine } from "./stockfish-worker.ts";
 import { PromotionChooser } from "./promotion-chooser.tsx";
-import { ChessCapturedScore } from "./chess-captured.tsx";
+import { CapturedTray, ChessCapturedScore } from "./chess-captured.tsx";
+import { fenAfter, pieceSrc, type BoardChange } from "./board-model.ts";
+import { createChessSound } from "./chess-sound.ts";
+import "./chess.css";
+
+/** The table keeps its wood, ivory and gold in every theme. */
+const chessColours = {
+  "--chess-ink": contentColours.chessInk,
+  "--chess-ivory": contentColours.chessIvory,
+  "--chess-gold": contentColours.chessGold,
+  "--chess-select": contentColours.chessSelect,
+  "--chess-check": contentColours.chessCheck,
+  "--chess-win": contentColours.chessWin,
+  "--chess-felt": contentColours.chessFelt,
+  "--chess-light": contentColours.chessLight,
+  "--chess-dark": contentColours.chessDark,
+} as CSSProperties;
 import type { ChessGuestSnapshot, ChessPromotionPiece } from "@26/shared";
 
 export type ChessGameProps = {
@@ -22,6 +41,8 @@ export type ChessGameProps = {
   ) => void;
   onResign: () => void;
   disabled?: boolean;
+  /** The player's move is on its way to the room. */
+  pending?: boolean;
 };
 
 type PendingMove = {
@@ -42,7 +63,11 @@ export function ChessGame({
   onMove,
   onResign,
   disabled = false,
+  pending = false,
 }: ChessGameProps) {
+  const reduce = useReducedMotion() ?? false;
+  // The move this phone last sent, and the position it was sent from.
+  const [sent, setSent] = useState<{ base: string; fen: string | null } | null>(null);
   const [engineReady, setEngineReady] = useState(false);
   const [engineError, setEngineError] = useState<string | null>(null);
   const [retryAttempt, setRetryAttempt] = useState(0);
@@ -257,7 +282,8 @@ export function ChessGame({
     };
   }, [snapshot.positionRevision]);
 
-  const handleSquareClick = useCallback(
+  // The player asked for a move: a pawn reaching the last rank picks a piece first.
+  const requestMove = useCallback(
     (from: string, to: string) => {
       if (
         disabled ||
@@ -266,21 +292,18 @@ export function ChessGame({
       ) {
         return;
       }
-
-      // Check if move needs promotion (pawn to 8th/1st rank)
       const piece = getPieceAt(snapshot.fen, from);
       const isPromotion =
         piece?.toLowerCase() === "p" &&
         ((snapshot.playerColor === "white" && to[1] === "8") ||
           (snapshot.playerColor === "black" && to[1] === "1"));
-
       if (isPromotion) {
         setPendingMove({ from, to, needsPromotion: true });
         setShowPromotionChooser(true);
-      } else {
-        // Submit immediately with current positionRevision
-        onMove(from, to, undefined, snapshot.positionRevision);
+        return;
       }
+      setSent({ base: snapshot.fen, fen: fenAfter(snapshot.fen, from, to) });
+      onMove(from, to, undefined, snapshot.positionRevision);
     },
     [disabled, snapshot, onMove],
   );
@@ -288,12 +311,16 @@ export function ChessGame({
   const handlePromotion = useCallback(
     (piece: ChessPromotionPiece) => {
       if (pendingMove) {
+        setSent({
+          base: snapshot.fen,
+          fen: fenAfter(snapshot.fen, pendingMove.from, pendingMove.to, piece),
+        });
         onMove(pendingMove.from, pendingMove.to, piece, snapshot.positionRevision);
         setPendingMove(null);
         setShowPromotionChooser(false);
       }
     },
-    [pendingMove, snapshot.positionRevision, onMove],
+    [pendingMove, snapshot.fen, snapshot.positionRevision, onMove],
   );
 
   const handleCancelPromotion = useCallback(() => {
@@ -301,92 +328,247 @@ export function ChessGame({
     setShowPromotionChooser(false);
   }, []);
 
+  // Sound: optional, unlocked by the first touch, remembered when muted.
+  const [sound] = useState(createChessSound);
+  const [muted, setMuted] = useState(() => sound.muted);
+  useEffect(() => () => sound.dispose(), [sound]);
+
+  const onBoardChange = useCallback(
+    (change: BoardChange) => {
+      sound.play(
+        change.kind === "capture"
+          ? "capture"
+          : change.kind === "castle"
+            ? "castle"
+            : change.kind === "promote"
+              ? "promote"
+              : "move",
+      );
+    },
+    [sound],
+  );
+  useEffect(() => {
+    if (snapshot.inCheck && !snapshot.isGameOver) sound.play("check");
+  }, [snapshot.inCheck, snapshot.isGameOver, snapshot.plyCount, sound]);
+  useEffect(() => {
+    if (!snapshot.isGameOver) return;
+    sound.play(snapshot.winner === "player" ? "win" : "lose");
+  }, [snapshot.isGameOver, snapshot.winner, sound]);
+  const onLowTime = useCallback(() => sound.play("low-time"), [sound]);
+
+  // The player's own move is drawn at once while the room confirms it. It is
+  // marked as sending, and falls back if the room does not accept it.
+  const showSent =
+    pending && sent !== null && sent.fen !== null && sent.base === snapshot.fen;
+  const boardFen = showSent ? sent.fen! : snapshot.fen;
+  const playerTurn = snapshot.sideToMove === snapshot.playerColor;
+  const interactive =
+    !disabled && !pending && engineReady && playerTurn && !snapshot.isGameOver;
+  const white = snapshot.playerColor === "white";
+
+  const status = snapshot.isGameOver
+    ? ""
+    : engineError
+      ? "The computer could not start."
+      : !engineReady
+        ? "Loading chess engine..."
+        : pending
+          ? "Sending your move…"
+          : snapshot.paused
+            ? "Paused"
+            : playerTurn
+              ? snapshot.inCheck
+                ? "Check! Your move."
+                : "Your move"
+              : "Stockfish is thinking…";
+
   return (
-    <div className="chess-game">
-      {/* Engine status indicator */}
-      {!snapshot.isGameOver && (
-        <div className="engine-status" role="status" aria-live="polite">
-          {engineError && (
-            <div className="engine-status-error">
-              <p className="text-destructive">
-                <span role="img" aria-label="warning">
-                  ⚠️
-                </span>{" "}
-                Engine failed: {engineError}
-              </p>
-              <button
-                type="button"
-                onClick={handleRetryEngine}
-                className="engine-retry-button"
-                aria-label="Retry loading engine"
-              >
-                Retry
-              </button>
-            </div>
-          )}
-          {!engineReady && !engineError && (
-            <div className="engine-status-loading">
-              <span role="img" aria-label="loading">
-                ⏳
-              </span>{" "}
-              Loading chess engine...
-              {retryAttempt > 0 && <span> (attempt {retryAttempt + 1})</span>}
-            </div>
-          )}
-          {engineReady && snapshot.sideToMove === snapshot.botColor && (
-            <div className="engine-status-thinking">
-              <span role="img" aria-label="bot thinking">
-                🤖
-              </span>{" "}
-              Bot thinking...
-            </div>
-          )}
-        </div>
-      )}
-
-      <ChessCapturedScore snapshot={snapshot} />
-
-      <ChessBoard
-        snapshot={snapshot}
-        onMove={handleSquareClick}
-        disabled={
-          disabled || !engineReady || snapshot.sideToMove !== snapshot.playerColor
-        }
-      />
-
-      {/* Promotion chooser modal */}
-      {showPromotionChooser && (
-        <PromotionChooser
-          color={snapshot.playerColor}
-          onChoose={handlePromotion}
-          onCancel={handleCancelPromotion}
+    <div className="chess-game" style={chessColours}>
+      <div
+        className="chess-plate"
+        data-side="bot"
+        data-active={!playerTurn || undefined}
+      >
+        <img
+          className="chess-plate-face"
+          src={pieceSrc(white ? "b" : "w", "k")}
+          alt=""
+          draggable={false}
         />
-      )}
+        <div className="chess-plate-who">
+          <span className="chess-plate-name">Stockfish</span>
+          <CapturedTray
+            fen={boardFen}
+            colour={white ? "w" : "b"}
+            label="Taken from you"
+          />
+        </div>
+        <ChessClock snapshot={snapshot} side="bot" />
+      </div>
 
-      {/* Game controls */}
-      <div className="chess-controls">
-        {!snapshot.isGameOver && (
+      <div className="chess-table">
+        <ChessBoard
+          fen={boardFen}
+          playerColor={snapshot.playerColor}
+          inCheck={snapshot.inCheck && !showSent}
+          sideToMove={snapshot.sideToMove}
+          interactive={interactive}
+          sending={showSent}
+          onMove={requestMove}
+          onChange={onBoardChange}
+          onTouch={sound.unlock}
+        />
+        <AnimatePresence>
+          {snapshot.isGameOver ? (
+            <motion.div
+              key="over"
+              className="chess-over"
+              data-result={snapshot.winner ?? "none"}
+              role="status"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+            >
+              {snapshot.winner === "player" && !reduce ? <Confetti /> : null}
+              <motion.div
+                className="chess-over-card"
+                initial={{ opacity: 0, y: reduce ? 0 : 24, scale: reduce ? 1 : 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={
+                  reduce
+                    ? { duration: 0.2 }
+                    : { type: "spring", stiffness: 320, damping: 22, delay: 0.15 }
+                }
+              >
+                <p className="chess-over-title">{resultTitle(snapshot)}</p>
+                {snapshot.terminationReason ? (
+                  <p className="chess-over-reason">{snapshot.terminationReason}</p>
+                ) : null}
+                <p className="chess-over-score">
+                  <strong>{snapshot.score}</strong> pts
+                </p>
+              </motion.div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>
+
+      <div
+        className="chess-plate"
+        data-side="you"
+        data-active={playerTurn || undefined}
+      >
+        <img
+          className="chess-plate-face"
+          src={pieceSrc(white ? "w" : "b", "k")}
+          alt=""
+          draggable={false}
+        />
+        <div className="chess-plate-who">
+          <span className="chess-plate-name">You</span>
+          <CapturedTray
+            fen={boardFen}
+            colour={white ? "b" : "w"}
+            label="You have taken"
+          />
+        </div>
+        <ChessClock snapshot={snapshot} side="player" onLowTime={onLowTime} />
+      </div>
+
+      <div className="chess-foot">
+        <ChessCapturedScore snapshot={snapshot} />
+        {!snapshot.isGameOver ? (
+          <div className="engine-status" role="status" aria-live="polite">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={status}
+                className="chess-status-line"
+                data-thinking={status.startsWith("Stockfish") || undefined}
+                initial={{ opacity: 0, y: reduce ? 0 : 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+              >
+                {status}
+                {!engineReady && !engineError && retryAttempt > 0 ? (
+                  <span> (attempt {retryAttempt + 1})</span>
+                ) : null}
+              </motion.span>
+            </AnimatePresence>
+            {engineError ? (
+              <div className="engine-status-error">
+                <p>Engine failed: {engineError}</p>
+                <button
+                  type="button"
+                  onClick={handleRetryEngine}
+                  className="engine-retry-button"
+                  aria-label="Retry loading engine"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+        <div className="chess-controls">
           <button
             type="button"
-            onClick={onResign}
-            disabled={disabled}
-            className="chess-resign-button"
-            aria-label="Resign from game"
+            className="chess-tool"
+            aria-pressed={!muted}
+            onClick={() => {
+              sound.unlock();
+              sound.setMuted(!muted);
+              setMuted(!muted);
+            }}
           >
-            Resign
+            {muted ? "Sound off" : "Sound on"}
           </button>
-        )}
-
-        {snapshot.isGameOver && (
-          <div className="chess-game-over" role="status">
-            <p className="result">{formatGameResult(snapshot)}</p>
-            {snapshot.terminationReason && (
-              <p className="reason text-muted">{snapshot.terminationReason}</p>
-            )}
-          </div>
-        )}
+          {!snapshot.isGameOver ? (
+            <button
+              type="button"
+              onClick={onResign}
+              disabled={disabled}
+              className="chess-tool chess-resign-button"
+              aria-label="Resign from game"
+            >
+              Resign
+            </button>
+          ) : null}
+        </div>
       </div>
+
+      <AnimatePresence>
+        {showPromotionChooser ? (
+          <PromotionChooser
+            key="promotion"
+            color={snapshot.playerColor}
+            onChoose={handlePromotion}
+            onCancel={handleCancelPromotion}
+          />
+        ) : null}
+      </AnimatePresence>
     </div>
+  );
+}
+
+/** A short burst for a win. Decoration only; skipped under reduced motion. */
+function Confetti() {
+  return (
+    <span className="chess-confetti" aria-hidden="true">
+      {Array.from({ length: 28 }, (_, index) => (
+        <i
+          key={index}
+          style={
+            {
+              "--angle": `${(index * 360) / 28 + (index % 3) * 7}deg`,
+              "--reach": `${5 + (index % 5) * 1.2}rem`,
+              "--tone": index % 4,
+              "--delay": `${(index % 7) * 0.03}s`,
+            } as CSSProperties
+          }
+        />
+      ))}
+    </span>
   );
 }
 
@@ -410,10 +592,9 @@ function getPieceAt(fen: string, square: string): string | null {
   return null;
 }
 
-function formatGameResult(snapshot: ChessGuestSnapshot): string {
-  const score = `${snapshot.score} pts`;
-  if (snapshot.winner === "player") return `🎉 You won! ${score}`;
-  if (snapshot.winner === "bot") return `😔 Bot wins · ${score}`;
-  if (snapshot.winner === "draw") return `🤝 Draw · ${score}`;
-  return `Game over · ${score}`;
+function resultTitle(snapshot: ChessGuestSnapshot): string {
+  if (snapshot.winner === "player") return "You won!";
+  if (snapshot.winner === "bot") return "Stockfish wins";
+  if (snapshot.winner === "draw") return "Draw";
+  return "Game over";
 }

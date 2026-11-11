@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChessGame } from "./chess-game";
-import { ChessClocks } from "./chess-clocks";
 import {
   applySoloMove,
   createSoloSnapshot,
@@ -56,7 +55,6 @@ export function SoloChessPage() {
         <p className="entry-eyebrow">Solo practice</p>
         <h1>Chess vs the Humza bot</h1>
         <p>You are White. 1+0, about 1425. No room, no party points.</p>
-        <ChessClocks snapshot={snapshot} />
         <ChessGame
           key={snapshot.gameId}
           snapshot={snapshot}
