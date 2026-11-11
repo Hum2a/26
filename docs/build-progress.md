@@ -6178,4 +6178,14 @@ Status: branch `feature/chess-interface` from master. No deploy.
 - **Sending** stays honest: the player own move is drawn at once and marked as sending while the room confirms it, and falls back if the room refuses it. Legal-move hints come from chess.js on the phone; the room still validates every move.
 - **Big screen** (`chess-stage.tsx`, `chess-stage.css`): a tournament hall on the same table: live counts, a points table with faces and bars, and recent finishes. The room still sends totals only, never a board.
 - **Assets**: `apps/web/public/assets/chess/` (12 pieces, 8 sounds, 3 textures, `CREDITS.md`), credited in `THIRD_PARTY_NOTICES.md`. The supplied `board/win.json` Lottie file is not used or committed: it would need a new animation library, and the confetti is drawn in CSS instead.
+- **Premoves** (`board-model.ts`, `chess-board.tsx`, `chess-game.tsx`, `guest-chess.tsx`, `chess.css`): Chess.com-style premove queue while Stockfish is thinking or while an earlier move is in flight (`premoveTargets`, `normalizePremove`, `applyPremoveToFen`, `applyPremovesToFen`, `resolvePremove`). Supports both tap-tap and drag-and-drop, multiple chained premoves (with the same piece or across squares vacated by earlier premoves), geometric premove rules (pawn forward 1/2 and empty/friendly diagonals for captures/en passant, sliding through blocking pieces, friendly-square recaptures, and two-square or king-onto-rook castling), and automatic queen promotion on premoves. Premoved squares highlight in crimson (`data-premove`) and pieces move on the virtual board without triggering move sounds until executed. When the player's turn arrives, the first queued premove is validated against the authoritative FEN and dispatched immediately if legal, or the queue is cleared if invalidated. Premoves can be cancelled by tapping an empty square, right-clicking, pressing `Escape`, or tapping the `Cancel premove` control.
 - Colours live in `contentColours` (`chess*`). The engine, the socket, scoring and the snapshot contracts are unchanged.
+
+### Commands and results
+
+- `npm run typecheck`, `npm run lint` — passed (0 errors, 27 existing warnings; structure check passed)
+- `npm run test:unit -w @26/web -- src/chess` — 10 files, 52 passed (including premove model, board and lifecycle tests)
+
+### Exact next stage
+
+Conclude the merge commit when ready and test solo chess (`/chess`) or a party rehearsal round on a phone. Do not start the next prompt automatically.

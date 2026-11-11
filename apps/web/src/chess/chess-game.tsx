@@ -12,7 +12,15 @@ import { ChessClock } from "./chess-clocks.tsx";
 import { StockfishEngine } from "./stockfish-worker.ts";
 import { PromotionChooser } from "./promotion-chooser.tsx";
 import { CapturedTray, ChessCapturedScore } from "./chess-captured.tsx";
-import { fenAfter, pieceSrc, type BoardChange } from "./board-model.ts";
+import {
+  applyPremovesToFen,
+  fenAfter,
+  normalizePremove,
+  pieceSrc,
+  resolvePremove,
+  type BoardChange,
+  type Premove,
+} from "./board-model.ts";
 import { createChessSound } from "./chess-sound.ts";
 import "./chess.css";
 
@@ -67,7 +75,17 @@ export function ChessGame({
 }: ChessGameProps) {
   const reduce = useReducedMotion() ?? false;
   // The move this phone last sent, and the position it was sent from.
-  const [sent, setSent] = useState<{ base: string; fen: string | null } | null>(null);
+  const [sent, setSent] = useState<{
+    base: string;
+    fen: string | null;
+    move: Premove;
+    revision: number;
+    sawPending: boolean;
+    fromPremove: boolean;
+  } | null>(null);
+  const [premoves, setPremoves] = useState<Premove[]>([]);
+  const [processedRevision, setProcessedRevision] = useState<number | null>(null);
+  const [trackedGameId, setTrackedGameId] = useState(snapshot.gameId);
   const [engineReady, setEngineReady] = useState(false);
   const [engineError, setEngineError] = useState<string | null>(null);
   const [retryAttempt, setRetryAttempt] = useState(0);
@@ -77,6 +95,7 @@ export function ChessGame({
   // Instance refs (stable, not in dependencies)
   const engineInstanceRef = useRef<StockfishEngine | null>(null);
   const mountedRef = useRef(true);
+  const dispatchedRevisionRef = useRef<number | null>(null);
 
   // Latest authoritative snapshot/handlers (for callbacks)
   const latestSnapshotRef = useRef(snapshot);
@@ -288,6 +307,7 @@ export function ChessGame({
       if (
         disabled ||
         snapshot.isGameOver ||
+        snapshot.paused ||
         snapshot.sideToMove !== snapshot.playerColor
       ) {
         return;
@@ -302,30 +322,156 @@ export function ChessGame({
         setShowPromotionChooser(true);
         return;
       }
-      setSent({ base: snapshot.fen, fen: fenAfter(snapshot.fen, from, to) });
+      const nextFen = fenAfter(snapshot.fen, from, to);
+      dispatchedRevisionRef.current = snapshot.positionRevision;
+      setProcessedRevision(snapshot.positionRevision);
+      setSent({
+        base: snapshot.fen,
+        fen: nextFen,
+        move: { from, to },
+        revision: snapshot.positionRevision,
+        sawPending: pending,
+        fromPremove: false,
+      });
       onMove(from, to, undefined, snapshot.positionRevision);
     },
-    [disabled, snapshot, onMove],
+    [disabled, pending, snapshot, onMove],
   );
 
   const handlePromotion = useCallback(
     (piece: ChessPromotionPiece) => {
       if (pendingMove) {
+        const nextFen = fenAfter(snapshot.fen, pendingMove.from, pendingMove.to, piece);
+        dispatchedRevisionRef.current = snapshot.positionRevision;
+        setProcessedRevision(snapshot.positionRevision);
         setSent({
           base: snapshot.fen,
-          fen: fenAfter(snapshot.fen, pendingMove.from, pendingMove.to, piece),
+          fen: nextFen,
+          move: { from: pendingMove.from, to: pendingMove.to, promotion: piece },
+          revision: snapshot.positionRevision,
+          sawPending: pending,
+          fromPremove: false,
         });
         onMove(pendingMove.from, pendingMove.to, piece, snapshot.positionRevision);
         setPendingMove(null);
         setShowPromotionChooser(false);
       }
     },
-    [pendingMove, snapshot.fen, snapshot.positionRevision, onMove],
+    [pending, pendingMove, snapshot.fen, snapshot.positionRevision, onMove],
   );
 
   const handleCancelPromotion = useCallback(() => {
     setPendingMove(null);
     setShowPromotionChooser(false);
+  }, []);
+
+  if (trackedGameId !== snapshot.gameId) {
+    setTrackedGameId(snapshot.gameId);
+    setPremoves([]);
+    setSent(null);
+    setProcessedRevision(null);
+    setPendingMove(null);
+    setShowPromotionChooser(false);
+  }
+
+  if (snapshot.isGameOver && (premoves.length > 0 || showPromotionChooser)) {
+    setPremoves([]);
+    setPendingMove(null);
+    setShowPromotionChooser(false);
+  }
+
+  if (sent && pending && !sent.sawPending) {
+    setSent({ ...sent, sawPending: true });
+  }
+
+  if (sent && sent.sawPending && !pending && sent.base === snapshot.fen) {
+    setSent(null);
+    if (premoves.length > 0) {
+      setPremoves([]);
+    }
+  }
+
+  // The player's own move is drawn at once while the room confirms it. It is
+  // marked as sending, and falls back if the room does not accept it.
+  const showSent =
+    sent !== null &&
+    sent.fen !== null &&
+    sent.base === snapshot.fen &&
+    sent.revision === snapshot.positionRevision &&
+    (pending || sent.fromPremove);
+
+  const canExecutePremove =
+    !disabled &&
+    !pending &&
+    !showSent &&
+    !snapshot.isGameOver &&
+    !snapshot.paused &&
+    snapshot.sideToMove === snapshot.playerColor;
+
+  if (
+    canExecutePremove &&
+    premoves.length > 0 &&
+    processedRevision !== snapshot.positionRevision
+  ) {
+    setProcessedRevision(snapshot.positionRevision);
+    const resolved = resolvePremove(snapshot.fen, premoves[0]!, snapshot.playerColor);
+    if (resolved) {
+      setPremoves(premoves.slice(1));
+      setSent({
+        base: snapshot.fen,
+        fen: resolved.nextFen,
+        move: {
+          from: resolved.from,
+          to: resolved.to,
+          promotion: resolved.promotion,
+        },
+        revision: snapshot.positionRevision,
+        sawPending: pending,
+        fromPremove: true,
+      });
+    } else {
+      setPremoves([]);
+    }
+  }
+
+  useEffect(() => {
+    if (
+      sent &&
+      sent.fromPremove &&
+      sent.revision === snapshot.positionRevision &&
+      dispatchedRevisionRef.current !== sent.revision
+    ) {
+      dispatchedRevisionRef.current = sent.revision;
+      latestOnMoveRef.current(
+        sent.move.from,
+        sent.move.to,
+        sent.move.promotion as ChessPromotionPiece | undefined,
+        sent.revision,
+      );
+    }
+  }, [sent, snapshot.positionRevision]);
+
+  const boardFen = showSent ? sent.fen! : snapshot.fen;
+  const white = snapshot.playerColor === "white";
+  const own = white ? "w" : "b";
+
+  const requestPremove = useCallback(
+    (from: string, to: string) => {
+      if (disabled || snapshot.isGameOver || snapshot.paused) {
+        return;
+      }
+      setPremoves((current) => {
+        const currentFen = applyPremovesToFen(boardFen, current, own);
+        const next = normalizePremove(currentFen, from, to, own);
+        if (!next) return current;
+        return [...current, next];
+      });
+    },
+    [disabled, snapshot.isGameOver, snapshot.paused, boardFen, own],
+  );
+
+  const clearPremoves = useCallback(() => {
+    setPremoves([]);
   }, []);
 
   // Sound: optional, unlocked by the first touch, remembered when muted.
@@ -356,31 +502,45 @@ export function ChessGame({
   }, [snapshot.isGameOver, snapshot.winner, sound]);
   const onLowTime = useCallback(() => sound.play("low-time"), [sound]);
 
-  // The player's own move is drawn at once while the room confirms it. It is
-  // marked as sending, and falls back if the room does not accept it.
-  const showSent =
-    pending && sent !== null && sent.fen !== null && sent.base === snapshot.fen;
-  const boardFen = showSent ? sent.fen! : snapshot.fen;
-  const playerTurn = snapshot.sideToMove === snapshot.playerColor;
+  const playerTurn = snapshot.sideToMove === snapshot.playerColor && !showSent;
   const interactive =
-    !disabled && !pending && engineReady && playerTurn && !snapshot.isGameOver;
-  const white = snapshot.playerColor === "white";
+    !disabled &&
+    !pending &&
+    engineReady &&
+    playerTurn &&
+    !snapshot.isGameOver &&
+    !snapshot.paused;
+  const premovable =
+    !disabled && !snapshot.isGameOver && !snapshot.paused && (!playerTurn || pending);
+
+  const premoveLabel =
+    premoves.length === 1
+      ? "Premove queued"
+      : premoves.length > 1
+        ? `${premoves.length} premoves queued`
+        : null;
 
   const status = snapshot.isGameOver
     ? ""
     : engineError
       ? "The computer could not start."
       : !engineReady
-        ? "Loading chess engine..."
+        ? premoveLabel
+          ? `${premoveLabel} — Loading chess engine...`
+          : "Loading chess engine..."
         : pending
-          ? "Sending your move…"
+          ? premoveLabel
+            ? `Sending your move… (${premoveLabel.toLowerCase()})`
+            : "Sending your move…"
           : snapshot.paused
             ? "Paused"
             : playerTurn
               ? snapshot.inCheck
                 ? "Check! Your move."
                 : "Your move"
-              : "Stockfish is thinking…";
+              : premoveLabel
+                ? `${premoveLabel} — Stockfish is thinking…`
+                : "Stockfish is thinking…";
 
   return (
     <div className="chess-game" style={chessColours}>
@@ -413,8 +573,12 @@ export function ChessGame({
           inCheck={snapshot.inCheck && !showSent}
           sideToMove={snapshot.sideToMove}
           interactive={interactive}
-          sending={showSent}
+          premovable={premovable}
+          premoves={premoves}
+          sending={pending && showSent}
           onMove={requestMove}
+          onPremove={requestPremove}
+          onClearPremoves={clearPremoves}
           onChange={onBoardChange}
           onTouch={sound.unlock}
         />
@@ -479,22 +643,19 @@ export function ChessGame({
         <ChessCapturedScore snapshot={snapshot} />
         {!snapshot.isGameOver ? (
           <div className="engine-status" role="status" aria-live="polite">
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.span
-                key={status}
-                className="chess-status-line"
-                data-thinking={status.startsWith("Stockfish") || undefined}
-                initial={{ opacity: 0, y: reduce ? 0 : 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
-              >
-                {status}
-                {!engineReady && !engineError && retryAttempt > 0 ? (
-                  <span> (attempt {retryAttempt + 1})</span>
-                ) : null}
-              </motion.span>
-            </AnimatePresence>
+            <motion.span
+              key={status}
+              className="chess-status-line"
+              data-thinking={status.includes("Stockfish is thinking") || undefined}
+              initial={{ opacity: 0, y: reduce ? 0 : 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18 }}
+            >
+              {status}
+              {!engineReady && !engineError && retryAttempt > 0 ? (
+                <span> (attempt {retryAttempt + 1})</span>
+              ) : null}
+            </motion.span>
             {engineError ? (
               <div className="engine-status-error">
                 <p>Engine failed: {engineError}</p>
@@ -511,6 +672,18 @@ export function ChessGame({
           </div>
         ) : null}
         <div className="chess-controls">
+          {!snapshot.isGameOver && premoves.length > 0 ? (
+            <button
+              type="button"
+              onClick={clearPremoves}
+              className="chess-tool chess-premove-cancel"
+              aria-label="Cancel premove"
+            >
+              {premoves.length === 1
+                ? "Cancel premove"
+                : `Cancel premoves (${premoves.length})`}
+            </button>
+          ) : null}
           <button
             type="button"
             className="chess-tool"
@@ -526,7 +699,10 @@ export function ChessGame({
           {!snapshot.isGameOver ? (
             <button
               type="button"
-              onClick={onResign}
+              onClick={() => {
+                clearPremoves();
+                onResign();
+              }}
               disabled={disabled}
               className="chess-tool chess-resign-button"
               aria-label="Resign from game"

@@ -177,7 +177,8 @@
   background-image: url("/assets/chess/board/board-dark.webp");
   color: var(--chess-light);
 }
-.chess-board[data-interactive] .chess-square {
+.chess-board[data-interactive] .chess-square,
+.chess-board[data-premove-mode] .chess-square {
   cursor: pointer;
 }
 .chess-square:focus-visible {
@@ -196,24 +197,40 @@
 }
 .chess-square[data-last] .chess-mark {
   opacity: 1;
-  background: color-mix(in srgb, var(--chess-select) 42%, transparent);
+  background-color: color-mix(in srgb, var(--chess-select) 42%, transparent);
+}
+.chess-square[data-premove] .chess-mark {
+  opacity: 1;
+  background-color: color-mix(in srgb, var(--chess-check) 52%, transparent);
+  box-shadow: inset 0 0 0 0.12rem color-mix(in srgb, var(--chess-check) 82%, white);
 }
 .chess-square[data-selected] .chess-mark {
   opacity: 1;
-  background: color-mix(in srgb, var(--chess-select) 68%, transparent);
+  background-color: color-mix(in srgb, var(--chess-select) 68%, transparent);
   box-shadow: inset 0 0 0 0.16rem color-mix(in srgb, var(--chess-gold) 90%, white);
+}
+.chess-board[data-premove-mode] .chess-square[data-selected] .chess-mark {
+  background-color: color-mix(in srgb, var(--chess-check) 68%, transparent);
+  box-shadow: inset 0 0 0 0.16rem color-mix(in srgb, var(--chess-check) 90%, white);
 }
 .chess-square[data-target="move"] .chess-mark {
   opacity: 1;
-  background: radial-gradient(
+  background-image: radial-gradient(
     circle,
     color-mix(in srgb, var(--chess-ink) 45%, transparent) 0 18%,
     transparent 20%
   );
 }
+.chess-board[data-premove-mode] .chess-square[data-target="move"] .chess-mark {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--chess-check) 65%, var(--chess-ink)) 0 18%,
+    transparent 20%
+  );
+}
 .chess-square[data-target="capture"] .chess-mark {
   opacity: 1;
-  background: radial-gradient(
+  background-image: radial-gradient(
     circle,
     transparent 0 58%,
     color-mix(in srgb, var(--chess-check) 75%, transparent) 60% 70%,
@@ -222,7 +239,7 @@
 }
 .chess-square[data-check] .chess-mark {
   opacity: 1;
-  background: radial-gradient(
+  background-image: radial-gradient(
     circle,
     color-mix(in srgb, var(--chess-check) 95%, transparent) 0 30%,
     color-mix(in srgb, var(--chess-check) 40%, transparent) 55%,
@@ -437,6 +454,10 @@
 }
 .chess-resign-button {
   border-color: color-mix(in srgb, var(--chess-check) 70%, transparent);
+}
+.chess-premove-cancel {
+  border-color: color-mix(in srgb, var(--chess-check) 85%, white);
+  background: color-mix(in srgb, var(--chess-check) 32%, var(--chess-ink));
 }
 .chess-tool:focus-visible,
 .engine-retry-button:focus-visible,

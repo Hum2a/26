@@ -9,6 +9,8 @@ const start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 function board(props: Partial<ChessBoardProps> = {}) {
   const onMove = vi.fn();
+  const onPremove = vi.fn();
+  const onClearPremoves = vi.fn();
   const onChange = vi.fn();
   const base: ChessBoardProps = {
     fen: start,
@@ -17,11 +19,15 @@ function board(props: Partial<ChessBoardProps> = {}) {
     sideToMove: "white",
     interactive: true,
     onMove,
+    onPremove,
+    onClearPremoves,
     onChange,
   };
   const view = render(<ChessBoard {...base} {...props} />);
   return {
     onMove,
+    onPremove,
+    onClearPremoves,
     onChange,
     view,
     redraw: (next: Partial<ChessBoardProps>) =>
@@ -115,4 +121,60 @@ it("turns the board round for Black", () => {
     .map((button) => button.getAttribute("aria-label"));
   expect(names[0]).toBe("h1 White Rook");
   expect(names[63]).toBe("a8 Black Rook");
+});
+
+it("queues premoves when waiting for the opponent, moves pieces on the virtual board, and highlights premove squares", () => {
+  const { onMove, onPremove, onChange, redraw } = board({
+    interactive: false,
+    premovable: true,
+    sideToMove: "black",
+  });
+
+  // Tapping e2 shows premove targets including diagonal captures d3 and f3
+  fireEvent.click(square("e2 White Pawn"));
+  expect(square("e4").getAttribute("data-target")).toBe("move");
+  expect(square("d3").getAttribute("data-target")).toBe("capture");
+  expect(square("f3").getAttribute("data-target")).toBe("capture");
+
+  fireEvent.click(square("e4"));
+  expect(onMove).not.toHaveBeenCalled();
+  expect(onPremove).toHaveBeenCalledWith("e2", "e4");
+
+  // Drawing the queued premove moves the pawn to e4 with data-premove and does not fire onChange sound
+  redraw({
+    interactive: false,
+    premovable: true,
+    sideToMove: "black",
+    premoves: [{ from: "e2", to: "e4" }],
+  });
+  expect(onChange).not.toHaveBeenCalled();
+  expect(square("e2").hasAttribute("data-premove")).toBe(true);
+  expect(square("e4 White Pawn").hasAttribute("data-premove")).toBe(true);
+
+  // Chaining a second premove from the pawn's new virtual square e4 -> d5
+  fireEvent.click(square("e4 White Pawn"));
+  expect(square("d5").getAttribute("data-target")).toBe("capture");
+  fireEvent.click(square("d5"));
+  expect(onPremove).toHaveBeenLastCalledWith("e4", "d5");
+});
+
+it("clears queued premoves on empty-square tap, right-click, or Escape", () => {
+  const { onClearPremoves } = board({
+    interactive: false,
+    premovable: true,
+    sideToMove: "black",
+    premoves: [{ from: "g1", to: "f3" }],
+  });
+
+  // Tapping an empty square clears premoves
+  fireEvent.click(square("a3"));
+  expect(onClearPremoves).toHaveBeenCalledTimes(1);
+
+  // Right-clicking anywhere on the board clears premoves
+  fireEvent.contextMenu(square("f3 White Knight"));
+  expect(onClearPremoves).toHaveBeenCalledTimes(2);
+
+  // Pressing Escape clears premoves
+  fireEvent.keyDown(window, { key: "Escape" });
+  expect(onClearPremoves).toHaveBeenCalledTimes(3);
 });

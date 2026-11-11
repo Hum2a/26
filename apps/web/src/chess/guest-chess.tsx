@@ -44,8 +44,7 @@ export function GuestChess({
     snapshot.phase === "collect" &&
     !snapshot.paused &&
     !snapshot.held &&
-    !chessSnapshot.isGameOver &&
-    !pending;
+    !chessSnapshot.isGameOver;
 
   function handleMove(
     from: string,
@@ -53,10 +52,11 @@ export function GuestChess({
     promotion?: "q" | "r" | "b" | "n",
     positionRevision?: number,
   ) {
-    if (!chessSnapshot || !open) return;
+    if (!chessSnapshot || !open || pending) return;
 
-    // Prevent duplicate submissions
-    const moveKey = `${from}-${to}-${promotion ?? ""}`;
+    const revision = positionRevision ?? chessSnapshot.positionRevision;
+    // Prevent duplicate submissions for the same position revision
+    const moveKey = `${revision}:${from}-${to}-${promotion ?? ""}`;
     if (pendingMoveRef.current === moveKey) return;
     pendingMoveRef.current = moveKey;
 
@@ -70,12 +70,12 @@ export function GuestChess({
       from,
       to,
       promotion,
-      positionRevision: positionRevision ?? chessSnapshot.positionRevision,
+      positionRevision: revision,
     });
   }
 
   function handleResign() {
-    if (!chessSnapshot || !open) return;
+    if (!chessSnapshot || !open || pending) return;
     onChessResign({
       gameId: chessSnapshot.gameId,
     });
@@ -97,7 +97,7 @@ export function GuestChess({
           snapshot={chessSnapshot}
           onMove={handleMove}
           onResign={handleResign}
-          disabled={!open || pending}
+          disabled={!open}
           pending={pending}
           onEngineError={setEngineError}
         />

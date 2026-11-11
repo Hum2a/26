@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyPremovesToFen,
+  applyPremoveToFen,
   fenAfter,
   legalTargets,
   missingPieces,
+  normalizePremove,
   piecesInFen,
+  premoveTargets,
   reconcileBoard,
+  resolvePremove,
 } from "./board-model";
 
 const start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -94,5 +99,101 @@ describe("board model", () => {
     expect(
       missingPieces("rnb1kbnr/pppp1ppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "b"),
     ).toEqual(["q", "p"]);
+  });
+
+  it("computes Chess.com geometric premove targets including pawn diagonals, recaptures, and castling", () => {
+    // A pawn on its home rank can premove 1 or 2 forward, plus both forward diagonals even when empty.
+    const pawnTargets = premoveTargets(start, "e2");
+    expect(pawnTargets.map((item) => item.to).sort()).toEqual(["d3", "e3", "e4", "f3"]);
+    expect(pawnTargets.find((item) => item.to === "d3")?.capture).toBe(true);
+    expect(pawnTargets.find((item) => item.to === "e4")?.capture).toBe(false);
+
+    // A sliding piece can premove through pieces and onto friendly pieces (for recaptures), but never onto its own king.
+    const queenTargets = premoveTargets(start, "d1").map((item) => item.to);
+    expect(queenTargets).toContain("d8");
+    expect(queenTargets).toContain("h5");
+    expect(queenTargets).toContain("d2"); // friendly recapture target
+    expect(queenTargets).not.toContain("e1"); // never own king
+
+    // A king on its home square can premove 1 step or castle (two squares or onto its corner rook).
+    const kingTargets = premoveTargets(start, "e1").map((item) => item.to);
+    expect(kingTargets).toContain("e2");
+    expect(kingTargets).toContain("g1");
+    expect(kingTargets).toContain("h1");
+    expect(kingTargets).toContain("c1");
+    expect(kingTargets).toContain("a1");
+  });
+
+  it("chains premoves on the virtual board, including castling and auto-queen promotion", () => {
+    // Chain 1: move knight g1->f3, bishop f1->c4, castle e1->h1 (normalized to g1), then move castled rook f1->e1
+    const afterChain = applyPremovesToFen(
+      start,
+      [
+        { from: "g1", to: "f3" },
+        { from: "f1", to: "c4" },
+        { from: "e1", to: "h1" },
+        { from: "f1", to: "e1" },
+      ],
+      "w",
+    );
+    const pieces = piecesInFen(afterChain);
+    expect(pieces.find((p) => p.square === "f3")).toMatchObject({
+      colour: "w",
+      kind: "n",
+    });
+    expect(pieces.find((p) => p.square === "c4")).toMatchObject({
+      colour: "w",
+      kind: "b",
+    });
+    expect(pieces.find((p) => p.square === "g1")).toMatchObject({
+      colour: "w",
+      kind: "k",
+    });
+    expect(pieces.find((p) => p.square === "e1")).toMatchObject({
+      colour: "w",
+      kind: "r",
+    });
+
+    // Chain 2: pawn promotes to queen on e8, then premoves as a queen from e8 to a8
+    const promoStart = "8/4P3/8/8/8/8/k7/4K3 b - - 0 1";
+    const norm = normalizePremove(promoStart, "e7", "e8", "w");
+    expect(norm).toEqual({ from: "e7", to: "e8", promotion: "q" });
+    const afterPromo = applyPremoveToFen(promoStart, norm!, "w");
+    expect(piecesInFen(afterPromo).find((p) => p.square === "e8")).toMatchObject({
+      colour: "w",
+      kind: "q",
+    });
+    const afterQueenSlide = applyPremoveToFen(
+      afterPromo,
+      { from: "e8", to: "a8" },
+      "w",
+    );
+    expect(piecesInFen(afterQueenSlide).find((p) => p.square === "a8")).toMatchObject({
+      colour: "w",
+      kind: "q",
+    });
+  });
+
+  it("resolves a premove when legal on the new board and rejects it when illegal", () => {
+    const afterE4E5 = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2";
+    expect(resolvePremove(afterE4E5, { from: "g1", to: "f3" }, "white")).toMatchObject({
+      from: "g1",
+      to: "f3",
+      promotion: undefined,
+    });
+
+    // Diagonal pawn premove e4->d5 is rejected when d5 is still empty
+    expect(resolvePremove(afterE4E5, { from: "e4", to: "d5" }, "white")).toBeNull();
+
+    // Diagonal pawn premove e4->d5 succeeds when Black actually played d7->d5
+    const afterE4D5 = "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2";
+    expect(resolvePremove(afterE4D5, { from: "e4", to: "d5" }, "white")).toMatchObject({
+      from: "e4",
+      to: "d5",
+    });
+
+    // Premove is rejected when the player was put in check and the premove does not answer check
+    const inCheckFen = "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3";
+    expect(resolvePremove(inCheckFen, { from: "b1", to: "c3" }, "white")).toBeNull();
   });
 });

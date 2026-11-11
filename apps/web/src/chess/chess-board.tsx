@@ -15,15 +15,18 @@ import {
 } from "motion/react";
 import type { ChessColor } from "@26/shared";
 import {
+  applyPremovesToFen,
   kingSquare,
   legalTargets,
   pieceNames,
   pieceSrc,
+  premoveTargets,
   reconcileBoard,
   squareAt,
   squarePlace,
   type BoardChange,
   type BoardPiece,
+  type Premove,
 } from "./board-model";
 
 export type ChessBoardProps = {
@@ -35,9 +38,15 @@ export type ChessBoardProps = {
   sideToMove: ChessColor;
   /** The player may move now. */
   interactive: boolean;
+  /** The player may queue premoves while waiting for their turn. */
+  premovable?: boolean;
+  /** Queued premoves, drawn on top of `fen`. */
+  premoves?: readonly Premove[];
   /** The drawn position includes a move the room has not confirmed yet. */
   sending?: boolean;
   onMove: (from: string, to: string) => void;
+  onPremove?: (from: string, to: string) => void;
+  onClearPremoves?: () => void;
   /** The drawn position changed: a move, capture, castle or promotion landed. */
   onChange?: (change: BoardChange) => void;
   /** The player touched the board (used to unlock sound). */
@@ -45,6 +54,7 @@ export type ChessBoardProps = {
 };
 
 const indexes = [0, 1, 2, 3, 4, 5, 6, 7];
+const emptyPremoves: readonly Premove[] = [];
 
 export function ChessBoard({
   fen,
@@ -52,38 +62,64 @@ export function ChessBoard({
   inCheck,
   sideToMove,
   interactive,
+  premovable = false,
+  premoves = emptyPremoves,
   sending = false,
   onMove,
+  onPremove,
+  onClearPremoves,
   onChange,
   onTouch,
 }: ChessBoardProps) {
   const reduce = useReducedMotion() ?? false;
   const flipped = playerColor === "black";
   const own = playerColor === "white" ? "w" : "b";
+  const canMove = interactive;
+  const canPremove = !interactive && premovable;
+  const canAct = canMove || canPremove;
   const boardRef = useRef<HTMLDivElement>(null);
 
-  // Piece identities carry over from one position to the next (derived state).
-  const [shown, setShown] = useState(() => ({
+  const displayFen = useMemo(
+    () => (premoves.length > 0 ? applyPremovesToFen(fen, premoves, own) : fen),
+    [fen, premoves, own],
+  );
+
+  // Authoritative/sent position changes drive move sounds and the last-move highlight.
+  const [realShown, setRealShown] = useState(() => ({
     fen,
     change: reconcileBoard(null, fen),
   }));
-  if (shown.fen !== fen) {
-    setShown({ fen, change: reconcileBoard(shown.change.pieces, fen) });
+  if (realShown.fen !== fen) {
+    setRealShown({ fen, change: reconcileBoard(realShown.change.pieces, fen) });
   }
-  const { pieces, move } = shown.change;
+
+  // Visual piece identities carry over across both real moves and premoves.
+  const [shown, setShown] = useState(() => ({
+    fen: displayFen,
+    change: reconcileBoard(null, displayFen),
+  }));
+  if (shown.fen !== displayFen) {
+    setShown({
+      fen: displayFen,
+      change: reconcileBoard(shown.change.pieces, displayFen),
+    });
+  }
+  const { pieces } = shown.change;
+  const { move } = realShown.change;
 
   useEffect(() => {
-    if (shown.change.kind !== "none") onChange?.(shown.change);
-    // Only a new position is news; a new callback identity is not.
+    if (realShown.change.kind !== "none") onChange?.(realShown.change);
+    // Only a new real position is news; a new callback identity is not.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shown]);
+  }, [realShown]);
 
   const [selected, setSelected] = useState<string | null>(null);
   // A piece just dropped on its square should not also slide there.
   const [dropped, setDropped] = useState<string | null>(null);
   if (
     selected &&
-    (!interactive || !pieces.some((piece) => piece.square === selected))
+    (!canAct ||
+      !pieces.some((piece) => piece.square === selected && piece.colour === own))
   ) {
     setSelected(null);
   }
@@ -93,34 +129,79 @@ export function ChessBoard({
     return () => window.clearTimeout(timer);
   }, [dropped]);
 
-  const targets = useMemo(
-    () => (selected ? legalTargets(fen, selected) : []),
-    [fen, selected],
-  );
+  useEffect(() => {
+    if (!selected && premoves.length === 0) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setSelected(null);
+        if (premoves.length > 0) {
+          onClearPremoves?.();
+        }
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selected, premoves.length, onClearPremoves]);
+
+  const targets = useMemo(() => {
+    if (!selected) return [];
+    if (canMove) return legalTargets(displayFen, selected);
+    if (canPremove) return premoveTargets(displayFen, selected);
+    return [];
+  }, [displayFen, selected, canMove, canPremove]);
+
+  const premoveSquares = useMemo(() => {
+    const set = new Set<string>();
+    for (const item of premoves) {
+      set.add(item.from);
+      set.add(item.to);
+    }
+    return set;
+  }, [premoves]);
+
   const bySquare = useMemo(
     () => new Map(pieces.map((piece) => [piece.square, piece])),
     [pieces],
   );
   const checked = inCheck
-    ? kingSquare(pieces, sideToMove === "white" ? "w" : "b")
+    ? kingSquare(realShown.change.pieces, sideToMove === "white" ? "w" : "b")
     : null;
 
-  /** A legal target, or any square when the position could not be read. */
+  /** A legal target, or any valid premove target while waiting for our turn. */
   function mayGo(from: string, to: string): boolean {
-    const list = from === selected ? targets : legalTargets(fen, from);
-    return list === null || list.some((target) => target.to === to);
+    if (canMove) {
+      const list = from === selected ? targets : legalTargets(displayFen, from);
+      return list === null || list.some((target) => target.to === to);
+    }
+    if (canPremove) {
+      const list = from === selected ? targets : premoveTargets(displayFen, from);
+      return list !== null && list.some((target) => target.to === to);
+    }
+    return false;
   }
 
   function press(square: string) {
     onTouch?.();
-    if (!interactive) return;
+    if (!canAct) return;
     const piece = bySquare.get(square);
     if (selected && selected !== square && mayGo(selected, square)) {
       setSelected(null);
-      onMove(selected, square);
+      if (canMove) {
+        onMove(selected, square);
+      } else {
+        onPremove?.(selected, square);
+      }
       return;
     }
-    setSelected(piece?.colour === own && selected !== square ? square : null);
+    if (piece?.colour === own && selected !== square) {
+      setSelected(square);
+      return;
+    }
+    const wasSelected = selected === square;
+    setSelected(null);
+    if (canPremove && premoves.length > 0 && !wasSelected) {
+      onClearPremoves?.();
+    }
   }
 
   /** The square under a point on the page, allowing for a flipped board. */
@@ -135,12 +216,23 @@ export function ChessBoard({
 
   function drop(piece: BoardPiece, x: number, y: number): boolean {
     const to = squareUnder(x, y);
-    if (!interactive || !to || to === piece.square || !mayGo(piece.square, to)) {
+    if (!canAct || !to || to === piece.square) {
+      return false;
+    }
+    if (!mayGo(piece.square, to)) {
+      if (canPremove && premoves.length > 0) {
+        setSelected(null);
+        onClearPremoves?.();
+      }
       return false;
     }
     setDropped(piece.id);
     setSelected(null);
-    onMove(piece.square, to);
+    if (canMove) {
+      onMove(piece.square, to);
+    } else {
+      onPremove?.(piece.square, to);
+    }
     return true;
   }
 
@@ -150,6 +242,16 @@ export function ChessBoard({
       ref={boardRef}
       data-sending={sending || undefined}
       data-interactive={interactive || undefined}
+      data-premove-mode={canPremove || undefined}
+      onContextMenu={(event) => {
+        if (canAct || premoves.length > 0 || selected) {
+          event.preventDefault();
+          setSelected(null);
+          if (premoves.length > 0) {
+            onClearPremoves?.();
+          }
+        }
+      }}
     >
       <div className="chess-squares" role="group" aria-label="Chess board">
         {indexes.map((row) =>
@@ -174,6 +276,7 @@ export function ChessBoard({
                 data-last={
                   move && (move.from === square || move.to === square) ? "" : undefined
                 }
+                data-premove={premoveSquares.has(square) ? "" : undefined}
                 data-target={target ? (target.capture ? "capture" : "move") : undefined}
                 data-check={checked === square || undefined}
                 aria-label={label}
@@ -212,7 +315,7 @@ export function ChessBoard({
               piece={piece}
               flipped={flipped}
               reduce={reduce}
-              movable={interactive && piece.colour === own}
+              movable={canAct && piece.colour === own}
               lifted={selected === piece.square}
               instant={dropped === piece.id}
               onPress={press}
