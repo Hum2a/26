@@ -79,9 +79,14 @@ if (command === "migrate") {
       Date.now(),
       needsGit ? readGitState() : undefined,
     );
-    if (!dryRun && !argv.includes("--skip-checks")) {
+    const shouldRunChecks =
+      !dryRun &&
+      !argv.includes("--skip-checks") &&
+      (command === "full" || argv.includes("--checks"));
+    if (shouldRunChecks) {
       console.log("Checking the release before any migrations or deployment.");
-      for (const args of releaseCheckSteps(argv.includes("--full-checks")))
+      const fullChecks = command === "full" || argv.includes("--full-checks");
+      for (const args of releaseCheckSteps(fullChecks))
         runCommand(npmCommand(), args);
     }
   }
@@ -96,11 +101,13 @@ if (command === "migrate") {
             targets.map((environment) => [environment, prepareSecrets(environment)]),
           )
         : undefined;
-    buildRelease(targets);
-    for (const environment of targets) {
-      if (command === "full" && !dryRun) {
+    if (command === "full" && !dryRun) {
+      for (const environment of targets) {
         migrateEnvironment(environment);
       }
+    }
+    buildRelease(targets);
+    for (const environment of targets) {
       deployEnvironment(environment, {
         prepared: preparedSecrets?.get(environment),
       });

@@ -6212,18 +6212,20 @@ Not verified: signed-in admin in a real browser, or the drawer on a physical pho
 - `npm run typecheck`, `npm run lint` — passed (0 errors, 27 existing warnings; structure check passed)
 - `npm run test:unit -w @26/web -- src/chess` — 10 files, 52 passed (including premove model, board and lifecycle tests)
 
-## 11 November 2026 — Single-build `deploy:both`
+## 11 November 2026 — Single-build `deploy:both` and fast `deploy:*` commands
 
 Status: complete locally. Not deployed.
 
-- `scripts/release.ts` and `scripts/release-support.ts` (`retargetGeneratedWorkerConfig`): `deploy:both` and `deploy:both:full` now run `npm run build` once instead of building twice. After deploying staging, `release.ts` retargets `apps/web/dist/26_humza_website_local/wrangler.json` using `env.production` from `apps/api/wrangler.jsonc`, validates the generated Worker config with `assertGeneratedWorkerConfig`, and deploys that same build to production. Local builds (`26-humza-website-local`) are still rejected by both `retargetGeneratedWorkerConfig` and `assertGeneratedWorkerConfig`.
-- `apps/web/vite.config.ts` and `apps/web/src/api/client-key.ts` (`resolveConfiguredClientKey`): a shared build embeds `VITE_CLIENT_API_KEY_STAGING` and `VITE_CLIENT_API_KEY_PRODUCTION` alongside `VITE_CLIENT_API_KEY` and selects the matching key by hostname (`26-staging.humza.website` vs `26.humza.website`), so a single client bundle works on both remote origins even if their client API keys differ.
+- **Fast deploy commands (`deploy:prod`, `deploy:staging`, `deploy:both`)**: plain deploy commands in `scripts/release.ts` now just build and deploy without running the test suite (use `--checks` to explicitly opt in). Production guards (clean master working tree and party freeze window) remain enforced.
+- **Full release commands (`deploy:prod:full`, `deploy:staging:full`, `deploy:both:full`)**: run the full test suite (`typecheck`, `content:check`, `test:unit`, `lint`, `test:release`, and the isolated API suite `@26/api`), run database migrations (`auth:migrate`, `archive:migrate`), build, and deploy with secrets attached (`--secrets-file`).
+- **Single-build combined releases (`deploy:both` and `deploy:both:full`)**: `scripts/release.ts` and `scripts/release-support.ts` (`retargetGeneratedWorkerConfig`): now run `npm run build` once instead of building twice. After deploying staging, `release.ts` retargets `apps/web/dist/26_humza_website_local/wrangler.json` using `env.production` from `apps/api/wrangler.jsonc`, validates the generated Worker config with `assertGeneratedWorkerConfig`, and deploys that same build to production. Local builds (`26-humza-website-local`) are still rejected by both `retargetGeneratedWorkerConfig` and `assertGeneratedWorkerConfig`.
+- **Hostname-aware client API key for shared builds** (`apps/web/vite.config.ts`, `apps/web/src/api/client-key.ts`): `resolveConfiguredClientKey` embeds `VITE_CLIENT_API_KEY_STAGING` and `VITE_CLIENT_API_KEY_PRODUCTION` alongside `VITE_CLIENT_API_KEY` and selects the matching key by hostname (`26-staging.humza.website` vs `26.humza.website`), so a single client bundle works on both remote origins even if their client API keys differ.
 
 ### Commands and results
 
-- `npm run test:release` — passed (including single-build `deploy --env both` and `retargetGeneratedWorkerConfig` assertions)
+- `npm run test:release` — 81 passed (including single-build `deploy --env both`, plain deploy fast build-and-deploy assertions, and full test suite/secrets/migrations assertions)
 - `npm run test:unit -w @26/web -- src/api/photo-display.test.ts` — passed
-- `npm run typecheck`, `npm run lint` — passed
+- `npm run typecheck`, `npm run lint` — passed (0 errors, 27 existing warnings; structure check passed)
 
 ### Exact next stage
 
