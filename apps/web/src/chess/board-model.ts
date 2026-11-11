@@ -499,7 +499,7 @@ export function fenAfter(
 }
 
 export function kingSquare(
-  pieces: readonly BoardPiece[],
+  pieces: readonly Omit<BoardPiece, "id">[],
   colour: PieceColour,
 ): string | null {
   return (
