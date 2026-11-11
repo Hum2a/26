@@ -222,6 +222,33 @@ export const previewQuestions: Record<BenchId, PublicQuestion> = {
     maxLength: 60,
     prompt: "What was their real name? Tommy Robinson",
   },
+  // Stand-ins from the existing starter pictures; the party question is a draft.
+  "whos-that-pokemon": {
+    ...core,
+    ...choice,
+    id: "whos-that-pokemon-preview",
+    presentation: "whos-that-pokemon",
+    attribution: "live",
+    prompt: "Who's that Pokémon?",
+    options: [
+      {
+        id: "turtwig",
+        label: "Turtwig",
+        image: "/assets/questions/favourite-pokemon/turtwig.png",
+      },
+      {
+        id: "mudkip",
+        label: "Mudkip",
+        image: "/assets/questions/favourite-pokemon/mudkip.png",
+      },
+      {
+        id: "tepig",
+        label: "Tepig",
+        image: "/assets/questions/favourite-pokemon/tepig.png",
+      },
+      { id: "piplup", label: "Piplup" },
+    ],
+  },
 };
 
 /** A made-up spread of votes, so a poll reveal has something to draw. */
