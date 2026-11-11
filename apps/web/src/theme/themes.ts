@@ -1826,4 +1826,15 @@ export const contentColours = {
   /** A redaction bar is black ink with paper-white text in every theme. */
   redactionInk: "#0c0c0c",
   redactionText: "#f4f1e8",
+  /** The chess table: carved ivory and ebony on wood, gold accents. */
+  chessInk: "#1c140c",
+  chessIvory: "#efe4d0",
+  chessGold: "#d9a441",
+  chessSelect: "#f2c94c",
+  chessCheck: "#e5484d",
+  chessWin: "#3fb56b",
+  chessFelt: "#17110c",
+  /** Square colours under the wood textures, shown until they load. */
+  chessLight: "#e8d2a6",
+  chessDark: "#8a5a34",
 } as const;
