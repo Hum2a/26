@@ -479,32 +479,45 @@ export function createCircuit(
   const travel = new Map<string, number>();
   const featurePoses = new Map<string, { x: number; z: number }>();
   const labels = new Map<string, THREE.Sprite>();
-  function label(driver: KartRaceView["participants"][number]) {
+  function label(driver: KartRaceView["participants"][number], named: boolean) {
+    const key = `${driver.playerId}:${named ? "name" : "number"}`;
+    const known = labels.get(key);
+    if (known) return known;
     const canvas = document.createElement("canvas");
-    canvas.width = 64;
+    // A chase-view tag carries the nickname; the map keeps the round number.
+    const name = named ? kartTagName(driver.name) : "";
+    canvas.width = named ? 256 : 64;
     canvas.height = 64;
     const ctx = canvas.getContext("2d");
     if (!ctx) return undefined;
+    const edge = `#${driver.number % 2 ? accent.getHexString() : highlight.getHexString()}`;
     ctx.fillStyle = `#${ground.getHexString()}`;
-    ctx.beginPath();
-    ctx.arc(32, 32, 29, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = `#${driver.number % 2 ? accent.getHexString() : highlight.getHexString()}`;
+    ctx.strokeStyle = edge;
     ctx.lineWidth = 4;
+    ctx.beginPath();
+    if (named) ctx.roundRect(4, 6, 248, 52, 26);
+    else ctx.arc(32, 32, 29, 0, Math.PI * 2);
+    ctx.fill();
     ctx.stroke();
     ctx.fillStyle = `#${ink.getHexString()}`;
-    ctx.font = "bold 34px sans-serif";
-    ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(String(driver.number), 32, 34);
+    if (named) {
+      ctx.font = "bold 30px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(`${driver.number} ${name}`, 22, 34, 216);
+    } else {
+      ctx.font = "bold 34px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(String(driver.number), 32, 34);
+    }
     const texture = new THREE.CanvasTexture(canvas);
     textures.add(texture);
     const material = new THREE.SpriteMaterial({ map: texture, depthTest: false });
     materials.add(material);
     const sprite = new THREE.Sprite(material);
-    sprite.scale.set(4.5, 4.5, 1);
+    sprite.scale.set(named ? 9 : 4.5, named ? 2.25 : 4.5, 1);
     scene.add(sprite);
-    labels.set(driver.playerId, sprite);
+    labels.set(key, sprite);
     return sprite;
   }
   /** The server pose carried forward since it last changed (not under reduced motion). */
@@ -587,6 +600,7 @@ export function createCircuit(
         emission.delete(id);
       }
     rig.begin(dt);
+    const tagged = new Set<THREE.Sprite>();
     for (let i = 0; i < drivers.length; i++) {
       const driver = drivers[i]!,
         previous = poses.get(driver.playerId),
@@ -705,11 +719,18 @@ export function createCircuit(
           sparks.setColorAt(sparkCount++, charged ? highlight : accent);
         }
       }
-      const sprite = focusPlayerId
-        ? undefined
-        : (labels.get(driver.playerId) ?? label(driver));
-      if (sprite) sprite.position.set(x, 3.8 + height, z);
+      // Everyone but you gets a tag: a name in chase view, a number on the map.
+      const sprite =
+        driver.playerId === focusPlayerId ? undefined : label(driver, !!focusPlayerId);
+      if (sprite) {
+        sprite.position.set(x, 3.8 + height, z);
+        sprite.visible = true;
+        tagged.add(sprite);
+      }
     }
+    // A kart that left view, or the other view's tag, must not linger.
+    for (const sprite of labels.values())
+      if (!tagged.has(sprite)) sprite.visible = false;
     for (const value of [bodies, noses, seats]) {
       value.count = detailedVisible ? 0 : drivers.length;
       value.instanceMatrix.needsUpdate = true;
@@ -951,4 +972,10 @@ export function createCircuit(
       scene.clear();
     },
   };
+}
+
+/** A nickname short enough for a tag over a kart. */
+export function kartTagName(name: string): string {
+  const trimmed = name.trim();
+  return trimmed.length > 12 ? `${trimmed.slice(0, 11)}…` : trimmed;
 }
