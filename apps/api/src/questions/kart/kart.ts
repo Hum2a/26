@@ -410,6 +410,8 @@ export function enterKart(
     race.itemRules = readRoomKartItems(sql).rules;
     // Room races time each kart's first throttle against GO for a start boost.
     race.launchVersion = 1;
+    // Guests see the karts around them by default; Live controls can hide them.
+    race.opponentsEnabled = true;
     write(sql, q.id, race);
     writeRoundState(sql, q.id, "kart-session", {
       raceId,
