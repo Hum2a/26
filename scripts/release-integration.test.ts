@@ -100,6 +100,14 @@ if (tool === "NPM" && args[0] === "run") {
     log("DEPLOY SKIP_GIT_CHECK=" + (process.env.SKIP_GIT_CHECK || ""));
   }
 }
+if (tool === "NPX" && args[0] === "wrangler" && args[1] === "deploy") {
+  const configIndex = args.indexOf("--config");
+  const configPath = configIndex !== -1 ? args[configIndex + 1] : "";
+  if (configPath && fs.existsSync(configPath)) {
+    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    log("WRANGLER_DEPLOY " + (config.targetEnvironment || "") + " " + (config.name || ""));
+  }
+}
 if (tool === "CURL") {
   process.stdout.write(JSON.stringify({ version: process.env.FAKE_LIVE_VERSION || "" }));
 }
@@ -437,16 +445,19 @@ describe("release.ts validation and approved deploys with fakes", () => {
     assert.doesNotMatch(result.log, /deploy:|release\.sh|secret bulk/);
   });
 
-  it("checks once for both targets, then builds and deploys staging before production", () => {
+  it("checks once for both targets, then builds once and deploys staging before production", () => {
     const result = runRelease(["deploy", "--env", "both"]);
     assert.equal(result.status, 0, result.stderr);
     assert.equal(loggedCommands(result.log, "GIT").length, 2);
     assert.deepEqual(loggedCommands(result.log, "NPM"), [
       ...checkSteps,
       "run build",
-      "run build",
     ]);
-    assert.deepEqual(loggedCommands(result.log, "BUILD"), ["staging", "production"]);
+    assert.deepEqual(loggedCommands(result.log, "BUILD"), ["staging"]);
+    assert.deepEqual(loggedCommands(result.log, "WRANGLER_DEPLOY"), [
+      "staging 26-humza-website-staging",
+      "production 26-humza-website",
+    ]);
     assert.equal(loggedCommands(result.log, "NPX").length, 2);
     assert.doesNotMatch(result.log, /deploy:|release\.sh|secret bulk/);
   });

@@ -22,6 +22,7 @@ export type GeneratedWorkerConfig = {
   name?: string;
   targetEnvironment?: string;
   routes?: Array<{ pattern?: string; custom_domain?: boolean }>;
+  [key: string]: unknown;
 };
 
 export type SecretCollection = {
@@ -154,6 +155,42 @@ export function readGeneratedWorkerConfig(filePath: string): GeneratedWorkerConf
     );
   }
   return JSON.parse(readFileSync(filePath, "utf8")) as GeneratedWorkerConfig;
+}
+
+export function retargetGeneratedWorkerConfig(
+  config: GeneratedWorkerConfig,
+  wranglerText: string,
+  environment: DeployableEnvironment,
+): GeneratedWorkerConfig {
+  if (
+    config.name === "26-humza-website-local" ||
+    (config.targetEnvironment !== "staging" &&
+      config.targetEnvironment !== "production")
+  ) {
+    throw new Error(
+      "The generated Worker is still 26-humza-website-local. Build with CLOUDFLARE_ENV set before deploying.",
+    );
+  }
+  const parsed = parseJsonc<{
+    env?: Record<string, Record<string, unknown>>;
+  }>(wranglerText);
+  const envConfig = parsed.env?.[environment];
+  if (!envConfig) {
+    throw new Error(
+      `apps/api/wrangler.jsonc has no env.${environment} configuration.`,
+    );
+  }
+  const next: GeneratedWorkerConfig = { ...config };
+  for (const sibling of Object.values(parsed.env ?? {})) {
+    for (const key of Object.keys(sibling)) {
+      delete next[key];
+    }
+  }
+  return {
+    ...next,
+    ...envConfig,
+    targetEnvironment: environment,
+  };
 }
 
 export function assertGeneratedWorkerConfig(

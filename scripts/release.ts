@@ -16,11 +16,13 @@ import {
   collectWorkerSecrets,
   readGeneratedWorkerConfig,
   requiredWorkerSecrets,
+  retargetGeneratedWorkerConfig,
   resolveMigrateEnvironment,
   resolveReleaseTargets,
   releaseCheckSteps,
   workerRelease,
   type DeployableEnvironment,
+  type SecretCollection,
 } from "./release-support.ts";
 
 type ReleaseCommand = "deploy" | "secrets-sync" | "migrate" | "full";
@@ -83,16 +85,25 @@ if (command === "migrate") {
         runCommand(npmCommand(), args);
     }
   }
-  for (const environment of targets) {
-    if (command === "secrets-sync") {
+  if (command === "secrets-sync") {
+    for (const environment of targets) {
       syncSecrets(environment);
-    } else if (command === "deploy") {
-      deployEnvironment(environment, { withSecrets: false });
-    } else {
-      if (!dryRun) {
+    }
+  } else {
+    const preparedSecrets =
+      command === "full"
+        ? new Map(
+            targets.map((environment) => [environment, prepareSecrets(environment)]),
+          )
+        : undefined;
+    buildRelease(targets);
+    for (const environment of targets) {
+      if (command === "full" && !dryRun) {
         migrateEnvironment(environment);
       }
-      deployEnvironment(environment, { withSecrets: true });
+      deployEnvironment(environment, {
+        prepared: preparedSecrets?.get(environment),
+      });
     }
   }
 }
@@ -140,16 +151,35 @@ function syncSecrets(environment: DeployableEnvironment) {
   });
 }
 
+function buildRelease(targets: readonly DeployableEnvironment[]) {
+  const primary = workerRelease(targets[0]);
+  if (targets.length === 1) {
+    console.log(`Building ${primary.environment} as ${primary.workerName}.`);
+  } else {
+    console.log(
+      `Building once for ${targets.map((env) => workerRelease(env).workerName).join(" and ")}.`,
+    );
+  }
+  runCommand(npmCommand(), ["run", "build"], {
+    CLOUDFLARE_ENV: primary.cloudflareEnv,
+  });
+}
+
 function deployEnvironment(
   environment: DeployableEnvironment,
-  options: { withSecrets: boolean },
+  options: { prepared?: SecretCollection },
 ) {
   const release = workerRelease(environment);
-  const prepared = options.withSecrets ? prepareSecrets(environment) : undefined;
-  console.log(`Building ${environment} as ${release.workerName}.`);
-  runCommand(npmCommand(), ["run", "build"], {
-    CLOUDFLARE_ENV: release.cloudflareEnv,
-  });
+  const prepared = options.prepared;
+  let generated = readGeneratedWorkerConfig(release.generatedConfigPath);
+  if (generated.targetEnvironment !== release.environment) {
+    generated = retargetGeneratedWorkerConfig(
+      generated,
+      readFileSync(wranglerConfigPath, "utf8"),
+      release.environment,
+    );
+    writeFileSync(release.generatedConfigPath, JSON.stringify(generated), "utf8");
+  }
   assertGeneratedWorkerConfig(
     readGeneratedWorkerConfig(release.generatedConfigPath),
     release,

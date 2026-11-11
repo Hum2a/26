@@ -71,6 +71,16 @@ function readDevVar(name: string): string {
   return readEnvValue(devVarsPath, name);
 }
 
+function resolveClientApiKeyForEnvironment(
+  target: "staging" | "production",
+): string {
+  const fromProcess = process.env.VITE_CLIENT_API_KEY?.trim();
+  if (fromProcess) {
+    return fromProcess;
+  }
+  return readEnvValue(path.join(repoRoot, `.env.${target}`), "VITE_CLIENT_API_KEY");
+}
+
 function resolveClientApiKeyForBuild(): string {
   const fromProcess = process.env.VITE_CLIENT_API_KEY?.trim();
   if (fromProcess) {
@@ -78,7 +88,7 @@ function resolveClientApiKeyForBuild(): string {
   }
   const target = process.env.CLOUDFLARE_ENV?.trim();
   if (target === "staging" || target === "production") {
-    return readEnvValue(path.join(repoRoot, `.env.${target}`), "VITE_CLIENT_API_KEY");
+    return resolveClientApiKeyForEnvironment(target);
   }
   return (
     readEnvValue(path.join(repoRoot, ".env.local"), "VITE_CLIENT_API_KEY") ||
@@ -372,6 +382,12 @@ export default defineConfig(({ command }) => ({
   define: {
     "import.meta.env.VITE_CLIENT_API_KEY": JSON.stringify(
       resolveClientApiKeyForBuild(),
+    ),
+    "import.meta.env.VITE_CLIENT_API_KEY_STAGING": JSON.stringify(
+      resolveClientApiKeyForEnvironment("staging"),
+    ),
+    "import.meta.env.VITE_CLIENT_API_KEY_PRODUCTION": JSON.stringify(
+      resolveClientApiKeyForEnvironment("production"),
     ),
     "import.meta.env.VITE_BUILD_ID": JSON.stringify(resolveBuildId()),
   },

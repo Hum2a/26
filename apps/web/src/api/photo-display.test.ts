@@ -1,5 +1,9 @@
 import { expect, it } from "vitest";
-import { noteMediaDisplayRevision, withClientApiKey } from "./client-key";
+import {
+  noteMediaDisplayRevision,
+  resolveConfiguredClientKey,
+  withClientApiKey,
+} from "./client-key";
 
 it("refreshes room photo URLs on policy changes without changing unrelated requests", () => {
   noteMediaDisplayRevision("ABCDEFGH", 2);
@@ -12,4 +16,17 @@ it("refreshes room photo URLs on policy changes without changing unrelated reque
     "display=",
   );
   expect(withClientApiKey("/api/rooms/ABCDEFGH/results")).not.toContain("display=");
+});
+
+it("selects the matching environment client API key by hostname for shared builds", () => {
+  const env = {
+    VITE_CLIENT_API_KEY: "default-key",
+    VITE_CLIENT_API_KEY_STAGING: "staging-key",
+    VITE_CLIENT_API_KEY_PRODUCTION: "production-key",
+  };
+  expect(resolveConfiguredClientKey("26-staging.humza.website", env)).toBe(
+    "staging-key",
+  );
+  expect(resolveConfiguredClientKey("26.humza.website", env)).toBe("production-key");
+  expect(resolveConfiguredClientKey("localhost", env)).toBe("default-key");
 });

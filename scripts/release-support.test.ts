@@ -10,6 +10,7 @@ import {
   publicHostname,
   publicOrigin,
   requiredWorkerSecrets,
+  retargetGeneratedWorkerConfig,
   resolveDeployableEnvironment,
   resolveMigrateEnvironment,
   resolveReleaseTargets,
@@ -71,6 +72,34 @@ test("generated config must match the requested Worker name and host", () => {
     },
     staging,
   );
+  assert.throws(
+    () =>
+      retargetGeneratedWorkerConfig(
+        {
+          name: "26-humza-website-local",
+          targetEnvironment: undefined,
+        },
+        wranglerText,
+        "production",
+      ),
+    /still 26-humza-website-local/,
+  );
+  const retargeted = retargetGeneratedWorkerConfig(
+    {
+      name: "26-humza-website-staging",
+      targetEnvironment: "staging",
+      routes: [stagingRoute],
+      main: "index.js",
+    },
+    wranglerText,
+    "production",
+  );
+  assertGeneratedWorkerConfig(retargeted, workerRelease("production"));
+  assert.equal(retargeted.main, "index.js");
+  assert.deepEqual(retargeted.vars, {
+    APP_ENV: "production",
+    MEDIA_BUCKET_NAME: "26-humza-media",
+  });
 });
 
 test("production does not require the test recipient, so results mail reaches guests", () => {
