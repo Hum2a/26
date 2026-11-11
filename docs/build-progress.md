@@ -82,6 +82,8 @@ Source of stage order: [docs/build-prompts.md](build-prompts.md)
 - [Admin redesign Stage C — live desk and player tools](#admin-redesign-stage-c--live-desk-and-player-tools)
 - [Admin redesign Stage D — media, results, content and health](#admin-redesign-stage-d--media-results-content-and-health)
 - [Admin experience Stage E — complete locally (19 October 2026)](#admin-experience-stage-e--complete-locally-19-october-2026)
+- [11 November 2026 — "Who's that Pokémon?" round (draft) and design](#11-november-2026--whos-that-pokémon-round-draft-and-design)
+- [11 November 2026 — Chess interface rebuild](#11-november-2026--chess-interface-rebuild)
 - [11 November 2026 — admin operator chrome](#11-november-2026--admin-operator-chrome)
 - [Birthday question batch — 19 October 2026](#birthday-question-batch--19-october-2026)
 - [Individual question inspection — 19 October 2026](#individual-question-inspection--19-october-2026)
@@ -6148,6 +6150,38 @@ Status: branch `fix/stockfish-search-once` from master. No deploy.
 - Not changed: the 2 API catalogue assertions, which only run with `--full-checks`
 
 Not verified: a real Stockfish game on a phone.
+
+## 11 November 2026 — "Who's that Pokémon?" round (draft) and design
+
+Status: branch `feature/whos-that-pokemon` from master. No deploy.
+
+- New draft `apps/api/src/questions/packs/birthday/whos-that-pokemon.ts`: a choice question with `presentation: "whos-that-pokemon"`, on the catalogue but not in `order`. The four similar-looking Pokémon, the answer and the pictures are recorded as missing, not invented.
+- New design `apps/web/src/play/designs/whos-that-pokemon.tsx` (+ CSS, test, bench fixture, `customPresentationIds` entry). It keeps its own look in every theme (colours in `contentColours`): red burst, yellow title with a blue outline, cream battle-menu box with a ▶ cursor, "I choose you!" send button. The stage shows the voter faces in each name.
+- Pictures: `apps/web/public/assets/questions/<question id>/silhouette.png` is shown while answers are open (a "?" stands in until it exists). Each option's colour PNG goes in its `image` field; the design draws option pictures only at the reveal, when the answer's picture flashes in with "It's …!". The silhouette is its own file, so the page never darkens the answer's picture itself.
+- Limit: the four colour PNGs are ordinary static files, so someone who guesses the URLs could compare them with the silhouette. That matches the existing option-image mechanism.
+
+### Commands and results
+
+- `npm run typecheck`, `npm run format:check` — passed; `npm run lint` — 0 errors, 27 existing warnings; structure check passed
+- `npm run test:unit` — 811 of 811 passed (5 new in `whos-that-pokemon.test.tsx`)
+- API `question-authoring`, `content-preflight`, `birthday-order`, `birthday-assets-prices` — 33 passed; `npm run content:check` — passed, listing the new draft as incomplete
+- `/design?q=whos-that-pokemon` checked in the browser: stage collect and reveal, phone at 375px, no console errors
+
+### Exact next stage
+
+Supply the four Pokémon, the answer and the five PNGs, then "make this question ready" and add it to the running order.
+
+## 11 November 2026 — Chess interface rebuild
+
+Status: branch `feature/chess-interface` from master. No deploy.
+
+- **Phone board** (`apps/web/src/chess/chess-board.tsx`, `board-model.ts`): carved SVG pieces on maple and walnut squares in a framed board on a leather table. Pieces keep their identity between positions, so a move slides, a taken piece shrinks away, castling moves both pieces and a promotion changes the pawn in place. Tap a piece to see its legal squares (dots, rings on captures) or drag it; the last move, the selected square and a king in check are highlighted. The board turns round for Black.
+- **Around the board** (`chess-game.tsx`, `chess-clocks.tsx`, `chess-captured.tsx`, `promotion-chooser.tsx`): a plate for each side with captured pieces and a clock that shows tenths and turns red under ten seconds; a status line; a result card over the board with confetti on a win; a promotion picker drawn with the piece art.
+- **Sound** (`chess-sound.ts`): move, capture, castle, promote, check, win, lose and a low-time tick, through the existing screen audio adapter. Nothing plays until the guest touches the board; Sound on/off is remembered on the phone.
+- **Sending** stays honest: the player own move is drawn at once and marked as sending while the room confirms it, and falls back if the room refuses it. Legal-move hints come from chess.js on the phone; the room still validates every move.
+- **Big screen** (`chess-stage.tsx`, `chess-stage.css`): a tournament hall on the same table: live counts, a points table with faces and bars, and recent finishes. The room still sends totals only, never a board.
+- **Assets**: `apps/web/public/assets/chess/` (12 pieces, 8 sounds, 3 textures, `CREDITS.md`), credited in `THIRD_PARTY_NOTICES.md`. The supplied `board/win.json` Lottie file is not used or committed: it would need a new animation library, and the confetti is drawn in CSS instead.
+- Colours live in `contentColours` (`chess*`). The engine, the socket, scoring and the snapshot contracts are unchanged.
 
 ## 11 November 2026 — admin operator chrome
 

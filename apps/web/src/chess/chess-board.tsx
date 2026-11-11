@@ -1,216 +1,313 @@
 /**
- * Interactive chess board component for phone UI.
- * Displays position, handles move selection, shows clocks.
+ * The chess board: carved pieces on a wooden board. Pieces slide between
+ * squares, a taken piece shrinks away, and the player moves by tapping two
+ * squares or by dragging. The room decides every move; this only draws the
+ * position it is given and reports the move the player asks for.
  */
 
-import { useState, useCallback } from "react";
-import type { ChessGuestSnapshot } from "@26/shared";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  animate,
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+} from "motion/react";
+import type { ChessColor } from "@26/shared";
+import {
+  kingSquare,
+  legalTargets,
+  pieceNames,
+  pieceSrc,
+  reconcileBoard,
+  squareAt,
+  squarePlace,
+  type BoardChange,
+  type BoardPiece,
+} from "./board-model";
 
-// Reserved for future rich board interaction
-// type BoardSquare = {
-//   file: string;
-//   rank: number;
-//   piece: string | null;
-//   isLight: boolean;
-//   isSelected: boolean;
-//   isLegalMove: boolean;
-// };
-
-type ChessBoardProps = {
-  snapshot: ChessGuestSnapshot;
-  onMove: (from: string, to: string, promotion?: "q" | "r" | "b" | "n") => void;
-  disabled?: boolean;
+export type ChessBoardProps = {
+  /** The position to draw (the room's, or the player's move awaiting the room). */
+  fen: string;
+  playerColor: ChessColor;
+  /** The side to move is in check. */
+  inCheck: boolean;
+  sideToMove: ChessColor;
+  /** The player may move now. */
+  interactive: boolean;
+  /** The drawn position includes a move the room has not confirmed yet. */
+  sending?: boolean;
+  onMove: (from: string, to: string) => void;
+  /** The drawn position changed: a move, capture, castle or promotion landed. */
+  onChange?: (change: BoardChange) => void;
+  /** The player touched the board (used to unlock sound). */
+  onTouch?: () => void;
 };
 
-/**
- * Parse FEN to board state.
- */
-function parseFen(fen: string): (string | null)[][] {
-  const [position] = fen.split(" ");
-  const ranks = position.split("/");
-  const board: (string | null)[][] = [];
+const indexes = [0, 1, 2, 3, 4, 5, 6, 7];
 
-  for (const rank of ranks) {
-    const row: (string | null)[] = [];
-    for (const char of rank) {
-      if (char >= "1" && char <= "8") {
-        const empties = parseInt(char, 10);
-        for (let i = 0; i < empties; i++) {
-          row.push(null);
-        }
-      } else {
-        row.push(char);
-      }
-    }
-    board.push(row);
+export function ChessBoard({
+  fen,
+  playerColor,
+  inCheck,
+  sideToMove,
+  interactive,
+  sending = false,
+  onMove,
+  onChange,
+  onTouch,
+}: ChessBoardProps) {
+  const reduce = useReducedMotion() ?? false;
+  const flipped = playerColor === "black";
+  const own = playerColor === "white" ? "w" : "b";
+  const boardRef = useRef<HTMLDivElement>(null);
+
+  // Piece identities carry over from one position to the next (derived state).
+  const [shown, setShown] = useState(() => ({
+    fen,
+    change: reconcileBoard(null, fen),
+  }));
+  if (shown.fen !== fen) {
+    setShown({ fen, change: reconcileBoard(shown.change.pieces, fen) });
+  }
+  const { pieces, move } = shown.change;
+
+  useEffect(() => {
+    if (shown.change.kind !== "none") onChange?.(shown.change);
+    // Only a new position is news; a new callback identity is not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown]);
+
+  const [selected, setSelected] = useState<string | null>(null);
+  // A piece just dropped on its square should not also slide there.
+  const [dropped, setDropped] = useState<string | null>(null);
+  if (
+    selected &&
+    (!interactive || !pieces.some((piece) => piece.square === selected))
+  ) {
+    setSelected(null);
+  }
+  useEffect(() => {
+    if (!dropped) return;
+    const timer = window.setTimeout(() => setDropped(null), 250);
+    return () => window.clearTimeout(timer);
+  }, [dropped]);
+
+  const targets = useMemo(
+    () => (selected ? legalTargets(fen, selected) : []),
+    [fen, selected],
+  );
+  const bySquare = useMemo(
+    () => new Map(pieces.map((piece) => [piece.square, piece])),
+    [pieces],
+  );
+  const checked = inCheck
+    ? kingSquare(pieces, sideToMove === "white" ? "w" : "b")
+    : null;
+
+  /** A legal target, or any square when the position could not be read. */
+  function mayGo(from: string, to: string): boolean {
+    const list = from === selected ? targets : legalTargets(fen, from);
+    return list === null || list.some((target) => target.to === to);
   }
 
-  return board;
-}
+  function press(square: string) {
+    onTouch?.();
+    if (!interactive) return;
+    const piece = bySquare.get(square);
+    if (selected && selected !== square && mayGo(selected, square)) {
+      setSelected(null);
+      onMove(selected, square);
+      return;
+    }
+    setSelected(piece?.colour === own && selected !== square ? square : null);
+  }
 
-export function ChessBoard({ snapshot, onMove, disabled = false }: ChessBoardProps) {
-  const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+  /** The square under a point on the page, allowing for a flipped board. */
+  function squareUnder(x: number, y: number): string | null {
+    const box = boardRef.current?.getBoundingClientRect();
+    if (!box || box.width === 0) return null;
+    const column = Math.floor(((x - box.left) / box.width) * 8);
+    const row = Math.floor(((y - box.top) / box.height) * 8);
+    if (column < 0 || column > 7 || row < 0 || row > 7) return null;
+    return flipped ? squareAt(7 - column, 7 - row) : squareAt(column, row);
+  }
 
-  const board = parseFen(snapshot.fen);
-  const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
-  const ranks = [8, 7, 6, 5, 4, 3, 2, 1]; // Display from top (rank 8) to bottom (rank 1)
-
-  const isPlayerTurn = snapshot.sideToMove === snapshot.playerColor;
-  const isInteractive = !disabled && isPlayerTurn && !snapshot.isGameOver;
-
-  const handleSquareClick = useCallback(
-    (file: string, rank: number) => {
-      if (!isInteractive) return;
-
-      const square = `${file}${rank}`;
-
-      // If a square is selected, attempt move
-      if (selectedSquare) {
-        // Let parent handle promotion detection and chooser
-        onMove(selectedSquare, square);
-        setSelectedSquare(null);
-        return;
-      }
-
-      // Select a piece if it's the player's piece
-      const clickedPiece = getPieceAt(board, square);
-      if (clickedPiece) {
-        const pieceColor =
-          clickedPiece === clickedPiece.toUpperCase() ? "white" : "black";
-        if (pieceColor === snapshot.playerColor) {
-          setSelectedSquare(square);
-          return;
-        }
-      }
-
-      // Deselect
-      setSelectedSquare(null);
-    },
-    [isInteractive, selectedSquare, board, snapshot, onMove],
-  );
+  function drop(piece: BoardPiece, x: number, y: number): boolean {
+    const to = squareUnder(x, y);
+    if (!interactive || !to || to === piece.square || !mayGo(piece.square, to)) {
+      return false;
+    }
+    setDropped(piece.id);
+    setSelected(null);
+    onMove(piece.square, to);
+    return true;
+  }
 
   return (
-    <div className="chess-board-container">
-      {/* Clocks */}
-      <div className="chess-clocks">
-        <div
-          className={`chess-clock ${snapshot.sideToMove === snapshot.botColor ? "active" : ""}`}
-        >
-          <span className="clock-label">Bot</span>
-          <span className="clock-time">{formatTime(snapshot.botTimeMs)}</span>
-        </div>
-        <div
-          className={`chess-clock ${snapshot.sideToMove === snapshot.playerColor ? "active" : ""}`}
-        >
-          <span className="clock-label">You</span>
-          <span className="clock-time">{formatTime(snapshot.playerTimeMs)}</span>
-        </div>
-      </div>
-
-      {/* Status */}
-      {snapshot.inCheck && !snapshot.isGameOver && (
-        <div className="chess-status check">Check!</div>
-      )}
-      {snapshot.isGameOver && (
-        <div className="chess-status game-over">
-          {snapshot.winner === "player" && "You won!"}
-          {snapshot.winner === "bot" && "Bot wins"}
-          {snapshot.winner === "draw" && "Draw"}
-        </div>
-      )}
-
-      {/* Board */}
-      <div className="chess-board">
-        {ranks.map((rank) => (
-          <div key={rank} className="chess-rank">
-            {files.map((file) => {
-              const square = `${file}${rank}`;
-              const piece = getPieceAt(board, square);
-              const isLight = (files.indexOf(file) + rank) % 2 === 0;
-              const isSelected = selectedSquare === square;
-
-              return (
-                <button
-                  key={square}
-                  type="button"
-                  className={`chess-square ${isLight ? "light" : "dark"} ${
-                    isSelected ? "selected" : ""
-                  }`}
-                  onClick={() => handleSquareClick(file, rank)}
-                  disabled={!isInteractive}
-                  aria-label={`${file}${rank}${piece ? ` ${getPieceName(piece)}` : ""}`}
-                >
-                  {piece && (
-                    <span className="chess-piece">{getPieceSymbol(piece)}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-
-      {/* Turn indicator */}
-      <div className="chess-turn-indicator">
-        {!snapshot.isGameOver && (
-          <span>
-            {isPlayerTurn ? "Your turn" : "Bot is thinking..."}
-            {!isPlayerTurn && <span className="thinking-spinner" />}
-          </span>
+    <div
+      className="chess-board"
+      ref={boardRef}
+      data-sending={sending || undefined}
+      data-interactive={interactive || undefined}
+    >
+      <div className="chess-squares" role="group" aria-label="Chess board">
+        {indexes.map((row) =>
+          indexes.map((column) => {
+            const square = flipped
+              ? squareAt(7 - column, 7 - row)
+              : squareAt(column, row);
+            const place = squarePlace(square);
+            const piece = bySquare.get(square);
+            const target =
+              targets === null ? undefined : targets.find((item) => item.to === square);
+            const label = piece
+              ? `${square} ${piece.colour === "w" ? "White" : "Black"} ${capital(pieceNames[piece.kind])}`
+              : square;
+            return (
+              <button
+                key={square}
+                type="button"
+                className="chess-square"
+                data-shade={(place.column + place.row) % 2 === 0 ? "light" : "dark"}
+                data-selected={selected === square || undefined}
+                data-last={
+                  move && (move.from === square || move.to === square) ? "" : undefined
+                }
+                data-target={target ? (target.capture ? "capture" : "move") : undefined}
+                data-check={checked === square || undefined}
+                aria-label={label}
+                aria-pressed={selected === square}
+                onClick={() => press(square)}
+              >
+                {column === 0 ? (
+                  <span
+                    className="chess-coordinate"
+                    data-edge="rank"
+                    aria-hidden="true"
+                  >
+                    {square[1]}
+                  </span>
+                ) : null}
+                {row === 7 ? (
+                  <span
+                    className="chess-coordinate"
+                    data-edge="file"
+                    aria-hidden="true"
+                  >
+                    {square[0]}
+                  </span>
+                ) : null}
+                <span className="chess-mark" aria-hidden="true" />
+              </button>
+            );
+          }),
         )}
-        {snapshot.isGameOver && snapshot.terminationReason && (
-          <span className="termination-reason">{snapshot.terminationReason}</span>
-        )}
+      </div>
+      <div className="chess-pieces" aria-hidden="true">
+        <AnimatePresence initial={false}>
+          {pieces.map((piece) => (
+            <Piece
+              key={piece.id}
+              piece={piece}
+              flipped={flipped}
+              reduce={reduce}
+              movable={interactive && piece.colour === own}
+              lifted={selected === piece.square}
+              instant={dropped === piece.id}
+              onPress={press}
+              onGrab={(square) => {
+                onTouch?.();
+                setSelected(square);
+              }}
+              onDrop={drop}
+            />
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );
 }
 
-function getPieceAt(board: (string | null)[][], square: string): string | null {
-  const file = square.charCodeAt(0) - "a".charCodeAt(0);
-  const rank = 8 - parseInt(square[1], 10);
-  return board[rank]?.[file] ?? null;
+function Piece({
+  piece,
+  flipped,
+  reduce,
+  movable,
+  lifted,
+  instant,
+  onPress,
+  onGrab,
+  onDrop,
+}: {
+  piece: BoardPiece;
+  flipped: boolean;
+  reduce: boolean;
+  movable: boolean;
+  lifted: boolean;
+  instant: boolean;
+  onPress: (square: string) => void;
+  onGrab: (square: string) => void;
+  onDrop: (piece: BoardPiece, x: number, y: number) => boolean;
+}) {
+  const place = squarePlace(piece.square);
+  const column = flipped ? 7 - place.column : place.column;
+  const row = flipped ? 7 - place.row : place.row;
+  const dragX = useMotionValue(0);
+  const dragY = useMotionValue(0);
+  return (
+    <motion.div
+      className="chess-piece"
+      data-movable={movable || undefined}
+      initial={{ opacity: 0, scale: 0.6, x: `${column * 100}%`, y: `${row * 100}%` }}
+      animate={{ opacity: 1, scale: 1, x: `${column * 100}%`, y: `${row * 100}%` }}
+      exit={{ opacity: 0, scale: reduce ? 1 : 0.3 }}
+      transition={
+        instant
+          ? { duration: 0 }
+          : reduce
+            ? { duration: 0.15 }
+            : {
+                x: { type: "spring", stiffness: 520, damping: 38 },
+                y: { type: "spring", stiffness: 520, damping: 38 },
+                default: { duration: 0.22, ease: "easeOut" },
+              }
+      }
+    >
+      <motion.img
+        src={pieceSrc(piece.colour, piece.kind)}
+        alt=""
+        draggable={false}
+        decoding="async"
+        style={{ x: dragX, y: dragY }}
+        animate={{ scale: lifted && !reduce ? 1.14 : 1 }}
+        transition={{ type: "spring", stiffness: 480, damping: 26 }}
+        drag={movable}
+        dragMomentum={false}
+        dragElastic={0}
+        whileDrag={{ scale: 1.25, zIndex: 5 }}
+        onTap={movable ? () => onPress(piece.square) : undefined}
+        onDragStart={() => onGrab(piece.square)}
+        onDragEnd={(_, info) => {
+          // Motion reports page coordinates; the board is measured in the viewport.
+          const moved = onDrop(
+            piece,
+            info.point.x - window.scrollX,
+            info.point.y - window.scrollY,
+          );
+          if (moved || reduce) {
+            dragX.set(0);
+            dragY.set(0);
+            return;
+          }
+          void animate(dragX, 0, { type: "spring", stiffness: 420, damping: 30 });
+          void animate(dragY, 0, { type: "spring", stiffness: 420, damping: 30 });
+        }}
+      />
+    </motion.div>
+  );
 }
 
-function getPieceSymbol(piece: string): string {
-  const symbols: Record<string, string> = {
-    K: "♔",
-    Q: "♕",
-    R: "♖",
-    B: "♗",
-    N: "♘",
-    P: "♙",
-    k: "♚",
-    q: "♛",
-    r: "♜",
-    b: "♝",
-    n: "♞",
-    p: "♟",
-  };
-  return symbols[piece] || piece;
-}
-
-function getPieceName(piece: string): string {
-  const names: Record<string, string> = {
-    K: "White King",
-    Q: "White Queen",
-    R: "White Rook",
-    B: "White Bishop",
-    N: "White Knight",
-    P: "White Pawn",
-    k: "Black King",
-    q: "Black Queen",
-    r: "Black Rook",
-    b: "Black Bishop",
-    n: "Black Knight",
-    p: "Black Pawn",
-  };
-  return names[piece] || piece;
-}
-
-function formatTime(ms: number): string {
-  const totalSeconds = Math.ceil(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+function capital(text: string): string {
+  return text[0]!.toUpperCase() + text.slice(1);
 }
