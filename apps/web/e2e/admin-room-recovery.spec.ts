@@ -10,7 +10,7 @@ async function signIn(page: Page) {
     .click();
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Your night.", exact: true }),
+    page.getByRole("heading", { name: "Dashboard", exact: true }),
   ).toBeVisible();
 }
 async function create(page: Page) {

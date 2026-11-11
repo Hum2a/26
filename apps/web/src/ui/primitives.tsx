@@ -14,11 +14,16 @@ import { Link, type LinkProps } from "react-router";
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight";
 
-function buttonClasses(variant: "primary" | "secondary", className: string) {
+function buttonClasses(
+  variant: "primary" | "secondary" | "danger",
+  className: string,
+) {
   const tone =
     variant === "primary"
       ? "bg-accent text-accent-foreground"
-      : "border border-line bg-background text-foreground";
+      : variant === "danger"
+        ? "border border-highlight bg-highlight text-highlight-foreground"
+        : "border border-line bg-background text-foreground";
   return `motion-press skin-control inline-flex min-h-12 touch-manipulation items-center justify-center gap-2 px-5 text-lg font-bold disabled:cursor-not-allowed disabled:opacity-60 ${focusRing} ${tone} ${className}`;
 }
 
@@ -26,12 +31,12 @@ export function LinkButton({
   variant = "primary",
   className = "",
   ...props
-}: LinkProps & { variant?: "primary" | "secondary" }) {
+}: LinkProps & { variant?: "primary" | "secondary" | "danger" }) {
   return <Link className={buttonClasses(variant, className)} {...props} />;
 }
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "danger";
   ref?: Ref<HTMLButtonElement>;
 };
 
@@ -200,6 +205,7 @@ export function ConfirmDialog({
   title,
   children,
   confirmLabel,
+  confirmTone = "primary",
   disabled = false,
   onConfirm,
   onClose,
@@ -208,6 +214,7 @@ export function ConfirmDialog({
   title: string;
   children: ReactNode;
   confirmLabel: string;
+  confirmTone?: "primary" | "danger";
   disabled?: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -249,7 +256,7 @@ export function ConfirmDialog({
         <Button variant="secondary" autoFocus onClick={onClose}>
           Cancel
         </Button>
-        <Button disabled={disabled} onClick={onConfirm}>
+        <Button variant={confirmTone} disabled={disabled} onClick={onConfirm}>
           {confirmLabel}
         </Button>
       </div>

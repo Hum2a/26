@@ -82,6 +82,7 @@ Source of stage order: [docs/build-prompts.md](build-prompts.md)
 - [Admin redesign Stage C — live desk and player tools](#admin-redesign-stage-c--live-desk-and-player-tools)
 - [Admin redesign Stage D — media, results, content and health](#admin-redesign-stage-d--media-results-content-and-health)
 - [Admin experience Stage E — complete locally (19 October 2026)](#admin-experience-stage-e--complete-locally-19-october-2026)
+- [11 November 2026 — admin operator chrome](#11-november-2026--admin-operator-chrome)
 - [Birthday question batch — 19 October 2026](#birthday-question-batch--19-october-2026)
 - [Individual question inspection — 19 October 2026](#individual-question-inspection--19-october-2026)
 - [Phone rehearsal and full-screen question foundation — 19 October 2026](#phone-rehearsal-and-full-screen-question-foundation--19-october-2026)
@@ -6147,3 +6148,26 @@ Status: branch `fix/stockfish-search-once` from master. No deploy.
 - Not changed: the 2 API catalogue assertions, which only run with `--full-checks`
 
 Not verified: a real Stockfish game on a phone.
+
+## 11 November 2026 — admin operator chrome
+
+Status: complete locally. Not deployed.
+
+Redesigned `/admin` as a dense operator console for Humza: grouped sidebar (Start, Catalogue, Tonight, Screens, After, You), compact primary/secondary/danger controls, smaller titles, status badges, dashboard with the selected room at a glance, and a phone menu drawer. Guest/stage chrome is unchanged. Auth is unchanged.
+
+### Files and interfaces
+
+- `apps/web/src/admin/features.ts` — each feature has a `group`; `adminNavGroups` drives the sidebar.
+- `apps/web/src/ui/admin-shell.tsx` + `admin.css` — grouped nav with icons, current-room chip, mobile drawer.
+- `apps/web/src/admin/rooms-page.tsx` — Dashboard / Rooms / room overview: stats, empty state, shortcut cards without rehearsal essays.
+- `apps/web/src/ui/primitives.tsx` — `danger` button variant for destructive confirms.
+- Agent rules: `.agents/rules/40-design.md` (admin ≠ guest chrome), `50-admin-coverage.md` (groups), `30-web.md`. Synced with `npm run agents:sync`.
+
+### Commands and results
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 27 existing react-refresh warnings; structure check passed
+- `npx vitest run src/admin src/ui/admin-shell-nav.test.tsx` (in `apps/web`) — 44 files, 208 passed
+- Playwright / E2E — not run (prohibited). Updated `admin-room-recovery.spec.ts` heading from “Your night.” to “Dashboard”
+
+Not verified: signed-in admin in a real browser, or the drawer on a physical phone.
