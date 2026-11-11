@@ -6,9 +6,19 @@ import type { LobbySnapshot } from "@26/shared";
  * `features.test.ts` fails when a source folder is not covered here or in
  * `adminExempt`. See `.agents/rules/50-admin-coverage.md`.
  */
+export type AdminNavGroup =
+  | "start"
+  | "catalogue"
+  | "tonight"
+  | "screens"
+  | "after"
+  | "you";
+
 export type AdminFeature = {
   id: string;
   label: string;
+  /** Sidebar and overview grouping. Admin chrome is built from this. */
+  group: AdminNavGroup;
   /** `global` pages live under /admin; `room` pages under /admin/rooms/:gameId. */
   scope: "global" | "room";
   /** Path segment after /admin or /admin/rooms/:gameId. Empty is the index page. */
@@ -23,10 +33,24 @@ export type AdminFeature = {
   status?: (snapshot: LobbySnapshot) => string;
 };
 
+export const adminNavGroups: readonly {
+  id: AdminNavGroup;
+  label: string;
+  hint: string;
+}[] = [
+  { id: "start", label: "Start", hint: "Dashboard and saved rooms" },
+  { id: "catalogue", label: "Catalogue", hint: "Questions, kart and trolls" },
+  { id: "tonight", label: "Tonight", hint: "Run this room" },
+  { id: "screens", label: "Screens", hint: "Photos, votes and gags" },
+  { id: "after", label: "After", hint: "Results, health and rehearsal" },
+  { id: "you", label: "You", hint: "This browser" },
+];
+
 export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "developer",
     label: "Developer tools",
+    group: "after",
     scope: "room",
     path: "developer",
     summary:
@@ -40,15 +64,17 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "home",
     label: "Home",
+    group: "start",
     scope: "global",
     path: "",
-    summary: "Recent rooms and a new lobby.",
+    summary: "Tonight at a glance: selected room, recent lobbies and shortcuts.",
     rehearsal: "Create a lobby with no guests and open its stage.",
     owns: ["apps/web/src/home"],
   },
   {
     id: "rooms",
     label: "Rooms",
+    group: "start",
     scope: "global",
     path: "rooms",
     summary: "Every saved room, with recovery for older ones.",
@@ -58,6 +84,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "content",
     label: "Question packs",
+    group: "catalogue",
     scope: "global",
     path: "content",
     summary:
@@ -68,6 +95,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "kart",
     label: "Kart",
+    group: "catalogue",
     scope: "global",
     path: "kart",
     summary:
@@ -79,6 +107,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "troll-catalogue",
     label: "Trolls",
+    group: "catalogue",
     scope: "global",
     path: "trolls",
     summary: "Every troll, its rules and timing.",
@@ -88,6 +117,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "overview",
     label: "Overview",
+    group: "tonight",
     scope: "room",
     path: "",
     summary: "Join code, phase, players and every feature at a glance.",
@@ -100,6 +130,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "live",
     label: "Live controls",
+    group: "tonight",
     scope: "room",
     path: "live",
     summary:
@@ -115,6 +146,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "players",
     label: "Players",
+    group: "tonight",
     scope: "room",
     path: "players",
     summary:
@@ -128,6 +160,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "media",
     label: "Media",
+    group: "screens",
     scope: "room",
     path: "media",
     summary: "Every photo and voice clip, moderation and reversible iPhone photo bias.",
@@ -139,6 +172,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "voters",
     label: "Vote board",
+    group: "screens",
     scope: "room",
     path: "voters",
     summary:
@@ -160,6 +194,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "wall",
     label: "Photo wall",
+    group: "screens",
     scope: "room",
     path: "wall",
     summary: "Approve, pull and pace guest photos on the big screen.",
@@ -177,6 +212,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "trolls",
     label: "Trolls",
+    group: "screens",
     scope: "room",
     path: "trolls",
     summary: "Switch trolls on or off and see every troll sent.",
@@ -189,6 +225,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "analytics",
     label: "Analytics",
+    group: "after",
     scope: "room",
     path: "analytics",
     summary: "Room statistics, podium highlights, fun facts and activity totals.",
@@ -199,6 +236,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "results",
     label: "Results",
+    group: "after",
     scope: "room",
     path: "results",
     summary: "The archive, the public results page and result emails.",
@@ -210,6 +248,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "health",
     label: "Health",
+    group: "after",
     scope: "room",
     path: "health",
     summary:
@@ -227,6 +266,7 @@ export const adminFeatures: readonly AdminFeature[] = [
   {
     id: "settings",
     label: "Account & appearance",
+    group: "you",
     scope: "global",
     path: "settings",
     summary: "Your administrator session and this browser's theme.",
@@ -261,3 +301,7 @@ export const globalFeatures = adminFeatures.filter(
   (feature) => feature.scope === "global",
 );
 export const roomFeatures = adminFeatures.filter((feature) => feature.scope === "room");
+
+export function featuresInGroup(group: AdminNavGroup): AdminFeature[] {
+  return adminFeatures.filter((feature) => feature.group === group);
+}

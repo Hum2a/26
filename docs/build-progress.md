@@ -82,6 +82,9 @@ Source of stage order: [docs/build-prompts.md](build-prompts.md)
 - [Admin redesign Stage C — live desk and player tools](#admin-redesign-stage-c--live-desk-and-player-tools)
 - [Admin redesign Stage D — media, results, content and health](#admin-redesign-stage-d--media-results-content-and-health)
 - [Admin experience Stage E — complete locally (19 October 2026)](#admin-experience-stage-e--complete-locally-19-october-2026)
+- [11 November 2026 — "Who's that Pokémon?" round (draft) and design](#11-november-2026--whos-that-pokémon-round-draft-and-design)
+- [11 November 2026 — Chess interface rebuild](#11-november-2026--chess-interface-rebuild)
+- [11 November 2026 — admin operator chrome](#11-november-2026--admin-operator-chrome)
 - [Birthday question batch — 19 October 2026](#birthday-question-batch--19-october-2026)
 - [Individual question inspection — 19 October 2026](#individual-question-inspection--19-october-2026)
 - [Phone rehearsal and full-screen question foundation — 19 October 2026](#phone-rehearsal-and-full-screen-question-foundation--19-october-2026)
@@ -6180,6 +6183,29 @@ Status: branch `feature/chess-interface` from master. No deploy.
 - **Assets**: `apps/web/public/assets/chess/` (12 pieces, 8 sounds, 3 textures, `CREDITS.md`), credited in `THIRD_PARTY_NOTICES.md`. The supplied `board/win.json` Lottie file is not used or committed: it would need a new animation library, and the confetti is drawn in CSS instead.
 - **Premoves** (`board-model.ts`, `chess-board.tsx`, `chess-game.tsx`, `guest-chess.tsx`, `chess.css`): Chess.com-style premove queue while Stockfish is thinking or while an earlier move is in flight (`premoveTargets`, `normalizePremove`, `applyPremoveToFen`, `applyPremovesToFen`, `resolvePremove`). Supports both tap-tap and drag-and-drop, multiple chained premoves (with the same piece or across squares vacated by earlier premoves), geometric premove rules (pawn forward 1/2 and empty/friendly diagonals for captures/en passant, sliding through blocking pieces, friendly-square recaptures, and two-square or king-onto-rook castling), and automatic queen promotion on premoves. Premoved squares highlight in crimson (`data-premove`) and pieces move on the virtual board without triggering move sounds until executed. When the player's turn arrives, the first queued premove is validated against the authoritative FEN and dispatched immediately if legal, or the queue is cleared if invalidated. Premoves can be cancelled by tapping an empty square, right-clicking, pressing `Escape`, or tapping the `Cancel premove` control.
 - Colours live in `contentColours` (`chess*`). The engine, the socket, scoring and the snapshot contracts are unchanged.
+
+## 11 November 2026 — admin operator chrome
+
+Status: complete locally. Not deployed.
+
+Redesigned `/admin` as a dense operator console for Humza: grouped sidebar (Start, Catalogue, Tonight, Screens, After, You), compact primary/secondary/danger controls, smaller titles, status badges, dashboard with the selected room at a glance, and a phone menu drawer. Guest/stage chrome is unchanged. Auth is unchanged.
+
+### Files and interfaces
+
+- `apps/web/src/admin/features.ts` — each feature has a `group`; `adminNavGroups` drives the sidebar.
+- `apps/web/src/ui/admin-shell.tsx` + `admin.css` — grouped nav with icons, current-room chip, mobile drawer.
+- `apps/web/src/admin/rooms-page.tsx` — Dashboard / Rooms / room overview: stats, empty state, shortcut cards without rehearsal essays.
+- `apps/web/src/ui/primitives.tsx` — `danger` button variant for destructive confirms.
+- Agent rules: `.agents/rules/40-design.md` (admin ≠ guest chrome), `50-admin-coverage.md` (groups), `30-web.md`. Synced with `npm run agents:sync`.
+
+### Commands and results
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 27 existing react-refresh warnings; structure check passed
+- `npx vitest run src/admin src/ui/admin-shell-nav.test.tsx` (in `apps/web`) — 44 files, 208 passed
+- Playwright / E2E — not run (prohibited). Updated `admin-room-recovery.spec.ts` heading from “Your night.” to “Dashboard”
+
+Not verified: signed-in admin in a real browser, or the drawer on a physical phone.
 
 ### Commands and results
 

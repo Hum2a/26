@@ -157,10 +157,13 @@ Every feature ships with its admin view in the same change. A feature is not don
 `apps/web/src/admin/features.ts` lists every feature (`adminFeatures`). The sidebar, the page titles and the room overview cards are built from it. Each entry has:
 
 - `id`, `label`, `scope` (`global` under `/admin`, `room` under `/admin/rooms/:gameId`) and `path`.
-- `summary`: what the page shows, in one sentence.
+- `group`: which sidebar section it belongs to (`start`, `catalogue`, `tonight`, `screens`, `after`, `you`). The shell renders `adminNavGroups` from this; do not hard-code a second nav list.
+- `summary`: what the page shows, in one sentence. Overview cards and shortcuts use this, not the full rehearsal text.
 - `rehearsal`: what the host can try with no guests (a preview, sample, demo or dry run). Be concrete. "None" is not acceptable. If something truly needs live guests, say how to do it with a second browser tab.
 - `owns`: the top-level source folders the feature lives in (`apps/api/src/<domain>`, `apps/web/src/<domain>`). Each folder belongs to exactly one feature.
 - `status` (room features): a short live line for the overview card, read from the host snapshot.
+
+Admin visual rules (compact chrome, grouped nav, phone drawer) live in `.agents/rules/40-design.md`. Coverage here is still see / manage / rehearse — a redesign must not drop a host action.
 
 Shared plumbing that is not a feature goes in `adminExempt` with a reason. Do not exempt something to avoid building its view.
 
@@ -313,7 +316,7 @@ Applies to `apps/web/**/*.ts` and `apps/web/**/*.tsx`.
 
 - Use British English, accessible controls, and clear phone states. Support reduced motion. Keep audio optional.
 - Keep phones and the projector instant: `.agents/rules/60-perf-web.md`, `63-perf-game-loops.md`, `64-perf-assets.md`. Lazy-load kart/chess, no per-frame React state, terminate workers.
-- Follow the design and motion rules. Open the live library docs listed there before copying a component; ease every visible change.
+- Follow the design and motion rules. Open the live library docs listed there before copying a component; ease every visible change. Admin (`/admin`) uses the compact operator chrome in `40-design.md`, not the large guest/stage button language.
 - Keep secrets and personal diagnostics off the projector and the stage screen.
 - Do not import server auth modules into the web app.
 - Do not put answer keys, truth nicknames, or scoring secrets in client code.
@@ -406,6 +409,19 @@ Use Motion springs or shared duration/easing tokens. Prefer enter/exit and layou
 ## Reduced motion and stage safety
 
 Honour `prefers-reduced-motion`. Turn off loops, parallax, blur storms, and layout thrash. Keep a short opacity or colour fade for state changes so the UI still does not pop. Motion must never hide a question, option, score, or answer on the projector, and must never put secrets or personal diagnostics on stage.
+
+## Admin workspace (Humza's control room)
+
+The party phone and projector stay loud: large type, generous tap targets, theme skins. **`/admin` is a different product surface.** It is a dense operator console for one person, often on a phone, and must stay understandable under pressure.
+
+Do not copy guest/stage chrome into admin. Specifically:
+
+- Group navigation from `adminFeatures[].group` (`apps/web/src/admin/features.ts`). Do not dump every page as a flat list of huge buttons.
+- Use compact primary / secondary / danger controls inside `.admin-workspace`. Guest `Button` size (`min-h-12`, `text-lg`) is for phones answering questions, not for the host desk.
+- Page titles are sentence-sized, with a one-line description of what the screen does. Status uses badges and short live lines, not essays on overview cards.
+- Confirm destructive actions. Show command results with the existing `CommandFeedback` / notices. Include empty and loading copy.
+- Keep rehearsal, but fold long how-to text away from the first glance. Overview cards show `summary` and live `status`; full `rehearsal` lives on the feature page.
+- Admin must work at phone width: a menu drawer, not a wrapped sidebar of oversized links. Do not send answer keys or personal diagnostics to `/screen`.
 
 ### Party themes are a palette plus a skin that fits the idea
 
