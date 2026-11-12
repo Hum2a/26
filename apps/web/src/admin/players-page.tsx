@@ -81,7 +81,16 @@ export function PlayersPage() {
                   onClick={() => setSelectedId(player.playerId)}
                 >
                   <span>
-                    <strong>{player.nickname}</strong>
+                    <strong className="inline-flex items-center gap-2">
+                      <span
+                        className="admin-status-dot"
+                        data-tone={
+                          player.removed ? "danger" : player.connected ? "ok" : "muted"
+                        }
+                        aria-hidden="true"
+                      />
+                      {player.nickname}
+                    </strong>
                     <small>
                       {player.removed
                         ? "Removed"
@@ -99,7 +108,7 @@ export function PlayersPage() {
                     </small>
                     <small>ID {player.playerId.slice(0, 8)}</small>
                   </span>
-                  <span>
+                  <span className="admin-mono-tag">
                     {player.points === null
                       ? "Score unavailable"
                       : `${player.points} pts`}
@@ -135,9 +144,20 @@ function JoiningControls() {
   const { snapshot, connection, busy, command, execute } = useAdminRoom();
   const admission = snapshot.admission;
   const locked = busy || connection !== "open" || command.retryable || !admission;
+  const isOpen = admission?.open ?? false;
   return (
     <section className="admin-task-section" aria-label="Joining controls">
-      <h2>New players</h2>
+      <div className="admin-page-heading">
+        <h2>New players</h2>
+        <span className="admin-badge" data-tone={isOpen ? "ok" : "muted"}>
+          <span
+            className="admin-status-dot"
+            data-tone={isOpen ? "ok" : "muted"}
+            aria-hidden="true"
+          />
+          {isOpen ? "Entry Open" : "Entry Closed"}
+        </span>
+      </div>
       <AnimatePresence mode="wait" initial={false}>
         <motion.p
           key={String(admission?.open)}
@@ -178,11 +198,13 @@ function JoiningControls() {
         keep working while entry is closed.
       </p>
       <h3>Recent joining changes</h3>
-      <ul>
+      <ul className="admin-data-list">
         {admission?.history.map((entry, index) => (
-          <li key={`${entry.at}:${index}`}>
-            {entry.open ? "Opened" : "Closed"} by host ·{" "}
-            {new Date(entry.at).toLocaleString("en-GB")}
+          <li key={`${entry.at}:${index}`} className="admin-data-row">
+            <span>
+              {entry.open ? "Opened" : "Closed"} by host ·{" "}
+              {new Date(entry.at).toLocaleString("en-GB")}
+            </span>
           </li>
         ))}
       </ul>

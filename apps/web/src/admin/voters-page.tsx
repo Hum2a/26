@@ -44,124 +44,168 @@ export function VotersPage() {
       <CommandFeedback scope="voters" />
 
       <section
-        className="skin-panel p-4 space-y-3"
+        className="admin-card"
         aria-label="Picks on the big screen"
       >
-        <h2>Picks on the big screen</h2>
-        <p>
-          {hidden
-            ? "Hidden for every question. The stage shows the options and how many have answered."
-            : "Following each question: live, after the reveal or never, as the question says."}
-        </p>
-        <Button
-          variant="secondary"
-          disabled={locked || !display}
-          onClick={() =>
-            void execute(
-              { action: hidden ? "voters-question" : "voters-hidden" },
-              hidden ? "Show picks on the big screen" : "Hide picks on the big screen",
-              "voters",
-            )
-          }
-        >
-          {hidden ? "Show picks again" : "Hide picks for every question"}
-        </Button>
-        <ol aria-label="Vote board switch history">
-          <AnimatePresence initial={false}>
-            {display?.history.map((entry, index) => (
-              <motion.li
-                key={`${entry.atMs}:${index}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                Host {entry.mode === "hidden" ? "hid picks" : "showed picks"} ·{" "}
-                {new Date(entry.atMs).toLocaleString("en-GB")}
-              </motion.li>
-            ))}
-          </AnimatePresence>
-        </ol>
-      </section>
-
-      <section className="skin-panel p-4 space-y-3" aria-label="Board right now">
-        <h2>Right now</h2>
-        {choice && choice.question.kind === "choice" ? (
-          <>
-            <p>
-              Question {choice.question.index}: {choice.question.prompt}
-              <br />
-              {attributionCopy[choice.question.attribution]}
-              {hidden ? " The room switch is hiding it." : ""}
-            </p>
-            <div className="voters-live-stage stage-presentation">
-              <RosterProvider
-                gameId={snapshot.gameId}
-                players={snapshot.players}
-                revision={snapshot.mediaDisplayRevision}
-              >
-                <VoteBoard play={choice} />
-              </RosterProvider>
-            </div>
-          </>
-        ) : (
-          <p>No choice question is running. The board appears here when one is.</p>
-        )}
-      </section>
-
-      <section className="skin-panel p-4 space-y-3" aria-label="Profile photos">
-        <h2>Profile photos</h2>
-        <p>
-          {withPhotos.length} of {snapshot.players.length} players have a photo.
-          Removing one takes it off every screen at once; the guest may take a new one.
-        </p>
-        {snapshot.players.length === 0 ? (
-          <p>No players yet.</p>
-        ) : (
-          <ul className="voters-photo-list" aria-label="Players and photos">
-            <AnimatePresence initial={false}>
-              {snapshot.players.map((player) => (
-                <motion.li
-                  key={player.playerId}
-                  layout="position"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18 }}
-                >
-                  <PlayerAvatar
-                    playerId={player.playerId}
-                    nickname={player.nickname}
-                    faceSrc={
-                      player.avatarMediaId
-                        ? avatarUrl(snapshot.gameId, player.avatarMediaId)
-                        : null
-                    }
-                    size="lg"
-                  />
-                  <span className="voters-photo-name">{player.nickname}</span>
-                  {player.avatarMediaId ? (
-                    <Button
-                      variant="secondary"
-                      disabled={locked}
-                      onClick={() =>
-                        void execute(
-                          { action: "avatar-clear", playerId: player.playerId },
-                          `Remove ${player.nickname}'s photo`,
-                          "voters",
-                        )
-                      }
+        <div className="admin-card-header">
+          <h2 className="admin-card-title">Picks on the big screen</h2>
+          <span className="admin-badge" data-tone={hidden ? "warn" : "ok"}>
+            <span
+              className="admin-status-dot"
+              data-tone={hidden ? "warn" : "ok"}
+              aria-hidden="true"
+            />
+            {hidden ? "Picks Hidden" : "Picks Active"}
+          </span>
+        </div>
+        <div className="admin-card-body">
+          <p>
+            {hidden
+              ? "Hidden for every question. The stage shows the options and how many have answered."
+              : "Following each question: live, after the reveal or never, as the question says."}
+          </p>
+          <div>
+            <Button
+              variant="secondary"
+              disabled={locked || !display}
+              onClick={() =>
+                void execute(
+                  { action: hidden ? "voters-question" : "voters-hidden" },
+                  hidden ? "Show picks on the big screen" : "Hide picks on the big screen",
+                  "voters",
+                )
+              }
+            >
+              {hidden ? "Show picks again" : "Hide picks for every question"}
+            </Button>
+          </div>
+          {display?.history.length ? (
+            <div>
+              <p className="admin-meta font-bold mb-2">Switch history</p>
+              <ol aria-label="Vote board switch history" className="admin-data-list">
+                <AnimatePresence initial={false}>
+                  {display?.history.map((entry, index) => (
+                    <motion.li
+                      key={`${entry.atMs}:${index}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="admin-data-row"
                     >
-                      Remove photo
-                    </Button>
-                  ) : (
-                    <span className="text-sm text-muted">No photo</span>
-                  )}
-                </motion.li>
+                      <span>
+                        Host {entry.mode === "hidden" ? "hid picks" : "showed picks"} ·{" "}
+                        {new Date(entry.atMs).toLocaleString("en-GB")}
+                      </span>
+                    </motion.li>
+                  ))}
+                </AnimatePresence>
+              </ol>
+            </div>
+          ) : (
+            <ol aria-label="Vote board switch history" className="hidden" />
+          )}
+        </div>
+      </section>
+
+      <section className="admin-card" aria-label="Board right now">
+        <div className="admin-card-header">
+          <h2 className="admin-card-title">Right now</h2>
+          {choice && choice.question.kind === "choice" ? (
+            <span className="admin-badge" data-tone="ok">
+              Question {choice.question.index}
+            </span>
+          ) : (
+            <span className="admin-badge" data-tone="muted">
+              Idle
+            </span>
+          )}
+        </div>
+        <div className="admin-card-body">
+          {choice && choice.question.kind === "choice" ? (
+            <>
+              <p>
+                Question {choice.question.index}: {choice.question.prompt}
+                <br />
+                {attributionCopy[choice.question.attribution]}
+                {hidden ? " The room switch is hiding it." : ""}
+              </p>
+              <div className="voters-live-stage stage-presentation">
+                <RosterProvider
+                  gameId={snapshot.gameId}
+                  players={snapshot.players}
+                  revision={snapshot.mediaDisplayRevision}
+                >
+                  <VoteBoard play={choice} />
+                </RosterProvider>
+              </div>
+            </>
+          ) : (
+            <p>No choice question is running. The board appears here when one is.</p>
+          )}
+        </div>
+      </section>
+
+      <section className="admin-card" aria-label="Profile photos">
+        <div className="admin-card-header">
+          <h2 className="admin-card-title">Profile photos</h2>
+          <span className="admin-mono-tag">
+            {withPhotos.length} / {snapshot.players.length} with photo
+          </span>
+        </div>
+        <div className="admin-card-body">
+          <p>
+            {withPhotos.length} of {snapshot.players.length} players have a photo.
+            Removing one takes it off every screen at once; the guest may take a new one.
+          </p>
+          {snapshot.players.length === 0 ? (
+            <p>No players yet.</p>
+          ) : (
+            <ul className="voters-photo-list" aria-label="Players and photos">
+              <AnimatePresence initial={false}>
+                {snapshot.players.map((player) => (
+                  <motion.li
+                    key={player.playerId}
+                    layout="position"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <PlayerAvatar
+                      playerId={player.playerId}
+                      nickname={player.nickname}
+                      faceSrc={
+                        player.avatarMediaId
+                          ? avatarUrl(snapshot.gameId, player.avatarMediaId)
+                          : null
+                      }
+                      size="lg"
+                    />
+                    <span className="voters-photo-name">{player.nickname}</span>
+                    {player.avatarMediaId ? (
+                      <Button
+                        variant="secondary"
+                        disabled={locked}
+                        onClick={() =>
+                          void execute(
+                            { action: "avatar-clear", playerId: player.playerId },
+                            `Remove ${player.nickname}'s photo`,
+                            "voters",
+                          )
+                        }
+                      >
+                        Remove photo
+                      </Button>
+                    ) : (
+                      <span className="text-sm text-muted">No photo</span>
+                    )}
+                  </motion.li>
               ))}
             </AnimatePresence>
           </ul>
         )}
+        </div>
       </section>
 
       <VotersRehearsal />
