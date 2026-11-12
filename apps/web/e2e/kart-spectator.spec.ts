@@ -106,6 +106,8 @@ test("local room host controls nearby opponents and stage modes on the existing 
     await expect(
       page.getByText("New kart effects are on.", { exact: true }),
     ).toBeVisible();
+    // Nearby racers are on by default; the host can still hide and restore them.
+    await page.getByRole("button", { name: "Hide nearby racers", exact: true }).click();
     await page.getByRole("button", { name: "Show nearby racers", exact: true }).click();
     await expect(
       page.getByRole("button", { name: "Hide nearby racers" }),
