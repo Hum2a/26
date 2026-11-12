@@ -691,6 +691,12 @@ it("lays out each kart state for landscape and keeps race notices visible over t
   const view = render(<GuestKart snapshot={base} />);
   expect(phone().getAttribute("data-layout")).toBe("grid");
   await waitFor(() => expect(notice()?.textContent).toContain("Grid slot 2 of 2"));
+  // One big tap turns race sound on, and the prompt then leaves.
+  const prompt = screen.getByRole("button", { name: "🔊 Tap for race sound" });
+  act(() => prompt.click());
+  await waitFor(() =>
+    expect(screen.queryByRole("button", { name: "🔊 Tap for race sound" })).toBeNull(),
+  );
   expect(notice()?.parentElement).toBe(phone());
   expect(notice()?.tagName).not.toBe("P");
   // Racing: no notice while driving normally.

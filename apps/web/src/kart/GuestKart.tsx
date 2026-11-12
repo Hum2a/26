@@ -87,6 +87,7 @@ export function GuestKart({
   const driveOpen = open && viewUsable;
   const send = useKartSocket(race, driveOpen && !recoveryPending, onInput);
   const laps = raceLaps(race);
+  const [soundAsked, setSoundAsked] = useState(false);
   const feedback = useRaceFeedback(race, { open: driveOpen && !recoveryPending });
   const contactFeedback = useKartContactFeedback({
     raceId: race?.raceId ?? "",
@@ -188,6 +189,31 @@ export function GuestKart({
           </AnimatePresence>
         </div>
       ) : null}
+      <AnimatePresence initial={false}>
+        {(layout === "grid" || layout === "race") &&
+        self &&
+        !complete &&
+        !feedback.soundOn &&
+        !soundAsked &&
+        !race?.ended &&
+        (race?.elapsedMs ?? 0) < 15_000 ? (
+          <motion.button
+            key="sound-prompt"
+            type="button"
+            className="kart-sound-prompt"
+            onClick={() => {
+              setSoundAsked(true);
+              if (!feedback.soundOn) feedback.toggleSound();
+            }}
+            initial={{ opacity: 0, scale: reduced ? 1 : 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduced ? 0.12 : 0.2, ease: "easeOut" }}
+          >
+            🔊 Tap for race sound
+          </motion.button>
+        ) : null}
+      </AnimatePresence>
       <header className="kart-phone-heading">
         <p className="kart-eyebrow">
           {lapWords(laps)} · {windowWords(timeLimitMs)}
