@@ -6215,3 +6215,28 @@ Not verified: signed-in admin in a real browser, or the drawer on a physical pho
 ### Exact next stage
 
 Conclude the merge commit when ready and test solo chess (`/chess`) or a party rehearsal round on a phone. Do not start the next prompt automatically.
+
+## 12 November 2026 — kart party feel (branch `kart-party-feel`)
+
+**Status:** ten kart improvements committed on `kart-party-feel`, not merged or deployed.
+
+| #   | Change                                                                                                                                                                            | Main files                                                                                                                      |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Nearby opponents shown by default on new races (host can still hide them)                                                                                                         | `apps/api/src/questions/kart/kart.ts` `enterKart`                                                                               |
+| 2   | Name tags (number + nickname) over opponents in the phone chase view; stale tags hidden                                                                                           | `apps/web/src/kart/circuit.ts`                                                                                                  |
+| 3   | Hit feed: landed items record who fired them (`by`); item rules v2 frames carry the last 3 s of hits (≤6). Phones show "Hit by Amina's bomb!", "You hit Dev!", "Shield blocked …" | `kart-projectiles.ts` `recentKartHits`, `kart-events.ts` `kartHitSchema`, `apps/web/src/kart/hit-feed.ts`, `useRaceFeedback.ts` |
+| 4   | Buzzes on by default instead of following the sound switch                                                                                                                        | `useRaceFeedback.ts`                                                                                                            |
+| 5   | Projector race sounds (GO, lead change, laps, final lap, win, hits) after the operator's first key or click, respecting the stage mute                                            | `KartStageCallouts.tsx`                                                                                                         |
+| 6   | Projector hit ticker ("Amina 💣 Chen"), last three for 4 s                                                                                                                        | `KartStageCallouts.tsx`, `race-hud.css`                                                                                         |
+| 7   | Ahead/behind names on the phone HUD; phone leaderboard adds the rows either side of the guest                                                                                     | `KartRaceHud.tsx`, `phoneLeaderboard` in `kart.ts`                                                                              |
+| 8   | `kart-park-grand-prix`: kart-sprint on the original 26 Park (catalogue only, not in `order`); packs accept 26 Park                                                                | `packs/birthday/kart-park-grand-prix.ts`, `authoring.ts`, `validate.ts`                                                         |
+| 9   | Item roulette badge (0.7 s spin, never blocks the button; none under reduced motion)                                                                                              | `PowerUpControl.tsx`                                                                                                            |
+| 10  | One-tap "Tap for race sound" on the grid, gone after one tap, once sound is on or 15 s in                                                                                         | `GuestKart.tsx`, `kart.css`                                                                                                     |
+
+**Checks (12 Nov):** `npm run typecheck` pass; `npm run lint` 0 errors (29 warnings, existing style); `npm run test:unit` 191 files / 843 tests pass; `npm run test -w @26/api -- kart birthday catalogue pack content` 32 files / 217 tests pass; `npm run content:check` pass; `npm run build` pass, bundle within budget. Existing browser specs `kart-lobby`, `kart`, `kart-spectator` pass (`kart-spectator` updated for opponents on by default; its first run timed out while the stage 3D view loaded, then passed).
+
+**Decisions:** hit banners and the ticker only appear with item rules v2 (Tennis ball, Bomb, Homing). Updated tests for intended changes: buzzes without sound (`race-hud.test.tsx`), phone leaderboard length 10 for last place (`kart-room.spec.ts`).
+
+**Unverified:** real phones (tags, banners, buzzes, roulette, sound prompt), projector audio in a room, the 80-racer load with opponents on.
+
+**Next:** two-phone race on staging with item rules v2; decide whether to swap `kart-park-grand-prix` into `order`.
