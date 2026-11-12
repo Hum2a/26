@@ -34,13 +34,14 @@ function ItemRoulette({ item }: { item: KartItem | null }) {
     if (!arrived) return;
     buzz(15);
     if (reduced) return;
-    setSpinning(true);
+    const begin = setTimeout(() => setSpinning(true), 0);
     const tick = setInterval(() => setSpin((value) => value + 1), 80);
     const stop = setTimeout(() => {
       clearInterval(tick);
       setSpinning(false);
     }, rouletteMs);
     return () => {
+      clearTimeout(begin);
       clearInterval(tick);
       clearTimeout(stop);
     };
