@@ -1,39 +1,58 @@
 export async function recordWav(): Promise<Blob> {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  const context = new AudioContext();
-  const source = context.createMediaStreamSource(stream);
-  const processor = context.createScriptProcessor(4096, 1, 1);
-  const gain = context.createGain();
-  gain.gain.value = 0;
-  const samples: number[] = [];
-  const maxSamples = Math.floor(context.sampleRate * 2.9);
-  const done = new Promise<void>((resolve) => {
-    processor.onaudioprocess = (event) => {
-      const channel = event.inputBuffer.getChannelData(0);
-      for (const sample of channel) {
-        if (samples.length < maxSamples) {
-          samples.push(sample);
-        }
-      }
-      if (samples.length >= maxSamples) {
+  let context: AudioContext | undefined;
+  let source: MediaStreamAudioSourceNode | undefined;
+  let processor: ScriptProcessorNode | undefined;
+  let gain: GainNode | undefined;
+  try {
+    context = new AudioContext();
+    source = context.createMediaStreamSource(stream);
+    const node = (processor = context.createScriptProcessor(4096, 1, 1));
+    gain = context.createGain();
+    gain.gain.value = 0;
+    const maxSamples = Math.floor(context.sampleRate * 2.9);
+    const samples = new Float32Array(maxSamples);
+    let filled = 0;
+    const done = new Promise<void>((resolve) => {
+      let timer = 0;
+      const finish = () => {
+        window.clearTimeout(timer);
         resolve();
-      }
-    };
-    window.setTimeout(resolve, 2900);
-  });
-  source.connect(processor);
-  processor.connect(gain);
-  gain.connect(context.destination);
-  await done;
-  processor.disconnect();
-  source.disconnect();
-  gain.disconnect();
-  for (const track of stream.getTracks()) {
-    track.stop();
+      };
+      node.onaudioprocess = (event) => {
+        const channel = event.inputBuffer.getChannelData(0);
+        const remaining = maxSamples - filled;
+        if (remaining > 0) {
+          const slice =
+            channel.length > remaining ? channel.subarray(0, remaining) : channel;
+          samples.set(slice, filled);
+          filled += slice.length;
+        }
+        if (filled >= maxSamples) {
+          finish();
+        }
+      };
+      timer = window.setTimeout(finish, 2900);
+    });
+    source.connect(node);
+    node.connect(gain);
+    gain.connect(context.destination);
+    await done;
+    return encodeWav(samples.subarray(0, filled), context.sampleRate);
+  } finally {
+    if (processor) {
+      processor.onaudioprocess = null;
+      processor.disconnect();
+    }
+    source?.disconnect();
+    gain?.disconnect();
+    for (const track of stream.getTracks()) {
+      track.stop();
+    }
+    if (context) {
+      await context.close().catch(() => {});
+    }
   }
-  const blob = encodeWav(new Float32Array(samples), context.sampleRate);
-  await context.close();
-  return blob;
 }
 
 function encodeWav(samples: Float32Array, sampleRate: number): Blob {

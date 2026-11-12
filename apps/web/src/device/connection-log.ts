@@ -52,6 +52,15 @@ export function noteUpload(input: { ok: boolean; durationMs: number }): void {
   }
 }
 
+export function hasUrgentConnectionDelta(): boolean {
+  return (
+    pending.submissionRetries > 0 ||
+    pending.uploadAttempts > 0 ||
+    pending.uploadFailures > 0 ||
+    pending.scriptErrors > 0
+  );
+}
+
 export function takeConnectionDelta(): Delta | null {
   const next = pending;
   const quiet =

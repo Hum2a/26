@@ -10,6 +10,13 @@ import { wallQuestionPhases, type LobbySnapshot, type WallReaction } from "@26/s
 import { FramedPhoto, reactionEmoji } from "../../wall/framed-photo";
 import { serverOffset } from "../../live/server-clock";
 import { withClientApiKey } from "../../api/client-key";
+import {
+  clearRoomMediaCache,
+  evictMediaUrl,
+  preloadMediaUrl,
+  supportsBlobMediaCache,
+  useCachedMediaSrc,
+} from "../../media/media-cache";
 
 type Wall = NonNullable<LobbySnapshot["wall"]>;
 type Now = NonNullable<Wall["now"]>;
@@ -43,6 +50,9 @@ export function StageWall({
   useEffect(() => {
     current.current = nowId;
   }, [nowId]);
+  useEffect(() => {
+    clearRoomMediaCache(gameId);
+  }, [gameId]);
   const report = useCallback(
     (postId: string) => {
       if (!onImageFailed || reported.current.has(postId)) return;
@@ -299,11 +309,10 @@ function Reel({
         }}
       >
         {strip.map((item, index) => (
-          <img
+          <ReelPhoto
             key={`-${index}`}
             src={src(item.mediaId)}
             alt={index < reel.length ? `Photo from ${item.nickname}` : ""}
-            className="wall-reel-photo"
           />
         ))}
       </motion.div>
@@ -311,11 +320,43 @@ function Reel({
   );
 }
 
+function ReelPhoto({ src, alt }: { src: string; alt: string }) {
+  const displaySrc = useCachedMediaSrc(src, { preload: true }) ?? src;
+  return (
+    <img
+      src={displaySrc}
+      alt={alt}
+      className="wall-reel-photo"
+      onError={() => {
+        if (displaySrc !== src) evictMediaUrl(src);
+      }}
+    />
+  );
+}
+
 /** Loads the next photo in the background so it never appears half-drawn. */
 function Preload({ src }: { src: string }) {
   useEffect(() => {
+    let cancelled = false;
+    const canCache = supportsBlobMediaCache();
+    if (canCache) {
+      void preloadMediaUrl(src).then((blobUrl) => {
+        if (cancelled || !blobUrl) return;
+        const decoded = new Image();
+        decoded.src = blobUrl;
+      });
+    }
     const image = new Image();
-    image.src = src;
+    if (
+      !canCache ||
+      typeof HTMLImageElement === "undefined" ||
+      !(image instanceof HTMLImageElement)
+    ) {
+      image.src = src;
+    }
+    return () => {
+      cancelled = true;
+    };
   }, [src]);
   return null;
 }

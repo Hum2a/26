@@ -176,4 +176,27 @@ describe("StockfishEngine Worker isolation", () => {
 
     engine.terminate();
   });
+
+  it("releases the handshake worker once initialized and terminates search workers on error", async () => {
+    const errors: string[] = [];
+    const engine = new StockfishEngine({
+      elo: 1425,
+      onError: (message) => errors.push(message),
+    });
+
+    await engine.initialize();
+    expect(createdWorkers.length).toBe(1);
+    expect(createdWorkers[0].terminated).toBe(true);
+
+    engine.setPosition("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
+    engine.go(200);
+    expect(createdWorkers.length).toBe(2);
+    const searchWorker = createdWorkers[1];
+    searchWorker.onerror?.({ message: "boom" } as ErrorEvent);
+
+    expect(searchWorker.terminated).toBe(true);
+    expect(errors).toEqual(["Search worker error: boom"]);
+
+    engine.terminate();
+  });
 });

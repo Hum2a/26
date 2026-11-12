@@ -17,6 +17,7 @@ import {
 
 export type { ChessMoveParams, ChessResignParams };
 import {
+  hasUrgentConnectionDelta,
   noteRtt,
   noteSubmissionRetries,
   takeConnectionDelta,
@@ -29,6 +30,8 @@ export type RoomSocketRole = "guest" | "stage" | "control";
 const heartbeatMs = 20_000;
 /** Round trips taken on connect, so the clock is right before the first question. */
 const timeProbesOnOpen = 5;
+/** Clock samples live 5 minutes (`server-clock.ts`), so refresh before expiry without waking every 20s. */
+const timeProbeRefreshMs = 4 * 60_000;
 /** A ping with no pong by the next heartbeat means the socket is dead. */
 const staleAfterMs = 15_000;
 /** After waking, a socket that cannot answer within this is replaced. */
@@ -280,6 +283,8 @@ export function openRoomSocket(options: {
   let summaryTimer: ReturnType<typeof setInterval> | undefined;
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
   let pingSentAt = 0;
+  let lastTimeProbeAt = 0;
+  let lastSummaryAt = 0;
   let wakeCheck: ReturnType<typeof setTimeout> | undefined;
   let timeProbes: ReturnType<typeof setTimeout>[] = [];
   let lastPhase = "";
@@ -304,6 +309,11 @@ export function openRoomSocket(options: {
       clearTimeout(resizeTimer);
       resizeTimer = undefined;
     }
+    if (draftTimer !== undefined) {
+      clearTimeout(draftTimer);
+      draftTimer = undefined;
+    }
+    draftPending = "";
     timeProbes.forEach((probeTimer) => clearTimeout(probeTimer));
     timeProbes = [];
     pingSentAt = 0;
@@ -319,7 +329,7 @@ export function openRoomSocket(options: {
     if (options.role !== "guest") {
       return;
     }
-    summaryTimer = setInterval(() => sendConnection(), 60_000);
+    summaryTimer = setInterval(() => maybeSendPeriodicConnection(), 60_000);
     if (typeof window !== "undefined") {
       window.addEventListener("resize", onResize);
       window.addEventListener("orientationchange", onResize);
@@ -343,12 +353,21 @@ export function openRoomSocket(options: {
       pingSentAt = Date.now();
       socket.send("ping");
     }
-    sendTimeProbe();
+    if (
+      !options.botSession &&
+      (typeof document === "undefined" || !document.hidden) &&
+      (lastTimeProbeAt === 0 || Date.now() - lastTimeProbeAt >= timeProbeRefreshMs)
+    ) {
+      sendTimeProbe();
+    }
   }
 
   function sendTimeProbe() {
+    if (options.botSession) return;
     if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(`time:${Date.now()}`);
+      const now = Date.now();
+      lastTimeProbeAt = now;
+      socket.send(`time:${now}`);
     }
   }
 
@@ -437,6 +456,26 @@ export function openRoomSocket(options: {
     );
   }
 
+  function maybeSendPeriodicConnection() {
+    if (options.botSession) return;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    const activePlay =
+      lastPhase !== "" &&
+      lastPhase !== "lobby" &&
+      (typeof document === "undefined" || !document.hidden);
+    // Avoid waking the hibernated room every 60s per phone just to trickle
+    // idle lobby RTT pings; report immediately on urgent errors/retries or active rounds.
+    if (
+      !hasUrgentConnectionDelta() &&
+      !activePlay &&
+      lastSummaryAt > 0 &&
+      Date.now() - lastSummaryAt < 5 * 60_000
+    ) {
+      return;
+    }
+    sendConnection();
+  }
+
   function sendConnection() {
     if (options.botSession) return;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
@@ -446,6 +485,7 @@ export function openRoomSocket(options: {
     if (!delta) {
       return;
     }
+    lastSummaryAt = Date.now();
     socket.send(
       JSON.stringify({
         kind: "command",
@@ -543,7 +583,7 @@ export function openRoomSocket(options: {
       typeof record.requestId === "string"
     ) {
       const command = tracked.get(record.requestId);
-      if (command && record.accepted === true) {
+      if (command) {
         tracked.delete(record.requestId);
       }
       options.onAck({
@@ -635,6 +675,9 @@ export function openRoomSocket(options: {
     stopped = true;
     clearTimer();
     clearHeartbeat();
+    tracked.clear();
+    lastSnapshot = undefined;
+    lastView = undefined;
     removeWakeListeners();
     options.onReplaced(message);
     options.onConnection("closed");
@@ -870,6 +913,9 @@ export function openRoomSocket(options: {
     stopped = true;
     clearTimer();
     clearHeartbeat();
+    tracked.clear();
+    lastSnapshot = undefined;
+    lastView = undefined;
     removeWakeListeners();
     if (socket) {
       detach(socket);

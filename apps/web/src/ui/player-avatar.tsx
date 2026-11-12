@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react/dist/offline";
 import botIcon from "@iconify-icons/lucide/bot";
+import { evictMediaUrl, useCachedMediaSrc } from "../media/media-cache";
 import { useRosterEntry } from "./roster-context";
 import "./player-avatar.css";
 
@@ -54,6 +55,7 @@ export function PlayerAvatar({
   const failed = failure !== null && failure.src === src;
   const tries = failed ? failure.tries : 0;
   const showFace = Boolean(src) && !(failed && failure.waiting);
+  const resolvedSrc = useCachedMediaSrc(showFace ? src : null, { preload: true });
   useEffect(() => {
     if (!failure?.waiting || failure.tries > avatarRetries) return;
     const timer = window.setTimeout(
@@ -74,12 +76,19 @@ export function PlayerAvatar({
       {showFace ? (
         <img
           key={`${src}#${tries}`}
-          src={src!}
+          src={resolvedSrc!}
           alt=""
           loading="lazy"
           decoding="async"
           draggable={false}
-          onError={() => setFailure({ src: src!, tries: tries + 1, waiting: true })}
+          onError={() => {
+            if (src && resolvedSrc !== src) {
+              evictMediaUrl(src);
+              return;
+            }
+            if (src) evictMediaUrl(src);
+            setFailure({ src: src!, tries: tries + 1, waiting: true });
+          }}
         />
       ) : bot ? (
         <span className="player-avatar-bot">

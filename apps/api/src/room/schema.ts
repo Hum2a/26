@@ -416,7 +416,32 @@ const scheduleStatements = [
   )`,
 ];
 
+const PARTY_SCHEMA_VERSION = 15;
+const REGISTRY_SCHEMA_VERSION = 1;
+
+function hasTable(sql: SqlStorage, name: string): boolean {
+  return (
+    sql
+      .exec<{ name: string }>(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+        name,
+      )
+      .toArray().length > 0
+  );
+}
+
 export function ensurePartySchema(sql: SqlStorage): void {
+  if (hasTable(sql, "schema_meta")) {
+    const meta = sql
+      .exec<{ version: number }>("SELECT version FROM schema_meta WHERE id = 1")
+      .toArray()[0];
+    if (meta?.version === PARTY_SCHEMA_VERSION) {
+      return;
+    }
+    if (meta && (meta.version < 1 || meta.version > PARTY_SCHEMA_VERSION)) {
+      throw new Error(`Unsupported room schema version ${meta.version}.`);
+    }
+  }
   for (const statement of [...partyStatements, ...scheduleStatements]) {
     sql.exec(statement);
   }
@@ -512,6 +537,17 @@ function addColumn(
 }
 
 function ensure(sql: SqlStorage, statements: string[]): void {
+  if (hasTable(sql, "schema_meta")) {
+    const meta = sql
+      .exec<{ version: number }>("SELECT version FROM schema_meta WHERE id = 1")
+      .toArray()[0];
+    if (meta?.version === REGISTRY_SCHEMA_VERSION) {
+      return;
+    }
+    if (meta && meta.version !== REGISTRY_SCHEMA_VERSION) {
+      throw new Error(`Unsupported room schema version ${meta.version}.`);
+    }
+  }
   for (const statement of statements) {
     sql.exec(statement);
   }

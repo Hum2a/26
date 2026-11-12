@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/primitives";
 import { recordWav } from "./wav";
 
@@ -11,6 +11,20 @@ export function VoiceTake({
 }) {
   const [status, setStatus] = useState("Record up to 3 seconds, then listen back.");
   const [preview, setPreview] = useState<string>();
+  const [recording, setRecording] = useState(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (!preview) return;
+    return () => {
+      URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
   const supported = voiceRecordingSupport();
   if (supported === "unavailable") {
     return (
@@ -23,24 +37,27 @@ export function VoiceTake({
         type="button"
         variant="secondary"
         className="w-full whitespace-normal"
-        disabled={disabled}
+        disabled={disabled || recording}
         onClick={() => {
+          setRecording(true);
           setStatus("Recording.");
           void recordWav()
             .then((blob) => {
-              if (preview) {
-                URL.revokeObjectURL(preview);
-              }
+              if (!mounted.current) return;
               const url = URL.createObjectURL(blob);
               setPreview(url);
               onClip(blob);
               setStatus("Listen, then send this clip or record again.");
             })
             .catch(() => {
+              if (!mounted.current) return;
               onClip(null);
               setStatus(
                 "The microphone is unavailable. You can still answer the questions.",
               );
+            })
+            .finally(() => {
+              if (mounted.current) setRecording(false);
             });
         }}
       >
@@ -57,7 +74,6 @@ export function VoiceTake({
           variant="secondary"
           disabled={disabled}
           onClick={() => {
-            URL.revokeObjectURL(preview);
             setPreview(undefined);
             onClip(null);
             setStatus("Record up to 3 seconds, then listen back.");

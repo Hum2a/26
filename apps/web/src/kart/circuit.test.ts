@@ -527,3 +527,63 @@ it("renders available boxes, deployed oil and shields with the existing resource
   ).toBe(1);
   circuit.dispose();
 });
+
+it("disposes driver label sprites, materials and textures when a driver leaves", () => {
+  const ctx2d = {
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 0,
+    font: "",
+    textAlign: "left",
+    textBaseline: "alphabetic",
+    beginPath: vi.fn(),
+    arc: vi.fn(),
+    fill: vi.fn(),
+    stroke: vi.fn(),
+    fillText: vi.fn(),
+  } as unknown as CanvasRenderingContext2D;
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((kind) =>
+    kind === "2d" ? ctx2d : null,
+  );
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((k) => [
+      k,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const circuit = createCircuit(palette, false);
+  const twoDrivers = projectKartRace(
+    createKartRace("labels", [
+      { playerId: "a", name: "Amina" },
+      { playerId: "b", name: "Baseer" },
+    ]),
+    null,
+    100,
+  );
+  circuit.update(twoDrivers, 0.1, false);
+  const sprites = circuit.scene.children.filter(
+    (child): child is THREE.Sprite => child instanceof THREE.Sprite,
+  );
+  expect(sprites).toHaveLength(2);
+
+  const departing = sprites[1]!;
+  const matDispose = vi.spyOn(departing.material, "dispose");
+  const texDispose = departing.material.map
+    ? vi.spyOn(departing.material.map, "dispose")
+    : undefined;
+
+  const oneDriver = {
+    ...twoDrivers,
+    participants: twoDrivers.participants.filter((driver) => driver.playerId === "a"),
+  };
+  circuit.update(oneDriver, 0.1, false);
+
+  const remaining = circuit.scene.children.filter(
+    (child): child is THREE.Sprite => child instanceof THREE.Sprite,
+  );
+  expect(remaining).toHaveLength(1);
+  expect(remaining[0]).toBe(sprites[0]);
+  expect(matDispose).toHaveBeenCalledOnce();
+  if (texDispose) expect(texDispose).toHaveBeenCalledOnce();
+  circuit.dispose();
+});

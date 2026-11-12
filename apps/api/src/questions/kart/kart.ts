@@ -842,23 +842,83 @@ export function projectKart(
   };
 }
 
+type KartFrameIndex = {
+  driverIndexById: Map<string, number>;
+  participantById: Map<string, KartRaceView["participants"][number]>;
+  participantByNumber: Map<number, KartRaceView["participants"][number]>;
+  topLeaders: KartRaceView["leaderboard"];
+  leaderIndexById: Map<string, number>;
+};
+
+function buildKartFrameIndex(race: KartRace, full: KartRaceView): KartFrameIndex {
+  const driverIndexById = new Map<string, number>();
+  for (let i = 0; i < race.drivers.length; i += 1) {
+    driverIndexById.set(race.drivers[i]!.playerId, i);
+  }
+  const participantById = new Map<string, KartRaceView["participants"][number]>();
+  const participantByNumber = new Map<number, KartRaceView["participants"][number]>();
+  for (const participant of full.participants) {
+    participantById.set(participant.playerId, participant);
+    participantByNumber.set(participant.number, participant);
+  }
+  const leaderIndexById = new Map<string, number>();
+  for (let i = 0; i < full.leaderboard.length; i += 1) {
+    leaderIndexById.set(full.leaderboard[i]!.playerId, i);
+  }
+  return {
+    driverIndexById,
+    participantById,
+    participantByNumber,
+    topLeaders: full.leaderboard.slice(0, 8),
+    leaderIndexById,
+  };
+}
+
 /** Self stays separate; optional nearby poses carry public fields only. */
 export function phoneRaceView(
   race: KartRace,
   full: KartRaceView,
   selfPlayerId: string,
   lastSequence: number | undefined,
+  shared?: KartFrameIndex,
 ): KartRaceView {
-  const index = race.drivers.findIndex((d) => d.playerId === selfPlayerId);
-  const numbers = race.opponentsEnabled
-    ? new Map(
-        selectNearbyNumbers(
-          full.participants,
-          selfPlayerId,
-          race.nearbyNumbers?.[index],
-        ).map((number, order) => [number, order] as const),
-      )
-    : new Map<number, number>();
+  const index = shared
+    ? (shared.driverIndexById.get(selfPlayerId) ?? -1)
+    : race.drivers.findIndex((d) => d.playerId === selfPlayerId);
+  const selfDriver = index >= 0 ? race.drivers[index] : undefined;
+  let nearby: KartRaceView["participants"] | undefined;
+  if (race.opponentsEnabled) {
+    const numbers = selectNearbyNumbers(
+      full.participants,
+      selfPlayerId,
+      race.nearbyNumbers?.[index],
+    );
+    if (shared) {
+      nearby = [];
+      for (const number of numbers) {
+        const participant = shared.participantByNumber.get(number);
+        if (participant) nearby.push(participant);
+      }
+    } else {
+      const order = new Map<number, number>(
+        numbers.map((number, rank) => [number, rank] as const),
+      );
+      nearby = full.participants
+        .filter((d) => order.has(d.number))
+        .sort((a, b) => order.get(a.number)! - order.get(b.number)!);
+    }
+  }
+  const selfParticipant = shared
+    ? shared.participantById.get(selfPlayerId)
+    : full.participants.find((d) => d.playerId === selfPlayerId);
+  const selfLeaderPos = shared
+    ? shared.leaderIndexById.get(selfPlayerId)
+    : full.leaderboard.findIndex((d) => d.playerId === selfPlayerId);
+  const leaderboard = shared
+    ? selfLeaderPos !== undefined && selfLeaderPos >= 8
+      ? [...shared.topLeaders, full.leaderboard[selfLeaderPos]!]
+      : shared.topLeaders.slice()
+    : full.leaderboard.filter((d, i) => i < 8 || d.playerId === selfPlayerId);
   return {
     ...full,
     selfPlayerId,
@@ -871,32 +931,21 @@ export function phoneRaceView(
       ? {
           powers: {
             ...full.powers,
-            selfItem: legacyKartItem(
-              race.drivers.find((d) => d.playerId === selfPlayerId)?.power?.item,
-            ),
+            selfItem: legacyKartItem(selfDriver?.power?.item),
             boxes: full.powers.boxes.map((b) => ({
               ...b,
               available:
                 b.available &&
-                (race.drivers.find((d) => d.playerId === selfPlayerId)?.power
-                  ?.cooldowns[b.id] ?? 0) <= race.elapsedMs,
+                (selfDriver?.power?.cooldowns[b.id] ?? 0) <= race.elapsedMs,
             })),
             effects: full.powers.effects.filter((e) => e.playerId === selfPlayerId),
           },
         }
       : {}),
-    inputCursor:
-      lastSequence ??
-      Math.max(0, race.drivers.find((d) => d.playerId === selfPlayerId)?.sequence ?? 0),
-    participants: full.participants.filter((d) => d.playerId === selfPlayerId),
-    nearby: race.opponentsEnabled
-      ? full.participants
-          .filter((d) => numbers.has(d.number))
-          .sort((a, b) => numbers.get(a.number)! - numbers.get(b.number)!)
-      : undefined,
-    leaderboard: full.leaderboard.filter(
-      (d, i) => i < 8 || d.playerId === selfPlayerId,
-    ),
+    inputCursor: lastSequence ?? Math.max(0, selfDriver?.sequence ?? 0),
+    participants: selfParticipant ? [selfParticipant] : [],
+    nearby,
+    leaderboard,
   };
 }
 
@@ -908,6 +957,7 @@ export function kartFrames(sql: SqlStorage, q: KartQuestion) {
   const race = readKart(sql, q.id);
   if (!race) return undefined;
   const full = projectKartRace(race, null, q.points);
+  const shared = buildKartFrameIndex(race, full);
   const cursors = new Map<string, number>();
   for (const row of sql
     .exec<{ state_key: string; payload: string }>(
@@ -920,14 +970,20 @@ export function kartFrames(sql: SqlStorage, q: KartQuestion) {
       (JSON.parse(row.payload) as InputQueue).lastSequence,
     );
   }
+  let submissionCount = 0;
+  for (const driver of race.drivers) {
+    if (!driver.cpu && driver.status !== "RACING") {
+      submissionCount += 1;
+    }
+  }
   return {
     full,
     itemsControl: kartItemsDetails(sql, q.id, createSqlStore(sql).readRoom().phase)
       .kartItems,
     contactHistory: race.contactHistory ?? [],
     recap: kartRaceRecap(race),
-    submissionCount: race.drivers.filter((d) => !d.cpu && d.status !== "RACING").length,
+    submissionCount,
     forPhone: (playerId: string) =>
-      phoneRaceView(race, full, playerId, cursors.get(playerId)),
+      phoneRaceView(race, full, playerId, cursors.get(playerId), shared),
   };
 }

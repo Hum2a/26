@@ -145,6 +145,12 @@ export default function KartCanvas({
       });
     const initialProfile = chooseProfile();
     if (!initialProfile) {
+      if (
+        "forceContextLoss" in renderer &&
+        typeof renderer.forceContextLoss === "function"
+      ) {
+        renderer.forceContextLoss();
+      }
       renderer.dispose();
       setFailed(true);
       readiness.current?.("failed");
@@ -498,6 +504,12 @@ export default function KartCanvas({
       renderer.setAnimationLoop(null);
       look?.dispose();
       circuit.dispose();
+      if (
+        "forceContextLoss" in renderer &&
+        typeof renderer.forceContextLoss === "function"
+      ) {
+        renderer.forceContextLoss();
+      }
       renderer.dispose();
       renderer.domElement.remove();
     };
