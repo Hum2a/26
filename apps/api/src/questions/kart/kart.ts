@@ -896,9 +896,8 @@ export function phoneRaceView(
           .filter((d) => numbers.has(d.number))
           .sort((a, b) => numbers.get(a.number)! - numbers.get(b.number)!)
       : undefined,
-    leaderboard: full.leaderboard.filter(
-      (d, i) => i < 8 || d.playerId === selfPlayerId,
-    ),
+    // Top eight, yourself, and the drivers directly ahead and behind you.
+    leaderboard: phoneLeaderboard(full.leaderboard, selfPlayerId),
   };
 }
 
@@ -932,4 +931,15 @@ export function kartFrames(sql: SqlStorage, q: KartQuestion) {
     forPhone: (playerId: string) =>
       phoneRaceView(race, full, playerId, cursors.get(playerId)),
   };
+}
+
+/** A phone's shortlist: the top eight plus its own row and the rows either side. */
+export function phoneLeaderboard<T extends { playerId: string }>(
+  rows: readonly T[],
+  selfPlayerId: string | null,
+): T[] {
+  const self = selfPlayerId
+    ? rows.findIndex((row) => row.playerId === selfPlayerId)
+    : -1;
+  return rows.filter((_, i) => i < 8 || (self >= 0 && Math.abs(i - self) <= 1));
 }

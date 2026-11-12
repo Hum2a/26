@@ -238,3 +238,23 @@
   color: var(--surface-foreground);
   border: 2px solid var(--accent);
 }
+
+/* The drivers one place either side, small enough to glance at. */
+.kart-race-rivals {
+  display: flex;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  max-width: 100%;
+}
+.kart-race-rivals span[data-side] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 9rem;
+  transition: opacity 200ms var(--ease-party, ease-out);
+}
+.kart-race-rivals span[data-side="ahead"] {
+  color: var(--highlight);
+}

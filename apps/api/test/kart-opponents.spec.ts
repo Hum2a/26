@@ -5,7 +5,7 @@ import {
   reduceKart,
   selectNearbyNumbers,
 } from "@26/shared";
-import { phoneRaceView } from "../src/questions/kart/kart";
+import { phoneLeaderboard, phoneRaceView } from "../src/questions/kart/kart";
 
 const poses = (count: number) =>
   Array.from({ length: count }, (_, i) => ({
@@ -66,4 +66,23 @@ it("persists only bounded roster numbers and projects self plus public nearby po
   expect(full.participants).toHaveLength(80);
   race.opponentsEnabled = false;
   expect(phoneRaceView(race, full, "p0", 1).nearby).toBeUndefined();
+});
+
+it("sends each phone the top eight plus the drivers either side of it", () => {
+  const rows = Array.from({ length: 20 }, (_, i) => ({ playerId: `p${i + 1}` }));
+  const ids = (self: string | null) =>
+    phoneLeaderboard(rows, self).map((row) => row.playerId);
+  expect(ids("p15")).toEqual([
+    ...rows.slice(0, 8).map((row) => row.playerId),
+    "p14",
+    "p15",
+    "p16",
+  ]);
+  expect(ids("p3")).toHaveLength(8);
+  expect(ids("p20")).toEqual([
+    ...rows.slice(0, 8).map((row) => row.playerId),
+    "p19",
+    "p20",
+  ]);
+  expect(ids(null)).toHaveLength(8);
 });

@@ -1,7 +1,7 @@
 import { act, render, renderHook, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { KartRaceView } from "@26/shared";
-import { KartRaceHud } from "./KartRaceHud";
+import { KartRaceHud, raceRivals } from "./KartRaceHud";
 import { KartStageCallouts, calloutMs } from "./KartStageCallouts";
 import { bannerMs, useRaceFeedback } from "./useRaceFeedback";
 import type { RaceAudio } from "./race-audio";
@@ -197,4 +197,26 @@ it("plays GO and lists landed items on the projector, then lets them fade", () =
   expect(
     screen.getByRole("list", { name: "Item hits" }).querySelectorAll("li").length,
   ).toBeLessThanOrEqual(1);
+});
+
+it("names the drivers one place ahead and behind", () => {
+  const race = view([
+    { id: "a", place: 1 },
+    { id: "b", place: 2 },
+    { id: "c", place: 3 },
+  ]);
+  const rows = race.leaderboard.map((row) => ({
+    ...row,
+    name: row.playerId.toUpperCase(),
+  }));
+  const named = { ...race, leaderboard: rows } as KartRaceView;
+  expect(raceRivals(named, 2, "b")).toMatchObject({
+    ahead: { name: "A" },
+    behind: { name: "C" },
+  });
+  expect(raceRivals(named, 1, "a").ahead).toBeUndefined();
+  expect(raceRivals(named, undefined, "b")).toEqual({
+    ahead: undefined,
+    behind: undefined,
+  });
 });
