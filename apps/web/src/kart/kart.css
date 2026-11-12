@@ -1377,3 +1377,22 @@ body:has(.kart-phone) {
 .kart-countdown span[data-beat="GO"] {
   color: var(--accent);
 }
+
+/* Item roulette: a badge beside the item button that spins briefly when a
+   new item arrives, then lands on it. */
+.kart-item-roulette {
+  display: inline-grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: var(--radius-control);
+  border: 2px solid var(--line);
+  background: var(--surface);
+  font-size: 1.5rem;
+  line-height: 1;
+  overflow: hidden;
+  transition: border-color 200ms var(--ease-party, ease-out);
+}
+.kart-item-roulette[data-spinning] {
+  border-color: var(--highlight);
+}
