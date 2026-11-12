@@ -156,3 +156,45 @@ it("announces each projector moment once, then clears it", () => {
   act(() => vi.advanceTimersByTime(calloutMs + 10));
   expect(region.dataset.idle).toBe("true");
 });
+
+it("plays GO and lists landed items on the projector, then lets them fade", () => {
+  const audio = fakeAudio();
+  const hits = {
+    presentation: {
+      version: 3,
+      items: {
+        hits: [
+          { eventId: 5, atMs: 900, kind: "hit", target: "a", by: "b", item: "bomb" },
+        ],
+      },
+    },
+  } as unknown as Partial<KartRaceView>;
+  const first = view(
+    [
+      { id: "a", place: 1 },
+      { id: "b", place: 2 },
+    ],
+    { elapsedMs: 500 },
+  );
+  const stage = render(<KartStageCallouts race={first} audio={audio} />);
+  expect(audio.cue).toHaveBeenCalledWith("go");
+  stage.rerender(
+    <KartStageCallouts
+      race={view(
+        [
+          { id: "a", place: 1 },
+          { id: "b", place: 2 },
+        ],
+        { elapsedMs: 900, ...hits },
+      )}
+      audio={audio}
+    />,
+  );
+  const ticker = () => screen.getByRole("list", { name: "Item hits" }).textContent;
+  expect(ticker()).toContain("B 💣 A");
+  expect(audio.cue).toHaveBeenCalledWith("launch");
+  act(() => vi.advanceTimersByTime(5000));
+  expect(
+    screen.getByRole("list", { name: "Item hits" }).querySelectorAll("li").length,
+  ).toBeLessThanOrEqual(1);
+});

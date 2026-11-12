@@ -214,3 +214,27 @@
     animation: none;
   }
 }
+
+/* Projector hit ticker: the last three landed items, right under the call-outs. */
+.kart-hit-ticker {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 7;
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+.kart-hit-ticker li {
+  justify-self: end;
+  border-radius: var(--radius-panel);
+  padding: 0.35rem 0.9rem;
+  font-size: clamp(1rem, 1.6vw, 1.6rem);
+  font-weight: 800;
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  color: var(--surface-foreground);
+  border: 2px solid var(--accent);
+}
