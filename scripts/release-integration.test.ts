@@ -401,8 +401,8 @@ describe("release.ts guards with fake git/npm/npx", () => {
 });
 
 describe("release.ts validation and approved deploys with fakes", () => {
-  it("stops deploy at a failed check: no build, no wrangler", () => {
-    const result = runRelease(["deploy", "--env", "production"], {
+  it("stops deploy at a failed check when --checks is requested: no build, no wrangler", () => {
+    const result = runRelease(["deploy", "--env", "production", "--checks"], {
       FAKE_NPM_FAIL: "test:unit",
     });
     assert.equal(result.status, 1);
@@ -429,14 +429,14 @@ describe("release.ts validation and approved deploys with fakes", () => {
     assert.equal(loggedCommands(result.log, "NPX").length, 0);
   });
 
-  it("runs every check once, then one build and one deploy for production", () => {
+  it("just builds and deploys for production without running tests", () => {
     const result = runRelease(["deploy", "--env", "production"]);
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(loggedCommands(result.log, "GIT"), [
       "rev-parse --abbrev-ref HEAD",
       "status --porcelain",
     ]);
-    assert.deepEqual(loggedCommands(result.log, "NPM"), [...checkSteps, "run build"]);
+    assert.deepEqual(loggedCommands(result.log, "NPM"), ["run build"]);
     assert.deepEqual(loggedCommands(result.log, "BUILD"), ["production"]);
     const npx = loggedCommands(result.log, "NPX");
     assert.equal(npx.length, 1);
@@ -445,14 +445,11 @@ describe("release.ts validation and approved deploys with fakes", () => {
     assert.doesNotMatch(result.log, /deploy:|release\.sh|secret bulk/);
   });
 
-  it("checks once for both targets, then builds once and deploys staging before production", () => {
+  it("just builds once and deploys staging before production without running tests", () => {
     const result = runRelease(["deploy", "--env", "both"]);
     assert.equal(result.status, 0, result.stderr);
     assert.equal(loggedCommands(result.log, "GIT").length, 2);
-    assert.deepEqual(loggedCommands(result.log, "NPM"), [
-      ...checkSteps,
-      "run build",
-    ]);
+    assert.deepEqual(loggedCommands(result.log, "NPM"), ["run build"]);
     assert.deepEqual(loggedCommands(result.log, "BUILD"), ["staging"]);
     assert.deepEqual(loggedCommands(result.log, "WRANGLER_DEPLOY"), [
       "staging 26-humza-website-staging",
@@ -462,20 +459,40 @@ describe("release.ts validation and approved deploys with fakes", () => {
     assert.doesNotMatch(result.log, /deploy:|release\.sh|secret bulk/);
   });
 
-  it("adds the full API suite only with --full-checks", () => {
-    const result = runRelease([
-      "deploy",
-      "--env",
-      "staging",
-      "--full-checks",
-      "--dry-run",
-    ]);
+  it("runs the full test suite, migrations, build and deploy with secrets on full", () => {
+    const result = runRelease(["full", "--env", "both"]);
     assert.equal(result.status, 0, result.stderr);
-    // A dry run packages only; it never runs the checks.
-    assert.deepEqual(loggedCommands(result.log, "NPM"), ["run build"]);
-    const checked = runRelease(["deploy", "--env", "staging", "--full-checks"]);
+    assert.equal(loggedCommands(result.log, "GIT").length, 2);
+    assert.deepEqual(loggedCommands(result.log, "NPM"), [
+      ...checkSteps,
+      "run test -w @26/api",
+      "run auth:migrate -- --env staging",
+      "run archive:migrate -- --env staging",
+      "run auth:migrate -- --env production",
+      "run archive:migrate -- --env production",
+      "run build",
+    ]);
+    assert.deepEqual(loggedCommands(result.log, "BUILD"), ["staging"]);
+    assert.deepEqual(loggedCommands(result.log, "WRANGLER_DEPLOY"), [
+      "staging 26-humza-website-staging",
+      "production 26-humza-website",
+    ]);
+    const npx = loggedCommands(result.log, "NPX");
+    assert.equal(npx.length, 2);
+    assert.match(npx[0] ?? "", /--secrets-file/);
+    assert.match(npx[1] ?? "", /--secrets-file/);
+  });
+
+  it("deploy runs checks when explicitly requested with --checks", () => {
+    const checked = runRelease(["deploy", "--env", "staging", "--checks"]);
     assert.equal(checked.status, 0, checked.stderr);
     assert.deepEqual(loggedCommands(checked.log, "NPM"), [
+      ...checkSteps,
+      "run build",
+    ]);
+    const withApi = runRelease(["deploy", "--env", "staging", "--checks", "--full-checks"]);
+    assert.equal(withApi.status, 0, withApi.stderr);
+    assert.deepEqual(loggedCommands(withApi.log, "NPM"), [
       ...checkSteps,
       "run test -w @26/api",
       "run build",

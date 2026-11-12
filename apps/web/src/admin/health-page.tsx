@@ -85,13 +85,23 @@ export function HealthPage() {
             ? `Last checked ${new Date(report.checkedAt).toLocaleTimeString("en-GB")}.${report.error ? " These details may be out of date." : ""}`
             : "Health information is unavailable."}
       </p>
-      <section className="admin-task-section">
-        <h2>Live connections</h2>
-        <p>
-          {connection === "open"
-            ? "Connected"
-            : "Reconnecting · live counts may be out of date"}
-        </p>
+      <section className="admin-task-section" aria-label="Live connections">
+        <div className="admin-page-heading">
+          <h2>Live connections</h2>
+          <span
+            className="admin-badge"
+            data-tone={connection === "open" ? "ok" : "warn"}
+          >
+            <span
+              className="admin-status-dot"
+              data-tone={connection === "open" ? "ok" : "warn"}
+              aria-hidden="true"
+            />
+            {connection === "open"
+              ? "Connected"
+              : "Reconnecting · live counts may be out of date"}
+          </span>
+        </div>
         <div className="admin-facts">
           {["guests", "stage", "control"].map((role) => (
             <div key={role}>

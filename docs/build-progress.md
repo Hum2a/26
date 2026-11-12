@@ -6212,19 +6212,63 @@ Not verified: signed-in admin in a real browser, or the drawer on a physical pho
 - `npm run typecheck`, `npm run lint` — passed (0 errors, 27 existing warnings; structure check passed)
 - `npm run test:unit -w @26/web -- src/chess` — 10 files, 52 passed (including premove model, board and lifecycle tests)
 
-## 11 November 2026 — Single-build `deploy:both`
+## 11 November 2026 — Single-build `deploy:both` and fast `deploy:*` commands
 
 Status: complete locally. Not deployed.
 
-- `scripts/release.ts` and `scripts/release-support.ts` (`retargetGeneratedWorkerConfig`): `deploy:both` and `deploy:both:full` now run `npm run build` once instead of building twice. After deploying staging, `release.ts` retargets `apps/web/dist/26_humza_website_local/wrangler.json` using `env.production` from `apps/api/wrangler.jsonc`, validates the generated Worker config with `assertGeneratedWorkerConfig`, and deploys that same build to production. Local builds (`26-humza-website-local`) are still rejected by both `retargetGeneratedWorkerConfig` and `assertGeneratedWorkerConfig`.
-- `apps/web/vite.config.ts` and `apps/web/src/api/client-key.ts` (`resolveConfiguredClientKey`): a shared build embeds `VITE_CLIENT_API_KEY_STAGING` and `VITE_CLIENT_API_KEY_PRODUCTION` alongside `VITE_CLIENT_API_KEY` and selects the matching key by hostname (`26-staging.humza.website` vs `26.humza.website`), so a single client bundle works on both remote origins even if their client API keys differ.
+- **Fast deploy commands (`deploy:prod`, `deploy:staging`, `deploy:both`)**: plain deploy commands in `scripts/release.ts` now just build and deploy without running the test suite (use `--checks` to explicitly opt in). Production guards (clean master working tree and party freeze window) remain enforced.
+- **Full release commands (`deploy:prod:full`, `deploy:staging:full`, `deploy:both:full`)**: run the full test suite (`typecheck`, `content:check`, `test:unit`, `lint`, `test:release`, and the isolated API suite `@26/api`), run database migrations (`auth:migrate`, `archive:migrate`), build, and deploy with secrets attached (`--secrets-file`).
+- **Single-build combined releases (`deploy:both` and `deploy:both:full`)**: `scripts/release.ts` and `scripts/release-support.ts` (`retargetGeneratedWorkerConfig`): now run `npm run build` once instead of building twice. After deploying staging, `release.ts` retargets `apps/web/dist/26_humza_website_local/wrangler.json` using `env.production` from `apps/api/wrangler.jsonc`, validates the generated Worker config with `assertGeneratedWorkerConfig`, and deploys that same build to production. Local builds (`26-humza-website-local`) are still rejected by both `retargetGeneratedWorkerConfig` and `assertGeneratedWorkerConfig`.
+- **Hostname-aware client API key for shared builds** (`apps/web/vite.config.ts`, `apps/web/src/api/client-key.ts`): `resolveConfiguredClientKey` embeds `VITE_CLIENT_API_KEY_STAGING` and `VITE_CLIENT_API_KEY_PRODUCTION` alongside `VITE_CLIENT_API_KEY` and selects the matching key by hostname (`26-staging.humza.website` vs `26.humza.website`), so a single client bundle works on both remote origins even if their client API keys differ.
 
 ### Commands and results
 
-- `npm run test:release` — passed (including single-build `deploy --env both` and `retargetGeneratedWorkerConfig` assertions)
+- `npm run test:release` — 81 passed (including single-build `deploy --env both`, plain deploy fast build-and-deploy assertions, and full test suite/secrets/migrations assertions)
 - `npm run test:unit -w @26/web -- src/api/photo-display.test.ts` — passed
-- `npm run typecheck`, `npm run lint` — passed
+- `npm run typecheck`, `npm run lint` — passed (0 errors, 27 existing warnings; structure check passed)
 
 ### Exact next stage
 
 Conclude the merge commit when ready and test solo chess (`/chess`) or a party rehearsal round on a phone. Do not start the next prompt automatically.
+
+## 11 November 2026 — Admin pages techy/dashboardy redesign
+
+Status: complete locally on branch `feature/admin-pages-dashboard-redesign`. Not deployed.
+
+Redesigned the internal page layout and presentation across all global and room-scoped `/admin` pages into a cohesive, mission-control dashboard:
+- **Design system components** (`apps/web/src/ui/admin.css`):
+  - `.admin-card`, `.admin-card-header`, `.admin-card-title`, `.admin-card-body`, `.admin-card-footer` for structured control boxes with crisp borders, subtle elevation and dark glass header chrome.
+  - `.admin-status-dot` with pulsing live indicator rings for `ok`, `warn`, `danger`, and `muted` operational states.
+  - `.admin-mono-tag` for monospace timestamps, metrics, IDs, and tabular values.
+  - `.admin-data-list` and `.admin-data-row` for high-density, alternating-shade tabular telemetry lists.
+  - `.admin-stat-grid` and `.admin-stat` upgraded into elevated gauge cards with tabular-figure numbers.
+  - `.admin-terminal` styling for console and chaos test logs.
+  - `.admin-private-notes` styled into a dedicated confidential operator box with accent border and mono title.
+  - Upgraded live controls dock (`.admin-live-actions`) to a frosted glass cockpit floating bar with box shadow.
+- **Pages enhanced**:
+  - `rooms-page.tsx`: Status dots, active room metrics, join code showcase, quick shortcut tiles.
+  - `health-page.tsx`: Elevated live connection card with status dot, email delivery report, and telemetry stats.
+  - `analytics-page.tsx`: Podium highlights card, sample-status badges, and structured troll telemetry list.
+  - `players-page.tsx`: Joining controls card with status indicator dot, player roster with connection dot chips, points tags, and tabular action buttons.
+  - `media-page.tsx`: Photo bias card with status badge, device stat chips, and moderation queue list.
+  - `voters-page.tsx`: "Picks on the big screen" card, live board mirror card, and profile photo cards.
+  - `wall-page.tsx`: Photo wall queue and layout controls cards with monospace queue counters.
+  - `trolls-page.tsx`: Troll log and frequency history transformed into structured data lists with timestamps and status dots.
+  - `live-console.tsx`: Upgraded live room cockpit, round status badges, countdown clock, confidential presenter box, join code aside card, and answer moderation data list.
+  - `developer-page.tsx` & `rehearsal-controls.tsx`: Bot population card, bot behaviour card with auto-pilot badge, telemetry stat grid gauges, chaos failure panel, and live activity log.
+  - `presentation-rehearsal.tsx` & `admin-page.tsx`: Preview mode card with status dot and sample standings.
+  - `results-page.tsx`: Standings card with final/live badge, insights card, and archive/export aside card with status dots.
+  - `question-page.tsx`: Question wording card, answer options data list, and readiness card with missing requirements list.
+  - `kart-page.tsx`: Standalone engine card, multiplayer rehearsal card, and layout preview card.
+  - `chess-page.tsx`: Live chess monitor card with standby/active badge and stat grid.
+
+### Commands and results
+
+- `npm run check:structure` — passed
+- `npm run typecheck` — passed
+- `npm run lint` — passed (0 errors, 27 existing react-refresh warnings; structure check passed)
+- `npm run test:unit -w @26/web` — 189 test files passed, 837 tests passed
+
+### Exact next stage
+
+Review the redesigned admin interface in `/admin` and merge `feature/admin-pages-dashboard-redesign` into `master`. Do not deploy without explicit instruction.

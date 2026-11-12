@@ -57,7 +57,13 @@ export function AnalyticsPage() {
       </section>
 
       <section className="admin-task-section" aria-label="Podium highlights">
-        <h2>Podium highlights ({eligible.length})</h2>
+        <div className="admin-page-heading">
+          <h2>Podium highlights ({eligible.length})</h2>
+          <span className="admin-badge" data-tone="ok">
+            <span className="admin-status-dot" data-tone="ok" aria-hidden="true" />
+            Stage ready
+          </span>
+        </div>
         {eligible.length === 0 ? (
           <p>No highlights yet. They appear as answers come in.</p>
         ) : (
@@ -65,11 +71,19 @@ export function AnalyticsPage() {
             {eligible.map((card) => (
               <li
                 key={card.id}
-                className="rounded-3xl border border-line bg-surface p-4"
+                className="admin-card"
               >
-                {card.illustrative ? <p className="font-bold">Illustrative</p> : null}
-                <p className="text-lg font-bold">{card.stage}</p>
-                <p>{card.results}</p>
+                <div className="admin-card-header">
+                  <span className="admin-card-title">
+                    <span className="admin-status-dot" data-tone="ok" aria-hidden="true" />
+                    Podium card
+                  </span>
+                  {card.illustrative ? <span className="admin-badge" data-tone="muted">Illustrative</span> : null}
+                </div>
+                <div className="admin-card-body">
+                  <p className="text-lg font-bold">{card.stage}</p>
+                  <p className="text-muted">{card.results}</p>
+                </div>
               </li>
             ))}
           </ul>
@@ -78,14 +92,23 @@ export function AnalyticsPage() {
 
       {held.length > 0 ? (
         <section className="admin-task-section" aria-label="Held back">
-          <h2>Held back ({held.length})</h2>
+          <div className="admin-page-heading">
+            <h2>Held back ({held.length})</h2>
+            <span className="admin-badge" data-tone="warn">
+              Sample too small
+            </span>
+          </div>
           <p>
             These groups are too small for a fair percentage, so the stage will not show
             them.
           </p>
           <ul className="admin-card-grid">
             {held.map((card) => (
-              <li key={card.id}>{card.results}</li>
+              <li key={card.id} className="admin-card">
+                <div className="admin-card-body">
+                  <p>{card.results}</p>
+                </div>
+              </li>
             ))}
           </ul>
         </section>
@@ -119,10 +142,13 @@ export function AnalyticsPage() {
         {trollCounts.length === 0 ? (
           <p>No trolls sent yet.</p>
         ) : (
-          <ul className="grid gap-1">
+          <ul className="admin-data-list">
             {trollCounts.map(([label, count]) => (
-              <li key={label}>
-                {label}: <strong>{count}</strong>
+              <li key={label} className="admin-data-row">
+                <span>{label}</span>
+                <span className="admin-mono-tag">
+                  {label}: <strong>{count}</strong>
+                </span>
               </li>
             ))}
           </ul>

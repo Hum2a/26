@@ -111,12 +111,12 @@ These commands read `apps/api/.dev.vars.staging` or `apps/api/.dev.vars.producti
 | `npm run db:migrate:dev`       | Auth and archive migrations on the Neon development branch, or PGlite when `DATABASE_URL` is blank |                                                  |
 | `npm run db:migrate:staging`   | Auth and archive migrations against the staging database                                           |                                                  |
 | `npm run db:migrate:prod`      | Auth and archive migrations against the production database                                        | Not covered by deploy/full production guards     |
-| `npm run deploy:staging`       | Build with `CLOUDFLARE_ENV=staging` and deploy that generated config                               |                                                  |
-| `npm run deploy:prod`          | Build with `CLOUDFLARE_ENV=production` and deploy that generated config                            | **Requires clean master, outside freeze period** |
-| `npm run deploy:both`          | Staging deploy, then production deploy                                                             | **Requires clean master, outside freeze period** |
-| `npm run deploy:staging:full`  | Staging migrate, then build and deploy with the required secrets attached                          |                                                  |
-| `npm run deploy:prod:full`     | Production migrate, then build and deploy with the required secrets attached                       | **Requires clean master, outside freeze period** |
-| `npm run deploy:both:full`     | Full staging release, then full production release                                                 | **Requires clean master, outside freeze period** |
+| `npm run deploy:staging`       | Build and deploy to staging (skips test suite; use `--checks` to opt in)                           |                                                  |
+| `npm run deploy:prod`          | Build and deploy to production (skips test suite; use `--checks` to opt in)                        | **Requires clean master, outside freeze period** |
+| `npm run deploy:both`          | Build once, deploy staging then production (skips test suite; use `--checks` to opt in)            | **Requires clean master, outside freeze period** |
+| `npm run deploy:staging:full`  | Full test suite, staging migrate, then build and deploy with secrets attached                      |                                                  |
+| `npm run deploy:prod:full`     | Full test suite, production migrate, then build and deploy with secrets attached                   | **Requires clean master, outside freeze period** |
+| `npm run deploy:both:full`     | Full test suite, migrate staging & production, build once and deploy both with secrets attached    | **Requires clean master, outside freeze period** |
 
 Add `-- --dry-run` to a secrets-sync or deploy command to check the package or secret names without uploading. A dry-run full release skips migrations.
 

@@ -178,15 +178,20 @@ export function WallPage() {
       </section>
 
       <section className="admin-task-section" aria-label="Queue">
-        <h2>Queue ({queued.length})</h2>
+        <div className="admin-page-heading">
+          <h2>Queue ({queued.length})</h2>
+          <span className="admin-mono-tag">{queued.length} queued</span>
+        </div>
         {queued.length === 0 ? <p>The queue is empty.</p> : null}
-        <ol className="grid gap-2">
+        <ol className="admin-data-list">
           {queued.map((item) => (
-            <li key={item.postId} className="flex flex-wrap items-center gap-3">
-              <span className="font-bold">{item.position}.</span>
-              <span>
-                {item.nickname}
-                {item.caption ? ` · ${item.caption}` : ""}
+            <li key={item.postId} className="admin-data-row">
+              <span className="flex items-center gap-2">
+                <span className="admin-mono-tag font-bold">{item.position}.</span>
+                <span>
+                  <strong>{item.nickname}</strong>
+                  {item.caption ? ` · ${item.caption}` : ""}
+                </span>
               </span>
               <Button
                 variant="secondary"

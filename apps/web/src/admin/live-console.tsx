@@ -212,22 +212,32 @@ export function LiveConsole() {
       <CommandFeedback scope="live" />
       {connection !== "open" ? (
         <p role="status" className="admin-inline-warning">
+          <span className="admin-status-dot" data-tone="warn" aria-hidden="true" />
           Reconnecting. Controls are unavailable until the room is connected.
         </p>
       ) : (
-        <p className="admin-connection">Connected to the room.</p>
+        <p className="admin-connection">
+          <span className="admin-status-dot" data-tone="ok" aria-hidden="true" />
+          Connected to the room.
+        </p>
       )}
       {kartLobby ? (
-        <section className="admin-current" aria-label="Kart lobby details">
-          <h2>Kart-only lobby</h2>
-          <p>
-            One lap · up to 80 racers. The saved course and time limit are shown below.
-          </p>
-          <p>
-            Created {new Date(snapshot.kartLobby!.createdAt).toLocaleString("en-GB")}.
-            The starting grid freezes when you start. Late arrivals watch this race;
-            create a fresh kart lobby for another race.
-          </p>
+        <section className="admin-card admin-current" aria-label="Kart lobby details">
+          <div className="admin-card-header">
+            <span className="admin-status-dot" data-tone="ok" aria-hidden="true" />
+            <span className="admin-mono-tag">KART LOBBY</span>
+            <h2 className="admin-card-title">Kart-only lobby</h2>
+          </div>
+          <div className="admin-card-body">
+            <p>
+              One lap · up to 80 racers. The saved course and time limit are shown below.
+            </p>
+            <p>
+              Created {new Date(snapshot.kartLobby!.createdAt).toLocaleString("en-GB")}.
+              The starting grid freezes when you start. Late arrivals watch this race;
+              create a fresh kart lobby for another race.
+            </p>
+          </div>
         </section>
       ) : null}
       <KartDrivingFeel />
@@ -358,6 +368,11 @@ export function LiveConsole() {
           <section className="admin-round" aria-label="Current question">
             <div className="admin-round-top">
               <p className="entry-eyebrow">
+                <span
+                  className="admin-status-dot"
+                  data-tone={snapshot.paused ? "warn" : playing ? "ok" : "muted"}
+                  aria-hidden="true"
+                />
                 {phaseLabel(phase)}
                 {snapshot.paused ? " · paused" : ""}
                 {snapshot.held ? " · waiting for control" : ""}
@@ -473,36 +488,61 @@ export function LiveConsole() {
           <RoomExtras />
         </div>
         <aside className="admin-live-side" aria-label="Room context">
-          <p className="entry-eyebrow">Guests join with</p>
-          <p className="admin-side-code">{snapshot.joinCode}</p>
-          <dl>
-            <div>
-              <dt>Phones connected</dt>
-              <dd>{snapshot.connections?.guests ?? "Unavailable"}</dd>
+          <div className="admin-card">
+            <div className="admin-card-header">
+              <span className="admin-status-dot" data-tone="ok" aria-hidden="true" />
+              <p className="admin-card-title">Join Code</p>
             </div>
-            <div>
-              <dt>Stage connection</dt>
-              <dd>
-                {snapshot.connections
-                  ? snapshot.connections.stage
-                    ? "Connected"
-                    : "No stage connected"
-                  : "Unavailable"}
-              </dd>
+            <div className="admin-card-body">
+              <p className="admin-side-code">{snapshot.joinCode}</p>
             </div>
-            <div>
-              <dt>Stage content</dt>
-              <dd>{snapshot.stageHidden ? "Hidden" : "Visible"}</dd>
+            <div className="admin-card-footer">
+              <a
+                className="entry-text-link"
+                href={`/host?code=${snapshot.joinCode}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open the stage ↗
+              </a>
             </div>
-          </dl>
-          <a
-            className="entry-text-link"
-            href={`/host?code=${snapshot.joinCode}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open the stage ↗
-          </a>
+          </div>
+          <div className="admin-card">
+            <div className="admin-card-header">
+              <p className="admin-card-title">Connections</p>
+            </div>
+            <div className="admin-card-body">
+              <dl>
+                <div>
+                  <dt>Phones connected</dt>
+                  <dd>
+                    <span className="admin-mono-tag">{snapshot.connections?.guests ?? "Unavailable"}</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Stage connection</dt>
+                  <dd>
+                    <span
+                      className="admin-status-dot"
+                      data-tone={snapshot.connections?.stage ? "ok" : "warn"}
+                      aria-hidden="true"
+                    />
+                    {snapshot.connections
+                      ? snapshot.connections.stage
+                        ? "Connected"
+                        : "No stage connected"
+                      : "Unavailable"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Stage content</dt>
+                  <dd>
+                    <span className="admin-mono-tag">{snapshot.stageHidden ? "Hidden" : "Visible"}</span>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
           <LinkButton variant="secondary" to="../players">
             Players ({snapshot.players.length})
           </LinkButton>
@@ -581,9 +621,9 @@ function LiveResponses({ locked }: { locked: boolean }) {
         </p>
       ) : null}
       {play?.hostResponses?.length ? (
-        <ul>
+        <ul className="admin-data-list">
           {play.hostResponses.map((row) => (
-            <li className="admin-response-row" key={row.playerId}>
+            <li className="admin-response-row admin-data-row" key={row.playerId}>
               <p>
                 <strong>{row.nickname}</strong>
                 <br />
@@ -654,9 +694,9 @@ function LiveResponses({ locked }: { locked: boolean }) {
           ))}
         </ul>
       ) : play?.hostAnswers?.length ? (
-        <ul>
+        <ul className="admin-data-list">
           {play.hostAnswers.map((row) => (
-            <li className="admin-response-row" key={row.playerId}>
+            <li className="admin-response-row admin-data-row" key={row.playerId}>
               <p>
                 <strong>{row.nickname}</strong> ·{" "}
                 {choices.find((option) => option.id === row.optionId)?.label ??

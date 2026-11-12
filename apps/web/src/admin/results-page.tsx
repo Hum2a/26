@@ -63,43 +63,58 @@ export function AdminResultsPage() {
       <CommandFeedback scope="results" />
       <EntryNotice message={result.error || message} />
       <div className="admin-report-grid">
-        <div>
-          <section className="admin-task-section">
-            <h2>
-              {snapshot.phase === "podium" ? "Final standings" : "Current scores"}
-            </h2>
-            {standings ? (
-              <StandingsList standings={standings} />
-            ) : snapshot.adminPlayers?.length ? (
-              <>
-                <p>Live totals. Final positions appear when the game finishes.</p>
-                <ul className="results-standings">
-                  {snapshot.adminPlayers.map((player) => (
-                    <li key={player.playerId}>
-                      <span>
-                        {player.nickname}
-                        {player.removed ? " · removed" : ""}
-                      </span>
-                      <strong>{player.points} points</strong>
-                    </li>
+        <div className="space-y-4">
+          <section className="admin-card">
+            <div className="admin-card-header">
+              <span
+                className="admin-status-dot"
+                data-tone={snapshot.phase === "podium" ? "ok" : "warn"}
+                aria-hidden="true"
+              />
+              <span className="admin-mono-tag">{snapshot.phase === "podium" ? "FINAL" : "LIVE"}</span>
+              <h2 className="admin-card-title">
+                {snapshot.phase === "podium" ? "Final standings" : "Current scores"}
+              </h2>
+            </div>
+            <div className="admin-card-body space-y-3">
+              {standings ? (
+                <StandingsList standings={standings} />
+              ) : snapshot.adminPlayers?.length ? (
+                <>
+                  <p>Live totals. Final positions appear when the game finishes.</p>
+                  <ul className="results-standings admin-data-list">
+                    {snapshot.adminPlayers.map((player) => (
+                      <li key={player.playerId} className="admin-data-row">
+                        <span>
+                          {player.nickname}
+                          {player.removed ? " · removed" : ""}
+                        </span>
+                        <strong className="admin-mono-tag">{player.points} points</strong>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p>No player scores are available yet.</p>
+              )}
+            </div>
+          </section>
+          <section className="admin-card">
+            <div className="admin-card-header">
+              <span className="admin-mono-tag">INSIGHTS</span>
+              <h2 className="admin-card-title">Highlights</h2>
+            </div>
+            <div className="admin-card-body">
+              {snapshot.highlights?.length ? (
+                <ul className="results-highlights admin-data-list">
+                  {snapshot.highlights.map((card) => (
+                    <li key={card.id} className="admin-data-row">{card.results}</li>
                   ))}
                 </ul>
-              </>
-            ) : (
-              <p>No player scores are available yet.</p>
-            )}
-          </section>
-          <section className="admin-task-section">
-            <h2>Highlights</h2>
-            {snapshot.highlights?.length ? (
-              <ul className="results-highlights">
-                {snapshot.highlights.map((card) => (
-                  <li key={card.id}>{card.results}</li>
-                ))}
-              </ul>
-            ) : (
-              <p>Comparison cards appear when the room has enough accepted answers.</p>
-            )}
+              ) : (
+                <p>Comparison cards appear when the room has enough accepted answers.</p>
+              )}
+            </div>
           </section>
           <FunFactReport
             cards={
@@ -109,52 +124,70 @@ export function AdminResultsPage() {
             }
           />
         </div>
-        <aside className="admin-report-aside">
-          <h2>Archive & sharing</h2>
-          <p>
-            {snapshot.phase !== "podium"
-              ? "The quiz is still running. The final archive follows the podium."
-              : snapshot.archive?.status === "completed"
-                ? "The archive export is complete."
-                : snapshot.archive?.status === "failed"
-                  ? "The archive export failed. Live final standings remain available."
-                  : "The archive export is preparing. The podium remains available."}
-          </p>
-          {snapshot.archive?.status === "failed" ? (
+        <aside className="admin-report-aside admin-card">
+          <div className="admin-card-header">
+            <span
+              className="admin-status-dot"
+              data-tone={
+                snapshot.archive?.status === "completed"
+                  ? "ok"
+                  : snapshot.archive?.status === "failed"
+                    ? "danger"
+                    : "warn"
+              }
+              aria-hidden="true"
+            />
+            <span className="admin-mono-tag">
+              ARCHIVE: {snapshot.archive?.status?.toUpperCase() ?? "STANDBY"}
+            </span>
+            <h2 className="admin-card-title">Archive & sharing</h2>
+          </div>
+          <div className="admin-card-body space-y-3">
+            <p>
+              {snapshot.phase !== "podium"
+                ? "The quiz is still running. The final archive follows the podium."
+                : snapshot.archive?.status === "completed"
+                  ? "The archive export is complete."
+                  : snapshot.archive?.status === "failed"
+                    ? "The archive export failed. Live final standings remain available."
+                    : "The archive export is preparing. The podium remains available."}
+            </p>
+            {snapshot.archive?.status === "failed" ? (
+              <Button
+                variant="secondary"
+                disabled={locked}
+                onClick={() => setReview(true)}
+              >
+                Retry archive export
+              </Button>
+            ) : null}
+            <Link
+              className="entry-text-link"
+              to={`/r/${snapshot.gameId}`}
+              target="_blank"
+            >
+              Open public results ↗
+            </Link>
+            <p>
+              {result.data?.state === "ready"
+                ? "The public report is ready."
+                : "The public report may still be preparing. Refresh to check again."}
+            </p>
             <Button
               variant="secondary"
-              disabled={locked}
-              onClick={() => setReview(true)}
+              disabled={locked || downloading}
+              onClick={() => void download()}
             >
-              Retry archive export
+              {downloading ? "Downloading…" : "Download score summary"}
             </Button>
-          ) : null}
-          <Link
-            className="entry-text-link"
-            to={`/r/${snapshot.gameId}`}
-            target="_blank"
-          >
-            Open public results ↗
-          </Link>
-          <p>
-            {result.data?.state === "ready"
-              ? "The public report is ready."
-              : "The public report may still be preparing. Refresh to check again."}
-          </p>
-          <Button
-            variant="secondary"
-            disabled={locked || downloading}
-            onClick={() => void download()}
-          >
-            {downloading ? "Downloading…" : "Download score summary"}
-          </Button>
-          <Link className="entry-text-link" to="../health">
-            Email delivery & export health →
-          </Link>
-          <p>
-            Personal results and delivery information stay separate from the public
-            report.
-          </p>
+            <Link className="entry-text-link" to="../health">
+              Email delivery & export health →
+            </Link>
+            <p>
+              Personal results and delivery information stay separate from the public
+              report.
+            </p>
+          </div>
         </aside>
       </div>
       <ConfirmDialog
