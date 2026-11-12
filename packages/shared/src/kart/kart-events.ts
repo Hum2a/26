@@ -4,6 +4,7 @@ import { kartItemSchema, type KartPowers } from "./kart-powers.ts";
 import {
   kartProjectilePoseSchema,
   projectKartProjectiles,
+  recentKartHits,
   type KartProjectileWorld,
 } from "./kart-projectiles.ts";
 import { allowedKartItems, type KartItemRules } from "./kart-item-rules.ts";
@@ -13,6 +14,19 @@ import {
   kartBounceTuning,
   type KartHandling,
 } from "./kart-handling.ts";
+
+/** A landed item in the public hit feed (who hit whom, with what). */
+export const kartHitSchema = z
+  .object({
+    eventId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+    atMs: z.number().int().min(0).max(180000),
+    kind: z.enum(["hit", "shield"]),
+    target: z.string().min(1).max(120),
+    by: z.string().min(1).max(120).optional(),
+    item: kartItemSchema.optional(),
+  })
+  .strict();
+export type KartHit = z.infer<typeof kartHitSchema>;
 
 const finishEventsSchema = z
   .array(
@@ -65,6 +79,7 @@ export const kartPresentationV3Schema = z
         spawning: z.boolean(),
         heldItem: kartItemSchema.nullable(),
         projectiles: z.array(kartProjectilePoseSchema).max(64),
+        hits: z.array(kartHitSchema).max(6).optional(),
       })
       .strict(),
   })
@@ -169,6 +184,12 @@ export function kartItemsPresentation(
           ? original.items.projectiles
           : race.itemsWorld
             ? projectKartProjectiles(race.itemsWorld)
+            : [],
+      hits:
+        original?.version === 3 && original.items.hits
+          ? original.items.hits
+          : race.itemsWorld
+            ? recentKartHits(race.itemsWorld)
             : [],
     },
   };

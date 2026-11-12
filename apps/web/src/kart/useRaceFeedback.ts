@@ -8,8 +8,13 @@ import {
   type RaceAudio,
 } from "./race-audio";
 import { ordinal, selfCues, type SelfCue } from "./race-callouts";
+import { selfHitCues } from "./hit-feed";
 
-export type RaceBanner = { id: string; text: string; tone: "lap" | "final" | "place" };
+export type RaceBanner = {
+  id: string;
+  text: string;
+  tone: "lap" | "final" | "place" | "hit" | "landed";
+};
 
 /** Roughly the circuit kart's top speed in metres a second, for the engine note. */
 const topSpeed = 30;
@@ -39,8 +44,9 @@ function bannerFor(cue: SelfCue, at: number): RaceBanner | undefined {
 
 /**
  * This phone's race moments: a short banner for laps, the final lap and
- * place gains, plus optional sound and buzzes. Sound is off until the guest
- * turns it on; buzzes follow the same switch.
+ * place gains, who hit you and who you hit, plus optional sound and buzzes.
+ * Sound is off until the guest turns it on; buzzes are on by default (phones
+ * without vibration simply ignore them).
  */
 export function useRaceFeedback(
   race: KartRaceView | undefined,
@@ -52,6 +58,7 @@ export function useRaceFeedback(
   const [banner, setBanner] = useState<RaceBanner>();
   const previous = useRef<KartRaceView | undefined>(undefined);
   const wasOpen = useRef(false);
+  const seenHits = useRef(new Set<number>());
   useEffect(() => () => audio.dispose(), [audio]);
   // A remembered choice can only start audio inside a tap, so re-arm it on the first one.
   useEffect(() => {
@@ -84,7 +91,7 @@ export function useRaceFeedback(
     const self = race.participants.find((d) => d.playerId === race.selfPlayerId);
     const racing = Boolean(self && self.status === "RACING" && !race.ended);
     audio.engine((self?.speed ?? 0) / topSpeed, open && racing);
-    const feedback = soundOn;
+    const feedback = true;
     if (open && !wasOpen.current && racing && race.elapsedMs < 3000) {
       audio.cue("go");
       if (feedback) buzz(80);
@@ -99,6 +106,22 @@ export function useRaceFeedback(
       was?.slipstream !== "active"
     )
       audio.cue("slipstream");
+    if (before?.raceId !== race.raceId) seenHits.current.clear();
+    for (const hit of selfHitCues(race, seenHits.current)) {
+      if (!open) continue;
+      setBanner({
+        id: `hit-${hit.eventId}`,
+        text: hit.text,
+        tone: hit.kind === "landed" ? "landed" : hit.kind === "hit" ? "hit" : "lap",
+      });
+      if (hit.kind === "hit") {
+        audio.cue("final-lap");
+        buzz([70, 40, 140]);
+      } else if (hit.kind === "landed") {
+        audio.cue("place-up");
+        buzz([25, 30, 25]);
+      } else buzz(30);
+    }
     for (const cue of selfCues(before, race)) {
       const next = bannerFor(cue, race.elapsedMs);
       if (next) setBanner(next);

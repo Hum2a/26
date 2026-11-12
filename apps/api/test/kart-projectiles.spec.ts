@@ -14,6 +14,8 @@ import {
   restoreKartProjectiles,
   projectKartProjectiles,
   kartProjectilePoseSchema,
+  recentKartHits,
+  kartHitFeedMs,
 } from "@26/shared";
 const empty: KartProjectileContext = { trackId: "party-ring-v1", walls: () => [] };
 function actor(playerId = "a", x = 0, z = 0, number = 1): KartProjectileActor {
@@ -302,4 +304,26 @@ it("centralises short damage immunity without altering original powers by defaul
   expect(applyKartItemHit(hit.powers, 1300).hit).toBe(true);
   expect(original.turboUntil).toBe(4000);
   expect(original.damageUntil).toBeUndefined();
+});
+
+it("records who fired a landed item and keeps a short public hit feed", () => {
+  const actors = [actor(), actor("b", 6, 0, 2)],
+    world = launch("tennis", actors);
+  const next = advance(world, actors, 200);
+  const hit = next.hits.find((row) => row.playerId === "b");
+  expect(hit).toMatchObject({ kind: "hit", by: "a", item: "tennis" });
+  expect(recentKartHits(next.world)).toEqual([
+    {
+      eventId: hit!.eventId,
+      atMs: hit!.atMs,
+      kind: "hit",
+      target: "b",
+      by: "a",
+      item: "tennis",
+    },
+  ]);
+  // The feed forgets a hit after a few seconds of race time.
+  expect(
+    recentKartHits({ ...next.world, elapsedMs: hit!.atMs + kartHitFeedMs + 1 }),
+  ).toEqual([]);
 });

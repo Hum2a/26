@@ -77,6 +77,8 @@ export const kartProjectileEventSchema = z
     projectileId: z.union([projectileIdSchema, z.literal("all")]),
     playerId: actorIdSchema.optional(),
     item: kartItemSchema.optional(),
+    /** Who fired the item that landed (hit and shield events). */
+    by: actorIdSchema.optional(),
   })
   .strict();
 export type KartProjectileEvent = z.infer<typeof kartProjectileEventSchema>;
@@ -364,6 +366,8 @@ export function stepKartProjectiles(
         atMs: toMs,
         projectileId: item.id,
         playerId: actor.playerId,
+        item: item.kind,
+        by: item.owner,
       };
       hits.push(record(next, event));
     }
@@ -462,4 +466,26 @@ export function stepKartProjectiles(
     return true;
   });
   return { world: next, actors: updated, hits };
+}
+
+/** How long a landed item stays in the public hit feed. */
+export const kartHitFeedMs = 3000;
+/** Recent landed items for the hit feed: newest last, at most six. */
+export function recentKartHits(world: KartProjectileWorld) {
+  return world.history
+    .filter(
+      (event) =>
+        (event.kind === "hit" || event.kind === "shield") &&
+        event.playerId !== undefined &&
+        event.atMs >= world.elapsedMs - kartHitFeedMs,
+    )
+    .slice(-6)
+    .map((event) => ({
+      eventId: event.eventId,
+      atMs: event.atMs,
+      kind: event.kind as "hit" | "shield",
+      target: event.playerId!,
+      ...(event.by ? { by: event.by } : {}),
+      ...(event.item ? { item: event.item } : {}),
+    }));
 }

@@ -182,3 +182,35 @@
     transition-duration: 0.1s;
   }
 }
+
+/* Item hits: being hit inverts the banner and gives it a short shake; landing
+   your own item uses the highlight. Reduced motion keeps the colour only. */
+.kart-race-banner[data-tone="hit"] {
+  background: var(--foreground);
+  color: var(--background);
+  animation: kart-hit-shake 360ms var(--ease-party, ease-out) 1;
+}
+.kart-race-banner[data-tone="landed"] {
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+}
+@keyframes kart-hit-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px) rotate(-2deg);
+  }
+  50% {
+    transform: translateX(6px) rotate(2deg);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kart-race-banner[data-tone="hit"] {
+    animation: none;
+  }
+}

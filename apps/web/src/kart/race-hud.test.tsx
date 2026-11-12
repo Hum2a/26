@@ -89,7 +89,7 @@ it("hides the lap counter in a one-lap race and shows a charging draft", () => {
   expect(screen.getByText("Drafting…")).toBeTruthy();
 });
 
-it("turns race moments into banners, sound and buzzes only when sound is on", () => {
+it("turns race moments into banners and buzzes, with sound only when it is on", () => {
   const audio = fakeAudio();
   const start = view([
     { id: "a", place: 1 },
@@ -98,7 +98,7 @@ it("turns race moments into banners, sound and buzzes only when sound is on", ()
   const hook = renderHook(({ race }) => useRaceFeedback(race, { open: true, audio }), {
     initialProps: { race: start },
   });
-  // Sound off: banners still show, but nothing buzzes.
+  // Sound off: banners still show and the phone still buzzes.
   hook.rerender({
     race: view([
       { id: "a", place: 2 },
@@ -106,7 +106,7 @@ it("turns race moments into banners, sound and buzzes only when sound is on", ()
     ]),
   });
   expect(hook.result.current.banner?.text).toBe("Up to 1st!");
-  expect(buzz).not.toHaveBeenCalled();
+  expect(buzz).toHaveBeenCalledWith(30);
   act(() => hook.result.current.toggleSound());
   expect(hook.result.current.soundOn).toBe(true);
   expect(localStorage.getItem("26.kart.race-sound")).toBe("on");
