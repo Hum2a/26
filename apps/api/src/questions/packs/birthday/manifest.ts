@@ -10,6 +10,7 @@ import { groupChatFigurine } from "./group-chat-figurine.ts";
 import { cursedSearchHistory } from "./cursed-search-history.ts";
 import { propertyPriceRoulette } from "./property-price-roulette.ts";
 import { kartSprint } from "./kart-sprint.ts";
+import { kartParkGrandPrix } from "./kart-park-grand-prix.ts";
 import type { QuestionPack } from "../../definition.ts";
 import { carName } from "./car-name.ts";
 import { favouriteGenre } from "./favourite-genre.ts";
@@ -149,6 +150,7 @@ export const birthdayPack: QuestionPack = {
     propertyPriceRoulette,
 
     kartSprint,
+    kartParkGrandPrix,
     favouriteGenre,
     leviticus187,
     carName,
