@@ -1,6 +1,11 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { clearRoomMediaCache } from "../media/media-cache";
 import { isScreenTroll, ScreenTroll } from "./screen-trolls";
+
+afterEach(() => {
+  clearRoomMediaCache();
+});
 
 describe("screen trolls", () => {
   it("knows which kinds the phone draws", () => {
@@ -193,5 +198,39 @@ describe("screen trolls", () => {
     expect(document.documentElement.classList.contains("troll-page-australia")).toBe(
       false,
     );
+  });
+
+  it("shares a single room-cached blob URL across all 28 ScreenInvasion copies", async () => {
+    clearRoomMediaCache();
+    const createObjectURL = vi.fn(() => "blob:troll-face-1");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      blob: async () => new Blob(["face"], { type: "image/jpeg" }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    try {
+      render(
+        <ScreenTroll
+          kind="invasion"
+          label="Your face, everywhere"
+          escape="Dismiss"
+          from={{ nickname: "Bilal", faceSrc: "/api/rooms/ROOM1/media/face-1" }}
+        />,
+      );
+      await waitFor(() => {
+        const faces = document.querySelectorAll("img.troll-invasion-face");
+        expect(faces).toHaveLength(28);
+        for (const face of faces) {
+          expect(face.getAttribute("src")).toBe("blob:troll-face-1");
+        }
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      clearRoomMediaCache();
+      vi.unstubAllGlobals();
+    }
   });
 });

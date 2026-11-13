@@ -6272,3 +6272,38 @@ Redesigned the internal page layout and presentation across all global and room-
 ### Exact next stage
 
 Review the redesigned admin interface in `/admin` and merge `feature/admin-pages-dashboard-redesign` into `master`. Do not deploy without explicit instruction.
+
+## 12 November 2026 — Performance, memory-leak remediation, and Cloudflare plan audit
+
+Status: complete locally. Not deployed.
+
+- **Audit & plan assessment (`docs/performance-audit.md`, `docs/README.md`)**: documented all memory-leak and 82-socket bottlenecks plus Cloudflare Free vs Paid quotas (Workers Paid \$5/month + Images Paid \$5/month recommended; keep DNS Zone on Free).
+- **WebSocket, hibernation & client engines**:
+  - `apps/web/src/live/room-socket.ts` & `apps/web/src/device/connection-log.ts`: delete rejected (`accepted: false`) entries from `tracked` on `ack`, purge timers/queues on `clearHeartbeat()`/`stop()`/`close()`, throttle `time:` probes (`timeProbeRefreshMs = 4 * 60_000`, skipped for bots) while keeping 20 s `"ping"` pure, and gate 60 s telemetry summaries via `hasUrgentConnectionDelta()` / `maybeSendPeriodicConnection()`.
+  - `apps/web/src/chess/stockfish-worker.ts`: release handshake worker on `readyok`, terminate errored/timed-out workers and finished search workers after `bestmove`, and clear `ready` in `terminate()`.
+  - `apps/web/src/media/voice-take.tsx` & `apps/web/src/media/wav.ts`: unmount guard, `recording` lock, and `URL.revokeObjectURL` cleanup; `try/finally` `AudioContext`/node/track teardown, timer clear, and pre-allocated `Float32Array` capture buffer.
+  - `apps/web/src/kart/KartCanvas.tsx` & `apps/web/src/kart/circuit.ts`: `renderer.forceContextLoss()` on cleanup, `disposeLabel()` pruning/disposing departed driver sprites/materials/textures, and scratch `present` `Set` reuse.
+- **Durable Object & SQLite fan-out**:
+  - `apps/api/src/room/schema.ts`: versioned fast-path check in `ensurePartySchema()` / `ensure()`.
+  - `apps/api/src/room/party-room.ts`, `names.ts`, `questions/multiple-choice.ts`, `wall/snapshot.ts`, `troll/engine.ts`, `questions/kart/kart.ts`: batched `standings()` and nickname lookups; hoisted room-wide snapshot work per broadcast; shared serialized field JSON cache via `WeakMap`; 1st-guest schema validation reuse; bounded/evicted `lastViews` and `destroyRoom()` teardown; pre-indexed kart racers (`KartFrameIndex` / `buildKartFrameIndex()`).
+- **Client room media cache & compositor/UI**:
+  - Added bounded (`MEDIA_CACHE_MAX_ENTRIES = 96`) in-memory room `blob:` cache (`apps/web/src/media/media-cache.ts`) preserving server `Cache-Control: private, no-store` headers and clearing stale rooms on `RosterProvider`/`StageWall` `gameId` transitions; wired `StageWall` (`Preload`, `ReelPhoto`), `FramedPhoto`, `TrayPhoto` (`guest-wall.tsx`), `PlayerAvatar`, `ScreenInvasion` (`classic-trolls.tsx`), `StagePhoto` (`stage-presentation.tsx`), `CuePhoto` (`stage-sound.tsx`), `DriverBadge`, `KartMap` (`MapFace`), and `KartCanvas`.
+  - Replaced `filter: blur(60px)` on `.liquid-blob` (`glass.css`) with multi-stop radial gradients and disabled per-pill `backdrop-filter` on `.name-bubble` (`name-cloud.css`); replaced `RanksTab` render-path `JSON.stringify`/`sessionStorage.setItem` and `O(N²)` scans with structural equality helpers, `Map` lookup, and `useEffect` storage writes.
+- **Tests added/updated**: `apps/web/src/media/media-cache.test.ts`, `apps/web/src/media/voice-take.test.tsx`, `apps/web/src/troll/screen-trolls.test.tsx`, `apps/web/src/guest/ranks-tab.test.tsx`, `apps/web/src/kart/circuit.test.ts`, `apps/web/src/live/room-socket.test.ts`, `apps/web/src/chess/stockfish-worker-isolation.test.ts`.
+
+### Commands and results
+
+- `npm run typecheck` — passed (0 errors)
+- `npm run lint` — passed (0 errors, 27 pre-existing `react-refresh/only-export-components` warnings; `Structure check passed.`)
+- `npm run test:unit` (`@26/web`) — 191 test files passed, 850 tests passed
+- `npm run build` — passed (secrets scan clean across 903 files; `entryJsGzipBytes: 217158 / 260000`, `entryCssGzipBytes: 20687 / 28000`, `totalJsGzipBytes: 1397454 / 1650000`, `largestJsGzipBytes: 496695 / 600000`; `content:check` passed for demo and birthday-draft)
+- `npm run test -w @26/api` (run prior to final client media-consumer wiring; no API files changed afterwards) — 131 / 133 test files passed, 764 / 766 tests passed; 2 pre-existing unrelated failures in untouched pack/catalogue tests (`test/admin-rooms-auth.spec.ts:430` missing `"chess"` from `chess-battle`, `test/party-concepts.spec.ts:231` incomplete `whos-that-pokemon`)
+
+### Manual verification / unresolved issues
+
+- Real-device projector + multi-phone GPU/WebGL memory profile over an extended rehearsal has not yet been measured interactively.
+- Pre-existing incomplete draft questions in `birthdayPack.catalogue` (`tribunal-reddit`, `council-ferrier-sector`, `nextdoor-paranoia`, `property-price-roulette`, `whos-that-pokemon`) and the 2 pack tests above remain unresolved.
+
+### Exact next stage
+
+Before dress rehearsal: upgrade Cloudflare to Workers Paid (\$5/mo) and Images Paid (\$5/mo), finish the incomplete draft birthday-pack questions, and rehearse live on real devices. Do not deploy without explicit instruction.
