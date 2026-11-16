@@ -40,11 +40,17 @@ describe("controller viewport", () => {
   it("covers the screen, presses in, and lifts the dock above the keyboard", () => {
     expect(indexHtml).toContain("viewport-fit=cover");
     expect(indexHtml).toContain("interactive-widget=resizes-content");
-    expect(indexHtml).toContain('name="theme-color"');
+    expect(indexHtml).toContain('name="color-scheme" content="dark"');
+    expect(indexHtml).toContain('name="supported-color-schemes" content="dark"');
+    expect(indexHtml).toContain('name="theme-color" content="#14110e"');
+    expect(indexHtml).toContain('media="(prefers-color-scheme: light)"');
+    expect(indexHtml).toContain('media="(prefers-color-scheme: dark)"');
     expect(indexHtml).toContain('name="apple-mobile-web-app-capable"');
     expect(indexCss).toContain("scale(0.98)");
     expect(indexCss).not.toContain("transition: none");
     expect(manifest).toContain('"display": "standalone"');
+    expect(manifest).toContain('"background_color": "#14110e"');
+    expect(manifest).toContain('"theme_color": "#14110e"');
     expect(manifest).not.toContain("serviceWorker");
 
     const viewport = {

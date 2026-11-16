@@ -6332,3 +6332,29 @@ Before dress rehearsal: upgrade Cloudflare to Workers Paid (\$5/mo) and Images P
 **Unverified:** real phones (tags, banners, buzzes, roulette, sound prompt), projector audio in a room, the 80-racer load with opponents on.
 
 **Next:** two-phone race on staging with item rules v2; decide whether to swap `kart-park-grand-prix` into `order`.
+
+## 16 November 2026 — Browser chrome matches the party theme
+
+Status: complete locally on `master`. Not deployed.
+
+Safari applies the `theme-color` tag that matches the system scheme, and Chrome applies the unqualified tag. A single tag left one browser on the system colour while the page used the party background. The head now sets `color-scheme` to the theme's own scheme and writes the theme background into the unqualified, light, and dark `theme-color` tags. Choosing a theme updates all three. The web app manifest splash colours stay `#14110e`, the 26 basic background.
+
+### Files
+
+- `apps/web/index.html`, `apps/web/vite.config.ts`, `apps/web/src/theme/themes.ts`, `apps/web/src/theme/install.ts`
+- `apps/web/src/theme/install.test.ts`, `apps/web/src/controller/viewport.test.tsx`
+
+### Commands and results
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 29 existing react-refresh warnings; structure check passed
+- `npx vitest run src/theme/install.test.ts src/theme/skins.test.ts src/controller/viewport.test.tsx` (in `apps/web`) — 3 files, 8 passed
+- `npm run build` — passed (secrets scan clean across 906 files; bundle within gzip budgets; content preflight passed)
+
+### Manual verification
+
+Local `http://localhost:5173/`: served HTML has `color-scheme` `dark` and `#14110e` on all three `theme-color` tags. `?theme=26-basic` paints `rgb(20, 17, 14)` with those tags. `?theme=confetti-department` paints `rgb(255, 248, 240)` (`#fff8f0`) and switches `color-scheme` to `light` on every tag. Not checked on a physical iPhone or Android toolbar.
+
+### Exact next stage
+
+Deploy when asked. Do not start the next prompt automatically.
