@@ -217,8 +217,8 @@ Each step needs the owner's go-ahead; nothing here has been run.
 
 1. Review and merge the `event-readiness` pull request into `master`.
 2. From a clean checkout of `master`: `npm install`, then `npm run setup`.
-3. Staging: `npm run deploy:staging`. It runs typecheck, content, unit, lint and
-   release checks before deploying. No Neon migration is needed: the new columns
+3. Staging: `npm run deploy:staging`. It builds and deploys. (Use
+   `npm run deploy:staging:full` to run the full test suite and migrations first). No Neon migration is needed: the new columns
    are room (Durable Object) columns, added when a room starts.
 4. Run the rehearsal below on staging.
 5. Production, before the freeze (20 November 00:00 to 22 November 12:00, London):

@@ -6,7 +6,14 @@ import {
   type WallReaction,
   type WallSnapshot,
 } from "@26/shared";
-import { wallCooldownMs } from "../room/limits.ts";
+import {
+  wallClosedMessage,
+  wallCooldownMessage,
+  wallCooldownMs,
+  wallMutedMessage,
+  wallWaitingMessage,
+  wallWaitingPerPlayer,
+} from "../room/limits.ts";
 import { readWallSettings, wallSendBlock } from "./store.ts";
 import { createSqlStore } from "../room/sql-store.ts";
 
@@ -38,12 +45,26 @@ type Photo = {
  * their owner. Captions are left off the stage and other guests' view when
  * the host turns captions off.
  */
-export function wallSnapshot(
-  sql: SqlStorage,
-  audience: "guest" | "stage" | "control",
-  selfPlayerId: string | undefined,
-  now: number,
-): WallSnapshot {
+const EMPTY_MINE: NonNullable<WallSnapshot["mine"]> = Object.freeze(
+  [],
+) as unknown as NonNullable<WallSnapshot["mine"]>;
+const EMPTY_ROWS: Row[] = [];
+
+export type WallSnapshotShared = {
+  settings: ReturnType<typeof readWallSettings>;
+  mutedSet: Set<string>;
+  rows: Row[];
+  rowsByPlayer: Map<string, Row[]>;
+  reactions: Map<string, Map<WallReaction, number>>;
+  orderPos: Map<string, number>;
+  waiting: number;
+  showing: Row | undefined;
+  podium: boolean;
+  publicBase: WallSnapshot | null;
+  guestEmptyWall: WallSnapshot | null;
+};
+
+export function prepareWallShared(sql: SqlStorage): WallSnapshotShared {
   const settings = readWallSettings(sql);
   const rows = sql
     .exec<Row>(
@@ -57,11 +78,85 @@ export function wallSnapshot(
     .toArray();
   const reactions = readReactions(sql);
   const order = queueOrder(rows);
+  const orderPos = new Map<string, number>();
+  for (let i = 0; i < order.length; i++) {
+    orderPos.set(order[i]!, i + 1);
+  }
+  const rowsByPlayer = new Map<string, Row[]>();
+  let showing: Row | undefined;
+  for (const row of rows) {
+    if (row.status === "showing" && !showing) showing = row;
+    let list = rowsByPlayer.get(row.player_id);
+    if (!list) {
+      list = [];
+      rowsByPlayer.set(row.player_id, list);
+    }
+    list.push(row);
+  }
+  const podium = createSqlStore(sql).readRoom().phase === "podium";
+  return {
+    settings,
+    mutedSet: new Set(settings.muted),
+    rows,
+    rowsByPlayer,
+    reactions,
+    orderPos,
+    waiting: order.length,
+    showing,
+    podium,
+    publicBase: null,
+    guestEmptyWall: null,
+  };
+}
+
+function sendBlockFromShared(
+  settings: WallSnapshotShared["settings"],
+  mutedSet: Set<string>,
+  mine: Row[],
+  playerId: string,
+  now: number,
+): string | null {
+  if (!settings.enabled) return wallClosedMessage;
+  if (mutedSet.has(playerId)) return wallMutedMessage;
+  let last = -Infinity;
+  let waiting = 0;
+  for (const row of mine) {
+    if (row.created_at > last) last = row.created_at;
+    if (row.status === "pending" || row.status === "queued") waiting += 1;
+  }
+  if (waiting >= wallWaitingPerPlayer) return wallWaitingMessage;
+  if (last !== -Infinity && now - last < wallCooldownMs) return wallCooldownMessage;
+  return null;
+}
+
+export function wallSnapshot(
+  sql: SqlStorage,
+  audience: "guest" | "stage" | "control",
+  selfPlayerId: string | undefined,
+  now: number,
+  shared?: WallSnapshotShared,
+): WallSnapshot {
+  const settings = shared ? shared.settings : readWallSettings(sql);
+  const rows = shared
+    ? shared.rows
+    : sql
+        .exec<Row>(
+          `SELECT wall_post.post_id, wall_post.media_id, wall_post.player_id, player.nickname,
+                  wall_post.caption, wall_post.frame, wall_post.status, wall_post.queued_at,
+                  wall_post.shown_at, wall_post.until_at, wall_post.created_at,
+                  wall_post.display_failed_at
+           FROM wall_post JOIN player ON player.player_id = wall_post.player_id
+           ORDER BY wall_post.created_at`,
+        )
+        .toArray();
+  const reactions = shared ? shared.reactions : readReactions(sql);
+  const order = shared ? null : queueOrder(rows);
   const position = (postId: string) => {
-    const index = order.indexOf(postId);
+    if (shared) return shared.orderPos.get(postId) ?? null;
+    const index = order!.indexOf(postId);
     return index === -1 ? null : index + 1;
   };
-  const showing = rows.find((row) => row.status === "showing");
+  const showing = shared ? shared.showing : rows.find((row) => row.status === "showing");
   const photo = (row: Row, withCaption: boolean): Photo => ({
     postId: row.post_id,
     mediaId: row.media_id,
@@ -70,22 +165,45 @@ export function wallSnapshot(
     frame: wallFrameSchema.catch("polaroid").parse(row.frame),
   });
   const publicCaptions = settings.captions || audience === "control";
-  const base: WallSnapshot = {
-    enabled: settings.enabled,
-    placement: settings.placement,
-    now: showing
-      ? {
-          ...photo(showing, publicCaptions || showing.player_id === selfPlayerId),
-          untilAt: showing.until_at ?? now,
-          reactions: reactionList(reactions.get(showing.post_id)),
-        }
-      : null,
-    waiting: order.length,
-  };
+  const isOwnerCaption = Boolean(showing && !publicCaptions && showing.player_id === selfPlayerId);
+  const waitingCount = shared ? shared.waiting : order!.length;
+  let base: WallSnapshot;
+  if (shared && !isOwnerCaption && audience !== "control") {
+    shared.publicBase ??= {
+      enabled: settings.enabled,
+      placement: settings.placement,
+      now: showing
+        ? {
+            ...photo(showing, publicCaptions),
+            untilAt: showing.until_at ?? now,
+            reactions: reactionList(reactions.get(showing.post_id)),
+          }
+        : null,
+      waiting: waitingCount,
+    };
+    base = shared.publicBase;
+  } else {
+    base = {
+      enabled: settings.enabled,
+      placement: settings.placement,
+      now: showing
+        ? {
+            ...photo(showing, publicCaptions || showing.player_id === selfPlayerId),
+            untilAt: showing.until_at ?? now,
+            reactions: reactionList(reactions.get(showing.post_id)),
+          }
+        : null,
+      waiting: waitingCount,
+    };
+  }
   if (audience === "stage") {
-    const nextId = order[0];
-    const next = nextId ? rows.find((row) => row.post_id === nextId) : undefined;
-    const podium = createSqlStore(sql).readRoom().phase === "podium";
+    const next = shared
+      ? rows.find((row) => shared.orderPos.get(row.post_id) === 1)
+      : (() => {
+          const nextId = order![0];
+          return nextId ? rows.find((row) => row.post_id === nextId) : undefined;
+        })();
+    const podium = shared ? shared.podium : createSqlStore(sql).readRoom().phase === "podium";
     const reel = podium
       ? readReel(sql).map((row) => ({
           mediaId: row.media_id,
@@ -103,7 +221,21 @@ export function wallSnapshot(
     if (!selfPlayerId) {
       return base;
     }
-    const mine = rows.filter((row) => row.player_id === selfPlayerId);
+    const mine: Row[] = shared
+      ? (shared.rowsByPlayer.get(selfPlayerId) ?? EMPTY_ROWS)
+      : rows.filter((row) => row.player_id === selfPlayerId);
+    const blocked = shared
+      ? sendBlockFromShared(settings, shared.mutedSet, mine, selfPlayerId, now)
+      : wallSendBlock(sql, selfPlayerId, now);
+    if (shared && mine.length === 0 && blocked === null && !isOwnerCaption) {
+      shared.guestEmptyWall ??= {
+        ...base,
+        blocked: null,
+        cooldownUntil: null,
+        mine: EMPTY_MINE,
+      };
+      return shared.guestEmptyWall;
+    }
     const last = mine.reduce(
       (latest, row) => Math.max(latest, row.created_at),
       -Infinity,
@@ -111,7 +243,7 @@ export function wallSnapshot(
     const cooldownUntil = last + wallCooldownMs > now ? last + wallCooldownMs : null;
     return {
       ...base,
-      blocked: wallSendBlock(sql, selfPlayerId, now),
+      blocked,
       cooldownUntil,
       mine: mine.slice(-30).map((row) => ({
         postId: row.post_id,

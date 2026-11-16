@@ -202,314 +202,345 @@ export function DeveloperPage() {
       {rehearsal ? (
         <PhoneLauncher gameId={snapshot.gameId} joinCode={snapshot.joinCode} />
       ) : null}
-      <section className="skin-panel p-4 space-y-3" aria-label="Bot population">
-        <h2>Build up the room</h2>
-        <p>
-          {count} bots · {snapshot.players.length - count} other players · 100 total
-          places
-        </p>
-        <p>
-          Each preset sets the total bot count. Existing bots are kept when scaling up.
-          Removing bots keeps their accepted actions and rehearsal history.
-        </p>
-        <div className="admin-actions">
-          {[10, 25, 50, 75, 100].map((n) => (
+      <section className="admin-card" aria-label="Bot population">
+        <div className="admin-card-header">
+          <span className="admin-status-dot" data-tone={count > 0 ? "ok" : "muted"} aria-hidden="true" />
+          <span className="admin-mono-tag">{count} BOTS ACTIVE</span>
+          <h2 className="admin-card-title">Build up the room</h2>
+        </div>
+        <div className="admin-card-body space-y-3">
+          <p>
+            {count} bots · {snapshot.players.length - count} other players · 100 total
+            places
+          </p>
+          <p>
+            Each preset sets the total bot count. Existing bots are kept when scaling up.
+            Removing bots keeps their accepted actions and rehearsal history.
+          </p>
+          <div className="admin-actions">
+            {[10, 25, 50, 75, 100].map((n) => (
+              <Button
+                key={n}
+                variant="secondary"
+                disabled={locked || ended || snapshot.players.length - count + n > 100}
+                onClick={() => setCount(n)}
+              >
+                Set {n} bots
+              </Button>
+            ))}
+          </div>
+          <form
+            className="admin-actions"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setCount(target);
+            }}
+          >
+            <TextField
+              label="Bot count"
+              hint="A total from 0 to 100, leaving space for any real guests."
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              value={Number.isNaN(target) ? "" : target}
+              onChange={(event) => setTarget(event.target.valueAsNumber)}
+            />
             <Button
-              key={n}
+              type="submit"
+              disabled={
+                locked ||
+                ended ||
+                !Number.isInteger(target) ||
+                target < 0 ||
+                target > 100 ||
+                snapshot.players.length - count + target > 100
+              }
+            >
+              Apply bot count
+            </Button>
+            <Button
               variant="secondary"
-              disabled={locked || ended || snapshot.players.length - count + n > 100}
-              onClick={() => setCount(n)}
+              disabled={locked || count === 0}
+              onClick={() => setCount(0)}
             >
-              Set {n} bots
+              Remove all bots
             </Button>
-          ))}
+          </form>
         </div>
-        <form
-          className="admin-actions"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setCount(target);
-          }}
-        >
-          <TextField
-            label="Bot count"
-            hint="A total from 0 to 100, leaving space for any real guests."
-            type="number"
-            min={0}
-            max={100}
-            step={1}
-            value={Number.isNaN(target) ? "" : target}
-            onChange={(event) => setTarget(event.target.valueAsNumber)}
+      </section>
+      <section className="admin-card" aria-label="Bot behaviour">
+        <div className="admin-card-header">
+          <span
+            className="admin-status-dot"
+            data-tone={settings.auto ? "ok" : "muted"}
+            aria-hidden="true"
           />
-          <Button
-            type="submit"
-            disabled={
-              locked ||
-              ended ||
-              !Number.isInteger(target) ||
-              target < 0 ||
-              target > 100 ||
-              snapshot.players.length - count + target > 100
-            }
-          >
-            Apply bot count
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={locked || count === 0}
-            onClick={() => setCount(0)}
-          >
-            Remove all bots
-          </Button>
-        </form>
-      </section>
-      <section className="skin-panel p-4 space-y-3" aria-label="Bot behaviour">
-        <h2>Choose the traffic</h2>
-        <p>
-          Automatic play starts off. Bots use only the public question and make varied
-          choices; typed answers are labelled samples and Wordle tries ordinary words.
-          Late entrants obey the same ballot and race eligibility rules as guests.
-        </p>
-        <div className="admin-actions">
-          <Button
-            aria-pressed={settings.auto}
-            onClick={() => setSettings({ ...settings, auto: !settings.auto })}
-          >
-            {settings.auto ? "Pause bot answers" : "Enable automatic answers"}
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={
-              !canRun || report.connected === 0 || snapshot.paused || snapshot.held
-            }
-            onClick={() => fleet.current?.burst()}
-          >
-            Send answer burst
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setError("");
-              setRunning(!running);
-            }}
-          >
-            {running ? "Disconnect bots" : "Connect bots"}
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={!canRun || !count}
-            onClick={() => {
-              setError("");
-              setAttempt((n) => n + 1);
-            }}
-          >
-            Reconnect all bots
-          </Button>
+          <span className="admin-mono-tag">{settings.auto ? "AUTO-PILOT ACTIVE" : "MANUAL MODE"}</span>
+          <h2 className="admin-card-title">Choose the traffic</h2>
         </div>
-        <div className="admin-actions">
-          <label>
-            Response pace{" "}
-            <select
-              value={settings.delayMs}
-              onChange={(event) =>
-                setSettings({ ...settings, delayMs: Number(event.target.value) })
-              }
-            >
-              <option value={0}>Immediate burst</option>
-              <option value={1000}>Varied: 1–2 seconds</option>
-              <option value={4000}>Varied: 4–8 seconds</option>
-            </select>
-          </label>
-          <label>
-            Participation{" "}
-            <select
-              value={settings.participation}
-              onChange={(event) =>
-                setSettings({ ...settings, participation: Number(event.target.value) })
-              }
-            >
-              {[25, 50, 75, 100].map((n) => (
-                <option key={n} value={n}>
-                  {n}% of bots
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={settings.kart}
-              onChange={(event) =>
-                setSettings({ ...settings, kart: event.target.checked })
-              }
-            />{" "}
-            Send kart controls at 10 per second
-          </label>
-        </div>
-        <p>
-          Kart traffic tests control delivery and race updates. Bots accelerate and
-          steer but do not navigate the course intelligently. This tab does not render
-          100 phone screens; use real phones for graphics and venue Wi-Fi testing.
-          Closing or leaving this page stops the bot connections.
-        </p>
-      </section>
-      <section className="skin-panel p-4 space-y-3" aria-label="Rehearsal results">
-        <h2>Connection and answer results</h2>
-        <dl className="grid gap-3 sm:grid-cols-3">
-          <div>
-            <dt>Bot connections in this tab</dt>
-            <dd>
-              {canRun ? report.connected : 0} / {count}
-            </dd>
-          </div>
-          <div>
-            <dt>Server-accepted commands</dt>
-            <dd>{report.accepted}</dd>
-          </div>
-          <div>
-            <dt>Refused / awaiting reply</dt>
-            <dd>
-              {report.refused} / {report.pending}
-            </dd>
-          </div>
-          <div>
-            <dt>95th percentile reply time</dt>
-            <dd>{report.p95Ms} ms</dd>
-          </div>
-          <div>
-            <dt>Current room</dt>
-            <dd>
-              {snapshot.phase}
-              {snapshot.paused ? " · paused" : ""}
-              {snapshot.held ? " · waiting for host" : ""}
-            </dd>
-          </div>
-          <div>
-            <dt>Answers this round</dt>
-            <dd>{snapshot.play?.submissionCount ?? 0}</dd>
-          </div>
-        </dl>
-        <p>
-          Metrics cover the current connection run. Reconnecting starts a fresh
-          measurement. Reply time includes scheduling in this browser.
-        </p>
-        <EntryNotice message={report.lastError} />
-        <div className="admin-actions">
-          <Button variant="secondary" onClick={downloadReport}>
-            Download rehearsal report
-          </Button>
-          <Button variant="secondary" onClick={() => fleet.current?.resetMetrics()}>
-            Clear measurements
-          </Button>
-        </div>
-      </section>
-      <section className="skin-panel p-4 space-y-3" aria-label="Rehearsal shortcuts">
-        <h2>Run the show from here</h2>
-        <p>
-          Run the show here to keep the bot fleet on this page. Leaving Developer tools
-          stops its connections.
-        </p>
-        <div className="admin-actions">
-          {snapshot.kartLobby ? (
+        <div className="admin-card-body space-y-3">
+          <p>
+            Automatic play starts off. Bots use only the public question and make varied
+            choices; typed answers are labelled samples and Wordle tries ordinary words.
+            Late entrants obey the same ballot and race eligibility rules as guests.
+          </p>
+          <div className="admin-actions">
             <Button
-              disabled={locked || !!rehearsal || snapshot.phase !== "lobby"}
+              aria-pressed={settings.auto}
+              onClick={() => setSettings({ ...settings, auto: !settings.auto })}
+            >
+              {settings.auto ? "Pause bot answers" : "Enable automatic answers"}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={
+                !canRun || report.connected === 0 || snapshot.paused || snapshot.held
+              }
+              onClick={() => fleet.current?.burst()}
+            >
+              Send answer burst
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setError("");
+                setRunning(!running);
+              }}
+            >
+              {running ? "Disconnect bots" : "Connect bots"}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={!canRun || !count}
+              onClick={() => {
+                setError("");
+                setAttempt((n) => n + 1);
+              }}
+            >
+              Reconnect all bots
+            </Button>
+          </div>
+          <div className="admin-actions">
+            <label>
+              Response pace{" "}
+              <select
+                value={settings.delayMs}
+                onChange={(event) =>
+                  setSettings({ ...settings, delayMs: Number(event.target.value) })
+                }
+              >
+                <option value={0}>Immediate burst</option>
+                <option value={1000}>Varied: 1–2 seconds</option>
+                <option value={4000}>Varied: 4–8 seconds</option>
+              </select>
+            </label>
+            <label>
+              Participation{" "}
+              <select
+                value={settings.participation}
+                onChange={(event) =>
+                  setSettings({ ...settings, participation: Number(event.target.value) })
+                }
+              >
+                {[25, 50, 75, 100].map((n) => (
+                  <option key={n} value={n}>
+                    {n}% of bots
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={settings.kart}
+                onChange={(event) =>
+                  setSettings({ ...settings, kart: event.target.checked })
+                }
+              />{" "}
+              Send kart controls at 10 per second
+            </label>
+          </div>
+          <p>
+            Kart traffic tests control delivery and race updates. Bots accelerate and
+            steer but do not navigate the course intelligently. This tab does not render
+            100 phone screens; use real phones for graphics and venue Wi-Fi testing.
+            Closing or leaving this page stops the bot connections.
+          </p>
+        </div>
+      </section>
+      <section className="admin-card" aria-label="Rehearsal results">
+        <div className="admin-card-header">
+          <span className="admin-status-dot" data-tone="ok" aria-hidden="true" />
+          <span className="admin-mono-tag">TELEMETRY</span>
+          <h2 className="admin-card-title">Connection and answer results</h2>
+        </div>
+        <div className="admin-card-body space-y-3">
+          <dl className="admin-stat-grid">
+            <div className="admin-stat">
+              <dt>Bot connections in this tab</dt>
+              <dd>
+                {canRun ? report.connected : 0} / {count}
+              </dd>
+            </div>
+            <div className="admin-stat">
+              <dt>Server-accepted commands</dt>
+              <dd>{report.accepted}</dd>
+            </div>
+            <div className="admin-stat">
+              <dt>Refused / awaiting reply</dt>
+              <dd>
+                {report.refused} / {report.pending}
+              </dd>
+            </div>
+            <div className="admin-stat">
+              <dt>95th percentile reply time</dt>
+              <dd>{report.p95Ms} ms</dd>
+            </div>
+            <div className="admin-stat">
+              <dt>Current room</dt>
+              <dd>
+                {snapshot.phase}
+                {snapshot.paused ? " · paused" : ""}
+                {snapshot.held ? " · waiting for host" : ""}
+              </dd>
+            </div>
+            <div className="admin-stat">
+              <dt>Answers this round</dt>
+              <dd>{snapshot.play?.submissionCount ?? 0}</dd>
+            </div>
+          </dl>
+          <p>
+            Metrics cover the current connection run. Reconnecting starts a fresh
+            measurement. Reply time includes scheduling in this browser.
+          </p>
+          <EntryNotice message={report.lastError} />
+          <div className="admin-actions">
+            <Button variant="secondary" onClick={downloadReport}>
+              Download rehearsal report
+            </Button>
+            <Button variant="secondary" onClick={() => fleet.current?.resetMetrics()}>
+              Clear measurements
+            </Button>
+          </div>
+        </div>
+      </section>
+      <section className="admin-card" aria-label="Rehearsal shortcuts">
+        <div className="admin-card-header">
+          <h2 className="admin-card-title">Run the show from here</h2>
+        </div>
+        <div className="admin-card-body space-y-3">
+          <p>
+            Run the show here to keep the bot fleet on this page. Leaving Developer tools
+            stops its connections.
+          </p>
+          <div className="admin-actions">
+            {snapshot.kartLobby ? (
+              <Button
+                disabled={locked || !!rehearsal || snapshot.phase !== "lobby"}
+                onClick={() =>
+                  void execute({ action: "start-kart" }, "Start kart race", "developer")
+                }
+              >
+                Start kart race
+              </Button>
+            ) : null}
+            <Button
+              disabled={
+                locked ||
+                !!rehearsal ||
+                !!snapshot.kartLobby ||
+                snapshot.phase !== "lobby"
+              }
               onClick={() =>
-                void execute({ action: "start-kart" }, "Start kart race", "developer")
+                void execute({ action: "start" }, "Start illustrative demo", "developer")
               }
             >
-              Start kart race
+              Start illustrative demo
             </Button>
-          ) : null}
-          <Button
-            disabled={
-              locked ||
-              !!rehearsal ||
-              !!snapshot.kartLobby ||
-              snapshot.phase !== "lobby"
-            }
-            onClick={() =>
-              void execute({ action: "start" }, "Start illustrative demo", "developer")
-            }
-          >
-            Start illustrative demo
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={
-              locked ||
-              !!rehearsal ||
-              !!snapshot.kartLobby ||
-              snapshot.phase !== "lobby"
-            }
-            onClick={() =>
-              void execute(
-                { action: "start-birthday" },
-                "Start birthday game",
-                "developer",
-              )
-            }
-          >
-            Start birthday game
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={locked || snapshot.phase === "lobby" || ended}
-            onClick={() =>
-              void execute(
-                { action: snapshot.paused ? "resume" : "pause" },
-                snapshot.paused ? "Resume game" : "Pause game",
-                "developer",
-              )
-            }
-          >
-            {snapshot.paused ? "Resume game" : "Pause game"}
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={
-              locked || snapshot.phase === "lobby" || snapshot.phase === "podium"
-            }
-            onClick={() =>
-              void execute({ action: "advance" }, "Advance beat", "developer")
-            }
-          >
-            Advance beat
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={locked || snapshot.phase === "lobby" || ended}
-            onClick={() =>
-              void execute({ action: "skip" }, "Skip question", "developer")
-            }
-          >
-            Skip question
-          </Button>
+            <Button
+              variant="secondary"
+              disabled={
+                locked ||
+                !!rehearsal ||
+                !!snapshot.kartLobby ||
+                snapshot.phase !== "lobby"
+              }
+              onClick={() =>
+                void execute(
+                  { action: "start-birthday" },
+                  "Start birthday game",
+                  "developer",
+                )
+              }
+            >
+              Start birthday game
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={locked || snapshot.phase === "lobby" || ended}
+              onClick={() =>
+                void execute(
+                  { action: snapshot.paused ? "resume" : "pause" },
+                  snapshot.paused ? "Resume game" : "Pause game",
+                  "developer",
+                )
+              }
+            >
+              {snapshot.paused ? "Resume game" : "Pause game"}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={
+                locked || snapshot.phase === "lobby" || snapshot.phase === "podium"
+              }
+              onClick={() =>
+                void execute({ action: "advance" }, "Advance beat", "developer")
+              }
+            >
+              Advance beat
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={locked || snapshot.phase === "lobby" || ended}
+              onClick={() =>
+                void execute({ action: "skip" }, "Skip question", "developer")
+              }
+            >
+              Skip question
+            </Button>
+          </div>
+          <div className="admin-actions">
+            <Link to="../health" className="entry-text-link">
+              Room health and traffic
+            </Link>
+            <Link to="/admin/content" target="_blank" className="entry-text-link">
+              Question rehearsals ↗
+            </Link>
+            <Link to="/admin" target="_blank" className="entry-text-link">
+              Create a fresh test room ↗
+            </Link>
+          </div>
+          <p>
+            Opening another room in this browser changes its room access. Stop these bots
+            before switching rooms.
+          </p>
         </div>
-        <div className="admin-actions">
-          <Link to="../health" className="entry-text-link">
-            Room health and traffic
-          </Link>
-          <Link to="/admin/content" target="_blank" className="entry-text-link">
-            Question rehearsals ↗
-          </Link>
-          <Link to="/admin" target="_blank" className="entry-text-link">
-            Create a fresh test room ↗
-          </Link>
-        </div>
-        <p>
-          Opening another room in this browser changes its room access. Stop these bots
-          before switching rooms.
-        </p>
       </section>
       <Disclosure title="Bot roster and scores">
-        <ul aria-label="Bot roster" className="space-y-2">
+        <ul aria-label="Bot roster" className="admin-data-list">
           {tools?.bots.map((bot) => {
             const player = players.get(bot.playerId);
             return (
-              <li key={bot.playerId}>
+              <li key={bot.playerId} className="admin-data-row">
+                <span
+                  className="admin-status-dot"
+                  data-tone={player?.connected ? "ok" : "muted"}
+                  aria-hidden="true"
+                />
                 <strong>{bot.nickname}</strong> ·{" "}
                 {player?.connected ? "connected" : "disconnected"} ·{" "}
-                {player?.points ?? 0} points
+                <span className="admin-mono-tag">{player?.points ?? 0} points</span>
                 {player?.answered === true
                   ? " · answered"
                   : player?.answered === false
@@ -520,23 +551,29 @@ export function DeveloperPage() {
           })}
         </ul>
       </Disclosure>
-      <section aria-label="Bot count history">
-        <h2>Recent population changes</h2>
-        <ol>
-          <AnimatePresence initial={false}>
-            {tools?.history.map((entry, index) => (
-              <motion.li
-                key={`${entry.atMs}:${index}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                {entry.count} bots · {new Date(entry.atMs).toLocaleString("en-GB")}
-              </motion.li>
-            ))}
-          </AnimatePresence>
-        </ol>
+      <section aria-label="Bot count history" className="admin-card">
+        <div className="admin-card-header">
+          <h2 className="admin-card-title">Recent population changes</h2>
+        </div>
+        <div className="admin-card-body">
+          <ol className="admin-data-list">
+            <AnimatePresence initial={false}>
+              {tools?.history.map((entry, index) => (
+                <motion.li
+                  key={`${entry.atMs}:${index}`}
+                  className="admin-data-row"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <span className="admin-mono-tag">{entry.count} bots</span> ·{" "}
+                  {new Date(entry.atMs).toLocaleString("en-GB")}
+                </motion.li>
+              ))}
+            </AnimatePresence>
+          </ol>
+        </div>
       </section>
     </section>
   );

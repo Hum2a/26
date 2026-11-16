@@ -126,13 +126,18 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
         </LinkButton>
       ) : null}
       {current ? (
-        <div className="admin-current">
+        <div className="admin-current" aria-label="Selected room">
           <div className="admin-page-heading">
             <div>
               <p className="entry-eyebrow">Selected in this browser</p>
               <h2>Room {current.joinCode}</h2>
             </div>
             <span className="admin-badge" data-tone={current.paused ? "warn" : "ok"}>
+              <span
+                className="admin-status-dot"
+                data-tone={current.paused ? "warn" : "ok"}
+                aria-hidden="true"
+              />
               {current.phase}
               {current.paused ? " · paused" : ""}
             </span>
@@ -357,6 +362,11 @@ export function RoomOverview() {
           className="admin-badge"
           data-tone={connection === "open" ? "ok" : "warn"}
         >
+          <span
+            className="admin-status-dot"
+            data-tone={connection === "open" ? "ok" : "warn"}
+            aria-hidden="true"
+          />
           {connection === "open" ? "Live" : "Reconnecting"}
         </span>
       </header>

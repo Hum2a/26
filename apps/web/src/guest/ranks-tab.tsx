@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import NumberFlow from "@number-flow/react";
 import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
@@ -45,6 +45,35 @@ function writeMemory(gameId: string | undefined, memory: Memory) {
   }
 }
 
+function standingsEqual(a: Standing[] | null, b: Standing[] | null): boolean {
+  if (a === b) return true;
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const left = a[i]!;
+    const right = b[i]!;
+    if (
+      left.place !== right.place ||
+      left.nickname !== right.nickname ||
+      left.points !== right.points
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function selfEqual(a: SelfStanding | null, b: SelfStanding | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.place === b.place && a.points === b.points && a.players === b.players;
+}
+
+function awardEqual(a: Memory["award"], b: Memory["award"]): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.questionId === b.questionId && a.points === b.points;
+}
+
 /**
  * The phone's leaderboard. The room only sends standings while scores are
  * shown, so this keeps the latest ones for the rest of the round. It never
@@ -59,7 +88,16 @@ export function RanksTab({
 }) {
   const reduce = useReducedMotion();
   const play = snapshot?.play;
-  const [memory, setMemory] = useState<Memory>(() => readMemory(snapshot?.gameId));
+  const gameId = snapshot?.gameId;
+  const [{ scopedGameId, memory }, setScopedMemory] = useState<{
+    scopedGameId: string | undefined;
+    memory: Memory;
+  }>(() => ({
+    scopedGameId: gameId,
+    memory: readMemory(gameId),
+  }));
+
+  const currentMemory = scopedGameId === gameId ? memory : readMemory(gameId);
   const nextStandings = play?.standings ?? null;
   const nextSelf = play?.selfStanding ?? null;
   // A revealed round with no award could not score (a poll): remember it as
@@ -70,23 +108,33 @@ export function RanksTab({
       ? { questionId: play.question.id, points: play.selfAward }
       : null;
   const changed =
-    (nextStandings !== null &&
-      JSON.stringify(nextStandings) !== JSON.stringify(memory.standings)) ||
-    (nextSelf !== null && JSON.stringify(nextSelf) !== JSON.stringify(memory.self)) ||
-    (nextAward !== null && JSON.stringify(nextAward) !== JSON.stringify(memory.award));
-  if (changed) {
-    const next = {
-      standings: nextStandings ?? memory.standings,
-      self: nextSelf ?? memory.self,
-      previousPlace:
-        nextSelf && memory.self && nextSelf.place !== memory.self.place
-          ? memory.self.place
-          : memory.previousPlace,
-      award: nextAward ?? memory.award,
-    };
-    setMemory(next);
-    writeMemory(snapshot?.gameId, next);
+    (nextStandings !== null && !standingsEqual(nextStandings, currentMemory.standings)) ||
+    (nextSelf !== null && !selfEqual(nextSelf, currentMemory.self)) ||
+    (nextAward !== null && !awardEqual(nextAward, currentMemory.award));
+  const nextMemory: Memory = changed
+    ? {
+        standings: nextStandings ?? currentMemory.standings,
+        self: nextSelf ?? currentMemory.self,
+        previousPlace:
+          nextSelf && currentMemory.self && nextSelf.place !== currentMemory.self.place
+            ? currentMemory.self.place
+            : currentMemory.previousPlace,
+        award: nextAward ?? currentMemory.award,
+      }
+    : currentMemory;
+
+  if (scopedGameId !== gameId || changed) {
+    setScopedMemory({ scopedGameId: gameId, memory: nextMemory });
   }
+
+  const lastWritten = useRef<Memory | null>(null);
+  useEffect(() => {
+    if (!gameId || memory === emptyMemory || memory === lastWritten.current) return;
+    if (scopedGameId !== gameId) return;
+    lastWritten.current = memory;
+    writeMemory(gameId, memory);
+  }, [gameId, scopedGameId, memory]);
+
   const hidden = Boolean(
     snapshot?.trolls.active.some(
       (effect) =>
@@ -95,15 +143,24 @@ export function RanksTab({
         effect.status === "active",
     ),
   );
-  const standings = memory.standings ?? [];
-  const self = memory.self;
+  const standings = nextMemory.standings ?? [];
+  const self = nextMemory.self;
   const movement =
-    self && memory.previousPlace !== null ? memory.previousPlace - self.place : 0;
+    self && nextMemory.previousPlace !== null
+      ? nextMemory.previousPlace - self.place
+      : 0;
   const leader = Math.max(1, ...standings.map((row) => row.points));
-  const idOf = (name: string) =>
-    snapshot?.players.find((player) => player.nickname === name)?.playerId ?? name;
+  const idByName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const player of snapshot?.players ?? []) {
+      map.set(player.nickname, player.playerId);
+    }
+    return map;
+  }, [snapshot?.players]);
+  const idOf = (name: string) => idByName.get(name) ?? name;
   const podium = standings.filter((row) => row.place <= 3).slice(0, 3);
-  const rest = standings.filter((row) => !podium.includes(row));
+  const podiumSet = new Set(podium);
+  const rest = standings.filter((row) => !podiumSet.has(row));
 
   return (
     <div className="ranks-tab">

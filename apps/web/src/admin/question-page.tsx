@@ -68,53 +68,76 @@ export function QuestionPage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.16, ease: "easeOut" }}
         >
-          <section className="admin-question-wording" aria-label="Question wording">
-            <p className="admin-meta">
-              {question.status} · {question.mechanic} ·{" "}
-              {question.order === null
-                ? "Not in running order"
-                : `Question ${question.order}`}{" "}
-              · {detail.release} pack
-            </p>
-            <h2>{question.prompt || "Prompt not supplied"}</h2>
-            {question.instructions ? <p>{question.instructions}</p> : null}
+          <section className="admin-question-wording admin-card" aria-label="Question wording">
+            <div className="admin-card-header">
+              <span
+                className="admin-status-dot"
+                data-tone={question.status === "ready" ? "ok" : "warn"}
+                aria-hidden="true"
+              />
+              <span className="admin-mono-tag">{question.status.toUpperCase()}</span>
+              <p className="admin-meta">
+                {question.mechanic} ·{" "}
+                {question.order === null
+                  ? "Not in running order"
+                  : `Question ${question.order}`}{" "}
+                · {detail.release} pack
+              </p>
+            </div>
+            <div className="admin-card-body">
+              <h2>{question.prompt || "Prompt not supplied"}</h2>
+              {question.instructions ? <p>{question.instructions}</p> : null}
+            </div>
           </section>
           <div className="admin-question-columns">
-            <div className="admin-question-body">
-              <section className="admin-task-section">
-                <h2>
-                  {question.mechanic === "rank" ? "Items to rank" : "Answer options"}
-                </h2>
-                {question.options.length ? (
-                  <ol className="admin-question-options">
-                    {question.options.map((option) => (
-                      <li key={option.id}>{option.label}</li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p>
-                    {question.mechanic === "typed"
-                      ? "Guests type their answer."
-                      : question.mechanic === "slider"
-                        ? "Guests answer using a slider."
-                        : "This mechanic does not use fixed answer options."}
-                  </p>
-                )}
+            <div className="admin-question-body space-y-4">
+              <section className="admin-task-section admin-card">
+                <div className="admin-card-header">
+                  <h2 className="admin-card-title">
+                    {question.mechanic === "rank" ? "Items to rank" : "Answer options"}
+                  </h2>
+                </div>
+                <div className="admin-card-body">
+                  {question.options.length ? (
+                    <ol className="admin-question-options admin-data-list">
+                      {question.options.map((option) => (
+                        <li key={option.id} className="admin-data-row">{option.label}</li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p>
+                      {question.mechanic === "typed"
+                        ? "Guests type their answer."
+                        : question.mechanic === "slider"
+                          ? "Guests answer using a slider."
+                          : "This mechanic does not use fixed answer options."}
+                    </p>
+                  )}
+                </div>
               </section>
-              <section className="admin-task-section">
-                <h2>Readiness</h2>
-                {question.missing.length ? (
-                  <ul className="admin-question-gaps">
-                    {question.missing.map((item, index) => (
-                      <li key={`${item.code}/${item.name}/${index}`}>
-                        <strong>{item.name}</strong>
-                        <p>{item.detail}</p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No missing authoring requirements recorded.</p>
-                )}
+              <section className="admin-task-section admin-card">
+                <div className="admin-card-header">
+                  <span
+                    className="admin-status-dot"
+                    data-tone={question.missing.length ? "warn" : "ok"}
+                    aria-hidden="true"
+                  />
+                  <h2 className="admin-card-title">Readiness</h2>
+                </div>
+                <div className="admin-card-body">
+                  {question.missing.length ? (
+                    <ul className="admin-question-gaps admin-data-list">
+                      {question.missing.map((item, index) => (
+                        <li key={`${item.code}/${item.name}/${index}`} className="admin-data-row">
+                          <strong>{item.name}</strong>
+                          <p>{item.detail}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No missing authoring requirements recorded.</p>
+                  )}
+                </div>
               </section>
               <Disclosure
                 key={`${version}/${questionId}`}

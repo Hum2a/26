@@ -23,6 +23,12 @@
   border-radius: 999px;
   padding: 0.3rem 0.85rem 0.3rem 0.3rem;
   color: var(--name-tone, var(--foreground));
+  /* Override .glass backdrop-filter on individual floating pills (up to ~80
+     concurrently on phones/projector) to avoid 80+ nested compositor passes. */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--glass-tint-strong);
+  contain: layout style;
   animation: name-float var(--float-time, 6s) ease-in-out var(--float-delay, 0s)
     infinite alternate;
 }

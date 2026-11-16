@@ -17,6 +17,7 @@ import {
   reactionLabels,
 } from "./framed-photo";
 import { sendWallPhoto } from "./wall-upload";
+import { evictMediaUrl, useCachedMediaSrc } from "../media/media-cache";
 import { buzz } from "../device/haptics";
 import { serverOffset } from "../live/server-clock";
 
@@ -353,9 +354,8 @@ function Tray({
                 🚫
               </span>
             ) : (
-              <img
+                <TrayPhoto
                 src={withClientApiKey(`/api/rooms/${gameId}/media/${item.mediaId}`)}
-                alt=""
               />
             )}
             <div className="grid gap-1">
@@ -386,6 +386,19 @@ function Tray({
         ))}
       </AnimatePresence>
     </section>
+  );
+}
+
+function TrayPhoto({ src }: { src: string }) {
+  const displaySrc = useCachedMediaSrc(src, { preload: true }) ?? src;
+  return (
+    <img
+      src={displaySrc}
+      alt=""
+      onError={() => {
+        if (displaySrc !== src) evictMediaUrl(src);
+      }}
+    />
   );
 }
 

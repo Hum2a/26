@@ -34,27 +34,34 @@
   width: 70vmax;
   height: 70vmax;
   border-radius: 46% 54% 58% 42% / 48% 42% 58% 52%;
-  filter: blur(60px);
+  /* Pre-softened multi-stop gradient gives the same ambient drift as blur(60px)
+     without forcing 70vmax GPU blur convolution every animation frame. */
+  background: radial-gradient(
+    closest-side,
+    var(--blob-colour) 0%,
+    color-mix(in srgb, var(--blob-colour) 68%, transparent) 42%,
+    transparent 74%
+  );
   opacity: 0.5;
   will-change: transform;
 }
 .liquid-blob[data-blob="a"] {
   top: -30vmax;
   left: -24vmax;
-  background: var(--accent);
+  --blob-colour: var(--accent);
   animation: liquid-drift-a 26s ease-in-out infinite alternate;
 }
 .liquid-blob[data-blob="b"] {
   right: -30vmax;
   top: 20vh;
-  background: var(--highlight);
+  --blob-colour: var(--highlight);
   opacity: 0.32;
   animation: liquid-drift-b 32s ease-in-out infinite alternate;
 }
 .liquid-blob[data-blob="c"] {
   bottom: -40vmax;
   left: 10vw;
-  background: color-mix(in srgb, var(--accent) 50%, var(--highlight));
+  --blob-colour: color-mix(in srgb, var(--accent) 50%, var(--highlight));
   opacity: 0.28;
   animation: liquid-drift-c 38s ease-in-out infinite alternate;
 }

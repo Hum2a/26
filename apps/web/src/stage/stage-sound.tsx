@@ -5,6 +5,7 @@ import {
   type LobbySnapshot,
 } from "@26/shared";
 import { withClientApiKey } from "../api/client-key.ts";
+import { evictMediaUrl, useCachedMediaSrc } from "../media/media-cache";
 import { stageShow } from "./audio";
 
 const playedKey = "26-stage-played";
@@ -106,46 +107,54 @@ export function StageSound({
 
 /** A cue photo. A zoom-and-enhance troll creeps slowly in to the middle. */
 function CuePhoto({ src, zoom = false }: { src: string; zoom?: boolean }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) {
-    return <p>This photo did not load. The caption stays.</p>;
+    const displaySrc = useCachedMediaSrc(src, { preload: true }) ?? src;
+    const [failedSrc, setFailedSrc] = useState<string>();
+    if (failedSrc === src) {
+      return <p>This photo did not load. The caption stays.</p>;
+    }
+    const image = (
+      <img
+        alt="Stage caption"
+        className={`max-h-[40vh] w-full object-contain${zoom ? " stage-zoom-photo" : ""}`}
+        src={displaySrc}
+        onError={() => {
+          if (displaySrc !== src) {
+            evictMediaUrl(src);
+            return;
+          }
+          evictMediaUrl(src);
+          setFailedSrc(src);
+        }}
+      />
+    );
+    // The frame clips the zoom so it never spills over the rest of the stage.
+    return zoom ? <div className="stage-zoom-frame">{image}</div> : image;
   }
-  const image = (
-    <img
-      alt="Stage caption"
-      className={`max-h-[40vh] w-full object-contain${zoom ? " stage-zoom-photo" : ""}`}
-      src={src}
-      onError={() => setFailed(true)}
-    />
-  );
-  // The frame clips the zoom so it never spills over the rest of the stage.
-  return zoom ? <div className="stage-zoom-frame">{image}</div> : image;
-}
 
-function remember(
-  cueId: string,
-  played: readonly string[],
-  setPlayed: (ids: string[]) => void,
-): void {
-  if (played.includes(cueId)) {
-    return;
+  function remember(
+    cueId: string,
+    played: readonly string[],
+    setPlayed: (ids: string[]) => void,
+  ): void {
+    if (played.includes(cueId)) {
+      return;
+    }
+    const next = [...played, cueId].slice(-20);
+    setPlayed(next);
+    try {
+      sessionStorage.setItem(playedKey, JSON.stringify(next));
+    } catch {
+      // The cue still will not repeat during this page.
+    }
   }
-  const next = [...played, cueId].slice(-20);
-  setPlayed(next);
-  try {
-    sessionStorage.setItem(playedKey, JSON.stringify(next));
-  } catch {
-    // The cue still will not repeat during this page.
-  }
-}
 
-function readPlayed(): string[] {
-  try {
-    const parsed: unknown = JSON.parse(sessionStorage.getItem(playedKey) ?? "[]");
-    return Array.isArray(parsed)
-      ? parsed.filter((item) => typeof item === "string")
-      : [];
-  } catch {
-    return [];
+  function readPlayed(): string[] {
+    try {
+      const parsed: unknown = JSON.parse(sessionStorage.getItem(playedKey) ?? "[]");
+      return Array.isArray(parsed)
+        ? parsed.filter((item) => typeof item === "string")
+        : [];
+    } catch {
+      return [];
+    }
   }
-}

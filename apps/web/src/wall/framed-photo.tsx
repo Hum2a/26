@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react/dist/offline";
 import imageOff from "@iconify-icons/lucide/image-off";
 import type { WallFrame, WallReaction } from "@26/shared";
+import { evictMediaUrl, useCachedMediaSrc } from "../media/media-cache";
 import "./wall.css";
 
 /** Names and short descriptions for the frame chips. */
@@ -62,6 +63,7 @@ export function FramedPhoto({
   size?: "phone" | "stage" | "corner" | "thumb";
   onFailed?: () => void;
 }) {
+  const displaySrc = useCachedMediaSrc(src, { preload: false }) ?? src;
   const [failedSource, setFailedSource] = useState<string>();
   const [loadedSource, setLoadedSource] = useState<string>();
   // The stage passes a new callback on every snapshot; the timer must not
@@ -107,10 +109,14 @@ export function FramedPhoto({
         ) : (
           <img
             key={src}
-            src={src}
+            src={displaySrc}
             alt={alt}
             onLoad={() => setLoadedSource(src)}
             onError={() => {
+              if (displaySrc !== src) {
+                evictMediaUrl(src);
+                return;
+              }
               if (failedSource === src) return;
               setFailedSource(src);
               onFailedRef.current?.();

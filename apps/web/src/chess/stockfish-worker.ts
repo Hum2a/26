@@ -45,15 +45,39 @@ export class StockfishEngine {
     }
 
     return new Promise((resolve, reject) => {
+      let settled = false;
+      let initWorker: Worker | null = null;
+      const cleanupInitWorker = () => {
+        if (initWorker) {
+          initWorker.onmessage = null;
+          initWorker.onerror = null;
+          initWorker.terminate();
+          if (this.worker === initWorker) {
+            this.worker = null;
+          }
+          initWorker = null;
+        }
+      };
+
       const timeout = setTimeout(() => {
-        reject(new Error("Stockfish initialization timeout (10s)"));
+        if (settled || this.worker !== initWorker) {
+          settled = true;
+          return;
+        }
+        settled = true;
+        cleanupInitWorker();
+        const message = "Stockfish initialization timeout (10s)";
+        this.options.onError(message);
+        reject(new Error(message));
       }, 10_000);
 
       try {
         // Load the Stockfish worker
-        this.worker = new Worker("/chess-engine/stockfish-19-lite-single.js");
+        initWorker = new Worker("/chess-engine/stockfish-19-lite-single.js");
+        this.worker = initWorker;
 
-        this.worker.onmessage = (event) => {
+        initWorker.onmessage = (event) => {
+          if (settled || this.worker !== initWorker) return;
           const line = event.data as string;
           this.handleMessage(line);
 
@@ -65,15 +89,22 @@ export class StockfishEngine {
           }
 
           if (line === "readyok") {
+            settled = true;
             this.ready = true;
             clearTimeout(timeout);
+            // Release the handshake probe worker immediately; each go() runs in
+            // its own isolated worker so no idle WASM instance sits in memory.
+            cleanupInitWorker();
             this.options.onReady();
             resolve();
           }
         };
 
-        this.worker.onerror = (error) => {
+        initWorker.onerror = (error) => {
+          if (settled) return;
+          settled = true;
           clearTimeout(timeout);
+          cleanupInitWorker();
           const message = `Stockfish worker error: ${error.message}`;
           this.options.onError(message);
           reject(new Error(message));
@@ -82,7 +113,10 @@ export class StockfishEngine {
         // Start UCI handshake
         this.sendCommand("uci");
       } catch (error) {
+        if (settled) return;
+        settled = true;
         clearTimeout(timeout);
+        cleanupInitWorker();
         const message = `Failed to create Stockfish worker: ${error instanceof Error ? error.message : String(error)}`;
         this.options.onError(message);
         reject(new Error(message));
@@ -194,6 +228,7 @@ export class StockfishEngine {
       // Error callback only if this Worker still active
       if (this.activeSearchWorker === searchWorker) {
         this.options.onError(`Search worker error: ${error.message}`);
+        this.finishSearch(searchWorker);
       }
     };
 
@@ -232,10 +267,10 @@ export class StockfishEngine {
    * Terminate the worker and clean up.
    */
   terminate(): void {
+    this.ready = false;
     if (this.worker) {
       this.worker.terminate();
       this.worker = null;
-      this.ready = false;
     }
     if (this.activeSearchWorker) {
       this.activeSearchWorker.terminate();
@@ -287,9 +322,11 @@ export class StockfishEngine {
     }
 
     this.options.elo = elo;
-    this.sendCommand("setoption name UCI_LimitStrength value true");
-    this.sendCommand(`setoption name UCI_Elo value ${elo}`);
-    this.sendCommand("isready");
+    if (this.worker) {
+      this.sendCommand("setoption name UCI_LimitStrength value true");
+      this.sendCommand(`setoption name UCI_Elo value ${elo}`);
+      this.sendCommand("isready");
+    }
   }
 }
 

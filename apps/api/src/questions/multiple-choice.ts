@@ -80,7 +80,7 @@ import {
   activeModifierKinds,
   activeTransfers,
   completeScheduledTroll,
-  displayNickname,
+  readDisplayNicknameMap,
   settleTrolls,
   submissionDisrupted,
 } from "../troll/engine.ts";
@@ -555,12 +555,222 @@ function parsePlay(
   return playSnapshotSchema.parse(sealed);
 }
 
+export type StandingRow = {
+  place: number;
+  nickname: string;
+  points: number;
+  playerId: string;
+};
+
+export type PublicStanding = { place: number; nickname: string; points: number };
+
+export type PlayBroadcastShared = {
+  totals: StandingRow[];
+  totalsById: Map<string, StandingRow>;
+  anyPoints: boolean;
+  guestStandings: PublicStanding[];
+  fullStandings: PublicStanding[];
+  picksHidden: boolean;
+  selfAwards: Map<string, number> | null;
+  choice?: {
+    submissionCount: number;
+    answersByPlayer: Map<
+      string,
+      { option_id: string; received_at: number; deadline_at: number }
+    >;
+    reveal: ReturnType<typeof choiceReveal> | null;
+    liveSample: string[] | null;
+    attributions: { optionId: string; nicknames: string[] }[] | null;
+    publicQuestion: Record<string, unknown>;
+  };
+  special?: {
+    submissionCount: number;
+    reveal: unknown;
+    liveSample: string[] | null;
+    publicQuestion: Record<string, unknown>;
+  };
+};
+
+export function preparePlayShared(
+  sql: SqlStorage,
+  room: RoomClock,
+): PlayBroadcastShared | undefined {
+  if (room.phase === "lobby" || room.questionCount <= 0) {
+    return undefined;
+  }
+  const question = questionFor(room);
+  if (!question) {
+    return undefined;
+  }
+  const scored = scoredPhases.includes(room.phase);
+  const needsStandings =
+    question.kind !== "chess" && (question.kind !== "kart" || scored);
+  const totals = needsStandings ? standings(sql) : [];
+  const totalsById = new Map<string, StandingRow>();
+  let anyPoints = false;
+  for (const row of totals) {
+    totalsById.set(row.playerId, row);
+    if (row.points > 0) anyPoints = true;
+  }
+  const guestStandings = needsStandings ? audienceStandings(totals, "guest") : [];
+  const fullStandings = needsStandings ? audienceStandings(totals, "stage") : [];
+  const picksHidden =
+    question.kind === "choice" ? readVoterDisplay(sql).mode === "hidden" : false;
+  let selfAwards: Map<string, number> | null = null;
+  if (scored && awardsPoints(question)) {
+    selfAwards = new Map();
+    for (const row of sql
+      .exec<{ player_id: string; points: number }>(
+        `SELECT player_id, points FROM score_ledger WHERE question_id = ?`,
+        question.id,
+      )
+      .toArray()) {
+      selfAwards.set(row.player_id, row.points);
+    }
+  }
+  const base: PlayBroadcastShared = {
+    totals,
+    totalsById,
+    anyPoints,
+    guestStandings,
+    fullStandings,
+    picksHidden,
+    selfAwards,
+  };
+  if (question.kind === "choice") {
+    const answerRows = sql
+      .exec<{
+        player_id: string;
+        option_id: string;
+        received_at: number;
+        deadline_at: number;
+      }>(
+        `SELECT player_id, option_id, received_at, deadline_at FROM choice_answer WHERE question_id = ?`,
+        question.id,
+      )
+      .toArray();
+    const answersByPlayer = new Map<
+      string,
+      { option_id: string; received_at: number; deadline_at: number }
+    >();
+    for (const row of answerRows) {
+      answersByPlayer.set(row.player_id, row);
+    }
+    base.choice = {
+      submissionCount: answerRows.length,
+      answersByPlayer,
+      reveal: scored ? choiceReveal(sql, question) : null,
+      liveSample: picksHidden ? null : liveNames(sql, question, room),
+      attributions: picksHidden ? null : publicAttributions(sql, question, room),
+      publicQuestion: buildChoicePublicQuestion(question, room),
+    };
+  } else if (
+    question.kind === "slider" ||
+    question.kind === "rank" ||
+    question.kind === "typed" ||
+    question.kind === "wordle"
+  ) {
+    const showNames = question.attribution !== "never";
+    const index = room.questionIndex + 1;
+    base.special = {
+      submissionCount:
+        question.kind === "wordle"
+          ? wordleProgress(sql, question.id).finishedCount
+          : responseCount(sql, question.id),
+      reveal:
+        question.kind === "wordle"
+          ? wordleReveal(sql, question, scored)
+          : question.kind === "slider"
+            ? sliderReveal(sql, question, scored, showNames && scored)
+            : question.kind === "typed"
+              ? typedReveal(sql, question, scored, showNames && scored)
+              : rankReveal(sql, question, scored, showNames && scored),
+      liveSample:
+        question.kind === "wordle"
+          ? null
+          : responseNames(
+              sql,
+              question.id,
+              question.attribution,
+              room.phase,
+              liveSampleSize,
+            ),
+      publicQuestion:
+        question.kind === "wordle"
+          ? publicWordleQuestion(question, index, room.questionCount)
+          : question.kind === "slider"
+            ? publicSliderQuestion(question, index, room.questionCount)
+            : question.kind === "typed"
+              ? publicTypedQuestion(question, index, room.questionCount)
+              : publicRankQuestion(question, index, room.questionCount),
+    };
+  }
+  return base;
+}
+
+function buildChoicePublicQuestion(question: ChoiceQuestion, room: RoomClock) {
+  return {
+    ...publicQuestionCore(question, room.questionIndex + 1, room.questionCount),
+    options: question.options.map((option) => ({
+      id: option.id,
+      label: option.label,
+      ...(option.image ? { image: option.image } : {}),
+    })),
+    kind: "choice" as const,
+    ...(question.outcome.kind === "correct"
+      ? {}
+      : { outcome: question.outcome.kind }),
+    ...(question.outcome.kind === "push"
+      ? {
+          push: {
+            lines: [...question.outcome.lines],
+            lineMs: question.outcome.lineMs,
+            banks: [...question.outcome.banks],
+            windowMs: question.collectMs,
+          },
+        }
+      : {}),
+    speedBonus: question.speedBonus !== null,
+    modifiers: [...(question.modifiers ?? [])],
+    suppressSpeedBonus: question.suppressSpeedBonus === true,
+  };
+}
+
+function lookupSelfAward(
+  sql: SqlStorage,
+  question: { id: string; points: number; kind: string; outcome?: { kind: string } },
+  audience: "guest" | "stage" | "control",
+  scored: boolean,
+  selfPlayerId?: string,
+  shared?: PlayBroadcastShared,
+): number | null {
+  if (!scored || audience !== "guest" || !selfPlayerId || !awardsPoints(question)) {
+    return null;
+  }
+  if (shared?.selfAwards) {
+    return shared.selfAwards.get(selfPlayerId) ?? 0;
+  }
+  return selfAward(sql, question, audience, scored, selfPlayerId);
+}
+
+function lookupAudienceStandings(
+  totals: StandingRow[],
+  audience: "guest" | "stage" | "control",
+  shared?: PlayBroadcastShared,
+): PublicStanding[] {
+  if (shared) {
+    return audience === "guest" ? shared.guestStandings : shared.fullStandings;
+  }
+  return audienceStandings(totals, audience);
+}
+
 export function projectPlay(
   sql: SqlStorage,
   room: RoomClock,
   audience: "guest" | "stage" | "control",
   selfPlayerId?: string,
   stageHidden = false,
+  shared?: PlayBroadcastShared,
 ): PlaySnapshot | null {
   if (room.phase === "lobby" || room.questionCount <= 0) {
     return null;
@@ -577,9 +787,16 @@ export function projectPlay(
       room,
       audience === "guest" ? selfPlayerId : undefined,
     );
+    const totals = shared
+      ? shared.totals
+      : scored
+        ? standings(sql)
+        : [];
     const selfRow =
-      audience === "guest" && selfPlayerId
-        ? standings(sql).find((d) => d.playerId === selfPlayerId)
+      scored && audience === "guest" && selfPlayerId
+        ? shared
+          ? shared.totalsById.get(selfPlayerId)
+          : totals.find((d) => d.playerId === selfPlayerId)
         : undefined;
     return parsePlay(
       {
@@ -589,10 +806,10 @@ export function projectPlay(
             ? {
                 place: selfRow.place,
                 points: selfRow.points,
-                players: standings(sql).length,
+                players: totals.length,
               }
             : null,
-        standings: scored ? audienceStandings(standings(sql), audience) : null,
+        standings: scored ? lookupAudienceStandings(totals, audience, shared) : null,
       },
       question,
       audience,
@@ -600,10 +817,10 @@ export function projectPlay(
     );
   }
   if (question.kind === "vote" || question.kind === "guess") {
-    return projectBallot(sql, room, audience, selfPlayerId, question, scored);
+    return projectBallot(sql, room, audience, selfPlayerId, question, scored, shared);
   }
   if (question.kind === "duel" || question.kind === "finale") {
-    return projectDuel(sql, room, audience, selfPlayerId, question, scored);
+    return projectDuel(sql, room, audience, selfPlayerId, question, scored, shared);
   }
   if (question.kind === "chess") {
     // Chess: project proper audience snapshot (guest/stage/control, no board leaks)
@@ -653,58 +870,43 @@ export function projectPlay(
     );
   }
   if (question.kind !== "choice") {
-    return projectSpecial(sql, room, audience, selfPlayerId, question, scored);
+    return projectSpecial(sql, room, audience, selfPlayerId, question, scored, shared);
   }
-  const countRow = sql
-    .exec<{ total: number }>(
-      `SELECT COUNT(*) AS total FROM choice_answer WHERE question_id = ?`,
-      question.id,
-    )
-    .toArray()[0];
-  const self = selfPlayerId
-    ? sql
-        .exec<{ option_id: string; received_at: number; deadline_at: number }>(
-          `SELECT option_id, received_at, deadline_at FROM choice_answer
-           WHERE player_id = ? AND question_id = ?`,
-          selfPlayerId,
+  const choiceShared = shared?.choice;
+  const submissionCount = choiceShared
+    ? choiceShared.submissionCount
+    : (sql
+        .exec<{ total: number }>(
+          `SELECT COUNT(*) AS total FROM choice_answer WHERE question_id = ?`,
           question.id,
         )
-        .toArray()[0]
+        .toArray()[0]?.total ?? 0);
+  const self = selfPlayerId
+    ? choiceShared
+      ? choiceShared.answersByPlayer.get(selfPlayerId)
+      : sql
+          .exec<{ option_id: string; received_at: number; deadline_at: number }>(
+            `SELECT option_id, received_at, deadline_at FROM choice_answer
+             WHERE player_id = ? AND question_id = ?`,
+            selfPlayerId,
+            question.id,
+          )
+          .toArray()[0]
     : undefined;
-  const totals = standings(sql);
-  const anyPoints = totals.some((row) => row.points > 0);
+  const totals = shared ? shared.totals : standings(sql);
+  const anyPoints = shared ? shared.anyPoints : totals.some((row) => row.points > 0);
   const showStanding = scored || anyPoints;
   const selfRow = selfPlayerId
-    ? totals.find((row) => row.playerId === selfPlayerId)
+    ? shared
+      ? shared.totalsById.get(selfPlayerId)
+      : totals.find((row) => row.playerId === selfPlayerId)
     : undefined;
-  const picksHidden = readVoterDisplay(sql).mode === "hidden";
+  const picksHidden = shared ? shared.picksHidden : readVoterDisplay(sql).mode === "hidden";
   const view = {
-    question: {
-      ...publicQuestionCore(question, room.questionIndex + 1, room.questionCount),
-      options: question.options.map((option) => ({
-        id: option.id,
-        label: option.label,
-        ...(option.image ? { image: option.image } : {}),
-      })),
-      kind: "choice" as const,
-      ...(question.outcome.kind === "correct"
-        ? {}
-        : { outcome: question.outcome.kind }),
-      ...(question.outcome.kind === "push"
-        ? {
-            push: {
-              lines: [...question.outcome.lines],
-              lineMs: question.outcome.lineMs,
-              banks: [...question.outcome.banks],
-              windowMs: question.collectMs,
-            },
-          }
-        : {}),
-      speedBonus: question.speedBonus !== null,
-      modifiers: [...(question.modifiers ?? [])],
-      suppressSpeedBonus: question.suppressSpeedBonus === true,
-    },
-    submissionCount: countRow?.total ?? 0,
+    question: choiceShared
+      ? choiceShared.publicQuestion
+      : buildChoicePublicQuestion(question, room),
+    submissionCount,
     selfAnswer: self
       ? question.outcome.kind === "multiple"
         ? { kind: "multiple" as const, optionIds: self.option_id.split(",") }
@@ -726,16 +928,28 @@ export function projectPlay(
     selfBallot: null,
     ballot: null,
     duel: null,
-    reveal: scored ? choiceReveal(sql, question) : null,
-    selfAward: selfAward(sql, question, audience, scored, selfPlayerId),
+    reveal: choiceShared
+      ? choiceShared.reveal
+      : scored
+        ? choiceReveal(sql, question)
+        : null,
+    selfAward: lookupSelfAward(sql, question, audience, scored, selfPlayerId, shared),
     selfStanding:
       audience === "guest" && showStanding && selfRow
         ? { place: selfRow.place, points: selfRow.points, players: totals.length }
         : null,
-    standings: showStanding ? audienceStandings(totals, audience) : null,
+    standings: showStanding ? lookupAudienceStandings(totals, audience, shared) : null,
     // The host's room switch keeps every name off the screens, not just the board.
-    liveSample: picksHidden ? null : liveNames(sql, question, room),
-    attributions: picksHidden ? null : publicAttributions(sql, question, room),
+    liveSample: choiceShared
+      ? choiceShared.liveSample
+      : picksHidden
+        ? null
+        : liveNames(sql, question, room),
+    attributions: choiceShared
+      ? choiceShared.attributions
+      : picksHidden
+        ? null
+        : publicAttributions(sql, question, room),
     // Stage and host only: eighty phones are never sent the board.
     ...(audience === "guest"
       ? {}
@@ -818,21 +1032,24 @@ function projectBallot(
   selfPlayerId: string | undefined,
   question: VoteQuestion | GuessQuestion,
   scored: boolean,
+  shared?: PlayBroadcastShared,
 ): PlaySnapshot | null {
-  const totals = standings(sql);
-  const anyPoints = totals.some((row) => row.points > 0);
+  const totals = shared ? shared.totals : standings(sql);
+  const anyPoints = shared ? shared.anyPoints : totals.some((row) => row.points > 0);
   const showStanding = scored || anyPoints;
   const selfRow = selfPlayerId
-    ? totals.find((row) => row.playerId === selfPlayerId)
+    ? shared
+      ? shared.totalsById.get(selfPlayerId)
+      : totals.find((row) => row.playerId === selfPlayerId)
     : undefined;
   const view = {
     ...ballotPlayFields(sql, question, room, audience, selfPlayerId, scored),
-    selfAward: selfAward(sql, question, audience, scored, selfPlayerId),
+    selfAward: lookupSelfAward(sql, question, audience, scored, selfPlayerId, shared),
     selfStanding:
       audience === "guest" && showStanding && selfRow
         ? { place: selfRow.place, points: selfRow.points, players: totals.length }
         : null,
-    standings: showStanding ? audienceStandings(totals, audience) : null,
+    standings: showStanding ? lookupAudienceStandings(totals, audience, shared) : null,
     attributions: null,
     duel: null,
   };
@@ -846,21 +1063,24 @@ function projectDuel(
   selfPlayerId: string | undefined,
   question: DuelQuestion | FinaleQuestion,
   scored: boolean,
+  shared?: PlayBroadcastShared,
 ): PlaySnapshot | null {
-  const totals = standings(sql);
-  const anyPoints = totals.some((row) => row.points > 0);
+  const totals = shared ? shared.totals : standings(sql);
+  const anyPoints = shared ? shared.anyPoints : totals.some((row) => row.points > 0);
   const showStanding = scored || anyPoints;
   const selfRow = selfPlayerId
-    ? totals.find((row) => row.playerId === selfPlayerId)
+    ? shared
+      ? shared.totalsById.get(selfPlayerId)
+      : totals.find((row) => row.playerId === selfPlayerId)
     : undefined;
   const view = {
     ...duelPlayFields(sql, question, room, audience, selfPlayerId, scored),
-    selfAward: selfAward(sql, question, audience, scored, selfPlayerId),
+    selfAward: lookupSelfAward(sql, question, audience, scored, selfPlayerId, shared),
     selfStanding:
       audience === "guest" && showStanding && selfRow
         ? { place: selfRow.place, points: selfRow.points, players: totals.length }
         : null,
-    standings: showStanding ? audienceStandings(totals, audience) : null,
+    standings: showStanding ? lookupAudienceStandings(totals, audience, shared) : null,
     attributions: null,
   };
   return parsePlay(view, question, audience, scored);
@@ -873,13 +1093,17 @@ export function projectSpecial(
   selfPlayerId: string | undefined,
   question: SliderQuestion | RankQuestion | TypedQuestion | WordleQuestion,
   scored: boolean,
+  shared?: PlayBroadcastShared,
 ): PlaySnapshot | null {
-  const totals = standings(sql);
-  const anyPoints = totals.some((row) => row.points > 0);
+  const totals = shared ? shared.totals : standings(sql);
+  const anyPoints = shared ? shared.anyPoints : totals.some((row) => row.points > 0);
   const showStanding = scored || anyPoints;
   const selfRow = selfPlayerId
-    ? totals.find((row) => row.playerId === selfPlayerId)
+    ? shared
+      ? shared.totalsById.get(selfPlayerId)
+      : totals.find((row) => row.playerId === selfPlayerId)
     : undefined;
+  const specialShared = shared?.special;
   const showNames = audience === "control" || question.attribution !== "never";
   const index = room.questionIndex + 1;
   const estimate =
@@ -899,16 +1123,18 @@ export function projectSpecial(
       ? readWordleBoard(sql, selfPlayerId, question.id)
       : undefined;
   const view = {
-    question:
-      question.kind === "wordle"
+    question: specialShared
+      ? specialShared.publicQuestion
+      : question.kind === "wordle"
         ? publicWordleQuestion(question, index, room.questionCount)
         : question.kind === "slider"
           ? publicSliderQuestion(question, index, room.questionCount)
           : question.kind === "typed"
             ? publicTypedQuestion(question, index, room.questionCount)
             : publicRankQuestion(question, index, room.questionCount),
-    submissionCount:
-      question.kind === "wordle"
+    submissionCount: specialShared
+      ? specialShared.submissionCount
+      : question.kind === "wordle"
         ? wordleProgress(sql, question.id).finishedCount
         : responseCount(sql, question.id),
     selfAnswer: board
@@ -924,21 +1150,24 @@ export function projectSpecial(
     ballot: null,
     duel: null,
     reveal:
-      question.kind === "wordle"
-        ? wordleReveal(sql, question, scored)
-        : question.kind === "slider"
-          ? sliderReveal(sql, question, scored, showNames && scored)
-          : question.kind === "typed"
-            ? typedReveal(sql, question, scored, showNames && scored)
-            : rankReveal(sql, question, scored, showNames && scored),
-    selfAward: selfAward(sql, question, audience, scored, selfPlayerId),
+      specialShared && (audience !== "control" || showNames)
+        ? specialShared.reveal
+        : question.kind === "wordle"
+          ? wordleReveal(sql, question, scored)
+          : question.kind === "slider"
+            ? sliderReveal(sql, question, scored, showNames && scored)
+            : question.kind === "typed"
+              ? typedReveal(sql, question, scored, showNames && scored)
+              : rankReveal(sql, question, scored, showNames && scored),
+    selfAward: lookupSelfAward(sql, question, audience, scored, selfPlayerId, shared),
     selfStanding:
       audience === "guest" && showStanding && selfRow
         ? { place: selfRow.place, points: selfRow.points, players: totals.length }
         : null,
-    standings: showStanding ? audienceStandings(totals, audience) : null,
-    liveSample:
-      question.kind === "wordle"
+    standings: showStanding ? lookupAudienceStandings(totals, audience, shared) : null,
+    liveSample: specialShared
+      ? specialShared.liveSample
+      : question.kind === "wordle"
         ? null
         : responseNames(
             sql,
@@ -1073,23 +1302,41 @@ function hostAnswerRows(
     }));
 }
 
-function standings(sql: SqlStorage): {
-  place: number;
-  nickname: string;
-  points: number;
-  playerId: string;
-}[] {
-  const rows = sql
-    .exec<{ player_id: string; nickname: string; points: number }>(
-      `SELECT player.player_id, player.nickname,
-              COALESCE((SELECT SUM(points) FROM score_ledger WHERE player_id = player.player_id), 0)
-              + COALESCE((SELECT SUM(points) FROM score_adjustment WHERE player_id = player.player_id), 0)
-              AS points
-       FROM player
-       WHERE player.revoked_at IS NULL
-       ORDER BY points DESC, player.nickname ASC`,
+function standings(sql: SqlStorage): StandingRow[] {
+  const players = sql
+    .exec<{ player_id: string; nickname: string }>(
+      `SELECT player_id, nickname FROM player WHERE revoked_at IS NULL`,
     )
     .toArray();
+  const ledgerTotals = new Map<string, number>();
+  for (const row of sql
+    .exec<{ player_id: string; points: number }>(
+      `SELECT player_id, COALESCE(SUM(points), 0) AS points FROM score_ledger GROUP BY player_id`,
+    )
+    .toArray()) {
+    ledgerTotals.set(row.player_id, row.points);
+  }
+  const adjustmentTotals = new Map<string, number>();
+  for (const row of sql
+    .exec<{ player_id: string; points: number }>(
+      `SELECT player_id, COALESCE(SUM(points), 0) AS points FROM score_adjustment GROUP BY player_id`,
+    )
+    .toArray()) {
+    adjustmentTotals.set(row.player_id, row.points);
+  }
+  const displayNicknames = readDisplayNicknameMap(sql, players);
+  const rows = players
+    .map((player) => ({
+      player_id: player.player_id,
+      nickname: player.nickname,
+      points:
+        (ledgerTotals.get(player.player_id) ?? 0) +
+        (adjustmentTotals.get(player.player_id) ?? 0),
+    }))
+    .sort((left, right) => {
+      if (right.points !== left.points) return right.points - left.points;
+      return left.nickname < right.nickname ? -1 : left.nickname > right.nickname ? 1 : 0;
+    });
   let place = 0;
   let previous = Number.POSITIVE_INFINITY;
   return rows.map((row, index) => {
@@ -1099,7 +1346,7 @@ function standings(sql: SqlStorage): {
     }
     return {
       place,
-      nickname: displayNickname(sql, row.player_id, row.nickname),
+      nickname: displayNicknames.get(row.player_id) ?? row.nickname,
       points: row.points,
       playerId: row.player_id,
     };

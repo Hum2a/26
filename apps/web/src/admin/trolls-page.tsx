@@ -81,32 +81,45 @@ function TrollHistory({ locked }: { locked: boolean }) {
       {history.length === 0 ? (
         <p>No trolls sent yet.</p>
       ) : (
-        <ul className="grid gap-2">
+        <ul className="admin-data-list">
           {history.map((item) => (
-            <li key={item.effectId} className="flex flex-wrap items-center gap-3">
-              <span>
+            <li key={item.effectId} className="admin-data-row">
+              <span className="flex items-center gap-2">
+                <span
+                  className="admin-status-dot"
+                  data-tone={
+                    item.status === "active"
+                      ? "ok"
+                      : item.status === "queued"
+                        ? "warn"
+                        : "muted"
+                  }
+                  aria-hidden="true"
+                />
                 <strong>{item.actorNickname}</strong> → {item.targetNickname}:{" "}
                 {item.label}
               </span>
-              <span className="text-sm">
-                {historyStatus[item.status]} ·{" "}
-                {new Date(item.createdAt).toLocaleTimeString("en-GB")}
-              </span>
-              {item.status === "queued" || item.status === "active" ? (
-                <Button
-                  variant="secondary"
-                  disabled={locked}
-                  onClick={() =>
-                    void execute(
-                      { action: "cancel-effect", effectId: item.effectId },
-                      `Cancel ${item.label}`,
-                      "trolls",
-                    )
-                  }
-                >
-                  Cancel
-                </Button>
-              ) : null}
+              <div className="flex items-center gap-3">
+                <span className="admin-mono-tag">
+                  {historyStatus[item.status]} ·{" "}
+                  {new Date(item.createdAt).toLocaleTimeString("en-GB")}
+                </span>
+                {item.status === "queued" || item.status === "active" ? (
+                  <Button
+                    variant="secondary"
+                    disabled={locked}
+                    onClick={() =>
+                      void execute(
+                        { action: "cancel-effect", effectId: item.effectId },
+                        `Cancel ${item.label}`,
+                        "trolls",
+                      )
+                    }
+                  >
+                    Cancel
+                  </Button>
+                ) : null}
+              </div>
             </li>
           ))}
         </ul>

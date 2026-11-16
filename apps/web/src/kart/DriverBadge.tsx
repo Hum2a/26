@@ -1,5 +1,6 @@
 import { useState, type ReactElement } from "react";
 import type { DriverStyle, LobbyDriver } from "@26/shared";
+import { evictMediaUrl, useCachedMediaSrc } from "../media/media-cache";
 import { driverFaceUrl } from "./driver-face";
 import "./driver.css";
 
@@ -22,6 +23,8 @@ export function DriverBadge({
   const [broken, setBroken] = useState<string | null>(null);
   const face = driver?.faceMediaId;
   const showFace = face !== undefined && broken !== face;
+  const rawSrc = showFace ? driverFaceUrl(gameId, face) : null;
+  const resolvedSrc = useCachedMediaSrc(rawSrc, { preload: true });
   return (
     <span
       className="driver-badge"
@@ -31,11 +34,18 @@ export function DriverBadge({
     >
       {showFace ? (
         <img
-          src={driverFaceUrl(gameId, face)}
+          src={resolvedSrc!}
           alt={`${nickname}’s driver`}
           loading="lazy"
           decoding="async"
-          onError={() => setBroken(face)}
+          onError={() => {
+            if (rawSrc && resolvedSrc !== rawSrc) {
+              evictMediaUrl(rawSrc);
+              return;
+            }
+            if (rawSrc) evictMediaUrl(rawSrc);
+            setBroken(face);
+          }}
         />
       ) : (
         <DriverEmblem style={driver?.style ?? "racer"} label={`${nickname}’s driver`} />

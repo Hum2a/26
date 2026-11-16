@@ -6212,9 +6212,101 @@ Not verified: signed-in admin in a real browser, or the drawer on a physical pho
 - `npm run typecheck`, `npm run lint` — passed (0 errors, 27 existing warnings; structure check passed)
 - `npm run test:unit -w @26/web -- src/chess` — 10 files, 52 passed (including premove model, board and lifecycle tests)
 
+## 11 November 2026 — Single-build `deploy:both` and fast `deploy:*` commands
+
+Status: complete locally. Not deployed.
+
+- **Fast deploy commands (`deploy:prod`, `deploy:staging`, `deploy:both`)**: plain deploy commands in `scripts/release.ts` now just build and deploy without running the test suite (use `--checks` to explicitly opt in). Production guards (clean master working tree and party freeze window) remain enforced.
+- **Full release commands (`deploy:prod:full`, `deploy:staging:full`, `deploy:both:full`)**: run the full test suite (`typecheck`, `content:check`, `test:unit`, `lint`, `test:release`, and the isolated API suite `@26/api`), run database migrations (`auth:migrate`, `archive:migrate`), build, and deploy with secrets attached (`--secrets-file`).
+- **Single-build combined releases (`deploy:both` and `deploy:both:full`)**: `scripts/release.ts` and `scripts/release-support.ts` (`retargetGeneratedWorkerConfig`): now run `npm run build` once instead of building twice. After deploying staging, `release.ts` retargets `apps/web/dist/26_humza_website_local/wrangler.json` using `env.production` from `apps/api/wrangler.jsonc`, validates the generated Worker config with `assertGeneratedWorkerConfig`, and deploys that same build to production. Local builds (`26-humza-website-local`) are still rejected by both `retargetGeneratedWorkerConfig` and `assertGeneratedWorkerConfig`.
+- **Hostname-aware client API key for shared builds** (`apps/web/vite.config.ts`, `apps/web/src/api/client-key.ts`): `resolveConfiguredClientKey` embeds `VITE_CLIENT_API_KEY_STAGING` and `VITE_CLIENT_API_KEY_PRODUCTION` alongside `VITE_CLIENT_API_KEY` and selects the matching key by hostname (`26-staging.humza.website` vs `26.humza.website`), so a single client bundle works on both remote origins even if their client API keys differ.
+
+### Commands and results
+
+- `npm run test:release` — 81 passed (including single-build `deploy --env both`, plain deploy fast build-and-deploy assertions, and full test suite/secrets/migrations assertions)
+- `npm run test:unit -w @26/web -- src/api/photo-display.test.ts` — passed
+- `npm run typecheck`, `npm run lint` — passed (0 errors, 27 existing warnings; structure check passed)
+
 ### Exact next stage
 
 Conclude the merge commit when ready and test solo chess (`/chess`) or a party rehearsal round on a phone. Do not start the next prompt automatically.
+
+## 11 November 2026 — Admin pages techy/dashboardy redesign
+
+Status: complete locally on branch `feature/admin-pages-dashboard-redesign`. Not deployed.
+
+Redesigned the internal page layout and presentation across all global and room-scoped `/admin` pages into a cohesive, mission-control dashboard:
+- **Design system components** (`apps/web/src/ui/admin.css`):
+  - `.admin-card`, `.admin-card-header`, `.admin-card-title`, `.admin-card-body`, `.admin-card-footer` for structured control boxes with crisp borders, subtle elevation and dark glass header chrome.
+  - `.admin-status-dot` with pulsing live indicator rings for `ok`, `warn`, `danger`, and `muted` operational states.
+  - `.admin-mono-tag` for monospace timestamps, metrics, IDs, and tabular values.
+  - `.admin-data-list` and `.admin-data-row` for high-density, alternating-shade tabular telemetry lists.
+  - `.admin-stat-grid` and `.admin-stat` upgraded into elevated gauge cards with tabular-figure numbers.
+  - `.admin-terminal` styling for console and chaos test logs.
+  - `.admin-private-notes` styled into a dedicated confidential operator box with accent border and mono title.
+  - Upgraded live controls dock (`.admin-live-actions`) to a frosted glass cockpit floating bar with box shadow.
+- **Pages enhanced**:
+  - `rooms-page.tsx`: Status dots, active room metrics, join code showcase, quick shortcut tiles.
+  - `health-page.tsx`: Elevated live connection card with status dot, email delivery report, and telemetry stats.
+  - `analytics-page.tsx`: Podium highlights card, sample-status badges, and structured troll telemetry list.
+  - `players-page.tsx`: Joining controls card with status indicator dot, player roster with connection dot chips, points tags, and tabular action buttons.
+  - `media-page.tsx`: Photo bias card with status badge, device stat chips, and moderation queue list.
+  - `voters-page.tsx`: "Picks on the big screen" card, live board mirror card, and profile photo cards.
+  - `wall-page.tsx`: Photo wall queue and layout controls cards with monospace queue counters.
+  - `trolls-page.tsx`: Troll log and frequency history transformed into structured data lists with timestamps and status dots.
+  - `live-console.tsx`: Upgraded live room cockpit, round status badges, countdown clock, confidential presenter box, join code aside card, and answer moderation data list.
+  - `developer-page.tsx` & `rehearsal-controls.tsx`: Bot population card, bot behaviour card with auto-pilot badge, telemetry stat grid gauges, chaos failure panel, and live activity log.
+  - `presentation-rehearsal.tsx` & `admin-page.tsx`: Preview mode card with status dot and sample standings.
+  - `results-page.tsx`: Standings card with final/live badge, insights card, and archive/export aside card with status dots.
+  - `question-page.tsx`: Question wording card, answer options data list, and readiness card with missing requirements list.
+  - `kart-page.tsx`: Standalone engine card, multiplayer rehearsal card, and layout preview card.
+  - `chess-page.tsx`: Live chess monitor card with standby/active badge and stat grid.
+
+### Commands and results
+
+- `npm run check:structure` — passed
+- `npm run typecheck` — passed
+- `npm run lint` — passed (0 errors, 27 existing react-refresh warnings; structure check passed)
+- `npm run test:unit -w @26/web` — 189 test files passed, 837 tests passed
+
+### Exact next stage
+
+Review the redesigned admin interface in `/admin` and merge `feature/admin-pages-dashboard-redesign` into `master`. Do not deploy without explicit instruction.
+
+## 12 November 2026 — Performance, memory-leak remediation, and Cloudflare plan audit
+
+Status: complete locally. Not deployed.
+
+- **Audit & plan assessment (`docs/performance-audit.md`, `docs/README.md`)**: documented all memory-leak and 82-socket bottlenecks plus Cloudflare Free vs Paid quotas (Workers Paid \$5/month + Images Paid \$5/month recommended; keep DNS Zone on Free).
+- **WebSocket, hibernation & client engines**:
+  - `apps/web/src/live/room-socket.ts` & `apps/web/src/device/connection-log.ts`: delete rejected (`accepted: false`) entries from `tracked` on `ack`, purge timers/queues on `clearHeartbeat()`/`stop()`/`close()`, throttle `time:` probes (`timeProbeRefreshMs = 4 * 60_000`, skipped for bots) while keeping 20 s `"ping"` pure, and gate 60 s telemetry summaries via `hasUrgentConnectionDelta()` / `maybeSendPeriodicConnection()`.
+  - `apps/web/src/chess/stockfish-worker.ts`: release handshake worker on `readyok`, terminate errored/timed-out workers and finished search workers after `bestmove`, and clear `ready` in `terminate()`.
+  - `apps/web/src/media/voice-take.tsx` & `apps/web/src/media/wav.ts`: unmount guard, `recording` lock, and `URL.revokeObjectURL` cleanup; `try/finally` `AudioContext`/node/track teardown, timer clear, and pre-allocated `Float32Array` capture buffer.
+  - `apps/web/src/kart/KartCanvas.tsx` & `apps/web/src/kart/circuit.ts`: `renderer.forceContextLoss()` on cleanup, `disposeLabel()` pruning/disposing departed driver sprites/materials/textures, and scratch `present` `Set` reuse.
+- **Durable Object & SQLite fan-out**:
+  - `apps/api/src/room/schema.ts`: versioned fast-path check in `ensurePartySchema()` / `ensure()`.
+  - `apps/api/src/room/party-room.ts`, `names.ts`, `questions/multiple-choice.ts`, `wall/snapshot.ts`, `troll/engine.ts`, `questions/kart/kart.ts`: batched `standings()` and nickname lookups; hoisted room-wide snapshot work per broadcast; shared serialized field JSON cache via `WeakMap`; 1st-guest schema validation reuse; bounded/evicted `lastViews` and `destroyRoom()` teardown; pre-indexed kart racers (`KartFrameIndex` / `buildKartFrameIndex()`).
+- **Client room media cache & compositor/UI**:
+  - Added bounded (`MEDIA_CACHE_MAX_ENTRIES = 96`) in-memory room `blob:` cache (`apps/web/src/media/media-cache.ts`) preserving server `Cache-Control: private, no-store` headers and clearing stale rooms on `RosterProvider`/`StageWall` `gameId` transitions; wired `StageWall` (`Preload`, `ReelPhoto`), `FramedPhoto`, `TrayPhoto` (`guest-wall.tsx`), `PlayerAvatar`, `ScreenInvasion` (`classic-trolls.tsx`), `StagePhoto` (`stage-presentation.tsx`), `CuePhoto` (`stage-sound.tsx`), `DriverBadge`, `KartMap` (`MapFace`), and `KartCanvas`.
+  - Replaced `filter: blur(60px)` on `.liquid-blob` (`glass.css`) with multi-stop radial gradients and disabled per-pill `backdrop-filter` on `.name-bubble` (`name-cloud.css`); replaced `RanksTab` render-path `JSON.stringify`/`sessionStorage.setItem` and `O(N²)` scans with structural equality helpers, `Map` lookup, and `useEffect` storage writes.
+- **Tests added/updated**: `apps/web/src/media/media-cache.test.ts`, `apps/web/src/media/voice-take.test.tsx`, `apps/web/src/troll/screen-trolls.test.tsx`, `apps/web/src/guest/ranks-tab.test.tsx`, `apps/web/src/kart/circuit.test.ts`, `apps/web/src/live/room-socket.test.ts`, `apps/web/src/chess/stockfish-worker-isolation.test.ts`.
+
+### Commands and results
+
+- `npm run typecheck` — passed (0 errors)
+- `npm run lint` — passed (0 errors, 27 pre-existing `react-refresh/only-export-components` warnings; `Structure check passed.`)
+- `npm run test:unit` (`@26/web`) — 191 test files passed, 850 tests passed
+- `npm run build` — passed (secrets scan clean across 903 files; `entryJsGzipBytes: 217158 / 260000`, `entryCssGzipBytes: 20687 / 28000`, `totalJsGzipBytes: 1397454 / 1650000`, `largestJsGzipBytes: 496695 / 600000`; `content:check` passed for demo and birthday-draft)
+- `npm run test -w @26/api` (run prior to final client media-consumer wiring; no API files changed afterwards) — 131 / 133 test files passed, 764 / 766 tests passed; 2 pre-existing unrelated failures in untouched pack/catalogue tests (`test/admin-rooms-auth.spec.ts:430` missing `"chess"` from `chess-battle`, `test/party-concepts.spec.ts:231` incomplete `whos-that-pokemon`)
+
+### Manual verification / unresolved issues
+
+- Real-device projector + multi-phone GPU/WebGL memory profile over an extended rehearsal has not yet been measured interactively.
+- Pre-existing incomplete draft questions in `birthdayPack.catalogue` (`tribunal-reddit`, `council-ferrier-sector`, `nextdoor-paranoia`, `property-price-roulette`, `whos-that-pokemon`) and the 2 pack tests above remain unresolved.
+
+### Exact next stage
+
+Before dress rehearsal: upgrade Cloudflare to Workers Paid (\$5/mo) and Images Paid (\$5/mo), finish the incomplete draft birthday-pack questions, and rehearse live on real devices. Do not deploy without explicit instruction.
 
 ## 12 November 2026 — kart party feel (branch `kart-party-feel`)
 

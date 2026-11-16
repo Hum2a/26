@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { buzz } from "../device/haptics";
+import { evictMediaUrl, useCachedMediaSrc } from "../media/media-cache";
 import { trollAssets } from "./troll-assets";
 import { useTrollClip } from "./troll-sound";
 
@@ -31,39 +32,46 @@ export function ScreenInvasion({
   onEscape?: () => void;
 }) {
   const nickname = from?.nickname ?? "Someone";
+  const rawFaceSrc = from?.faceSrc ?? null;
+  const faceSrc = useCachedMediaSrc(rawFaceSrc, { preload: true });
   return (
     <div className="troll-flood" role="dialog" aria-label={`${label}: ${nickname}`}>
       {invasionCopies.map((copy, index) =>
-        from?.faceSrc ? (
-          <img
-            key={index}
-            src={from.faceSrc}
-            alt=""
-            className="troll-flood-face troll-invasion-face"
-            style={{
-              left: `${copy.left}%`,
-              top: `${copy.top}%`,
-              width: `${copy.size}vmin`,
-              rotate: `${copy.spin}deg`,
-              animationDelay: `${copy.delay}s`,
-            }}
-          />
-        ) : (
-          <span
-            key={index}
-            aria-hidden="true"
-            className="troll-flood-face troll-invasion-name"
-            style={{
-              left: `${copy.left}%`,
-              top: `${copy.top}%`,
-              fontSize: `${copy.size / 4}vmin`,
-              rotate: `${copy.spin}deg`,
-              animationDelay: `${copy.delay}s`,
-            }}
-          >
-            {nickname}
-          </span>
-        ),
+          faceSrc ? (
+            <img
+              key={index}
+              src={faceSrc}
+              alt=""
+              className="troll-flood-face troll-invasion-face"
+              onError={
+                rawFaceSrc && faceSrc !== rawFaceSrc
+                  ? () => evictMediaUrl(rawFaceSrc)
+                  : undefined
+              }
+              style={{
+                left: `${copy.left}%`,
+                top: `${copy.top}%`,
+                width: `${copy.size}vmin`,
+                rotate: `${copy.spin}deg`,
+                animationDelay: `${copy.delay}s`,
+              }}
+            />
+          ) : (
+            <span
+              key={index}
+              aria-hidden="true"
+              className="troll-flood-face troll-invasion-name"
+              style={{
+                left: `${copy.left}%`,
+                top: `${copy.top}%`,
+                fontSize: `${copy.size / 4}vmin`,
+                rotate: `${copy.spin}deg`,
+                animationDelay: `${copy.delay}s`,
+              }}
+            >
+              {nickname}
+            </span>
+          ),
       )}
       <p className="troll-flood-caption">{nickname} was here</p>
       {escape ? (

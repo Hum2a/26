@@ -161,3 +161,38 @@ it("links to the full results once the podium is up", () => {
     `/r/${playingFixture.gameId}`,
   );
 });
+
+it("skips storage writes on unchanged snapshots and separates games on gameId change", () => {
+  sessionStorage.clear();
+  const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
+  const snapA = scored({
+    standings,
+    selfStanding: { place: 2, points: 200, players: 4 },
+    selfAward: 120,
+  });
+  const view = render(<RanksTab nickname="Amina" snapshot={snapA} />);
+  expect(setItemSpy).toHaveBeenCalledTimes(1);
+
+  // New object identities with identical values should not write again.
+  view.rerender(
+    <RanksTab
+      nickname="Amina"
+      snapshot={scored({
+        standings: standings.map((row) => ({ ...row })),
+        selfStanding: { place: 2, points: 200, players: 4 },
+        selfAward: 120,
+      })}
+    />,
+  );
+  expect(setItemSpy).toHaveBeenCalledTimes(1);
+
+  // Switching to another room clears previous game's remembered standings.
+  view.rerender(
+    <RanksTab
+      nickname="Amina"
+      snapshot={{ ...playingFixture, gameId: "NEWROOM1" }}
+    />,
+  );
+  expect(screen.queryByText("Place 2 of 4")).toBeNull();
+  setItemSpy.mockRestore();
+});

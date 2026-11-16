@@ -479,6 +479,18 @@ export function createCircuit(
   const travel = new Map<string, number>();
   const featurePoses = new Map<string, { x: number; z: number }>();
   const labels = new Map<string, THREE.Sprite>();
+  const present = new Set<string>();
+  function disposeLabel(id: string, sprite: THREE.Sprite) {
+    scene.remove(sprite);
+    const mat = sprite.material;
+    if (mat.map) {
+      mat.map.dispose();
+      textures.delete(mat.map);
+    }
+    mat.dispose();
+    materials.delete(mat);
+    labels.delete(id);
+  }
   function label(driver: KartRaceView["participants"][number], named: boolean) {
     const key = `${driver.playerId}:${named ? "name" : "number"}`;
     const known = labels.get(key);
@@ -591,7 +603,10 @@ export function createCircuit(
     const drivers = (
       focusPlayerId ? (self ? [self, ...neighbours] : []) : race.participants
     ).slice(0, capacity);
-    const present = new Set(drivers.map((driver) => driver.playerId));
+    present.clear();
+    for (const driver of drivers) {
+      present.add(driver.playerId);
+    }
     for (const id of poses.keys())
       if (!present.has(id)) {
         poses.delete(id);
@@ -599,6 +614,10 @@ export function createCircuit(
         travel.delete(id);
         emission.delete(id);
       }
+    for (const [id, sprite] of labels) {
+      const playerId = id.slice(0, id.lastIndexOf(":"));
+      if (!present.has(playerId)) disposeLabel(id, sprite);
+    }
     rig.begin(dt);
     const tagged = new Set<THREE.Sprite>();
     for (let i = 0; i < drivers.length; i++) {
@@ -735,7 +754,7 @@ export function createCircuit(
       value.count = detailedVisible ? 0 : drivers.length;
       value.instanceMatrix.needsUpdate = true;
     }
-    rig.end(new Set(drivers.map((driver) => driver.playerId)));
+    rig.end(present);
     if (effects)
       vfxPool!.update({
         raceId: race.raceId,

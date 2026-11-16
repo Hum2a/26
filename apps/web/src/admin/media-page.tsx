@@ -50,57 +50,86 @@ export function MediaPage() {
         gallery.
       </p>
       <CommandFeedback scope="media" />
-      <section className="skin-panel p-4 space-y-3" aria-label="Photo quality policy">
-        <h2>Photo bias</h2>
-        <p>
-          {snapshot.photoBias?.enabled !== false
-            ? "On: iPhone uploads get a deliberately rough display."
-            : "Off: clean photos are shown."}{" "}
-          Android photos use the best accepted copy. Unknown devices stay neutral. Clean
-          copies are always kept; these admin previews show them.
-        </p>
-        <p>
-          {snapshot.photoBias?.iphonePhotos ?? 0} iPhone ·{" "}
-          {snapshot.photoBias?.androidPhotos ?? 0} Android ·{" "}
-          {snapshot.photoBias?.otherPhotos ?? 0} other or unknown photos.
-        </p>
-        <Button
-          disabled={locked}
-          variant="secondary"
-          onClick={() =>
-            void execute(
-              {
-                action:
-                  snapshot.photoBias?.enabled === false
-                    ? "photo-bias-on"
-                    : "photo-bias-off",
-              },
-              "Change photo bias",
-              "media",
-            )
-          }
-        >
-          {snapshot.photoBias?.enabled === false
-            ? "Enable photo bias"
-            : "Show clean photos"}
-        </Button>
-        <ol aria-label="Photo bias history">
-          <AnimatePresence initial={false}>
-            {snapshot.photoBias?.history.map((entry, index) => (
-              <motion.li
-                key={`${entry.atMs}:${index}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                Host {entry.enabled ? "enabled bias" : "restored clean photos"} ·{" "}
-                {new Date(entry.atMs).toLocaleString("en-GB")}
-              </motion.li>
-            ))}
-          </AnimatePresence>
-        </ol>
-        <PhotoBiasRehearsal />
+      <section className="admin-card" aria-label="Photo quality policy">
+        <div className="admin-card-header">
+          <h2 className="admin-card-title">Photo bias</h2>
+          <span
+            className="admin-badge"
+            data-tone={snapshot.photoBias?.enabled !== false ? "warn" : "ok"}
+          >
+            <span
+              className="admin-status-dot"
+              data-tone={snapshot.photoBias?.enabled !== false ? "warn" : "ok"}
+              aria-hidden="true"
+            />
+            {snapshot.photoBias?.enabled !== false
+              ? "On: iPhone rough display"
+              : "Off: Clean photos"}
+          </span>
+        </div>
+        <div className="admin-card-body">
+          <p>
+            {snapshot.photoBias?.enabled !== false
+              ? "On: iPhone uploads get a deliberately rough display."
+              : "Off: clean photos are shown."}{" "}
+            Android photos use the best accepted copy. Unknown devices stay neutral. Clean
+            copies are always kept; these admin previews show them.
+          </p>
+          <p className="admin-mono-tag">
+            {snapshot.photoBias?.iphonePhotos ?? 0} iPhone ·{" "}
+            {snapshot.photoBias?.androidPhotos ?? 0} Android ·{" "}
+            {snapshot.photoBias?.otherPhotos ?? 0} other or unknown photos.
+          </p>
+          <div>
+            <Button
+              disabled={locked}
+              variant="secondary"
+              onClick={() =>
+                void execute(
+                  {
+                    action:
+                      snapshot.photoBias?.enabled === false
+                        ? "photo-bias-on"
+                        : "photo-bias-off",
+                  },
+                  "Change photo bias",
+                  "media",
+                )
+              }
+            >
+              {snapshot.photoBias?.enabled === false
+                ? "Enable photo bias"
+                : "Show clean photos"}
+            </Button>
+          </div>
+          {snapshot.photoBias?.history.length ? (
+            <div>
+              <p className="admin-meta font-bold mb-2">Bias change history</p>
+              <ol aria-label="Photo bias history" className="admin-data-list">
+                <AnimatePresence initial={false}>
+                  {snapshot.photoBias?.history.map((entry, index) => (
+                    <motion.li
+                      key={`${entry.atMs}:${index}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="admin-data-row"
+                    >
+                      <span>
+                        Host {entry.enabled ? "enabled bias" : "restored clean photos"} ·{" "}
+                        {new Date(entry.atMs).toLocaleString("en-GB")}
+                      </span>
+                    </motion.li>
+                  ))}
+                </AnimatePresence>
+              </ol>
+            </div>
+          ) : (
+            <ol aria-label="Photo bias history" className="hidden" />
+          )}
+          <PhotoBiasRehearsal />
+        </div>
       </section>
       <EntryNotice message={page.error} />
       <div className="admin-actions">

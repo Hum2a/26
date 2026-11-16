@@ -1,5 +1,6 @@
-import { memo, useMemo, type ReactNode } from "react";
+import { memo, useEffect, useMemo, type ReactNode } from "react";
 import type { LobbyPlayer } from "@26/shared";
+import { clearRoomMediaCache } from "../media/media-cache";
 import { PlayerAvatar } from "./player-avatar";
 import {
   buildRoster,
@@ -32,6 +33,9 @@ export function RosterProvider({
   // `players` gets a new identity on every full snapshot; the key does not.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const roster = useMemo(() => buildRoster(gameId, list), [gameId, key, revision]);
+  useEffect(() => {
+    clearRoomMediaCache(gameId);
+  }, [gameId]);
   return <RosterContext.Provider value={roster}>{children}</RosterContext.Provider>;
 }
 
