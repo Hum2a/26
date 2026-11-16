@@ -49,5 +49,6 @@ export function steerFromTravel(dx: number, width: number): number {
   const deadZone = 0.06;
   if (Math.abs(raw) <= deadZone) return 0;
   const linear = (Math.abs(raw) - deadZone) / (1 - deadZone);
-  return Math.sign(raw) * linear ** 1.5;
+  // Mild curve keeps fine corrections gentle without delaying hard left/right flips.
+  return Math.sign(raw) * linear ** 1.2;
 }

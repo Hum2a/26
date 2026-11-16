@@ -225,8 +225,8 @@ export function LiveConsole() {
           </p>
           <p>
             Created {new Date(snapshot.kartLobby!.createdAt).toLocaleString("en-GB")}.
-            The starting grid freezes when you start. Late arrivals watch this race;
-            create a fresh kart lobby for another race.
+            The starting grid freezes when you start. Late arrivals watch this race.
+            After the podium, choose Race again to keep this join code.
           </p>
         </section>
       ) : null}
@@ -270,7 +270,24 @@ export function LiveConsole() {
             {primaryLabel}
           </Button>
         ) : phase === "podium" ? (
-          <p>{kartLobby ? "The race is complete." : "The quiz is complete."}</p>
+          kartLobby ? (
+            <>
+              <p>The race is complete.</p>
+              <Button
+                disabled={locked}
+                onClick={() =>
+                  void execute({ action: "restart-kart" }, "Race again", "live")
+                }
+              >
+                Race again
+              </Button>
+              <p className="admin-meta">
+                Same join code and guests. Then choose Start kart race.
+              </p>
+            </>
+          ) : (
+            <p>The quiz is complete.</p>
+          )
         ) : null}
         {playing && !snapshot.paused ? (
           <Button

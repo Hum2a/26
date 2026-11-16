@@ -16,8 +16,10 @@ import { GuestPage } from "./guest-page";
 vi.mock("../live/room-api", async (original) => ({
   ...(await original<typeof import("../live/room-api")>()),
   resumeGuest: vi.fn(async () => undefined),
+  leaveLobby: vi.fn(async () => undefined),
 }));
 vi.mock("../live/room-socket", () => ({ openRoomSocket: vi.fn() }));
+import { leaveLobby } from "../live/room-api";
 
 type Options = Parameters<typeof openRoomSocket>[0];
 let options: Options;
@@ -150,6 +152,41 @@ it("reports a refused troll without touching the answer", async () => {
   );
   expect(await screen.findByText("Trolls are closed.")).toBeTruthy();
   expect(socket.submitAnswer).not.toHaveBeenCalled();
+}, 20_000);
+
+it("shows Leave lobby in the You menu and returns to the join form", async () => {
+  render(
+    <MemoryRouter>
+      <GuestPage
+        rehearsalSession={{
+          gameId: "ABCDEFGH",
+          playerId,
+          nickname: "Amina",
+          joinCode: "ABCDEF",
+          stateVersion: 2,
+        }}
+      />
+    </MemoryRouter>,
+  );
+  await waitFor(() => expect(openRoomSocket).toHaveBeenCalled());
+  act(() => {
+    options.onConnection("open");
+    options.onSnapshot({
+      ...ready,
+      phase: "lobby",
+      play: null,
+      mode: "kart",
+    } as LobbySnapshot);
+  });
+  fireEvent.click(await screen.findByRole("button", { name: "You: Amina" }));
+  const leaveButtons = await screen.findAllByRole("button", { name: "Leave lobby" });
+  expect(leaveButtons.length).toBeGreaterThanOrEqual(1);
+  fireEvent.click(leaveButtons[0]!);
+  await waitFor(() => expect(leaveLobby).toHaveBeenCalled());
+  expect(await screen.findByRole("heading", { name: "Join the room" })).toBeTruthy();
+  expect(
+    await screen.findByText("You left the lobby. Enter a new join code when you are ready."),
+  ).toBeTruthy();
 }, 20_000);
 
 it("does not ask for nickname votes in a kart-only lobby", async () => {

@@ -699,6 +699,42 @@ function moveTo(
   }
 }
 
+/**
+ * Returns a finished room to the lobby so the same join code can race again.
+ * Callers must clear any round-owned race rows for the frozen question first.
+ */
+export function returnToLobby(store: GameStore, now: number): void {
+  const room = store.readRoom();
+  if (room.phase !== "podium") {
+    throw new Error("Finish the race before starting another in this lobby.");
+  }
+  if (!Number.isSafeInteger(now) || now < 0) {
+    throw new Error("Choose a valid restart time.");
+  }
+  endPhase(store, room.roundId, now);
+  for (const job of store.jobs()) {
+    if (job.jobType === "gameplay" && job.status === "pending") {
+      store.saveJob({ ...job, status: "cancelled", dueAt: null, remainingMs: null });
+    }
+  }
+  const next: RoomClock = {
+    ...room,
+    phase: "lobby",
+    phaseGeneration: room.phaseGeneration + 1,
+    scopeGeneration: room.scopeGeneration + 1,
+    paused: false,
+    hold: null,
+    finishAfterRound: false,
+    roundId: null,
+    questionIndex: 0,
+    funFactIndex: 0,
+    fault: null,
+  };
+  if (!store.casRoom(room.phaseGeneration, next)) {
+    throw new Error("The room moved. Try Race again.");
+  }
+}
+
 /** Rehearsal caller enforces isolation and clears the selected question's records. */
 export function restartQuestion(store: GameStore, index: number, now: number): void {
   const room = store.readRoom();

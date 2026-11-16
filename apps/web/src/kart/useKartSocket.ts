@@ -6,8 +6,8 @@ import {
   type KartRaceView,
 } from "@26/shared";
 
-/** The room drops controls that arrive under 80 ms apart; leave room for jitter. */
-const minGapMs = 90;
+/** The room drops controls that arrive under 80 ms apart; leave a little jitter room. */
+const minGapMs = 85;
 /** Re-send held controls so the room keeps them fresh. */
 const heartbeatMs = 100;
 
