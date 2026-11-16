@@ -104,6 +104,99 @@ it("authorises and replays the race start, freezes late arrivals and ends withou
   expect((await room.snapshotFor("stage")).play?.kart?.participantCount).toBe(1);
 });
 
+it("returns a finished kart lobby to Start kart race with the same join code", async () => {
+  const now = Date.now() + 60_000;
+  const created = await env.ROOM_CODE_REGISTRY.getByName("codes").createLobby({
+    requestId: crypto.randomUUID(),
+    kind: "kart",
+    digest: await payloadDigest({ action: "create", kind: "kart" }),
+    now: new Date(now).toISOString(),
+  });
+  if (!created.ok) throw new Error(created.message);
+  const room = env.PARTY_ROOM.getByName(created.result.gameId);
+  await room.joinPlayer({
+    nickname: "Amina",
+    requestId: crypto.randomUUID(),
+    now: new Date(now).toISOString(),
+  });
+  expect(
+    (
+      await room.hostAction({
+        ...created.result.control,
+        action: "start-kart",
+        requestId: crypto.randomUUID(),
+        nowMs: now,
+      })
+    ).ok,
+  ).toBe(true);
+  for (let n = 1; n <= 6; n++) {
+    expect(
+      (
+        await room.advanceRound({
+          ...created.result.control,
+          requestId: crypto.randomUUID(),
+          nowMs: now + n * 100,
+        })
+      ).ok,
+    ).toBe(true);
+  }
+  expect((await room.snapshotFor("control")).phase).toBe("podium");
+  const joinCode = (await room.snapshotFor("control")).joinCode;
+  expect(
+    (
+      await room.hostAction({
+        ...created.result.control,
+        action: "restart-kart",
+        requestId: crypto.randomUUID(),
+        nowMs: now + 700,
+      })
+    ).ok,
+  ).toBe(true);
+  const again = await room.snapshotFor("control");
+  expect(again.phase).toBe("lobby");
+  expect(again.joinCode).toBe(joinCode);
+  expect(again.players).toHaveLength(1);
+  expect(again.kartLobby).toBeTruthy();
+  expect(
+    (
+      await room.hostAction({
+        ...created.result.control,
+        action: "start-kart",
+        requestId: crypto.randomUUID(),
+        nowMs: now + 800,
+      })
+    ).ok,
+  ).toBe(true);
+  expect((await room.snapshotFor("stage")).play?.question.kind).toBe("kart");
+});
+
+it("lets a guest leave and clear their place so another phone can join a new code", async () => {
+  const now = Date.now() + 60_000;
+  const created = await env.ROOM_CODE_REGISTRY.getByName("codes").createLobby({
+    requestId: crypto.randomUUID(),
+    kind: "kart",
+    digest: await payloadDigest({ action: "create", kind: "kart" }),
+    now: new Date(now).toISOString(),
+  });
+  if (!created.ok) throw new Error(created.message);
+  const room = env.PARTY_ROOM.getByName(created.result.gameId);
+  const joined = await room.joinPlayer({
+    nickname: "Amina",
+    requestId: crypto.randomUUID(),
+    now: new Date(now).toISOString(),
+  });
+  if (!joined.ok) throw new Error(joined.message);
+  expect((await room.snapshotFor("control")).players).toHaveLength(1);
+  expect(
+    await room.leaveGuest({
+      playerId: joined.playerId,
+      secret: joined.secret,
+      now: new Date(now + 1).toISOString(),
+    }),
+  ).toEqual({ ok: true });
+  expect((await room.snapshotFor("control")).players).toHaveLength(0);
+});
+
 it("refuses the kart start domain command in an ordinary lobby without changing it", async () => {
   const created = await env.ROOM_CODE_REGISTRY.getByName("codes").createLobby({
     requestId: crypto.randomUUID(),

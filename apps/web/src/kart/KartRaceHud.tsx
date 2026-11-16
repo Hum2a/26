@@ -53,6 +53,7 @@ export function KartRaceHud({
           Lap {lap}/{laps}
         </p>
       ) : null}
+      <RaceRivals race={race} place={place} selfPlayerId={self.playerId} />
       <AnimatePresence initial={false}>
         {self.slipstream ? (
           <motion.p
@@ -85,5 +86,48 @@ export function KartRaceHud({
         ) : null}
       </AnimatePresence>
     </div>
+  );
+}
+
+/** Who to chase and who is chasing: the drivers one place either side. */
+export function raceRivals(
+  race: KartRaceView,
+  place: number | undefined,
+  selfPlayerId: string,
+) {
+  if (!place) return { ahead: undefined, behind: undefined };
+  const at = (p: number) =>
+    race.leaderboard.find((row) => row.place === p && row.playerId !== selfPlayerId);
+  return { ahead: place > 1 ? at(place - 1) : undefined, behind: at(place + 1) };
+}
+
+function RaceRivals({
+  race,
+  place,
+  selfPlayerId,
+}: {
+  race: KartRaceView;
+  place: number | undefined;
+  selfPlayerId: string;
+}) {
+  const { ahead, behind } = raceRivals(race, place, selfPlayerId);
+  if (!ahead && !behind) return null;
+  return (
+    <p className="kart-race-rivals">
+      {ahead ? (
+        <span data-side="ahead">
+          <span aria-hidden="true">▲ </span>
+          <span className="sr-only">Ahead: </span>
+          {ahead.name}
+        </span>
+      ) : null}
+      {behind ? (
+        <span data-side="behind">
+          <span aria-hidden="true">▼ </span>
+          <span className="sr-only">Behind: </span>
+          {behind.name}
+        </span>
+      ) : null}
+    </p>
   );
 }

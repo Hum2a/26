@@ -828,7 +828,7 @@ function validKart(q: { trackId: string; timeLimitMs: number; collectMs: number 
   const limit =
     q.trackId === "party-ring-v1"
       ? 45000
-      : q.trackId === "mario-circuit-v1"
+      : q.trackId === "mario-circuit-v1" || q.trackId === "26-park-v1"
         ? 180000
         : 0;
   return limit > 0 && q.timeLimitMs === limit && q.collectMs === limit;

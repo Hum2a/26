@@ -1,4 +1,4 @@
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import {
@@ -9,7 +9,7 @@ import {
   parkWalls,
 } from "@26/shared";
 import { vfxRehearsalRace } from "./vfx-rehearsal";
-import { createCircuit } from "./circuit";
+import { createCircuit, kartTagName } from "./circuit";
 import { kartCameraPose, smoothKartPose, kartVehiclePose } from "./presentation";
 import { driftEffectDescription } from "./drift-effects";
 
@@ -528,7 +528,14 @@ it("renders available boxes, deployed oil and shields with the existing resource
   circuit.dispose();
 });
 
-it("disposes driver label sprites, materials and textures when a driver leaves", () => {
+describe("kart name tags", () => {
+  it("keep short nicknames and shorten long ones", () => {
+    expect(kartTagName("  Chen ")).toBe("Chen");
+    expect(kartTagName("Bartholomew the Great")).toBe("Bartholomew…");
+    expect(kartTagName("Twelve chars")).toBe("Twelve chars");
+  });
+
+  it("disposes driver label sprites, materials and textures when a driver leaves", () => {
   const ctx2d = {
     fillStyle: "",
     strokeStyle: "",
@@ -586,4 +593,5 @@ it("disposes driver label sprites, materials and textures when a driver leaves",
   expect(matDispose).toHaveBeenCalledOnce();
   if (texDispose) expect(texDispose).toHaveBeenCalledOnce();
   circuit.dispose();
+  });
 });

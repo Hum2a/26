@@ -77,6 +77,18 @@ export function serializeGuestCookie(input: {
   ].join("; ");
 }
 
+/** Clears the guest cookie so this phone can join a different room. */
+export function clearGuestCookie(secure = true): string {
+  return [
+    `${guestCookieName}=`,
+    "HttpOnly",
+    ...(secure ? ["Secure"] : []),
+    "SameSite=Strict",
+    "Path=/",
+    "Max-Age=0",
+  ].join("; ");
+}
+
 export function readGuestCookie(
   cookieHeader: string | undefined,
 ): { gameId: string; playerId: string; secret: string } | undefined {

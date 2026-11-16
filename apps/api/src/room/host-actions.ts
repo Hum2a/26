@@ -67,7 +67,7 @@ import {
   readKartLobby,
   chooseKartLobbyTrack,
 } from "./kart/kart-lobby.ts";
-import { startRound } from "./lifecycle.ts";
+import { returnToLobby, startRound } from "./lifecycle.ts";
 import { changeVoterDisplay } from "../questions/voters.ts";
 import { clearAvatar } from "../media/avatar.ts";
 
@@ -146,6 +146,32 @@ export function applyHostAction(
       },
       crypto.randomUUID(),
     );
+    return {};
+  }
+  if (input.action === "restart-kart") {
+    const store = createGameStore(sql);
+    const room = store.readRoom();
+    const script = room.questionScript;
+    const question = script?.questions[0];
+    if (
+      !readKartLobby(sql) ||
+      !script ||
+      script.version !== room.questionSetVersion ||
+      script.questions.length !== 1 ||
+      question?.kind !== "kart"
+    ) {
+      throw new Error("Open a kart-only lobby before racing again.");
+    }
+    if (room.phase !== "podium") {
+      throw new Error("Finish the race before starting another in this lobby.");
+    }
+    sql.exec(`DELETE FROM round_state WHERE question_id = ?`, question.id);
+    sql.exec(`DELETE FROM score_ledger WHERE question_id = ?`, question.id);
+    sql.exec(`DELETE FROM choice_answer WHERE question_id = ?`, question.id);
+    sql.exec(`DELETE FROM round_response WHERE question_id = ?`, question.id);
+    returnToLobby(store, input.nowMs);
+    sql.exec(`UPDATE room SET stage_hidden = 0, opening = 'done'`);
+    touch(sql);
     return {};
   }
   if (input.action === "open-joining" || input.action === "close-joining") {

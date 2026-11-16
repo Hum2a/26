@@ -423,6 +423,8 @@ export default defineConfig(({ command }) => ({
     host: true,
     port: 5173,
     strictPort: true,
+    // Discord tests use a temporary trycloudflare.com link to this machine.
+    allowedHosts: [".trycloudflare.com"],
   },
   preview: {
     port: 4173,

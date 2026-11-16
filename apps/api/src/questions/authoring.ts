@@ -375,21 +375,26 @@ export function finaleQuestion(
 }
 
 export function kartQuestion(
-  input: SharedInput & { trackId?: "party-ring-v1" | "mario-circuit-v1" },
+  input: SharedInput & {
+    trackId?: "party-ring-v1" | "mario-circuit-v1" | "26-park-v1";
+  },
 ): AuthoredKart {
+  // Full courses get three minutes; the ring is a 45-second sprint.
+  const windowMs =
+    input.trackId && input.trackId !== "party-ring-v1" ? 180_000 : 45_000;
   return finish(
     {
       ...shared(
         {
           ...input,
-          collectMs: input.trackId === "mario-circuit-v1" ? 180_000 : 45_000,
+          collectMs: windowMs,
           attribution: "live",
         },
         input.points ?? 100,
       ),
       kind: "kart",
       trackId: input.trackId ?? "party-ring-v1",
-      timeLimitMs: input.trackId === "mario-circuit-v1" ? 180_000 : 45_000,
+      timeLimitMs: windowMs,
     },
     input.status,
   );

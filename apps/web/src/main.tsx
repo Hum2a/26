@@ -5,9 +5,11 @@ import { RouterProvider } from "react-router";
 import { router } from "./router";
 import { installTheme } from "./theme/install";
 import { installErrorReporter } from "./device/error-reporter";
+import { installRequestIdPolyfill } from "./device/request-id";
 import { installStaleBuildRecovery } from "./ui/stale-build";
 import "./index.css";
 
+installRequestIdPolyfill();
 installTheme();
 installErrorReporter();
 installStaleBuildRecovery();

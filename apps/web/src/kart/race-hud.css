@@ -182,3 +182,79 @@
     transition-duration: 0.1s;
   }
 }
+
+/* Item hits: being hit inverts the banner and gives it a short shake; landing
+   your own item uses the highlight. Reduced motion keeps the colour only. */
+.kart-race-banner[data-tone="hit"] {
+  background: var(--foreground);
+  color: var(--background);
+  animation: kart-hit-shake 360ms var(--ease-party, ease-out) 1;
+}
+.kart-race-banner[data-tone="landed"] {
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+}
+@keyframes kart-hit-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px) rotate(-2deg);
+  }
+  50% {
+    transform: translateX(6px) rotate(2deg);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kart-race-banner[data-tone="hit"] {
+    animation: none;
+  }
+}
+
+/* Projector hit ticker: the last three landed items, right under the call-outs. */
+.kart-hit-ticker {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 7;
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+.kart-hit-ticker li {
+  justify-self: end;
+  border-radius: var(--radius-panel);
+  padding: 0.35rem 0.9rem;
+  font-size: clamp(1rem, 1.6vw, 1.6rem);
+  font-weight: 800;
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  color: var(--surface-foreground);
+  border: 2px solid var(--accent);
+}
+
+/* The drivers one place either side, small enough to glance at. */
+.kart-race-rivals {
+  display: flex;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  max-width: 100%;
+}
+.kart-race-rivals span[data-side] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 9rem;
+  transition: opacity 200ms var(--ease-party, ease-out);
+}
+.kart-race-rivals span[data-side="ahead"] {
+  color: var(--highlight);
+}

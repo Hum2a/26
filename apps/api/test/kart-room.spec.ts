@@ -1097,7 +1097,7 @@ it("persists full-room control queues before a tick and replays them after evict
   expect(guest.participants).toHaveLength(1);
   expect(guest.participants[0]!.playerId).toBe(players[99]);
   expect(guest.inputCursor).toBe(2);
-  expect(guest.leaderboard).toHaveLength(9); // Top eight plus this phone's own place.
+  expect(guest.leaderboard).toHaveLength(10); // Top eight, the driver just ahead and this phone.
   expect(JSON.stringify(guest)).not.toContain("inputUntil");
 });
 

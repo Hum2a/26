@@ -147,6 +147,7 @@ import {
   applyReaction,
   cloudRows,
   EMPTY_VOTER_REACTIONS,
+  markKicked,
   recentAdjustments,
   revealNames,
   seedDemoNames,
@@ -211,7 +212,11 @@ import {
 } from "../wall/snapshot.ts";
 import { syncWall } from "../wall/queue.ts";
 import { seedSampleRoom, type SampleMedia } from "./sample.ts";
-import { reportWallImageFailed, type WallSettingsChange } from "../wall/moderation.ts";
+import {
+  declineWaitingFor,
+  reportWallImageFailed,
+  type WallSettingsChange,
+} from "../wall/moderation.ts";
 
 type WallCommand =
   | {
@@ -664,6 +669,34 @@ export class PartyRoom extends DurableObject<Env> {
       this.broadcast();
     }
     return result;
+  }
+
+  /**
+   * Guest leaves of their own accord: remove them from the active roster and
+   * close their sockets. The HTTP route also clears the guest cookie.
+   */
+  async leaveGuest(input: {
+    playerId: string;
+    secret: string;
+    now: string;
+  }): Promise<{ ok: true }> {
+    const existing = this.readRoom();
+    if (!existing) return { ok: true };
+    const check = await this.verifyGuest(
+      input.playerId,
+      input.secret,
+      new Date(input.now),
+    );
+    if (!check.ok) return { ok: true };
+    this.ctx.storage.transactionSync(() => {
+      if (!markKicked(this.ctx.storage.sql, input.playerId, input.now)) return;
+      declineWaitingFor(this.ctx.storage.sql, input.playerId);
+      syncWall(this.ctx.storage.sql, "tick", Date.parse(input.now));
+      this.ctx.storage.sql.exec(`UPDATE room SET state_version = state_version + 1`);
+    });
+    this.closePlayerSockets(input.playerId, removedSessionMessage);
+    this.broadcast();
+    return { ok: true };
   }
 
   async resumeGuest(input: {

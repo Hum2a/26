@@ -1377,3 +1377,45 @@ body:has(.kart-phone) {
 .kart-countdown span[data-beat="GO"] {
   color: var(--accent);
 }
+
+/* Item roulette: a badge beside the item button that spins briefly when a
+   new item arrives, then lands on it. */
+.kart-item-roulette {
+  display: inline-grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: var(--radius-control);
+  border: 2px solid var(--line);
+  background: var(--surface);
+  font-size: 1.5rem;
+  line-height: 1;
+  overflow: hidden;
+  transition: border-color 200ms var(--ease-party, ease-out);
+}
+.kart-item-roulette[data-spinning] {
+  border-color: var(--highlight);
+}
+
+/* One big tap turns race sound on; it leaves once sound is on or the race is
+   well under way, so it never sits over the driving view for long. */
+.kart-sound-prompt {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 9;
+  min-height: 3rem;
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--highlight);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--surface-foreground);
+  font-weight: 800;
+  font-size: 1rem;
+  touch-action: manipulation;
+  transition: background-color 150ms var(--ease-party, ease-out);
+}
+.kart-sound-prompt:active {
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+}

@@ -410,6 +410,8 @@ export function enterKart(
     race.itemRules = readRoomKartItems(sql).rules;
     // Room races time each kart's first throttle against GO for a start boost.
     race.launchVersion = 1;
+    // Guests see the karts around them by default; Live controls can hide them.
+    race.opponentsEnabled = true;
     write(sql, q.id, race);
     writeRoundState(sql, q.id, "kart-session", {
       raceId,
@@ -846,8 +848,6 @@ type KartFrameIndex = {
   driverIndexById: Map<string, number>;
   participantById: Map<string, KartRaceView["participants"][number]>;
   participantByNumber: Map<number, KartRaceView["participants"][number]>;
-  topLeaders: KartRaceView["leaderboard"];
-  leaderIndexById: Map<string, number>;
 };
 
 function buildKartFrameIndex(race: KartRace, full: KartRaceView): KartFrameIndex {
@@ -861,16 +861,10 @@ function buildKartFrameIndex(race: KartRace, full: KartRaceView): KartFrameIndex
     participantById.set(participant.playerId, participant);
     participantByNumber.set(participant.number, participant);
   }
-  const leaderIndexById = new Map<string, number>();
-  for (let i = 0; i < full.leaderboard.length; i += 1) {
-    leaderIndexById.set(full.leaderboard[i]!.playerId, i);
-  }
   return {
     driverIndexById,
     participantById,
     participantByNumber,
-    topLeaders: full.leaderboard.slice(0, 8),
-    leaderIndexById,
   };
 }
 
@@ -911,14 +905,7 @@ export function phoneRaceView(
   const selfParticipant = shared
     ? shared.participantById.get(selfPlayerId)
     : full.participants.find((d) => d.playerId === selfPlayerId);
-  const selfLeaderPos = shared
-    ? shared.leaderIndexById.get(selfPlayerId)
-    : full.leaderboard.findIndex((d) => d.playerId === selfPlayerId);
-  const leaderboard = shared
-    ? selfLeaderPos !== undefined && selfLeaderPos >= 8
-      ? [...shared.topLeaders, full.leaderboard[selfLeaderPos]!]
-      : shared.topLeaders.slice()
-    : full.leaderboard.filter((d, i) => i < 8 || d.playerId === selfPlayerId);
+  const leaderboard = phoneLeaderboard(full.leaderboard, selfPlayerId);
   return {
     ...full,
     selfPlayerId,
@@ -945,6 +932,7 @@ export function phoneRaceView(
     inputCursor: lastSequence ?? Math.max(0, selfDriver?.sequence ?? 0),
     participants: selfParticipant ? [selfParticipant] : [],
     nearby,
+    // Top eight, yourself, and the drivers directly ahead and behind you.
     leaderboard,
   };
 }
@@ -986,4 +974,15 @@ export function kartFrames(sql: SqlStorage, q: KartQuestion) {
     forPhone: (playerId: string) =>
       phoneRaceView(race, full, playerId, cursors.get(playerId), shared),
   };
+}
+
+/** A phone's shortlist: the top eight plus its own row and the rows either side. */
+export function phoneLeaderboard<T extends { playerId: string }>(
+  rows: readonly T[],
+  selfPlayerId: string | null,
+): T[] {
+  const self = selfPlayerId
+    ? rows.findIndex((row) => row.playerId === selfPlayerId)
+    : -1;
+  return rows.filter((_, i) => i < 8 || (self >= 0 && Math.abs(i - self) <= 1));
 }

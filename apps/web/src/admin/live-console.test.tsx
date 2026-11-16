@@ -69,6 +69,23 @@ it("starts only the frozen race in a kart lobby and blocks its controls offline"
   ).toBe(true);
 });
 
+it("offers Race again on a finished kart podium to keep the same join code", async () => {
+  setupControls({
+    ...roomFixture,
+    phase: "podium",
+    kartLobby: { createdAt: 1000 },
+    play: null,
+  });
+  await mountControls(<LiveConsole />);
+  expect(screen.getByText("The race is complete.")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Race again" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "restart-kart" }),
+    ),
+  );
+});
+
 it("starts the saved birthday script from the lobby", async () => {
   setupControls(roomFixture);
   await mountControls(<LiveConsole />);

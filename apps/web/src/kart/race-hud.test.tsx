@@ -1,7 +1,7 @@
 import { act, render, renderHook, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { KartRaceView } from "@26/shared";
-import { KartRaceHud } from "./KartRaceHud";
+import { KartRaceHud, raceRivals } from "./KartRaceHud";
 import { KartStageCallouts, calloutMs } from "./KartStageCallouts";
 import { bannerMs, useRaceFeedback } from "./useRaceFeedback";
 import type { RaceAudio } from "./race-audio";
@@ -89,7 +89,7 @@ it("hides the lap counter in a one-lap race and shows a charging draft", () => {
   expect(screen.getByText("Drafting…")).toBeTruthy();
 });
 
-it("turns race moments into banners, sound and buzzes only when sound is on", () => {
+it("turns race moments into banners and buzzes, with sound only when it is on", () => {
   const audio = fakeAudio();
   const start = view([
     { id: "a", place: 1 },
@@ -98,7 +98,7 @@ it("turns race moments into banners, sound and buzzes only when sound is on", ()
   const hook = renderHook(({ race }) => useRaceFeedback(race, { open: true, audio }), {
     initialProps: { race: start },
   });
-  // Sound off: banners still show, but nothing buzzes.
+  // Sound off: banners still show and the phone still buzzes.
   hook.rerender({
     race: view([
       { id: "a", place: 2 },
@@ -106,7 +106,7 @@ it("turns race moments into banners, sound and buzzes only when sound is on", ()
     ]),
   });
   expect(hook.result.current.banner?.text).toBe("Up to 1st!");
-  expect(buzz).not.toHaveBeenCalled();
+  expect(buzz).toHaveBeenCalledWith(30);
   act(() => hook.result.current.toggleSound());
   expect(hook.result.current.soundOn).toBe(true);
   expect(localStorage.getItem("26.kart.race-sound")).toBe("on");
@@ -155,4 +155,68 @@ it("announces each projector moment once, then clears it", () => {
   // After its hold the queue is empty; the text then eases out.
   act(() => vi.advanceTimersByTime(calloutMs + 10));
   expect(region.dataset.idle).toBe("true");
+});
+
+it("plays GO and lists landed items on the projector, then lets them fade", () => {
+  const audio = fakeAudio();
+  const hits = {
+    presentation: {
+      version: 3,
+      items: {
+        hits: [
+          { eventId: 5, atMs: 900, kind: "hit", target: "a", by: "b", item: "bomb" },
+        ],
+      },
+    },
+  } as unknown as Partial<KartRaceView>;
+  const first = view(
+    [
+      { id: "a", place: 1 },
+      { id: "b", place: 2 },
+    ],
+    { elapsedMs: 500 },
+  );
+  const stage = render(<KartStageCallouts race={first} audio={audio} />);
+  expect(audio.cue).toHaveBeenCalledWith("go");
+  stage.rerender(
+    <KartStageCallouts
+      race={view(
+        [
+          { id: "a", place: 1 },
+          { id: "b", place: 2 },
+        ],
+        { elapsedMs: 900, ...hits },
+      )}
+      audio={audio}
+    />,
+  );
+  const ticker = () => screen.getByRole("list", { name: "Item hits" }).textContent;
+  expect(ticker()).toContain("B 💣 A");
+  expect(audio.cue).toHaveBeenCalledWith("launch");
+  act(() => vi.advanceTimersByTime(5000));
+  expect(
+    screen.getByRole("list", { name: "Item hits" }).querySelectorAll("li").length,
+  ).toBeLessThanOrEqual(1);
+});
+
+it("names the drivers one place ahead and behind", () => {
+  const race = view([
+    { id: "a", place: 1 },
+    { id: "b", place: 2 },
+    { id: "c", place: 3 },
+  ]);
+  const rows = race.leaderboard.map((row) => ({
+    ...row,
+    name: row.playerId.toUpperCase(),
+  }));
+  const named = { ...race, leaderboard: rows } as KartRaceView;
+  expect(raceRivals(named, 2, "b")).toMatchObject({
+    ahead: { name: "A" },
+    behind: { name: "C" },
+  });
+  expect(raceRivals(named, 1, "a").ahead).toBeUndefined();
+  expect(raceRivals(named, undefined, "b")).toEqual({
+    ahead: undefined,
+    behind: undefined,
+  });
 });

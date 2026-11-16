@@ -171,13 +171,19 @@ export function AdminKartPage() {
                     Choose Start kart race when everyone is ready. Advance through the
                     get-ready beats, then drive. The race leads to results and the podium.
                   </li>
+                  <li>
+                    After the podium, choose Race again on Live controls to keep the same
+                    join code, then Start kart race.
+                  </li>
                 </ol>
                 <p>
                   The grid freezes when the race starts. Late arrivals can join the room
-                  and watch; create another kart lobby for their race. To rehearse without
-                  guests, join the new lobby from a private second tab and open its stage.
-                  Pause, end the race or switch course features off from Live controls.
-                  Layout previews do not start a race or change a room.
+                  and watch. Open Rooms to see every open lobby, Destroy room on Live
+                  controls to clear one, or Remove a guest under Players. Guests can Leave
+                  lobby from the You menu on their phone. To rehearse without guests, join
+                  the new lobby from a private second tab and open its stage. Pause, end
+                  the race or switch course features off from Live controls. Layout
+                  previews do not start a race or change a room.
                 </p>
                 <Link className="entry-text-link" to="/admin/rooms">
                   Open rooms →

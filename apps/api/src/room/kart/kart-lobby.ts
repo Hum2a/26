@@ -135,3 +135,4 @@ export function assertKartLobbyAction(sql: SqlStorage, action: string) {
   )
     throw new Error("This is a kart-only lobby. Use Start kart race.");
 }
+

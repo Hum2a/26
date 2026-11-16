@@ -49,6 +49,7 @@ import type { Hono } from "hono";
 import { z } from "zod";
 import { jsonData } from "../auth/http.ts";
 import {
+  clearGuestCookie,
   readCredentialCookie,
   readGuestCookie,
   sameOriginReadRejection,
@@ -269,6 +270,30 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     return jsonData(resumed.session);
   });
 
+  app.post("/api/rooms/leave", async (c) => {
+    if (sameOriginRejection(c.req.raw)) {
+      return authFailure("forbidden", 403);
+    }
+    const guest = readGuestCookie(c.req.header("cookie"));
+    const cleared = new Headers();
+    cleared.append("set-cookie", clearGuestCookie(c.env.APP_ENV !== "local"));
+    if (guest) {
+      const gameId = gameIdSchema.safeParse(guest.gameId);
+      if (gameId.success) {
+        try {
+          await room(c.env, gameId.data).leaveGuest({
+            playerId: guest.playerId,
+            secret: guest.secret,
+            now: new Date().toISOString(),
+          });
+        } catch {
+          /* Cookie still clears so the phone can join another code. */
+        }
+      }
+    }
+    return jsonData({ ok: true }, 200, cleared);
+  });
+
   app.post("/api/rooms/lookup", async (c) => {
     if (sameOriginRejection(c.req.raw)) {
       return authFailure("forbidden", 403);
@@ -393,6 +418,7 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "start",
       "start-birthday",
       "start-kart",
+      "restart-kart",
       "start-kart-rehearsal",
       "kart-course-on",
       "kart-course-off",
@@ -978,7 +1004,8 @@ function readHostDetails(
       ? { ok: true, fields: { rehearsalConfig: config.data } }
       : { ok: false, message: "Choose valid rehearsal settings." };
   }
-  if (action === "start-kart") return { ok: true, fields: {} };
+  if (action === "start-kart" || action === "restart-kart")
+    return { ok: true, fields: {} };
   if (action === "developer-jump") {
     const index = z
       .number()
