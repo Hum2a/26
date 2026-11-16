@@ -26,8 +26,42 @@ export function presentBinding(value: string | undefined): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-export function configuredAdminEmail(env: AuthBindings): string | undefined {
-  return presentBinding(env.ADMIN_EMAIL)?.toLowerCase();
+/**
+ * Local fallback when ADMIN_EMAIL is unset. A comma-separated allow-list;
+ * a single address is still valid. Staging and production set the same
+ * binding as a Cloudflare secret.
+ */
+export const defaultLocalAdminEmails = "humzab1711@hotmail.com,adenreh@gmail.com";
+
+/**
+ * Parses ADMIN_EMAIL as a comma-separated allow-list of administrator
+ * addresses. A single address still works. Tokens are trimmed and
+ * lowercased. Empty parts, duplicates, and values without `@` are ignored.
+ */
+export function parseAdminEmails(value: string | undefined): string[] {
+  const raw = presentBinding(value);
+  if (!raw) {
+    return [];
+  }
+  const emails: string[] = [];
+  const seen = new Set<string>();
+  for (const part of raw.split(",")) {
+    const email = part.trim().toLowerCase();
+    if (!email.includes("@") || seen.has(email)) {
+      continue;
+    }
+    seen.add(email);
+    emails.push(email);
+  }
+  return emails;
+}
+
+export function configuredAdminEmails(env: AuthBindings): string[] {
+  return parseAdminEmails(env.ADMIN_EMAIL);
+}
+
+export function isConfiguredAdminEmail(env: AuthBindings, email: string): boolean {
+  return configuredAdminEmails(env).includes(email.trim().toLowerCase());
 }
 
 /**

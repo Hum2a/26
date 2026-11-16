@@ -148,6 +148,25 @@
 .projector-setup-return:focus-visible {
   opacity: 1;
 }
+/* Idle presentation: the setup button fades away with the cursor. */
+.stage-cursor-hidden .projector-setup-return:not(:focus-visible) {
+  opacity: 0;
+  pointer-events: none;
+}
+/* Full screen dropped while presenting: a quiet hint, not the setup page. */
+.projector-fullscreen-hint {
+  position: fixed;
+  left: 50%;
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  z-index: 55;
+  translate: -50% 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 0.4rem 0.9rem;
+  background: color-mix(in oklab, var(--background) 85%, transparent);
+  color: var(--foreground);
+  font-size: 1rem;
+}
 .projector-media {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));

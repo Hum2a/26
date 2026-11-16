@@ -40,6 +40,15 @@ export function PhonePreviewPanel({
           Solo practice has no room connection or party points.
         </p>
       ) : null}
+      {questionId === "chess-battle" ? (
+        <p>
+          Want to try the real bot?{" "}
+          <a className="entry-text-link" href="/chess" target="_blank" rel="noreferrer">
+            Play standalone chess ↗
+          </a>{" "}
+          Solo practice has no room connection or party points.
+        </p>
+      ) : null}
       <div className="admin-preview-controls">
         <div role="group" aria-label="Preview phase">
           {[

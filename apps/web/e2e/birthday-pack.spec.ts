@@ -82,6 +82,10 @@ test("edits the birthday order and starts the imported room race on a phone", as
     );
     await admin.bringToFront();
     await admin.getByRole("button", { name: "Start birthday game" }).click();
+    await admin
+      .getByRole("dialog")
+      .getByRole("button", { name: "Start birthday game", exact: true })
+      .click();
     await expect(driver.getByText(/Starting grid/)).toBeVisible({ timeout: 20000 });
     await model;
     for (let i = 0; i < 2; i++) {

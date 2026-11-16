@@ -58,7 +58,11 @@ npm run dev
 
 ## Staging and production releases
 
+**For production releases, use `bash release.sh` which enforces version bumping, clean tree, and all checks.**
+
 The Vite plugin selects the Wrangler environment at build time. The release scripts set `CLOUDFLARE_ENV`, check the generated Worker name, and deploy that file. Passing `--env` only at deploy time does not retarget a build that was flattened as local.
+
+### Staging releases
 
 ```powershell
 npm run secrets-sync:staging
@@ -72,13 +76,50 @@ Or one command that migrates, then builds and deploys with the required secrets 
 npm run deploy:staging:full
 ```
 
+### Production releases
+
+**Recommended approach using release.sh:**
+
+```powershell
+bash release.sh --deploy=production
+```
+
+The `release.sh` script handles version bumping, requires master and a clean tree before the bump, runs checks, then deploys. After that point it sets `SKIP_GIT_CHECK=true` so generated artefacts from the bump/checks do not fail `release.ts`'s git check. It still passes `--override-freeze` through. `release.sh` does not accept `--skip-git-check`.
+
+**Direct approach (bypasses version bumping):**
+
+```powershell
+npm run deploy:prod
+```
+
+**Production safeguards by command type:**
+
+| Command type                                    | Freeze check | Clean master |
+| ----------------------------------------------- | ------------ | ------------ |
+| deploy/full to production or both               | Required     | Required     |
+| deploy/full to staging only, or any `--dry-run` | Not required | Not required |
+| secrets-sync (any target)                       | Not required | Not required |
+| standalone migrate (`db:migrate:*`)             | Not required | Not required |
+
+Raw vendor commands (`npx wrangler deploy`, `npx wrangler secret put`, the auth and archive migration scripts run directly) are outside these safeguards.
+
+Pass `--override-freeze` for emergency deploys during freeze period (20 Nov-22 Nov UTC).
+
+A git-check bypass (`SKIP_GIT_CHECK=true` or `--skip-git-check` on `release.ts`) never skips freeze. Use it only from a trusted wrapper that has already required clean master. Direct `npm run deploy:prod` still reads git and fails closed if git is unavailable. Git is read only for a real production deploy: staging deploys and dry runs do not need it.
+
+`npm run test:release` runs `release.ts` and `release.sh` against fake git, npm, npx, curl and gh, on Windows as well as Linux. It refuses to run a release command unless those fakes answer, and sets an invalid `CLOUDFLARE_API_TOKEN` so a real Wrangler could not use a saved login. The `release.sh` tests use a throwaway repository with a local bare remote.
+
 The Vite environment directory stays `apps/web/dist/26_humza_website_local` because that name comes from the top-level Worker. The script opens `apps/web/dist/26_humza_website_local/wrangler.json` and refuses to continue unless `"name"` is `26-humza-website-staging` and `"targetEnvironment"` is `staging`. A build that still has `"name": "26-humza-website-local"` is the local build. Do not deploy it as staging.
 
 Wrangler warns that the secret names are missing from `env.staging.vars`. That warning is expected. Those names are `secrets.required`, not vars. The build also warns that the secrets are not in the local environment. That does not mean they were created.
 
 `npm run secrets-sync:staging` uploads the required names from `apps/api/.dev.vars.staging` with `wrangler secret bulk`. Empty values are rejected. Extra keys in that file are not uploaded. `npm run deploy:staging` does not upload secrets. `npm run deploy:staging:full` attaches them with `--secrets-file` on the same deploy as the new code.
 
-`npm run deploy:both` and `npm run deploy:both:full` run staging and then production. Add `-- --dry-run` to a secrets-sync or deploy command to check names or packaging without uploading.
+`npm run deploy:both` and `npm run deploy:both:full` run staging and then production. Plain deploy commands (`deploy:staging`, `deploy:prod`, `deploy:both`) build and deploy directly without running the test suite (use `--checks` to opt in). Full commands (`deploy:staging:full`, `deploy:prod:full`, `deploy:both:full`) run the full test suite (typecheck, content preflight, unit tests, linter, release tests, and the isolated API suite `@26/api`), migrate the database schemas, and deploy with secrets attached (`--secrets-file`). Combined commands (`deploy:both` and `deploy:both:full`) build the web and Worker package once, deploy staging, retarget the generated `wrangler.json` for production from `apps/api/wrangler.jsonc`, and deploy the same build to production. `npm run release` retains its existing checks and tells the deploy command those checks have already run.
+
+Add `-- --dry-run` to a secrets-sync or deploy command to check names or packaging without uploading, migrating or deploying. A deploy dry run builds the package but needs no freeze override and does not run the full pre-release check suite.
+
+Production is frozen from 20 November 2026 at 00:00 until 22 November at 12:00, London time. An explicitly requested emergency deployment can use `--override-freeze`; `--skip-checks` separately skips the pre-release checks when necessary. These flags work through both `npm run release -- ...` and the direct deploy commands. Packaging and generated Worker target checks still run.
 
 ## Production build
 
@@ -90,7 +131,7 @@ npm run db:migrate:prod
 npm run deploy:prod
 ```
 
-Or `npm run deploy:prod:full`. The generated worker name must be `26-humza-website` and the custom domain must be `26.humza.website`. This repository has no `account_id`. Cloudflare creates the DNS record for the custom domain on deploy when `humza.website` is in that account.
+Or `npm run deploy:prod:full`. The generated worker name must be `26-humza-website` and the custom domain must be `26.humza.website`. Cloudflare creates the DNS record for the custom domain on deploy when `humza.website` is in that account.
 
 ## Rollback
 
@@ -113,9 +154,9 @@ npm run db:migrate:staging
 npm run db:migrate:prod
 ```
 
-Those commands run `auth:migrate` and `archive:migrate` for one environment. Seed remains separate: `npm run auth:seed -- --env staging`. Replace `staging` with `production` only for the production database. Archive migration is additive: version 1 gains the delivery tables and becomes version 2. A frozen publication is not rewritten. Do not run `archive:retain` during the event. That command deletes old archive rows and is not a recovery tool.
+Those commands run `auth:migrate` and `archive:migrate` for one environment. Seed remains separate: `npm run auth:seed -- --env staging`. Replace `staging` with `production` only for the production database. After adding an address to `ADMIN_EMAIL`, run seed again for that environment; existing administrator users are left unchanged. Archive migration is additive: version 1 gains the delivery tables and becomes version 2. A frozen publication is not rewritten. Do not run `archive:retain` during the event. That command deletes old archive rows and is not a recovery tool.
 
-Neon project `26` in `aws-eu-west-2` has a `development`, `staging`, and `production` branch. Better Auth tables, `room_credential`, and the verified administrator are applied on all three. The development branch also has the local inbox table. Each gitignored vars file holds that branch's pooled `DATABASE_URL`. `BETTER_AUTH_URL` is still blank, so staging and production auth stays unavailable until it matches the public origin.
+Neon project `26` in `aws-eu-west-2` has a `development`, `staging`, and `production` branch. Better Auth tables, `room_credential`, and the verified administrator users are applied on all three. The development branch also has the local inbox table. Each gitignored vars file holds that branch's pooled `DATABASE_URL`. `BETTER_AUTH_URL` is still blank, so staging and production auth stays unavailable until it matches the public origin.
 
 ## R2
 
@@ -134,7 +175,7 @@ The `IMAGES` binding is declared on the staging and production environments. It 
 
 Names only. Prefer `npm run secrets-sync:staging` after filling `apps/api/.dev.vars.staging`. To set one name by hand, use `npx wrangler secret put NAME --env staging` and paste the value on stdin. Do not put the value on the command line or in `wrangler.jsonc`.
 
-- `ADMIN_EMAIL`
+- `ADMIN_EMAIL` — comma-separated administrator allow-list (`humzab1711@hotmail.com,adenreh@gmail.com`). A single address still works. After changing it, upload the secret and run `npm run auth:seed -- --env staging` (or `--env production`).
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
 - `DATABASE_URL`
@@ -148,7 +189,7 @@ Names only. Prefer `npm run secrets-sync:staging` after filling `apps/api/.dev.v
 
 `CLIENT_API_KEY` must match `VITE_CLIENT_API_KEY` in the matching `.env.{env}` file used at build time. Rotate both together with `npm run client-api-key:rotate -- --env staging`, rebuild, then sync secrets. The SPA embeds the Vite value in the client bundle. This blocks casual direct API access; it is not a hidden server secret.
 
-`EMAIL_TEST_RECIPIENT` is required on staging. Results mail is sent only to that address. Admin sign-in is not limited by it. If the name is unset on staging, results mail throws and does not send. Production sends to the guest address only when this secret is absent. If it is set in production, results mail is limited to it as well.
+`EMAIL_TEST_RECIPIENT` is required on staging. Results mail is sent only to that address; if the name is unset, delivery refuses to send. Local development can opt into the same restriction by setting it. Production always sends to the requested guest address, even if an old test-recipient binding remains. Admin sign-in is not limited by this setting. This source change takes effect when deployed; it does not inspect or remove any existing secret.
 
 An empty string in `vars` would replace a secret on the next deploy. Staging and production `vars` therefore contain only `APP_ENV` and `MEDIA_BUCKET_NAME`. Local `vars` still include empty placeholders so local development and type generation stay explicit.
 

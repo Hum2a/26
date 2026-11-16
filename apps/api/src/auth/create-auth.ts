@@ -1,6 +1,10 @@
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { emailOTP, magicLink } from "better-auth/plugins";
-import { configuredAdminEmail, presentBinding, type AuthBindings } from "./bindings.ts";
+import {
+  configuredAdminEmails,
+  presentBinding,
+  type AuthBindings,
+} from "./bindings.ts";
 import type { AppDatabase } from "./create-database.ts";
 import type { EmailSender } from "./create-email.ts";
 
@@ -40,13 +44,21 @@ export function resolvePublicOrigin(
   }
 }
 
+/** Seconds a signed session cookie may answer for the database. */
+export const adminSessionCacheSeconds = 120;
+export const adminSessionOptions = {
+  cookieCache: { enabled: true, maxAge: adminSessionCacheSeconds },
+} as const;
+
 export function createAuth(
   env: AuthBindings,
   input: { origin: string; database: AppDatabase; email: EmailSender },
+  preparation?: { preparingLocalDatabase: true },
 ) {
-  const adminEmail = configuredAdminEmail(env);
+  const adminEmails = configuredAdminEmails(env);
+  const allowedAdmins = new Set(adminEmails);
   const secret = resolveAuthSecret(env);
-  if (!adminEmail || !secret) {
+  if (adminEmails.length === 0 || !secret) {
     throw new Error("Authentication is not configured for this environment.");
   }
 
@@ -57,15 +69,31 @@ export function createAuth(
     secret,
     trustedOrigins: [input.origin],
     telemetry: { enabled: false },
-    advanced: { useSecureCookies: true },
+    advanced: {
+      useSecureCookies: true,
+      // The isolated local migration instance is created before tables exist.
+      // Real request instances, including local ones, validate after preparation.
+      database: {
+        validateSchema: !(
+          preparation?.preparingLocalDatabase &&
+          env.APP_ENV === "local" &&
+          input.database.kind === "pglite"
+        ),
+      },
+    },
     emailAndPassword: { enabled: false },
     rateLimit: { enabled: env.APP_ENV !== "local" },
+    // Host commands check the admin session on every Pause or Advance. A short
+    // signed cookie cache answers most of them without a database round trip,
+    // so a slow Neon start cannot stall the live desk. A revoked session stays
+    // valid for at most this long.
+    session: adminSessionOptions,
     database: input.database.auth,
     databaseHooks: {
       user: {
         create: {
           before: async (user) => {
-            if (user.email.toLowerCase() !== adminEmail) {
+            if (!allowedAdmins.has(user.email.toLowerCase())) {
               return false;
             }
           },
@@ -80,7 +108,7 @@ export function createAuth(
         allowedAttempts: 5,
         storeOTP: "hashed",
         async sendVerificationOTP({ email, otp, type }) {
-          if (type !== "sign-in" || email.toLowerCase() !== adminEmail) return;
+          if (type !== "sign-in" || !allowedAdmins.has(email.toLowerCase())) return;
           await input.email.send({
             to: email,
             subject: "Sign in to 26",
@@ -97,7 +125,7 @@ export function createAuth(
         storeToken: "hashed",
         expiresIn: magicLinkLifetimeSeconds,
         sendMagicLink: async ({ email, token }) => {
-          if (email.toLowerCase() !== adminEmail) return;
+          if (!allowedAdmins.has(email.toLowerCase())) return;
           const code = await issueCode(email);
           const confirm = new URL("/admin/confirm", input.origin);
           confirm.searchParams.set("token", token);

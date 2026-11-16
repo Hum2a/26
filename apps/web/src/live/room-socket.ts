@@ -11,8 +11,13 @@ import {
   type DriverStyle,
   type WallFrame,
   type WallReaction,
+  type ChessMoveParams,
+  type ChessResignParams,
 } from "@26/shared";
+
+export type { ChessMoveParams, ChessResignParams };
 import {
+  hasUrgentConnectionDelta,
   noteRtt,
   noteSubmissionRetries,
   takeConnectionDelta,
@@ -25,6 +30,8 @@ export type RoomSocketRole = "guest" | "stage" | "control";
 const heartbeatMs = 20_000;
 /** Round trips taken on connect, so the clock is right before the first question. */
 const timeProbesOnOpen = 5;
+/** Clock samples live 5 minutes (`server-clock.ts`), so refresh before expiry without waking every 20s. */
+const timeProbeRefreshMs = 4 * 60_000;
 /** A ping with no pong by the next heartbeat means the socket is dead. */
 const staleAfterMs = 15_000;
 /** After waking, a socket that cannot answer within this is replaced. */
@@ -156,6 +163,7 @@ type CommandBody =
       mediaId?: string;
     }
   | { kind: "command"; requestId: string; name: "troll-escape"; effectId: string }
+  | { kind: "command"; requestId: string; name: "wall-image-failed"; postId: string }
   | {
       kind: "command";
       requestId: string;
@@ -186,6 +194,28 @@ type CommandBody =
       name: "driver";
       style: DriverStyle;
       faceMediaId: string | null;
+    }
+  | {
+      kind: "command";
+      requestId: string;
+      name: "avatar";
+      mediaId: string | null;
+    }
+  | {
+      kind: "command";
+      requestId: string;
+      name: "chess-move";
+      gameId: string;
+      from: string;
+      to: string;
+      promotion?: "q" | "r" | "b" | "n";
+      positionRevision: number;
+    }
+  | {
+      kind: "command";
+      requestId: string;
+      name: "chess-resign";
+      gameId: string;
     };
 
 type TrackedCommand = {
@@ -222,6 +252,8 @@ export function openRoomSocket(options: {
   submitTrollEscape: (effectId: string) => string;
   submitReaction: (targetId: string, reaction: "like" | "dislike") => string;
   submitDriver: (style: DriverStyle, faceMediaId: string | null) => string;
+  /** Set or remove (null) this guest's profile photo. Returns the request id. */
+  submitAvatar: (mediaId: string | null) => string;
   submitWallPost: (post: {
     mediaId: string;
     caption: string;
@@ -230,6 +262,10 @@ export function openRoomSocket(options: {
   }) => string;
   submitWallWithdraw: (postId: string) => string;
   submitWallReact: (postId: string, reaction: WallReaction) => string;
+  /** Projector only: the wall photo it was told to show did not load. */
+  reportWallImageFailed: (postId: string) => string;
+  submitChessMove: (params: ChessMoveParams) => string;
+  submitChessResign: (params: ChessResignParams) => string;
   reconnectNow: () => void;
   close: () => void;
 } {
@@ -247,6 +283,8 @@ export function openRoomSocket(options: {
   let summaryTimer: ReturnType<typeof setInterval> | undefined;
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
   let pingSentAt = 0;
+  let lastTimeProbeAt = 0;
+  let lastSummaryAt = 0;
   let wakeCheck: ReturnType<typeof setTimeout> | undefined;
   let timeProbes: ReturnType<typeof setTimeout>[] = [];
   let lastPhase = "";
@@ -271,6 +309,11 @@ export function openRoomSocket(options: {
       clearTimeout(resizeTimer);
       resizeTimer = undefined;
     }
+    if (draftTimer !== undefined) {
+      clearTimeout(draftTimer);
+      draftTimer = undefined;
+    }
+    draftPending = "";
     timeProbes.forEach((probeTimer) => clearTimeout(probeTimer));
     timeProbes = [];
     pingSentAt = 0;
@@ -286,7 +329,7 @@ export function openRoomSocket(options: {
     if (options.role !== "guest") {
       return;
     }
-    summaryTimer = setInterval(() => sendConnection(), 60_000);
+    summaryTimer = setInterval(() => maybeSendPeriodicConnection(), 60_000);
     if (typeof window !== "undefined") {
       window.addEventListener("resize", onResize);
       window.addEventListener("orientationchange", onResize);
@@ -310,12 +353,21 @@ export function openRoomSocket(options: {
       pingSentAt = Date.now();
       socket.send("ping");
     }
-    sendTimeProbe();
+    if (
+      !options.botSession &&
+      (typeof document === "undefined" || !document.hidden) &&
+      (lastTimeProbeAt === 0 || Date.now() - lastTimeProbeAt >= timeProbeRefreshMs)
+    ) {
+      sendTimeProbe();
+    }
   }
 
   function sendTimeProbe() {
+    if (options.botSession) return;
     if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(`time:${Date.now()}`);
+      const now = Date.now();
+      lastTimeProbeAt = now;
+      socket.send(`time:${now}`);
     }
   }
 
@@ -404,6 +456,26 @@ export function openRoomSocket(options: {
     );
   }
 
+  function maybeSendPeriodicConnection() {
+    if (options.botSession) return;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    const activePlay =
+      lastPhase !== "" &&
+      lastPhase !== "lobby" &&
+      (typeof document === "undefined" || !document.hidden);
+    // Avoid waking the hibernated room every 60s per phone just to trickle
+    // idle lobby RTT pings; report immediately on urgent errors/retries or active rounds.
+    if (
+      !hasUrgentConnectionDelta() &&
+      !activePlay &&
+      lastSummaryAt > 0 &&
+      Date.now() - lastSummaryAt < 5 * 60_000
+    ) {
+      return;
+    }
+    sendConnection();
+  }
+
   function sendConnection() {
     if (options.botSession) return;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
@@ -413,6 +485,7 @@ export function openRoomSocket(options: {
     if (!delta) {
       return;
     }
+    lastSummaryAt = Date.now();
     socket.send(
       JSON.stringify({
         kind: "command",
@@ -438,7 +511,7 @@ export function openRoomSocket(options: {
     const resume = lastView ? `&since=${encodeURIComponent(lastView)}` : "";
     const current = new WebSocket(
       withClientApiKey(
-        `${protocol}//${location.host}/ws/${options.gameId}?role=${options.role}&patches=1${resume}`,
+        `${protocol}//${location.host}/ws/${options.gameId}?role=${options.role}&patches=1&kartItems=2&kartTracks=2${resume}`,
       ),
       options.botSession
         ? [`26-bot.${options.botSession.playerId}.${options.botSession.secret}`]
@@ -510,7 +583,7 @@ export function openRoomSocket(options: {
       typeof record.requestId === "string"
     ) {
       const command = tracked.get(record.requestId);
-      if (command && record.accepted === true) {
+      if (command) {
         tracked.delete(record.requestId);
       }
       options.onAck({
@@ -602,6 +675,9 @@ export function openRoomSocket(options: {
     stopped = true;
     clearTimer();
     clearHeartbeat();
+    tracked.clear();
+    lastSnapshot = undefined;
+    lastView = undefined;
     removeWakeListeners();
     options.onReplaced(message);
     options.onConnection("closed");
@@ -750,6 +826,15 @@ export function openRoomSocket(options: {
     });
   }
 
+  function submitAvatar(mediaId: string | null): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      name: "avatar",
+      mediaId,
+    });
+  }
+
   function submitWallPost(post: {
     mediaId: string;
     caption: string;
@@ -783,6 +868,15 @@ export function openRoomSocket(options: {
     });
   }
 
+  function reportWallImageFailed(postId: string): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      name: "wall-image-failed",
+      postId,
+    });
+  }
+
   function submitReaction(targetId: string, reaction: "like" | "dislike"): string {
     return sendCommand({
       kind: "command",
@@ -793,10 +887,35 @@ export function openRoomSocket(options: {
     });
   }
 
+  function submitChessMove(params: ChessMoveParams): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      name: "chess-move",
+      gameId: params.gameId,
+      from: params.from,
+      to: params.to,
+      ...(params.promotion ? { promotion: params.promotion } : {}),
+      positionRevision: params.positionRevision,
+    });
+  }
+
+  function submitChessResign(params: ChessResignParams): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      name: "chess-resign",
+      gameId: params.gameId,
+    });
+  }
+
   function close() {
     stopped = true;
     clearTimer();
     clearHeartbeat();
+    tracked.clear();
+    lastSnapshot = undefined;
+    lastView = undefined;
     removeWakeListeners();
     if (socket) {
       detach(socket);
@@ -856,9 +975,13 @@ export function openRoomSocket(options: {
     submitTrollEscape,
     submitReaction,
     submitDriver,
+    submitAvatar,
     submitWallPost,
     submitWallWithdraw,
     submitWallReact,
+    reportWallImageFailed,
+    submitChessMove,
+    submitChessResign,
     close,
   };
 }

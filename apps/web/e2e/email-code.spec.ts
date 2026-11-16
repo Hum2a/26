@@ -11,14 +11,17 @@ test("admin signs in with an emailed code and keeps the original magic-link alte
   await page.goto("/admin/login?returnTo=%2Fadmin%2Frooms");
   await page.getByLabel("Administrator email").fill("humzab1711@hotmail.com");
   const inbox = page.waitForResponse(
-    (response) => response.url().endsWith("/api/dev/inbox") && response.ok(),
+    (response) =>
+      new URL(response.url()).pathname === "/api/dev/inbox" && response.ok(),
   );
   await page.getByRole("button", { name: "Email me a code and link" }).click();
   const mail = (await (await inbox).json()) as {
-    messages: { text: string; html: string }[];
+    messages: { text: string; html?: string }[];
   };
   const code = mail.messages[0]!.text.match(/Your sign-in code: (\d{6})/)![1]!;
-  expect(mail.messages[0]!.html).toContain("Your backstage pass.");
+  // The sign-in page asks for text only, so a cold dev server answers in time.
+  // The designed email is checked by the API auth test and the preview test below.
+  expect(mail.messages[0]!.html).toBeUndefined();
   await expect(
     page.getByRole("link", { name: "Open the sign-in confirmation" }).first(),
   ).toBeVisible();

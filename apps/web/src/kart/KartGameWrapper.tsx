@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import type { KartCompletion, KartRaceView } from "@26/shared";
-import { KartMap } from "./KartMap";
+import { KartStageView } from "./KartStageView";
 import { KartLeaderboard } from "./KartLeaderboard";
+import { KartRecapPanel } from "./KartRecapPanel";
 import "./kart.css";
 
 /** Only public, authenticated room snapshots enter the renderer. There is no upstream menu or external service. */
@@ -37,7 +38,12 @@ export default function KartGameWrapper({
       </p>
     );
   return (
-    <section className="kart-stage" aria-label="One-lap kart sprint">
+    <section
+      className="kart-stage"
+      aria-label={
+        (race.laps ?? 1) > 1 ? `${race.laps}-lap kart race` : "One-lap kart sprint"
+      }
+    >
       <div className="kart-race-heading">
         <div>
           <p className="kart-eyebrow">THE 26 GRAND PRIX</p>
@@ -46,7 +52,11 @@ export default function KartGameWrapper({
               ? "Chequered flag"
               : paused
                 ? "Race paused"
-                : "One lap. No excuses."}
+                : race.laps === 3
+                  ? "Three laps. No excuses."
+                  : race.laps === 2
+                    ? "Two laps. No excuses."
+                    : "One lap. No excuses."}
           </h2>
         </div>
         {!race.ended ? (
@@ -57,12 +67,22 @@ export default function KartGameWrapper({
         ) : null}
       </div>
       <div className="kart-stage-layout">
-        <div className="kart-viewport kart-spectator-viewport">
-          <KartMap race={race} />
-          <div className="kart-map-summary">
-            <strong>{race.participants.length}</strong>
-            <span>drivers · one lap</span>
-          </div>
+        <div className="kart-stage-view">
+          {race.ended ? (
+            <KartRecapPanel
+              recap={
+                race.presentation && race.presentation.version !== 2
+                  ? race.presentation.recap
+                  : undefined
+              }
+              stage
+              names={Object.fromEntries(
+                race.leaderboard.map((row) => [row.playerId, row.name]),
+              )}
+            />
+          ) : (
+            <KartStageView race={race} paused={paused} />
+          )}
           {paused ? <p className="kart-paused">PAUSED</p> : null}
         </div>
         <KartLeaderboard key={race.raceId} race={race} paused={paused} />

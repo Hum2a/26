@@ -4,6 +4,7 @@ import {
   missingRequirements,
   type Answer,
   type AttributionMode,
+  type AuthoredChess,
   type AuthoredKart,
   type AuthoredChoice,
   type AuthoredDuel,
@@ -135,7 +136,13 @@ export function choiceQuestion(
       : ordinaryDefaults.choicePoints);
   return finish(
     {
-      ...shared(input, points),
+      ...shared(
+        {
+          ...input,
+          attribution: input.attribution ?? ordinaryDefaults.choiceAttribution,
+        },
+        points,
+      ),
       kind: "choice",
       outcome,
       options: input.options ?? [],
@@ -388,6 +395,46 @@ export function kartQuestion(
   );
 }
 
+export function chessQuestion(
+  input: SharedInput & {
+    initialTimeMs?: number;
+    incrementMs?: number;
+  },
+): AuthoredChess {
+  // Validate time controls - only 1+0 (60000ms, no increment) is supported
+  const initialTimeMs = input.initialTimeMs ?? 60_000;
+  const incrementMs = input.incrementMs ?? 0;
+
+  if (initialTimeMs !== 60_000) {
+    throw new Error(
+      `Chess only supports 1+0 time control. initialTimeMs must be 60000, got ${initialTimeMs}`,
+    );
+  }
+
+  if (incrementMs !== 0) {
+    throw new Error(
+      `Chess only supports no increment. incrementMs must be 0, got ${incrementMs}`,
+    );
+  }
+
+  return finish(
+    {
+      ...shared(
+        {
+          ...input,
+          collectMs: input.collectMs ?? 15_000, // Default collection time
+          attribution: input.attribution ?? "never",
+        },
+        input.points ?? 40,
+      ),
+      kind: "chess",
+      initialTimeMs: 60_000, // Fixed 1+0
+      incrementMs: 0,
+    },
+    input.status,
+  );
+}
+
 function playableCore(question: AuthoredQuestion, illustrative: boolean) {
   return {
     id: question.id,
@@ -426,7 +473,16 @@ export function toPlayable(
       kind: "kart",
       trackId: question.trackId,
       timeLimitMs: question.timeLimitMs,
+      ...(question.laps ? { laps: question.laps } : {}),
     };
+  if (question.kind === "chess") {
+    return {
+      ...core,
+      kind: "chess",
+      initialTimeMs: question.initialTimeMs,
+      incrementMs: question.incrementMs,
+    };
+  }
   if (question.kind === "choice") {
     if (!isKnown(question.correctOption)) {
       return undefined;

@@ -1,5 +1,6 @@
 import {
   authFailureSchema,
+  kartTrackCapabilityHeader,
   guestSessionSchema,
   lobbyCreatedSchema,
   roomDiagnosticsSchema,
@@ -14,6 +15,9 @@ import {
   type PlayCommand,
   type TransferIssued,
   type RehearsalConfig,
+  type KartLookName,
+  type KartHandling,
+  type KartItemRules,
 } from "@26/shared";
 import { clientApiHeaders } from "../api/client-key.ts";
 
@@ -130,7 +134,10 @@ export async function lookupStage(
     const response = await fetch("/api/rooms/lookup", {
       method: "POST",
       credentials: "same-origin",
-      headers: clientApiHeaders({ "content-type": "application/json" }),
+      headers: clientApiHeaders({
+        "content-type": "application/json",
+        [kartTrackCapabilityHeader]: "2",
+      }),
       body: JSON.stringify({ code }),
       signal: controller.signal,
     });
@@ -157,6 +164,22 @@ export type PlayAction =
   | "start-kart-rehearsal"
   | "kart-course-on"
   | "kart-course-off"
+  | "kart-opponents-on"
+  | "kart-effects-on"
+  | "kart-effects-off"
+  | "kart-look"
+  | "kart-setting"
+  | "kart-handling"
+  | "kart-item-rules"
+  | "kart-track"
+  | "kart-items-on"
+  | "kart-items-off"
+  | "kart-items-clear"
+  | "kart-opponents-off"
+  | "kart-stage-map"
+  | "kart-stage-overview"
+  | "kart-stage-follow"
+  | "kart-stage-director"
   | "photo-bias-on"
   | "photo-bias-off"
   | "start"
@@ -192,6 +215,9 @@ export type PlayAction =
   | "wall-mute"
   | "wall-unmute"
   | "hide-media"
+  | "voters-question"
+  | "voters-hidden"
+  | "avatar-clear"
   | "retry-archive"
   | "release-stuck-media"
   | "retry-delivery"
@@ -204,6 +230,14 @@ export type PlayIntent = {
   questionIndex?: number;
   scenario?: "disconnect" | "late-join" | "deadline-burst" | "host-loss";
   botCount?: number;
+  /** Kart driving-feel change; the room validates the key and value again. */
+  kartSetting?: { key: string; value: string };
+  lookPreset?: KartLookName;
+  handlingPreset?: KartHandling;
+  itemRules?: KartItemRules;
+  kartTrack?: import("@26/shared").KartTrackId;
+  kartLaps?: import("@26/shared").KartLaps;
+  kartCpu?: number;
   gameId: string;
   action: PlayAction;
   requestId: string;

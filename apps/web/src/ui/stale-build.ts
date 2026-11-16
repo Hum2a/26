@@ -30,7 +30,8 @@ export function canReloadForNewBuild(now = Date.now()): boolean {
     const stored = sessionStorage.getItem(reloadKey);
     last = stored === null ? null : Number(stored);
   } catch {
-    // Storage can be refused; a single reload attempt still helps.
+    // Without a durable guard a failed chunk could reload forever.
+    return false;
   }
   return !(last !== null && Number.isFinite(last) && now - last < retryWindowMs);
 }
@@ -45,7 +46,8 @@ export function reloadForNewBuild(
   try {
     sessionStorage.setItem(reloadKey, String(now));
   } catch {
-    // The reload still happens without the guard.
+    // Leave the manual reload available when the guard cannot be saved.
+    return false;
   }
   reload();
   return true;

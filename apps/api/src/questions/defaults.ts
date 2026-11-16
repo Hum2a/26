@@ -6,6 +6,12 @@ export const standardPresentation = "standard";
 export const ordinaryDefaults = {
   collectMs: 20_000,
   attribution: "after" as AttributionMode,
+  /**
+   * Choice rounds show who is picking what on the big screen as it happens:
+   * the live vote board. Set `attribution: "after"` or `"never"` on a question
+   * to keep its picks hidden until the reveal, or entirely.
+   */
+  choiceAttribution: "live" as AttributionMode,
   presentation: standardPresentation,
   speedBonus: null as { maxPoints: number } | null,
   choicePoints: 100,

@@ -214,7 +214,8 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
   ).toBeVisible();
   await driver.getByRole("button", { name: "Use 3D driving view" }).click();
   await expect(driver.locator("canvas[aria-label='Your driving view']")).toBeVisible();
-  await expect(other.getByRole("heading", { name: "Kart 2" })).toBeVisible();
+  // Racing portrait hides this heading so the pedals fit; the kart stays this phone's own.
+  await expect(other.locator(".kart-phone-heading .phone-prompt")).toHaveText("Kart 2");
   await expect(
     driver.getByText(`Position 1 of ${participantCount}`, { exact: true }),
   ).toBeVisible();
@@ -240,17 +241,31 @@ test("a quiz transitions to personal phone driving views, a spectator map and a 
       .toBe(true);
   }
   await driver.setViewportSize({ width: 844, height: 390 });
-  expect(
-    await driver
-      .getByRole("button", { name: "Accelerate" })
-      .evaluate((button) => button.getBoundingClientRect().bottom <= innerHeight),
-  ).toBe(true);
+  // Sideways, the thumb pad works the throttle and brake, so drift is the only button.
+  await expect(driver.getByRole("button", { name: "Accelerate" })).toHaveCount(0);
+  for (const control of [
+    driver.locator(".kart-thumb-pad"),
+    driver.getByRole("button", { name: "Drift / boost" }),
+  ])
+    expect(
+      await control.evaluate(
+        (node) => node.getBoundingClientRect().bottom <= innerHeight,
+      ),
+    ).toBe(true);
   await driver.setViewportSize({ width: 390, height: 844 });
   await driver.getByRole("button", { name: "Use thumb pad" }).click();
   const thumb = driver.locator(".kart-thumb-pad"),
     padBox = (await thumb.boundingBox())!;
-  await driver.mouse.move(padBox.x + padBox.width * 0.62, padBox.y + padBox.height / 2);
+  // Steering follows thumb travel from where it lands, not the landing point.
+  await driver.mouse.move(padBox.x + padBox.width * 0.4, padBox.y + padBox.height / 2);
   await driver.mouse.down();
+  await driver.mouse.move(
+    padBox.x + padBox.width * 0.4 + 60,
+    padBox.y + padBox.height / 2,
+    {
+      steps: 4,
+    },
+  );
   await expect
     .poll(() => Number((inputs.at(-1) as { steer?: number })?.steer))
     .toBeGreaterThan(0.2);

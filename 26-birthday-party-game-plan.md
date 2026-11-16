@@ -43,7 +43,7 @@ Keep the experience playful and straightforward. Build the storage, recovery and
 - Baseer presents while Humza operates the big screen and live controls.
 - Every guest plays individually and gets their own vote. No pods or voting groups.
 - Humza supplies the questions. No question CMS or editor; question definitions are versioned TypeScript bundled with the application.
-- No guest accounts, signup or passwords. One administrator account for Humza.
+- No guest accounts, signup or passwords. Administrator sign-in is an allow-list on `ADMIN_EMAIL` (Humza and Aden).
 - Browser only, with no mobile app or public matchmaking.
 - Open on something funny and self-explanatory, preferably multiple choice. No separate warm-up act.
 - Trolls unlock from round two. Effects are brief unless deliberately designed as recurring jokes.

@@ -25,11 +25,15 @@ export type CommandScope =
   | "players"
   | "room"
   | "media"
+  | "voters"
   | "results"
   | "health"
   | "trolls"
   | "wall"
   | "kart"
+  | "kart-handling"
+  | "kart-items"
+  | "kart-track"
   | "developer";
 type CommandRequest = {
   command: AdminCommand;

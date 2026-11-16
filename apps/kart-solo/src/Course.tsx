@@ -55,8 +55,15 @@ function Feature({ feature }: { feature: CourseFeature }) {
   );
 }
 export function Course() {
+  const trial = useGameStore((state) => state.soloMode !== "free");
   return (
     <group name="solo-course">
+      {trial ? (
+        <mesh name="practice-timing-line" position={[0, -1.48, 0]}>
+          <boxGeometry args={[16, 0.04, 0.4]} />
+          <meshBasicMaterial color={themes[DEFAULT_THEME_ID].colors.highlight} />
+        </mesh>
+      ) : null}
       {soloCourse.map((feature) => (
         <Feature key={feature.id} feature={feature} />
       ))}

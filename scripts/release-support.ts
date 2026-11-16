@@ -22,6 +22,7 @@ export type GeneratedWorkerConfig = {
   name?: string;
   targetEnvironment?: string;
   routes?: Array<{ pattern?: string; custom_domain?: boolean }>;
+  [key: string]: unknown;
 };
 
 export type SecretCollection = {
@@ -156,6 +157,42 @@ export function readGeneratedWorkerConfig(filePath: string): GeneratedWorkerConf
   return JSON.parse(readFileSync(filePath, "utf8")) as GeneratedWorkerConfig;
 }
 
+export function retargetGeneratedWorkerConfig(
+  config: GeneratedWorkerConfig,
+  wranglerText: string,
+  environment: DeployableEnvironment,
+): GeneratedWorkerConfig {
+  if (
+    config.name === "26-humza-website-local" ||
+    (config.targetEnvironment !== "staging" &&
+      config.targetEnvironment !== "production")
+  ) {
+    throw new Error(
+      "The generated Worker is still 26-humza-website-local. Build with CLOUDFLARE_ENV set before deploying.",
+    );
+  }
+  const parsed = parseJsonc<{
+    env?: Record<string, Record<string, unknown>>;
+  }>(wranglerText);
+  const envConfig = parsed.env?.[environment];
+  if (!envConfig) {
+    throw new Error(
+      `apps/api/wrangler.jsonc has no env.${environment} configuration.`,
+    );
+  }
+  const next: GeneratedWorkerConfig = { ...config };
+  for (const sibling of Object.values(parsed.env ?? {})) {
+    for (const key of Object.keys(sibling)) {
+      delete next[key];
+    }
+  }
+  return {
+    ...next,
+    ...envConfig,
+    targetEnvironment: environment,
+  };
+}
+
 export function assertGeneratedWorkerConfig(
   config: GeneratedWorkerConfig,
   release: WorkerRelease,
@@ -183,4 +220,63 @@ export function assertGeneratedWorkerConfig(
       `Generated config is missing custom domain ${release.hostname}. One Worker must serve that host.`,
     );
   }
+}
+
+/**
+ * No production deploys across the party weekend: a deploy restarts every
+ * room and drops every phone's connection. London is on UTC in November.
+ */
+export const deployFreeze = {
+  from: Date.parse("2026-11-20T00:00:00Z"),
+  until: Date.parse("2026-11-22T12:00:00Z"),
+};
+
+export function inDeployFreeze(nowMs: number): boolean {
+  return nowMs >= deployFreeze.from && nowMs < deployFreeze.until;
+}
+
+/**
+ * Shared by deploy/full entry points, before checks or remote changes.
+ * Freeze always applies to production. Git state applies when provided;
+ * `undefined` is the documented wrapper bypass after release.sh (or trusted
+ * CI) has already enforced clean master. secrets-sync and migrate do not call
+ * this function.
+ */
+export function assertDeployAllowed(
+  targets: readonly DeployableEnvironment[],
+  options: { dryRun: boolean; overrideFreeze: boolean },
+  nowMs: number,
+  gitState?: { branch: string; clean: boolean },
+): void {
+  // A packaging dry run does not deploy, migrate or upload secrets.
+  if (options.dryRun || !targets.includes("production")) return;
+
+  if (inDeployFreeze(nowMs) && !options.overrideFreeze)
+    throw new Error(
+      "Production is frozen for the party weekend (20 Nov to midday 22 Nov). Pass --override-freeze only for an emergency fix.",
+    );
+
+  if (gitState) {
+    if (gitState.branch !== "master")
+      throw new Error(
+        `Production deploys must be from master. Current branch: ${gitState.branch}`,
+      );
+    if (!gitState.clean)
+      throw new Error(
+        "Production deploys require a clean working tree. Commit or stash changes first.",
+      );
+  }
+}
+
+/** Run once per invocation, including a staging + production release. */
+export function releaseCheckSteps(fullChecks: boolean): string[][] {
+  const steps = [
+    ["run", "typecheck"],
+    ["run", "content:check"],
+    ["run", "test:unit"],
+    ["run", "lint"],
+    ["run", "test:release"],
+  ];
+  if (fullChecks) steps.push(["run", "test", "-w", "@26/api"]);
+  return steps;
 }

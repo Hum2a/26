@@ -207,3 +207,26 @@ it("uses bot-only scoped WebSocket credentials, persists the answer before ack a
   });
   expect((await stub.fetch(request())).status).toBe(401);
 });
+
+it("refuses to add bots to the live birthday game but still removes them, and allows them in a rehearsal room", async () => {
+  const { stub } = await setup();
+  await runInDurableObject(stub, async (_instance, state) => {
+    const { setBotCount, liveBirthdayGame } = await import("../src/developer/bots.ts");
+    const { writeRoundState } = await import("../src/questions/round-state.ts");
+    const sql = state.storage.sql;
+    const now = Date.now();
+    // An ordinary lobby takes bots for a rehearsal with the demo.
+    expect(liveBirthdayGame(sql)).toBe(false);
+    setBotCount(sql, 2, now);
+    // Once the birthday script is frozen into the room, adding bots is refused.
+    writeRoundState(sql, "__pack", "birthday-script", { order: [] });
+    expect(liveBirthdayGame(sql)).toBe(true);
+    expect(() => setBotCount(sql, 5, now + 1)).toThrow("live birthday game");
+    // Removing bots that were already there still works.
+    expect(() => setBotCount(sql, 0, now + 2)).not.toThrow();
+    // A dedicated rehearsal room with the same script may use bots.
+    sql.exec(`INSERT INTO developer_rehearsal (id, payload) VALUES (1, '{}')`);
+    expect(liveBirthdayGame(sql)).toBe(false);
+    expect(() => setBotCount(sql, 3, now + 3)).not.toThrow();
+  });
+});

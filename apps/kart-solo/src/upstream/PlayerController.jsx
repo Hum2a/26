@@ -3,6 +3,8 @@
 import { DriftEffects } from "../DriftEffects";
 import { themes, DEFAULT_THEME_ID } from "../../../web/src/theme/themes";
 import { driftPose } from "../../../web/src/kart/drift-effects";
+import { kartVehiclePose } from "../../../web/src/kart/presentation";
+import { vehiclePose } from "../../../web/src/kart/vehicle-pose";
 import { Kart } from "./models/Kart";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
@@ -22,29 +24,49 @@ import {
   soloCourse,
   courseEnabled,
   drivingDriftLevel,
+  stepKartTrial,
+  recoverKartTrial,
+  createKartTrial,
+  kartTrialRecord,
 } from "@26/shared";
-import { readGamepad } from "../gamepad";
+import {
+  addKartRecord,
+  browserKartRecordStorage,
+  writeKartRecords,
+} from "../../../web/src/kart/kart-records";
 import { nearbySoloWalls } from "../track/collision-world";
 import { useGameStore } from "./store";
 
 export const PlayerController = () => {
+  // Reset replaces this keyed controller. Until React commits that replacement,
+  // an old render callback must not republish its previous run into the store.
+  const generation = useRef(useGameStore.getState().soloReset);
   const playerRef = useRef(null),
     kartRef = useRef(null);
   const cameraGroupRef = useRef(null),
     cameraLookAtRef = useRef(null);
-  const gamepadArmed = useRef(true);
   const hop = useRef(0),
     heldDrift = useRef(false);
   const practice = soloCourse.find(
     (f) => f.id === useGameStore.getState().soloPractice,
   );
-  const start = practice ? { x: practice.x, z: practice.z + 12 } : { x: 0, z: 0 };
+  const trial = useRef(useGameStore.getState().soloTrial);
+  const start = trial.current
+    ? { x: 0, z: 8 }
+    : practice
+      ? { x: practice.x, z: practice.z + 12 }
+      : { x: 0, z: 0 };
   const body = useRef(createDrivingBody(start.x, start.z, -Math.PI / 2));
   const powers = useRef(createKartPowers()),
     oils = useRef([]),
     usedItem = useRef(useGameStore.getState().soloItemUse);
   const previous = useRef(body.current);
-  const safe = useRef({ ...start, heading: -Math.PI / 2 });
+  const safe = useRef({
+    ...start,
+    heading: -Math.PI / 2,
+    cursor: trial.current?.cursor,
+    lap: 0,
+  });
   const elapsed = useRef(0),
     accumulator = useRef(0),
     lastRecovery = useRef(-2000),
@@ -52,9 +74,10 @@ export const PlayerController = () => {
   const speedRef = useRef(0),
     driftDirection = useRef(0),
     driftPower = useRef(0);
+  const vehicleMotion = useRef({ speed: 0, turnRate: 0, travel: 0 });
+  const lastRendered = useRef(null);
   const jumpOffset = useRef(0),
-    backWheelOffset = useRef({ left: 0, right: 0 }),
-    inputTurn = useRef(0);
+    backWheelOffset = useRef({ left: 0, right: 0 });
   const ray = useRef(new Raycaster()),
     meshes = useRef([]);
   const { scene } = useThree();
@@ -84,12 +107,13 @@ export const PlayerController = () => {
   useFrame(({ camera }, delta) => {
     const store = useGameStore.getState();
     if (
+      generation.current !== store.soloReset ||
       store.soloPaused ||
       !store.soloStarted ||
+      trial.current?.finished ||
       !playerRef.current ||
       !kartRef.current
     ) {
-      gamepadArmed.current = false;
       accumulator.current = 0;
       body.current = { ...body.current, driftMs: 0, wasDrifting: false };
       return;
@@ -101,14 +125,22 @@ export const PlayerController = () => {
         shieldUntil: 0,
         slowedUntil: 0,
       };
-      gamepadArmed.current = false;
       recovery.current = store.soloRecover;
       if (elapsed.current - lastRecovery.current >= 2000) {
-        body.current = createDrivingBody(
-          safe.current.x,
-          safe.current.z,
-          safe.current.heading,
-        );
+        // A recovery anchor from the previous lap must not grant its gates again.
+        const sameLap =
+          !trial.current || safe.current.lap === trial.current.laps.length;
+        const anchor = sameLap
+          ? safe.current
+          : {
+              x: 0,
+              z: 8,
+              heading: -Math.PI / 2,
+              cursor: createKartTrial(trial.current.config).cursor,
+            };
+        body.current = createDrivingBody(anchor.x, anchor.z, anchor.heading);
+        if (trial.current)
+          trial.current = recoverKartTrial(trial.current, anchor.cursor);
         previous.current = body.current;
         accumulator.current = 0;
         lastRecovery.current = elapsed.current;
@@ -125,7 +157,7 @@ export const PlayerController = () => {
         soloControls: { ...kartNeutral },
       });
     }
-    if (usedItem.current !== store.soloItemUse) {
+    if (store.soloItemsEnabled && usedItem.current !== store.soloItemUse) {
       usedItem.current = store.soloItemUse;
       const used = useKartPower(powers.current, "solo", body.current, elapsed.current);
       if (used) {
@@ -135,20 +167,10 @@ export const PlayerController = () => {
       }
     }
     accumulator.current += Math.min(0.1, Math.max(0, delta)) * 1000;
-    const pad = readGamepad();
-    if (!pad.gas && !pad.brake && !pad.drift && !pad.steer) gamepadArmed.current = true;
     let surface = surfaceAt(body.current.x, body.current.z);
     while (accumulator.current >= 20) {
       const controls = useGameStore.getState().soloControls;
-      const input = gamepadArmed.current
-        ? {
-            ...controls,
-            steer: controls.steer || pad.steer,
-            gas: controls.gas || pad.gas,
-            brake: controls.brake || pad.brake,
-            drift: controls.drift || pad.drift,
-          }
-        : controls;
+      const input = controls;
       const effective =
         surface === "unsupported" && !(body.current.height > 0) ? kartNeutral : input;
       previous.current = body.current;
@@ -167,13 +189,16 @@ export const PlayerController = () => {
         surface !== "road" || powers.current.slowedUntil > elapsed.current,
         true,
         soloCourse.filter((f) => courseEnabled(f, store.soloCourseSettings)),
+        store.soloHandling,
       );
       const effect = stepKartPowers(
         powers.current,
         "solo",
         previous.current,
         body.current,
-        surface === "road" && !(body.current.height > 0) ? soloItemBoxes : [],
+        store.soloItemsEnabled && surface === "road" && !(body.current.height > 0)
+          ? soloItemBoxes
+          : [],
         body.current.height > 0 ? [] : oils.current,
         elapsed.current + 20,
         "solo",
@@ -196,6 +221,33 @@ export const PlayerController = () => {
       oils.current = oils.current.filter((o) => o.expiresAt > elapsed.current + 20);
       elapsed.current += 20;
       accumulator.current -= 20;
+      if (trial.current) {
+        trial.current = stepKartTrial(trial.current, {
+          x: body.current.x,
+          z: body.current.z,
+          speed: Math.hypot(body.current.vx, body.current.vz),
+          stepMs: 20,
+          activeMs: elapsed.current,
+        });
+        if (trial.current.finished) {
+          const record = kartTrialRecord(trial.current);
+          const records = record
+            ? addKartRecord(store.soloRecords, record)
+            : store.soloRecords;
+          const notice =
+            record && records.enabled
+              ? writeKartRecords(browserKartRecordStorage, records)
+              : store.soloRecordNotice;
+          useGameStore.setState({
+            soloPaused: true,
+            soloControls: { ...kartNeutral },
+            soloRecords: records,
+            soloRecordNotice: notice,
+          });
+          accumulator.current = 0;
+          break;
+        }
+      }
       surface = surfaceAt(body.current.x, body.current.z);
       if (
         surface === "road" &&
@@ -212,24 +264,38 @@ export const PlayerController = () => {
           x: body.current.x,
           z: body.current.z,
           heading: body.current.heading,
+          cursor: trial.current?.cursor,
+          lap: trial.current?.laps.length ?? 0,
         };
     }
     const d = body.current,
       player = playerRef.current;
     const alpha = accumulator.current / 20,
       old = previous.current;
-    player.position.set(
-      old.x + (d.x - old.x) * alpha,
-      (old.height ?? 0) + ((d.height ?? 0) - (old.height ?? 0)) * alpha,
-      old.z + (d.z - old.z) * alpha,
-    );
     const turn = Math.atan2(
       Math.sin(d.heading - old.heading),
       Math.cos(d.heading - old.heading),
     );
-    player.rotation.y = -(old.heading + turn * alpha) - Math.PI / 2;
+    const renderPose = kartVehiclePose({
+      x: old.x + (d.x - old.x) * alpha,
+      z: old.z + (d.z - old.z) * alpha,
+      height: (old.height ?? 0) + ((d.height ?? 0) - (old.height ?? 0)) * alpha,
+      heading: old.heading + turn * alpha,
+    });
+    player.position.set(...renderPose.position);
+    player.rotation.y = -renderPose.heading - Math.PI / 2;
     speedRef.current = d.vx * Math.cos(d.heading) + d.vz * Math.sin(d.heading);
-    inputTurn.current = -d.turn * 0.1;
+    const oldPose = lastRendered.current;
+    if (oldPose) {
+      const dx = renderPose.position[0] - oldPose[0],
+        dz = renderPose.position[2] - oldPose[2];
+      if (Math.hypot(dx, dz) < 8)
+        vehicleMotion.current.travel +=
+          dx * Math.cos(renderPose.heading) + dz * Math.sin(renderPose.heading);
+    }
+    lastRendered.current = renderPose.position;
+    vehicleMotion.current.speed = speedRef.current;
+    vehicleMotion.current.turnRate = d.turn;
     driftDirection.current = d.wasDrifting
       ? -(d.driftSide || Math.sign(d.turn)) * 0.6
       : 0;
@@ -241,11 +307,13 @@ export const PlayerController = () => {
     jumpOffset.current = reduced ? 0 : Math.sin((hop.current / 250) * Math.PI) * 0.5;
     const easing = 1 - Math.exp(-10 * Math.min(delta, 0.1));
     const pose = driftPose(d.heading, d.vx, d.vz, d.wasDrifting, d.driftSide || 0);
+    const chassis = vehiclePose(vehicleMotion.current, reduced, {
+      wheelBase: 1.4,
+      wheelRadius: 0.2892,
+    });
     kartRef.current.rotation.y +=
       ((reduced ? 0 : -pose) - kartRef.current.rotation.y) * easing;
-    kartRef.current.rotation.z +=
-      ((reduced ? 0 : driftDirection.current * 0.035) - kartRef.current.rotation.z) *
-      easing;
+    kartRef.current.rotation.z += (chassis.roll - kartRef.current.rotation.z) * easing;
     cameraGroupRef.current.position.x +=
       ((reduced ? 0 : driftDirection.current * 0.7) -
         cameraGroupRef.current.position.x) *
@@ -269,10 +337,12 @@ export const PlayerController = () => {
       soloPowers: powers.current,
       soloOils: oils.current,
       soloElapsed: elapsed.current,
+      soloTrial: trial.current,
       speed: speedRef.current,
       isBoosting: d.boostMs > 0,
       soloSurface: surface,
       soloContact: d.contact,
+      soloStunMs: d.stunMs ?? 0,
       soloRecoveryReady: elapsed.current - lastRecovery.current >= 2000,
       soloHeight: d.height ?? 0,
       soloVerticalSpeed: d.verticalSpeed ?? 0,
@@ -294,7 +364,7 @@ export const PlayerController = () => {
           driftPower={driftPower}
           jumpOffset={jumpOffset}
           backWheelOffset={backWheelOffset}
-          inputTurn={inputTurn}
+          vehicleMotion={vehicleMotion}
         />
         <group ref={cameraLookAtRef} position={[0, -0.5, -9]} />
       </group>

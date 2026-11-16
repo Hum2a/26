@@ -1,0 +1,44 @@
+.kart-recap {
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--foreground);
+}
+.kart-recap h3 {
+  margin: 0 0 0.4rem;
+}
+.kart-recap > ol {
+  display: grid;
+  gap: 0.7rem;
+  list-style: none;
+  padding: 0;
+  max-height: 32rem;
+  overflow: auto;
+}
+.kart-recap > ol > li {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+.kart-sector-splits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.4rem;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+.kart-recap[data-stage="true"] {
+  font-size: clamp(1.2rem, 2.2vw, 2rem);
+}
+.kart-recap[data-stage="true"] > ol {
+  max-height: none;
+}
+.kart-recap-unavailable {
+  color: var(--muted);
+}
+.kart-recap-phone-preview {
+  max-width: 430px;
+}

@@ -1,0 +1,184 @@
+/* Phone race numbers: place, lap and slipstream, plus a short banner. */
+.kart-race-hud {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.9rem;
+  pointer-events: none;
+}
+/* Upright phones: overlay the driving view's top-left corner ("Map view" is
+   top-right), so the race numbers cost no height and the pedals still fit a
+   320×568 screen. The negative bottom margin lets the view rise under it. */
+.kart-phone .kart-race-hud {
+  justify-self: start;
+  align-self: start;
+  z-index: 4;
+  margin: 0.5rem 0 -2.9rem 0.5rem;
+  height: 2.4rem;
+  width: max-content;
+  border-radius: var(--radius-panel);
+  padding: 0.1rem 0.6rem;
+  background: color-mix(in oklab, var(--background) 62%, transparent);
+}
+.kart-phone .kart-race-place strong {
+  font-size: 1.7rem;
+}
+.kart-phone .kart-race-banner {
+  top: calc(100% + 0.4rem);
+  left: 0;
+  translate: none;
+}
+.kart-race-place {
+  display: flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.kart-race-place strong {
+  display: inline-block;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(2rem, 9vw, 3rem);
+  line-height: 1;
+  color: var(--accent);
+}
+.kart-race-place span {
+  font-weight: 800;
+  color: var(--muted);
+}
+.kart-race-lap,
+.kart-race-slip {
+  margin: 0;
+  border-radius: var(--radius-control);
+  padding: 0.15rem 0.55rem;
+  font-weight: 800;
+  background: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--line);
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+.kart-race-lap[data-final] {
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+}
+.kart-race-slip[data-phase="active"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.kart-race-banner {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 0.4rem);
+  translate: -50% 0;
+  z-index: 8;
+  margin: 0;
+  white-space: nowrap;
+  border-radius: var(--radius-panel);
+  padding: 0.35rem 1rem;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(1.2rem, 6vw, 2rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  box-shadow: 0 0.4rem 1.2rem color-mix(in oklab, var(--background) 60%, transparent);
+}
+.kart-race-banner[data-tone="final"] {
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+}
+
+/* Landscape racing: the numbers sit bottom-centre between the pad and Drift,
+   clear of the driving feedback at the top; the banner rises above them. */
+@media (orientation: landscape) and (max-height: 32rem) {
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-hud {
+    position: absolute;
+    z-index: 6;
+    margin: 0;
+    height: auto;
+    bottom: max(0.6rem, env(safe-area-inset-bottom));
+    left: 50%;
+    translate: -50% 0;
+    flex-wrap: nowrap;
+    border-radius: var(--radius-panel);
+    padding: 0.2rem 0.8rem;
+    background: color-mix(in oklab, var(--background) 62%, transparent);
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-place strong {
+    font-size: clamp(1.4rem, 8dvh, 2.1rem);
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-banner {
+    top: auto;
+    bottom: calc(100% + 0.4rem);
+    left: 50%;
+    translate: -50% 0;
+  }
+}
+
+/* The finish moment. */
+.kart-finish-place {
+  display: block;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(1.9rem, 9vw, 3.4rem);
+  line-height: 1;
+  color: var(--accent);
+}
+.kart-finish-flag {
+  height: 0.7rem;
+  border-radius: 0.2rem;
+  background: repeating-conic-gradient(var(--foreground) 0 25%, var(--background) 0 50%)
+    0 0 / 0.7rem 0.7rem;
+}
+.kart-finish-laps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.8rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+/* Projector race director. */
+.kart-stage-callouts {
+  position: absolute;
+  z-index: 4;
+  top: 1.2rem;
+  left: 50%;
+  translate: -50% 0;
+  pointer-events: none;
+  max-width: 90%;
+}
+.kart-stage-callout {
+  margin: 0;
+  border-radius: var(--radius-panel);
+  padding: 0.5rem 1.6rem;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(1.6rem, 3.6vw, 3.4rem);
+  font-weight: 900;
+  text-align: center;
+  background: var(--surface);
+  color: var(--surface-foreground, var(--foreground));
+  border: 2px solid var(--line);
+  box-shadow: 0 0.6rem 2rem color-mix(in oklab, var(--background) 55%, transparent);
+}
+.kart-stage-callout:is([data-tone="win"], [data-tone="final"]) {
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+  border-color: var(--highlight);
+}
+.kart-stage-callout[data-tone="lead"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .kart-race-lap,
+  .kart-race-slip {
+    transition-duration: 0.1s;
+  }
+}

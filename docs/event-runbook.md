@@ -2,7 +2,7 @@
 
 [Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
 
-Baseer presents. Humza operates the administrator screen. Guests play on their own phones. This runbook matches the controls in the current build. The question pack is still the illustrative demo `demo-2026-09-22`. The venue rehearsal, a physical phone, and a projector have not been checked from this environment.
+Baseer presents. Humza operates the administrator screen. Guests play on their own phones. This runbook matches the controls in the current build (updated 5 November 2026). The party plays the birthday running order: **Start birthday game** freezes the saved order into the room. The illustrative demo is for rehearsals only. The venue rehearsal, a physical phone, and a projector have not been checked from this environment; see [Physical-device and venue sign-off](#physical-device-and-venue-sign-off).
 
 <details>
 <summary>On this page</summary>
@@ -16,19 +16,24 @@ Baseer presents. Humza operates the administrator screen. Guests play on their o
 - [Shutdown](#shutdown)
 - [Same-room recovery drill](#same-room-recovery-drill)
 - [Load and reconnect rehearsal](#load-and-reconnect-rehearsal)
-- [Still needed before the party](#still-needed-before-the-party)
+- [Readiness and remaining content](#readiness-and-remaining-content)
+- [Physical-device and venue sign-off](#physical-device-and-venue-sign-off)
+- [Run just the kart race](#run-just-the-kart-race)
 
 </details>
 
 ## Before the room opens
 
-1. Run the local checks in [docs/deployment.md](deployment.md), or open https://26-staging.humza.website only after that environment has actually been deployed.
-2. Sign in at `/admin` with the administrator magic link. Confirm with the Sign in button. Opening the link page does not sign in.
-3. Create the lobby. Leave that admin tab open. It holds the control connection.
-4. Open `/host` on the projector browser and connect it to the same room. The stage cookie is separate from the admin cookie.
-5. On the stage, press Start show once. A refresh asks again. M mutes the stage, and the icon shows that state. Personal diagnostics stay on the admin screen. D shows a small operator count on the stage, and ? lists the stage shortcuts.
-6. Print or save [docs/content/illustrative-answer-key.md](content/illustrative-answer-key.md) and [docs/content/illustrative-running-order.md](content/illustrative-running-order.md) before the night. Those files are the offline question, answer, and presenter script. Refresh them with `npm run content:export` after the real questions replace the demo.
+**The day before (20 November):** production is frozen — `npm run release` refuses production deploys from 20 November until midday 22 November. In the Neon console, switch off autosuspend (scale to zero) on the production branch for the night so host commands never wait for a cold database. Print [docs/content/birthday-answer-key.md](content/birthday-answer-key.md) and [docs/content/birthday-running-order.md](content/birthday-running-order.md); refresh them first with `npm run content:export` if the order changed.
+
+1. Open https://26.humza.website/admin on the control laptop and sign in with the magic link or email code sent to a configured administrator address (Humza or Aden). Confirm with the Sign in button. Opening the link page does not sign in.
+2. **Question packs → Running order:** check the order and the estimated show length. _Suggest a mixed order_ spreads out same-series rounds; review, then save or discard. A started game never changes.
+3. Create the lobby. Leave that admin tab open. It holds the control connection and stays authorised for twelve hours.
+4. **Live controls → Driving feel** (kart round): defaults are prediction on, other karts glide, sideways steering strip, auto frame rate, 3-2-1-GO countdown. If karts rubber-band on the venue Wi-Fi, choose _Conservative_ or _Off_; changes reach phones at once.
+5. Open `/host` on the projector browser and connect it to the same room. The stage cookie is separate from the admin cookie and lasts fourteen hours. Press **Present on this screen**, then F for full screen.
+6. On the stage, press Start show once for sound. M mutes the stage. F requests full screen. Escape returns to projector setup. If full screen drops by accident the show stays up with a short hint; press F. A reload of the projector tab reconnects and keeps presenting. The stage deliberately has no operator readout: diagnostics stay on the admin screen.
 7. Press Refresh room health. Expect phase `lobby`, a control connection, and no failed scheduler jobs.
+8. When everyone is in, press **Start birthday game** and confirm. The confirmation says how many players are in; the running order freezes at that moment. The illustrative demo start is labelled as a rehearsal alternative and also asks first. Developer bots are refused in a room running the birthday game.
 
 ## Joining
 
@@ -151,30 +156,103 @@ Run this against a local or staging room before guests arrive. Use one nickname 
 2. In development, run `window.__26.dropSockets()` in a phone or stage tab's console. The tab should reconnect without a reload and keep its answer. The helper does not exist in a production build.
 3. On the venue Wi-Fi, join ten real phones, switch the access point off for 20 seconds and back on. Every phone should return without a reload. Note anything else here.
 
-## Still needed before the party
+## Readiness and remaining content
 
-From Humza, before the demo pack is replaced:
+The birthday catalogue has a 56-round default running order, frozen separately for
+each room when **Start birthday game** is used. The illustrative demo remains a
+separate rehearsal. Review the saved running order in **Admin → Question packs**;
+do not assume a change there alters a game that has already started.
 
-- The real question list, running order, and the answer or scoring rule for each.
-- How long each answer and vote stays open.
-- Which rounds allow double or nothing, and which stay unscored.
-- Whether long vote rounds show every answer or a shortlist.
-- The party sting, and any face or caption art. The file in the repo is a short illustrative tone.
-- Photos or voice the questions themselves need.
-- Which comparison cards Baseer should read.
+Four rounds remain drafts by the host's decision on 3 November 2026:
 
-Until those exist, present the illustrative pack and the printed exports.
+| Round                   | Material needed                                                        |
+| ----------------------- | ---------------------------------------------------------------------- |
+| Reddit tribunal         | Original thread, exact title, outcome, top comment and answer          |
+| Ferrier estate          | Verified estate name and confirmed category                            |
+| Nextdoor paranoia       | Genuine post or screenshot and confirmed explanation                   |
+| Property price roulette | Dated listing, authorised image, rent, agent wording and numeric scale |
 
-These checks cannot be completed from the development machine:
+Figurine and Cursed Search History are ready in the catalogue and can be rehearsed
+from their question pages. Add them explicitly to the saved order when wanted.
+The spoken debate round has been dropped. Steal, Robin Hood and Shared score are
+permitted on scored birthday choice questions; polls and other mechanics retain
+their existing restrictions. Each guest gets one troll, from question two.
 
-- A physical phone joining over the venue Wi-Fi.
-- The projector or an HDMI output, including type size from the back of the room.
-- Start show on the venue browser after a full refresh.
-- A photo and a voice note from a guest phone into the deployed bucket.
-- Staging admin login, a full mixed game, recovery, export, and results on the deployed URL.
-- A results email to the configured test recipient. No test recipient is configured, and no message has been sent.
-- A 75-guest pass on staging. The existing figure is from the local emulator only.
-- `npm run load:realtime` against staging conditions, and the venue Wi-Fi drill above.
+## Physical-device and venue sign-off
+
+Use a fresh rehearsal room, with Baseer presenting and Humza on Live controls.
+Record date, device/browser, room, result and any issue for each check. An unchecked
+item is unverified; desktop browser automation does not establish a physical pass.
+
+- [ ] iPhone Safari and Android Chrome: join by QR, answer, select another tab,
+      return to Play as answering opens, and see a server-accepted answer.
+- [ ] Lock each phone during collection, unlock, reconnect and confirm its saved
+      answer and score. Repeat with Wi-Fi off/on and a switch to mobile data.
+- [ ] Recover onto a second device using the host's transfer flow. Confirm one
+      player and one score, with the old phone no longer able to answer.
+- [ ] Deny camera and microphone permission; questions remain usable. Then allow
+      them and send a photo and a short voice clip. Check moderation and hiding.
+- [ ] Check large text, short landscape screens, safe areas, reduced motion and
+      optional audio on both devices. Keep the answer and send action reachable.
+- [ ] Complete quiz → kart → final scores → phone facts → podium. Check controller
+      responsiveness on both phones and stage readability from the back of the room.
+- [ ] Check the actual projector, HDMI, fullscreen, sound output and fallback Wi-Fi.
+- [ ] Open archived results and private recaps; download the score summary. Verify
+      results email only to an explicitly chosen test address, then check delivery.
+- [ ] Run the venue reconnect drill and intended guest-count load rehearsal. Local
+      emulator load figures do not establish venue or deployed capacity.
+
+No physical-device, venue, deployed email or deployed load pass is implied by this
+checklist. Use local rehearsals first; deployments and remote test sends require
+separate instructions.
+
+## Releasing the event build
+
+Deployed on 8 November 2026: `cbd1e6c` on both sites (staging `6317ea2b…`,
+production `09181ecb…`). Host moderation, the troll pack, wall recovery and the
+`event-readiness` branch are **not** deployed. `/api/health` reports only the app
+version, not a commit, so a healthy endpoint does not prove which code is live.
+
+Each step needs the owner's go-ahead; nothing here has been run.
+
+1. Review and merge the `event-readiness` pull request into `master`.
+2. From a clean checkout of `master`: `npm install`, then `npm run setup`.
+3. Staging: `npm run deploy:staging`. It builds and deploys. (Use
+   `npm run deploy:staging:full` to run the full test suite and migrations first). No Neon migration is needed: the new columns
+   are room (Durable Object) columns, added when a room starts.
+4. Run the rehearsal below on staging.
+5. Production, before the freeze (20 November 00:00 to 22 November 12:00, London):
+   `bash release.sh --deploy=production` (or `npm run deploy:prod`). It requires
+   clean `master`, bumps the app version so `/api/health` shows a new number,
+   runs the checks and deploys.
+6. Record the commit, both Cloudflare version ids and the health version in
+   `docs/build-progress.md`. Roll back with the previous version id (see
+   `docs/deployment.md`, Rollback) if anything is wrong.
+
+## Moderation and wall rehearsal
+
+Two phones (one iPhone, one Android), the real projector, Baseer presenting and
+Humza on Live controls, on staging first. Tick only what was actually done.
+
+- [ ] **Join and reconnect:** both phones join by QR; lock one during a question,
+      unlock, and confirm it rejoins with its answer kept.
+- [ ] **Typed answer:** send a typed answer; a slur is refused on the phone without
+      echoing it; an ordinary cheeky answer is accepted.
+- [ ] **Hide and Restore:** on an all-answer vote and the typed commonness round,
+      hide an answer in Live controls; it leaves the projector and the other phone;
+      restore it; it returns. Scores do not change.
+- [ ] **Voting:** vote for an answer, then hide it before the reveal; the reveal
+      and any Public vote or Misattributed troll never show its text.
+- [ ] **Wall failure:** interrupt the projector's network while a photo is still
+      loading (or use a photo that will not load). The
+      projector shows "could not be shown", moves on within about six seconds, the
+      next photo gets its full time, and Live wall shows "Couldn't display".
+- [ ] **Manual wall control:** Skip and Show next still work, including straight
+      after a failure.
+- [ ] **Pause and resume:** pause during a question; the wall keeps cycling; a
+      failed photo still moves on; resume and the question carries on.
+- [ ] **Round progression:** advance through reveal, scores and the next question;
+      the phones follow.
 
 ## Run just the kart race
 
@@ -192,3 +270,13 @@ This does not edit the birthday running order or release a question pack. Creati
 or opening a room selects it for this browser, as usual. A failed creation can be
 retried with the same request; avoid creating another room just because a reply
 was lost. The feature has not been deployed merely by completing local checks.
+
+## Expanded kart items — locally verified
+
+Before a race, open **Admin → room → Live controls → Kart items**. Choose the allowed expanded items and save. Empty selection gives no box pickups. **Use original items** restores the existing turbo/shield/oil pool. The current race freezes its choice when collection starts, including during pauses; after racing, changes apply to the next start. Older tabs are explicitly asked to refresh before expanded gameplay.
+
+Treats give the holder a 600ms turbo and drop nothing. Tennis balls bounce, bombs drop behind with a 1.5-second fuse, and homing bolts select an eligible racer ahead. With nobody ahead, homing gives the same small personal boost. Shields absorb one item hit; item use changes driving, never directly steals quiz points.
+
+Live controls show held items by player, active counts and recent accepted item history. **Stop item spawning** stops boxes and new oil/projectile use while retaining held inventory; held boosts/shields still work. **Clear track items** removes current projectiles/oil. **Resume item spawning** reopens pickups and hazards. Use the normal Pause/Resume for the entire race clock. Rehearse without guests in **Admin → Kart → Items sandbox**, including personal Treats, shields, fuses, height, full pools and restore/clear/stop. No room or score is changed by that sandbox. Mandatory hazards stay visible when decorative effects are off or graphics are Low.
+
+No deployment or physical-device certification is implied by this local implementation note.

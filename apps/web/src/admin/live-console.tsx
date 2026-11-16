@@ -1,3 +1,4 @@
+import { phaseLabel } from "../live/phase-label";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import type { RoomPhaseName } from "@26/shared";
@@ -14,6 +15,8 @@ import { CommandFeedback } from "./command-feedback";
 import { WallQuickPanel } from "./wall-page";
 import { RoomExtras } from "./room-extras";
 import { KartCourseControls } from "./kart-course-controls";
+import { KartTrackControls } from "./kart-track-controls";
+import { KartDrivingFeel } from "./kart-driving-feel";
 import { DangerZone } from "./danger-zone";
 
 const revealPhases = new Set<RoomPhaseName>(["reveal", "scores", "final", "podium"]);
@@ -34,6 +37,38 @@ export function LiveConsole() {
   const canHide = revealPhases.has(phase);
   const context = `${phase}:${snapshot.play?.question.id ?? "lobby"}`;
   const countdown = usePhaseCountdown(snapshot, observedAt);
+  // Players whose phones are connected now; absent or removed players do not count.
+  const connectedPlayers =
+    snapshot.adminPlayers?.filter((player) => player.connected && !player.removed)
+      .length ?? snapshot.players.length;
+  /** Starting is one-way, so every start asks first and says what will happen. */
+  function askStart(action: "start-birthday" | "start-kart" | "start") {
+    if (locked) return;
+    const people = snapshot.players?.length ?? 0;
+    const joined = `${people} ${people === 1 ? "player is" : "players are"} in.`;
+    setConfirmation({
+      command: { action },
+      context,
+      title:
+        action === "start-birthday"
+          ? "Start the birthday game?"
+          : action === "start-kart"
+            ? "Start the kart race?"
+            : "Start the illustrative demo instead?",
+      detail:
+        action === "start-birthday"
+          ? `${joined} The running order freezes now and every phone moves to the first question.`
+          : action === "start-kart"
+            ? `${joined} The starting grid freezes now. Anyone who joins later watches this race.`
+            : `${joined} This plays the illustrative demo questions, not the birthday game. Use it only for a rehearsal.`,
+      label:
+        action === "start-birthday"
+          ? "Start birthday game"
+          : action === "start-kart"
+            ? "Start kart race"
+            : "Start the demo",
+    });
+  }
   function ask(action: "skip" | "finish") {
     if (locked) return;
     setConfirmation({
@@ -143,7 +178,7 @@ export function LiveConsole() {
           : "advance";
   const primaryLabel =
     primary === "start"
-      ? "Start the illustrative demo"
+      ? "Start the illustrative demo instead"
       : primary === "resume"
         ? "Resume"
         : primary === "finish"
@@ -167,7 +202,7 @@ export function LiveConsole() {
     <section className="admin-section live-console">
       <header className="admin-page-heading">
         <div>
-          <p className="entry-eyebrow">Only on your control screen</p>
+          <p className="entry-eyebrow">Tonight</p>
           <h1>Live controls</h1>
         </div>
         <Link className="entry-text-link" to="../players">
@@ -177,32 +212,41 @@ export function LiveConsole() {
       <CommandFeedback scope="live" />
       {connection !== "open" ? (
         <p role="status" className="admin-inline-warning">
+          <span className="admin-status-dot" data-tone="warn" aria-hidden="true" />
           Reconnecting. Controls are unavailable until the room is connected.
         </p>
       ) : (
-        <p className="admin-connection">Connected to the lobby.</p>
+        <p className="admin-connection">
+          <span className="admin-status-dot" data-tone="ok" aria-hidden="true" />
+          Connected to the room.
+        </p>
       )}
       {kartLobby ? (
-        <section className="admin-current" aria-label="Kart lobby details">
-          <h2>Kart-only lobby</h2>
-          <p>Mario circuit · one lap · three-minute limit · up to 80 racers.</p>
-          <p>
-            Created {new Date(snapshot.kartLobby!.createdAt).toLocaleString("en-GB")}.
-            The starting grid freezes when you start. Late arrivals watch this race;
-            create a fresh kart lobby for another race.
-          </p>
+        <section className="admin-card admin-current" aria-label="Kart lobby details">
+          <div className="admin-card-header">
+            <span className="admin-status-dot" data-tone="ok" aria-hidden="true" />
+            <span className="admin-mono-tag">KART LOBBY</span>
+            <h2 className="admin-card-title">Kart-only lobby</h2>
+          </div>
+          <div className="admin-card-body">
+            <p>
+              One lap · up to 80 racers. The saved course and time limit are shown below.
+            </p>
+            <p>
+              Created {new Date(snapshot.kartLobby!.createdAt).toLocaleString("en-GB")}.
+              The starting grid freezes when you start. Late arrivals watch this race;
+              create a fresh kart lobby for another race.
+            </p>
+          </div>
         </section>
       ) : null}
+      <KartDrivingFeel />
+      <KartTrackControls />
       <div className="admin-live-actions" aria-label="Live actions">
         {phase === "lobby" ? (
           <Button
             disabled={locked}
-            onClick={() =>
-              void execute(
-                { action: kartLobby ? "start-kart" : "start-birthday" },
-                kartLobby ? "Start kart race" : "Start birthday game",
-              )
-            }
+            onClick={() => askStart(kartLobby ? "start-kart" : "start-birthday")}
           >
             {kartLobby ? "Start kart race" : "Start birthday game"}
           </Button>
@@ -228,7 +272,9 @@ export function LiveConsole() {
             onClick={() =>
               primary === "finish"
                 ? ask("finish")
-                : void execute({ action: primary }, primaryLabel)
+                : primary === "start"
+                  ? askStart("start")
+                  : void execute({ action: primary }, primaryLabel)
             }
           >
             {primaryLabel}
@@ -322,7 +368,12 @@ export function LiveConsole() {
           <section className="admin-round" aria-label="Current question">
             <div className="admin-round-top">
               <p className="entry-eyebrow">
-                {phase}
+                <span
+                  className="admin-status-dot"
+                  data-tone={snapshot.paused ? "warn" : playing ? "ok" : "muted"}
+                  aria-hidden="true"
+                />
+                {phaseLabel(phase)}
                 {snapshot.paused ? " · paused" : ""}
                 {snapshot.held ? " · waiting for control" : ""}
               </p>
@@ -340,12 +391,22 @@ export function LiveConsole() {
                   : "The room is between questions.")}
             </h2>
             {upcomingFact ? <p>Next: {upcomingFact.text}</p> : null}
+            {snapshot.play && phase !== "facts" ? (
+              <p className="admin-next-up">
+                Round {snapshot.play.question.index} of {snapshot.play.question.total}
+                {snapshot.nextQuestion
+                  ? ` · Next: ${snapshot.nextQuestion.title}`
+                  : snapshot.play.question.index >= snapshot.play.question.total
+                    ? " · Last round"
+                    : ""}
+              </p>
+            ) : null}
             {phase === "facts" && snapshot.funFactList && !upcomingFact ? (
               <p>Next: the podium.</p>
             ) : null}
             <p>
               {snapshot.play
-                ? `${snapshot.play.submissionCount} submissions · ${snapshot.players.length} active players`
+                ? `${snapshot.play.submissionCount} of ${connectedPlayers} connected players answered · ${snapshot.players.length} in the room`
                 : `${snapshot.players.length} guests in the lobby. Share the join code, then start when you are ready.`}
             </p>
             {snapshot.play?.presenterNotes ? (
@@ -427,36 +488,61 @@ export function LiveConsole() {
           <RoomExtras />
         </div>
         <aside className="admin-live-side" aria-label="Room context">
-          <p className="entry-eyebrow">Guests join with</p>
-          <p className="admin-side-code">{snapshot.joinCode}</p>
-          <dl>
-            <div>
-              <dt>Phones connected</dt>
-              <dd>{snapshot.connections?.guests ?? "Unavailable"}</dd>
+          <div className="admin-card">
+            <div className="admin-card-header">
+              <span className="admin-status-dot" data-tone="ok" aria-hidden="true" />
+              <p className="admin-card-title">Join Code</p>
             </div>
-            <div>
-              <dt>Stage connection</dt>
-              <dd>
-                {snapshot.connections
-                  ? snapshot.connections.stage
-                    ? "Connected"
-                    : "No stage connected"
-                  : "Unavailable"}
-              </dd>
+            <div className="admin-card-body">
+              <p className="admin-side-code">{snapshot.joinCode}</p>
             </div>
-            <div>
-              <dt>Stage content</dt>
-              <dd>{snapshot.stageHidden ? "Hidden" : "Visible"}</dd>
+            <div className="admin-card-footer">
+              <a
+                className="entry-text-link"
+                href={`/host?code=${snapshot.joinCode}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open the stage ↗
+              </a>
             </div>
-          </dl>
-          <a
-            className="entry-text-link"
-            href={`/host?code=${snapshot.joinCode}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open the stage ↗
-          </a>
+          </div>
+          <div className="admin-card">
+            <div className="admin-card-header">
+              <p className="admin-card-title">Connections</p>
+            </div>
+            <div className="admin-card-body">
+              <dl>
+                <div>
+                  <dt>Phones connected</dt>
+                  <dd>
+                    <span className="admin-mono-tag">{snapshot.connections?.guests ?? "Unavailable"}</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Stage connection</dt>
+                  <dd>
+                    <span
+                      className="admin-status-dot"
+                      data-tone={snapshot.connections?.stage ? "ok" : "warn"}
+                      aria-hidden="true"
+                    />
+                    {snapshot.connections
+                      ? snapshot.connections.stage
+                        ? "Connected"
+                        : "No stage connected"
+                      : "Unavailable"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Stage content</dt>
+                  <dd>
+                    <span className="admin-mono-tag">{snapshot.stageHidden ? "Hidden" : "Visible"}</span>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
           <LinkButton variant="secondary" to="../players">
             Players ({snapshot.players.length})
           </LinkButton>
@@ -490,27 +576,85 @@ export function LiveConsole() {
   );
 }
 
+/**
+ * Where the room accepts hide/restore for written answers (shortlists keep
+ * their own Include/Remove): an all-answer ballot while answers are collected
+ * or voted on (a bracket only before voting), and a commonness question, the
+ * typed format that shows answers in public. The room checks again.
+ */
+function answerModeration(
+  play: ReturnType<typeof useAdminRoom>["snapshot"]["play"],
+  phase: string,
+): "ballot" | "reveal" | null {
+  if (play?.question.kind === "vote" && play.question.candidateMode === "all") {
+    if (phase === "collect") return "ballot";
+    if (phase === "vote" && !play.question.flow) return "ballot";
+    return null;
+  }
+  if (
+    play?.question.kind === "typed" &&
+    play.question.scoring === "commonness" &&
+    (phase === "collect" || phase === "reveal" || phase === "scores")
+  ) {
+    return "reveal";
+  }
+  return null;
+}
+
 function LiveResponses({ locked }: { locked: boolean }) {
   const { snapshot, execute } = useAdminRoom();
   const play = snapshot.play;
   const shortlist =
     play?.question.kind === "vote" && play.question.candidateMode === "shortlist";
+  const moderation = answerModeration(play, snapshot.phase);
   const choices = play?.question.kind === "choice" ? play.question.options : [];
   return (
     <section className="admin-task-section">
       <h2>Responses on this question</h2>
+      {moderation ? (
+        <p className="text-sm">
+          Hide an answer to take it off guests' phones and the stage. Answers with the
+          same text are hidden together, and nothing is deleted.
+          {moderation === "ballot"
+            ? " Votes already cast for it stop counting until you restore it."
+            : ""}
+        </p>
+      ) : null}
       {play?.hostResponses?.length ? (
-        <ul>
+        <ul className="admin-data-list">
           {play.hostResponses.map((row) => (
-            <li className="admin-response-row" key={row.playerId}>
+            <li className="admin-response-row admin-data-row" key={row.playerId}>
               <p>
                 <strong>{row.nickname}</strong>
                 <br />
                 {row.summary}
-                {row.included === false ? " (not on the ballot)" : ""}
+                {row.included === false
+                  ? shortlist
+                    ? " (not on the ballot)"
+                    : " (hidden from guests and the stage)"
+                  : ""}
                 {row.votes !== undefined ? ` · ${row.votes} votes` : ""}
               </p>
               <div className="admin-actions">
+                {moderation && row.included !== undefined ? (
+                  <Button
+                    variant="secondary"
+                    disabled={locked}
+                    onClick={() =>
+                      void execute(
+                        {
+                          action: row.included ? "exclude" : "include",
+                          playerId: row.playerId,
+                        },
+                        row.included ? "Hide answer" : "Restore answer",
+                      )
+                    }
+                  >
+                    {row.included
+                      ? `Hide ${row.nickname}'s answer`
+                      : `Restore ${row.nickname}'s answer`}
+                  </Button>
+                ) : null}
                 {shortlist && snapshot.phase === "collect" ? (
                   <Button
                     variant="secondary"
@@ -550,9 +694,9 @@ function LiveResponses({ locked }: { locked: boolean }) {
           ))}
         </ul>
       ) : play?.hostAnswers?.length ? (
-        <ul>
+        <ul className="admin-data-list">
           {play.hostAnswers.map((row) => (
-            <li className="admin-response-row" key={row.playerId}>
+            <li className="admin-response-row admin-data-row" key={row.playerId}>
               <p>
                 <strong>{row.nickname}</strong> ·{" "}
                 {choices.find((option) => option.id === row.optionId)?.label ??

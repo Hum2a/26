@@ -4,9 +4,9 @@ import { completeAWordle } from "../src/questions/packs/birthday/complete-a-word
 import { birthdayPack } from "../src/questions/packs/birthday/manifest.ts";
 import { questionPreview } from "../src/room/question-preview.ts";
 import { previewWordle, readWordlePreviewBody } from "../src/room/wordle-preview.ts";
-import { isWordleWord } from "../src/questions/wordle.ts";
+import { isWordleWord } from "../src/questions/wordle/wordle.ts";
 import { toPlayable, wordleQuestion } from "../src/questions/authoring.ts";
-import { publicWordleQuestion } from "../src/questions/wordle.ts";
+import { publicWordleQuestion } from "../src/questions/wordle/wordle.ts";
 import { validatePack } from "../src/questions/validate.ts";
 
 const rules = { answer: "VULGY", isWord: isWordleWord, deadline: 120_000 };

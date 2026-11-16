@@ -24,7 +24,10 @@ test("a large birthday catalogue retains ready rehearsals and labels concept pla
     await expect(
       page.getByRole("button", { name: "Made up", exact: true }),
     ).toBeVisible();
-    await expect(page.locator(".question-progress")).toHaveText("1 / 1");
+    // The preview shows the question's real place in the pack.
+    await expect(page.locator(".question-progress")).toHaveText(
+      /^Question \d+\/\d+ of \d+$/,
+    );
     for (const width of [320, 390, 430]) {
       await page.setViewportSize({ width, height: 844 });
       await expect(

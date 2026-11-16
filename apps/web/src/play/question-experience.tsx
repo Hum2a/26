@@ -33,14 +33,28 @@ export function QuestionExperience({
             title: `+${award} points`,
             line: "Nice. Check Ranks for your place.",
           }
-        : { tone: "missed", title: "No points this time", line: "Plenty more to come." }
-      : revealed && status === "closed" && play.question.kind !== "kart"
-        ? {
+        : {
             tone: "missed",
-            title: "No answer from you",
-            line: "Get the next one in time.",
+            title: "No points this time",
+            line:
+              play.question.index >= play.question.total
+                ? "That was the last one. Watch the stage for the podium."
+                : "Plenty more to come.",
           }
-        : null;
+      : revealed && status === "accepted" && play.question.kind !== "kart"
+        ? // The room gives no award for a round that cannot score, such as a poll.
+          {
+            tone: "fun",
+            title: "Just for fun",
+            line: "No points on this one. See what the room picked.",
+          }
+        : revealed && status === "closed" && play.question.kind !== "kart"
+          ? {
+              tone: "missed",
+              title: "No answer from you",
+              line: "Get the next one in time.",
+            }
+          : null;
   return (
     <section
       className="question-experience"

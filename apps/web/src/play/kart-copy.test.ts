@@ -49,3 +49,35 @@ it("directs drivers to their own screen rather than finding a kart on the TV", (
     "driving view opens on this phone",
   );
 });
+
+it("does not promise another round or call it a quiz in a kart-only room", () => {
+  const race = createKartRace("kart-only", [{ playerId: "a", name: "Amina" }]);
+  race.ended = true;
+  const watching = {
+    phase: "reveal",
+    paused: false,
+    held: false,
+    mode: "kart",
+    play: {
+      question: { kind: "kart" },
+      kart: projectKartRace(race, null, 100),
+      selfAnswer: null,
+      reveal: null,
+      selfAward: null,
+      selfStanding: null,
+    },
+  } as unknown as LobbySnapshot;
+  expect(guestRoundCopy(watching)).toBe("You watched this race.");
+  expect(guestRoundCopy({ ...watching, mode: undefined })).toContain("next round");
+  const podium = {
+    ...watching,
+    phase: "podium",
+    play: { ...watching.play!, selfStanding: { place: 2, points: 300, players: 5 } },
+  } as unknown as LobbySnapshot;
+  expect(guestRoundCopy(podium)).toBe(
+    "The race is over. You finished 2nd with 300 points.",
+  );
+  expect(guestRoundCopy({ ...podium, mode: undefined })).toContain(
+    "The quiz has ended.",
+  );
+});

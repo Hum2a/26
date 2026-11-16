@@ -10,6 +10,7 @@ import {
   LiveCount,
   QuestionTag,
   StagePrompt,
+  StageVoters,
   useDesignMotion,
 } from "./kit";
 import "./trolley-lever.css";
@@ -222,15 +223,15 @@ function TrolleyStage({
       />
       <div className="trolley-stage-options" aria-label="Lever choices">
         {view.question.options.map((option) => (
-          <motion.p
+          <motion.div
             key={option.id}
-            className="design-stage-line"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={motionSet.soft}
           >
-            {option.label}
-          </motion.p>
+            <p className="design-stage-line">{option.label}</p>
+            <StageVoters play={play} optionId={option.id} />
+          </motion.div>
         ))}
       </div>
       <p className="design-stage-line">

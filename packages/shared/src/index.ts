@@ -1,20 +1,50 @@
-import { kartRaceSchema } from "./kart.ts";
-import { lobbyDriverSchema } from "./kart-driver.ts";
-export * from "./kart.ts";
-export * from "./kart-driver.ts";
-export * from "./kart-driving.ts";
+import { kartRaceSchema, kartLookHistorySchema } from "./kart/kart-race-schema.ts";
+import { kartContactHistorySchema } from "./kart/kart-contacts.ts";
+import { kartRecapSchema } from "./kart/kart-recap.ts";
+import { kartItemsControlSchema } from "./kart/kart-item-rules.ts";
+import {
+  kartHandlingControlSchema,
+  kartHandlingHistorySchema,
+} from "./kart/kart-handling.ts";
+import { lobbyDriverSchema } from "./kart/kart-driver.ts";
+import { kartSettingsSchema, kartSettingHistorySchema } from "./kart/kart-settings.ts";
+export * from "./kart/kart.ts";
+export * from "./kart/kart-driver.ts";
+export * from "./kart/kart-driving.ts";
+export * from "./kart/kart-assets.ts";
+export * from "./kart/kart-events.ts";
+export * from "./kart/kart-contacts.ts";
+export * from "./kart/kart-handling.ts";
+export * from "./kart/kart-laps.ts";
+export * from "./kart/kart-time-trial.ts";
+export * from "./kart/kart-recap.ts";
+export { importedWalls, importedRoute } from "./kart/kart-track.ts";
+export * from "./kart/kart-nearby.ts";
+export * from "./kart/kart-settings.ts";
+export * from "./moderation.ts";
 export * from "./rate-limit.ts";
+export * from "./voters.ts";
+import { voterDisplayModes } from "./voters.ts";
 import { z } from "zod";
+export const kartRehearsalBeatSchema = z.enum(["grid", "turn", "boost", "finish"]);
+export const kartRehearsalSchema = z
+  .object({
+    label: z.literal("Stand-in drivers — isolated rendering rehearsal"),
+    phone: kartRaceSchema,
+    stage: kartRaceSchema,
+  })
+  .strict();
+
 import { developerToolsSchema } from "./developer.ts";
 export * from "./developer.ts";
-import { wordleBoardSchema } from "./wordle.ts";
+import { wordleBoardSchema } from "./wordle/wordle.ts";
 export {
   wordleBoardSchema,
   emptyWordleBoard,
   markWordle,
   reduceWordle,
-} from "./wordle.ts";
-export type { WordleBoard, WordleMark } from "./wordle.ts";
+} from "./wordle/wordle.ts";
+export type { WordleBoard, WordleMark } from "./wordle/wordle.ts";
 import { funFactCardSchema, statCardSchema } from "./stats.ts";
 import { wallSnapshotSchema } from "./wall.ts";
 export {
@@ -66,6 +96,14 @@ export type {
 export type { FunFactCard, StatCard } from "./stats.ts";
 export { resultsStatusSchema } from "./archive.ts";
 export type { ResultsStatus } from "./archive.ts";
+export * from "./chess/chess-schemas.ts";
+export * from "./chess/chess-params.ts";
+export * from "./chess/chess-score.ts";
+import {
+  chessGuestSnapshotSchema,
+  chessStageSnapshotSchema,
+  chessControlSnapshotSchema,
+} from "./chess/chess-schemas.ts";
 export {
   emailVerifyTtlMs,
   galleryAttribution,
@@ -247,6 +285,8 @@ export const lobbyPlayerSchema = z
     nickname: z.string().min(1).max(24),
     // Optional so a phone on an older build still reads newer snapshots.
     driver: lobbyDriverSchema.optional(),
+    /** The guest's own photo, shown beside their nickname all game. The host can remove it. */
+    avatarMediaId: z.uuid().optional(),
   })
   .strict();
 
@@ -294,6 +334,7 @@ export const customPresentationIds = [
   "bin-unmasked",
   "deed-poll",
   "redacted-file",
+  "whos-that-pokemon",
 ] as const;
 
 export type CustomPresentationId = (typeof customPresentationIds)[number];
@@ -377,9 +418,20 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
   z
     .object({
       ...publicQuestionCore,
+      kind: z.literal("chess"),
+      // 1+0 time control: 1 minute per player, no increment
+      playerTimeMs: z.literal(60000),
+      botTimeMs: z.literal(60000),
+    })
+    .strict(),
+  z
+    .object({
+      ...publicQuestionCore,
       kind: z.literal("kart"),
-      trackId: z.enum(["party-ring-v1", "mario-circuit-v1"]),
-      timeLimitMs: z.union([z.literal(45_000), z.literal(180_000)]),
+      trackId: z.enum(["party-ring-v1", "mario-circuit-v1", "26-park-v1"]),
+      // The course window × laps; three laps of a three-minute course at most.
+      timeLimitMs: z.number().int().positive().max(540_000),
+      laps: z.union([z.literal(2), z.literal(3)]).optional(),
     })
     .strict(),
   z
@@ -516,6 +568,20 @@ export const wordlePreviewResultSchema = z.discriminatedUnion("ok", [
   z.object({ ok: z.literal(false), message: z.string() }).strict(),
 ]);
 export type AdminQuestionPreview = z.infer<typeof adminQuestionPreviewSchema>;
+
+export const voterDisplayModeSchema = z.enum(voterDisplayModes);
+
+/** Each option's voters in arrival order. Stage and host only. */
+export const optionVotersSchema = z
+  .array(
+    z
+      .object({
+        optionId: publicOptionIdSchema,
+        playerIds: z.array(z.uuid()).max(100),
+      })
+      .strict(),
+  )
+  .max(contentLimits.pollOptionMax);
 
 const selfAnswerSchema = z
   .discriminatedUnion("kind", [
@@ -774,6 +840,14 @@ export const playSnapshotSchema = z
   .object({
     question: publicQuestionSchema,
     kart: kartRaceSchema.optional(),
+    /** Chess: per-audience snapshot. See chess-schemas.ts. */
+    chess: z
+      .union([
+        chessGuestSnapshotSchema,
+        chessStageSnapshotSchema,
+        chessControlSnapshotSchema,
+      ])
+      .optional(),
     submissionCount: z.number().int().nonnegative(),
     selfAnswer: selfAnswerSchema,
     selfBallot: z
@@ -828,6 +902,12 @@ export const playSnapshotSchema = z
       )
       .max(contentLimits.pollOptionMax)
       .nullable(),
+    /**
+     * Stage and host only: who picked each option, for the live vote board.
+     * Guest phones never receive it. Null when the question or the host keeps
+     * picks off the screen.
+     */
+    voters: optionVotersSchema.nullable().optional(),
     hostAnswers: z
       .array(
         z
@@ -923,7 +1003,29 @@ export type TrollKindName = (typeof trollKinds)[number];
 
 /** Control-only metadata for a deliberately created kart lobby. */
 export const kartLobbySchema = z
-  .object({ createdAt: z.number().int().nonnegative() })
+  .object({
+    createdAt: z.number().int().nonnegative(),
+    trackId: z.enum(["party-ring-v1", "mario-circuit-v1", "26-park-v1"]).optional(),
+    /** Absent means one lap. */
+    laps: z.union([z.literal(2), z.literal(3)]).optional(),
+    /** CPU racers added behind the guests; absent means none. */
+    cpu: z.number().int().min(1).max(7).optional(),
+    sourceVersion: z.string().min(1).max(120).optional(),
+    history: z
+      .array(
+        z
+          .object({
+            atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+            trackId: z.enum(["party-ring-v1", "mario-circuit-v1", "26-park-v1"]),
+            laps: z.union([z.literal(2), z.literal(3)]).optional(),
+            cpu: z.number().int().min(1).max(7).optional(),
+            source: z.literal("host"),
+          })
+          .strict(),
+      )
+      .max(20)
+      .optional(),
+  })
   .strict();
 
 /** Audience projections omit private operator fields for guests and stage. */
@@ -1027,6 +1129,8 @@ export const lobbySnapshotSchema = z
       .strict()
       .nullable(),
     stageHidden: z.boolean(),
+    /** Public. "kart" for a kart-only lobby; absent for an ordinary party room. */
+    mode: z.enum(["party", "kart"]).optional(),
     finishAfterRound: z.boolean(),
     revealNonce: z.number().int().nonnegative(),
     media: z
@@ -1094,6 +1198,59 @@ export const lobbySnapshotSchema = z
       })
       .strict(),
     /** Control only: every troll sent this game, newest first. */
+    kartStageHistory: z
+      .array(
+        z
+          .object({
+            atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+            mode: z.enum(["map", "overview", "follow", "director"]),
+          })
+          .strict(),
+      )
+      .max(20)
+      .optional(),
+    kartOpponentHistory: z
+      .array(
+        z
+          .object({
+            atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+            enabled: z.boolean(),
+          })
+          .strict(),
+      )
+      .max(20)
+      .optional(),
+    kartEffectsHistory: z
+      .array(
+        z
+          .object({
+            atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+            enabled: z.boolean(),
+          })
+          .strict(),
+      )
+      .max(20)
+      .optional(),
+    /** Control only: bounded changes to the race's cosmetic look. */
+    kartLookHistory: kartLookHistorySchema.optional(),
+    /** Control only: at most20 accepted impact/recovery records. */
+    kartContactHistory: kartContactHistorySchema.optional(),
+    /** Control only while racing; public recap is delivered only after the finish. */
+    kartRecap: kartRecapSchema.optional(),
+    /** Control only: inventory, accepted item history and frozen choices. */
+    kartItems: kartItemsControlSchema.optional(),
+    /** Control only: next race choice, current frozen profile and host changes. */
+    kartHandling: kartHandlingControlSchema.optional(),
+    kartHandlingHistory: kartHandlingHistorySchema.optional(),
+    /** Control only: the round after the current one. */
+    nextQuestion: z
+      .object({ title: z.string().max(200), kind: z.string().max(40) })
+      .strict()
+      .nullable()
+      .optional(),
+    /** Control only: driving-feel settings and who changed them when. */
+    kartSettings: kartSettingsSchema.optional(),
+    kartSettingsHistory: kartSettingHistorySchema.optional(),
     kartCourseHistory: z
       .array(
         z
@@ -1125,6 +1282,25 @@ export const lobbySnapshotSchema = z
       .int()
       .nonnegative()
       .max(Number.MAX_SAFE_INTEGER)
+      .optional(),
+    /** Host-only: whether picks may reach the projector, and when that changed. */
+    voterDisplay: z
+      .object({
+        mode: voterDisplayModeSchema,
+        history: z
+          .array(
+            z
+              .object({
+                atMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+                mode: voterDisplayModeSchema,
+              })
+              .strict(),
+          )
+          .max(20),
+        /** Players with a visible profile photo. */
+        avatars: z.number().int().min(0).max(100),
+      })
+      .strict()
       .optional(),
     /** Host-only photo policy, counts and change history. */
     photoBias: z
@@ -1495,5 +1671,14 @@ export function remainingUntil(
   return deadlineAt - (serverNow + (now - observedAt));
 }
 
-export * from "./kart-powers.ts";
-export * from "./kart-course.ts";
+export * from "./kart/kart-powers.ts";
+export * from "./kart/kart-projectiles.ts";
+export * from "./kart/kart-targeting.ts";
+export * from "./kart/kart-item-rules.ts";
+export * from "./kart/kart-course.ts";
+export * from "./kart/kart-tracks.ts";
+export * from "./kart/kart-track-compatibility.ts";
+export * from "./kart/kart-park.ts";
+export * from "./kart/kart-spectator.ts";
+export * from "./kart/kart-vfx.ts";
+export * from "./kart/kart-look.ts";

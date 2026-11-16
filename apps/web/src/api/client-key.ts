@@ -1,6 +1,29 @@
 import { clientApiKeyHeader, clientApiKeyQueryParam } from "@26/shared";
 
-const configuredKey = import.meta.env.VITE_CLIENT_API_KEY?.trim() ?? "";
+export function resolveConfiguredClientKey(
+  hostname = typeof window !== "undefined" ? window.location.hostname : "",
+  env: {
+    readonly VITE_CLIENT_API_KEY?: string;
+    readonly VITE_CLIENT_API_KEY_STAGING?: string;
+    readonly VITE_CLIENT_API_KEY_PRODUCTION?: string;
+  } = import.meta.env,
+): string {
+  if (hostname === "26-staging.humza.website") {
+    const stagingKey = env.VITE_CLIENT_API_KEY_STAGING?.trim();
+    if (stagingKey) {
+      return stagingKey;
+    }
+  }
+  if (hostname === "26.humza.website") {
+    const productionKey = env.VITE_CLIENT_API_KEY_PRODUCTION?.trim();
+    if (productionKey) {
+      return productionKey;
+    }
+  }
+  return env.VITE_CLIENT_API_KEY?.trim() ?? "";
+}
+
+const configuredKey = resolveConfiguredClientKey();
 const mediaRevisions = new Map<string, number>();
 export function noteMediaDisplayRevision(gameId: string, revision = 0) {
   mediaRevisions.set(gameId.toUpperCase(), revision);

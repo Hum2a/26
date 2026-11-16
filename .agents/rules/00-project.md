@@ -43,6 +43,7 @@ Every later prompt starts by reading this file.
 ## Scripts
 
 - Naming: `<domain>:<action>` (e.g. `test:unit`, `questions:check`, `email:preview`, `dev:jump`)
+- A fresh checkout is prepared with `npm install`, then `npm run setup`. Setup installs dependencies, syncs environment files, generates a missing local client API key, copies agent instructions, generates Worker types, installs Playwright Chromium, and migrates and seeds the local database. It leaves an existing local key unchanged and does not deploy or upload secrets.
 
 - This is a separate birthday project. Never change LifeSmart, use its production resources or copy its pupil-specific rules into this project.
 - The plan's agreed decisions take precedence over its suggested defaults. Later explicit user decisions take precedence over both. Record material implementation choices.
@@ -54,10 +55,13 @@ Every later prompt starts by reading this file.
 - Use React, TypeScript, Vite, Hono, Cloudflare Workers/Durable Objects/R2, Neon, Better Auth and Resend as specified in the plan. Use a small shared validation package and consistent styling primitives. Verify current official documentation when implementing version-sensitive APIs; pin compatible dependencies and retain the lockfile.
 - Use domain folders, British English, accessible controls and clear phone states. Include reduced-motion support and optional audio. Keep secrets and personal diagnostics off the projector.
 - Do not open, quote, or commit secret files such as `.env`, `.dev.vars`, private keys, or credential files. Example templates may be read.
+- `artifacts/` is local check output and is gitignored: Playwright reports, probe logs, screenshots, and Miniflare storage. A path that is already tracked stays in the index until it is removed. After changing `.gitignore`, or when `git status` still lists a tracked ignored path such as a Playwright `.last-run.json`, run `npm run git:drop-ignored`. That command removes those paths from the index and leaves the files on disk. Do not commit that output.
+- `npm run git:sync` fetches from every remote, prunes deleted remote-tracking branches, and deletes local branches whose upstream is gone. It keeps the checked-out branch, `master`, `main`, and branches that were never pushed. A branch Git still considers unmerged is kept until `npm run git:sync -- --force`.
 - Work in the existing implementation. Do not create competing state stores, socket clients, auth factories, schedulers, schemas or score engines for each new feature.
 - Keep production paths real. Deterministic local fakes are allowed only behind explicit test/development adapters; they must not silently succeed in deployed environments.
 - Implement, run relevant checks, fix failures and update documentation. Do not rewrite unrelated work or weaken checks to obtain a pass.
 - No deployments, paid resource creation or changes to unrelated remote resources are implied by Prompts 01-18. Missing external credentials should not prevent completing locally testable work; report precisely what remains unverified.
 - Agent instructions are edited in `.agents`. Run `npm run agents:sync` afterwards. Do not hand-edit the generated copies.
+- Layout: `.agents/rules/05-structure.md`. Performance and workflow: `.agents/rules/55-agent-workflow.md` plus `60-perf-*.md`. Goal: zero perceptible slowdown for about 80 phones. Do not restructure the tree in a rules-only change.
 - At the end of every stage update `docs/build-progress.md`: status, files/interfaces added, decisions/defaults, commands and results, manual verification, unresolved issues and the exact next stage. Never label an unrun check as passed.
 - Final response for each stage: what now works, how to run/try it, what was verified and any concrete remaining limitation. Do not automatically begin the next prompt.

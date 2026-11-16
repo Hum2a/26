@@ -2,8 +2,8 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import type { PlaySnapshot } from "@26/shared";
 import { Button } from "../ui/primitives";
-import { SubmitButton } from "../rounds/SubmitButton";
-import { roundSubmitState } from "../rounds/submit-state";
+import { SubmitButton } from "./controls/SubmitButton";
+import { roundSubmitState } from "./controls/submit-state";
 import { useDesignMotion } from "./designs/kit";
 
 export function GuestMultiple({

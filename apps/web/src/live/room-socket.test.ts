@@ -277,7 +277,7 @@ describe("openRoomSocket liveness", () => {
     client.close();
   });
 
-  it("does not retain accepted commands for replay, but keeps uncertain ones", () => {
+  it("does not retain accepted or rejected commands for replay, only unacknowledged ones", () => {
     const client = open("guest");
     const first = FakeSocket.instances[0]!;
     first.open();
@@ -288,7 +288,7 @@ describe("openRoomSocket liveness", () => {
           kind: "ack",
           scope: "private",
           requestId,
-          accepted: true,
+          accepted: index % 2 === 0,
         }),
       });
     }
@@ -304,6 +304,46 @@ describe("openRoomSocket liveness", () => {
       expect.objectContaining({ requestId, targetId: "pending-player" }),
     ]);
     client.close();
+  });
+
+  it("keeps 20s pings hibernation-clean and only refreshes time probes once every 4 minutes", () => {
+    const client = open("stage");
+    try {
+      const socket = FakeSocket.instances[0]!;
+      socket.open();
+      vi.advanceTimersByTime(1_000);
+      const initialTimeProbes = socket.sent.filter((msg) => msg.startsWith("time:")).length;
+      expect(initialTimeProbes).toBe(5);
+      socket.sent.length = 0;
+
+      // 3 x 20s heartbeats should send "ping" only (zero "time:" wakeups).
+      for (let i = 0; i < 3; i += 1) {
+        vi.advanceTimersByTime(20_000);
+        socket.emit("message", { data: "pong" });
+      }
+      expect(socket.sent.filter((msg) => msg === "ping")).toHaveLength(3);
+      expect(socket.sent.some((msg) => msg.startsWith("time:"))).toBe(false);
+
+      // Passing the 4-minute refresh boundary triggers one fresh time probe.
+      socket.sent.length = 0;
+      for (let i = 0; i < 10; i += 1) {
+        vi.advanceTimersByTime(20_000);
+        socket.emit("message", { data: "pong" });
+      }
+      expect(socket.sent.filter((msg) => msg.startsWith("time:"))).toHaveLength(1);
+    } finally {
+      client.close();
+    }
+  });
+
+  it("cancels pending draft timers when closing", () => {
+    const client = open("guest");
+    const socket = FakeSocket.instances[0]!;
+    socket.open();
+    client.submitDraft("hello");
+    client.close();
+    vi.advanceTimersByTime(500);
+    expect(socket.sent.some((msg) => msg.includes('"draft"'))).toBe(false);
   });
 
   it("closes a stage socket that stops answering pings, then reconnects", () => {

@@ -97,7 +97,8 @@ export async function signOutAdmin(): Promise<Failure | undefined> {
 }
 
 export async function fetchLocalInbox(): Promise<DevInbox["messages"]> {
-  const result = await authRequest("/api/dev/inbox");
+  // Text only: the sign-in page needs the code and link, not the rendered email.
+  const result = await authRequest("/api/dev/inbox?format=text");
   if ("error" in result || !result.ok) return [];
   const parsed = devInboxSchema.safeParse(result.body);
   return parsed.success ? parsed.data.messages : [];

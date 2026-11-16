@@ -25,15 +25,23 @@ export function PowerUpControl({
       >
         {pending ? "Using…" : item ? "Use " + kartItemNames[item] : "No power-up"}
       </Button>
-      <p role="status">
+      <p role="status" data-hint={effect || notice ? undefined : ""}>
         {effect ||
           notice ||
           (item
             ? item === "turbo"
-              ? "A short burst of speed — hold A"
+              ? "A short burst of speed — keep accelerating"
               : item === "shield"
-                ? "Blocks one oil slick for 5 seconds"
-                : "Drop oil behind you to slow a kart"
+                ? "Blocks one item hit for 5 seconds"
+                : item === "oil"
+                  ? "Drop oil behind you to slow a kart"
+                  : item === "tennis"
+                    ? "Throw a bouncing tennis ball ahead"
+                    : item === "bomb"
+                      ? "Drop a bomb — move away before its fuse ends"
+                      : item === "homing"
+                        ? "Targets a racer ahead; gives a small boost if nobody is ahead"
+                        : "A personal 0.6-second boost — keep accelerating"
             : "Drive through a glowing item box to collect an item")}
       </p>
     </div>

@@ -1,0 +1,238 @@
+/*
+ * "Who's that Pokémon?" The scene keeps its own colours in every theme (set
+ * from contentColours on the root): a red burst, a yellow title with a blue
+ * outline, and a cream battle-menu box. System fonts only.
+ */
+.poke {
+  position: relative;
+  isolation: isolate;
+  padding: 1rem;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(120% 90% at 50% 0%, transparent 40%, var(--poke-red-deep) 100%),
+    var(--poke-red);
+  color: var(--poke-cream);
+  font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+}
+.poke .design-tag {
+  color: var(--poke-cream);
+}
+
+/* The title: fat yellow letters, blue outline, a hard drop. */
+.poke-title {
+  margin: 0;
+  color: var(--poke-yellow);
+  font-family: "Arial Black", "Trebuchet MS", system-ui, sans-serif;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.01em;
+  line-height: 1.02;
+  paint-order: stroke fill;
+  -webkit-text-stroke: 0.14em var(--poke-blue);
+  text-shadow: 0.07em 0.09em 0 var(--poke-ink);
+  overflow-wrap: break-word;
+}
+.poke-title[data-size="phone"] {
+  font-size: clamp(1.7rem, 8.5vw, 2.6rem);
+  text-align: center;
+}
+.poke-title[data-size="stage"] {
+  font-size: max(72px, 5.4vw);
+}
+
+/* The mystery picture in its burst. */
+.poke-mystery {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(100%, 18rem);
+  aspect-ratio: 1;
+  margin-inline: auto;
+  border-radius: 50%;
+}
+.poke-mystery[data-size="stage"] {
+  width: min(100%, 44vh, 34rem);
+}
+.poke-rays,
+.poke-glow,
+.poke-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+.poke-rays {
+  inset: -18%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--poke-burst) 55%, transparent) 0deg 9deg,
+    transparent 9deg 18deg
+  );
+  mask-image: radial-gradient(circle, black 35%, transparent 70%);
+  animation: poke-spin 40s linear infinite;
+}
+.poke-glow {
+  background: radial-gradient(
+    circle,
+    white 0%,
+    var(--poke-burst) 38%,
+    color-mix(in srgb, var(--poke-yellow) 60%, transparent) 62%,
+    transparent 72%
+  );
+}
+.poke-flash {
+  background: white;
+  pointer-events: none;
+}
+.poke-art {
+  position: relative;
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+  user-select: none;
+  filter: drop-shadow(
+    0 0.4rem 0.5rem color-mix(in srgb, var(--poke-ink) 45%, transparent)
+  );
+}
+.poke-unknown {
+  position: relative;
+  color: var(--poke-ink);
+  font-family: "Arial Black", system-ui, sans-serif;
+  font-weight: 900;
+  font-size: clamp(6rem, 40vw, 11rem);
+  line-height: 1;
+}
+.poke-mystery[data-size="stage"] .poke-unknown {
+  font-size: min(30vh, 22rem);
+}
+
+.poke-line {
+  margin: 0;
+  text-align: center;
+  font-weight: 800;
+}
+
+/* Names in a battle-menu box: cream panel, dark double border, a ▶ cursor. */
+.poke-menu {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.6rem;
+  list-style: none;
+  border: 4px solid var(--poke-ink);
+  border-radius: 0.9rem;
+  outline: 3px solid var(--poke-cream);
+  outline-offset: -9px;
+  background: var(--poke-cream);
+  color: var(--poke-ink);
+}
+.poke-move {
+  display: grid;
+  grid-template-columns: 1.1em minmax(0, 1fr);
+  align-items: center;
+  gap: 0.15rem 0.3rem;
+  min-height: 3.5rem;
+  padding: 0.55rem 0.6rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  font-size: 1.05rem;
+  text-align: start;
+  touch-action: manipulation;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+button.poke-move:disabled {
+  cursor: default;
+}
+.poke-move-name {
+  min-width: 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.poke-cursor {
+  opacity: 0;
+  transform: translateX(-0.3em);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.poke-move[data-chosen] {
+  background: color-mix(in srgb, var(--poke-yellow) 55%, var(--poke-cream));
+  box-shadow: inset 0 0 0 3px var(--poke-blue);
+}
+.poke-move[data-chosen] .poke-cursor,
+.poke-move[data-answer] .poke-cursor {
+  opacity: 1;
+  transform: none;
+}
+.poke-move[data-answer] {
+  background: var(--poke-yellow);
+  box-shadow: inset 0 0 0 4px var(--poke-blue);
+}
+.poke-move:focus-visible {
+  outline: 3px solid var(--poke-blue);
+  outline-offset: 2px;
+}
+
+/* Stage: the burst on the left, title and names on the right. */
+.poke-stage {
+  padding: clamp(1rem, 2.5vw, 2.5rem);
+}
+.poke-stage-body {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 4rem);
+}
+.poke-stage-side {
+  display: grid;
+  gap: clamp(1rem, 2.5vh, 2rem);
+  min-width: 0;
+}
+.poke-menu[data-size="stage"] {
+  gap: 0.75rem;
+  padding: 1rem;
+  border-width: 6px;
+  outline-offset: -13px;
+}
+.poke-menu[data-size="stage"] .poke-move {
+  font-size: max(40px, 2.6vw);
+  padding: 0.5em 0.6em;
+}
+.poke-menu[data-size="stage"] .design-voters {
+  grid-column: 1 / -1;
+}
+.poke-count {
+  color: var(--poke-cream);
+}
+
+@media (max-width: 800px) {
+  .poke-stage-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@keyframes poke-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .poke-rays {
+    animation: none;
+  }
+  .poke-cursor,
+  .poke-move {
+    transition-duration: 0.12s;
+  }
+}
+/* A phone keeps the burst still: loops belong on the projector. */
+.poke-mystery[data-size="phone"] .poke-rays {
+  animation: none;
+}

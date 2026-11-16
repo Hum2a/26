@@ -28,7 +28,7 @@ Live typing is only compatible with a question whose attribution is `live`. Doub
 
 Screen invasion, call from Mum, cracked screen, dodging button, nickname swap, hidden score, double or nothing, live typing, voice clip, theme song, and sponsor break.
 
-The theme song looks for `apps/web/public/assets/demo-sting.wav`. The file in the repo is a short illustrative tone. Replace it with the party sting and keep it under about three seconds. There is no party face asset. The invasion, call, and crack effects are labelled demos until those assets exist.
+The theme song plays `apps/web/public/assets/theme-song.mp3`, a 3.1 second Thomas the Tank Engine flute clip. Keep a replacement under about three seconds. Benjamin Netanyahu has his face and music, and the cracked screen has a glass smash. The full list of trolls still waiting for an asset is in `apps/api/src/troll/README.md`.
 
 ## Still needed from Humza
 

@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { LobbySnapshot } from "@26/shared";
 import { StageWall } from "./stage-wall";
+import { FramedPhoto, wallImageTimeoutMs } from "../../wall/framed-photo";
 
 type Wall = NonNullable<LobbySnapshot["wall"]>;
 const id = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
@@ -104,5 +105,305 @@ describe("projector photo wall", () => {
     expect(document.querySelectorAll(".wall-floater")).toHaveLength(2);
     update(3);
     expect(document.querySelectorAll(".wall-floater")).toHaveLength(3);
+  });
+});
+
+describe("a photo that never loads or errors on the projector", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+  const at = (postId: string, mediaId: string) => ({ ...now, postId, mediaId });
+
+  it("is reported once after four seconds, with the moving-on card", () => {
+    vi.useFakeTimers();
+    const onImageFailed = vi.fn();
+    render(
+      <StageWall
+        wall={wall({ now })}
+        gameId="ROOM"
+        phase="scores"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    act(() => vi.advanceTimersByTime(wallImageTimeoutMs - 1));
+    expect(onImageFailed).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1));
+    expect(onImageFailed).toHaveBeenCalledTimes(1);
+    expect(onImageFailed).toHaveBeenCalledWith(id(1));
+    expect(screen.getByText("Moving on in a moment.")).toBeTruthy();
+    act(() => vi.advanceTimersByTime(20_000));
+    expect(onImageFailed).toHaveBeenCalledTimes(1);
+  });
+
+  it("is not reported once it loads, however slowly", () => {
+    vi.useFakeTimers();
+    const onImageFailed = vi.fn();
+    render(
+      <StageWall
+        wall={wall({ now })}
+        gameId="ROOM"
+        phase="scores"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    act(() => vi.advanceTimersByTime(3_900));
+    fireEvent.load(screen.getByRole("img", { name: /a photo from Amina/ }));
+    act(() => vi.advanceTimersByTime(20_000));
+    expect(onImageFailed).not.toHaveBeenCalled();
+    expect(screen.getByRole("img", { name: /a photo from Amina/ })).toBeTruthy();
+  });
+
+  it("an error and the timeout together still report once", () => {
+    vi.useFakeTimers();
+    const onImageFailed = vi.fn();
+    render(
+      <StageWall
+        wall={wall({ now })}
+        gameId="ROOM"
+        phase="scores"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    act(() => vi.advanceTimersByTime(1_000));
+    fireEvent.error(screen.getByRole("img", { name: /a photo from Amina/ }));
+    act(() => vi.advanceTimersByTime(20_000));
+    expect(onImageFailed).toHaveBeenCalledTimes(1);
+  });
+
+  it("new snapshots of the same photo do not restart the clock", () => {
+    vi.useFakeTimers();
+    const onImageFailed = vi.fn();
+    const view = render(
+      <StageWall
+        wall={wall({ now })}
+        gameId="ROOM"
+        phase="scores"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    for (const count of [1, 2, 3]) {
+      act(() => vi.advanceTimersByTime(1_000));
+      // A reaction arrives; the page passes a fresh callback each render.
+      view.rerender(
+        <StageWall
+          wall={wall({ now: { ...now, reactions: [{ reaction: "fire", count }] } })}
+          gameId="ROOM"
+          phase="scores"
+          onImageFailed={(postId) => onImageFailed(postId)}
+        />,
+      );
+    }
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(onImageFailed).toHaveBeenCalledTimes(1);
+  });
+
+  it("a late timer for the photo that left never reports it", () => {
+    vi.useFakeTimers();
+    const onImageFailed = vi.fn();
+    const view = render(
+      <StageWall
+        wall={wall({ now })}
+        gameId="ROOM"
+        phase="scores"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    act(() => vi.advanceTimersByTime(3_000));
+    // The room moves on (a manual Skip, say) before the first photo's timer.
+    view.rerender(
+      <StageWall
+        wall={wall({ now: at(id(3), id(4)) })}
+        gameId="ROOM"
+        phase="scores"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    // The outgoing photo is still mounted for its exit animation (jsdom never
+    // finishes that), and its own timer passes: it must not report.
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(onImageFailed).not.toHaveBeenCalledWith(id(1));
+  });
+
+  it("gives a new source its own full four seconds and drops the old timer", () => {
+    vi.useFakeTimers();
+    const onFailed = vi.fn();
+    const photo = (src: string) => (
+      <FramedPhoto
+        src={src}
+        frame="polaroid"
+        nickname="Amina"
+        caption={null}
+        size="stage"
+        onFailed={onFailed}
+      />
+    );
+    const view = render(photo("/a.jpg"));
+    act(() => vi.advanceTimersByTime(3_000));
+    view.rerender(photo("/b.jpg"));
+    act(() => vi.advanceTimersByTime(3_999));
+    expect(onFailed).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1));
+    expect(onFailed).toHaveBeenCalledTimes(1);
+  });
+
+  it("is never timed out on screens that do not report, such as phone previews", () => {
+    vi.useFakeTimers();
+    render(<StageWall wall={wall({ now })} gameId="ROOM" phase="scores" />);
+    act(() => vi.advanceTimersByTime(20_000));
+    expect(screen.queryByText("This photo could not be shown.")).toBeNull();
+  });
+});
+
+describe("a photo that fails to load on the projector", () => {
+  it("shows the failed card and reports the post once, then the next post once", async () => {
+    const onImageFailed = vi.fn();
+    const view = render(
+      <StageWall
+        wall={wall({ now })}
+        gameId="ROOM"
+        phase="scores"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    const image = screen.getByRole("img", { name: /a photo from Amina/ });
+    fireEvent.error(image);
+    expect(screen.getByText("This photo could not be shown.")).toBeTruthy();
+    expect(onImageFailed).toHaveBeenCalledTimes(1);
+    expect(onImageFailed).toHaveBeenCalledWith(id(1));
+    // The same post re-rendered (a new snapshot) does not report again.
+    view.rerender(
+      <StageWall
+        wall={wall({ now: { ...now, reactions: [] } })}
+        gameId="ROOM"
+        phase="scores"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    expect(onImageFailed).toHaveBeenCalledTimes(1);
+    view.unmount();
+    // The room moves on to another post, which is broken too. (Corner placement:
+    // jsdom cannot run the spotlight's keyframed spring, so its exit never ends.)
+    const corner = render(
+      <StageWall
+        wall={wall({ now, placement: "corner" })}
+        gameId="ROOM"
+        phase="collect"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    const next = { ...now, postId: id(3), mediaId: id(4), nickname: "Bilal" };
+    corner.rerender(
+      <StageWall
+        wall={wall({ now: next, placement: "corner" })}
+        gameId="ROOM"
+        phase="collect"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    // The outgoing photo finishes its exit before the next one mounts.
+    fireEvent.error(await screen.findByRole("img", { name: /a photo from Bilal/ }));
+    expect(onImageFailed).toHaveBeenLastCalledWith(id(3));
+    expect(onImageFailed).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports nothing for a healthy photo, or where no projector callback is given", () => {
+    const onImageFailed = vi.fn();
+    const view = render(
+      <StageWall
+        wall={wall({ now })}
+        gameId="ROOM"
+        phase="scores"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    fireEvent.load(screen.getByRole("img", { name: /a photo from Amina/ }));
+    expect(onImageFailed).not.toHaveBeenCalled();
+    view.unmount();
+    // A guest's or the host's preview has no callback: a failure only shows the card.
+    render(<StageWall wall={wall({ now })} gameId="ROOM" phase="scores" />);
+    fireEvent.error(screen.getByRole("img", { name: /a photo from Amina/ }));
+    expect(screen.getByText("This photo could not be shown.")).toBeTruthy();
+  });
+
+  it("drops an error from an image that has already left the screen", () => {
+    const onImageFailed = vi.fn();
+    const view = render(
+      <StageWall
+        wall={wall({ now })}
+        gameId="ROOM"
+        phase="scores"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    const image = screen.getByRole("img", { name: /a photo from Amina/ });
+    view.unmount();
+    fireEvent.error(image);
+    expect(onImageFailed).not.toHaveBeenCalled();
+  });
+});
+
+describe("the failed-photo card", () => {
+  it("tells the projector it is moving on, and guests or the host only that it failed", () => {
+    const view = render(
+      <StageWall
+        wall={wall({ now })}
+        gameId="ROOM"
+        phase="scores"
+        onImageFailed={vi.fn()}
+      />,
+    );
+    fireEvent.error(screen.getByRole("img", { name: /a photo from Amina/ }));
+    expect(screen.getByText("This photo could not be shown.")).toBeTruthy();
+    expect(screen.getByText("Moving on in a moment.")).toBeTruthy();
+    view.unmount();
+    render(<StageWall wall={wall({ now })} gameId="ROOM" phase="scores" />);
+    fireEvent.error(screen.getByRole("img", { name: /a photo from Amina/ }));
+    expect(screen.getByText("This photo could not be shown.")).toBeTruthy();
+    expect(screen.queryByText("Moving on in a moment.")).toBeNull();
+  });
+
+  it("reports a photo once however many error events it fires", () => {
+    const onImageFailed = vi.fn();
+    render(
+      <StageWall
+        wall={wall({ now, placement: "corner" })}
+        gameId="ROOM"
+        phase="collect"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    const image = screen.getByRole("img", { name: /a photo from Amina/ });
+    fireEvent.error(image);
+    fireEvent.error(image);
+    expect(onImageFailed).toHaveBeenCalledTimes(1);
+  });
+
+  it("never lets a late error from the previous photo report the next one", async () => {
+    const onImageFailed = vi.fn();
+    const view = render(
+      <StageWall
+        wall={wall({ now, placement: "corner" })}
+        gameId="ROOM"
+        phase="collect"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    const previous = screen.getByRole("img", { name: /a photo from Amina/ });
+    const next = { ...now, postId: id(5), mediaId: id(6), nickname: "Chen" };
+    view.rerender(
+      <StageWall
+        wall={wall({ now: next, placement: "corner" })}
+        gameId="ROOM"
+        phase="collect"
+        onImageFailed={onImageFailed}
+      />,
+    );
+    const current = await screen.findByRole("img", { name: /a photo from Chen/ });
+    fireEvent.error(previous);
+    expect(onImageFailed).not.toHaveBeenCalled();
+    // Chen's photo still loads normally and is never reported.
+    fireEvent.load(current);
+    expect(onImageFailed).not.toHaveBeenCalled();
+    expect(screen.queryByText("This photo could not be shown.")).toBeNull();
   });
 });

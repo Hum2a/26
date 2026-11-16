@@ -23,6 +23,19 @@ export function developerDetails(sql: SqlStorage) {
 }
 
 /** Called inside the existing receipted host transaction. Target count, never additive. */
+/** The room is running Humza's birthday script outside a dedicated rehearsal room. */
+export function liveBirthdayGame(sql: SqlStorage): boolean {
+  const script = sql
+    .exec(
+      `SELECT 1 FROM round_state WHERE question_id = '__pack' AND state_key = 'birthday-script'`,
+    )
+    .toArray().length;
+  const rehearsal = sql
+    .exec(`SELECT 1 FROM developer_rehearsal WHERE id = 1`)
+    .toArray().length;
+  return script > 0 && rehearsal === 0;
+}
+
 export function setBotCount(sql: SqlStorage, value: unknown, now: number) {
   const parsed = botCountSchema.safeParse(value);
   if (!parsed.success || !Number.isSafeInteger(now) || now < 0)
@@ -39,6 +52,11 @@ export function setBotCount(sql: SqlStorage, value: unknown, now: number) {
     .toArray()[0]?.phase;
   if (count > 0 && (phase === "podium" || phase === "final" || phase === "facts"))
     throw new Error("Use a fresh room for another rehearsal.");
+  // The real birthday game never takes bots; a dedicated rehearsal room may.
+  if (count > previous.bots.length && liveBirthdayGame(sql))
+    throw new Error(
+      "Bots cannot join the live birthday game. Use a rehearsal room to test with bots.",
+    );
   for (const bot of previous.bots.slice(count)) {
     markKicked(sql, bot.playerId, new Date(now).toISOString());
     declineWaitingFor(sql, bot.playerId);

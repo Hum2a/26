@@ -49,7 +49,22 @@
   background: color-mix(in oklab, var(--color-background) 25%, transparent);
   font-size: 3rem;
   font-weight: 700;
+  position: relative;
+  overflow: hidden;
   animation: troll-ring 1.2s ease-in-out infinite;
+}
+
+/*
+ * Stock painting standing in for Mum (795x1000). Her head is small and left of
+ * centre, so the image is enlarged and shifted until it fills the circle.
+ */
+.troll-call-photo {
+  position: absolute;
+  top: -100%;
+  left: -73%;
+  width: 331%;
+  max-width: none;
+  height: auto;
 }
 
 .troll-call-name {

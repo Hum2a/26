@@ -224,13 +224,29 @@ export type AuthoredFinale = AuthorFields &
 
 export type KartBody = {
   kind: "kart";
-  trackId: "party-ring-v1" | "mario-circuit-v1";
-  timeLimitMs: 45_000 | 180_000;
+  trackId: "party-ring-v1" | "mario-circuit-v1" | "26-park-v1";
+  /** Packs use the course window; kart-only lobbies multiply it by `laps`. */
+  timeLimitMs: number;
+  /** Only room-owned kart-lobby copies set this; packs stay one lap. */
+  laps?: 2 | 3;
+  /** Kart-lobby copies only: CPU racers added behind the guests (1–7). */
+  cpuRacers?: number;
 };
 export type AuthoredKart = AuthorFields & KartBody;
 export type KartQuestion = PlayableFields & KartBody;
 
+export type ChessBody = {
+  kind: "chess";
+  /** Time control in milliseconds (e.g., 60000 for 1 minute) */
+  initialTimeMs: number;
+  /** Time increment per move in milliseconds (0 for no increment) */
+  incrementMs: number;
+};
+export type AuthoredChess = AuthorFields & ChessBody;
+export type ChessQuestion = PlayableFields & ChessBody;
+
 export type AuthoredQuestion =
+  | AuthoredChess
   | AuthoredKart
   | AuthoredChoice
   | AuthoredSlider
@@ -285,6 +301,7 @@ export type FinaleQuestion = PlayableFields &
 
 /** A question the engine can score. Drafts are not this type. */
 export type Question =
+  | ChessQuestion
   | KartQuestion
   | ChoiceQuestion
   | SliderQuestion

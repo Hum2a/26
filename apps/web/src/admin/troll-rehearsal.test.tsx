@@ -29,5 +29,7 @@ it("draws the real target banner and guides a live check for a points troll", ()
   expect(banner.textContent).toContain("From Sample troller");
   expect(screen.getByText(/scored multiple-choice question/)).toBeTruthy();
   expect(screen.getByText(/Watch the scores at the reveal/)).toBeTruthy();
-  expect(screen.getByRole("link", { name: "/join" }).getAttribute("href")).toBe("/join");
+  expect(screen.getByRole("link", { name: "/join" }).getAttribute("href")).toBe(
+    "/join",
+  );
 });

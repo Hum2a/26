@@ -223,10 +223,15 @@ describe("archive delivery tables", () => {
         sent.push(message.to);
       },
     };
-    const closed = restrictResultsEmail({ APP_ENV: "staging" }, sender);
-    await expect(
-      closed.send({ to: "guest@example.test", subject: "Hi", text: "Hi" }),
-    ).rejects.toThrow("Staging email needs EMAIL_TEST_RECIPIENT.");
+    for (const testRecipient of [undefined, "", "   "]) {
+      const closed = restrictResultsEmail(
+        { APP_ENV: "staging", EMAIL_TEST_RECIPIENT: testRecipient },
+        sender,
+      );
+      await expect(
+        closed.send({ to: "guest@example.test", subject: "Hi", text: "Hi" }),
+      ).rejects.toThrow("Staging email needs EMAIL_TEST_RECIPIENT.");
+    }
     const limited = restrictResultsEmail(
       { APP_ENV: "staging", EMAIL_TEST_RECIPIENT: "host@example.test" },
       sender,
@@ -234,8 +239,56 @@ describe("archive delivery tables", () => {
     await expect(
       limited.send({ to: "guest@example.test", subject: "Hi", text: "Hi" }),
     ).rejects.toThrow("That address is outside the configured test recipient.");
+    expect(sent).toEqual([]);
     await limited.send({ to: "host@example.test", subject: "Hi", text: "Hi" });
     expect(sent).toEqual(["host@example.test"]);
+  });
+
+  it("production sends to each guest even with a leftover staging test recipient", async () => {
+    const sent: OutboundEmail[] = [];
+    const sender: EmailSender = {
+      kind: "resend",
+      async send(message) {
+        sent.push(message);
+      },
+    };
+    for (const testRecipient of [undefined, "host@example.test"]) {
+      const production = restrictResultsEmail(
+        { APP_ENV: "production", EMAIL_TEST_RECIPIENT: testRecipient },
+        sender,
+      );
+      expect(production).toBe(sender);
+      const message = {
+        to: "guest@example.test",
+        subject: "Your result",
+        text: "Your own recap",
+        idempotencyKey: `result:${testRecipient ?? "unset"}`,
+      };
+      await production.send(message);
+      expect(sent.at(-1)).toEqual(message);
+    }
+    expect(sent).toHaveLength(2);
+  });
+
+  it("local results retain the optional test restriction and normalise matching addresses", async () => {
+    const sent: string[] = [];
+    const sender: EmailSender = {
+      kind: "local-inbox",
+      async send(message) {
+        sent.push(message.to);
+      },
+    };
+    expect(restrictResultsEmail({ APP_ENV: "local" }, sender)).toBe(sender);
+    const local = restrictResultsEmail(
+      { APP_ENV: "local", EMAIL_TEST_RECIPIENT: "  Host@Example.Test  " },
+      sender,
+    );
+    await expect(
+      local.send({ to: "guest@example.test", subject: "Hi", text: "Hi" }),
+    ).rejects.toThrow("That address is outside the configured test recipient.");
+    expect(sent).toEqual([]);
+    await local.send({ to: "HOST@example.test", subject: "Hi", text: "Hi" });
+    expect(sent).toEqual(["HOST@example.test"]);
   });
 });
 

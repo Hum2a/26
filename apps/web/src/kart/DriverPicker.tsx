@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { driverStyles, type DriverStyle, type LobbyDriver } from "@26/shared";
 import { Button } from "../ui/primitives";
 import { CaptureFlow } from "../photo/CaptureFlow";
 import { sendFacePhoto } from "../media/face-upload";
 import { DriverBadge, DriverEmblem } from "./DriverBadge";
+
+const SoloPracticeFrame = lazy(() =>
+  import("./SoloPracticeFrame").then((frame) => ({ default: frame.SoloPracticeFrame })),
+);
 
 /**
  * Lobby choice of kart driver. The style saves at once; a face photo is
@@ -16,17 +20,22 @@ export function DriverPicker({
   driver,
   pending,
   onChoose,
+  avatarMediaId,
 }: {
   gameId: string;
   nickname: string;
   driver: LobbyDriver | undefined;
   pending: boolean;
   onChoose: (style: DriverStyle, faceMediaId: string | null) => void;
+  /** The guest's profile photo; a driver with no photo of its own uses it. */
+  avatarMediaId?: string;
 }) {
   const reduced = useReducedMotion();
   const [taking, setTaking] = useState(false);
+  const [practice, setPractice] = useState(false);
   const style = driver?.style ?? "racer";
   const face = driver?.faceMediaId ?? null;
+  const borrowed = face !== null && face === avatarMediaId;
 
   return (
     <section className="driver-picker" aria-labelledby="driver-picker-title">
@@ -67,12 +76,40 @@ export function DriverPicker({
           </label>
         ))}
       </fieldset>
+      <Button
+        variant="secondary"
+        aria-expanded={practice}
+        onClick={() => setPractice((value) => !value)}
+      >
+        {practice ? "Close practice" : "Practise with my driver"}
+      </Button>
+      <AnimatePresence initial={false}>
+        {practice ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <p>
+              Solo practice uses your chosen driver and visible photo. No room controls
+              or party points.
+            </p>
+            <Suspense fallback={<p role="status">Preparing solo practice…</p>}>
+              <SoloPracticeFrame gameId={gameId} driver={driver} />
+            </Suspense>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <div className="driver-picker-face">
         <h3>Your face on the driver</h3>
         <p>
           Optional. Your photo is shown on your kart and on the big screen during the
           race. The host can remove it, and it is not added to the photo gallery.
+          {borrowed
+            ? " Your profile photo is on the driver now; take another to use a different one."
+            : ""}
         </p>
         <div className="driver-picker-actions">
           <Button
@@ -83,7 +120,7 @@ export function DriverPicker({
           >
             {taking ? "Close camera" : face ? "Retake my photo" : "Use my photo"}
           </Button>
-          {face ? (
+          {face && !borrowed ? (
             <Button
               variant="secondary"
               disabled={pending}

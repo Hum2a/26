@@ -1,0 +1,116 @@
+Troll sound and image credits for 26.humza.website
+==================================================
+
+Files in this folder come from Wikimedia Commons, as listed in the asset
+pack's SOURCES.md (licences as stated on each file page, fetched 7 November
+2026). The licences differ file by file. The pack is NOT all CC0.
+
+They are deliberate comic stand-ins. "Mum" is an old public domain painting and
+an American English-lesson dialogue clip, not a real family member. The bubble
+sound is a bubble pop, not bubble wrap. The AirDrop chime is a generic chime,
+not an Apple sound. Nothing here is affiliated with Apple.
+
+Changes made by the asset pack (before this project):
+  Every MP3 was transcoded from the original to MP3, 44.1 kHz, 160 kbps, and
+  loudness-normalised to -16 LUFS (12 was already an MP3 and was re-encoded).
+  Further edits are noted per file below.
+Changes made in this project: none. Files are used as supplied, under their
+pack names. 02b, 10b, the originals and the preview montage are not shipped.
+
+Share-alike notice: the adapted versions of the CC BY-SA files below
+(01, 04, 12 and 14) are licensed under the same licence as their source,
+CC BY-SA 3.0 or CC BY-SA 4.0 as stated.
+
+01_call-from-mum_ringtone.mp3
+  "Model 500 Telephone British ring" by CianMcCann (own work)
+  https://commons.wikimedia.org/wiki/File:Model_500_Telephone_British_ring.ogg
+  Licence: CC BY-SA 3.0 https://creativecommons.org/licenses/by-sa/3.0
+  Changes: trimmed to the first 8 s of the 24 s original, normalised, MP3.
+
+02_call-from-mum_voice-line.mp3
+  "Anna: Where are you Marsha? I am in the bathroom!" by VOA Learning English
+  https://commons.wikimedia.org/wiki/File:Anna_Where_are_you_Marsha,_I_am_in_the_bathroom!.ogg
+  Licence: public domain. Changes: normalised, MP3.
+
+03_call-from-mum_photo_web.jpg
+  "Ein ermahnendes Wort" ("An admonishing word"), unknown artist, via
+  Düsseldorfer Auktionshaus
+  https://commons.wikimedia.org/wiki/File:LV_Ein_ermahnendes_Wort.jpg
+  Licence: public domain. Changes: recompressed as a smaller JPEG, same 795x1000 size.
+
+04_bubble-wrap_pop.mp3
+  "Bubble 01 nevit" by Nevit Dilmen (own work)
+  https://commons.wikimedia.org/wiki/File:Bubble_01_nevit.ogg
+  Licence: CC BY-SA 3.0 https://creativecommons.org/licenses/by-sa/3.0
+  Changes: normalised, MP3.
+
+05_notification-storm_ding.mp3
+  "Simple Happy Beep" by waveplaySFX
+  https://commons.wikimedia.org/wiki/File:Simple_Happy_Beep.ogg
+  (originally https://freesound.org/people/waveplaySFX/sounds/518147/)
+  Licence: CC0 1.0 http://creativecommons.org/publicdomain/zero/1.0/deed.en
+  Changes: normalised, MP3.
+
+05b_notification-storm_ding-alt.mp3
+  "Notification 3 (Gravity Sound)" by Gravity Sound
+  https://commons.wikimedia.org/wiki/File:Notification_3_(Gravity_Sound).wav
+  Licence: CC BY 4.0 https://creativecommons.org/licenses/by/4.0
+  Changes: normalised, MP3.
+
+06_confetti-cannon_party-horn.mp3
+  "Luftrüssel" by Flo Sorg (own work)
+  https://commons.wikimedia.org/wiki/File:Luftr%C3%BCssel.ogg
+  Licence: public domain. Changes: normalised, MP3.
+
+07_fake-crash_error.mp3
+  "Error Sound 11 (Gravity Sound)" by Gravity Sound
+  https://commons.wikimedia.org/wiki/File:Error_Sound_11_(Gravity_Sound).wav
+  Licence: CC BY 4.0 https://creativecommons.org/licenses/by/4.0
+  Changes: normalised, MP3.
+
+08_airdrop-spam_generic-chime.mp3
+  "Chime (1) Sample" by UnKnownrNone (own work). A generic chime.
+  https://commons.wikimedia.org/wiki/File:Chime_(1)_Sample.wav
+  Licence: CC0 1.0 http://creativecommons.org/publicdomain/zero/1.0/deed.en
+  Changes: normalised, MP3.
+
+09_low-battery_chirp.mp3
+  "Smoke alarm" by cori, via pdsounds.org, transferred by Fæ
+  https://commons.wikimedia.org/wiki/File:Smoke_alarm.ogg
+  Licence: public domain. Changes: one 1.2 s chirp cut from the 37 s
+  original, normalised, MP3.
+
+10_fake-last-place_sad-trombone.mp3
+  "Sad Trombone" by Sad Tromboner (own work)
+  https://commons.wikimedia.org/wiki/File:Sad_Trombone.wav
+  Licence: CC BY 4.0 https://creativecommons.org/licenses/by/4.0
+  Changes: normalised, MP3.
+
+11_fake-exit_door-slam.mp3
+  "Slam closet door (Gravity Sound)" by Gravity Sound
+  https://commons.wikimedia.org/wiki/File:Slam_closet_door_(Gravity_Sound).wav
+  Licence: CC BY 4.0 https://creativecommons.org/licenses/by/4.0
+  Changes: normalised, MP3.
+
+12_sponsor-break_ad-jingle.mp3
+  "Zündfunk Radiotop Polyphon Jingle - 1994" by Maximilian Schönherr (own work)
+  https://commons.wikimedia.org/wiki/File:Z%C3%BCndfunk_Radiotop_Polyphon_Jingle_-_1994.mp3
+  Licence: CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0
+  Changes: normalised, re-encoded MP3.
+
+13_speech_drumroll.mp3
+  "Drum Roll Intro" by Iwan Sounds and DIY
+  https://commons.wikimedia.org/wiki/File:Drum_Roll_Intro.ogg
+  Licence: CC0 1.0 http://creativecommons.org/publicdomain/zero/1.0/deed.en
+  Changes: normalised, MP3.
+
+13b_speech_applause.mp3
+  "Clapping hurray (cropped)" by Starlite, cropped from File:Clapping_hurray.ogg
+  https://commons.wikimedia.org/wiki/File:Clapping_hurray_(cropped).oga
+  Licence: public domain. Changes: normalised, MP3.
+
+14_zoom-enhance_beep.mp3
+  "Beep-09" by Rockhusho (own work)
+  https://commons.wikimedia.org/wiki/File:Beep-09.ogg
+  Licence: CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0
+  Changes: normalised, MP3.

@@ -83,6 +83,54 @@ it("declines the first waiting photo with the D key", async () => {
   );
 });
 
+it("says which photo the big screen could not display, and keeps Skip", async () => {
+  setupControls({
+    ...fixture,
+    wall: {
+      ...fixture.wall!,
+      now: { ...fixture.wall!.now!, displayFailed: true },
+      recent: [
+        {
+          postId: id(7),
+          mediaId: id(8),
+          nickname: "Bilal",
+          caption: null,
+          frame: "polaroid",
+          playerId,
+          status: "shown",
+          reactions: 0,
+          displayFailed: true,
+        },
+        {
+          postId: id(9),
+          mediaId: id(0),
+          nickname: "Cara",
+          caption: null,
+          frame: "polaroid",
+          playerId,
+          status: "shown",
+          reactions: 2,
+        },
+      ],
+    },
+  });
+  await mountControls(<WallPage />);
+  expect(
+    screen
+      .getByRole("region", { name: "On screen now" })
+      .textContent?.includes("Couldn't display on the big screen"),
+  ).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+  await waitFor(() =>
+    expect(sent()).toContainEqual(expect.objectContaining({ action: "wall-skip" })),
+  );
+  // In the history, only the photo that failed is marked.
+  fireEvent.click(screen.getByRole("button", { name: /Shown so far \(2\)/ }));
+  const marked = await screen.findAllByText("Couldn't display");
+  expect(marked).toHaveLength(1);
+  expect(marked[0].closest("li")?.textContent).toContain("Bilal");
+});
+
 it("pulls the photo on screen and changes settings", async () => {
   await mountControls(<WallPage />);
   fireEvent.click(screen.getByRole("button", { name: "Pull it" }));

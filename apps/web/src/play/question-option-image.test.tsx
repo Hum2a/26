@@ -92,7 +92,7 @@ it("renders illustrations inside existing phone buttons without changing their n
 
 it("also draws images on stage and keeps answering closed during the prompt", () => {
   const view = render(<StagePlay snapshot={snapshot("prompt")} />);
-  expect(view.container.querySelectorAll(".stage-option img")).toHaveLength(4);
+  expect(view.container.querySelectorAll(".vote-option img")).toHaveLength(4);
   expect(screen.getByText("Osama bin laden")).toBeTruthy();
   view.unmount();
   render(

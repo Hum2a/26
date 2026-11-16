@@ -11,6 +11,9 @@ import { damp } from "three/src/math/MathUtils.js";
 import { getDriftLevel } from "../constants.js";
 import { useGameStore } from "../store.js";
 import { Raycaster, Vector3 } from "three";
+import { kartAssetPaths } from "@26/shared";
+import { vehiclePose } from "../../../../web/src/kart/vehicle-pose";
+import { SoloDriver } from "../../SoloDriver";
 const raycaster = new Raycaster();
 
 export function Kart({
@@ -19,12 +22,9 @@ export function Kart({
   driftPower,
   jumpOffset,
   backWheelOffset,
-  inputTurn,
+  vehicleMotion,
 }) {
-  const { nodes, materials } = useGLTF(
-    import.meta.env.BASE_URL + "models/kart.glb",
-    import.meta.env.BASE_URL + "draco/",
-  );
+  const { nodes, materials } = useGLTF(kartAssetPaths.kart, kartAssetPaths.draco);
 
   const wheel3 = useRef(null);
   const wheel2 = useRef(null);
@@ -79,17 +79,23 @@ export function Kart({
   const { scene } = useThree();
   const direction = new Vector3(0, -1, 0);
 
-  function rotateWheels(left, right, delta) {
-    const rotationSpeed = speed.current * 0.01 * delta * 60;
-    wheel0.current.rotation.x += rotationSpeed;
-    wheel1.current.rotation.x += rotationSpeed;
-    wheel2.current.rotation.x += rotationSpeed;
-    wheel3.current.rotation.x += rotationSpeed;
-
-    yRotation.current = damp(yRotation.current, inputTurn.current, 4, delta);
-
+  function rotateWheels(delta) {
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const front = vehiclePose(vehicleMotion.current, reduced, {
+      wheelBase: 1.4,
+      wheelRadius: 0.2892,
+    });
+    const rear = vehiclePose(vehicleMotion.current, reduced, {
+      wheelBase: 1.4,
+      wheelRadius: 0.3518,
+    });
+    wheel0.current.rotation.x = front.wheelRotation;
+    wheel1.current.rotation.x = front.wheelRotation;
+    wheel2.current.rotation.x = rear.wheelRotation;
+    wheel3.current.rotation.x = rear.wheelRotation;
+    yRotation.current = damp(yRotation.current, -front.steering, 8, delta);
     frontWheels.current.rotation.y = yRotation.current;
-    wheelRef.current.rotation.y = yRotation.current * Math.PI * 4;
+    wheelRef.current.rotation.y = yRotation.current * 2.2;
   }
 
   function getGroundPosition(wheelBase, wheel, offset = 0, wheelIndex, delta) {
@@ -205,10 +211,7 @@ export function Kart({
         });
       }
       const isDrifting = !!driftDirection.current && jumpOffset.current === 0;
-      const left = false,
-        right = false;
-
-      rotateWheels(left, right, delta);
+      rotateWheels(delta);
 
       getGroundPosition(wheel0Base, wheel0, backWheelOffset.current.right, 0, delta);
       getGroundPosition(wheel1Base, wheel1, backWheelOffset.current.left, 1, delta);
@@ -282,6 +285,7 @@ export function Kart({
   }, []);
   return (
     <>
+      <SoloDriver anchor={bodyRef} />
       {/* <pointLight intensity={2000} position={[0, 10, 0]}/> */}
 
       <group ref={groupRef} dispose={null}>

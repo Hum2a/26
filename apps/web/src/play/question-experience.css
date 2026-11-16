@@ -337,6 +337,13 @@
     color-mix(in srgb, var(--accent) 20%, transparent) 90%
   );
 }
+.answer-state[data-state="fun"]::after {
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--accent) 35%, transparent),
+    transparent 90%
+  );
+}
 .answer-state[data-state="missed"]::after {
   opacity: 0.35;
 }

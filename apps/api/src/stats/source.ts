@@ -93,7 +93,10 @@ export function readStatsSource(sql: SqlStorage): StatsSource {
        FROM vote_ballot
        LEFT JOIN vote_candidate
          ON vote_candidate.question_id = vote_ballot.question_id
-        AND vote_candidate.candidate_id = vote_ballot.candidate_id`,
+        AND vote_candidate.candidate_id = vote_ballot.candidate_id
+       -- A ballot for an answer the host excluded did not count, and its
+       -- text must not reach the public highlights.
+       WHERE vote_candidate.included IS NULL OR vote_candidate.included = 1`,
     )
     .toArray();
   const scored = new Map(

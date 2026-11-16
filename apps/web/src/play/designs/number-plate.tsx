@@ -6,6 +6,7 @@ import {
   LiveCount,
   QuestionTag,
   StagePrompt,
+  StageVoters,
   useDesignMotion,
 } from "./kit";
 import "./number-plate.css";
@@ -200,11 +201,14 @@ function PlateStage({
                 }}
               >
                 <Plate label={option.label} size="stage" />
+                <StageVoters play={play} optionId={option.id} />
               </motion.li>
             ),
           )}
         </ul>
       </LayoutGroup>
+      {/* The answer plate moves onto the car, so its voters follow it here. */}
+      {answer ? <StageVoters play={play} optionId={answer.id} /> : null}
       <p className="design-stage-line">
         {answer ? (
           <>Registered: {answer.label}.</>

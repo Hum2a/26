@@ -27,6 +27,12 @@ const routes: RouteObject[] = [
     lazy: async () => ({ Component: (await import("./kart/solo-page")).SoloKartPage }),
   },
   {
+    path: "/chess",
+    lazy: async () => ({
+      Component: (await import("./chess/solo-page")).SoloChessPage,
+    }),
+  },
+  {
     path: "/j/:code",
     lazy: async () => ({ Component: (await import("./guest/guest-page")).GuestPage }),
   },
@@ -137,6 +143,12 @@ const routes: RouteObject[] = [
             path: "media",
             lazy: async () => ({
               Component: (await import("./admin/media-page")).MediaPage,
+            }),
+          },
+          {
+            path: "voters",
+            lazy: async () => ({
+              Component: (await import("./admin/voters-page")).VotersPage,
             }),
           },
           {

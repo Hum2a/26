@@ -2,14 +2,23 @@ import { lazy, Suspense } from "react";
 const KartGameWrapper = lazy(() => import("../kart/KartGameWrapper"));
 import { motion } from "motion/react";
 import type { LobbySnapshot, PlaySnapshot, RoomPhaseName } from "@26/shared";
-import { QuestionOptionImage } from "./question-option-image";
+import { VoteBoard } from "./vote-board";
+import { RosterProvider } from "../ui/roster";
+import { ChessStage } from "../chess/chess-stage";
 import { Panel } from "../ui/primitives";
 import { Glyph } from "./designs/glyph";
 import { AnswerNames } from "./attributions";
 import { renderPresentation } from "./presentation";
 import { KartDriversProvider } from "../kart/KartDriversProvider";
-import { FunFactStage } from "./fun-fact";
-import { Scoreboard } from "../ui/scoreboard";
+const KartCountdown = lazy(() =>
+  import("../kart/KartCountdown").then((beat) => ({ default: beat.KartCountdown })),
+);
+const FunFactStage = lazy(() =>
+  import("./fun-fact").then((fact) => ({ default: fact.FunFactStage })),
+);
+const Scoreboard = lazy(() =>
+  import("../ui/scoreboard").then((board) => ({ default: board.Scoreboard })),
+);
 import { GuestPush } from "./guest-push";
 import { PlayerAvatar } from "../ui/player-avatar";
 
@@ -48,8 +57,31 @@ export function StagePlay({
   /** When this snapshot arrived, for screens that follow the room's clock. */
   observedAt?: number;
 }) {
+  // Faces for the vote board, standings and designs, keyed by player id.
+  return (
+    <RosterProvider
+      gameId={snapshot.gameId}
+      players={snapshot.players}
+      revision={snapshot.mediaDisplayRevision}
+    >
+      <StageBeat snapshot={snapshot} observedAt={observedAt} />
+    </RosterProvider>
+  );
+}
+
+function StageBeat({
+  snapshot,
+  observedAt,
+}: {
+  snapshot: LobbySnapshot;
+  observedAt?: number;
+}) {
   if (snapshot.phase === "facts" && snapshot.funFact) {
-    return <FunFactStage fact={snapshot.funFact} />;
+    return (
+      <Suspense fallback={<p role="status">Preparing the next fact…</p>}>
+        <FunFactStage fact={snapshot.funFact} />
+      </Suspense>
+    );
   }
   const play = snapshot.play;
   if (!play) {
@@ -64,8 +96,17 @@ export function StagePlay({
         <Suspense fallback={<p>Preparing the race…</p>}>
           <KartGameWrapper race={play.kart} paused={snapshot.paused || snapshot.held} />
         </Suspense>
+        <Suspense fallback={null}>
+          <KartCountdown
+            snapshot={snapshot}
+            observedAt={observedAt ?? snapshot.serverNow}
+          />
+        </Suspense>
       </KartDriversProvider>
     );
+  if (play.question.kind === "chess" && play.chess && "totalGames" in play.chess) {
+    return <ChessStage snapshot={play.chess} />;
+  }
   const leadBoard =
     snapshot.phase === "scores" ||
     snapshot.phase === "final" ||
@@ -157,16 +198,17 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
   if (play.question.kind === "duel" || play.question.kind === "finale") {
     return <DuelView play={play} omitBoard={omitBoard} />;
   }
+
+  // Only choice questions have options
+  if (play.question.kind !== "choice") {
+    return <p>Unsupported question type for this view</p>;
+  }
+
   const reveal = play.reveal?.kind === "choice" ? play.reveal : undefined;
   const options = play.question.options;
   const answer = reveal
     ? options.find((option) => option.id === reveal.correctOptionId)
     : undefined;
-  const count = (optionId: string) =>
-    reveal?.tally?.find((row) => row.optionId === optionId)?.count;
-  const countLabel =
-    play.submissionCount === 1 ? "1 answer in." : `${play.submissionCount} answers in.`;
-
   return (
     <div className="grid gap-4">
       <p>
@@ -174,26 +216,9 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
         Question {play.question.index} of {play.question.total}.
       </p>
       <p className="stage-prompt">{play.question.prompt}</p>
-      <ul
-        className={
-          options.length > 6 ? "stage-option-grid" : "stage-options grid gap-3"
-        }
-      >
-        {options.map((option) => {
-          const votes = count(option.id);
-          return (
-            <li key={option.id} className="stage-option">
-              {option.image ? <QuestionOptionImage src={option.image} /> : null}
-              {option.label}
-              {votes === undefined
-                ? ""
-                : ` — ${votes} ${votes === 1 ? "vote" : "votes"}`}
-            </li>
-          );
-        })}
-      </ul>
-      <p>{countLabel}</p>
-      <AnswerNames play={play} />
+      <VoteBoard play={play} />
+      {/* The board shows faces; names stay for a round whose picks are not on it. */}
+      {play.voters ? null : <AnswerNames play={play} />}
       {answer ? <p className="stage-answer">The answer is {answer.label}.</p> : null}
       {reveal && !answer ? (
         <p className="stage-answer">{outcomeLine(reveal, options)}</p>
@@ -603,27 +628,29 @@ function Standings({
     return null;
   }
   return (
-    <Scoreboard
-      title={title ?? "The standings"}
-      label="Scoreboard"
-      podium={podium}
-      entries={(play.standings ?? []).map((row) => ({
-        id: row.nickname,
-        name: row.nickname,
-        place: row.place,
-        points: row.points,
-        badge: (
-          <PlayerAvatar
-            playerId={
-              players.find((player) => player.nickname === row.nickname)?.playerId ??
-              row.nickname
-            }
-            nickname={row.nickname}
-            size="sm"
-          />
-        ),
-      }))}
-    />
+    <Suspense fallback={<p role="status">{title ?? "The standings"}</p>}>
+      <Scoreboard
+        title={title ?? "The standings"}
+        label="Scoreboard"
+        podium={podium}
+        entries={(play.standings ?? []).map((row) => ({
+          id: row.nickname,
+          name: row.nickname,
+          place: row.place,
+          points: row.points,
+          badge: (
+            <PlayerAvatar
+              playerId={
+                players.find((player) => player.nickname === row.nickname)?.playerId ??
+                row.nickname
+              }
+              nickname={row.nickname}
+              size="sm"
+            />
+          ),
+        }))}
+      />
+    </Suspense>
   );
 }
 

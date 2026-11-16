@@ -9,7 +9,7 @@ import { SkinMotif } from "../theme/skin-motif";
 import { ThemePicker } from "../theme/theme-picker";
 import { Wordmark } from "../theme/wordmark";
 import { PhoneDockTarget } from "../controller/phone-dock";
-import { ConnectionDot } from "../net/ConnectionDot";
+import { ConnectionDot } from "../live/ConnectionDot";
 import { LiquidGround } from "../ui/liquid-ground";
 import "./phone-shell.css";
 

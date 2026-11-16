@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AnimatePresence,
   motion,
@@ -10,6 +10,13 @@ import { wallQuestionPhases, type LobbySnapshot, type WallReaction } from "@26/s
 import { FramedPhoto, reactionEmoji } from "../../wall/framed-photo";
 import { serverOffset } from "../../live/server-clock";
 import { withClientApiKey } from "../../api/client-key";
+import {
+  clearRoomMediaCache,
+  evictMediaUrl,
+  preloadMediaUrl,
+  supportsBlobMediaCache,
+  useCachedMediaSrc,
+} from "../../media/media-cache";
 
 type Wall = NonNullable<LobbySnapshot["wall"]>;
 type Now = NonNullable<Wall["now"]>;
@@ -18,16 +25,45 @@ type Now = NonNullable<Wall["now"]>;
  * The photo wall on the projector. In a break the photo takes the screen
  * (spotlight); with corner placement during a question it sits small in a
  * corner. Nothing here decides what shows or for how long: that is the room.
+ *
+ * `onImageFailed` tells the room the photo on screen did not load, once per
+ * post. Only the projector passes it, and the room accepts it only from the
+ * projector's own credential for the post it is showing; it then ends that
+ * photo after a short "could not be shown" card through the normal rotation.
  */
 export function StageWall({
   wall,
   gameId,
   phase,
+  onImageFailed,
 }: {
   wall: Wall;
   gameId: string;
   phase: string;
+  onImageFailed?: (postId: string) => void;
 }) {
+  const reported = useRef(new Set<string>());
+  const nowId = wall.now?.postId;
+  // A photo on its way out (its exit animation) cannot report: only the photo
+  // the room says is on screen now. The room checks this again.
+  const current = useRef(nowId);
+  useEffect(() => {
+    current.current = nowId;
+  }, [nowId]);
+  useEffect(() => {
+    clearRoomMediaCache(gameId);
+  }, [gameId]);
+  const report = useCallback(
+    (postId: string) => {
+      if (!onImageFailed || reported.current.has(postId)) return;
+      if (postId !== current.current) return;
+      reported.current.add(postId);
+      onImageFailed(postId);
+    },
+    [onImageFailed],
+  );
+  // Only a screen that reports failures says the wall is moving on.
+  const failed = nowId && onImageFailed ? () => report(nowId) : undefined;
   const src = (mediaId: string) =>
     withClientApiKey(`/api/rooms/${gameId}/media/${mediaId}`);
   const inQuestion = (wallQuestionPhases as readonly string[]).includes(phase);
@@ -40,7 +76,12 @@ export function StageWall({
       ) : null}
       <AnimatePresence mode="wait">
         {wall.now && !corner ? (
-          <Spotlight key={wall.now.postId} now={wall.now} src={src(wall.now.mediaId)} />
+          <Spotlight
+            key={wall.now.postId}
+            now={wall.now}
+            src={src(wall.now.mediaId)}
+            onFailed={failed}
+          />
         ) : null}
         {wall.now && corner ? (
           <motion.div
@@ -56,6 +97,7 @@ export function StageWall({
               nickname={wall.now.nickname}
               caption={wall.now.caption}
               size="corner"
+              onFailed={failed}
             />
           </motion.div>
         ) : null}
@@ -78,7 +120,15 @@ export function StageWall({
   );
 }
 
-function Spotlight({ now, src }: { now: Now; src: string }) {
+function Spotlight({
+  now,
+  src,
+  onFailed,
+}: {
+  now: Now;
+  src: string;
+  onFailed?: () => void;
+}) {
   const reduce = useReducedMotion();
   const meter = useMotionValue(1);
   useEffect(() => {
@@ -129,7 +179,19 @@ function Spotlight({ now, src }: { now: Now; src: string }) {
         transition={
           reduce
             ? { duration: 0.3 }
-            : { type: "spring", stiffness: 140, damping: 14, filter: { duration: 1.6 } }
+            : {
+                type: "spring",
+                stiffness: 140,
+                damping: 14,
+                filter: { duration: 1.6 },
+                // A spring takes two keyframes only; the wobble is a timed tween.
+                rotate: {
+                  type: "tween",
+                  duration: 0.9,
+                  ease: "easeOut",
+                  times: [0, 0.45, 0.75, 1],
+                },
+              }
         }
       >
         <FramedPhoto
@@ -138,6 +200,7 @@ function Spotlight({ now, src }: { now: Now; src: string }) {
           nickname={now.nickname}
           caption={now.caption}
           size="stage"
+          onFailed={onFailed}
         />
       </motion.div>
       <Reactions now={now} reduce={Boolean(reduce)} />
@@ -246,11 +309,10 @@ function Reel({
         }}
       >
         {strip.map((item, index) => (
-          <img
+          <ReelPhoto
             key={`-${index}`}
             src={src(item.mediaId)}
             alt={index < reel.length ? `Photo from ${item.nickname}` : ""}
-            className="wall-reel-photo"
           />
         ))}
       </motion.div>
@@ -258,11 +320,43 @@ function Reel({
   );
 }
 
+function ReelPhoto({ src, alt }: { src: string; alt: string }) {
+  const displaySrc = useCachedMediaSrc(src, { preload: true }) ?? src;
+  return (
+    <img
+      src={displaySrc}
+      alt={alt}
+      className="wall-reel-photo"
+      onError={() => {
+        if (displaySrc !== src) evictMediaUrl(src);
+      }}
+    />
+  );
+}
+
 /** Loads the next photo in the background so it never appears half-drawn. */
 function Preload({ src }: { src: string }) {
   useEffect(() => {
+    let cancelled = false;
+    const canCache = supportsBlobMediaCache();
+    if (canCache) {
+      void preloadMediaUrl(src).then((blobUrl) => {
+        if (cancelled || !blobUrl) return;
+        const decoded = new Image();
+        decoded.src = blobUrl;
+      });
+    }
     const image = new Image();
-    image.src = src;
+    if (
+      !canCache ||
+      typeof HTMLImageElement === "undefined" ||
+      !(image instanceof HTMLImageElement)
+    ) {
+      image.src = src;
+    }
+    return () => {
+      cancelled = true;
+    };
   }, [src]);
   return null;
 }

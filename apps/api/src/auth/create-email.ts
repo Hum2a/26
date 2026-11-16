@@ -1,3 +1,4 @@
+import { withTimeout } from "../timeout.ts";
 import { presentBinding, type AuthBindings } from "./bindings.ts";
 import type { AppDatabase } from "./create-database.ts";
 
@@ -37,12 +38,14 @@ export type InboxMessage = {
 
 /**
  * Results mail on staging goes only to EMAIL_TEST_RECIPIENT.
+ * Local runs may opt into the same restriction; production ignores that binding.
  * Administrator sign-in uses createEmail directly and is not limited by this.
  */
 export function restrictResultsEmail(
   env: AuthBindings,
   sender: EmailSender,
 ): EmailSender {
+  if (env.APP_ENV === "production") return sender;
   const testRecipient = presentBinding(env.EMAIL_TEST_RECIPIENT)?.toLowerCase();
   if (env.APP_ENV !== "staging" && !testRecipient) {
     return sender;
@@ -91,17 +94,20 @@ function createResendSender(apiKey: string, from: string | undefined): EmailSend
       const resend = new Resend(apiKey);
       const html = await renderPartyEmail(message);
       try {
-        const result = await resend.emails.send(
-          {
-            from,
-            to: message.to,
-            subject: message.subject,
-            text: message.text,
-            html,
-          },
-          message.idempotencyKey
-            ? { idempotencyKey: message.idempotencyKey }
-            : undefined,
+        const result = await withTimeout(
+          resend.emails.send(
+            {
+              from,
+              to: message.to,
+              subject: message.subject,
+              text: message.text,
+              html,
+            },
+            message.idempotencyKey
+              ? { idempotencyKey: message.idempotencyKey }
+              : undefined,
+          ),
+          "Resend",
         );
         if (result.error) {
           throw new Error("Email delivery failed.");
@@ -152,24 +158,36 @@ function createLocalInbox(database: AppDatabase): EmailSender {
   };
 }
 
-export async function listLocalInbox(database: AppDatabase): Promise<InboxMessage[]> {
-  const { renderPartyEmail } = await import("@26/emails");
+/**
+ * The local inbox, newest first. Only the newest message is rendered as HTML,
+ * and `html: false` skips rendering entirely: the sign-in page needs only the
+ * text, and a cold React Email render on a fresh dev server can outlast the
+ * admin client's request timeout, which hid the sign-in link.
+ */
+export async function listLocalInbox(
+  database: AppDatabase,
+  { html = true }: { html?: boolean } = {},
+): Promise<(Omit<InboxMessage, "html"> & { html?: string })[]> {
   const rows = await database.executor.query(
     `select id, recipient, subject, body
      from dev_inbox
      order by created_at desc
      limit 20`,
   );
-  return Promise.all(
-    rows.map(async (row) => ({
-      id: String(row.id),
-      recipient: String(row.recipient),
-      subject: String(row.subject),
-      text: String(row.body),
-      html: await renderPartyEmail({
-        subject: String(row.subject),
-        text: String(row.body),
-      }),
-    })),
-  );
+  const messages = rows.map((row) => ({
+    id: String(row.id),
+    recipient: String(row.recipient),
+    subject: String(row.subject),
+    text: String(row.body),
+  }));
+  const newest = messages[0];
+  if (!html || !newest) return messages;
+  const { renderPartyEmail } = await import("@26/emails");
+  return [
+    {
+      ...newest,
+      html: await renderPartyEmail({ subject: newest.subject, text: newest.text }),
+    },
+    ...messages.slice(1),
+  ];
 }

@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { buzz } from "../device/haptics";
+import { evictMediaUrl, useCachedMediaSrc } from "../media/media-cache";
+import { trollAssets } from "./troll-assets";
+import { useTrollClip } from "./troll-sound";
 
 /**
  * The original trolls, finished: the troller's face everywhere, a call from
@@ -29,39 +32,46 @@ export function ScreenInvasion({
   onEscape?: () => void;
 }) {
   const nickname = from?.nickname ?? "Someone";
+  const rawFaceSrc = from?.faceSrc ?? null;
+  const faceSrc = useCachedMediaSrc(rawFaceSrc, { preload: true });
   return (
     <div className="troll-flood" role="dialog" aria-label={`${label}: ${nickname}`}>
       {invasionCopies.map((copy, index) =>
-        from?.faceSrc ? (
-          <img
-            key={index}
-            src={from.faceSrc}
-            alt=""
-            className="troll-flood-face troll-invasion-face"
-            style={{
-              left: `${copy.left}%`,
-              top: `${copy.top}%`,
-              width: `${copy.size}vmin`,
-              rotate: `${copy.spin}deg`,
-              animationDelay: `${copy.delay}s`,
-            }}
-          />
-        ) : (
-          <span
-            key={index}
-            aria-hidden="true"
-            className="troll-flood-face troll-invasion-name"
-            style={{
-              left: `${copy.left}%`,
-              top: `${copy.top}%`,
-              fontSize: `${copy.size / 4}vmin`,
-              rotate: `${copy.spin}deg`,
-              animationDelay: `${copy.delay}s`,
-            }}
-          >
-            {nickname}
-          </span>
-        ),
+          faceSrc ? (
+            <img
+              key={index}
+              src={faceSrc}
+              alt=""
+              className="troll-flood-face troll-invasion-face"
+              onError={
+                rawFaceSrc && faceSrc !== rawFaceSrc
+                  ? () => evictMediaUrl(rawFaceSrc)
+                  : undefined
+              }
+              style={{
+                left: `${copy.left}%`,
+                top: `${copy.top}%`,
+                width: `${copy.size}vmin`,
+                rotate: `${copy.spin}deg`,
+                animationDelay: `${copy.delay}s`,
+              }}
+            />
+          ) : (
+            <span
+              key={index}
+              aria-hidden="true"
+              className="troll-flood-face troll-invasion-name"
+              style={{
+                left: `${copy.left}%`,
+                top: `${copy.top}%`,
+                fontSize: `${copy.size / 4}vmin`,
+                rotate: `${copy.spin}deg`,
+                animationDelay: `${copy.delay}s`,
+              }}
+            >
+              {nickname}
+            </span>
+          ),
       )}
       <p className="troll-flood-caption">{nickname} was here</p>
       {escape ? (
@@ -84,7 +94,14 @@ const callLines = [
   "Anyway, I'll let you go. Call me back.",
 ];
 
-/** A full incoming-call screen. Decline ends it; Answer plays a short call. */
+/** Lines appear this far apart, so the call outlasts the 6.1 second voice line. */
+const callLineMs = 1_600;
+
+/**
+ * A full incoming-call screen. The ringtone plays until Decline (which ends the
+ * troll) or Answer, which swaps it for the voice line, once. "Mum" is a stock
+ * painting and an American dialogue clip, not anyone's real mother.
+ */
 export function CallFromMum({
   label,
   escape,
@@ -96,6 +113,8 @@ export function CallFromMum({
 }) {
   const [answered, setAnswered] = useState(false);
   const [line, setLine] = useState(0);
+  const [photoFailed, setPhotoFailed] = useState(false);
+  useTrollClip(answered ? trollAssets.mumVoice : trollAssets.mumRingtone);
   useEffect(() => {
     if (answered) {
       return;
@@ -112,13 +131,22 @@ export function CallFromMum({
       onEscape?.();
       return;
     }
-    const timer = window.setTimeout(() => setLine((value) => value + 1), 1_400);
+    const timer = window.setTimeout(() => setLine((value) => value + 1), callLineMs);
     return () => window.clearTimeout(timer);
   }, [answered, line, onEscape]);
   return (
     <div className="troll-cover troll-call" role="dialog" aria-label={label}>
       <div className="troll-call-avatar" aria-hidden="true">
-        M
+        {photoFailed ? (
+          "M"
+        ) : (
+          <img
+            className="troll-call-photo"
+            src={trollAssets.mumPhoto}
+            alt=""
+            onError={() => setPhotoFailed(true)}
+          />
+        )}
       </div>
       <p className="troll-call-name">Mum</p>
       <p className="troll-call-meta">
@@ -211,6 +239,7 @@ export function ShatteredScreen({
   onEscape?: () => void;
 }) {
   const cracks = useMemo(() => crackPaths(seed), [seed]);
+  useTrollClip(trollAssets.glassCrack);
   useEffect(() => {
     buzz(80);
   }, []);

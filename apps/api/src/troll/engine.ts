@@ -1,4 +1,5 @@
 import { questionFor } from "../questions/registry.ts";
+import { quotableAnswer } from "../questions/hidden-answers.ts";
 import {
   isTrollPayload,
   type GameStore,
@@ -25,11 +26,13 @@ import {
 } from "../room/limits.ts";
 import { createSqlStore } from "../room/sql-store.ts";
 import {
-  demoStingAsset,
+  themeStingAsset,
   isTrollKind,
   slotDecision,
+  speechApplauseMs,
   themeCueCap,
   trollDefinitions,
+  trollStageSounds,
   zoomAssetLabel,
   type PointTransfer,
   type TrollDefinition,
@@ -327,6 +330,84 @@ export function sillyNameFor(effectId: string): string {
  * a silly name, then "Guest 14", then a nickname swap. Stored names, scores
  * and answers never change.
  */
+export function readDisplayNicknameMap(
+  sql: SqlStorage,
+  players?: readonly { player_id: string; nickname: string }[],
+): Map<string, string> {
+  const result = new Map<string, string>();
+  const effects = sql
+    .exec<{
+      effect_id: string;
+      kind: string;
+      actor_id: string;
+      target_id: string;
+      started_at: number | null;
+      rowid: number;
+    }>(
+      `SELECT effect_id, kind, actor_id, target_id, started_at, rowid
+       FROM troll_effect
+       WHERE status = 'active' AND kind IN ('temp-nickname', 'guest-14', 'swap')
+       ORDER BY started_at DESC, rowid ASC`,
+    )
+    .toArray();
+  if (effects.length === 0) {
+    return result;
+  }
+  const renames = new Map<string, string>();
+  const swapRows: { actor_id: string; target_id: string; rowid: number }[] = [];
+  for (const row of effects) {
+    if (row.kind === "temp-nickname" || row.kind === "guest-14") {
+      if (!renames.has(row.target_id)) {
+        renames.set(
+          row.target_id,
+          row.kind === "guest-14" ? "Guest 14" : sillyNameFor(row.effect_id),
+        );
+      }
+    } else if (row.kind === "swap") {
+      swapRows.push(row);
+    }
+  }
+  if (swapRows.length > 0) {
+    swapRows.sort((a, b) => a.rowid - b.rowid);
+    const swapOther = new Map<string, string>();
+    for (const swap of swapRows) {
+      if (!swapOther.has(swap.actor_id)) swapOther.set(swap.actor_id, swap.target_id);
+      if (!swapOther.has(swap.target_id)) swapOther.set(swap.target_id, swap.actor_id);
+    }
+    const storedById = new Map<string, string>();
+    if (players) {
+      for (const p of players) storedById.set(p.player_id, p.nickname);
+    } else {
+      for (const row of sql
+        .exec<{ player_id: string; nickname: string }>(
+          `SELECT player_id, nickname FROM player`,
+        )
+        .toArray()) {
+        storedById.set(row.player_id, row.nickname);
+      }
+    }
+    for (const [playerId, otherId] of swapOther) {
+      if (!renames.has(playerId)) {
+        const nick = storedById.get(otherId);
+        if (nick !== undefined) result.set(playerId, nick);
+      }
+    }
+  }
+  for (const [playerId, nick] of renames) {
+    result.set(playerId, nick);
+  }
+  return result;
+}
+
+export function hiddenPersonalScoreSet(sql: SqlStorage): Set<string> {
+  const rows = sql
+    .exec<{ target_id: string }>(
+      `SELECT target_id FROM troll_effect WHERE kind = 'hide-score' AND status = 'active'`,
+    )
+    .toArray();
+  return new Set(rows.map((row) => row.target_id));
+}
+
 export function displayNickname(
   sql: SqlStorage,
   playerId: string,
@@ -419,106 +500,214 @@ export function activeModifierKinds(
     .map((row) => row.kind);
 }
 
+const EMPTY_TROLL_OFFERS: TrollOffer[] = Object.freeze([]) as unknown as TrollOffer[];
+const EMPTY_TROLL_ACTIVE: TrollActiveItem[] = Object.freeze(
+  [],
+) as unknown as TrollActiveItem[];
+
+type TrollOffer = { kind: TrollKind; label: string; enabled: boolean };
+type TrollActiveItem = {
+  effectId: string;
+  kind: TrollKind;
+  role: "actor" | "target";
+  status: "queued" | "active";
+  expiresAt: number | null;
+  label: string;
+  escape: string | null;
+  assetLabel: string;
+  fromPlayerId?: string;
+};
+type TrollAnnouncement = {
+  cueId: string;
+  label: string;
+  assetLabel: string;
+  mediaId?: string;
+  mediaKind?: "photo" | "voice";
+  audioAsset?: string;
+} | null;
+type TrollSnapshotValue = {
+  token: "locked" | "ready" | "spent";
+  offers: TrollOffer[];
+  disabled?: TrollKind[];
+  active: TrollActiveItem[];
+  announcement: TrollAnnouncement;
+};
+
+export type TrollSnapshotShared = {
+  room: RoomClock;
+  locked: boolean;
+  disabled: TrollKind[];
+  tokenStates: Map<string, "ready" | "spent">;
+  openEffects: EffectRow[];
+  hiddenScores: Set<string>;
+  announcement: TrollAnnouncement;
+  offersReady: TrollOffer[] | null;
+  offersSpent: TrollOffer[] | null;
+  guestIdleCache: Map<"locked" | "ready" | "spent", TrollSnapshotValue>;
+};
+
+export function prepareTrollShared(
+  sql: SqlStorage,
+  store: GameStore,
+): TrollSnapshotShared {
+  const room = store.readRoom();
+  const locked = room.questionCount <= 0 || room.questionIndex < 1;
+  const disabled = disabledTrollKinds(sql);
+  const openEffects = readOpen(sql);
+  const tokenRows = sql
+    .exec<{ player_id: string; state: string }>(
+      `SELECT player_id, state FROM troll_token`,
+    )
+    .toArray();
+  const tokenStates = new Map<string, "ready" | "spent">();
+  for (const row of tokenRows) {
+    tokenStates.set(row.player_id, row.state === "spent" ? "spent" : "ready");
+  }
+  const hiddenScores = hiddenPersonalScoreSet(sql);
+  const playing = readCues(sql).find((cue) => cue.status === "playing");
+  const announcement: TrollAnnouncement = !playing
+    ? null
+    : {
+        cueId: playing.cue_id,
+        label: publicCueLabel(sql, playing),
+        assetLabel: playing.asset_label,
+        ...(playing.media_id && playing.media_kind
+          ? {
+              mediaId: playing.media_id,
+              mediaKind:
+                playing.media_kind === "voice"
+                  ? ("voice" as const)
+                  : ("photo" as const),
+            }
+          : {}),
+        ...(playing.audio_asset ? { audioAsset: playing.audio_asset } : {}),
+      };
+  return {
+    room,
+    locked,
+    disabled,
+    tokenStates,
+    openEffects,
+    hiddenScores,
+    announcement,
+    offersReady: null,
+    offersSpent: null,
+    guestIdleCache: new Map(),
+  };
+}
+
+function buildTrollOffers(
+  room: RoomClock,
+  disabled: TrollKind[],
+  tokenReady: boolean,
+): TrollOffer[] {
+  return Object.values(trollDefinitions)
+    .filter((definition) => !disabled.includes(definition.kind))
+    .map((definition) => ({
+      kind: definition.kind,
+      label: definition.label,
+      enabled:
+        definition.phases.includes(room.phase) &&
+        ((definition.kind !== "double" && !definition.modifier) ||
+          questionAllowsModifier(room, definition.kind)) &&
+        (definition.kind !== "typing" || questionAllowsTyping(room)) &&
+        questionFits(definition, room) &&
+        tokenReady,
+    }));
+}
+
 export function trollSnapshot(
   sql: SqlStorage,
   store: GameStore,
   audience: "guest" | "stage" | "control",
   selfPlayerId: string | undefined,
-): {
-  token: "locked" | "ready" | "spent";
-  offers: { kind: TrollKind; label: string; enabled: boolean }[];
-  disabled?: TrollKind[];
-  active: {
-    effectId: string;
-    kind: TrollKind;
-    role: "actor" | "target";
-    status: "queued" | "active";
-    expiresAt: number | null;
-    label: string;
-    escape: string | null;
-    assetLabel: string;
-  }[];
-  announcement: {
-    cueId: string;
-    label: string;
-    assetLabel: string;
-    mediaId?: string;
-    mediaKind?: "photo" | "voice";
-    audioAsset?: string;
-  } | null;
-} {
-  const room = store.readRoom();
-  const locked = room.questionCount <= 0 || room.questionIndex < 1;
+  shared?: TrollSnapshotShared,
+): TrollSnapshotValue {
+  const room = shared ? shared.room : store.readRoom();
+  const locked = shared ? shared.locked : room.questionCount <= 0 || room.questionIndex < 1;
   const token = !selfPlayerId
     ? "locked"
     : locked
       ? "locked"
-      : tokenState(sql, selfPlayerId) === "spent"
+      : (shared ? (shared.tokenStates.get(selfPlayerId) ?? "ready") : tokenState(sql, selfPlayerId)) === "spent"
         ? "spent"
         : "ready";
-  const disabled = disabledTrollKinds(sql);
-  const offers =
-    audience === "guest" && selfPlayerId && !locked
-      ? Object.values(trollDefinitions)
-          .filter((definition) => !disabled.includes(definition.kind))
-          .map((definition) => ({
-            kind: definition.kind,
-            label: definition.label,
-            enabled:
-              definition.phases.includes(room.phase) &&
-              ((definition.kind !== "double" && !definition.modifier) ||
-                questionAllowsModifier(room, definition.kind)) &&
-              (definition.kind !== "typing" || questionAllowsTyping(room)) &&
-              questionFits(definition, room) &&
-              token === "ready",
-          }))
-      : [];
-  const active = selfPlayerId
-    ? readOpen(sql)
-        .filter(
-          (effect) =>
-            effect.actor_id === selfPlayerId || effect.target_id === selfPlayerId,
-        )
-        .flatMap((effect) => {
-          if (!isTrollKind(effect.kind)) {
-            return [];
-          }
-          const definition = trollDefinitions[effect.kind];
-          return [
-            {
-              effectId: effect.effect_id,
-              kind: effect.kind,
-              role:
-                effect.target_id === selfPlayerId
-                  ? ("target" as const)
-                  : ("actor" as const),
-              status:
-                effect.status === "queued" ? ("queued" as const) : ("active" as const),
-              expiresAt: publicExpiry(store, effect),
-              label: definition.label,
-              escape: effect.status === "active" ? definition.escape : null,
-              assetLabel: definition.assetLabel,
-              // Who sent it, for the target's own screen. The stage already announces it.
-              ...(effect.target_id === selfPlayerId
-                ? { fromPlayerId: effect.actor_id }
-                : {}),
-            },
-          ];
-        })
-        .slice(0, 4)
+  const disabled = shared ? shared.disabled : disabledTrollKinds(sql);
+  let offers: TrollOffer[];
+  if (audience === "guest" && selfPlayerId && !locked) {
+    if (shared) {
+      if (token === "ready") {
+        shared.offersReady ??= buildTrollOffers(room, disabled, true);
+        offers = shared.offersReady;
+      } else {
+        shared.offersSpent ??= buildTrollOffers(room, disabled, false);
+        offers = shared.offersSpent;
+      }
+    } else {
+      offers = buildTrollOffers(room, disabled, token === "ready");
+    }
+  } else {
+    offers = EMPTY_TROLL_OFFERS;
+  }
+  const openEffects = shared ? shared.openEffects : selfPlayerId ? readOpen(sql) : [];
+  const filteredEffects = selfPlayerId
+    ? openEffects.filter(
+        (effect) => effect.actor_id === selfPlayerId || effect.target_id === selfPlayerId,
+      )
     : [];
-  const playing = readCues(sql).find((cue) => cue.status === "playing");
-  return {
-    token,
-    offers,
-    active,
-    ...(audience === "control" ? { disabled } : {}),
-    announcement:
-      audience === "guest" || !playing
-        ? null
-        : {
+  const active =
+    filteredEffects.length > 0
+      ? filteredEffects
+          .flatMap((effect) => {
+            if (!isTrollKind(effect.kind)) {
+              return [];
+            }
+            const definition = trollDefinitions[effect.kind];
+            return [
+              {
+                effectId: effect.effect_id,
+                kind: effect.kind,
+                role:
+                  effect.target_id === selfPlayerId
+                    ? ("target" as const)
+                    : ("actor" as const),
+                status:
+                  effect.status === "queued" ? ("queued" as const) : ("active" as const),
+                expiresAt: publicExpiry(store, effect),
+                label: definition.label,
+                escape: effect.status === "active" ? definition.escape : null,
+                assetLabel: definition.assetLabel,
+                // Who sent it, for the target's own screen. The stage already announces it.
+                ...(effect.target_id === selfPlayerId
+                  ? { fromPlayerId: effect.actor_id }
+                  : {}),
+              },
+            ];
+          })
+          .slice(0, 4)
+      : EMPTY_TROLL_ACTIVE;
+  if (shared && audience === "guest" && active.length === 0) {
+    const cached = shared.guestIdleCache.get(token);
+    if (cached) return cached;
+    const result: TrollSnapshotValue = {
+      token,
+      offers,
+      active,
+      announcement: null,
+    };
+    shared.guestIdleCache.set(token, result);
+    return result;
+  }
+  let announcement: TrollAnnouncement = null;
+  if (audience !== "guest") {
+    if (shared) {
+      announcement = shared.announcement;
+    } else {
+      const playing = readCues(sql).find((cue) => cue.status === "playing");
+      announcement = playing
+        ? {
             cueId: playing.cue_id,
-            label: playing.label,
+            label: publicCueLabel(sql, playing),
             assetLabel: playing.asset_label,
             ...(playing.media_id && playing.media_kind
               ? {
@@ -530,7 +719,16 @@ export function trollSnapshot(
                 }
               : {}),
             ...(playing.audio_asset ? { audioAsset: playing.audio_asset } : {}),
-          },
+          }
+        : null;
+    }
+  }
+  return {
+    token,
+    offers,
+    active,
+    ...(audience === "control" ? { disabled } : {}),
+    announcement,
   };
 }
 
@@ -919,7 +1117,12 @@ type CueExtra = {
   questionIndex?: number | null;
   durationMs?: number;
   held?: boolean;
+  /** A line quoting guests' answers: whose, and what to show if one is hidden. */
+  quote?: { questionId: string; authors: string[]; unquoted: string };
 };
+
+/** A theatre line, and the answers it quotes, if any. */
+type TheatreLine = { label: string; quote?: CueExtra["quote"] };
 
 function announceStart(
   sql: SqlStorage,
@@ -974,6 +1177,7 @@ function announceStart(
       now,
       {
         ...(mediaId ? { mediaId, mediaKind: "photo" as const } : {}),
+        audioAsset: trollStageSounds.zoomEnhance,
         durationMs: 7_000,
       },
     );
@@ -990,7 +1194,12 @@ function announceStart(
         : cueLabel(sql, actorId, targetId, definition.label),
       definition.assetLabel,
       now,
-      { durationMs: definition.cueMs },
+      {
+        ...(definition.kind === "sponsor"
+          ? { audioAsset: trollStageSounds.sponsor }
+          : {}),
+        durationMs: definition.cueMs,
+      },
     );
     return;
   }
@@ -1125,7 +1334,7 @@ function enqueueThemeCues(
       "Theme jingle",
       now,
       {
-        audioAsset: demoStingAsset,
+        audioAsset: themeStingAsset,
         questionIndex: room.questionIndex,
         durationMs: trollDefinitions.theme.cueMs,
       },
@@ -1159,33 +1368,61 @@ function enqueueTheatreCues(
       continue;
     }
     const nickname = nicknameOf(sql, effect.target_id) ?? "A player";
-    const [label, asset] =
+    const [line, asset]: [TheatreLine, string] =
       effect.kind === "replay"
-        ? [replayLine(sql, room, effect.target_id, nickname), "Instant replay"]
+        ? [
+            { label: replayLine(sql, room, effect.target_id, nickname) },
+            "Instant replay",
+          ]
         : effect.kind === "public-vote"
           ? [publicVoteLine(sql, room, effect.target_id, nickname), "Public vote"]
           : effect.kind === "misattributed"
             ? [misattributedLine(sql, room, effect, nickname), "Totally true"]
-            : [`${nickname}, the floor is yours.`, "Speech! Speech!"];
-    enqueueCue(sql, store, room, effect.effect_id, label, asset, now, {
+            : [{ label: `${nickname}, the floor is yours.` }, "Speech! Speech!"];
+    enqueueCue(sql, store, room, effect.effect_id, line.label, asset, now, {
+      ...(line.quote ? { quote: line.quote } : {}),
       questionIndex: room.questionIndex,
       durationMs: effect.kind === "speech" ? 8_000 : 5_000,
+      ...(effect.kind === "speech"
+        ? { audioAsset: trollStageSounds.speechDrumroll }
+        : {}),
     });
+    if (effect.kind === "speech") {
+      // Queued behind the drumroll, so the applause starts as the floor closes.
+      enqueueCue(
+        sql,
+        store,
+        room,
+        effect.effect_id,
+        `A round of applause for ${nickname}.`,
+        "Applause",
+        now,
+        {
+          questionIndex: room.questionIndex,
+          durationMs: speechApplauseMs,
+          audioAsset: trollStageSounds.speechApplause,
+        },
+      );
+    }
     closeEffect(sql, effect.effect_id, "expired", now);
   }
 }
 
-/** Who the target voted for on this vote question. */
+/**
+ * Who the target voted for on this vote question. A vote for an answer the
+ * host has hidden, even after the vote was cast, is never named.
+ */
 function publicVoteLine(
   sql: SqlStorage,
   room: RoomClock,
   playerId: string,
   nickname: string,
-): string {
+): TheatreLine {
   const question = questionFor(room);
   const ballot = sql
-    .exec<{ label: string }>(
-      `SELECT vote_candidate.label FROM vote_ballot
+    .exec<{ label: string; owner_id: string | null; included: number }>(
+      `SELECT vote_candidate.label, vote_candidate.owner_id, vote_candidate.included
+       FROM vote_ballot
        JOIN vote_candidate ON vote_candidate.question_id = vote_ballot.question_id
          AND vote_candidate.candidate_id = vote_ballot.candidate_id
        WHERE vote_ballot.player_id = ? AND vote_ballot.question_id = ?`,
@@ -1193,46 +1430,67 @@ function publicVoteLine(
       question?.id ?? "",
     )
     .toArray()[0];
-  return (
-    ballot
-      ? `${nickname} voted for "${ballot.label}".`
-      : `${nickname} didn't vote. Coward.`
-  ).slice(0, 120);
+  if (!ballot || !question) return { label: `${nickname} didn't vote. Coward.` };
+  const secret = `${nickname}'s vote stays a secret this time.`.slice(0, 120);
+  if (
+    ballot.included !== 1 ||
+    (ballot.owner_id !== null && !quotableAnswer(sql, question.id, ballot.owner_id))
+  )
+    return { label: secret };
+  return {
+    label: `${nickname} voted for "${ballot.label}".`.slice(0, 120),
+    ...(ballot.owner_id
+      ? {
+          quote: {
+            questionId: question.id,
+            authors: [ballot.owner_id],
+            unquoted: secret,
+          },
+        }
+      : {}),
+  };
 }
 
 /**
- * Claims the target wrote another guest's answer to this question. Picked by
- * the effect id, so it is the same on every screen and replay.
+ * Claims the target wrote another guest's answer to this question. It quotes
+ * only answers the public could already see: cards still on the ballot whose
+ * author the host has not hidden. Picked by the effect id, so it is the same
+ * on every screen and replay.
  */
 function misattributedLine(
   sql: SqlStorage,
   room: RoomClock,
   effect: { effect_id: string; target_id: string },
   nickname: string,
-): string {
+): TheatreLine {
   const question = questionFor(room);
+  const nothing = `${nickname} wrote nothing at all. Suspicious.`.slice(0, 120);
+  if (!question) return { label: nothing };
   const others = sql
-    .exec<{ body: string }>(
-      `SELECT body FROM text_response WHERE question_id = ? AND player_id != ?
-       UNION ALL
-       SELECT label AS body FROM vote_candidate
-       WHERE question_id = ? AND owner_id IS NOT NULL AND owner_id != ?`,
-      question?.id ?? "",
-      effect.target_id,
-      question?.id ?? "",
+    .exec<{ body: string; owner_id: string }>(
+      `SELECT label AS body, owner_id FROM vote_candidate
+       WHERE question_id = ? AND owner_id IS NOT NULL AND owner_id != ? AND included = 1
+       ORDER BY position ASC, candidate_id ASC`,
+      question.id,
       effect.target_id,
     )
     .toArray()
-    .map((row) => row.body)
-    .filter((body) => body.trim().length > 0);
+    .filter(
+      (row) =>
+        row.body.trim().length > 0 && quotableAnswer(sql, question.id, row.owner_id),
+    );
   if (others.length === 0) {
-    return `${nickname} wrote nothing at all. Suspicious.`;
+    return { label: nothing };
   }
   let hash = 0;
   for (const character of effect.effect_id) {
     hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
   }
-  return `${nickname} wrote "${others[hash % others.length]}".`.slice(0, 120);
+  const chosen = others[hash % others.length]!;
+  return {
+    label: `${nickname} wrote "${chosen.body}".`.slice(0, 120),
+    quote: { questionId: question.id, authors: [chosen.owner_id], unquoted: nothing },
+  };
 }
 
 /** What the target went with on this choice question. Not judged: the reveal does that. */
@@ -1364,8 +1622,9 @@ function insertCue(
   sql.exec(
     `INSERT INTO stage_cue (
        cue_id, effect_id, label, asset_label, status, duration_ms, created_at, started_at,
-       media_id, audio_asset, media_kind, question_index
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       media_id, audio_asset, media_kind, question_index,
+       quote_question_id, quote_authors, unquoted_label
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     cueId,
     effectId,
     label,
@@ -1378,7 +1637,34 @@ function insertCue(
     extra.audioAsset ?? null,
     extra.mediaKind ?? null,
     extra.questionIndex ?? null,
+    extra.quote?.questionId ?? null,
+    extra.quote ? JSON.stringify(extra.quote.authors) : null,
+    extra.quote?.unquoted ?? null,
   );
+}
+
+/**
+ * The words a screen may show for a stored cue. A line quoting an answer the
+ * host has hidden since it was written shows its unquoted version instead; a
+ * restored answer is quoted again. Checked on every read, so a replay or a
+ * reconnecting screen gets the same answer as the live stage.
+ */
+function publicCueLabel(sql: SqlStorage, cue: CueRow): string {
+  if (!cue.quote_question_id || !cue.quote_authors) return cue.label;
+  let authors: unknown;
+  try {
+    authors = JSON.parse(cue.quote_authors);
+  } catch {
+    authors = null;
+  }
+  const fallback = cue.unquoted_label ?? cue.asset_label;
+  if (!Array.isArray(authors)) return fallback;
+  return authors.every(
+    (author) =>
+      typeof author === "string" && quotableAnswer(sql, cue.quote_question_id!, author),
+  )
+    ? cue.label
+    : fallback;
 }
 
 function startNextCue(
@@ -1478,13 +1764,17 @@ type CueRow = {
   audio_asset: string | null;
   media_kind: string | null;
   question_index: number | null;
+  quote_question_id: string | null;
+  quote_authors: string | null;
+  unquoted_label: string | null;
 };
 
 function readCues(sql: SqlStorage): CueRow[] {
   return sql
     .exec<CueRow>(
       `SELECT cue_id, effect_id, label, asset_label, status, created_at, duration_ms,
-              media_id, audio_asset, media_kind, question_index
+              media_id, audio_asset, media_kind, question_index,
+              quote_question_id, quote_authors, unquoted_label
        FROM stage_cue ORDER BY created_at ASC`,
     )
     .toArray();

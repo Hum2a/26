@@ -1,6 +1,6 @@
 import { emptyWordleBoard, reduceWordle, wordlePreviewInputSchema } from "@26/shared";
 import { isKnown, type AuthoredQuestion } from "../questions/definition.ts";
-import { isWordleWord } from "../questions/wordle.ts";
+import { isWordleWord } from "../questions/wordle/wordle.ts";
 
 /** Stateless admin rehearsal: replay words on the server, never trust client marks. */
 export function previewWordle(question: AuthoredQuestion, input: unknown) {

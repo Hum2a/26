@@ -13,6 +13,7 @@ import {
   LiveCount,
   QuestionTag,
   StagePrompt,
+  StageVoters,
   useDesignMotion,
 } from "./kit";
 import "./now-playing.css";
@@ -199,6 +200,7 @@ function NowPlayingStage({
                   <Icon icon={sleeve(option.id)} />
                 </span>
                 <span className="np-title">{option.label}</span>
+                <StageVoters play={play} optionId={option.id} />
                 <span className="np-meter np-meter-live" aria-hidden="true">
                   {[0, 1, 2, 3].map((bar) => (
                     <span

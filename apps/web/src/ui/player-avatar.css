@@ -23,8 +23,17 @@
   letter-spacing: 0.02em;
   line-height: 1;
 }
+.player-avatar[data-size="xs"] {
+  --avatar-size: 1.35rem;
+}
 .player-avatar[data-size="sm"] {
   --avatar-size: 1.9rem;
+}
+/* A photo keeps the player's colour as a thin ring, so faces stay tellable apart. */
+.player-avatar[data-face] {
+  box-shadow:
+    0 0 0 2px var(--hue),
+    0 6px 14px -8px color-mix(in srgb, black 80%, transparent);
 }
 .player-avatar[data-size="lg"] {
   --avatar-size: 3.4rem;

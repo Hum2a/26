@@ -1,4 +1,21 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+/** A beat lasts a second, shorter than a slow poll, so note each one as it renders. */
+function recordBeats(screen: Page) {
+  return screen.evaluate(() => {
+    const seen: string[] = [];
+    (window as unknown as { __beats: string[] }).__beats = seen;
+    new MutationObserver(() => {
+      for (const beat of document.querySelectorAll(".kart-countdown [data-beat]")) {
+        const value = beat.getAttribute("data-beat")!;
+        if (!seen.includes(value)) seen.push(value);
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+}
+function beats(screen: Page) {
+  return screen.evaluate(() => (window as unknown as { __beats: string[] }).__beats);
+}
 
 test("a fresh kart lobby goes directly to the Mario circuit with normal room controls", async ({
   browser,
@@ -60,9 +77,17 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   await phone.getByLabel("Nickname").fill("Amina");
   await phone.getByRole("button", { name: "Join", exact: true }).click();
   await expect(phone.getByRole("heading", { name: "In the lobby" })).toBeVisible();
+  const rivalContext = await browser.newContext({
+    viewport: { width: 430, height: 844 },
+  });
+  const rival = await rivalContext.newPage();
+  await rival.goto(`/j/${code}`);
+  await rival.getByLabel("Nickname").fill("Chen");
+  await rival.getByRole("button", { name: "Join", exact: true }).click();
+  await expect(rival.getByRole("heading", { name: "In the lobby" })).toBeVisible();
   const stage = await page.context().newPage();
   const publicFrames: string[] = [];
-  for (const screen of [phone, stage])
+  for (const screen of [phone, rival, stage])
     screen.on("websocket", (socket) =>
       socket.on("framereceived", (frame) => publicFrames.push(String(frame.payload))),
     );
@@ -70,6 +95,10 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   await stage.getByRole("button", { name: "Connect room" }).click();
   await stage.getByRole("button", { name: "Present on this screen" }).click();
   await page.getByRole("button", { name: "Start kart race", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Start kart race", exact: true })
+    .click();
   await expect(stage.locator("[data-phase-motion]")).toHaveAttribute(
     "data-phase",
     "intro",
@@ -78,6 +107,14 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   await expect(
     page.getByRole("button", { name: "Start kart race", exact: true }),
   ).toHaveCount(0);
+  // Landscape grid: the slot and instruction stay visible over the paused driving view.
+  await phone.setViewportSize({ width: 844, height: 390 });
+  await expect(phone.locator(".kart-phone")).toHaveAttribute("data-layout", "grid");
+  await expect(phone.locator(".kart-race-status")).toContainText(
+    "push up right on GO for a rocket start",
+  );
+  await expect(phone.locator(".kart-race-status")).toBeVisible();
+  await phone.setViewportSize({ width: 390, height: 844 });
   async function advance(phase: string) {
     await page.getByRole("button", { name: "Advance", exact: true }).click();
     await expect(stage.locator("[data-phase-motion]")).toHaveAttribute(
@@ -85,10 +122,56 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
       phase,
     );
   }
+  // Mark the live renderer: nothing may rebuild it behind the countdown.
+  await phone
+    .locator("canvas[aria-label='Your driving view']")
+    .evaluate((canvas: HTMLCanvasElement) => {
+      canvas.dataset.raceStart = "kept";
+    });
+  await recordBeats(phone);
+  await recordBeats(stage);
   await advance("prompt");
-  await advance("collect");
+  // The prompt runs out on its own: 3-2-1 on the phone and the stage, then GO.
+  await expect.poll(() => beats(phone), { timeout: 12_000 }).toContain("1");
+  await expect(stage.locator("[data-phase-motion]")).toHaveAttribute(
+    "data-phase",
+    "collect",
+    { timeout: 5_000 },
+  );
+  await expect.poll(() => beats(phone)).toEqual(["3", "2", "1", "GO"]);
+  await expect.poll(() => beats(stage)).toEqual(["3", "2", "1", "GO"]);
+  await expect(phone.locator("canvas[data-race-start='kept']")).toHaveCount(1);
   await expect(phone.getByRole("button", { name: "Accelerate" })).toBeEnabled();
-  await expect(stage.locator("[data-map-player]")).toHaveCount(1);
+  await expect(stage.locator("[data-map-player]")).toHaveCount(2);
+  await expect(rival.getByRole("button", { name: "Accelerate" })).toBeEnabled();
+  await phone.getByRole("button", { name: "Accelerate" }).click({ delay: 500 });
+  await rival.getByRole("button", { name: "Accelerate" }).click({ delay: 500 });
+  await expect
+    .poll(() => {
+      const moving = new Set<string>();
+      for (const frame of publicFrames) {
+        if (!frame.startsWith("{")) continue;
+        const packet = JSON.parse(frame) as {
+          kind?: string;
+          kart?: { participants?: { name: string; speed: number }[] };
+        };
+        if (packet.kind === "kart") {
+          for (const driver of packet.kart?.participants ?? []) {
+            if (driver.speed > 0) moving.add(driver.name);
+          }
+        }
+      }
+      return moving.has("Amina") && moving.has("Chen");
+    })
+    .toBe(true);
+  await stage.screenshot({
+    path: ".codex/previews/kart/kart-circuit-two-racers.png",
+    fullPage: true,
+  });
+  await phone.screenshot({
+    path: ".codex/previews/kart/kart-phone-racing.png",
+    fullPage: true,
+  });
   const late = await lateContext.newPage();
   await late.goto(`/j/${code}`);
   await late.getByLabel("Nickname").fill("Bilal");
@@ -96,11 +179,18 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   await expect(late.locator(".skin-status[role=status]")).toHaveText(
     "You’re watching this race. Join the next round.",
   );
-  await expect(stage.locator("[data-map-player]")).toHaveCount(1);
+  await expect(stage.locator("[data-map-player]")).toHaveCount(2);
   await page.getByRole("button", { name: "Pause", exact: true }).click();
   await expect(phone.getByRole("button", { name: "Accelerate" })).toBeDisabled();
   await phone.reload();
   await expect(phone.getByRole("button", { name: "Accelerate" })).toBeDisabled();
+  // Landscape keeps the pause visible over the full-screen driving view.
+  await phone.setViewportSize({ width: 844, height: 390 });
+  await expect(phone.locator(".kart-race-status")).toHaveText(
+    "Paused — controls released",
+  );
+  await expect(phone.locator(".kart-race-status")).toBeVisible();
+  await phone.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Resume", exact: true }).click();
   await expect(phone.getByRole("button", { name: "Accelerate" })).toBeEnabled();
   await advance("reveal");
@@ -114,6 +204,10 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   await expect(
     stage.getByRole("heading", { name: "Podium", exact: true }),
   ).toBeVisible();
+  await stage.screenshot({
+    path: ".codex/previews/kart/kart-podium-two-racers.png",
+    fullPage: true,
+  });
   expect(publicFrames.join("\n")).not.toContain('"kartLobby"');
   expect(publicFrames.join("\n")).not.toContain('"birthday-script"');
   await page.goto(liveUrl.replace(/\/live$/, ""));
@@ -122,4 +216,5 @@ test("a fresh kart lobby goes directly to the Mario circuit with normal room con
   ).toBeVisible();
   await phoneContext.close();
   await lateContext.close();
+  await rivalContext.close();
 });

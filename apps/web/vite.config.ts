@@ -26,7 +26,15 @@ import { DEFAULT_THEME_ID, themeDocumentHead } from "./src/theme/themes.ts";
 const clientApiKeyHeader = "x-26-client-key";
 
 const localAuthPrefixes = ["/api/auth", "/api/admin", "/api/dev", "/api/stage"];
-const localAdminProofKey = randomBytes(32).toString("hex");
+const browserChecks = process.env.PARTY_BROWSER_REHEARSAL === "1";
+const browserProofKey = browserChecks ? process.env.PARTY_BROWSER_PROOF_KEY : undefined;
+if (browserProofKey && !/^[a-f0-9]{64}$/.test(browserProofKey)) {
+  throw new Error("Browser rehearsal needs a valid ephemeral proof key.");
+}
+const localAdminProofKey = browserProofKey ?? randomBytes(32).toString("hex");
+if (browserChecks && process.env.CLOUDFLARE_ENV) {
+  throw new Error("Browser rehearsal cannot target a deployed environment.");
+}
 const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 const devVarsPath = fileURLToPath(new URL("../api/.dev.vars", import.meta.url));
 
@@ -63,6 +71,16 @@ function readDevVar(name: string): string {
   return readEnvValue(devVarsPath, name);
 }
 
+function resolveClientApiKeyForEnvironment(
+  target: "staging" | "production",
+): string {
+  const fromProcess = process.env.VITE_CLIENT_API_KEY?.trim();
+  if (fromProcess) {
+    return fromProcess;
+  }
+  return readEnvValue(path.join(repoRoot, `.env.${target}`), "VITE_CLIENT_API_KEY");
+}
+
 function resolveClientApiKeyForBuild(): string {
   const fromProcess = process.env.VITE_CLIENT_API_KEY?.trim();
   if (fromProcess) {
@@ -70,7 +88,7 @@ function resolveClientApiKeyForBuild(): string {
   }
   const target = process.env.CLOUDFLARE_ENV?.trim();
   if (target === "staging" || target === "production") {
-    return readEnvValue(path.join(repoRoot, `.env.${target}`), "VITE_CLIENT_API_KEY");
+    return resolveClientApiKeyForEnvironment(target);
   }
   return (
     readEnvValue(path.join(repoRoot, ".env.local"), "VITE_CLIENT_API_KEY") ||
@@ -154,7 +172,9 @@ function clientApiHeadersForNode(): Record<string, string> {
   return key ? { [clientApiKeyHeader]: key } : {};
 }
 
-type LocalApp = { fetch: (request: Request, env: unknown) => Promise<Response> };
+type LocalApp = {
+  fetch: (request: Request, env: unknown) => Promise<Response>;
+};
 
 let localApp: Promise<LocalApp> | undefined;
 
@@ -259,7 +279,8 @@ function localAuthEnv() {
   };
   return {
     APP_ENV: "local",
-    ADMIN_EMAIL: readDevVar("ADMIN_EMAIL") || "humzab1711@hotmail.com",
+    ADMIN_EMAIL:
+      readDevVar("ADMIN_EMAIL") || "humzab1711@hotmail.com,adenreh@gmail.com",
     BETTER_AUTH_SECRET: "",
     BETTER_AUTH_URL: "",
     DATABASE_URL: "",
@@ -362,6 +383,12 @@ export default defineConfig(({ command }) => ({
     "import.meta.env.VITE_CLIENT_API_KEY": JSON.stringify(
       resolveClientApiKeyForBuild(),
     ),
+    "import.meta.env.VITE_CLIENT_API_KEY_STAGING": JSON.stringify(
+      resolveClientApiKeyForEnvironment("staging"),
+    ),
+    "import.meta.env.VITE_CLIENT_API_KEY_PRODUCTION": JSON.stringify(
+      resolveClientApiKeyForEnvironment("production"),
+    ),
     "import.meta.env.VITE_BUILD_ID": JSON.stringify(resolveBuildId()),
   },
   plugins: [
@@ -370,7 +397,10 @@ export default defineConfig(({ command }) => ({
     react(),
     tailwindcss(),
     cloudflare({
-      configPath: "../api/wrangler.jsonc",
+      configPath: browserChecks
+        ? "../api/test/browser/wrangler.jsonc"
+        : "../api/wrangler.jsonc",
+      remoteBindings: !browserChecks,
       // Browser checks already use temporary local auth. Keep their rooms and
       // alarms isolated too; normal development retains its persistent rooms.
       persistState: !(
@@ -379,8 +409,13 @@ export default defineConfig(({ command }) => ({
         process.env.LOCAL_DATABASE_ID === "browser-checks"
       ),
       config: (current) =>
-        command === "serve" && current.vars?.APP_ENV === "local"
-          ? { vars: { ...current.vars, LOCAL_ADMIN_PROOF_KEY: localAdminProofKey } }
+        (command === "serve" || browserChecks) && current.vars?.APP_ENV === "local"
+          ? {
+              vars: {
+                ...current.vars,
+                LOCAL_ADMIN_PROOF_KEY: localAdminProofKey,
+              },
+            }
           : {},
     }),
   ],

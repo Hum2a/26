@@ -9,7 +9,7 @@ import {
   readWordleBoard,
   wordleScores,
   wordleProgress,
-} from "../src/questions/wordle.ts";
+} from "../src/questions/wordle/wordle.ts";
 import { projectSpecial } from "../src/questions/multiple-choice.ts";
 
 it("persists each board, isolates guests, restores after eviction and scores only once", async () => {

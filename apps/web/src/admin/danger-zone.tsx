@@ -63,7 +63,7 @@ export function DangerZone() {
               and photos, and frees the join code. This cannot be undone.
             </p>
             <Button
-              variant="secondary"
+              variant="danger"
               disabled={locked}
               onClick={() => setAsking("destroy")}
             >
@@ -92,6 +92,7 @@ export function DangerZone() {
         open={asking === "destroy"}
         title={`Destroy room ${snapshot.joinCode}?`}
         confirmLabel="Destroy room"
+        confirmTone="danger"
         disabled={locked || !codeMatches}
         onClose={close}
         onConfirm={() => {

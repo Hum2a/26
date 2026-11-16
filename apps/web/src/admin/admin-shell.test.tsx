@@ -28,9 +28,13 @@ beforeEach(() => {
     submitReaction: vi.fn(),
     reconnectNow: vi.fn(),
     submitDriver: vi.fn(),
+    submitAvatar: vi.fn(),
     submitWallPost: vi.fn(),
     submitWallWithdraw: vi.fn(),
     submitWallReact: vi.fn(),
+    reportWallImageFailed: vi.fn(),
+    submitChessMove: vi.fn(() => crypto.randomUUID()),
+    submitChessResign: vi.fn(() => crypto.randomUUID()),
   });
 });
 function Probe() {

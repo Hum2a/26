@@ -1,3 +1,5 @@
+import { KartIngressCache, type KartIngressClock } from "./kart/kart-ingress.ts";
+import { kartRaceRecap } from "@26/shared";
 import {
   kartRehearsalVersion,
   requirePlayable as requireKartRehearsal,
@@ -10,10 +12,25 @@ import {
   recoverKart,
   useKartItem,
   readKart,
-} from "../questions/kart.ts";
+  readRoomKartSettings,
+  kartHandlingDetails,
+  kartItemsDetails,
+} from "../questions/kart/kart.ts";
 import { readRoundState } from "../questions/round-state.ts";
 import { readAdmission } from "./admission.ts";
-import { assertKartLobbyAction, freezeKartLobby, readKartLobby } from "./kart-lobby.ts";
+import {
+  handleChessClockAlarm,
+  createChessRound,
+  pauseChessClocks,
+  resumeChessClocks,
+  executeChessMove,
+  executeResignation,
+} from "../questions/chess/chess-mechanic.ts";
+import {
+  assertKartLobbyAction,
+  freezeKartLobby,
+  readKartLobby,
+} from "./kart/kart-lobby.ts";
 import { writeRoundState } from "../questions/round-state.ts";
 import { freezeBirthdayOrder } from "../questions/birthday-order.ts";
 import { DurableObject } from "cloudflare:workers";
@@ -37,6 +54,7 @@ import {
   newerTabMessage,
   removedSessionMessage,
   nicknameSchema,
+  blockedNickname,
   type GuestSession,
   type KartFrame,
   type LobbySnapshot,
@@ -99,6 +117,7 @@ import {
   transferLimitMessage,
   transferTtlMs,
   transferUsedMessage,
+  wallImageReportMessage,
 } from "./limits.ts";
 import {
   acceptAnswer,
@@ -117,15 +136,23 @@ import {
   type RoomPhase,
 } from "./lifecycle.ts";
 import { applyHostAction, type HostActionInput } from "./host-actions.ts";
+import { logError } from "../log.ts";
+
+/** How soon a failed alarm tries again. */
+export const alarmRetryMs = 2_000;
+/** How often a socket's delivery counter is written to its attachment. */
+export const deliverySeqPersistEvery = 64;
 import {
+  allVoterReactions,
   applyReaction,
   cloudRows,
+  EMPTY_VOTER_REACTIONS,
   recentAdjustments,
   revealNames,
   seedDemoNames,
   voterReactions,
 } from "./names.ts";
-import { commitAndArm } from "./scheduler.ts";
+import { commitAndArm, rearmAfterFailure } from "./scheduler.ts";
 import { ensurePartySchema } from "./schema.ts";
 import { createSqlStore } from "./sql-store.ts";
 import type { Question } from "../questions/definition.ts";
@@ -136,8 +163,10 @@ import {
   ledgerCount,
   ledgerTotal,
   multipleChoicePlugin,
+  preparePlayShared,
   projectPlay,
   recordRevealScores,
+  type PlayBroadcastShared,
 } from "../questions/multiple-choice.ts";
 import { acceptDuel, acceptPrediction, wrongKindDuel } from "../questions/duel.ts";
 import {
@@ -155,6 +184,8 @@ import {
   type MediaPurpose,
 } from "../media/records.ts";
 import { readDrivers, saveDriver } from "./drivers.ts";
+import { readAvatars, saveAvatar } from "../media/avatar.ts";
+import { voterDisplayDetails } from "../questions/voters.ts";
 import { draftGapMs } from "../troll/catalogue.ts";
 import {
   acceptDeviceReport,
@@ -173,10 +204,14 @@ import { readRoomArchive } from "../archive/schedule.ts";
 import { readRoomDiagnostics } from "./diagnostics.ts";
 import { createWallPost, reactToWall, withdrawWallPost } from "../wall/store.ts";
 import { wallMediaViewable } from "../wall/access.ts";
-import { wallSnapshot } from "../wall/snapshot.ts";
+import {
+  prepareWallShared,
+  wallSnapshot,
+  type WallSnapshotShared,
+} from "../wall/snapshot.ts";
 import { syncWall } from "../wall/queue.ts";
 import { seedSampleRoom, type SampleMedia } from "./sample.ts";
-import type { WallSettingsChange } from "../wall/moderation.ts";
+import { reportWallImageFailed, type WallSettingsChange } from "../wall/moderation.ts";
 
 type WallCommand =
   | {
@@ -220,13 +255,16 @@ import {
   escapeTroll,
   hidesPersonalScore,
   hostTrollRows,
+  prepareTrollShared,
+  readDisplayNicknameMap,
   trollHistoryRows,
   trollSnapshot,
+  type TrollSnapshotShared,
 } from "../troll/engine.ts";
 import { acceptMultiple } from "../questions/multiple.ts";
 import { acceptRanking, wrongKindRank } from "../questions/rank.ts";
 import { acceptEstimate, wrongKindEstimate } from "../questions/slider.ts";
-import { acceptWordleGuess } from "../questions/wordle.ts";
+import { acceptWordleGuess } from "../questions/wordle/wordle.ts";
 import { acceptTypedAnswer } from "../questions/typed.ts";
 import {
   acceptBallot,
@@ -253,6 +291,8 @@ type SocketAttachment = {
   deliverySeq: number;
   /** The screen said it can apply patches. Older builds get full snapshots. */
   patches?: true;
+  kartItems?: 2;
+  kartTracks?: 2;
 };
 
 type BroadcastScope = "all" | "facilitators" | "stage";
@@ -261,12 +301,45 @@ type SentView = { id: string; fields: Map<string, string> };
 function viewKey(attachment: { role: string; principalId: string }): string {
   return `${attachment.role}:${attachment.principalId}`;
 }
-type SnapshotPartsCache = Map<string, ReturnType<PartyRoom["snapshotParts"]>>;
 type SnapshotStatistics = {
   stats: ReturnType<typeof readStatsSource>;
   facts: ReturnType<typeof aggregateFacts>;
   funFacts: ReturnType<typeof readFunFactSelection>;
 };
+type RoomWideSnapshotData = {
+  nowMs: number;
+  room: RoomRow;
+  players: LobbySnapshot["players"];
+  clock: ReturnType<typeof publicClock>;
+  stored: ReturnType<ReturnType<typeof createSqlStore>["readRoom"]>;
+  presentation:
+    | {
+        opening: string | null;
+        stage_hidden: number;
+        reveal_nonce: number;
+      }
+    | undefined;
+  stageHidden: boolean;
+  statistics: SnapshotStatistics;
+  cloud: LobbySnapshot["cloud"];
+  namesReveal: LobbySnapshot["namesReveal"];
+  mediaDisplayRevision: number;
+  rehearsalRevision?: number;
+  isKartMode: boolean;
+  playShared: PlayBroadcastShared | undefined;
+  trollShared: TrollSnapshotShared;
+  wallShared: WallSnapshotShared;
+  voterReactionsMap: Map<string, { playerId: string; reaction: "like" | "dislike" }[]>;
+};
+type SnapshotParts = ReturnType<PartyRoom["snapshotParts"]>;
+type BroadcastContext = {
+  partsByAudience: Map<string, SnapshotParts>;
+  roomWide: RoomWideSnapshotData;
+  guestSchemaValidated: boolean;
+  sharedFieldJson: Map<string, WeakMap<object, string>>;
+};
+/** Cap in-memory resume views to bound memory across test/reconnect churn while keeping 80+ guests hot. */
+const maxLastViews = 256;
 /** Changes inside this window share one fan-out. Short enough not to be seen. */
 const broadcastWindowMs = 30;
 /** Three buckets for each of 80 phones plus stage and control, with room to spare. */
@@ -369,6 +442,7 @@ export class PartyRoom extends DurableObject<Env> {
   private readonly meter = createRealtimeMeter();
   private database: Promise<AppDatabase> | undefined;
   private kartArrivals = new KartInputBuffer();
+  private kartIngress = new KartIngressCache();
   private rateBuckets = new Map<string, RateBucket>();
   /** The last view each socket holds, and per screen for resume. Memory only. */
   private views = new WeakMap<WebSocket, SentView>();
@@ -474,6 +548,14 @@ export class PartyRoom extends DurableObject<Env> {
         message: "Enter a nickname of 1 to 24 characters.",
       };
     }
+    // Names go up on the projector; refuse slurs and explicit terms at the door.
+    if (blockedNickname(nickname.data)) {
+      return {
+        ok: false,
+        error: "invalid",
+        message: "Choose a different nickname. That one cannot go on the big screen.",
+      };
+    }
     const digest = await payloadDigest({ nickname: nickname.data });
     const prior = this.readReceipt("join", input.requestId);
     if (prior) {
@@ -514,7 +596,11 @@ export class PartyRoom extends DurableObject<Env> {
           )
           .toArray()[0];
         if (taken) {
-          result = { ok: false, error: "conflict", message: nicknameTakenMessage };
+          result = {
+            ok: false,
+            error: "conflict",
+            message: nicknameTakenMessage,
+          };
           this.writeReceipt("join", input.requestId, digest, result);
           return;
         }
@@ -633,7 +719,11 @@ export class PartyRoom extends DurableObject<Env> {
       return { ok: false, error: "not_found", message: roomMissingMessage };
     }
     if (!validRequestId(input.requestId)) {
-      return { ok: false, error: "invalid", message: "That request was not accepted." };
+      return {
+        ok: false,
+        error: "invalid",
+        message: "That request was not accepted.",
+      };
     }
     const digest = await payloadDigest({ playerId: input.playerId });
     const prior = this.readReceipt("control", input.requestId);
@@ -706,7 +796,11 @@ export class PartyRoom extends DurableObject<Env> {
     }
     const codeHash = await hashCredentialSecret(code);
     const existing = this.ctx.storage.sql
-      .exec<{ player_id: string; expires_at: string; consumed_at: string | null }>(
+      .exec<{
+        player_id: string;
+        expires_at: string;
+        consumed_at: string | null;
+      }>(
         `SELECT player_id, expires_at, consumed_at FROM transfer WHERE code_hash = ?`,
         codeHash,
       )
@@ -741,7 +835,11 @@ export class PartyRoom extends DurableObject<Env> {
       }
       const active = this.readPlayer(playerId);
       if (!active || active.revoked_at) {
-        result = { ok: false, error: "invalid", message: transferInvalidMessage };
+        result = {
+          ok: false,
+          error: "invalid",
+          message: transferInvalidMessage,
+        };
         return;
       }
       const current = this.ctx.storage.sql
@@ -755,7 +853,11 @@ export class PartyRoom extends DurableObject<Env> {
         return;
       }
       if (Date.parse(current.expires_at) <= Date.parse(input.now)) {
-        result = { ok: false, error: "expired", message: transferExpiredMessage };
+        result = {
+          ok: false,
+          error: "expired",
+          message: transferExpiredMessage,
+        };
         return;
       }
       this.ctx.storage.sql.exec(
@@ -825,12 +927,83 @@ export class PartyRoom extends DurableObject<Env> {
     return check.ok ? { ok: true } : { ok: false };
   }
 
+  /** In-memory delivery counters; see `send`. */
+  private readonly deliverySeqs = new WeakMap<WebSocket, number>();
+
   override async alarm(): Promise<void> {
     const now = Date.now();
     let raceTickOnly = false;
+    try {
+      await this.runDueJobs(now, (value) => (raceTickOnly = value));
+    } catch (error) {
+      // A failed transaction rolls back its own next alarm. Re-arm so a
+      // transient fault never leaves the room stuck between phases.
+      logError("alarm", error, { retryInMs: alarmRetryMs });
+      await rearmAfterFailure(this.ctx.storage, Date.now() + alarmRetryMs);
+      return;
+    }
+    this.refreshKartIngressClock();
+    // A race tick fires five times a second and never makes an archive job
+    // due (that would be another due job), so it skips the archive's queries.
+    if (!raceTickOnly)
+      try {
+        await settleArchive({
+          storage: this.ctx.storage,
+          env: this.env,
+          now,
+          ...(this.archiveWriterOverride ? { writer: this.archiveWriterOverride } : {}),
+        });
+      } catch (error) {
+        // The archive retries on its own schedule; screens must still update.
+        logError("archive", error);
+      }
+    if (!raceTickOnly || !this.broadcastKart()) {
+      this.broadcast(true);
+    }
+  }
+
+  /** Runs every due job in one transaction that also arms the next alarm. */
+  private async runDueJobs(now: number, raceTick: (only: boolean) => void) {
     await commitAndArm(this.ctx.storage, (sql) => {
       this.flushKartInputs(sql);
-      const store = createGameStore(sql);
+      const baseStore = createGameStore(sql);
+      // Compose chess callbacks with existing lifecycle callbacks
+      const baseOnScheduledJob = baseStore.onScheduledJob;
+      const baseOnEnterPhase = baseStore.onEnterPhase;
+
+      const store: GameStore = {
+        ...baseStore,
+        onScheduledJob: (job, now) => {
+          // Call base handler first (kart-tick, trolls)
+          if (baseOnScheduledJob) {
+            baseOnScheduledJob(job, now);
+          }
+          // Then handle chess-specific jobs
+          if (job.payload.startsWith("chess-clock:")) {
+            const gameId = job.payload.substring("chess-clock:".length);
+            handleChessClockAlarm(sql, store, gameId, now);
+          }
+        },
+        onEnterPhase: (room, now) => {
+          // Call base handler first (scoring, trolls, wall, export, etc.)
+          if (baseOnEnterPhase) {
+            baseOnEnterPhase(room, now);
+          }
+          // Then handle chess-specific phase entry
+          if (room.phase === "collect") {
+            const question = questionFor(room);
+            if (question?.kind === "chess") {
+              const participants = sql
+                .exec<{ player_id: string }>(
+                  `SELECT player_id FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
+                )
+                .toArray()
+                .map((r) => r.player_id);
+              createChessRound(sql, store, question, participants, now);
+            }
+          }
+        },
+      };
       const before = store.readRoom();
       const due = sql
         .exec<{ payload: string }>(
@@ -842,24 +1015,16 @@ export class PartyRoom extends DurableObject<Env> {
       onAlarm(store, now);
       const after = store.readRoom();
       // A tick that only moved the race goes out as a kart frame, not a full snapshot.
-      raceTickOnly =
+      raceTick(
         due.length > 0 &&
-        due.every((job) => job.payload === "kart-tick") &&
-        after.phase === "collect" &&
-        after.phaseGeneration === before.phaseGeneration &&
-        after.questionIndex === before.questionIndex &&
-        !after.paused &&
-        !after.hold;
+          due.every((job) => job.payload === "kart-tick") &&
+          after.phase === "collect" &&
+          after.phaseGeneration === before.phaseGeneration &&
+          after.questionIndex === before.questionIndex &&
+          !after.paused &&
+          !after.hold,
+      );
     });
-    await settleArchive({
-      storage: this.ctx.storage,
-      env: this.env,
-      now,
-      ...(this.archiveWriterOverride ? { writer: this.archiveWriterOverride } : {}),
-    });
-    if (!raceTickOnly || !this.broadcastKart()) {
-      this.broadcast(true);
-    }
   }
 
   /** Tests inject a writer. Production uses the Worker database binding. */
@@ -1151,6 +1316,9 @@ export class PartyRoom extends DurableObject<Env> {
       const question = questionFor(store.readRoom());
       if (question?.kind === "kart")
         releaseKartInputs(sql, store, question, input.nowMs);
+      if (question?.kind === "chess") {
+        pauseChessClocks(sql, store, input.nowMs);
+      }
       pause(store, input.nowMs);
     });
   }
@@ -1170,7 +1338,12 @@ export class PartyRoom extends DurableObject<Env> {
       return allowed;
     }
     return this.phaseCommand(input.requestId, { action: "resume" }, (sql) => {
-      resume(createSqlStore(sql), input.nowMs);
+      const store = createSqlStore(sql);
+      const question = questionFor(store.readRoom());
+      if (question?.kind === "chess") {
+        resumeChessClocks(sql, store, input.nowMs);
+      }
+      resume(store, input.nowMs);
     });
   }
 
@@ -1254,6 +1427,8 @@ export class PartyRoom extends DurableObject<Env> {
     return this.phaseCommand(input.requestId, { action: "start-birthday" }, (sql) => {
       if (createSqlStore(sql).readRoom().phase !== "lobby")
         throw new Error("This game has already started.");
+      if (developerDetails(sql).bots.length > 0)
+        throw new Error("Remove rehearsal bots before starting the birthday game.");
       writeRoundState(sql, "__pack", "birthday-script", script);
       sql.exec(
         "UPDATE room SET question_set_version = ?, scoring_version = ?, opening = 'done'",
@@ -1435,7 +1610,11 @@ export class PartyRoom extends DurableObject<Env> {
     }
     const room = this.readRoom();
     if (!room) {
-      return { ok: false, error: "unauthenticated", message: roomMissingMessage };
+      return {
+        ok: false,
+        error: "unauthenticated",
+        message: roomMissingMessage,
+      };
     }
     if (input.confirmCode.toUpperCase() !== room.join_code.toUpperCase()) {
       return {
@@ -1465,17 +1644,39 @@ export class PartyRoom extends DurableObject<Env> {
       }
     }
     this.liveDrafts.clear();
-    if (this.draftFlush) clearTimeout(this.draftFlush);
+    if (this.draftFlush) {
+      clearTimeout(this.draftFlush);
+      this.draftFlush = undefined;
+    }
+    if (this.broadcastFlush !== undefined) {
+      clearTimeout(this.broadcastFlush);
+      this.broadcastFlush = undefined;
+    }
+    this.dirty.clear();
+    this.lastViews.clear();
+    this.rateBuckets.clear();
+    this.kartArrivals = new KartInputBuffer();
+    this.kartIngress = new KartIngressCache();
     // Cancel every job through the one scheduler, which then disarms the alarm.
     await commitAndArm(this.ctx.storage, (sql) => {
       sql.exec(
         "UPDATE schedule_job SET status = 'cancelled', due_at = NULL WHERE status = 'pending'",
       );
     });
+    if (this.database) {
+      const pendingDb = this.database;
+      this.database = undefined;
+      await pendingDb.then((db) => db.close()).catch(() => {});
+    }
     await this.ctx.storage.deleteAll();
     // Empty tables, not missing ones: later requests read "no room" cleanly.
     ensurePartySchema(this.ctx.storage.sql);
-    return { ok: true, gameId: room.game_id, joinCode: room.join_code, mediaKeys };
+    return {
+      ok: true,
+      gameId: room.game_id,
+      joinCode: room.join_code,
+      mediaKeys,
+    };
   }
 
   async hostAction(input: {
@@ -1485,6 +1686,13 @@ export class PartyRoom extends DurableObject<Env> {
     nowMs: number;
     action: string;
     botCount?: number;
+    kartSetting?: unknown;
+    lookPreset?: unknown;
+    handlingPreset?: unknown;
+    itemRules?: unknown;
+    kartTrack?: unknown;
+    kartLaps?: unknown;
+    kartCpu?: unknown;
     rehearsalConfig?: unknown;
     questionIndex?: number;
     scenario?: unknown;
@@ -1540,6 +1748,18 @@ export class PartyRoom extends DurableObject<Env> {
       }
     }
     if (input.botCount !== undefined) payload.botCount = input.botCount;
+    if (input.kartSetting !== undefined)
+      payload.kartSetting = JSON.stringify(input.kartSetting);
+    if (input.lookPreset !== undefined)
+      payload.lookPreset = JSON.stringify(input.lookPreset);
+    if (input.handlingPreset !== undefined)
+      payload.handlingPreset = JSON.stringify(input.handlingPreset);
+    if (input.itemRules !== undefined)
+      payload.itemRules = JSON.stringify(input.itemRules);
+    if (input.kartTrack !== undefined)
+      payload.kartTrack = JSON.stringify(input.kartTrack);
+    if (input.kartLaps !== undefined) payload.kartLaps = JSON.stringify(input.kartLaps);
+    if (input.kartCpu !== undefined) payload.kartCpu = JSON.stringify(input.kartCpu);
     if (input.playerId) {
       payload.playerId = input.playerId;
     }
@@ -1621,6 +1841,13 @@ export class PartyRoom extends DurableObject<Env> {
         const applied = applyHostAction(sql, {
           action: input.action,
           botCount: input.botCount,
+          kartSetting: input.kartSetting,
+          lookPreset: input.lookPreset,
+          handlingPreset: input.handlingPreset,
+          itemRules: input.itemRules,
+          kartTrack: input.kartTrack,
+          kartLaps: input.kartLaps,
+          kartCpu: input.kartCpu,
           rehearsalConfig: input.rehearsalConfig,
           questionIndex: input.questionIndex,
           scenario: input.scenario,
@@ -1763,7 +1990,10 @@ export class PartyRoom extends DurableObject<Env> {
       input.nowMs,
     );
     if (!allowed.ok) return allowed;
-    return { ok: true as const, page: adminMedia(this.ctx.storage.sql, input.before) };
+    return {
+      ok: true as const,
+      page: adminMedia(this.ctx.storage.sql, input.before),
+    };
   }
 
   async diagnostics(input: {
@@ -2091,7 +2321,9 @@ export class PartyRoom extends DurableObject<Env> {
         input.mediaId,
         input.guest
           ? { role: "guest", playerId: input.guest.playerId }
-          : { role: input.credential?.role === "control" ? "control" : "presentation" },
+          : {
+              role: input.credential?.role === "control" ? "control" : "presentation",
+            },
       );
     if (!row || row.hidden || wallHidden) {
       return {
@@ -2130,7 +2362,11 @@ export class PartyRoom extends DurableObject<Env> {
 
   async resumeAdmin(input: { requestId: string; now: string }) {
     if (!this.readRoom())
-      return { ok: false as const, error: "not_found", message: roomMissingMessage };
+      return {
+        ok: false as const,
+        error: "not_found",
+        message: roomMissingMessage,
+      };
     const principal = "admin-resume";
     const digest = await payloadDigest({ action: "resume-admin" });
     const prior = this.readReceipt(principal, input.requestId);
@@ -2150,7 +2386,11 @@ export class PartyRoom extends DurableObject<Env> {
           error: "expired",
           message: "That opening request expired. Try opening the room again.",
         };
-      return { ok: true as const, ...saved, snapshot: this.buildSnapshot("control") };
+      return {
+        ok: true as const,
+        ...saved,
+        snapshot: this.buildSnapshot("control"),
+      };
     }
     const control = await this.prepareCredential("control", new Date(input.now));
     const presentation = await this.prepareCredential(
@@ -2182,7 +2422,11 @@ export class PartyRoom extends DurableObject<Env> {
     const persisted = JSON.parse(
       this.readReceipt(principal, input.requestId)!.resultJson,
     ) as typeof saved;
-    return { ok: true as const, ...persisted, snapshot: this.buildSnapshot("control") };
+    return {
+      ok: true as const,
+      ...persisted,
+      snapshot: this.buildSnapshot("control"),
+    };
   }
 
   async releaseAdmin(input: {
@@ -2236,11 +2480,12 @@ export class PartyRoom extends DurableObject<Env> {
     const client = pair[0];
     const server = pair[1];
     this.ctx.acceptWebSocket(server, [identity.attachment.role]);
-    server.serializeAttachment(
-      query.get("patches") === "1"
-        ? { ...identity.attachment, patches: true }
-        : identity.attachment,
-    );
+    server.serializeAttachment({
+      ...identity.attachment,
+      ...(query.get("patches") === "1" ? { patches: true } : {}),
+      ...(query.get("kartItems") === "2" ? { kartItems: 2 } : {}),
+      ...(query.get("kartTracks") === "2" ? { kartTracks: 2 } : {}),
+    });
     if (identity.attachment.role === "guest") {
       this.closeOlder(server, identity.attachment, newerTabMessage);
     } else if (identity.attachment.role === "presentation") {
@@ -2282,9 +2527,17 @@ export class PartyRoom extends DurableObject<Env> {
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    if (ws.readyState !== 1) return;
     const text =
       typeof message === "string" ? message : new TextDecoder().decode(message);
-    const bytes = typeof message === "string" ? text.length : message.byteLength;
+    // A UTF-16 length undercounts accented text and emoji; measure real bytes
+    // whenever the message could be near the limit.
+    const bytes =
+      typeof message !== "string"
+        ? message.byteLength
+        : text.length * 3 <= maxPayloadBytes
+          ? text.length
+          : new TextEncoder().encode(text).byteLength;
     this.meter.add("in", bytes, Date.now());
     if (bytes > maxPayloadBytes) {
       this.send(ws, {
@@ -2311,7 +2564,11 @@ export class PartyRoom extends DurableObject<Env> {
         Number.isFinite(sentAt) &&
         this.allow(`time:${attachment.principalId}`, timeRateLimit)
       ) {
-        const reply = JSON.stringify({ kind: "time", sentAt, serverNow: Date.now() });
+        const reply = JSON.stringify({
+          kind: "time",
+          sentAt,
+          serverNow: Date.now(),
+        });
         this.meter.add("out:time", reply.length, Date.now());
         try {
           ws.send(reply);
@@ -2345,21 +2602,31 @@ export class PartyRoom extends DurableObject<Env> {
       if (attachment.role !== "guest") return;
       // Controls carry no acknowledgement. They are stored, with their arrival
       // time, in one transaction at the start of the next tick.
-      const sql = this.ctx.storage.sql;
-      const room = createSqlStore(sql).readRoom();
-      if (room.phase !== "collect" || room.paused || room.hold) return;
-      const question = questionFor(room);
-      if (question?.kind !== "kart") return;
-      const session = readRoundState<{ raceId: string; players: string[] }>(
-        sql,
-        question.id,
-        "kart-session",
-      );
-      if (!session?.players.includes(attachment.principalId)) return;
       if (
         !early.input ||
         typeof early.input !== "object" ||
-        (early.input as { raceId?: unknown }).raceId !== session.raceId
+        typeof (early.input as { raceId?: unknown }).raceId !== "string"
+      )
+        return;
+      const sql = this.ctx.storage.sql;
+      const clock = this.kartIngress.readClock(() => this.readKartIngressClock());
+      if (
+        !clock ||
+        !this.kartIngress.allows(
+          clock,
+          attachment.principalId,
+          (early.input as { raceId: string }).raceId,
+          () => {
+            const question = questionFor(createSqlStore(sql).readRoom());
+            return question?.kind === "kart"
+              ? readRoundState<{ raceId: string; players: string[] }>(
+                  sql,
+                  question.id,
+                  "kart-session",
+                )
+              : undefined;
+          },
+        )
       )
         return;
       this.kartArrivals.push(attachment.principalId, early.input, Date.now());
@@ -2387,6 +2654,15 @@ export class PartyRoom extends DurableObject<Env> {
       return;
     }
     if (!command) {
+      return;
+    }
+    if (command.name === "wall-image-failed") {
+      await this.acceptWallImageFailure(
+        ws,
+        attachment,
+        command.requestId,
+        command.postId,
+      );
       return;
     }
     if (command.name === "kart-recover" || command.name === "kart-use-item") {
@@ -2497,6 +2773,10 @@ export class PartyRoom extends DurableObject<Env> {
       });
       return;
     }
+    if (command.name === "avatar") {
+      await this.acceptAvatar(ws, attachment, command.requestId, command.mediaId);
+      return;
+    }
     const digest = await payloadDigest({ name: command.name });
     const prior = this.readReceipt(attachment.principalId, command.requestId);
     if (prior && prior.digest !== digest) {
@@ -2567,7 +2847,7 @@ export class PartyRoom extends DurableObject<Env> {
 
   async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
     void ws;
-    void error;
+    logError("socket", error);
   }
 
   readGameplayContext(playerId: string) {
@@ -2707,6 +2987,36 @@ export class PartyRoom extends DurableObject<Env> {
     return result;
   }
 
+  /**
+   * The projector's report that the wall photo it was told to show did not
+   * load. Only the presentation socket may send it; a guest or the control
+   * screen is refused. It cannot pick a photo: the room checks the post is the
+   * one showing and ends it through the normal rotation (`reportWallImageFailed`).
+   */
+  private async acceptWallImageFailure(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    requestId: string,
+    postId: unknown,
+  ): Promise<void> {
+    let accepted = false;
+    if (attachment.role === "presentation") {
+      await commitAndArm(this.ctx.storage, (sql) => {
+        accepted = reportWallImageFailed(sql, postId, Date.now());
+      });
+    }
+    this.send(ws, {
+      kind: "ack",
+      scope: "private",
+      requestId,
+      accepted,
+      ...(accepted ? {} : { error: wallImageReportMessage }),
+    });
+    if (accepted) {
+      this.broadcast();
+    }
+  }
+
   private async acceptKartAction(
     ws: WebSocket,
     attachment: SocketAttachment,
@@ -2764,6 +3074,21 @@ export class PartyRoom extends DurableObject<Env> {
     this.send(ws, { kind: "ack", scope: "private", requestId, ...result });
   }
 
+  private readKartIngressClock(): KartIngressClock | undefined {
+    return this.ctx.storage.sql
+      .exec<KartIngressClock>(
+        "SELECT phase, paused, hold, phase_generation, scope_generation, question_index, question_set_version FROM room",
+      )
+      .toArray()[0];
+  }
+
+  private refreshKartIngressClock(): void {
+    const clock = this.readKartIngressClock();
+    this.kartIngress.refreshClock(clock);
+    if (!clock || clock.phase !== "collect" || clock.paused !== 0 || clock.hold)
+      this.kartArrivals.drain();
+  }
+
   private flushKartInputs(sql: SqlStorage): void {
     const arrivals = this.kartArrivals.drain();
     if (!arrivals.length) return;
@@ -2779,13 +3104,21 @@ export class PartyRoom extends DurableObject<Env> {
   ): Promise<{ ok: true } | Extract<PhaseCommandResult, { ok: false }>> {
     const room = this.readRoom();
     if (!room) {
-      return { ok: false, error: "unauthenticated", message: roomMissingMessage };
+      return {
+        ok: false,
+        error: "unauthenticated",
+        message: roomMissingMessage,
+      };
     }
     const record = await createSqliteRoomCredentialDirectory(this.ctx.storage.sql).get(
       credentialId,
     );
     if (!record) {
-      return { ok: false, error: "unauthenticated", message: controlMissingMessage };
+      return {
+        ok: false,
+        error: "unauthenticated",
+        message: controlMissingMessage,
+      };
     }
     const check = await verifyRoomCredential({
       credentialId,
@@ -2817,13 +3150,21 @@ export class PartyRoom extends DurableObject<Env> {
   > {
     const room = this.readRoom();
     if (!room) {
-      return { ok: false, error: "unauthenticated", message: roomMissingMessage };
+      return {
+        ok: false,
+        error: "unauthenticated",
+        message: roomMissingMessage,
+      };
     }
     const record = await createSqliteRoomCredentialDirectory(this.ctx.storage.sql).get(
       credentialId,
     );
     if (!record) {
-      return { ok: false, error: "unauthenticated", message: controlMissingMessage };
+      return {
+        ok: false,
+        error: "unauthenticated",
+        message: controlMissingMessage,
+      };
     }
     const check = await verifyRoomCredential({
       credentialId,
@@ -2895,6 +3236,8 @@ export class PartyRoom extends DurableObject<Env> {
         return;
       }
       changed = true;
+      // Discard controls observed under a hold before presence can release it.
+      this.flushKartInputs(sql);
       notePresence(store, { controller, stage }, Date.now());
     });
     // A phone coming or going changes only the host's connection counts.
@@ -2961,7 +3304,11 @@ export class PartyRoom extends DurableObject<Env> {
       }
       return {
         ok: true,
-        attachment: { role: "guest", principalId: guest.playerId, deliverySeq: 0 },
+        attachment: {
+          role: "guest",
+          principalId: guest.playerId,
+          deliverySeq: 0,
+        },
       };
     }
     if (role === "stage" || role === "control") {
@@ -3013,7 +3360,11 @@ export class PartyRoom extends DurableObject<Env> {
 
   private async verifyGuest(playerId: string, secret: string, now: Date) {
     const row = this.ctx.storage.sql
-      .exec<{ secret_hash: string; expires_at: string; revoked_at: string | null }>(
+      .exec<{
+        secret_hash: string;
+        expires_at: string;
+        revoked_at: string | null;
+      }>(
         `SELECT secret_hash, expires_at, revoked_at FROM credential
          WHERE player_id = ? AND principal = 'guest' AND revoked_at IS NULL
          ORDER BY rowid DESC LIMIT 1`,
@@ -3120,7 +3471,9 @@ export class PartyRoom extends DurableObject<Env> {
           testRecipient: boolean;
         }
   > {
-    const testRecipient = Boolean(presentBinding(this.env.EMAIL_TEST_RECIPIENT));
+    const testRecipient =
+      this.env.APP_ENV !== "production" &&
+      Boolean(presentBinding(this.env.EMAIL_TEST_RECIPIENT));
     try {
       const delivery = await this.resultsDelivery();
       const room = this.readRoom();
@@ -3335,6 +3688,7 @@ export class PartyRoom extends DurableObject<Env> {
         sql,
         createSqlStore(sql),
         attachment.principalId,
+        requestId,
         command,
         now,
         question,
@@ -3496,13 +3850,57 @@ export class PartyRoom extends DurableObject<Env> {
     requestId: string,
     choice: { style: unknown; faceMediaId: unknown },
   ): Promise<void> {
+    await this.acceptPlayerChoice(ws, attachment, requestId, "driver", choice, (sql) =>
+      saveDriver(sql, {
+        playerId: attachment.principalId,
+        choice,
+        phase: createSqlStore(sql).readRoom().phase,
+      }),
+    );
+  }
+
+  /** A guest sets or removes their profile photo. Saved before the acknowledgement. */
+  private async acceptAvatar(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    requestId: string,
+    mediaId: unknown,
+  ): Promise<void> {
+    await this.acceptPlayerChoice(
+      ws,
+      attachment,
+      requestId,
+      "avatar",
+      { mediaId },
+      (sql) => saveAvatar(sql, { playerId: attachment.principalId, mediaId }),
+    );
+  }
+
+  /**
+   * A guest's own setting (driver, profile photo): one receipted transaction,
+   * then the guest's snapshot, the room broadcast and the acknowledgement.
+   */
+  private async acceptPlayerChoice(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    requestId: string,
+    name: "driver" | "avatar",
+    payload: Record<string, unknown>,
+    save: (sql: SqlStorage) => { ok: true } | { ok: false; message: string },
+  ): Promise<void> {
     const reply = (accepted: boolean, error?: string) =>
-      this.send(ws, { kind: "ack", scope: "private", requestId, accepted, error });
+      this.send(ws, {
+        kind: "ack",
+        scope: "private",
+        requestId,
+        accepted,
+        error,
+      });
     if (attachment.role !== "guest") {
       reply(false, answerRoleMessage);
       return;
     }
-    const digest = await payloadDigest({ name: "driver", ...choice });
+    const digest = await payloadDigest({ name, ...payload });
     let accepted = false;
     let error: string | undefined;
     let mismatch = false;
@@ -3518,18 +3916,13 @@ export class PartyRoom extends DurableObject<Env> {
         error = stored.error;
         return;
       }
-      const room = createSqlStore(sql).readRoom();
-      const result = saveDriver(sql, {
-        playerId: attachment.principalId,
-        choice,
-        phase: room.phase,
-      });
+      const result = save(sql);
       accepted = result.ok;
       error = result.ok ? undefined : result.message;
       this.writeReceipt(attachment.principalId, requestId, digest, {
         accepted,
         error,
-        name: "driver",
+        name,
       });
     });
     if (mismatch) {
@@ -3646,35 +4039,126 @@ export class PartyRoom extends DurableObject<Env> {
    * The parts of a snapshot that are the same for every screen of one audience.
    * A broadcast builds these once and reuses them for each socket.
    */
-  private snapshotParts(
-    audience: "guest" | "stage" | "control",
-    statistics?: SnapshotStatistics,
-  ) {
-    this.meter.add("build:public", 0, Date.now());
+  private prepareRoomWideSnapshotData(): RoomWideSnapshotData {
     const room = this.readRoom();
     if (!room) {
       throw new Error(roomMissingMessage);
     }
     const sql = this.ctx.storage.sql;
+    const nowMs = Date.now();
     const drivers = readDrivers(sql);
-    const players = sql
+    const avatars = readAvatars(sql);
+    const rawPlayers = sql
       .exec<{ player_id: string; nickname: string }>(
         `SELECT player_id, nickname FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
       )
-      .toArray()
-      .map((row) => {
-        const driver = drivers.get(row.player_id);
-        return {
-          playerId: row.player_id,
-          nickname: displayNickname(sql, row.player_id, row.nickname),
-          ...(driver ? { driver } : {}),
-        };
-      });
+      .toArray();
+    const nicknameOverrides = readDisplayNicknameMap(sql, rawPlayers);
+    const players = rawPlayers.map((row) => {
+      const driver = drivers.get(row.player_id);
+      const avatar = avatars.get(row.player_id);
+      return {
+        playerId: row.player_id,
+        nickname: nicknameOverrides.get(row.player_id) ?? row.nickname,
+        ...(driver ? { driver } : {}),
+        ...(avatar ? { avatarMediaId: avatar } : {}),
+      };
+    });
+    const store = createSqlStore(sql);
+    const clock = publicClock(store);
+    const stored = store.readRoom();
+    const presentation = sql
+      .exec<{
+        opening: string | null;
+        stage_hidden: number;
+        reveal_nonce: number;
+      }>(`SELECT opening, stage_hidden, reveal_nonce FROM room`)
+      .toArray()[0];
+    this.meter.add("build:statistics", 0, nowMs);
+    const stats = readStatsSource(sql);
+    const statistics: SnapshotStatistics = {
+      stats,
+      facts: aggregateFacts(stats),
+      funFacts: readFunFactSelection(sql, stats),
+    };
+    const cloud = cloudRows(sql);
+    const namesReveal =
+      presentation?.opening === "showing" ? revealNames(sql, cloud) : null;
+    const rehearsal = readRehearsal(sql);
+    return {
+      nowMs,
+      room,
+      players,
+      clock,
+      stored,
+      presentation,
+      stageHidden: presentation?.stage_hidden === 1,
+      statistics,
+      cloud,
+      namesReveal,
+      mediaDisplayRevision: photoBiasState(sql).revision,
+      ...(rehearsal ? { rehearsalRevision: rehearsal.revision } : {}),
+      isKartMode: Boolean(readKartLobby(sql)),
+      playShared: preparePlayShared(sql, stored),
+      trollShared: prepareTrollShared(sql, store),
+      wallShared: prepareWallShared(sql),
+      voterReactionsMap: allVoterReactions(sql),
+    };
+  }
+
+  private snapshotParts(
+    audience: "guest" | "stage" | "control",
+    statistics?: SnapshotStatistics,
+    roomWide?: RoomWideSnapshotData,
+  ) {
+    this.meter.add("build:public", 0, Date.now());
+    const sql = this.ctx.storage.sql;
+    if (roomWide) {
+      return {
+        room: roomWide.room,
+        players: roomWide.players,
+        store: createSqlStore(sql),
+        clock: roomWide.clock,
+        stored: roomWide.stored,
+        presentation: roomWide.presentation,
+        stageHidden: roomWide.stageHidden,
+        statistics: roomWide.statistics,
+        ...roomWide.statistics,
+        cloud: roomWide.cloud,
+        namesReveal: roomWide.namesReveal,
+        mediaDisplayRevision: roomWide.mediaDisplayRevision,
+        media: listUploads(sql, audience),
+      };
+    }
+    const room = this.readRoom();
+    if (!room) {
+      throw new Error(roomMissingMessage);
+    }
+    const drivers = readDrivers(sql);
+    const avatars = readAvatars(sql);
+    const rawPlayers = sql
+      .exec<{ player_id: string; nickname: string }>(
+        `SELECT player_id, nickname FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
+      )
+      .toArray();
+    const nicknameOverrides = readDisplayNicknameMap(sql, rawPlayers);
+    const players = rawPlayers.map((row) => {
+      const driver = drivers.get(row.player_id);
+      const avatar = avatars.get(row.player_id);
+      return {
+        playerId: row.player_id,
+        nickname: nicknameOverrides.get(row.player_id) ?? row.nickname,
+        ...(driver ? { driver } : {}),
+        ...(avatar ? { avatarMediaId: avatar } : {}),
+      };
+    });
     const store = createSqlStore(sql);
     const presentation = sql
-      .exec<{ opening: string | null; stage_hidden: number; reveal_nonce: number }>(
-        `SELECT opening, stage_hidden, reveal_nonce FROM room`,
-      )
+      .exec<{
+        opening: string | null;
+        stage_hidden: number;
+        reveal_nonce: number;
+      }>(`SELECT opening, stage_hidden, reveal_nonce FROM room`)
       .toArray()[0];
     if (!statistics) {
       this.meter.add("build:statistics", 0, Date.now());
@@ -3685,6 +4169,7 @@ export class PartyRoom extends DurableObject<Env> {
         funFacts: readFunFactSelection(sql, stats),
       };
     }
+    const cloud = cloudRows(sql);
     return {
       room,
       players,
@@ -3695,8 +4180,8 @@ export class PartyRoom extends DurableObject<Env> {
       stageHidden: presentation?.stage_hidden === 1,
       statistics,
       ...statistics,
-      cloud: cloudRows(sql),
-      namesReveal: presentation?.opening === "showing" ? revealNames(sql) : null,
+      cloud,
+      namesReveal: presentation?.opening === "showing" ? revealNames(sql, cloud) : null,
       mediaDisplayRevision: photoBiasState(sql).revision,
       media: listUploads(sql, audience),
     };
@@ -3705,26 +4190,38 @@ export class PartyRoom extends DurableObject<Env> {
   private buildSnapshot(
     audience: "guest" | "stage" | "control",
     selfPlayerId?: string,
-    parts: ReturnType<PartyRoom["snapshotParts"]> = this.snapshotParts(audience),
+    parts: SnapshotParts = this.snapshotParts(audience),
+    broadcast?: BroadcastContext,
   ): LobbySnapshot {
     const { room, players, store, clock, stored, presentation, stageHidden, stats } =
       parts;
+    const roomWide = broadcast?.roomWide;
+    const sql = this.ctx.storage.sql;
     let play = projectPlay(
-      this.ctx.storage.sql,
+      sql,
       stored,
       audience,
       selfPlayerId,
       audience === "stage" && stageHidden,
+      roomWide?.playShared,
     );
     if (
       play &&
       audience === "guest" &&
       selfPlayerId &&
-      hidesPersonalScore(this.ctx.storage.sql, selfPlayerId)
+      (roomWide
+        ? roomWide.trollShared.hiddenScores.has(selfPlayerId)
+        : hidesPersonalScore(sql, selfPlayerId))
     ) {
       play = { ...play, selfAward: null, selfStanding: null, standings: null };
     }
-    const trolls = trollSnapshot(this.ctx.storage.sql, store, audience, selfPlayerId);
+    const trolls = trollSnapshot(
+      sql,
+      store,
+      audience,
+      selfPlayerId,
+      roomWide?.trollShared,
+    );
     const highlights =
       audience === "control"
         ? presentStats(stats, "preview", undefined, parts.facts).highlights
@@ -3763,7 +4260,12 @@ export class PartyRoom extends DurableObject<Env> {
             cards: funFacts.cards,
           }
         : undefined;
-    return lobbySnapshotSchema.parse({
+    const nowMs = roomWide?.nowMs ?? Date.now();
+    const rehearsalRevision = roomWide
+      ? roomWide.rehearsalRevision
+      : readRehearsal(sql)?.revision;
+    const isKartMode = roomWide ? roomWide.isKartMode : Boolean(readKartLobby(sql));
+    const rawSnapshot: LobbySnapshot = {
       gameId: room.game_id,
       joinCode: room.join_code,
       phase: clock.phase,
@@ -3771,20 +4273,24 @@ export class PartyRoom extends DurableObject<Env> {
       held: clock.held,
       deadlineAt: clock.deadlineAt,
       remainingMs: clock.remainingMs,
-      serverNow: Date.now(),
+      serverNow: nowMs,
       stateVersion: room.state_version,
       mediaDisplayRevision: parts.mediaDisplayRevision,
-      ...(readRehearsal(this.ctx.storage.sql)
-        ? { rehearsalRevision: readRehearsal(this.ctx.storage.sql)!.revision }
-        : {}),
+      ...(rehearsalRevision !== undefined ? { rehearsalRevision } : {}),
       questionSetVersion: room.question_set_version,
       scoringVersion: room.scoring_version,
       players,
       ...(selfPlayerId ? { selfPlayerId } : {}),
+      // Public: phones and the stage adapt copy and orientation for a kart-only room.
+      ...(isKartMode ? { mode: "kart" as const } : {}),
       play,
       cloud: parts.cloud,
       ...(selfPlayerId
-        ? { selfReactions: voterReactions(this.ctx.storage.sql, selfPlayerId) }
+        ? {
+            selfReactions: roomWide
+              ? (roomWide.voterReactionsMap.get(selfPlayerId) ?? EMPTY_VOTER_REACTIONS)
+              : voterReactions(sql, selfPlayerId),
+          }
         : {}),
       namesReveal: parts.namesReveal,
       stageHidden,
@@ -3793,10 +4299,12 @@ export class PartyRoom extends DurableObject<Env> {
       media: parts.media,
       ...this.publicDraft(audience),
       trolls,
-      wall: wallSnapshot(this.ctx.storage.sql, audience, selfPlayerId, Date.now()),
+      wall: wallSnapshot(sql, audience, selfPlayerId, nowMs, roomWide?.wallShared),
       ...(audience === "control"
         ? {
             phaseGeneration: stored.phaseGeneration,
+            // Control only: what follows the current round, for the live desk.
+            nextQuestion: play ? nextQuestionPreview(stored) : null,
             connections: {
               guests: this.ctx.getWebSockets("guest").length,
               stage: this.ctx.getWebSockets("presentation").length,
@@ -3804,6 +4312,7 @@ export class PartyRoom extends DurableObject<Env> {
             },
             hostEffects: hostTrollRows(this.ctx.storage.sql),
             photoBias: photoBiasDetails(this.ctx.storage.sql),
+            voterDisplay: voterDisplayDetails(this.ctx.storage.sql),
             developerTools: {
               ...developerDetails(this.ctx.storage.sql),
               rehearsal: rehearsalDetails(this.ctx.storage.sql, Date.now()),
@@ -3813,6 +4322,54 @@ export class PartyRoom extends DurableObject<Env> {
               play?.question.kind === "kart"
                 ? (readKart(this.ctx.storage.sql, play.question.id)?.courseHistory ??
                   [])
+                : [],
+            kartOpponentHistory:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.opponentHistory ??
+                  [])
+                : [],
+            kartEffectsHistory:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.effectsHistory ??
+                  [])
+                : [],
+            kartLookHistory:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.lookHistory ?? [])
+                : [],
+            kartContactHistory:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.contactHistory ??
+                  [])
+                : [],
+            kartRecap:
+              play?.question.kind === "kart"
+                ? (() => {
+                    const race = readKart(this.ctx.storage.sql, play.question.id);
+                    return race ? kartRaceRecap(race) : undefined;
+                  })()
+                : undefined,
+            ...kartHandlingDetails(
+              this.ctx.storage.sql,
+              play?.question.kind === "kart" ? play.question.id : undefined,
+              stored.phase,
+            ),
+            ...kartItemsDetails(
+              this.ctx.storage.sql,
+              play?.question.kind === "kart" ? play.question.id : undefined,
+              stored.phase,
+            ),
+            kartSettings:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.settings ??
+                  readRoomKartSettings(this.ctx.storage.sql).settings ??
+                  {})
+                : (readRoomKartSettings(this.ctx.storage.sql).settings ?? {}),
+            kartSettingsHistory:
+              readRoomKartSettings(this.ctx.storage.sql).history ?? [],
+            kartStageHistory:
+              play?.question.kind === "kart"
+                ? (readKart(this.ctx.storage.sql, play.question.id)?.stageHistory ?? [])
                 : [],
             adjustments: recentAdjustments(this.ctx.storage.sql),
             admission: readAdmission(this.ctx.storage.sql),
@@ -3834,7 +4391,15 @@ export class PartyRoom extends DurableObject<Env> {
       ...(funFact ? { funFact } : {}),
       ...(funFactList ? { funFactList } : {}),
       ...(audience === "control" ? this.archiveDiagnostic() : {}),
-    });
+    };
+    if (audience === "guest" && broadcast?.guestSchemaValidated) {
+      return rawSnapshot;
+    }
+    const parsed = lobbySnapshotSchema.parse(rawSnapshot);
+    if (audience === "guest" && broadcast) {
+      broadcast.guestSchemaValidated = true;
+    }
+    return parsed;
   }
 
   private archiveDiagnostic(): {
@@ -3863,6 +4428,7 @@ export class PartyRoom extends DurableObject<Env> {
    * once per change. A phase deadline flushes at once.
    */
   private broadcast(urgent = false): void {
+    this.refreshKartIngressClock();
     this.markDirty("all", urgent);
   }
 
@@ -3904,10 +4470,18 @@ export class PartyRoom extends DurableObject<Env> {
       0,
       Date.now(),
     );
-    const shared: SnapshotPartsCache = new Map();
     const sockets = roles
       ? roles.flatMap((role) => this.ctx.getWebSockets(role))
       : this.ctx.getWebSockets();
+    if (sockets.length === 0) {
+      return;
+    }
+    const shared: BroadcastContext = {
+      partsByAudience: new Map(),
+      roomWide: this.prepareRoomWideSnapshotData(),
+      guestSchemaValidated: false,
+      sharedFieldJson: new Map(),
+    };
     for (const socket of sockets) {
       this.sendSnapshot(socket, shared);
     }
@@ -3930,6 +4504,9 @@ export class PartyRoom extends DurableObject<Env> {
     }
     const stateVersion = this.readRoom()?.state_version ?? 0;
     const serverNow = Date.now();
+    const contactHistory = JSON.stringify(frames.contactHistory);
+    const recap = JSON.stringify(frames.recap);
+    const items = JSON.stringify(frames.itemsControl);
     this.meter.add("broadcast:kart", 0, serverNow);
     for (const socket of this.ctx.getWebSockets()) {
       const attachment = this.attachment(socket);
@@ -3937,6 +4514,28 @@ export class PartyRoom extends DurableObject<Env> {
         continue;
       }
       if (attachment.role !== "guest" && !this.facilitatorAllowed(socket, attachment)) {
+        continue;
+      }
+      if (
+        !this.kartClientAllowed(
+          socket,
+          attachment,
+          frames.full.presentation?.version === 3,
+          frames.full.trackId === "26-park-v1" ||
+            (attachment.role === "control" &&
+              readKartLobby(this.ctx.storage.sql)?.trackId !== undefined),
+        )
+      )
+        continue;
+      // Reuse the existing authenticated snapshot/patch path only when private
+      // history changes. Diagnostics never enter public compact kart frames.
+      if (
+        attachment.role === "control" &&
+        (this.views.get(socket)?.fields.get("kartContactHistory") !== contactHistory ||
+          this.views.get(socket)?.fields.get("kartRecap") !== recap ||
+          this.views.get(socket)?.fields.get("kartItems") !== items)
+      ) {
+        this.sendSnapshot(socket);
         continue;
       }
       this.send(socket, {
@@ -4019,7 +4618,10 @@ export class PartyRoom extends DurableObject<Env> {
     const now = Date.now();
     const previous = this.liveDrafts.get(playerId);
     if (previous && now - previous.shownAt < draftGapMs) {
-      this.liveDrafts.set(playerId, { text: trimmed, shownAt: previous.shownAt });
+      this.liveDrafts.set(playerId, {
+        text: trimmed,
+        shownAt: previous.shownAt,
+      });
       this.scheduleDraftFlush(draftGapMs - (now - previous.shownAt));
       return;
     }
@@ -4047,7 +4649,7 @@ export class PartyRoom extends DurableObject<Env> {
     }, delayMs);
   }
 
-  private sendSnapshot(ws: WebSocket, shared?: SnapshotPartsCache): void {
+  private sendSnapshot(ws: WebSocket, shared?: BroadcastContext): void {
     const attachment = this.attachment(ws);
     if (!attachment) {
       return;
@@ -4061,20 +4663,51 @@ export class PartyRoom extends DurableObject<Env> {
         : attachment.role === "control"
           ? "control"
           : "stage";
-    let parts = shared?.get(audience);
+    let parts = shared?.partsByAudience.get(audience);
     if (!parts) {
-      // This synchronous fan-out cannot interleave writes. Share room-wide
-      // calculations across audiences, keeping private projections separate.
-      const statistics = shared?.values().next().value?.statistics;
-      parts = this.snapshotParts(audience, statistics);
-      shared?.set(audience, parts);
+      parts = this.snapshotParts(audience, shared?.roomWide.statistics, shared?.roomWide);
+      shared?.partsByAudience.set(audience, parts);
     }
     const snapshot = this.buildSnapshot(
       audience,
       attachment.role === "guest" ? attachment.principalId : undefined,
       parts,
+      shared,
     );
-    this.sendView(ws, attachment, snapshot);
+    if (
+      !this.kartClientAllowed(
+        ws,
+        attachment,
+        snapshot.play?.kart?.presentation?.version === 3,
+        snapshot.play?.kart?.trackId === "26-park-v1" ||
+          (snapshot.play?.question.kind === "kart" &&
+            snapshot.play.question.trackId === "26-park-v1") ||
+          (attachment.role === "control" && snapshot.kartLobby?.trackId !== undefined),
+      )
+    )
+      return;
+    this.sendView(ws, attachment, snapshot, shared?.sharedFieldJson);
+  }
+  private kartClientAllowed(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    expanded: boolean,
+    tracks = false,
+  ) {
+    if (
+      (!expanded || attachment.kartItems === 2) &&
+      (!tracks || attachment.kartTracks === 2)
+    )
+      return true;
+    const message =
+      tracks && attachment.kartTracks !== 2
+        ? "The kart courses have updated. Refresh this tab to join the race."
+        : "The kart game has updated. Refresh this tab to use the race items.";
+    this.send(ws, { kind: "replaced", scope: "private", message });
+    ws.close(4000, message);
+    this.views.delete(ws);
+    this.lastViews.delete(viewKey(attachment));
+    return false;
   }
 
   /**
@@ -4086,23 +4719,45 @@ export class PartyRoom extends DurableObject<Env> {
     ws: WebSocket,
     attachment: SocketAttachment,
     snapshot: LobbySnapshot,
+    sharedFieldJson?: Map<string, WeakMap<object, string>>,
   ) {
     if (!attachment.patches) {
       this.send(ws, { kind: "snapshot", scope: "public", snapshot });
       return;
     }
-    const fields = new Map(
-      // JSON omits optional undefined fields. The patch cache must represent
-      // exactly that wire view, including unsets when an optional field clears.
-      Object.entries(snapshot).flatMap(([key, value]) =>
-        value === undefined ? [] : [[key, JSON.stringify(value)] as const],
-      ),
-    );
+    const fields = new Map<string, string>();
+    // JSON omits optional undefined fields. The patch cache must represent
+    // exactly that wire view, including unsets when an optional field clears.
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (value === undefined) continue;
+      if (sharedFieldJson && value !== null && typeof value === "object") {
+        let fieldCache = sharedFieldJson.get(key);
+        if (!fieldCache) {
+          fieldCache = new WeakMap();
+          sharedFieldJson.set(key, fieldCache);
+        }
+        let json = fieldCache.get(value as object);
+        if (json === undefined) {
+          json = JSON.stringify(value);
+          fieldCache.set(value as object, json);
+        }
+        fields.set(key, json);
+      } else {
+        fields.set(key, JSON.stringify(value));
+      }
+    }
     const previous = this.views.get(ws);
     this.viewCount += 1;
     const view = { id: `${this.viewEpoch}.${this.viewCount}`, fields };
     this.views.set(ws, view);
-    this.lastViews.set(viewKey(attachment), view);
+    const key = viewKey(attachment);
+    this.lastViews.delete(key);
+    this.lastViews.set(key, view);
+    while (this.lastViews.size > maxLastViews) {
+      const oldest = this.lastViews.keys().next().value;
+      if (oldest === undefined) break;
+      this.lastViews.delete(oldest);
+    }
     if (previous) {
       const set: Record<string, unknown> = {};
       const unset: string[] = [];
@@ -4130,7 +4785,12 @@ export class PartyRoom extends DurableObject<Env> {
         return;
       }
     }
-    this.send(ws, { kind: "snapshot", scope: "public", snapshot, view: view.id });
+    this.send(ws, {
+      kind: "snapshot",
+      scope: "public",
+      snapshot,
+      view: view.id,
+    });
   }
 
   /** Stage and control sockets stop receiving room data once their credential lapses. */
@@ -4151,13 +4811,20 @@ export class PartyRoom extends DurableObject<Env> {
     const message = "Room access expired or changed. Reopen the room from admin.";
     this.send(ws, { kind: "replaced", scope: "private", message });
     ws.close(4000, message);
+    this.views.delete(ws);
+    this.lastViews.delete(viewKey(attachment));
     return false;
   }
 
   private send(
     ws: WebSocket,
     message:
-      | { kind: "snapshot"; scope: "public"; snapshot: LobbySnapshot; view?: string }
+      | {
+          kind: "snapshot";
+          scope: "public";
+          snapshot: LobbySnapshot;
+          view?: string;
+        }
       | {
           kind: "patch";
           scope: "public";
@@ -4180,11 +4847,19 @@ export class PartyRoom extends DurableObject<Env> {
     if (!attachment) {
       return;
     }
-    const next: SocketAttachment = {
-      ...attachment,
-      deliverySeq: attachment.deliverySeq + 1,
-    };
-    ws.serializeAttachment(next);
+    // Counting in memory: rewriting the attachment on every send cost one
+    // storage write per socket per frame. It is saved every
+    // deliverySeqPersistEvery sends; after hibernation the count resumes past
+    // anything that could have been sent, so it never goes backwards.
+    const counted = this.deliverySeqs.get(ws);
+    const deliverySeq =
+      (counted ??
+        attachment.deliverySeq +
+          (attachment.deliverySeq > 0 ? deliverySeqPersistEvery : 0)) + 1;
+    this.deliverySeqs.set(ws, deliverySeq);
+    const next: SocketAttachment = { ...attachment, deliverySeq };
+    if (counted === undefined || deliverySeq % deliverySeqPersistEvery === 0)
+      ws.serializeAttachment(next);
     const payload =
       message.kind === "ack" && message.error
         ? { ...message, deliverySeq: next.deliverySeq }
@@ -4228,6 +4903,7 @@ export class PartyRoom extends DurableObject<Env> {
   }
 
   private closePlayerSockets(playerId: string, message: string): void {
+    this.lastViews.delete(viewKey({ role: "guest", principalId: playerId }));
     for (const socket of this.ctx.getWebSockets("guest")) {
       const attachment = this.attachment(socket);
       if (!attachment || attachment.principalId !== playerId) {
@@ -4235,6 +4911,7 @@ export class PartyRoom extends DurableObject<Env> {
       }
       this.send(socket, { kind: "replaced", scope: "private", message });
       socket.close(4000, message);
+      this.views.delete(socket);
     }
   }
 
@@ -4258,6 +4935,8 @@ export class PartyRoom extends DurableObject<Env> {
       principalId: record.principalId,
       deliverySeq: record.deliverySeq,
       ...(record.patches === true ? { patches: true } : {}),
+      ...(record.kartItems === 2 ? { kartItems: 2 as const } : {}),
+      ...(record.kartTracks === 2 ? { kartTracks: 2 as const } : {}),
     };
   }
 
@@ -4397,6 +5076,7 @@ function acceptRoundCommand(
   sql: SqlStorage,
   store: GameStore,
   playerId: string,
+  requestId: string,
   command:
     | { name: "estimate"; value: unknown }
     | { name: "rank"; placements: unknown }
@@ -4405,6 +5085,15 @@ function acceptRoundCommand(
     | { name: "duel"; value: unknown }
     | { name: "troll"; kind: unknown; targetId: unknown; mediaId?: string }
     | { name: "troll-escape"; effectId: unknown }
+    | {
+        name: "chess-move";
+        gameId: string;
+        from: string;
+        to: string;
+        promotion?: string;
+        positionRevision: number;
+      }
+    | { name: "chess-resign"; gameId: string }
     | WallCommand,
   now: number,
   question: Question | undefined,
@@ -4449,6 +5138,46 @@ function acceptRoundCommand(
   if (command.name === "troll-escape") {
     return escapeTroll(sql, store, playerId, command.effectId, now);
   }
+  if (command.name === "chess-move") {
+    if (!question || question.kind !== "chess") {
+      return { ok: false, message: "Not a chess round" };
+    }
+
+    // CRITICAL: Player can ONLY submit moves for their OWN game.
+    // Server determines human vs bot path from game.sideToMove.
+    // Casual trust: guest chooses bot moves for own game, never other players' games.
+    const chessMoveCommand = {
+      kind: "chess-move" as const,
+      requestId,
+      gameId: command.gameId,
+      from: command.from,
+      to: command.to,
+      positionRevision: command.positionRevision,
+      ...(command.promotion
+        ? { promotion: command.promotion as "q" | "r" | "b" | "n" }
+        : {}),
+    };
+    const result = executeChessMove(sql, store, chessMoveCommand, playerId, now);
+    if (!result.success) {
+      return { ok: false, message: result.error };
+    }
+    return { ok: true };
+  }
+  if (command.name === "chess-resign") {
+    if (!question || question.kind !== "chess") {
+      return { ok: false, message: "Not a chess round" };
+    }
+    const chessResignCommand = {
+      kind: "chess-resign" as const,
+      requestId,
+      gameId: command.gameId,
+    };
+    const result = executeResignation(sql, chessResignCommand, playerId, now);
+    if (!result.success) {
+      return { ok: false, message: result.error };
+    }
+    return { ok: true };
+  }
   if (command.name === "wall-react") {
     return reactToWall(sql, playerId, command, now);
   }
@@ -4486,7 +5215,11 @@ function acceptRoundCommand(
 }
 
 function readCommand(body: unknown):
-  | { requestId: string; name: "kart-recover" | "kart-use-item"; raceId: string }
+  | {
+      requestId: string;
+      name: "kart-recover" | "kart-use-item";
+      raceId: string;
+    }
   | { requestId: string; name: "kart-input"; input: unknown }
   | { requestId: string; name: "snapshot" }
   | { requestId: string; name: "answer"; optionId: string }
@@ -4496,6 +5229,16 @@ function readCommand(body: unknown):
   | { requestId: string; name: "ballot"; candidateId: unknown; epoch?: unknown }
   | { requestId: string; name: "duel"; value: unknown }
   | { requestId: string; name: "draft"; text: string }
+  | {
+      requestId: string;
+      name: "chess-move";
+      gameId: string;
+      from: string;
+      to: string;
+      promotion?: string;
+      positionRevision: number;
+    }
+  | { requestId: string; name: "chess-resign"; gameId: string }
   | {
       requestId: string;
       name: "troll";
@@ -4513,9 +5256,21 @@ function readCommand(body: unknown):
       keep: unknown;
     }
   | { requestId: string; name: "wall-withdraw"; postId: unknown }
-  | { requestId: string; name: "wall-react"; postId: unknown; reaction: unknown }
-  | { requestId: string; name: "react"; targetId: string; reaction: "like" | "dislike" }
+  | { requestId: string; name: "wall-image-failed"; postId: unknown }
+  | {
+      requestId: string;
+      name: "wall-react";
+      postId: unknown;
+      reaction: unknown;
+    }
+  | {
+      requestId: string;
+      name: "react";
+      targetId: string;
+      reaction: "like" | "dislike";
+    }
   | { requestId: string; name: "driver"; style: unknown; faceMediaId: unknown }
+  | { requestId: string; name: "avatar"; mediaId: unknown }
   | { requestId: string; name: "device"; reason: string; report: unknown }
   | {
       requestId: string;
@@ -4543,29 +5298,53 @@ function readCommand(body: unknown):
     return null;
   }
   if (record.name === "kart-input")
-    return { requestId: record.requestId, name: "kart-input", input: record.input };
+    return {
+      requestId: record.requestId,
+      name: "kart-input",
+      input: record.input,
+    };
   if (
     (record.name === "kart-recover" || record.name === "kart-use-item") &&
     typeof record.raceId === "string" &&
     record.raceId.length > 0 &&
     record.raceId.length <= 120
   )
-    return { requestId: record.requestId, name: record.name, raceId: record.raceId };
+    return {
+      requestId: record.requestId,
+      name: record.name,
+      raceId: record.raceId,
+    };
   if (record.name === "snapshot") {
     return { requestId: record.requestId, name: "snapshot" };
+  }
+  if (record.name === "avatar") {
+    // Checked again (and against the guest's own photos) by saveAvatar.
+    return { requestId: record.requestId, name: "avatar", mediaId: record.mediaId };
   }
   if (
     record.name === "answer" &&
     typeof record.optionId === "string" &&
     /^[a-z0-9-]{1,16}$/.test(record.optionId)
   ) {
-    return { requestId: record.requestId, name: "answer", optionId: record.optionId };
+    return {
+      requestId: record.requestId,
+      name: "answer",
+      optionId: record.optionId,
+    };
   }
   if (record.name === "estimate") {
-    return { requestId: record.requestId, name: "estimate", value: record.value };
+    return {
+      requestId: record.requestId,
+      name: "estimate",
+      value: record.value,
+    };
   }
   if (record.name === "rank") {
-    return { requestId: record.requestId, name: "rank", placements: record.placements };
+    return {
+      requestId: record.requestId,
+      name: "rank",
+      placements: record.placements,
+    };
   }
   if (record.name === "text") {
     return { requestId: record.requestId, name: "text", body: record.body };
@@ -4581,6 +5360,45 @@ function readCommand(body: unknown):
   if (record.name === "duel") {
     return { requestId: record.requestId, name: "duel", value: record.value };
   }
+  if (record.name === "chess-move") {
+    if (
+      typeof record.gameId !== "string" ||
+      typeof record.from !== "string" ||
+      typeof record.to !== "string" ||
+      !/^[a-h][1-8]$/.test(record.from) ||
+      !/^[a-h][1-8]$/.test(record.to) ||
+      typeof record.positionRevision !== "number" ||
+      record.positionRevision < 0 ||
+      !Number.isInteger(record.positionRevision)
+    ) {
+      return null;
+    }
+    if (
+      record.promotion &&
+      !["q", "r", "b", "n"].includes(record.promotion as string)
+    ) {
+      return null;
+    }
+    return {
+      requestId: record.requestId,
+      name: "chess-move",
+      gameId: record.gameId,
+      from: record.from,
+      to: record.to,
+      promotion: record.promotion as "q" | "r" | "b" | "n" | undefined,
+      positionRevision: record.positionRevision,
+    };
+  }
+  if (record.name === "chess-resign") {
+    if (typeof record.gameId !== "string") {
+      return null;
+    }
+    return {
+      requestId: record.requestId,
+      name: "chess-resign",
+      gameId: record.gameId,
+    };
+  }
   if (record.name === "wall-post") {
     return {
       requestId: record.requestId,
@@ -4595,6 +5413,13 @@ function readCommand(body: unknown):
     return {
       requestId: record.requestId,
       name: "wall-withdraw",
+      postId: record.postId,
+    };
+  }
+  if (record.name === "wall-image-failed") {
+    return {
+      requestId: record.requestId,
+      name: "wall-image-failed",
       postId: record.postId,
     };
   }
@@ -4682,4 +5507,10 @@ function roomResponse(status: number, error: string, message: string): Response 
     { error, message },
     { status, headers: { "cache-control": "no-store" } },
   );
+}
+
+/** The round after the current one, as a title and mechanic only. */
+function nextQuestionPreview(room: Parameters<typeof questionFor>[0]) {
+  const next = questionFor({ ...room, questionIndex: room.questionIndex + 1 });
+  return next ? { title: next.title, kind: next.kind } : null;
 }

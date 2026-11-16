@@ -25,6 +25,7 @@ try {
         },
       },
     },
+    { preparingLocalDatabase: true },
   );
   const sql = await compileAuthSchema(auth);
   const output = path.join(root, "apps/api/src/auth/migrations/better-auth.sql");

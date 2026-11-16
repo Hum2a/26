@@ -25,8 +25,10 @@ import {
   type WallSettingsChange,
 } from "../wall/moderation.ts";
 import { syncWall } from "../wall/queue.ts";
-import { excludeAuthor, featureCandidate, includeAuthor } from "../questions/vote.ts";
+import { moderateCurrentAnswer } from "../questions/answer-moderation.ts";
+import { featureCandidate } from "../questions/vote.ts";
 import {
+  avatarClearedMessage,
   hideClosedMessage,
   demoScoringVersion,
   mediaMissingMessage,
@@ -46,18 +48,41 @@ import {
   swapNicknames,
 } from "./names.ts";
 import { createSqlStore } from "./sql-store.ts";
-import { changeKartCourse } from "../questions/kart.ts";
+import {
+  changeKartCourse,
+  changeKartOpponents,
+  changeKartEffects,
+  changeKartLook,
+  changeKartSetting,
+  changeKartHandling,
+  changeKartItemRules,
+  changeKartItemsSafety,
+  changeKartStage,
+} from "../questions/kart/kart.ts";
 import { changePhotoBias } from "../media/photo-bias.ts";
 import { setBotCount } from "../developer/bots.ts";
 import { changeAdmission } from "./admission.ts";
-import { assertKartLobbyAction, readKartLobby } from "./kart-lobby.ts";
+import {
+  assertKartLobbyAction,
+  readKartLobby,
+  chooseKartLobbyTrack,
+} from "./kart/kart-lobby.ts";
 import { startRound } from "./lifecycle.ts";
+import { changeVoterDisplay } from "../questions/voters.ts";
+import { clearAvatar } from "../media/avatar.ts";
 
 const shownPhases = new Set(["reveal", "scores", "final", "podium"]);
 
 export type HostActionInput = {
   action: string;
   botCount?: number;
+  kartSetting?: unknown;
+  lookPreset?: unknown;
+  handlingPreset?: unknown;
+  itemRules?: unknown;
+  kartTrack?: unknown;
+  kartLaps?: unknown;
+  kartCpu?: unknown;
   rehearsalConfig?: unknown;
   questionIndex?: number;
   scenario?: unknown;
@@ -82,6 +107,17 @@ export function applyHostAction(
   input: HostActionInput,
 ): { transferCode?: string; released?: number } {
   assertKartLobbyAction(sql, input.action);
+  if (input.action === "kart-track") {
+    chooseKartLobbyTrack(
+      sql,
+      input.kartTrack,
+      input.nowMs,
+      input.kartLaps ?? 1,
+      input.kartCpu ?? 0,
+    );
+    touch(sql);
+    return {};
+  }
   if (input.action === "start-kart") {
     const room = createSqlStore(sql).readRoom();
     const script = room.questionScript;
@@ -162,6 +198,53 @@ export function applyHostAction(
     changePhotoBias(sql, input.action === "photo-bias-on", input.nowMs);
     return {};
   }
+  if (input.action === "kart-opponents-on" || input.action === "kart-opponents-off") {
+    changeKartOpponents(sql, input.action === "kart-opponents-on", input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (input.action === "kart-setting") {
+    changeKartSetting(sql, input.kartSetting, input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (input.action === "kart-handling") {
+    changeKartHandling(sql, input.handlingPreset, input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (input.action === "kart-item-rules") {
+    changeKartItemRules(sql, input.itemRules, input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (["kart-items-on", "kart-items-off", "kart-items-clear"].includes(input.action)) {
+    changeKartItemsSafety(sql, input.action.slice("kart-items-".length), input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (input.action === "kart-look") {
+    changeKartLook(sql, input.lookPreset, input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (input.action === "kart-effects-on" || input.action === "kart-effects-off") {
+    changeKartEffects(sql, input.action === "kart-effects-on", input.nowMs);
+    touch(sql);
+    return {};
+  }
+  if (
+    [
+      "kart-stage-map",
+      "kart-stage-overview",
+      "kart-stage-follow",
+      "kart-stage-director",
+    ].includes(input.action)
+  ) {
+    changeKartStage(sql, input.action.slice("kart-stage-".length), input.nowMs);
+    touch(sql);
+    return {};
+  }
   if (input.action === "kart-course-on" || input.action === "kart-course-off") {
     changeKartCourse(sql, input.action === "kart-course-on", input.nowMs);
     touch(sql);
@@ -198,6 +281,23 @@ export function applyHostAction(
     }
     hideUpload(sql, input.mediaId);
     noteArchiveCorrection(sql, input.nowMs);
+    return {};
+  }
+  if (input.action === "voters-question" || input.action === "voters-hidden") {
+    changeVoterDisplay(
+      sql,
+      input.action === "voters-hidden" ? "hidden" : "question",
+      input.nowMs,
+    );
+    return {};
+  }
+  if (input.action === "avatar-clear") {
+    if (!input.playerId) {
+      throw new Error(playerMissingMessage);
+    }
+    if (!clearAvatar(sql, input.playerId)) {
+      throw new Error(avatarClearedMessage);
+    }
     return {};
   }
   if (input.action === "rename") {
@@ -256,14 +356,14 @@ export function applyHostAction(
     if (!input.playerId) {
       throw new Error(playerMissingMessage);
     }
-    includeAuthor(sql, input.playerId);
+    moderateCurrentAnswer(sql, input.playerId, false);
     return {};
   }
   if (input.action === "exclude") {
     if (!input.playerId) {
       throw new Error(playerMissingMessage);
     }
-    excludeAuthor(sql, input.playerId);
+    moderateCurrentAnswer(sql, input.playerId, true);
     return {};
   }
   if (input.action === "feature") {

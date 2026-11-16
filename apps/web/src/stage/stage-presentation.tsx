@@ -8,7 +8,9 @@ import { JoinMark } from "../lobby/join-mark";
 import { NameCloud, NameReveal } from "../lobby/name-cloud";
 import { StagePlay } from "../play/stage-play";
 import { PhaseTransition } from "../anim/PhaseTransition";
+import { kartRaceScene } from "../kart/race-scene";
 import { withClientApiKey } from "../api/client-key";
+import { evictMediaUrl, useCachedMediaSrc } from "../media/media-cache";
 import { usePhaseCountdown } from "../live/use-phase-countdown";
 import { SafeArea } from "./SafeArea";
 import { StageFullscreen } from "./fullscreen";
@@ -77,19 +79,19 @@ export function StagePresentation({
           <header className="projector-top">
             <Wordmark />
             {connected &&
-            !lobby &&
-            !hidden &&
-            clock &&
-            !(
-              snapshot.play?.question.kind === "kart" && snapshot.phase === "collect"
-            ) ? (
+              !lobby &&
+              !hidden &&
+              clock &&
+              !(
+                snapshot.play?.question.kind === "kart" && snapshot.phase === "collect"
+              ) ? (
               <StageCountdown
                 {...clock}
                 label={
                   snapshot.paused
                     ? "Paused."
                     : snapshot.play?.question.kind === "kart" &&
-                        snapshot.phase === "reveal"
+                      snapshot.phase === "reveal"
                       ? "The reveal"
                       : clock.label
                 }
@@ -132,7 +134,11 @@ export function StagePresentation({
             </section>
           ) : (
             <>
-              <PhaseTransition phase={snapshot.phase} stage>
+              <PhaseTransition
+                phase={snapshot.phase}
+                scene={kartRaceScene(snapshot)}
+                stage
+              >
                 <StagePlay snapshot={snapshot} observedAt={observedAt} />
               </PhaseTransition>
               {collecting && snapshot.play && snapshot.play.question.kind !== "kart" ? (
@@ -199,14 +205,22 @@ export function StagePresentation({
   );
 }
 function StagePhoto({ nickname, src }: { nickname: string; src: string }) {
+  const displaySrc = useCachedMediaSrc(src, { preload: true }) ?? src;
   const [failedSource, setFailedSource] = useState<string>();
   return failedSource === src ? (
     <p>Photo from {nickname} is unavailable.</p>
   ) : (
     <img
       alt={`Photo from ${nickname}`}
-      src={src}
-      onError={() => setFailedSource(src)}
+      src={displaySrc}
+      onError={() => {
+        if (displaySrc !== src) {
+          evictMediaUrl(src);
+          return;
+        }
+        evictMediaUrl(src);
+        setFailedSource(src);
+      }}
     />
   );
 }

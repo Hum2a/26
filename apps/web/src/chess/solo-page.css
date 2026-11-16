@@ -1,0 +1,60 @@
+.solo-chess-page {
+  position: relative;
+  min-height: 100dvh;
+  width: 100%;
+  padding: max(4.5rem, env(safe-area-inset-top)) 1rem 2rem;
+  box-sizing: border-box;
+}
+.solo-chess-back {
+  position: absolute;
+  top: max(0.75rem, env(safe-area-inset-top));
+  left: 0.75rem;
+  z-index: 5;
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 1rem;
+  color: var(--foreground);
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.18s var(--ease-party);
+}
+.solo-chess-back:active {
+  transform: scale(0.95);
+}
+.solo-chess-back:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+.solo-chess-board {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 32rem;
+  margin: 0 auto;
+}
+.solo-chess-board h1 {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  margin: 0;
+}
+.solo-chess-new {
+  min-height: 2.75rem;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--surface-foreground);
+  font-weight: 700;
+  transition:
+    transform 0.18s var(--ease-party),
+    background-color 0.18s var(--ease-party);
+}
+.solo-chess-new:active {
+  transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .solo-chess-back:active,
+  .solo-chess-new:active {
+    transform: none;
+  }
+}

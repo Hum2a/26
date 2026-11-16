@@ -44,7 +44,14 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
     throw new Error("The guest pages did not open.");
   }
 
-  await admin.getByRole("button", { name: "Start the illustrative demo" }).click();
+  await admin
+    .getByRole("button", { name: "Start the illustrative demo instead" })
+    .click();
+
+  await admin
+    .getByRole("dialog")
+    .getByRole("button", { name: "Start the demo", exact: true })
+    .click();
   await expect(admin.getByText("The illustrative demo has started.")).toBeVisible();
   await expect(stage.getByRole("heading", { name: "Get ready" })).toBeVisible();
   await advanceUntil(admin, stage, "Answers are open");
@@ -281,7 +288,9 @@ test("an illustrative quiz runs for the host, the stage, and three phones", asyn
     "Answer accepted.",
   );
   await admin.getByRole("button", { name: "Include Bilal" }).click();
-  await expect(admin.getByText("That answer is on the ballot.")).toBeVisible();
+  await expect(
+    admin.getByText("That answer is shown to guests and the stage."),
+  ).toBeVisible();
 
   await advanceUntil(admin, stage, "Voting");
   await expect(amina.getByRole("button", { name: "Spare from Bilal" })).toBeVisible();
@@ -400,29 +409,33 @@ async function advanceUntil(admin: Page, stage: Page, text: string) {
     const phase = stage.locator("[data-phase-motion]");
     const previous = (await phase.getAttribute("data-phase")) ?? "";
     const previousContent = await phase.innerText();
-    await Promise.all([
-      admin.waitForResponse(
-        (response) =>
-          response.url().includes("/api/rooms/play") && response.status() === 200,
-        { timeout: 15_000 },
-      ),
-      (async () => {
-        const finish = admin.getByRole("button", { name: "Finish quiz", exact: true });
-        if (await finish.isVisible()) {
-          await finish.click();
-          await admin
-            .getByRole("dialog")
-            .getByRole("button", { name: "Finish quiz", exact: true })
-            .click();
-        } else {
+    try {
+      await Promise.all([
+        admin.waitForResponse(
+          (response) =>
+            response.url().includes("/api/rooms/play") && response.status() === 200,
+          { timeout: 15_000 },
+        ),
+        (async () => {
           await admin
             .getByRole("button", {
-              name: /^(Advance|Next fact|Show the podium)$/,
+              name: /^(Advance|Next fact|Show the podium|Finish quiz|Show podium)$/,
             })
+            .first()
             .click();
-        }
-      })(),
-    ]);
+          // Confirm only the finish/podium dialog; other dialogs stay closed.
+          const confirm = admin
+            .getByRole("dialog")
+            .getByRole("button", { name: /^(Finish quiz|Show podium)$/, exact: true });
+          if (await confirm.isVisible().catch(() => false)) await confirm.click();
+        })(),
+      ]);
+    } catch (error) {
+      // A server alarm may reach the target while the outgoing host control leaves.
+      // Accept that path only when the real stage has rendered the exact target.
+      if (await target.isVisible()) return;
+      throw error;
+    }
     if (previous === "facts")
       await expect(phase).not.toHaveText(previousContent, { timeout: 5_000 });
     else

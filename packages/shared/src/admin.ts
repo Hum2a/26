@@ -49,6 +49,8 @@ export const adminContentSchema = z
                 mechanic: z.string(),
                 presentation: z.string(),
                 status: z.enum(["draft", "ready"]),
+                /** Estimated on-screen seconds for planning; pauses not included. */
+                estimatedSeconds: z.number().int().nonnegative().max(3600).optional(),
                 order: z.number().int().positive().nullable(),
                 missing: z.array(
                   z

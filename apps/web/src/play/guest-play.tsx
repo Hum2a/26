@@ -1,11 +1,18 @@
-import { GuestKart } from "../kart/GuestKart";
+import { lazy, Suspense } from "react";
+// The race and its track geometry load when a kart round arrives, not on joining.
+const GuestKart = lazy(() =>
+  import("../kart/GuestKart").then((kart) => ({ default: kart.GuestKart })),
+);
+const GuestChess = lazy(() =>
+  import("../chess/guest-chess").then((chess) => ({ default: chess.GuestChess })),
+);
 import { KartDriversProvider } from "../kart/KartDriversProvider";
-import type { KartInput } from "@26/shared";
+import type { KartInput, ChessMoveParams, ChessResignParams } from "@26/shared";
 import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
 import { QuestionOptionImage } from "./question-option-image";
-import { OptionText } from "../rounds/OptionText";
-import { SubmitButton } from "../rounds/SubmitButton";
-import { roundSubmitState } from "../rounds/submit-state";
+import { OptionText } from "./controls/OptionText";
+import { SubmitButton } from "./controls/SubmitButton";
+import { roundSubmitState } from "./controls/submit-state";
 import { Button } from "../ui/primitives";
 import { AnswerNames } from "./attributions";
 import { GuestBallot } from "./guest-ballot";
@@ -39,6 +46,8 @@ export function GuestPlay({
   kartItemNotice,
   kartRecoveryPending,
   kartRecoveryNotice,
+  onChessMove,
+  onChessResign,
   connected,
   observedAt,
   onChoose,
@@ -55,6 +64,8 @@ export function GuestPlay({
   kartItemNotice?: string;
   kartRecoveryPending?: boolean;
   kartRecoveryNotice?: string;
+  onChessMove?: (params: ChessMoveParams) => void;
+  onChessResign?: (params: ChessResignParams) => void;
   connected?: boolean;
   selectedId?: string;
   pending: boolean;
@@ -76,19 +87,33 @@ export function GuestPlay({
     return (
       <QuestionExperience snapshot={snapshot} pending={false}>
         <KartDriversProvider snapshot={snapshot}>
-          <GuestKart
-            snapshot={snapshot}
-            connected={connected}
-            onInput={onKartInput}
-            onUseItem={onKartUseItem}
-            itemPending={kartItemPending}
-            itemNotice={kartItemNotice}
-            onRecover={onKartRecover}
-            recoveryPending={kartRecoveryPending}
-            recoveryNotice={kartRecoveryNotice}
-          />
+          <Suspense fallback={<p role="status">Preparing your kart…</p>}>
+            <GuestKart
+              snapshot={snapshot}
+              connected={connected}
+              onInput={onKartInput}
+              onUseItem={onKartUseItem}
+              itemPending={kartItemPending}
+              itemNotice={kartItemNotice}
+              onRecover={onKartRecover}
+              recoveryPending={kartRecoveryPending}
+              recoveryNotice={kartRecoveryNotice}
+              observedAt={observedAt}
+            />
+          </Suspense>
         </KartDriversProvider>
       </QuestionExperience>
+    );
+  if (play.question.kind === "chess")
+    return (
+      <Suspense fallback={<p role="status">Loading chess engine…</p>}>
+        <GuestChess
+          snapshot={snapshot}
+          pending={pending}
+          onChessMove={onChessMove ?? (() => {})}
+          onChessResign={onChessResign ?? (() => {})}
+        />
+      </Suspense>
     );
   const open =
     snapshot.phase === "collect" &&

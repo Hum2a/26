@@ -59,6 +59,15 @@ export const rankPartialMessage = "Place at least one item.";
 export const textInvalidMessage = "Write an answer of 1 to 80 characters.";
 export const textClosedMessage = "This question is not collecting written answers.";
 export const typedInvalidMessage = "Type an answer that fits the box.";
+export const moderationClosedMessage =
+  "Answers can be hidden while they are collected or voted on. Hide the stage instead.";
+export const moderationFlowMessage =
+  "This vote runs in rounds. Hide answers before voting starts, or hide the stage.";
+export const moderationNotShownMessage =
+  "This question does not show written answers on the big screen.";
+/** A written answer with an identity slur. The text is never echoed back. */
+export const answerBlockedMessage =
+  "That answer can't go on the big screen. Try different wording.";
 export const ballotClosedMessage = "This question is not collecting votes.";
 export const ballotUnknownMessage = "That answer is not on the ballot.";
 export const ballotSelfMessage = "You cannot vote for your own answer.";
@@ -104,10 +113,16 @@ export const voiceMaxBytes = 400_000;
 export const voiceMaxMs = 3_000;
 export const playerMediaSlots = 8;
 export const roomMediaSlots = 80;
-/** Driver face photos, counted apart from question media. Retakes are expected. */
-export const playerFaceSlots = 5;
-export const roomFaceSlots = 400;
-export const faceQuotaMessage = "You have used your driver photo retakes.";
+/**
+ * Face photos (profile photo and kart driver), counted apart from question
+ * media. Retakes are expected, so each guest has a few.
+ */
+export const playerFaceSlots = 8;
+export const roomFaceSlots = 600;
+export const faceQuotaMessage = "You have used your photo retakes.";
+export const avatarPhotoMessage =
+  "That photo is not your profile photo. Take it again.";
+export const avatarClearedMessage = "That player has no profile photo to remove.";
 
 /** Photo wall. See `docs/photo-wall-plan.md`. */
 export const playerWallSlots = 15;
@@ -128,6 +143,8 @@ export const wallPostMissingMessage = "That photo is no longer on the wall.";
 export const wallFrameMessage = "Choose one of the frames.";
 export const wallDecidedMessage = "That photo has already been dealt with.";
 export const wallNothingShowingMessage = "Nothing is on the photo wall right now.";
+/** The projector reported a photo that is no longer on screen, or reported it twice. */
+export const wallImageReportMessage = "That photo is no longer on screen.";
 export const wallSettingsMessage = "Those photo wall settings were not accepted.";
 export const wallReactionsPerPhoto = 20;
 export const wallReactionGapMs = 300;

@@ -35,6 +35,95 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(administratorForRequest).mockResolvedValue({ email: "admin@example.test" });
 });
+it("replaces old HTTP readers before returning new private course metadata, and serves capable readers", async () => {
+  const snapshot: shared.LobbySnapshot = {
+    gameId: "ABCDEFGH",
+    joinCode: "ABCDEF",
+    phase: "lobby",
+    paused: false,
+    held: false,
+    deadlineAt: null,
+    remainingMs: null,
+    serverNow: 1,
+    stateVersion: 1,
+    questionSetVersion: "demo-2026-09-22",
+    scoringVersion: "demo-2026-09-22",
+    players: [],
+    play: null,
+    cloud: [],
+    namesReveal: null,
+    stageHidden: false,
+    finishAfterRound: false,
+    revealNonce: 0,
+    media: [],
+    trolls: { token: "locked", offers: [], active: [], announcement: null },
+    connections: { guests: 0, stage: 0, control: 1 },
+    kartLobby: { createdAt: 1, trackId: "26-park-v1", history: [] },
+  };
+  const env = {
+    ...bindings,
+    ROOM_CODE_REGISTRY: { getByName: () => ({ hasGame: async () => true }) },
+    PARTY_ROOM: {
+      getByName: () => ({ adminRoom: async () => ({ ok: true, snapshot }) }),
+    },
+  } as unknown as Env;
+  const cookie = "26_room_control=id.secret; 26_admin_room=ABCDEFGH";
+  for (const path of ["/api/admin/rooms/ABCDEFGH", "/api/admin/rooms/current"]) {
+    const old = await app.request(
+      `https://example.com${path}`,
+      { headers: { cookie } },
+      env,
+    );
+    expect(old.status).toBe(409);
+    expect(old.headers.get("cache-control")).toBe("no-store");
+    const body = await old.text();
+    expect(body).toContain("Refresh");
+    expect(body).not.toContain("26-park-v1");
+    expect(body).not.toContain("sourceVersion");
+    const current = await app.request(
+      `https://example.com${path}`,
+      { headers: { cookie, "x-26-kart-tracks": "2" } },
+      env,
+    );
+    expect(current.status).toBe(200);
+  }
+});
+
+it("serves the versioned kart inventory only to administrators without caching or room side effects", async () => {
+  const path = "https://example.com/api/admin/kart-assets";
+  const response = await app.request(path, {}, bindings);
+  expect(response.status).toBe(200);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(shared.kartAssetManifestSchema.parse(await response.json())).toEqual(
+    shared.kartAssetManifest,
+  );
+  expect(listRooms).not.toHaveBeenCalled();
+  vi.mocked(administratorForRequest).mockResolvedValue(
+    Response.json({ error: "unauthenticated" }, { status: 401 }),
+  );
+  const denied = await app.request(path, {}, bindings);
+  expect(denied.status).toBe(401);
+  expect(await denied.text()).not.toContain("sha256");
+});
+
+it("rehearses real public kart projections with labelled stand-ins and rejects invalid poses or unauthenticated reads", async () => {
+  const path = "https://example.com/api/admin/kart-preview";
+  const response = await app.request(path + "?beat=turn", {}, bindings);
+  expect(response.status).toBe(200);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  const preview = shared.kartRehearsalSchema.parse(await response.json());
+  expect(preview.stage.participants).toHaveLength(80);
+  expect(preview.phone.participants).toHaveLength(1);
+  expect(preview.phone.nearby).toHaveLength(8);
+  expect(preview.phone.participants[0]!.turnRate).toBe(0.5);
+  expect(JSON.stringify(preview)).not.toMatch(/credential|secret|inputUntil|lastSafe/);
+  expect(listRooms).not.toHaveBeenCalled();
+  expect((await app.request(path + "?beat=unknown", {}, bindings)).status).toBe(400);
+  vi.mocked(administratorForRequest).mockResolvedValue(
+    Response.json({ error: "unauthenticated" }, { status: 401 }),
+  );
+  expect((await app.request(path, {}, bindings)).status).toBe(401);
+});
 
 it("checks admin and origin before Wordle rehearsal; returns feedback without the target", async () => {
   const path =
@@ -110,6 +199,7 @@ it("protects a read-only content projection and excludes answer/reveal fields", 
   for (const pack of content!.packs)
     for (const question of pack.questions) {
       expect(Object.keys(question).sort()).toEqual([
+        "estimatedSeconds",
         "id",
         "mechanic",
         "missing",

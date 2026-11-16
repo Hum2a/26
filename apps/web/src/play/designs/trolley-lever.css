@@ -125,7 +125,8 @@
   gap: 1.75rem;
 }
 
-.trolley-stage-options > p {
+/* Each option is a wrapper holding its label and its voters. */
+.trolley-stage-options > div > p {
   padding-inline-start: 1rem;
   border-inline-start: 4px solid var(--line);
 }

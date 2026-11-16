@@ -104,3 +104,95 @@ it("respects a hidden-score troll", () => {
   );
   expect(screen.getByText(/hid your score/)).toBeTruthy();
 });
+
+it("calls a poll just for fun instead of repeating the previous round's points", () => {
+  const view = render(
+    <RanksTab
+      nickname="Amina"
+      snapshot={scored({
+        standings,
+        selfStanding: { place: 2, points: 200, players: 4 },
+        selfAward: 120,
+      })}
+    />,
+  );
+  expect(screen.getByText("+120 on the last question")).toBeTruthy();
+  view.rerender(
+    <RanksTab
+      nickname="Amina"
+      snapshot={scored({
+        standings,
+        selfStanding: { place: 2, points: 200, players: 4 },
+        question: { ...playingFixture.play!.question, id: "poll-round" },
+        selfAward: null,
+      })}
+    />,
+  );
+  expect(screen.getByText("The last round was just for fun")).toBeTruthy();
+  expect(screen.queryByText("+120 on the last question")).toBeNull();
+});
+
+it("keeps the last standings across a reload of the same game", () => {
+  sessionStorage.clear();
+  const first = render(
+    <RanksTab
+      nickname="Amina"
+      snapshot={scored({
+        standings,
+        selfStanding: { place: 2, points: 200, players: 4 },
+        selfAward: 120,
+      })}
+    />,
+  );
+  first.unmount();
+  // A reload mid-question: no standings in the snapshot yet.
+  render(<RanksTab nickname="Amina" snapshot={playingFixture} />);
+  expect(screen.getByText("Place 2 of 4")).toBeTruthy();
+  expect(screen.getByText("+120 on the last question")).toBeTruthy();
+});
+
+it("links to the full results once the podium is up", () => {
+  const view = render(<RanksTab nickname="Amina" snapshot={playingFixture} />);
+  expect(screen.queryByRole("link", { name: /full results/ })).toBeNull();
+  view.rerender(
+    <RanksTab nickname="Amina" snapshot={{ ...playingFixture, phase: "podium" }} />,
+  );
+  expect(screen.getByRole("link", { name: /full results/ }).getAttribute("href")).toBe(
+    `/r/${playingFixture.gameId}`,
+  );
+});
+
+it("skips storage writes on unchanged snapshots and separates games on gameId change", () => {
+  sessionStorage.clear();
+  const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
+  const snapA = scored({
+    standings,
+    selfStanding: { place: 2, points: 200, players: 4 },
+    selfAward: 120,
+  });
+  const view = render(<RanksTab nickname="Amina" snapshot={snapA} />);
+  expect(setItemSpy).toHaveBeenCalledTimes(1);
+
+  // New object identities with identical values should not write again.
+  view.rerender(
+    <RanksTab
+      nickname="Amina"
+      snapshot={scored({
+        standings: standings.map((row) => ({ ...row })),
+        selfStanding: { place: 2, points: 200, players: 4 },
+        selfAward: 120,
+      })}
+    />,
+  );
+  expect(setItemSpy).toHaveBeenCalledTimes(1);
+
+  // Switching to another room clears previous game's remembered standings.
+  view.rerender(
+    <RanksTab
+      nickname="Amina"
+      snapshot={{ ...playingFixture, gameId: "NEWROOM1" }}
+    />,
+  );
+  expect(screen.queryByText("Place 2 of 4")).toBeNull();
+  setItemSpy.mockRestore();
+});

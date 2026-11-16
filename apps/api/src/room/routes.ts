@@ -1,4 +1,17 @@
 import {
+  kartSettingChangeSchema,
+  kartLookNameSchema,
+  kartHandlingSchema,
+  kartItemRulesSchema,
+  kartLapsSchema,
+  kartCpuCountSchema,
+  kartRaceSchema,
+  type KartHandling,
+  type KartSettingChange,
+  type KartLookName,
+} from "@26/shared";
+import { rejectOldKartTrackClient } from "./kart/kart-track-compatibility.ts";
+import {
   gameIdSchema,
   botCountSchema,
   botSessionsSchema,
@@ -281,7 +294,8 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     if (!allowed.ok) {
       return roomFailure(401, "unauthenticated", "This screen needs its room session.");
     }
-    return jsonData(await room(c.env, resolved.gameId).snapshotFor("stage"));
+    const snapshot = await room(c.env, resolved.gameId).snapshotFor("stage");
+    return rejectOldKartTrackClient(c.req.raw, snapshot) ?? jsonData(snapshot);
   });
 
   app.post("/api/rooms/transfer", async (c) => {
@@ -382,6 +396,22 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "start-kart-rehearsal",
       "kart-course-on",
       "kart-course-off",
+      "kart-opponents-on",
+      "kart-effects-on",
+      "kart-effects-off",
+      "kart-setting",
+      "kart-handling",
+      "kart-item-rules",
+      "kart-track",
+      "kart-items-on",
+      "kart-items-off",
+      "kart-items-clear",
+      "kart-look",
+      "kart-opponents-off",
+      "kart-stage-map",
+      "kart-stage-overview",
+      "kart-stage-follow",
+      "kart-stage-director",
       "photo-bias-on",
       "photo-bias-off",
       "pause",
@@ -418,6 +448,9 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "wall-mute",
       "wall-unmute",
       "hide-media",
+      "voters-question",
+      "voters-hidden",
+      "avatar-clear",
       "retry-archive",
       "release-stuck-media",
       "retry-delivery",
@@ -895,6 +928,13 @@ function readHostDetails(
         questionIndex?: number;
         scenario?: unknown;
         botCount?: number;
+        kartSetting?: KartSettingChange;
+        itemRules?: unknown;
+        kartTrack?: unknown;
+        kartLaps?: unknown;
+        kartCpu?: unknown;
+        lookPreset?: KartLookName;
+        handlingPreset?: KartHandling;
         playerId?: string;
         otherPlayerId?: string;
         nickname?: string;
@@ -956,6 +996,51 @@ function readHostDetails(
       ? { ok: true, fields: { scenario: scenario.data } }
       : { ok: false, message: "Choose a rehearsal scenario." };
   }
+  if (action === "kart-setting") {
+    const change = kartSettingChangeSchema.safeParse(field(body, "kartSetting"));
+    return change.success
+      ? { ok: true, fields: { kartSetting: change.data } }
+      : { ok: false, message: "Choose a valid kart setting." };
+  }
+  if (action === "kart-look") {
+    const preset = kartLookNameSchema.safeParse(field(body, "lookPreset"));
+    return preset.success
+      ? { ok: true, fields: { lookPreset: preset.data } }
+      : { ok: false, message: "Choose a valid kart look." };
+  }
+  if (action === "kart-handling") {
+    const preset = kartHandlingSchema.safeParse(field(body, "handlingPreset"));
+    return preset.success
+      ? { ok: true, fields: { handlingPreset: preset.data } }
+      : { ok: false, message: "Choose valid kart handling." };
+  }
+  if (action === "kart-item-rules") {
+    const rules = kartItemRulesSchema.safeParse(field(body, "itemRules"));
+    return rules.success
+      ? { ok: true, fields: { itemRules: rules.data } }
+      : { ok: false, message: "Choose valid item rules." };
+  }
+  if (action === "kart-track") {
+    const track = kartRaceSchema.shape.trackId.safeParse(field(body, "kartTrack"));
+    if (!track.success)
+      return { ok: false, message: "Choose an installed kart course." };
+    const rawLaps = field(body, "kartLaps"),
+      rawCpu = field(body, "kartCpu");
+    const laps = rawLaps === undefined ? undefined : kartLapsSchema.safeParse(rawLaps);
+    if (laps && !laps.success)
+      return { ok: false, message: "Choose one, two or three laps." };
+    const cpu = rawCpu === undefined ? undefined : kartCpuCountSchema.safeParse(rawCpu);
+    if (cpu && !cpu.success)
+      return { ok: false, message: "Choose between 0 and 7 CPU racers." };
+    return {
+      ok: true,
+      fields: {
+        kartTrack: track.data,
+        ...(laps ? { kartLaps: laps.data } : {}),
+        ...(cpu ? { kartCpu: cpu.data } : {}),
+      },
+    };
+  }
   if (action === "developer-bots") {
     const count = botCountSchema.safeParse(field(body, "botCount"));
     return count.success
@@ -963,6 +1048,9 @@ function readHostDetails(
       : { ok: false, message: "Choose a whole bot count from 0 to 100." };
   }
   if (action === "photo-bias-on" || action === "photo-bias-off") {
+    return { ok: true, fields: {} };
+  }
+  if (action === "voters-question" || action === "voters-hidden") {
     return { ok: true, fields: {} };
   }
   if (action === "open-joining" || action === "close-joining") {
@@ -978,6 +1066,7 @@ function readHostDetails(
     "exclude",
     "wall-mute",
     "wall-unmute",
+    "avatar-clear",
   ].includes(action);
   const playerId = z.uuid().safeParse(field(body, "playerId"));
   if (needsPlayer && !playerId.success) {
@@ -1094,10 +1183,33 @@ function readRequestId(body: unknown): string | undefined {
   return value;
 }
 
-async function readJson(request: Request): Promise<unknown> {
+/** Room API bodies are small commands; stop reading at this byte limit. */
+export const maxJsonBodyBytes = 65_536;
+
+export async function readJson(request: Request): Promise<unknown> {
+  const declared = Number(request.headers.get("content-length") ?? 0);
+  if (Number.isFinite(declared) && declared > maxJsonBodyBytes) return undefined;
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   try {
-    return await request.json();
+    reader = request.body?.getReader();
+    if (!reader) return undefined;
+    const decoder = new TextDecoder();
+    let bytes = 0;
+    let text = "";
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) return JSON.parse(text + decoder.decode());
+      bytes += chunk.value.byteLength;
+      if (bytes > maxJsonBodyBytes) {
+        void reader.cancel().catch(() => undefined);
+        return undefined;
+      }
+      text += decoder.decode(chunk.value, { stream: true });
+    }
   } catch {
+    void reader?.cancel().catch(() => undefined);
     return undefined;
+  } finally {
+    reader?.releaseLock();
   }
 }

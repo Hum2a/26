@@ -2,17 +2,20 @@
 # Cut a release: set the version everywhere, tag it, publish it, deploy it,
 # and check the live sites report it.
 #
-#   ./release.sh                 next patch (0.0.1 -> 0.0.2), deploy to both
+#   ./release.sh                 next patch (0.0.1 -> 0.0.2), deploy to staging
 #   ./release.sh patch           the same
 #   ./release.sh 0.0.1           an exact version
 #   ./release.sh current         print the current version and stop
 #
 # Options:
-#   --deploy=both|staging|production|none   where to deploy (default: both)
+#   --deploy=both|staging|production|none   where to deploy (default: staging)
+#   --override-freeze                       deploy production during the party freeze
 #   --dry-run                               show what would happen, change nothing
-#   --skip-checks                           skip typecheck and content checks
+#   --skip-checks                           skip the pre-release checks
+#   --full-checks                           also run the full API suite (slow)
 #   --no-github                             no GitHub release (tag is still pushed)
 #   --v1                                    allow 1.0.0 and above (the final product)
+#   --confirm-production                    accepted and ignored (kept for old scripts)
 #
 # The version lives in the root package.json (and its lockfile entry),
 # packages/shared/src/version.ts (shown in the admin sidebar and returned by
@@ -23,7 +26,9 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 bump="patch"
-deploy="both"
+deploy="staging"
+override_freeze=false
+full_checks=false
 dry_run=false
 skip_checks=false
 github=true
@@ -34,6 +39,9 @@ for arg in "$@"; do
     --deploy=*) deploy="${arg#--deploy=}" ;;
     --dry-run) dry_run=true ;;
     --skip-checks) skip_checks=true ;;
+    --full-checks) full_checks=true ;;
+    --confirm-production) ;; # ignored; kept so old scripts still parse
+    --override-freeze) override_freeze=true ;;
     --no-github) github=false ;;
     --v1) allow_v1=true ;;
     -h|--help) sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
@@ -49,6 +57,13 @@ esac
 
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 fail() { printf '\n\033[31m%s\033[0m\n' "$*" >&2; exit 1; }
+
+# The party weekend is frozen because a deploy drops every phone's connection.
+if [[ "$dry_run" != true && ( "$deploy" == both || "$deploy" == production ) ]]; then
+  if [[ "$override_freeze" != true ]] && node --experimental-strip-types -e "import('./scripts/release-support.ts').then((m) => process.exit(m.inDeployFreeze(Date.now()) ? 0 : 1))"; then
+    fail "Production is frozen for the party weekend (20 Nov to midday 22 Nov). Pass --override-freeze only for an emergency fix."
+  fi
+fi
 
 current="$(node -p "require('./package.json').version || '0.0.0'")"
 
@@ -95,7 +110,7 @@ fi
 if [[ "$dry_run" == true ]]; then
   echo "Dry run. Would:"
   echo "  - set version $next in package.json, package-lock.json and packages/shared/src/version.ts"
-  [[ "$skip_checks" == true ]] || echo "  - run typecheck and content checks"
+  [[ "$skip_checks" == true ]] || echo "  - run typecheck, content, unit, lint and script checks$([[ "$full_checks" == true ]] && echo ", and the full API suite")"
   echo "  - commit \"Release v$next\", tag v$next, push master and the tag"
   [[ "$github" == true ]] && echo "  - create GitHub release v$next"
   [[ "$deploy" != none ]] && echo "  - deploy to $deploy and check /api/health reports $next"
@@ -131,7 +146,12 @@ fs.writeFileSync(
 
 if [[ "$skip_checks" != true ]]; then
   say "Checking"
-  if ! npm run typecheck || ! npm run content:check; then
+  checks_ok=true
+  npm run typecheck && npm run content:check && npm run test:unit && npx eslint . && npm run test:release || checks_ok=false
+  if [[ "$checks_ok" == true && "$full_checks" == true ]]; then
+    npm run test -w @26/api || checks_ok=false
+  fi
+  if [[ "$checks_ok" != true ]]; then
     git checkout -- package.json package-lock.json packages/shared/src/version.ts
     fail "Checks failed. The version change was undone; nothing was committed."
   fi
@@ -173,7 +193,12 @@ check_live() {
 
 if [[ "$deploy" != none ]]; then
   say "Deploying v$next to $deploy"
-  npm run "deploy:$deploy"
+  # Branch/cleanliness were required before the version bump. Checks and the
+  # bump may leave generated files, so release.ts git state is skipped here.
+  # Freeze still goes through the common deploy entry point.
+  deploy_options=(--skip-checks)
+  [[ "$override_freeze" == true ]] && deploy_options+=(--override-freeze)
+  SKIP_GIT_CHECK=true npm run "deploy:$deploy" -- "${deploy_options[@]}"
   say "Checking the live sites"
   ok=true
   if [[ "$deploy" == both || "$deploy" == staging ]]; then

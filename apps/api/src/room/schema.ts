@@ -102,6 +102,28 @@ const scheduleStatements = [
     created_at INTEGER NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS schedule_job_due ON schedule_job (status, due_at)`,
+  `CREATE TABLE IF NOT EXISTS chess_game (
+    game_id TEXT PRIMARY KEY,
+    round_id TEXT NOT NULL,
+    player_id TEXT NOT NULL,
+    fen TEXT NOT NULL,
+    pgn TEXT NOT NULL,
+    position_history TEXT NOT NULL,
+    player_time_ms INTEGER NOT NULL,
+    bot_time_ms INTEGER NOT NULL,
+    last_move_at INTEGER NOT NULL,
+    side_to_move TEXT NOT NULL,
+    ply_count INTEGER NOT NULL,
+    position_revision INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    winner TEXT,
+    terminated_at INTEGER,
+    termination_reason TEXT,
+    scored INTEGER NOT NULL DEFAULT 0
+  )`,
+  `CREATE INDEX IF NOT EXISTS chess_game_player ON chess_game (player_id)`,
+  `CREATE INDEX IF NOT EXISTS chess_game_round ON chess_game (round_id)`,
+  `CREATE INDEX IF NOT EXISTS chess_game_status ON chess_game (status)`,
   `CREATE TABLE IF NOT EXISTS room_archive (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     final_revision INTEGER NOT NULL,
@@ -394,7 +416,32 @@ const scheduleStatements = [
   )`,
 ];
 
+const PARTY_SCHEMA_VERSION = 15;
+const REGISTRY_SCHEMA_VERSION = 1;
+
+function hasTable(sql: SqlStorage, name: string): boolean {
+  return (
+    sql
+      .exec<{ name: string }>(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+        name,
+      )
+      .toArray().length > 0
+  );
+}
+
 export function ensurePartySchema(sql: SqlStorage): void {
+  if (hasTable(sql, "schema_meta")) {
+    const meta = sql
+      .exec<{ version: number }>("SELECT version FROM schema_meta WHERE id = 1")
+      .toArray()[0];
+    if (meta?.version === PARTY_SCHEMA_VERSION) {
+      return;
+    }
+    if (meta && (meta.version < 1 || meta.version > PARTY_SCHEMA_VERSION)) {
+      throw new Error(`Unsupported room schema version ${meta.version}.`);
+    }
+  }
   for (const statement of [...partyStatements, ...scheduleStatements]) {
     sql.exec(statement);
   }
@@ -422,6 +469,14 @@ export function ensurePartySchema(sql: SqlStorage): void {
   addColumn(sql, "stage_cue", "audio_asset", "TEXT");
   addColumn(sql, "stage_cue", "media_kind", "TEXT");
   addColumn(sql, "stage_cue", "question_index", "INTEGER");
+  // Troll lines that quote guests' answers record whose answers they quote
+  // (JSON author ids for one question) and a line with no quote, so a stored cue
+  // is checked against the host's Hide again whenever it is shown.
+  addColumn(sql, "stage_cue", "quote_question_id", "TEXT");
+  addColumn(sql, "stage_cue", "quote_authors", "TEXT");
+  addColumn(sql, "stage_cue", "unquoted_label", "TEXT");
+  // When the projector reported it could not display a wall photo; host only.
+  addColumn(sql, "wall_post", "display_failed_at", "INTEGER");
   addColumn(sql, "room", "telemetry_retention_days", "INTEGER NOT NULL DEFAULT 30");
   addColumn(sql, "choice_answer", "device_context_id", "TEXT");
   addColumn(sql, "round_response", "device_context_id", "TEXT");
@@ -437,6 +492,10 @@ export function ensurePartySchema(sql: SqlStorage): void {
   addColumn(sql, "media_upload", "purpose", "TEXT NOT NULL DEFAULT 'round'");
   addColumn(sql, "player", "driver_style", "TEXT");
   addColumn(sql, "player", "driver_face_media_id", "TEXT");
+  // A guest's profile photo (a `face` media row) and the host's projector switch.
+  addColumn(sql, "player", "avatar_media_id", "TEXT");
+  addColumn(sql, "room", "voter_display", "TEXT NOT NULL DEFAULT 'question'");
+  addColumn(sql, "room", "voter_display_history", "TEXT NOT NULL DEFAULT '[]'");
   addColumn(sql, "connection_summary", "script_errors", "INTEGER NOT NULL DEFAULT 0");
   addColumn(sql, "connection_summary", "last_script_error", "TEXT");
   addColumn(sql, "connection_summary", "last_script_error_at", "TEXT");
@@ -478,6 +537,17 @@ function addColumn(
 }
 
 function ensure(sql: SqlStorage, statements: string[]): void {
+  if (hasTable(sql, "schema_meta")) {
+    const meta = sql
+      .exec<{ version: number }>("SELECT version FROM schema_meta WHERE id = 1")
+      .toArray()[0];
+    if (meta?.version === REGISTRY_SCHEMA_VERSION) {
+      return;
+    }
+    if (meta && meta.version !== REGISTRY_SCHEMA_VERSION) {
+      throw new Error(`Unsupported room schema version ${meta.version}.`);
+    }
+  }
   for (const statement of statements) {
     sql.exec(statement);
   }

@@ -1,0 +1,1192 @@
+{
+  "schemaVersion": 1,
+  "recordedOn": "2026-11-04",
+  "scope": "Explicit local diagnostic fixtures, not app capacity",
+  "versions": {
+    "vite": {
+      "plugin": "1.57.3",
+      "miniflare": "5.20260921.0-alpha",
+      "workerd": "1.20260921.1"
+    },
+    "vitest": {
+      "plugin": "1.4.11",
+      "miniflare": "5.20261023.3-beta",
+      "workerd": "1.20261023.1"
+    }
+  },
+  "upstream": [
+    "https://github.com/cloudflare/workerd/issues/7191",
+    "https://github.com/cloudflare/workerd/pull/7442"
+  ],
+  "records": [
+    {
+      "evidence": "runtime-probe-vite.json",
+      "runtime": "vite",
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 97,
+      "received": 0,
+      "distinctSending": 50,
+      "maxTick": 0,
+      "health": [
+        {
+          "milliseconds": 7,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 21,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 18,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 18,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 19,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 4,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 18,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 5,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 19,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 18,
+          "body": {
+            "ok": true
+          }
+        }
+      ],
+      "stop": {
+        "milliseconds": 41,
+        "body": {
+          "stopped": true,
+          "inputs": 0,
+          "ticks": 0
+        }
+      },
+      "error": "AssertionError [ERR_ASSERTION]: The runtime must continue broadcasting during traffic",
+      "fixtureVersion": 1,
+      "interpretationLimit": "Fixture v1 did not consume POST request bodies; bridge/start failures cannot establish an app bootstrap cause."
+    },
+    {
+      "evidence": "runtime-probe-vitest.json",
+      "runtime": "vitest",
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 9500,
+      "received": 4750,
+      "distinctSending": 50,
+      "maxTick": 95,
+      "health": [
+        {
+          "milliseconds": 5,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 8,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 4,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 5,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 3,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 5,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 4,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 3,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 4,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 3,
+          "body": {
+            "ok": true
+          }
+        }
+      ],
+      "stop": {
+        "milliseconds": 14,
+        "body": {
+          "stopped": true,
+          "inputs": 9500,
+          "ticks": 95
+        }
+      },
+      "error": null,
+      "fixtureVersion": 1,
+      "interpretationLimit": "Fixture v1 did not consume POST request bodies; bridge/start failures cannot establish an app bootstrap cause."
+    },
+    {
+      "evidence": "runtime-probe-vite-disk.json",
+      "runtime": "vite",
+      "storage": "disk",
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 9700,
+      "received": 4850,
+      "distinctSending": 50,
+      "maxTick": 97,
+      "health": [
+        {
+          "milliseconds": 54,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 18,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 27,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 69,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 17,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 50,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 29,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 5,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 22,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 18,
+          "body": {
+            "ok": true
+          }
+        }
+      ],
+      "stop": {
+        "milliseconds": 167,
+        "body": {
+          "stopped": true,
+          "inputs": 9600,
+          "ticks": 97
+        }
+      },
+      "error": null,
+      "fixtureVersion": 1,
+      "interpretationLimit": "Fixture v1 did not consume POST request bodies; bridge/start failures cannot establish an app bootstrap cause."
+    },
+    {
+      "evidence": "runtime-probe-vite-disk-bridge.json",
+      "runtime": "vite",
+      "storage": "disk",
+      "transport": "bridge",
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 9600,
+      "received": 4800,
+      "distinctSending": 50,
+      "maxTick": 96,
+      "health": [
+        {
+          "milliseconds": 63,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 7,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 40,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 87,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 6,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 35,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 9,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 8,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 6,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 4,
+          "body": {
+            "ok": true
+          }
+        }
+      ],
+      "stop": {
+        "milliseconds": 45,
+        "body": {
+          "stopped": true,
+          "inputs": 9550,
+          "ticks": 96
+        }
+      },
+      "error": null,
+      "fixtureVersion": 1,
+      "interpretationLimit": "Fixture v1 did not consume POST request bodies; bridge/start failures cannot establish an app bootstrap cause."
+    },
+    {
+      "evidence": "runtime-probe-vite-disk-bridge-inspector.json",
+      "runtime": "vite",
+      "storage": "disk",
+      "transport": "bridge",
+      "inspector": true,
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 9600,
+      "received": 4800,
+      "distinctSending": 50,
+      "maxTick": 96,
+      "health": [
+        {
+          "milliseconds": 64,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 6,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 49,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 6,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 7,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 6,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 10,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 46,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 5,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 4,
+          "body": {
+            "ok": true
+          }
+        }
+      ],
+      "stop": {
+        "milliseconds": 52,
+        "body": {
+          "stopped": true,
+          "inputs": 9550,
+          "ticks": 96
+        }
+      },
+      "error": null,
+      "fixtureVersion": 1,
+      "interpretationLimit": "Fixture v1 did not consume POST request bodies; bridge/start failures cannot establish an app bootstrap cause."
+    },
+    {
+      "evidence": "runtime-probe-vite-disk-bridge-inspector-sql.json",
+      "runtime": "vite",
+      "storage": "disk",
+      "transport": "bridge",
+      "inspector": true,
+      "sql": true,
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 9650,
+      "received": 4800,
+      "distinctSending": 50,
+      "maxTick": 96,
+      "health": [
+        {
+          "milliseconds": 119,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 79,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 58,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 7,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 15,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 6,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 11,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 6,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 9,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 4,
+          "body": {
+            "ok": true
+          }
+        }
+      ],
+      "stop": {
+        "milliseconds": 76,
+        "body": {
+          "stopped": true,
+          "inputs": 9600,
+          "ticks": 96,
+          "sqlRows": 50
+        }
+      },
+      "error": null,
+      "fixtureVersion": 1,
+      "interpretationLimit": "Fixture v1 did not consume POST request bodies; bridge/start failures cannot establish an app bootstrap cause."
+    },
+    {
+      "evidence": "runtime-probe-vite-disk-bridge-inspector-sql-attachments.json",
+      "runtime": "vite",
+      "storage": "disk",
+      "transport": "bridge",
+      "inspector": true,
+      "sql": true,
+      "protocol": "attachments",
+      "pongs": 0,
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 9900,
+      "received": 4850,
+      "distinctSending": 50,
+      "maxTick": 97,
+      "health": [
+        {
+          "milliseconds": 8,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 5,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 327,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 16,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 49,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 201,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 76,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 111,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 65,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 4,
+          "body": {
+            "ok": true
+          }
+        }
+      ],
+      "stop": {
+        "milliseconds": 68,
+        "body": {
+          "stopped": true,
+          "inputs": 9850,
+          "ticks": 97,
+          "attachmentReads": 14700,
+          "attachmentWrites": 4900,
+          "sqlRows": 50
+        }
+      },
+      "error": null,
+      "fixtureVersion": 1,
+      "interpretationLimit": "Fixture v1 did not consume POST request bodies; bridge/start failures cannot establish an app bootstrap cause."
+    },
+    {
+      "evidence": "runtime-probe-vite-disk-bridge-inspector-sql-auto-response.json",
+      "runtime": "vite",
+      "storage": "disk",
+      "transport": "bridge",
+      "inspector": true,
+      "sql": true,
+      "protocol": "auto-response",
+      "pongs": 0,
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 0,
+      "received": 0,
+      "distinctSending": 0,
+      "maxTick": 0,
+      "health": [],
+      "stop": null,
+      "error": "SyntaxError: Unexpected end of JSON input",
+      "bridgeErrors": [
+        {
+          "path": "/start",
+          "error": "TypeError: terminated",
+          "cause": "Error: read ECONNRESET"
+        }
+      ],
+      "stage": "starting-alarm",
+      "fixtureVersion": 1,
+      "interpretationLimit": "Fixture v1 did not consume POST request bodies; bridge/start failures cannot establish an app bootstrap cause."
+    },
+    {
+      "evidence": "runtime-probe-vite-disk-direct-inspector-sql-auto-response.json",
+      "runtime": "vite",
+      "storage": "disk",
+      "transport": "direct",
+      "inspector": true,
+      "sql": true,
+      "protocol": "auto-response",
+      "pongs": 500,
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 9650,
+      "received": 4750,
+      "distinctSending": 50,
+      "maxTick": 95,
+      "health": [
+        {
+          "milliseconds": 94,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 7,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 78,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 6,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 8,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 5,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 6,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 7,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 4,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 72,
+          "body": {
+            "ok": true
+          }
+        }
+      ],
+      "stop": {
+        "milliseconds": 67,
+        "body": {
+          "stopped": true,
+          "inputs": 9650,
+          "ticks": 95,
+          "attachmentReads": 0,
+          "attachmentWrites": 0,
+          "sqlRows": 50
+        }
+      },
+      "error": null,
+      "bridgeErrors": [],
+      "fixtureVersion": 1,
+      "interpretationLimit": "Fixture v1 did not consume POST request bodies; bridge/start failures cannot establish an app bootstrap cause."
+    },
+    {
+      "evidence": "runtime-probe-vitest-disk-bridge-inspector-sql-auto-response.json",
+      "runtime": "vitest",
+      "storage": "disk",
+      "transport": "bridge",
+      "inspector": true,
+      "sql": true,
+      "protocol": "auto-response",
+      "pongs": 500,
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 9850,
+      "received": 4700,
+      "distinctSending": 50,
+      "maxTick": 94,
+      "health": [
+        {
+          "milliseconds": 88,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 112,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 46,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 120,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 78,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 11,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 11,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 10,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 69,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 9,
+          "body": {
+            "ok": true
+          }
+        }
+      ],
+      "stop": {
+        "milliseconds": 128,
+        "body": {
+          "stopped": true,
+          "inputs": 9800,
+          "ticks": 94,
+          "attachmentReads": 0,
+          "attachmentWrites": 0,
+          "sqlRows": 50
+        }
+      },
+      "error": null,
+      "bridgeErrors": [],
+      "stage": "complete",
+      "fixtureVersion": 1,
+      "interpretationLimit": "Fixture v1 did not consume POST request bodies; bridge/start failures cannot establish an app bootstrap cause."
+    },
+    {
+      "evidence": "runtime-probe-vite-disk-bridge-inspector-sql-barrier.json",
+      "runtime": "vite",
+      "storage": "disk",
+      "transport": "bridge",
+      "inspector": true,
+      "sql": true,
+      "protocol": "barrier",
+      "pongs": 0,
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 0,
+      "received": 0,
+      "distinctSending": 0,
+      "maxTick": 0,
+      "health": [],
+      "stop": null,
+      "error": "SyntaxError: Unexpected end of JSON input",
+      "bridgeErrors": [
+        {
+          "path": "/start",
+          "error": "TypeError: terminated",
+          "cause": "Error: read ECONNRESET"
+        }
+      ],
+      "stage": "starting-alarm",
+      "fixtureVersion": 1,
+      "interpretationLimit": "Fixture v1 did not consume POST request bodies; bridge/start failures cannot establish an app bootstrap cause."
+    },
+    {
+      "evidence": "runtime-probe-vite-disk-bridge-inspector-sql-auto-response-sync.json",
+      "runtime": "vite",
+      "storage": "disk",
+      "transport": "bridge",
+      "inspector": true,
+      "sql": true,
+      "protocol": "auto-response-sync",
+      "pongs": 500,
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 9550,
+      "received": 4750,
+      "distinctSending": 50,
+      "maxTick": 95,
+      "health": [
+        {
+          "milliseconds": 64,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 10,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 11,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 9,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 31,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 11,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 10,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 32,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 10,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 41,
+          "body": {
+            "ok": true
+          }
+        }
+      ],
+      "stop": {
+        "milliseconds": 58,
+        "body": {
+          "stopped": true,
+          "inputs": 9550,
+          "ticks": 95,
+          "attachmentReads": 0,
+          "attachmentWrites": 0,
+          "sqlRows": 50
+        }
+      },
+      "error": null,
+      "bridgeErrors": [],
+      "stage": "complete",
+      "fixtureVersion": 1,
+      "interpretationLimit": "Fixture v1 did not consume POST request bodies; bridge/start failures cannot establish an app bootstrap cause."
+    },
+    {
+      "evidence": "runtime-probe-vite-disk-bridge-inspector-sql-barrier-v2.json",
+      "fixtureVersion": 2,
+      "runtime": "vite",
+      "storage": "disk",
+      "transport": "bridge",
+      "inspector": true,
+      "sql": true,
+      "protocol": "barrier",
+      "pongs": 0,
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 9650,
+      "received": 4800,
+      "distinctSending": 50,
+      "maxTick": 96,
+      "health": [
+        {
+          "milliseconds": 11,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 74,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 84,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 6,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 58,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 83,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 7,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 80,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 6,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 53,
+          "body": {
+            "ok": true
+          }
+        }
+      ],
+      "stop": {
+        "milliseconds": 69,
+        "body": {
+          "stopped": true,
+          "inputs": 9617,
+          "ticks": 96,
+          "attachmentReads": 0,
+          "attachmentWrites": 0,
+          "sqlRows": 50
+        }
+      },
+      "error": null,
+      "bridgeErrors": [],
+      "stage": "complete"
+    },
+    {
+      "evidence": "runtime-probe-vite-disk-bridge-inspector-sql-combined-v2.json",
+      "fixtureVersion": 2,
+      "runtime": "vite",
+      "storage": "disk",
+      "transport": "bridge",
+      "inspector": true,
+      "sql": true,
+      "protocol": "combined",
+      "pongs": 500,
+      "scope": "Minimal local external TCP/WebSocket + hibernating DO/alarm fixture; no application, auth, Vite or GPU; not game capacity",
+      "population": 50,
+      "configuredInputHz": 10,
+      "configuredFrameBytes": 1024,
+      "sent": 9550,
+      "received": 4750,
+      "distinctSending": 50,
+      "maxTick": 95,
+      "health": [
+        {
+          "milliseconds": 12,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 10,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 10,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 61,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 11,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 30,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 89,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 10,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 68,
+          "body": {
+            "ok": true
+          }
+        },
+        {
+          "milliseconds": 8,
+          "body": {
+            "ok": true
+          }
+        }
+      ],
+      "stop": {
+        "milliseconds": 60,
+        "body": {
+          "stopped": true,
+          "inputs": 9500,
+          "ticks": 95,
+          "attachmentReads": 14250,
+          "attachmentWrites": 4800,
+          "sqlRows": 50
+        }
+      },
+      "error": null,
+      "bridgeErrors": [],
+      "stage": "complete"
+    }
+  ],
+  "appTrial": {
+    "evidence": "runtime-without-webgl-disk.log",
+    "status": "failed",
+    "seconds": 55.8,
+    "observedDrivingBotConnections": 50,
+    "moving": true,
+    "frames": 3,
+    "health": "5s timeout",
+    "pause": "net::ERR_ABORTED",
+    "change": "Isolated disk persistState trial reverted because it did not fix app stall",
+    "synchronousConstructor": "FAILED; reverted all constructor/README trial changes",
+    "alternateLockedBackend": "PASSED 50-driver app case; then full 11-case matrix with guarded local test adapter, no dependency upgrade"
+  },
+  "limitation": "The old in-memory alarm crash is reproduced independently. Direct/bridge/inspector/SQL disk fixtures pass; none establishes the cause of the real application stall.",
+  "latestFinding": "Superseded version-1 barrier/reset conclusions: the fixture did not consume POST bodies. Version 2 drains them; old-runtime bridged async barrier and combined pong/attachments/SQL cases pass. Actual-app synchronous constructor and disk trials failed and were reverted. Unchanged actual app passes full 11-case matrix with explicit already-locked API-test backend; ordinary Vite backend limitation remains, exact upstream app-stall cause not established."
+}

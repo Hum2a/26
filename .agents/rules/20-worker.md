@@ -9,6 +9,7 @@ globs:
 # Worker and room
 
 - One Worker serves the application and API. One SQLite-backed Durable Object owns each room. One durable scheduler owns all room alarms.
+- Live-path cost: follow `.agents/rules/61-perf-realtime.md` and `62-perf-server.md`. About 80 phones share one object; batch writes, patch snapshots, keep kart ticks off full fan-out.
 - Persist an accepted action before its success acknowledgement. Retries use the same idempotency key.
 - Neon, email, and image or audio processing stay outside the live guest-action path.
 - Read configuration from Worker bindings. Do not read `process.env` in `apps/api/src` or `packages/shared/src`.

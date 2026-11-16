@@ -69,7 +69,8 @@ for (const node of document.nodes.filter((n) => n.mesh !== undefined)) {
     const p = [0, 1, 2].map((j) => point(face.GetValue(j)));
     if (!solidNodes.has(node.name)) {
       audit[node.name === "Object_24" ? "road" : "dirt"].push(
-        p.map((v) => [round(v[0]), round(v[2])]),
+        // Keep X/Z byte-for-byte stable for physics; Y is cosmetic solo-world height.
+        p.map((v) => [round(v[0]), round(v[2]), round(v[1])]),
       );
       continue;
     }
@@ -104,7 +105,7 @@ const output = {
   edges,
 };
 fs.mkdirSync(new URL("packages/shared/src/", root), { recursive: true });
-const circuitPath = new URL("packages/shared/src/kart-circuit.json", root);
+const circuitPath = new URL("packages/shared/src/kart/kart-circuit.json", root);
 fs.writeFileSync(
   circuitPath,
   await format(JSON.stringify({ ...output, road: audit.road, dirt: audit.dirt }), {

@@ -14,6 +14,7 @@ import {
   ballotWithdrawnMessage,
   featureClosedMessage,
   shortlistClosedMessage,
+  shortlistMissingMessage,
   textInvalidMessage,
 } from "../src/room/limits.ts";
 
@@ -42,9 +43,11 @@ describe("room-wide voting", () => {
       action: "include",
       playerId: amina.playerId,
     });
+    // An all-answer ballot can be moderated while answers are collected, but
+    // only an answer that exists.
     expect(earlyInclude.ok).toBe(false);
     if (!earlyInclude.ok) {
-      expect(earlyInclude.message).toBe(shortlistClosedMessage);
+      expect(earlyInclude.message).toBe(shortlistMissingMessage);
     }
 
     const aminaSocket = await connect(stub, created.gameId, guestCookie(amina));

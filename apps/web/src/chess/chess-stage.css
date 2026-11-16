@@ -1,0 +1,184 @@
+/* The big screen during the chess round: a tournament hall on the same table. */
+.chess-hall {
+  display: grid;
+  gap: clamp(1rem, 2.4vh, 2rem);
+  width: 100%;
+  box-sizing: border-box;
+  padding: clamp(1.25rem, 3vw, 3rem);
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(
+      110% 80% at 50% 0%,
+      transparent 25%,
+      color-mix(in srgb, var(--chess-felt) 88%, transparent) 100%
+    ),
+    url("/assets/chess/board/table.webp") center / cover,
+    var(--chess-felt);
+  color: var(--chess-ivory);
+}
+.chess-hall-head {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  text-align: center;
+}
+.chess-hall-crest {
+  display: flex;
+  justify-content: center;
+}
+.chess-hall-crest img {
+  width: clamp(3rem, 6vw, 6rem);
+  height: clamp(3rem, 6vw, 6rem);
+  margin-inline: -0.35rem;
+  filter: drop-shadow(0 0.4rem 0.4rem color-mix(in srgb, black 60%, transparent));
+}
+.chess-hall-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: max(72px, 5.2vw);
+  line-height: 1;
+  color: var(--chess-gold);
+}
+.chess-hall-subtitle,
+.chess-hall-total {
+  margin: 0;
+  font-size: max(40px, 2.2vw);
+  color: color-mix(in srgb, var(--chess-ivory) 85%, transparent);
+}
+.chess-hall-total {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.chess-hall-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: clamp(0.6rem, 1.2vw, 1.25rem);
+}
+.chess-hall-stat {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  padding: clamp(0.75rem, 1.6vw, 1.5rem);
+  border-radius: 1rem;
+  border: 2px solid color-mix(in srgb, var(--chess-ivory) 18%, transparent);
+  background: color-mix(in srgb, var(--chess-ink) 70%, transparent);
+  text-align: center;
+}
+.chess-hall-stat[data-live] {
+  border-color: var(--chess-gold);
+  box-shadow: 0 0 1.6rem -0.6rem var(--chess-gold);
+}
+.chess-hall-stat[data-tone="win"] .chess-hall-stat-value {
+  color: var(--chess-win);
+}
+.chess-hall-stat[data-tone="loss"] .chess-hall-stat-value {
+  color: var(--chess-check);
+}
+.chess-hall-stat-value {
+  font-size: max(64px, 4.4vw);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.chess-hall-stat-label {
+  font-size: max(40px, 1.9vw);
+  line-height: 1.1;
+}
+
+.chess-hall-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr));
+  gap: clamp(1rem, 2vw, 2rem);
+  align-items: start;
+}
+.chess-hall-panel {
+  display: grid;
+  gap: 0.6rem;
+  padding: clamp(0.9rem, 1.6vw, 1.5rem);
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--chess-gold) 40%, transparent);
+  background: color-mix(in srgb, var(--chess-ink) 72%, transparent);
+  min-width: 0;
+}
+.chess-hall-panel h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: max(44px, 2.6vw);
+  color: var(--chess-gold);
+}
+.chess-hall-table {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chess-hall-row,
+.chess-hall-event {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--chess-ivory) 8%, transparent);
+  font-size: max(40px, 2vw);
+  line-height: 1.15;
+}
+.chess-hall-row[data-finished] {
+  background: color-mix(in srgb, var(--chess-gold) 20%, transparent);
+}
+.chess-hall-place {
+  flex: none;
+  width: 1.4em;
+  font-weight: 900;
+  color: var(--chess-gold);
+  font-variant-numeric: tabular-nums;
+}
+.chess-hall-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.chess-hall-bar {
+  flex: 1 1 4rem;
+  height: 0.35em;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--chess-ivory) 12%, transparent);
+  overflow: hidden;
+}
+.chess-hall-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--chess-gold);
+  transform-origin: left;
+  transition: transform 0.6s cubic-bezier(0.2, 0, 0, 1);
+}
+.chess-hall-points,
+.chess-hall-verdict {
+  flex: none;
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.chess-hall-event img {
+  flex: none;
+  width: 1.5em;
+  height: 1.5em;
+}
+.chess-hall-event[data-event="checkmate-win"] {
+  background: color-mix(in srgb, var(--chess-win) 28%, transparent);
+}
+.chess-hall-event[data-event="checkmate-loss"],
+.chess-hall-event[data-event="timeout"] {
+  background: color-mix(in srgb, var(--chess-check) 22%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chess-hall-bar span {
+    transition-duration: 0.2s;
+  }
+}

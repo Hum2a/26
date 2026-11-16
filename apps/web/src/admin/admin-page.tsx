@@ -1,7 +1,7 @@
 import { PresentationRehearsal } from "./presentation-rehearsal";
 import { useState } from "react";
 
-import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router";
+import { Link, Navigate, useOutlet, useLocation, useNavigate } from "react-router";
 
 import { Button, StatusMessage } from "../ui/primitives";
 
@@ -21,6 +21,10 @@ export function AdminPage() {
   const location = useLocation();
 
   const navigate = useNavigate();
+
+  // Retain the outgoing route during its fade, rather than mounting the incoming
+  // controls in that route and then resetting them when the new page enters.
+  const page = useOutlet();
 
   const [notice, setNotice] = useState("");
 
@@ -70,7 +74,7 @@ export function AdminPage() {
       >
         {notice ? <StatusMessage>{notice}</StatusMessage> : null}
 
-        <Outlet />
+        {page}
       </AdminShell>
     );
   }
@@ -99,15 +103,15 @@ export function AdminPage() {
 export function AdminSettingsPage() {
   return (
     <section className="admin-section">
-      <p className="entry-eyebrow">Your workspace</p>
-      <h1>Account & appearance</h1>
-      <p>
-        Your administrator session is shown in the sidebar. Use Theme in the header to
-        choose how this browser looks.
-      </p>
-      <p>
-        Phones and the projector choose their themes independently. Changing this
-        browser does not change anyone else’s screen.
+      <header className="admin-page-heading">
+        <div>
+          <p className="entry-eyebrow">This browser</p>
+          <h1>Account & appearance</h1>
+        </div>
+      </header>
+      <p className="admin-lede">
+        Your session is in the sidebar. Theme in the header only changes this browser.
+        Phones and the projector pick their own looks.
       </p>
       <PresentationRehearsal />
       <Link className="entry-text-link" to="/admin/rooms">

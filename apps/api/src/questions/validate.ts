@@ -23,7 +23,7 @@ import { isSupportedPresentation } from "./presentation.ts";
  */
 export const unsupportedEffects: readonly string[] = [];
 
-export const illustrativeStingAsset = "apps/web/public/assets/demo-sting.wav";
+export const illustrativeStingAsset = "apps/web/public/assets/theme-song.mp3";
 
 export type ContentIssue = {
   level: "error" | "incomplete";
@@ -775,6 +775,10 @@ function checkPlayable(question: Question): ContentIssue[] {
     if (question.roster === "shortlist" && question.shortlist.length === 0) {
       return [issue("error", "guess", `${question.id} shortlist is empty.`)];
     }
+    return [];
+  }
+  if (question.kind === "chess") {
+    // Chess questions have no additional validation
     return [];
   }
   if (question.kind === "finale") {

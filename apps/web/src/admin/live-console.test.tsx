@@ -18,6 +18,8 @@ import {
   socket,
   success,
   update,
+  playerId,
+  secondId,
 } from "./controls.test-support";
 beforeEach(() => setupControls());
 
@@ -43,12 +45,17 @@ it("starts only the frozen race in a kart lobby and blocks its controls offline"
   await mountControls(<LiveConsole />);
   expect(screen.queryByRole("button", { name: "Start birthday game" })).toBeNull();
   expect(
-    screen.queryByRole("button", { name: "Start the illustrative demo" }),
+    screen.queryByRole("button", { name: "Start the illustrative demo instead" }),
   ).toBeNull();
   expect(
     screen.queryByRole("button", { name: "Start local kart rehearsal" }),
   ).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Start kart race" }));
+  // Starting asks first, naming what freezes.
+  const dialog = await screen.findByRole("dialog");
+  expect(dialog.textContent).toContain("The starting grid freezes now");
+  expect(playRoom).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Start kart race" }));
   await waitFor(() =>
     expect(playRoom).toHaveBeenCalledWith(
       expect.objectContaining({ action: "start-kart" }),
@@ -66,11 +73,28 @@ it("starts the saved birthday script from the lobby", async () => {
   setupControls(roomFixture);
   await mountControls(<LiveConsole />);
   fireEvent.click(screen.getByRole("button", { name: "Start birthday game" }));
+  const dialog = await screen.findByRole("dialog");
+  expect(dialog.textContent).toContain("The running order freezes now");
+  expect(playRoom).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Start birthday game" }));
   await waitFor(() =>
     expect(playRoom).toHaveBeenCalledWith(
       expect.objectContaining({ action: "start-birthday" }),
     ),
   );
+});
+
+it("asks before the demo start and sends nothing when cancelled", async () => {
+  setupControls(roomFixture);
+  await mountControls(<LiveConsole />);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Start the illustrative demo instead" }),
+  );
+  const dialog = await screen.findByRole("dialog");
+  expect(dialog.textContent).toContain("not the birthday game");
+  fireEvent.click(within(dialog).getByRole("button", { name: /Cancel|Close|Keep/ }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(playRoom).not.toHaveBeenCalled();
 });
 
 it("offers lobby actions without misleading phase controls", async () => {
@@ -79,7 +103,7 @@ it("offers lobby actions without misleading phase controls", async () => {
   expect(
     (
       screen.getByRole("button", {
-        name: "Start the illustrative demo",
+        name: "Start the illustrative demo instead",
       }) as HTMLButtonElement
     ).disabled,
   ).toBe(false);
@@ -93,7 +117,9 @@ it("offers lobby actions without misleading phase controls", async () => {
 });
 it("renders server round information and waits for snapshots after pause/resume", async () => {
   await mountControls(<LiveConsole />);
-  expect(screen.getByText("1 submissions · 1 active players")).toBeTruthy();
+  expect(
+    screen.getByText("1 of 1 connected players answered · 1 in the room"),
+  ).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Pause" }));
   await screen.findByText("The quiz is paused.");
   // An HTTP receipt must not replace authoritative socket state.
@@ -243,6 +269,160 @@ it("steps fun facts and shows the next line only on this screen", async () => {
   await waitFor(() =>
     expect(playRoom).toHaveBeenCalledWith(
       expect.objectContaining({ action: "advance" }),
+    ),
+  );
+});
+
+it("counts only connected players in the round line", async () => {
+  setupControls({
+    ...playingFixture,
+    players: [
+      { playerId, nickname: "Amina" },
+      { playerId: secondId, nickname: "Sam" },
+    ],
+    adminPlayers: [
+      ...playingFixture.adminPlayers!,
+      {
+        playerId: secondId,
+        nickname: "Sam",
+        points: 0,
+        connected: false,
+        removed: false,
+        answered: false,
+      },
+    ],
+  });
+  await mountControls(<LiveConsole />);
+  expect(
+    screen.getByText("1 of 1 connected players answered · 2 in the room"),
+  ).toBeTruthy();
+});
+
+it("previews the next round for the operator", async () => {
+  setupControls({
+    ...playingFixture,
+    nextQuestion: { title: "Guess the tab", kind: "slider" },
+  });
+  await mountControls(<LiveConsole />);
+  expect(screen.getByText("Round 1 of 2 · Next: Guess the tab")).toBeTruthy();
+});
+
+function voteFixture(
+  phase: "collect" | "vote" | "reveal",
+  question: { candidateMode: "all" | "shortlist"; flow?: "tournament" },
+) {
+  return {
+    ...playingFixture,
+    phase,
+    play: {
+      ...playingFixture.play!,
+      question: {
+        id: "toast",
+        index: 1,
+        total: 2,
+        prompt: "Write a toast.",
+        points: 60,
+        illustrative: true,
+        attribution: "after" as const,
+        presentation: "standard" as const,
+        kind: "vote" as const,
+        selfVote: "forbidden" as const,
+        votes: 1 as const,
+        tie: "shared" as const,
+        award: "authors" as const,
+        lateJoin: "ineligible" as const,
+        ...question,
+      },
+      hostResponses: [
+        { playerId, nickname: "Amina", summary: "Cheers all", included: true },
+        {
+          playerId: secondId,
+          nickname: "Bilal",
+          summary: "Rude line",
+          included: false,
+        },
+      ],
+    },
+  } as typeof playingFixture;
+}
+
+it("hides and restores written answers on an all-answer ballot", async () => {
+  setupControls(voteFixture("vote", { candidateMode: "all" }));
+  await mountControls(<LiveConsole />);
+  expect(
+    screen.getByText(/Rude line \(hidden from guests and the stage\)/),
+  ).toBeTruthy();
+  expect(screen.getByText(/Votes already cast for it stop counting/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Hide Amina's answer" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "exclude", playerId }),
+    ),
+  );
+  await screen.findByText(
+    "That answer is hidden from guests and the stage. It is still stored.",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Restore Bilal's answer" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "include", playerId: secondId }),
+    ),
+  );
+});
+
+it("offers no answer moderation once a bracket is voting or a result is settled", async () => {
+  setupControls(voteFixture("vote", { candidateMode: "all", flow: "tournament" }));
+  await mountControls(<LiveConsole />);
+  expect(screen.queryByRole("button", { name: "Hide Amina's answer" })).toBeNull();
+  update(voteFixture("reveal", { candidateMode: "all" }));
+  await waitFor(() =>
+    expect(screen.queryByRole("button", { name: "Hide Amina's answer" })).toBeNull(),
+  );
+  expect(screen.queryByRole("button", { name: "Restore Bilal's answer" })).toBeNull();
+});
+
+it("keeps shortlist Include and Remove instead of Hide", async () => {
+  setupControls(voteFixture("collect", { candidateMode: "shortlist" }));
+  await mountControls(<LiveConsole />);
+  expect(screen.getByText(/Rude line \(not on the ballot\)/)).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Hide Amina's answer" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Include Bilal" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "include", playerId: secondId }),
+    ),
+  );
+});
+
+it("hides a typed answer from a commonness reveal", async () => {
+  setupControls({
+    ...playingFixture,
+    phase: "reveal",
+    play: {
+      ...playingFixture.play!,
+      question: {
+        id: "common-password",
+        index: 1,
+        total: 2,
+        prompt: "Most common password?",
+        points: 100,
+        illustrative: false,
+        attribution: "never",
+        presentation: "standard",
+        kind: "typed",
+        maxLength: 40,
+        scoring: "commonness",
+      },
+      hostResponses: [
+        { playerId, nickname: "Amina", summary: "Submitted: hunter2", included: true },
+      ],
+    },
+  } as typeof playingFixture);
+  await mountControls(<LiveConsole />);
+  fireEvent.click(screen.getByRole("button", { name: "Hide Amina's answer" }));
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "exclude", playerId }),
     ),
   );
 });

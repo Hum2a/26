@@ -74,3 +74,47 @@ it("moves and removes rounds, excludes drafts, and retries the same save receipt
     screen.getByRole("button", { name: "Remove First from running order" }),
   ).toBeTruthy();
 });
+
+it("shows the show length, flags clusters and suggests a mixed order without saving", async () => {
+  vi.mocked(saveRunningOrder).mockReset();
+  const ids = [
+    "council-a",
+    "council-b",
+    "council-c",
+    "trolley-a",
+    "trolley-b",
+    "kart-sprint",
+  ];
+  const questions = ids.map((id) => ({
+    id,
+    title: id,
+    status: "ready" as const,
+    prompt: "Fixture",
+    mechanic: id === "kart-sprint" ? "kart" : "choice",
+    presentation: "standard" as const,
+    estimatedSeconds: 60,
+    order: null,
+    missing: [],
+  }));
+  render(
+    <MemoryRouter>
+      <RunningOrder
+        pack={{
+          id: "birthday",
+          version: "birthday-draft",
+          release: "draft",
+          illustrative: false,
+          questions,
+          runningOrder: { revision: 1, ids, updatedAt: null, history: [] },
+        }}
+      />
+    </MemoryRouter>,
+  );
+  expect(screen.getByText(/Show length about 6 min/)).toBeTruthy();
+  expect(screen.getByText(/3 “council” rounds run back to back/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Suggest a mixed order" }));
+  await screen.findByText(/Suggested a mixed order/);
+  expect(screen.queryByText(/run back to back/)).toBeNull();
+  expect(screen.getByText(/Unsaved changes/)).toBeTruthy();
+  expect(saveRunningOrder).not.toHaveBeenCalled();
+});

@@ -5,7 +5,7 @@ Fixture names such as Amina and Bilal exist so the demo can score a round.
 
 # Presenter running order
 
-Selected trolls in this build: invasion, call, crack, yield, swap, hide-score, double, typing, voice, theme, sponsor.
+Selected trolls in this build: invasion, netanyahu, call, crack, yield, swap, hide-score, double, typing, voice, theme, sponsor, australia, mirror, jelly, comic-sans, lights-out, bubble-wrap, fake-crash, forced-update, captcha, notification-storm, confetti, dvd, screen-recording, low-battery, airdrop, overheating, answer-viewers, typing-dots, reshuffle, translate, slider-drift, reverse-typing, autocorrect, char-limit, haptic-storm, temp-nickname, guest-14, fake-last, replay, speech, fake-exit, zoom-photo, steal, robin-hood, share, public-vote, misattributed.
 
 ## 1. choice · shape
 

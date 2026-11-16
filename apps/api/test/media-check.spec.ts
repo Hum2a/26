@@ -14,6 +14,34 @@ import {
 } from "../src/room/limits.ts";
 
 describe("media checks", () => {
+  it("keeps local uploads in the emulated bucket even with real-shaped credentials", async () => {
+    const input = {
+      env: {
+        APP_ENV: "local",
+        R2_ACCOUNT_ID: "0123456789abcdef0123456789abcdef",
+        R2_ACCESS_KEY_ID: "test-key",
+        R2_SECRET_ACCESS_KEY: "test-secret",
+        MEDIA_BUCKET_NAME: "26-test",
+      },
+      requestUrl: "http://localhost:4173/j/ABCDEF",
+      gameId: "ABCDEFGH",
+      uploadId: "00000000-0000-4000-8000-000000000001",
+      tempKey: "tmp/test",
+      contentType: "image/jpeg",
+    };
+    expect(await uploadTarget(input)).toEqual({
+      ok: true,
+      uploadUrl:
+        "http://localhost:4173/api/rooms/ABCDEFGH/media/temporary/00000000-0000-4000-8000-000000000001",
+    });
+    // A deployed environment still requires real signing; it cannot use this route.
+    for (const APP_ENV of ["staging", "production"]) {
+      const result = await uploadTarget({ ...input, env: { ...input.env, APP_ENV } });
+      expect(result.ok && new URL(result.uploadUrl).hostname).toBe(
+        "0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com",
+      );
+    }
+  });
   it("keeps a clean copy and creates a visibly smaller rough display without mutating it", async () => {
     const source = tinyJpeg(600, 300);
     const clean = await localJpegPhoto(source);

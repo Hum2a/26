@@ -134,7 +134,7 @@ export function AdminLoginPage() {
       <form className="entry-form" onSubmit={(event) => void onRequest(event)}>
         <TextField
           label="Administrator email"
-          hint="Access is restricted to the configured administrator."
+          hint="Access is restricted to the configured administrators."
           type="email"
           autoComplete="username"
           value={email}

@@ -37,6 +37,8 @@ A new idea becomes a draft in the birthday catalogue. It is not added to a live 
 
 Create `apps/api/src/questions/packs/birthday/<id>.ts`. The id is a stable lowercase slug, such as `childhood-photo`. Do not put a running-order number in the id or the filename.
 
+Runtime for a round does not live in the pack file. Shared schemas and reducers go in `packages/shared/src/<mechanic>/` and are exported from `packages/shared/src/index.ts`. Worker scoring for kart, chess and Wordle lives in `apps/api/src/questions/<mechanic>/`. Ordinary quiz scoring still sits in `apps/api/src/questions/multiple-choice.ts` (and slider, rank, vote, duel). Phone and stage UI for ordinary questions lives in `apps/web/src/play/` (shared widgets in `play/controls/`). A heavy engine (kart, chess) lives in `apps/web/src/<mechanic>/` and is lazy-loaded from play. The live socket stays in `apps/web/src/live/`. See `.agents/rules/05-structure.md`.
+
 Register that export in `catalogue` inside `apps/api/src/questions/packs/birthday/manifest.ts`. Leave it out of `order` until it is ready and you have explicitly included it.
 
 Helpers live in `apps/api/src/questions/authoring.ts`. Defaults live only in `apps/api/src/questions/defaults.ts`.
@@ -108,6 +110,7 @@ That file is a draft. The photo and the person are still required. Nothing here 
 When an ordinary setting is omitted, the helper uses `apps/api/src/questions/defaults.ts`:
 
 - 20 seconds to answer, attribution `after`, presentation `standard`, no score modifier, no speed bonus.
+- Choice: attribution `live`. The big screen shows who is picking what as it happens (the vote board): options grow with their share and fill with the voters' faces. Set `attribution: "after"` to keep picks hidden until the reveal, or `"never"` to keep them off the screen. Guest phones never receive other people's picks, and the host can hide picks for every question from Admin → Vote board.
 - Choice: 100 points, 2 to 6 options. A poll is 0 points, cannot have a speed bonus, and may list up to 16 options.
 - Typed: 100 points, a 60-character box (at most 80).
 - Slider: 100 points, with full points for an exact value.
@@ -176,7 +179,7 @@ A phone design receives the phone's `open`, `pending`, `selectedId`, and the sel
 
 The Question packs phone preview is an isolated controller layout rehearsal, labelled with no running race. For a real multi-device rehearsal, use a fresh local lobby and Admin → Live controls → Start local kart rehearsal. That explicit development start is rejected in staging/production. Full contracts, engine provenance, scoring, rendering limits and the quiz/race/podium sequence are in [kart-minigame.md](kart-minigame.md). `kart-sprint` is the final round in the default birthday order.
 
-The Tribunal/chaos ideas are recorded in [content/tribunal-and-chaos.md](content/tribunal-and-chaos.md). A real Reddit/community/listing round needs its genuine source and answer. Self-vote multipliers, live spoken debates and push-your-luck raids remain explicit unsupported drafts; ordinary polls or text ballots must not be presented as those finished mechanics.
+The Tribunal/chaos ideas are recorded in [content/tribunal-and-chaos.md](content/tribunal-and-chaos.md). A real Reddit/community/listing round needs its genuine source and answer. The figurine self-vote bonus and Cursed Search History push-your-luck round are implemented and ready in the catalogue, outside the running order. The spoken-debate round was dropped. Reddit tribunal, Ferrier estate, Nextdoor and property price stay explicit drafts until their genuine sources, answers and assets are supplied.
 
 ## Arrange and start the birthday pack
 

@@ -114,6 +114,32 @@ export function cloudRows(sql: SqlStorage): CloudName[] {
     }));
 }
 
+const EMPTY_VOTER_REACTIONS: { playerId: string; reaction: "like" | "dislike" }[] =
+  Object.freeze([]) as unknown as { playerId: string; reaction: "like" | "dislike" }[];
+
+export function allVoterReactions(
+  sql: SqlStorage,
+): Map<string, { playerId: string; reaction: "like" | "dislike" }[]> {
+  const rows = sql
+    .exec<{ voter_id: string; target_id: string; reaction: string }>(
+      `SELECT voter_id, target_id, reaction FROM name_reaction ORDER BY updated_at ASC`,
+    )
+    .toArray();
+  const map = new Map<string, { playerId: string; reaction: "like" | "dislike" }[]>();
+  for (const row of rows) {
+    if (row.reaction !== "like" && row.reaction !== "dislike") continue;
+    let list = map.get(row.voter_id);
+    if (!list) {
+      list = [];
+      map.set(row.voter_id, list);
+    }
+    list.push({ playerId: row.target_id, reaction: row.reaction });
+  }
+  return map;
+}
+
+export { EMPTY_VOTER_REACTIONS };
+
 export function voterReactions(
   sql: SqlStorage,
   voterId: string,
@@ -131,8 +157,11 @@ export function voterReactions(
     );
 }
 
-export function revealNames(sql: SqlStorage): NameReveal {
-  const rows = cloudRows(sql);
+export function revealNames(
+  sql: SqlStorage,
+  precomputedCloud?: CloudName[],
+): NameReveal {
+  const rows = precomputedCloud ?? cloudRows(sql);
   return {
     liked: extremes(rows, "likes"),
     disliked: extremes(rows, "dislikes"),

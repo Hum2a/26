@@ -2,8 +2,8 @@ import { motion } from "motion/react";
 import { useDesignMotion } from "./designs/kit";
 import { useState } from "react";
 import type { PlaySnapshot } from "@26/shared";
-import { OptionText } from "../rounds/OptionText";
-import { SubmitButton } from "../rounds/SubmitButton";
+import { OptionText } from "./controls/OptionText";
+import { SubmitButton } from "./controls/SubmitButton";
 import { Button, TextField } from "../ui/primitives";
 
 export function GuestBallot({

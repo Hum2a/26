@@ -1,6 +1,9 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import type { AuthBindings } from "../apps/api/src/auth/bindings.ts";
+import {
+  defaultLocalAdminEmails,
+  type AuthBindings,
+} from "../apps/api/src/auth/bindings.ts";
 import {
   devVarsPath,
   projectRoot,
@@ -34,7 +37,7 @@ export function readAuthTarget(): AuthTarget {
   const bindings: AuthBindings = {
     APP_ENV: target,
     ADMIN_EMAIL:
-      values.ADMIN_EMAIL || (target === "local" ? "humzab1711@hotmail.com" : ""),
+      values.ADMIN_EMAIL || (target === "local" ? defaultLocalAdminEmails : ""),
     BETTER_AUTH_SECRET: values.BETTER_AUTH_SECRET || "",
     BETTER_AUTH_URL: values.BETTER_AUTH_URL || "",
     DATABASE_URL: values.DATABASE_URL || "",

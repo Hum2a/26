@@ -79,6 +79,79 @@ function drawn(value: ReturnType<typeof rig>["value"]) {
 }
 
 describe("driver rig", () => {
+  it("falls back to a plain face after a failed photo and ignores late loader callbacks after disposal", () => {
+    let failed: (() => void) | undefined;
+    const load = vi
+      .spyOn(THREE.TextureLoader.prototype, "load")
+      .mockImplementation((_url, _ready, _progress, error) => {
+        failed = () => error?.(new Error("missing"));
+        return new THREE.Texture();
+      });
+    try {
+      const { value, textures } = rig(1);
+      value.setDrivers(
+        new Map([["a", { style: "racer", faceMediaId: "photo" }]]),
+        () => "/photo",
+      );
+      value.begin(0.016);
+      value.place("a", 0, pose, cue, red, red, 0.016, false);
+      value.end(new Set(["a"]));
+      expect(value.faceCount()).toBe(1);
+      failed!();
+      expect(value.faceCount()).toBe(0);
+      expect(textures.size).toBe(0);
+      value.begin(0.016);
+      value.place("a", 0, pose, cue, red, red, 0.016, true);
+      value.end(new Set(["a"]));
+      expect(load).toHaveBeenCalledTimes(1);
+      expect(drawn(value)).toBeGreaterThan(0);
+      value.dispose();
+      failed!();
+      expect(textures.size).toBe(0);
+    } finally {
+      load.mockRestore();
+    }
+  });
+  it("bounds visible face meshes and textures at capacity through an 80-driver rotation and hides removed photos", () => {
+    const load = vi
+      .spyOn(THREE.TextureLoader.prototype, "load")
+      .mockImplementation(() => new THREE.Texture());
+    try {
+      const { scene, value, textures } = rig(9);
+      value.setDrivers(
+        new Map(
+          Array.from({ length: 80 }, (_, i) => [
+            "p" + i,
+            { style: "racer" as const, faceMediaId: "face" + i },
+          ]),
+        ),
+        (id) => "/media/" + id,
+      );
+      for (let offset = 0; offset < 80; offset += 9) {
+        value.begin(0.016);
+        const visible = new Set<string>();
+        for (let i = offset; i < Math.min(offset + 12, 80); i++) {
+          visible.add("p" + i);
+          value.place("p" + i, i, pose, cue, red, red, 0.016, false);
+          expect(value.faceCount()).toBeLessThanOrEqual(9);
+          expect(textures.size).toBeLessThanOrEqual(9);
+        }
+        value.end(visible);
+        expect(value.faceCount()).toBeLessThanOrEqual(9);
+        expect(textures.size).toBeLessThanOrEqual(9);
+      }
+      value.setDrivers(new Map(), () => "");
+      value.begin(0.016);
+      value.place("p79", 79, pose, cue, red, red, 0.016, true);
+      value.end(new Set(["p79"]));
+      expect(value.faceCount()).toBe(0);
+      expect(textures.size).toBe(0);
+      expect(scene.getObjectByName("kart-driver-face")).toBeUndefined();
+      value.dispose();
+    } finally {
+      load.mockRestore();
+    }
+  });
   it("refreshes photo policy URLs and releases the previous face texture", () => {
     const load = vi
       .spyOn(THREE.TextureLoader.prototype, "load")

@@ -32,7 +32,7 @@ describe("illustrative content preflight", () => {
   it("reports a missing selected asset", () => {
     const issues = preflightContent({
       questions: demoQuestions,
-      missingAssets: ["apps/web/public/assets/demo-sting.wav"],
+      missingAssets: ["apps/web/public/assets/theme-song.mp3"],
     });
     expect(issues.map((issue) => issue.code)).toEqual(["asset"]);
   });

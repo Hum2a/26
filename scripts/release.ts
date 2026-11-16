@@ -1,7 +1,8 @@
-import { spawnSync } from "node:child_process";
+import { spawnSync, execSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { resolveCommand } from "./command.mjs";
 import {
   devVarsPath,
   projectRoot,
@@ -11,13 +12,17 @@ import {
 } from "./env-files.ts";
 import {
   assertGeneratedWorkerConfig,
+  assertDeployAllowed,
   collectWorkerSecrets,
   readGeneratedWorkerConfig,
   requiredWorkerSecrets,
+  retargetGeneratedWorkerConfig,
   resolveMigrateEnvironment,
   resolveReleaseTargets,
+  releaseCheckSteps,
   workerRelease,
   type DeployableEnvironment,
+  type SecretCollection,
 } from "./release-support.ts";
 
 type ReleaseCommand = "deploy" | "secrets-sync" | "migrate" | "full";
@@ -28,24 +33,84 @@ const argv = process.argv.slice(2);
 const command = readCommand(argv);
 const dryRun = argv.includes("--dry-run");
 
+function readGitState(): { branch: string; clean: boolean } | undefined {
+  // release.sh verifies clean master before this, then sets SKIP_GIT_CHECK.
+  // Direct npm deploy routes must still read git. There is no blanket CI bypass.
+  if (argv.includes("--skip-git-check") || process.env.SKIP_GIT_CHECK === "true") {
+    return undefined;
+  }
+  try {
+    const branch = execSync("git rev-parse --abbrev-ref HEAD", {
+      cwd: root,
+      encoding: "utf8",
+    }).trim();
+    const status = execSync("git status --porcelain", {
+      cwd: root,
+      encoding: "utf8",
+    }).trim();
+    return { branch, clean: status === "" };
+  } catch {
+    throw new Error(
+      "Cannot verify git state. Production deploys require a clean master branch. Pass --skip-git-check or set SKIP_GIT_CHECK=true only from a trusted wrapper that has already enforced that policy.",
+    );
+  }
+}
+
 if (command === "migrate") {
   const environment = resolveMigrateEnvironment(
     readTargetEnvironment(process.argv) ?? argv[1],
   );
   migrateEnvironment(environment);
 } else {
-  for (const environment of resolveReleaseTargets(
+  const targets = resolveReleaseTargets(
     readTargetEnvironment(process.argv) ?? (argv.includes("both") ? "both" : argv[1]),
-  )) {
-    if (command === "secrets-sync") {
+  );
+  if (command === "deploy" || command === "full") {
+    // Git state matters only to a real production deploy, the one case
+    // assertDeployAllowed checks it. Staging and packaging dry runs never read
+    // git, so they do not fail on a missing git with a production message.
+    const needsGit = !dryRun && targets.includes("production");
+    assertDeployAllowed(
+      targets,
+      {
+        dryRun,
+        overrideFreeze: argv.includes("--override-freeze"),
+      },
+      Date.now(),
+      needsGit ? readGitState() : undefined,
+    );
+    const shouldRunChecks =
+      !dryRun &&
+      !argv.includes("--skip-checks") &&
+      (command === "full" || argv.includes("--checks"));
+    if (shouldRunChecks) {
+      console.log("Checking the release before any migrations or deployment.");
+      const fullChecks = command === "full" || argv.includes("--full-checks");
+      for (const args of releaseCheckSteps(fullChecks))
+        runCommand(npmCommand(), args);
+    }
+  }
+  if (command === "secrets-sync") {
+    for (const environment of targets) {
       syncSecrets(environment);
-    } else if (command === "deploy") {
-      deployEnvironment(environment, { withSecrets: false });
-    } else {
-      if (!dryRun) {
+    }
+  } else {
+    const preparedSecrets =
+      command === "full"
+        ? new Map(
+            targets.map((environment) => [environment, prepareSecrets(environment)]),
+          )
+        : undefined;
+    if (command === "full" && !dryRun) {
+      for (const environment of targets) {
         migrateEnvironment(environment);
       }
-      deployEnvironment(environment, { withSecrets: true });
+    }
+    buildRelease(targets);
+    for (const environment of targets) {
+      deployEnvironment(environment, {
+        prepared: preparedSecrets?.get(environment),
+      });
     }
   }
 }
@@ -93,16 +158,35 @@ function syncSecrets(environment: DeployableEnvironment) {
   });
 }
 
+function buildRelease(targets: readonly DeployableEnvironment[]) {
+  const primary = workerRelease(targets[0]);
+  if (targets.length === 1) {
+    console.log(`Building ${primary.environment} as ${primary.workerName}.`);
+  } else {
+    console.log(
+      `Building once for ${targets.map((env) => workerRelease(env).workerName).join(" and ")}.`,
+    );
+  }
+  runCommand(npmCommand(), ["run", "build"], {
+    CLOUDFLARE_ENV: primary.cloudflareEnv,
+  });
+}
+
 function deployEnvironment(
   environment: DeployableEnvironment,
-  options: { withSecrets: boolean },
+  options: { prepared?: SecretCollection },
 ) {
   const release = workerRelease(environment);
-  const prepared = options.withSecrets ? prepareSecrets(environment) : undefined;
-  console.log(`Building ${environment} as ${release.workerName}.`);
-  runCommand(npmCommand(), ["run", "build"], {
-    CLOUDFLARE_ENV: release.cloudflareEnv,
-  });
+  const prepared = options.prepared;
+  let generated = readGeneratedWorkerConfig(release.generatedConfigPath);
+  if (generated.targetEnvironment !== release.environment) {
+    generated = retargetGeneratedWorkerConfig(
+      generated,
+      readFileSync(wranglerConfigPath, "utf8"),
+      release.environment,
+    );
+    writeFileSync(release.generatedConfigPath, JSON.stringify(generated), "utf8");
+  }
   assertGeneratedWorkerConfig(
     readGeneratedWorkerConfig(release.generatedConfigPath),
     release,
@@ -169,11 +253,13 @@ function runCommand(
   extraEnv?: Record<string, string>,
   cwd = root,
 ) {
-  const result = spawnSync(command, args, {
+  const invocation = resolveCommand(command, args);
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd,
     env: extraEnv ? { ...process.env, ...extraEnv } : process.env,
     stdio: "inherit",
-    shell: process.platform === "win32",
+    shell: false,
+    windowsHide: true,
   });
   if (result.status !== 0) {
     throw new Error(

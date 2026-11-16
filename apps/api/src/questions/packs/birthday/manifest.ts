@@ -27,6 +27,7 @@ import { trolleyYourMum } from "./trolley-your-mum.ts";
 import { trolleyMamdaniAfrica } from "./trolley-mamdani-africa.ts";
 import { trolleyFreddoMultiverse } from "./trolley-freddo-multiverse.ts";
 import { favouritePokemon } from "./favourite-pokemon.ts";
+import { whosThatPokemon } from "./whos-that-pokemon.ts";
 import { howItalianIsHumza } from "./how-italian-is-humza.ts";
 import { christianityBranches } from "./christianity-branches.ts";
 import { inflationFreddo } from "./inflation-freddo.ts";
@@ -61,6 +62,7 @@ import { datingExitExcuse } from "./dating-exit-excuse.ts";
 import { dialPopCulture } from "./dial-pop-culture.ts";
 import { dialLondonGeography } from "./dial-london-geography.ts";
 import { dialBritishPolitics } from "./dial-british-politics.ts";
+import { chessBattle } from "./chess-battle.ts";
 
 /**
  * Working catalogue for Humza's questions.
@@ -163,6 +165,7 @@ export const birthdayPack: QuestionPack = {
     realNameVinDiesel,
     realNameJamieFoxx,
     favouritePokemon,
+    whosThatPokemon,
     commonPassword,
     completeAWordle,
     inflationFreddo,
@@ -197,6 +200,7 @@ export const birthdayPack: QuestionPack = {
     dialPopCulture,
     dialLondonGeography,
     dialBritishPolitics,
+    chessBattle,
   ]),
 };
 

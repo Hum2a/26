@@ -2,6 +2,12 @@ import type { RoomPhaseName } from "@26/shared";
 import type { PlayAction } from "../live/room-api";
 
 export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
+  if (action === "kart-item-rules") return "Kart item rules saved for the next start.";
+  if (action === "kart-track") return "Course saved. It freezes when this race starts.";
+  if (action === "kart-items-on") return "Kart item spawning resumed.";
+  if (action === "kart-items-off")
+    return "Kart item spawning stopped. Held personal boosts and shields remain usable.";
+  if (action === "kart-items-clear") return "Active kart track items cleared.";
   if (action === "start-kart")
     return "The kart race has started. The starting grid is frozen.";
   if (action === "open-joining")
@@ -25,6 +31,22 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "start-birthday")
     return "The birthday game has started with its saved running order.";
   if (action === "kart-course-on") return "Floor boosts, ramps and sweepers are on.";
+  if (action === "kart-opponents-on") return "Nearby racers are visible on phones.";
+  if (action === "kart-effects-on") return "New kart effects are on.";
+  if (action === "kart-effects-off") return "Kart decoration is off.";
+  if (action === "kart-look")
+    return "Kart look updated. Each screen keeps its graphics preference.";
+  if (action === "kart-setting")
+    return "Kart driving setting saved. Phones pick it up straight away.";
+  if (action === "kart-handling")
+    return "Kart handling saved for the next race. An open starting grid updates before racing.";
+  if (action === "kart-opponents-off") return "Nearby racers are hidden on phones.";
+  if (action === "kart-stage-map") return "Stage returned to the full-field map.";
+  if (action === "kart-stage-overview") return "Stage is showing the 3D overview.";
+  if (action === "kart-stage-follow")
+    return "Stage is following the leading active racer.";
+  if (action === "kart-stage-director")
+    return "Stage director is following the leading active racers.";
   if (action === "kart-course-off")
     return "Course features are off. Airborne karts have landed.";
   if (action === "start") {
@@ -95,6 +117,15 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "hide-media") {
     return "That photo or voice clip is hidden from the stage and the gallery.";
   }
+  if (action === "voters-question") {
+    return "Picks show on the big screen again, as each question allows.";
+  }
+  if (action === "voters-hidden") {
+    return "Picks are hidden on the big screen for every question. Phones are unchanged.";
+  }
+  if (action === "avatar-clear") {
+    return "That profile photo was removed from every screen. The guest can take a new one.";
+  }
   if (action === "show") {
     return "The stage content is visible.";
   }
@@ -116,11 +147,12 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "adjust") {
     return "The score was adjusted. The reason stays on this screen.";
   }
+  // Shortlist curation, all-answer ballots and commonness reveals share these.
   if (action === "include") {
-    return "That answer is on the ballot.";
+    return "That answer is shown to guests and the stage.";
   }
   if (action === "exclude") {
-    return "That answer was taken off the ballot.";
+    return "That answer is hidden from guests and the stage. It is still stored.";
   }
   if (action === "feature") {
     return "The stage selection changed. The vote tally did not.";

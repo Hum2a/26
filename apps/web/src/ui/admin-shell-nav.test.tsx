@@ -47,6 +47,8 @@ it("still shows the room pages with no room selected, and how to get one", async
   renderAt("/admin");
   expect(screen.getByText("Analytics")).toBeTruthy();
   expect(screen.getByText("Photo wall")).toBeTruthy();
+  expect(screen.getByText("Tonight")).toBeTruthy();
+  expect(screen.getByText("Catalogue")).toBeTruthy();
   expect(
     screen.getByRole("link", { name: "Open a room first →" }).getAttribute("href"),
   ).toBe("/admin/rooms");

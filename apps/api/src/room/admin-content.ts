@@ -1,4 +1,7 @@
+import { estimateRoundMs } from "../questions/runtime.ts";
 import {
+  kartAssetManifest,
+  kartTrackPreview,
   adminContentSchema,
   adminTrollsSchema,
   type AdminContent,
@@ -12,6 +15,7 @@ import { authFailure, jsonData } from "../auth/http.ts";
 import { missingRequirements } from "../questions/definition.ts";
 import { questionPacks } from "../questions/registry.ts";
 import { rejectUnlessRoomCreator } from "./access.ts";
+import { kartPreview } from "./kart/kart-preview.ts";
 import { adminQuestion } from "./admin-question.ts";
 import { previewWordle, readWordlePreviewBody } from "./wordle-preview.ts";
 import { questionPreview } from "./question-preview.ts";
@@ -67,6 +71,9 @@ export function adminContent(order?: BirthdayOrder): AdminContent | null {
           mechanic: question.kind,
           presentation: question.presentation,
           status: question.status,
+          estimatedSeconds: Math.round(
+            estimateRoundMs(question as Parameters<typeof estimateRoundMs>[0]) / 1000,
+          ),
           order: (pack.packId === "birthday" && order
             ? order.ids
             : pack.order
@@ -192,6 +199,34 @@ export function registerAdminContentRoutes(app: Hono<{ Bindings: Env }>) {
       question,
     );
     return detail ? jsonData(detail) : authFailure("invalid", 500);
+  });
+  app.get("/api/admin/kart-preview", async (c) => {
+    const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
+    if (rejected) return rejected;
+    try {
+      return jsonData(kartPreview(c.req.query("beat") ?? "grid"));
+    } catch {
+      return authFailure("invalid", 400);
+    }
+  });
+  app.get("/api/admin/kart-assets", async (c) => {
+    const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
+    return rejected ?? jsonData(kartAssetManifest);
+  });
+  app.get("/api/admin/kart-tracks", async (c) => {
+    const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
+    if (rejected) return rejected;
+    try {
+      return jsonData(
+        kartTrackPreview({
+          track: c.req.query("track"),
+          slot: c.req.query("slot"),
+          beat: c.req.query("beat"),
+        }),
+      );
+    } catch {
+      return authFailure("invalid", 400);
+    }
   });
   app.get("/api/admin/trolls", async (c) => {
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);

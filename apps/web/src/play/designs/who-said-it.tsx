@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import type { PresentationProps } from "../presentation";
-import { ChoiceSend, choiceView, LiveCount, useDesignMotion } from "./kit";
+import { ChoiceSend, choiceView, LiveCount, StageVoters, useDesignMotion } from "./kit";
 import "./who-said-it.css";
 
 /** The quote is public prompt copy; its attribution comes only from a server reveal. */
@@ -77,6 +77,7 @@ export function WhoSaidIt(props: PresentationProps) {
               transition={motionSet.soft}
             >
               {content}
+              <StageVoters play={props.play} optionId={option.id} />
             </motion.div>
           );
         })}

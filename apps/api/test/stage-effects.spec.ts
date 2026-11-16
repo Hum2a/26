@@ -183,7 +183,7 @@ describe("stage effects", () => {
     ).toBeUndefined();
     await reach(themeRoom, fresh, "colour", "scores");
     const first = (await themeRoom.snapshotFor("stage")).trolls.announcement;
-    expect(first?.audioAsset).toBe("/assets/demo-sting.wav");
+    expect(first?.audioAsset).toBe("/assets/theme-song.mp3");
     expect(first?.label).toContain("Bilal");
     await themeRoom.pauseRound({
       ...control(fresh),
@@ -206,7 +206,7 @@ describe("stage effects", () => {
     ).toBe(true);
     await reach(themeRoom, fresh, "candles", "scores");
     const second = (await themeRoom.snapshotFor("stage")).trolls.announcement;
-    expect(second?.audioAsset).toBe("/assets/demo-sting.wav");
+    expect(second?.audioAsset).toBe("/assets/theme-song.mp3");
     expect(second?.cueId).not.toBe(first?.cueId);
     socket.close();
   });
@@ -306,6 +306,10 @@ describe("stage effects", () => {
       ).toBe(true);
       socket.close();
     }
+    // A sponsor break opens with its jingle on the stage.
+    expect((await stub.snapshotFor("stage")).trolls.announcement?.audioAsset).toBe(
+      "/assets/trolls/12_sponsor-break_ad-jingle.mp3",
+    );
     for (let step = 0; step < 3; step += 1) {
       expect(
         (

@@ -1,4 +1,5 @@
 import path from "node:path";
+import { defaultLocalAdminEmails } from "../apps/api/src/auth/bindings.ts";
 import {
   devVarsExamplePath,
   devVarsPath,
@@ -14,7 +15,7 @@ const root = projectRoot();
 
 const devDefaults: Record<TargetEnvironment, Record<string, string>> = {
   local: {
-    ADMIN_EMAIL: "humzab1711@hotmail.com",
+    ADMIN_EMAIL: defaultLocalAdminEmails,
   },
   staging: {
     BETTER_AUTH_URL: "https://26-staging.humza.website",

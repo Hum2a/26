@@ -1,12 +1,30 @@
 import { createKartPowers, defaultCourseSettings } from "@26/shared";
 // Adapted from mario-kart-js 0f7a430. See UPSTREAM.md and THIRD_PARTY_NOTICES.md.
 import { create } from "zustand";
+import {
+  readKartRecords,
+  browserKartRecordStorage,
+} from "../../../web/src/kart/kart-records";
+
+const records = readKartRecords(browserKartRecordStorage);
 
 export const useGameStore = create((set) => ({
   soloPowers: createKartPowers(),
   soloOils: [],
   soloElapsed: 0,
+  soloDriverStyle: "racer",
+  soloVfxPreset: null,
+  soloLookPreset: null,
+  soloLookReady: false,
+  soloDriverFace: null,
   soloCourseSettings: { ...defaultCourseSettings },
+  soloHandling: "slide-v1",
+  soloMode: "free",
+  soloItemsEnabled: true,
+  soloTrial: /** @type {import('@26/shared').KartTrial | null} */ (null),
+  soloRecords: records.data,
+  soloRecordNotice: records.notice,
+  soloStunMs: 0,
   soloPractice: null,
   soloHeight: 0,
   soloVerticalSpeed: 0,

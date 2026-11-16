@@ -1,14 +1,22 @@
-import { importedRoute } from "../../../../packages/shared/src/kart-route";
-import { useId } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { importedRoute } from "../../../../packages/shared/src/kart/kart-route";
+import { useId, type ReactNode } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   ringCourse,
   soloCourse,
   courseFeaturePose,
+  parkTrackId,
+  parkRibbon,
+  parkCourse,
+  parkRoute,
+  parkLanePoint,
   type KartRaceView,
 } from "@26/shared";
+import { evictMediaUrl, useCachedMediaSrc } from "../media/media-cache";
 import { driverFaceUrl } from "./driver-face";
 import { useKartDrivers } from "./drivers-context";
+import { mapHeadingPath, nextMapSector, mapX, mapZ } from "./navigation";
+import { KartProjectileLayer } from "./KartProjectileLayer";
 
 /** A leader's face inside their marker ring. Drivers without a photo keep the plain dot. */
 function MapFace({
@@ -21,14 +29,16 @@ function MapFace({
   gameId: string;
 }) {
   const clip = `${useId()}-face`;
-  if (!face || !gameId) return null;
+  const rawHref = face && gameId ? driverFaceUrl(gameId, face) : null;
+  const href = useCachedMediaSrc(rawHref, { preload: true });
+  if (!href) return null;
   return (
     <>
       <clipPath id={clip}>
         <circle r="3.1" />
       </clipPath>
       <image
-        href={driverFaceUrl(gameId, face)}
+        href={href}
         x={-3.1}
         y={-3.1}
         width={6.2}
@@ -36,6 +46,9 @@ function MapFace({
         clipPath={`url(#${clip})`}
         preserveAspectRatio="xMidYMid slice"
         data-map-face={playerId}
+        onError={
+          rawHref && href !== rawHref ? () => evictMediaUrl(rawHref) : undefined
+        }
       />
     </>
   );
@@ -45,17 +58,26 @@ function MapFace({
 export function KartMap({
   race,
   personal = false,
+  children,
 }: {
   race: KartRaceView;
   personal?: boolean;
+  children?: ReactNode;
 }) {
   const imported = race.trackId === "mario-circuit-v1";
-  const px = (x: number) => (imported ? (x - 150) * 0.34 : x);
-  const pz = (z: number) => (imported ? z * 0.34 : z);
+  const park = race.trackId === parkTrackId;
+  const px = (x: number) => mapX(race.trackId, x);
+  const pz = (z: number) => mapZ(race.trackId, z);
   const reduced = useReducedMotion();
   const faces = useKartDrivers();
+  const nextSector = personal ? nextMapSector(race) : undefined;
   const drivers = personal
-    ? race.participants.filter((driver) => driver.playerId === race.selfPlayerId)
+    ? [
+      ...race.participants.filter((driver) => driver.playerId === race.selfPlayerId),
+      ...(race.nearby ?? [])
+        .filter((driver) => driver.playerId !== race.selfPlayerId)
+        .slice(0, 8),
+    ]
     : race.participants;
   const leaders = new Map(
     race.leaderboard.slice(0, 3).map((row, i) => [row.playerId, i]),
@@ -71,7 +93,21 @@ export function KartMap({
           : `Live race map: ${drivers.length} drivers`
       }
     >
-      {imported ? (
+      {park ? (
+        <path
+          data-track-road="26-park-v1"
+          d={(["left", "right"] as const)
+            .map(
+              (side) =>
+                `M${parkRibbon.map((edge) => `${px(edge[side][0])} ${pz(edge[side][1])}`).join("L")}Z`,
+            )
+            .join(" ")}
+          fill="var(--surface)"
+          fillRule="evenodd"
+          stroke="var(--accent)"
+          strokeWidth="0.5"
+        />
+      ) : imported ? (
         <polyline
           points={importedRoute.map(([x, z]) => `${px(x)},${pz(z)}`).join(" ")}
           fill="none"
@@ -88,42 +124,61 @@ export function KartMap({
         </>
       )}
       {race.courseEnabled
-        ? (imported ? soloCourse : ringCourse).map((feature) => {
-            const pose = courseFeaturePose(feature, race.elapsedMs);
-            return (
-              <motion.g
-                key={feature.id}
-                initial={false}
-                animate={{
-                  x: px(pose.x),
-                  y: pz(pose.z),
-                  rotate: (feature.heading * 180) / Math.PI,
-                }}
-                transition={{ duration: reduced ? 0.1 : 0.18, ease: "easeOut" }}
-                aria-label={`Track ${feature.kind}`}
+        ? (park ? parkCourse : imported ? soloCourse : ringCourse).map((feature) => {
+          const pose = courseFeaturePose(feature, race.elapsedMs);
+          return (
+            <motion.g
+              key={feature.id}
+              initial={false}
+              animate={{
+                x: px(pose.x),
+                y: pz(pose.z),
+                rotate: (feature.heading * 180) / Math.PI,
+              }}
+              transition={{ duration: reduced ? 0.1 : 0.18, ease: "easeOut" }}
+              aria-label={`Track ${feature.kind}`}
+            >
+              <rect
+                x={-feature.length / 2}
+                y={-feature.width / 2}
+                width={feature.length}
+                height={feature.width}
+                fill={
+                  feature.kind === "hazard" ? "var(--foreground)" : "var(--accent)"
+                }
+              />
+              <text
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="var(--background)"
+                fontSize="3"
               >
-                <rect
-                  x={-feature.length / 2}
-                  y={-feature.width / 2}
-                  width={feature.length}
-                  height={feature.width}
-                  fill={
-                    feature.kind === "hazard" ? "var(--foreground)" : "var(--accent)"
-                  }
-                />
-                <text
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fill="var(--background)"
-                  fontSize="3"
-                >
-                  {feature.kind === "boost" ? "»" : feature.kind === "ramp" ? "↗" : "!"}
-                </text>
-              </motion.g>
-            );
-          })
+                {feature.kind === "boost" ? "»" : feature.kind === "ramp" ? "↗" : "!"}
+              </text>
+            </motion.g>
+          );
+        })
         : null}
+      {park &&
+        Array.from({ length: 8 }, (_, i) => {
+          const along = ((i + 1) * parkRoute.lapLength) / 8,
+            a = parkLanePoint(along, -12),
+            b = parkLanePoint(along, 12),
+            label = parkLanePoint(along, -16);
+          return (
+            <g key={`park-gate-${i}`}>
+              <path
+                d={`M${px(a.x)} ${pz(a.z)}L${px(b.x)} ${pz(b.z)}`}
+                className="kart-map-checkpoint"
+              />
+              <text x={px(label.x)} y={pz(label.z)} className="kart-map-sector">
+                {i === 7 ? "START" : i + 1}
+              </text>
+            </g>
+          );
+        })}
       {!imported &&
+        !park &&
         Array.from({ length: 8 }, (_, i) => {
           const a = ((i + 1) * Math.PI) / 4;
           return (
@@ -176,7 +231,7 @@ export function KartMap({
           aria-label="Oil slick"
         />
       ))}
-      {!imported && (
+      {!imported && !park && (
         <>
           <path d="M34 0H50" className="kart-map-finish" />
           <text y="-2" className="kart-map-wordmark">
@@ -189,6 +244,52 @@ export function KartMap({
             CLOCKWISE ↻
           </text>
         </>
+      )}
+      <AnimatePresence initial={false}>
+        {nextSector ? (
+          <motion.g
+            key={nextSector.sector}
+            data-map-next-sector={nextSector.sector}
+            aria-label={
+              nextSector.sector === 8
+                ? "Next sector: finish line"
+                : `Next sector: ${nextSector.sector}`
+            }
+            transform={`translate(${px(nextSector.x)} ${pz(nextSector.z)})`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduced ? 0.1 : 0.18, ease: "easeOut" }}
+          >
+            <circle
+              r="6"
+              fill="var(--background)"
+              stroke="var(--highlight)"
+              strokeWidth="1"
+            />
+            <text
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize="7.5"
+              fill="var(--highlight)"
+            >
+              {nextSector.sector === 8 ? "F" : nextSector.sector}
+            </text>
+            <title>
+              {nextSector.sector === 8
+                ? "Finish line — complete the remaining sector"
+                : `Next accepted sector ${nextSector.sector}`}
+            </title>
+          </motion.g>
+        ) : null}
+      </AnimatePresence>
+      {children}
+      {race.presentation?.version === 3 && (
+        <KartProjectileLayer
+          projectiles={race.presentation.items.projectiles}
+          elapsedMs={race.elapsedMs}
+          trackId={race.trackId}
+        />
       )}
       {drivers.map((driver) => (
         <motion.g
@@ -215,7 +316,22 @@ export function KartMap({
             className="kart-map-dot"
             data-finished={driver.status === "FINISHED"}
           />
-          {personal || leaders.has(driver.playerId) ? (
+          {personal && driver.playerId === race.selfPlayerId ? (
+            <motion.path
+              aria-label="Your heading"
+              fill="var(--foreground)"
+              stroke="var(--background)"
+              strokeWidth="0.4"
+              initial={false}
+              animate={{ d: mapHeadingPath(driver.heading) }}
+              transition={{ duration: reduced ? 0.1 : 0.18, ease: "easeOut" }}
+            />
+          ) : null}
+          {(
+            personal
+              ? driver.playerId === race.selfPlayerId
+              : leaders.has(driver.playerId)
+          ) ? (
             <>
               <circle r="3.5" className="kart-map-leader-ring" />
               <MapFace

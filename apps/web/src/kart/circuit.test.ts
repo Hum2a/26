@@ -1,10 +1,295 @@
 import { afterEach, expect, it, vi } from "vitest";
 import * as THREE from "three";
-import { createKartRace, projectKartRace } from "@26/shared";
+import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
+import {
+  createKartRace,
+  projectKartRace,
+  defaultKartVfxPreset,
+  parkRibbon,
+  parkWalls,
+} from "@26/shared";
+import { vfxRehearsalRace } from "./vfx-rehearsal";
 import { createCircuit } from "./circuit";
-import { kartCameraPose, smoothKartPose } from "./presentation";
+import { kartCameraPose, smoothKartPose, kartVehiclePose } from "./presentation";
+import { driftEffectDescription } from "./drift-effects";
+
+it("uses versioned plain pose/effect descriptions without cross-bundle Three objects", () => {
+  expect(kartVehiclePose({ x: 1, z: 2, height: 3, heading: 4 })).toEqual({
+    version: 1,
+    position: [1, 3, 2],
+    heading: 4,
+  });
+  const effect = driftEffectDescription(1, 1, 1, true, false);
+  expect(effect.version).toBe(1);
+  expect(effect.space).toBe("kart-local");
+  expect(effect.points).toHaveLength(8);
+  expect(driftEffectDescription(1, 1, 1, true, true).points).toHaveLength(2);
+  expect(JSON.parse(JSON.stringify(effect))).toEqual(effect);
+});
 
 afterEach(() => vi.restoreAllMocks());
+it("builds the original park mesh and visible edge barriers from exactly the shared collision ribbon, then disposes it", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((role) => [
+      role,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const circuit = createCircuit(palette, true, "p", "26-park-v1");
+  const road = circuit.scene.getObjectByName("kart-park-road") as THREE.Mesh;
+  const positions = road.geometry.getAttribute("position"),
+    normals = road.geometry.getAttribute("normal");
+  expect(positions.count).toBe(parkRibbon.length * 6);
+  for (let i = 0; i < parkRibbon.length; i++) {
+    expect(positions.getX(i * 6)).toBeCloseTo(parkRibbon[i]!.left[0], 4);
+    expect(positions.getZ(i * 6)).toBeCloseTo(parkRibbon[i]!.left[1], 4);
+    expect(normals.getY(i * 6)).toBeGreaterThan(0.99);
+  }
+  const a = circuit.scene.getObjectByName(
+    "kart-park-walls-accent",
+  ) as THREE.InstancedMesh;
+  const b = circuit.scene.getObjectByName("kart-park-walls-ink") as THREE.InstancedMesh;
+  expect(a.count + b.count).toBe(parkWalls.length);
+  const dispose = vi.spyOn(road.geometry, "dispose");
+  circuit.dispose();
+  expect(dispose).toHaveBeenCalledOnce();
+});
+it("keeps original park geometry and procedural driving visible if the optional detailed kart model fails", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  vi.spyOn(GLTFLoader.prototype, "load").mockImplementation(
+    (_url, _loaded, _progress, failed) => {
+      failed?.(new Error("Asset unavailable"));
+    },
+  );
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((role) => [
+      role,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const trackStates: string[] = [],
+    vehicleStates: string[] = [];
+  const circuit = createCircuit(
+    palette,
+    true,
+    "p",
+    "26-park-v1",
+    undefined,
+    (state) => trackStates.push(state),
+    0,
+    (state) => vehicleStates.push(state),
+  );
+  const view = projectKartRace(
+    createKartRace("park-fallback", [{ playerId: "p", name: "Stand-in" }], {
+      trackId: "26-park-v1",
+    }),
+    "p",
+    0,
+  );
+  circuit.update(view, 0.02, false, 1, 0, 0, true);
+  expect(trackStates).toEqual(["ready"]);
+  expect(vehicleStates).toEqual(["loading", "failed"]);
+  expect(circuit.renderStats()).toMatchObject({ drivers: 1, detailed: false });
+  expect(circuit.scene.getObjectByName("kart-park-road")?.visible).toBe(true);
+  circuit.dispose();
+});
+it("renders bounded authoritative item hazards even with decoration and detail off, then clears stale poses", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((role) => [
+      role,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const race = projectKartRace(
+    createKartRace("items", [], {
+      itemRules: { version: 2, allowed: ["tennis", "bomb", "homing"] },
+    }),
+    null,
+    0,
+  );
+  if (race.presentation?.version !== 3) throw new Error("Expanded projection required");
+  race.presentation.items.projectiles = ["tennis", "bomb", "homing"].map(
+    (kind, index) => ({
+      id: `projectile-${index + 1}`,
+      kind: kind as "tennis" | "bomb" | "homing",
+      x: 42,
+      z: index * 5,
+      height: 0,
+      createdAt: 0,
+    }),
+  );
+  const circuit = createCircuit(palette, false, undefined, "party-ring-v1");
+  circuit.update(race, 0.02, false, 1, 0, 0, false);
+  for (const kind of ["tennis", "bomb", "homing"])
+    expect(
+      (circuit.scene.getObjectByName(`kart-projectile-${kind}`) as THREE.InstancedMesh)
+        .count,
+    ).toBe(1);
+  const mesh = circuit.scene.getObjectByName(
+    "kart-projectile-tennis",
+  ) as THREE.InstancedMesh;
+  const matrix = new THREE.Matrix4();
+  mesh.getMatrixAt(0, matrix);
+  expect(new THREE.Vector3().setFromMatrixPosition(matrix).x).toBe(42);
+  race.presentation.items.projectiles = [];
+  circuit.update(race, 0.02, true, 1, 0, 0, false);
+  for (const kind of ["tennis", "bomb", "homing"])
+    expect(
+      (circuit.scene.getObjectByName(`kart-projectile-${kind}`) as THREE.InstancedMesh)
+        .count,
+    ).toBe(0);
+  circuit.dispose();
+});
+it("renders the finite impact script as a fresh contact spark burst", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  vi.spyOn(GLTFLoader.prototype, "load").mockImplementation(() => {});
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((role) => [
+      role,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const source = projectKartRace(
+    createKartRace("sample", [{ playerId: "p", name: "Stand-in" }], {
+      trackId: "mario-circuit-v1",
+    }),
+    "p",
+    0,
+  );
+  const circuit = createCircuit(palette, true, "p", "mario-circuit-v1");
+  let peak = 0;
+  for (let ms = 0; ms < 3500; ms += 50) {
+    circuit.update(
+      vfxRehearsalRace(source, "impact", ms, 1),
+      0.05,
+      false,
+      1,
+      640,
+      8,
+      false,
+      { preset: defaultKartVfxPreset, tier: "high", paused: false },
+    );
+    peak = Math.max(peak, circuit.vfxStats().byKind?.spark ?? 0);
+  }
+  expect(peak).toBeGreaterThan(0);
+  expect(circuit.vfxStats().byKind?.spark ?? 0).toBe(0);
+  circuit.dispose();
+});
+it("renders self and only the quality-limited server-selected neighbours and drops stale rig state", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((role) => [
+      role,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const full = projectKartRace(
+    createKartRace(
+      "neighbours",
+      Array.from({ length: 80 }, (_, i) => ({ playerId: "p" + i, name: "Driver" })),
+    ),
+    "p79",
+    100,
+  );
+  const phone = {
+    ...full,
+    participants: [full.participants[79]!],
+    nearby: full.participants.slice(0, 8),
+  };
+  const circuit = createCircuit(
+    palette,
+    true,
+    "p79",
+    "party-ring-v1",
+    undefined,
+    undefined,
+    8,
+  );
+  circuit.update(phone, 1 / 30, false, 1, 640, 2);
+  expect(circuit.pose("p79")).toBeDefined();
+  expect(circuit.pose("p0")).toBeDefined();
+  expect(circuit.pose("p2")).toBeUndefined();
+  circuit.update(phone, 1 / 30, false, 1, 640, 8);
+  expect(circuit.pose("p7")).toBeDefined();
+  circuit.update({ ...phone, nearby: [] }, 1 / 30, false, 1, 640, 8);
+  expect(circuit.pose("p0")).toBeUndefined();
+  expect(circuit.pose("p79")).toBeDefined();
+  circuit.dispose();
+});
+it("reports actual model loading, decode success and failure, and ignores late callbacks after disposal", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  let loaded: Parameters<GLTFLoader["load"]>[1] | undefined;
+  let failed: Parameters<GLTFLoader["load"]>[3];
+  const load = vi
+    .spyOn(GLTFLoader.prototype, "load")
+    .mockImplementation((_url, ready, _progress, error) => {
+      loaded = ready;
+      failed = error;
+    });
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((role) => [
+      role,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const status = vi.fn(),
+    error = vi.fn();
+  const circuit = createCircuit(palette, true, "p", "mario-circuit-v1", error, status);
+  expect(status).toHaveBeenLastCalledWith("loading");
+  expect(load).toHaveBeenCalledWith(
+    "/kart-engine/models/mario-circuit-test-transformed.glb",
+    expect.any(Function),
+    undefined,
+    expect.any(Function),
+  );
+  loaded!({ scene: new THREE.Group() } as GLTF);
+  expect(status).toHaveBeenLastCalledWith("ready");
+  circuit.dispose();
+  failed!(new Error("late"));
+  expect(error).not.toHaveBeenCalled();
+  const broken = createCircuit(palette, true, "p", "mario-circuit-v1", error, status);
+  failed!(new Error("missing"));
+  expect(status).toHaveBeenLastCalledWith("failed");
+  expect(error).toHaveBeenCalledTimes(1);
+  broken.dispose();
+});
+it("caps decorative scene sparks without removing item boxes or karts", () => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((role) => [
+      role,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const circuit = createCircuit(palette, false);
+  const race = projectKartRace(
+    createKartRace(
+      "budget",
+      Array.from({ length: 80 }, (_, i) => ({ playerId: "p" + i, name: "Driver" })),
+    ),
+    null,
+    100,
+  );
+  for (const driver of race.participants) {
+    driver.drifting = true;
+    driver.driftCharge = 1;
+  }
+  circuit.update(race, 0.1, false, 1, 128);
+  expect(
+    (circuit.scene.getObjectByName("kart-drift-sparks") as THREE.InstancedMesh).count,
+  ).toBe(128);
+  expect(
+    (circuit.scene.getObjectByName("kart-item-boxes") as THREE.InstancedMesh).count,
+  ).toBe(18);
+  expect(circuit.pose("p79")).toBeDefined();
+  circuit.update(race, 0.1, false, 1, 0);
+  expect(
+    (circuit.scene.getObjectByName("kart-drift-sparks") as THREE.InstancedMesh).count,
+  ).toBe(0);
+  circuit.dispose();
+});
 it("smooths at the same rate across frame rates, uses the short angle and disables travel for reduced motion", () => {
   const target = { x: 10, z: 10, heading: Math.PI + 0.1 };
   const start = { x: 0, z: 0, heading: Math.PI - 0.1 };
@@ -240,5 +525,65 @@ it("renders available boxes, deployed oil and shields with the existing resource
   expect(
     (circuit.scene.getObjectByName("kart-shields") as THREE.InstancedMesh).count,
   ).toBe(1);
+  circuit.dispose();
+});
+
+it("disposes driver label sprites, materials and textures when a driver leaves", () => {
+  const ctx2d = {
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 0,
+    font: "",
+    textAlign: "left",
+    textBaseline: "alphabetic",
+    beginPath: vi.fn(),
+    arc: vi.fn(),
+    fill: vi.fn(),
+    stroke: vi.fn(),
+    fillText: vi.fn(),
+  } as unknown as CanvasRenderingContext2D;
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((kind) =>
+    kind === "2d" ? ctx2d : null,
+  );
+  const palette = Object.fromEntries(
+    ["ground", "road", "accent", "highlight", "ink", "muted"].map((k) => [
+      k,
+      new THREE.Color(),
+    ]),
+  ) as Parameters<typeof createCircuit>[0];
+  const circuit = createCircuit(palette, false);
+  const twoDrivers = projectKartRace(
+    createKartRace("labels", [
+      { playerId: "a", name: "Amina" },
+      { playerId: "b", name: "Baseer" },
+    ]),
+    null,
+    100,
+  );
+  circuit.update(twoDrivers, 0.1, false);
+  const sprites = circuit.scene.children.filter(
+    (child): child is THREE.Sprite => child instanceof THREE.Sprite,
+  );
+  expect(sprites).toHaveLength(2);
+
+  const departing = sprites[1]!;
+  const matDispose = vi.spyOn(departing.material, "dispose");
+  const texDispose = departing.material.map
+    ? vi.spyOn(departing.material.map, "dispose")
+    : undefined;
+
+  const oneDriver = {
+    ...twoDrivers,
+    participants: twoDrivers.participants.filter((driver) => driver.playerId === "a"),
+  };
+  circuit.update(oneDriver, 0.1, false);
+
+  const remaining = circuit.scene.children.filter(
+    (child): child is THREE.Sprite => child instanceof THREE.Sprite,
+  );
+  expect(remaining).toHaveLength(1);
+  expect(remaining[0]).toBe(sprites[0]);
+  expect(matDispose).toHaveBeenCalledOnce();
+  if (texDispose) expect(texDispose).toHaveBeenCalledOnce();
   circuit.dispose();
 });
