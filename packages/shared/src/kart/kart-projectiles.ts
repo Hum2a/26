@@ -29,7 +29,7 @@ export const kartProjectileTuning = {
 } as const;
 const actorIdSchema = z.string().min(1).max(120);
 const projectileIdSchema = z.string().regex(/^projectile-[1-9][0-9]{0,15}$/);
-const activeMsSchema = z.number().int().min(0).max(180000);
+const activeMsSchema = z.number().int().min(0).max(540000);
 export const kartProjectileSchema = z
   .object({
     id: projectileIdSchema,
@@ -41,8 +41,8 @@ export const kartProjectileSchema = z
     vz: z.number().finite(),
     height: z.number().finite().nonnegative(),
     createdAt: activeMsSchema,
-    expiresAt: z.number().int().min(1).max(186000),
-    armedAt: z.number().int().min(0).max(180500),
+    expiresAt: z.number().int().min(1).max(546000),
+    armedAt: z.number().int().min(0).max(540500),
     bounces: z.number().int().min(0).max(kartProjectileTuning.maxBounces),
     hitPlayers: z.array(actorIdSchema).max(100),
     targetId: actorIdSchema.optional(),
@@ -344,7 +344,7 @@ export function stepKartProjectiles(
   if (
     !Number.isSafeInteger(toMs) ||
     toMs < world.elapsedMs ||
-    toMs > 180000 ||
+    toMs > 540000 ||
     toMs - world.elapsedMs > kartProjectileTuning.stepMs ||
     actors.length > 100
   )

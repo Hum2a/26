@@ -1,3 +1,4 @@
+import { KartRollbackBench } from "./kart-rollback-bench";
 import { AnimatePresence, motion } from "motion/react";
 import { Link, useSearchParams } from "react-router";
 import { Button, LinkButton } from "../ui/primitives";
@@ -32,6 +33,7 @@ const views = [
   ["collisions", "Collisions"],
   ["trials", "Time trials"],
   ["start", "Race start"],
+  ["rollback", "Rollback & timing"],
   ["recap", "Race results"],
   ["items", "Items sandbox"],
   ["tracks", "Tracks & modes"],
@@ -128,6 +130,8 @@ export function AdminKartPage() {
             <KartTrialBench />
           ) : view === "start" ? (
             <KartStartBench />
+          ) : view === "rollback" ? (
+            <KartRollbackBench />
           ) : view === "recap" ? (
             <KartRecapBench />
           ) : view === "items" ? (

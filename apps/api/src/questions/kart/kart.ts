@@ -1,3 +1,4 @@
+import { kartFinishSchema, createDrivingBody } from "@26/shared";
 import {
   kartInputSchema,
   kartStageModeSchema,
@@ -44,8 +45,10 @@ import { questionFor } from "../registry.ts";
 const key = "kart-race";
 export const readKart = (sql: SqlStorage, id: string) =>
   readRoundState<KartRace>(sql, id, key);
-const write = (sql: SqlStorage, id: string, race: KartRace) =>
+const write = (sql: SqlStorage, id: string, race: KartRace) => {
+  race.checkpointRevision = (race.checkpointRevision ?? 0) + 1;
   writeRoundState(sql, id, key, race);
+};
 
 type RoomKartSettings = { settings?: KartSettings; history?: KartSettingHistory };
 export const readRoomKartItems = (sql: SqlStorage) =>
@@ -410,6 +413,7 @@ export function enterKart(
     race.itemRules = readRoomKartItems(sql).rules;
     // Room races time each kart's first throttle against GO for a start boost.
     race.launchVersion = 1;
+    race.timingMode = "device-v1";
     // Guests see the karts around them by default; Live controls can hide them.
     race.opponentsEnabled = true;
     write(sql, q.id, race);
@@ -909,6 +913,26 @@ export function phoneRaceView(
   return {
     ...full,
     selfPlayerId,
+    ...(race.timingMode === "device-v1" && selfDriver
+      ? {
+          rollback: {
+            revision: race.checkpointRevision ?? 0,
+            appliedSequence: selfDriver.sequence,
+            recovery: selfDriver.lap?.recoveries ?? 0,
+            body:
+              selfDriver.physics ??
+              createDrivingBody(selfDriver.x, selfDriver.z, selfDriver.heading),
+            lap: {
+              angle: selfDriver.angle,
+              distance: selfDriver.distance,
+              checkpoint: selfDriver.checkpoint,
+              done: selfDriver.lapsDone ?? 0,
+              splits: selfDriver.lapTimes ?? [],
+            },
+            input: selfDriver.input,
+          },
+        }
+      : {}),
     presentation: kartItemsPresentation(
       race,
       selfPlayerId,
@@ -985,4 +1009,43 @@ export function phoneLeaderboard<T extends { playerId: string }>(
     ? rows.findIndex((row) => row.playerId === selfPlayerId)
     : -1;
   return rows.filter((_, i) => i < 8 || (self >= 0 && Math.abs(i - self) <= 1));
+}
+
+/** Trusted casual timing. Identity, phase, membership and settlement remain room-owned. */
+export function acceptKartFinish(
+  sql: SqlStorage,
+  store: GameStore,
+  q: KartQuestion,
+  playerId: string,
+  raw: unknown,
+  now: number,
+): { ok: true } | { ok: false; message: string } {
+  const report = kartFinishSchema.safeParse(raw);
+  const room = store.readRoom();
+  if (!report.success)
+    return { ok: false, message: "Invalid finish time or lap splits." };
+  if (room.phase !== "collect" || room.paused || room.hold)
+    return {
+      ok: false,
+      message: "Finish reports are available only while the race is running.",
+    };
+  const due = collectDue(sql, store)?.due_at;
+  if (due == null || now >= due)
+    return { ok: false, message: "The finish window has closed." };
+  const race = readKart(sql, q.id);
+  if (
+    !race ||
+    race.ended ||
+    race.raceId !== report.data.raceId ||
+    !sql
+      .exec("SELECT 1 FROM player WHERE player_id = ? AND revoked_at IS NULL", playerId)
+      .toArray().length
+  )
+    return { ok: false, message: "This phone cannot finish that race." };
+  const next = reduceKart(race, { type: "device-finish", playerId, ...report.data });
+  if (next === race)
+    return { ok: false, message: "That finish cannot be accepted in this race." };
+  write(sql, q.id, next);
+  sql.exec("UPDATE room SET state_version = state_version + 1");
+  return { ok: true };
 }

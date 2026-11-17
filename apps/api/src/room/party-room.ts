@@ -6,6 +6,7 @@ import {
 } from "../questions/registry.ts";
 import {
   acceptKartInputs,
+  acceptKartFinish,
   kartFrames,
   KartInputBuffer,
   releaseKartInputs,
@@ -2661,6 +2662,15 @@ export class PartyRoom extends DurableObject<Env> {
       );
       return;
     }
+    if (command.name === "kart-finish") {
+      await this.acceptKartFinishReport(
+        ws,
+        attachment,
+        command.requestId,
+        command.report,
+      );
+      return;
+    }
     if (command.name === "kart-recover" || command.name === "kart-use-item") {
       await this.acceptKartAction(
         ws,
@@ -3012,6 +3022,58 @@ export class PartyRoom extends DurableObject<Env> {
     if (accepted) {
       this.broadcast();
     }
+  }
+
+  private async acceptKartFinishReport(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    requestId: string,
+    report: unknown,
+  ): Promise<void> {
+    if (attachment.role !== "guest") {
+      this.send(ws, {
+        kind: "ack",
+        scope: "private",
+        requestId,
+        accepted: false,
+        error: "Only a racing phone can report a finish.",
+      });
+      return;
+    }
+    const digest = await payloadDigest({
+      name: "kart-finish",
+      report: JSON.stringify(report) ?? "null",
+    });
+    let result: { accepted: boolean; error?: string } = { accepted: false };
+    await commitAndArm(this.ctx.storage, (sql) => {
+      const prior = this.readReceipt(attachment.principalId, requestId);
+      if (prior) {
+        result =
+          prior.digest === digest
+            ? JSON.parse(prior.resultJson)
+            : {
+                accepted: false,
+                error: "That request id was already used for another action.",
+              };
+        return;
+      }
+      this.flushKartInputs(sql);
+      const store = createGameStore(sql),
+        q = questionFor(store.readRoom());
+      const finish =
+        q?.kind === "kart"
+          ? acceptKartFinish(sql, store, q, attachment.principalId, report, Date.now())
+          : { ok: false as const, message: "No kart race is running." };
+      result = finish.ok
+        ? { accepted: true }
+        : { accepted: false, error: finish.message };
+      if (finish.ok && q?.kind === "kart" && readKart(sql, q.id)?.ended)
+        advance(store, Date.now());
+      this.writeReceipt(attachment.principalId, requestId, digest, result);
+    });
+    if (result.accepted) this.broadcast();
+    else this.sendSnapshot(ws);
+    this.send(ws, { kind: "ack", scope: "private", requestId, ...result });
   }
 
   private async acceptKartAction(
@@ -5234,6 +5296,7 @@ function acceptRoundCommand(
 }
 
 function readCommand(body: unknown):
+  | { requestId: string; name: "kart-finish"; report: unknown }
   | {
       requestId: string;
       name: "kart-recover" | "kart-use-item";
@@ -5316,6 +5379,8 @@ function readCommand(body: unknown):
   if (typeof record.requestId !== "string" || !validRequestId(record.requestId)) {
     return null;
   }
+  if (record.name === "kart-finish")
+    return { requestId: record.requestId, name: "kart-finish", report: record.report };
   if (record.name === "kart-input")
     return {
       requestId: record.requestId,

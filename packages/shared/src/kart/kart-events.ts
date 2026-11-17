@@ -19,7 +19,7 @@ import {
 export const kartHitSchema = z
   .object({
     eventId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
-    atMs: z.number().int().min(0).max(180000),
+    atMs: z.number().int().min(0).max(540000),
     kind: z.enum(["hit", "shield"]),
     target: z.string().min(1).max(120),
     by: z.string().min(1).max(120).optional(),

@@ -253,7 +253,7 @@ it("refuses oversized, corrupt, duplicate and incompatible saved worlds", () => 
   const invalid = [
     { ...world, version: 2 },
     { ...world, secret: "unexpected" },
-    { ...world, elapsedMs: 180001 },
+    { ...world, elapsedMs: 540001 },
     {
       ...world,
       sequence: 65,
@@ -326,4 +326,16 @@ it("records who fired a landed item and keeps a short public hit feed", () => {
   expect(
     recentKartHits({ ...next.world, elapsedMs: hit!.atMs + kartHitFeedMs + 1 }),
   ).toEqual([]);
+});
+
+it("restores and advances items beyond three minutes within the supported three-lap window", () => {
+  const actors = [actor()];
+  const world = { ...createKartProjectiles(), elapsedMs: 300000 };
+  const launched = launchKartProjectile(world, "tennis", actors[0]!, actors, empty);
+  expect(launched.accepted).toBe(true);
+  const restored = restoreKartProjectiles(launched.world);
+  expect(restored.projectiles).toHaveLength(1);
+  expect(stepKartProjectiles(restored, actors, 300020, empty).world.elapsedMs).toBe(
+    300020,
+  );
 });

@@ -15,16 +15,23 @@ export function KartCourseControls() {
     <section aria-label="Kart course controls">
       <KartItemControls />
       <h2>Kart course</h2>
+      <p>
+        {race.timingMode === "device-v1"
+          ? "Trusted device timing — local rollback stays enabled; phones record finishes and the room saves results and awards points."
+          : "Room timing — this existing race uses server-simulated finishes."}
+      </p>
+      <Link to="/admin/kart?view=rollback">Rehearse rollback and device timing</Link>
       <KartRecapPanel
+        timingMode={race.timingMode}
         recap={snapshot.kartRecap}
         names={Object.fromEntries(
           snapshot.players.map((player) => [player.playerId, player.nickname]),
         )}
       />
       <p>
-        Pause freezes accepted sector timing. Advance ends an active race early;
-        unfinished drivers receive DNF, with the host-ended reason retained. Use the
-        existing Live controls above.
+        Pause freezes racing time. Advance ends an active race early; unfinished drivers
+        receive DNF, with the host-ended reason retained. Use the existing Live controls
+        above.
       </p>
       <Link to="/admin/kart?view=recap">Rehearse race results without guests</Link>
       <KartCollisionOverlay

@@ -68,3 +68,13 @@ it("does not label an older early ending as a timeout or invent a missing finish
   view.rerender(<GuestKart snapshot={snapshot()} />);
   expect(screen.getByText("Time unavailable")).toBeTruthy();
 });
+
+it("labels device timing on accepted results", () => {
+  render(
+    <KartRecapPanel
+      recap={kartRaceRecap(kartRecapRehearsal("host-ended"))}
+      timingMode="device-v1"
+    />,
+  );
+  expect(screen.getByText(/Device-recorded finish times/)).toBeTruthy();
+});
