@@ -6398,3 +6398,15 @@ Inspected all three downloaded JPEGs locally and checked their subject/source ma
 ### Exact next stage
 
 Try Admin → Rooms custom code; Admin → Question packs → Favourite genre get-ready reveal steps; Pokémon/push/chess phone/stage rehearsal. Select any additional questions that should use staged options, and explicitly add desired new guest scenarios to Running order. Deploy only when requested.
+
+## 17 November 2026 — Push and follow-up verification
+
+Committed the implementation as `b12414f`, pushed `codex/party-rounds-and-room-codes`, and opened PR #28 against `master`: https://github.com/Hum2a/26/pull/28 . No merge or deployment.
+
+Used the computer-use skill to check the existing local browser at `http://localhost:5173/chess`. The real Stockfish WASM loaded, White played e2–e4, Black replied e7–e5, and the UI returned to “Your move”. Admin → Rooms redirected to administrator sign-in; authenticated room creation and phone/stage walkthroughs remain unverified. No authentication was bypassed.
+
+Ran `npm run load:realtime`: harness assertions passed for 10/25/50/75/100 simulated guests, but timings were poor above 25. Answer ack p95 was 208/354/757/1297/2132 ms respectively. At 75 guests, stage updates were 1/s with p95 gaps 3023 ms; at 100, 0.8/s with p95 gaps 3388 ms. A separate `LOAD_SIZES=80 npm run load:realtime` reproduced the issue: answer ack p50 753 / p95 1503 / max 1589 ms, stage updates 0.8/s, stage gap p95 3042 ms. Both were local workerd, ring kart track, six-second driving windows at ten inputs/second; neither measures an 80-player chess game or production latency. No full guest snapshots were sent during the measured race windows.
+
+These are **not** acceptable responsiveness results despite the harness passing its functional assertions. The older verification report records materially better timings. A clean baseline/profile comparison is needed before attributing the degradation to this PR, the emulator or desktop load. No timing checks were weakened, unrelated processes stopped, or live-path refactor undertaken during verification.
+
+Exact next stage: profile/compare the local realtime bottleneck, then inspect the authenticated admin rehearsals in a signed-in browser and test real phones/projector. The implementation's previous unit/type/lint/build results remain recorded above; this follow-up changes documentation only.
