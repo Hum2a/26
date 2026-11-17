@@ -119,6 +119,7 @@ export const birthdayPack: QuestionPack = {
     "who-said-it-performance-review",
     "who-said-it-absolute-force",
     "who-said-it-grief-pipeline",
+    "trump-made-up-country",
     "guess-tab-oyster",
     "guess-tab-car-insurance",
     "guess-tab-soho-pint",
@@ -134,6 +135,7 @@ export const birthdayPack: QuestionPack = {
     "dial-pop-culture",
     "dial-london-geography",
     "dial-british-politics",
+    "chess-battle",
     "kart-sprint",
   ],
   catalogue: withPointsTrolls([

@@ -590,3 +590,82 @@
     transform: none;
   }
 }
+
+/* Piece values and the folded scoring/tips guide under the board. */
+
+.chess-guide {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.chess-values {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chess-value {
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control, 0.6rem);
+  background: var(--surface);
+  color: var(--surface-foreground);
+  padding: 0.35rem 0.2rem;
+}
+
+.chess-value img {
+  width: 2rem;
+  height: 2rem;
+  aspect-ratio: 1;
+}
+
+.chess-value-name {
+  font-size: 0.75rem;
+  text-transform: capitalize;
+  color: var(--muted);
+}
+
+.chess-value-points {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.chess-value-points::after {
+  content: " pts";
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.chess-guide-toggle {
+  justify-self: start;
+}
+
+.chess-guide-panel {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel, 0.75rem);
+  background: var(--surface);
+  color: var(--surface-foreground);
+  padding: 0 0.9rem;
+}
+
+.chess-guide-panel h3 {
+  margin: 0.8rem 0 0.3rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.chess-guide-panel ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 0.8rem;
+  padding-left: 1.1rem;
+  line-height: 1.35;
+}

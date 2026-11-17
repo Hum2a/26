@@ -3,6 +3,7 @@ import { choiceQuestion } from "../../authoring.ts";
 export const trumpMadeUpCountry = choiceQuestion({
   id: "trump-made-up-country",
   title: "Trump's made-up countries",
+  presentation: "executive-order",
   prompt: "Which of these countries has Trump made up?",
   instructions: "Select all that apply.",
   outcome: {

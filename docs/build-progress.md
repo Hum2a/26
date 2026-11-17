@@ -6307,3 +6307,19 @@ Status: complete locally. Not deployed.
 ### Exact next stage
 
 Before dress rehearsal: upgrade Cloudflare to Workers Paid (\$5/mo) and Images Paid (\$5/mo), finish the incomplete draft birthday-pack questions, and rehearse live on real devices. Do not deploy without explicit instruction.
+
+## 17 November 2026: Trump made-up countries question, chess round in the running order
+
+### Status
+
+- New question `trump-made-up-country` (choice, multiple outcome: The United States of Israel and The Islamic Republic of Japan). Ready, in the running order after `who-said-it-grief-pipeline`.
+- Bespoke design `executive-order` (`apps/web/src/play/designs/executive-order.tsx`): a gold-trimmed "Executive Order No. 26" decree. Guests tick countries with an animated marker tick and sign it with a scrawl ("Sign it. Bigly."); the reveal stamps each line "100% made up" or "Not him. Just a pun." Stage shows the decree with live signature count. Added to `customPresentationIds`, the registry and the design bench fixtures (bench reveal for a multiple outcome uses a stand-in pair, never the answer key).
+- `chess-battle` is no longer forced to draft and is in the running order before `kart-sprint`.
+- Chess scoring: a win on time (`status: "timeout"`, `winner: "player"`) now scores captures + `chessTimeWinBonus` (15). Chosen on 17 November 2026 at the user's request. Checkmate is unchanged (at least 40). Existing tests that asserted 0 for a time win were updated to the new rule.
+- Chess stage snapshot: optional `highlights` (room captures, queens taken, time wins, moves played, longest game, fastest win, biggest haul) and per-standing `moves` / `timeLeftMs`. New hall event `timeout-win`. Aggregate only, no boards. Each game's PGN is now parsed once per projection instead of twice.
+- Chess big screen: highlight cards and an "Every board" grid (stable nickname order, moves, points, clock bar that turns red under 20%).
+- Chess phone: always-visible piece-value strip (Q10 R5 B3 N3 P1) and a folded "How to score + handy tricks" panel (scoring rules, tap/drag, premoves, cancel premove, low-time beep, sound, promotion, resign).
+
+### Next stage
+
+Rehearse the chess round with two browser tabs from `/admin` to see the new hall and phone guide on real screens.

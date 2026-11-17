@@ -182,4 +182,28 @@ describe("custom question designs", () => {
     expect(view.container.querySelector(".design-phone")).toBeNull();
     expect(screen.getByLabelText("Your answer")).toBeTruthy();
   });
+
+  it("ticks several countries on the executive order and signs them as one answer", () => {
+    const onText = vi.fn();
+    const question = previewQuestions["executive-order"];
+    phone(lobby("collect", play(question)), { onText });
+    const sign = screen.getByRole("button", { name: /sign it/i });
+    expect(sign).toHaveProperty("disabled", true);
+    fireEvent.click(screen.getByRole("button", { name: "Baghdaddystan" }));
+    fireEvent.click(screen.getByRole("button", { name: "The United States of Israel" }));
+    expect(screen.getByText(/2 countries invented/)).toBeTruthy();
+    fireEvent.click(sign);
+    expect(onText).toHaveBeenCalledWith(
+      JSON.stringify(["baghdaddystan", "united-states-of-israel"]),
+    );
+  });
+
+  it("stamps each line of the executive order at the reveal", () => {
+    const question = previewQuestions["executive-order"];
+    const reveal = previewReveal(question, undefined, 1);
+    phone(lobby("reveal", play(question, { reveal })));
+    expect(
+      screen.getByRole("button", { name: "Baghdaddystan, not one of his" }),
+    ).toBeTruthy();
+  });
 });

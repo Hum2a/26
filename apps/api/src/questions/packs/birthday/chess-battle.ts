@@ -7,10 +7,9 @@ import { chessQuestion } from "../../authoring.ts";
 export const chessBattle = chessQuestion({
   id: "chess-battle",
   title: "Chess Battle",
-  status: "draft",
   prompt: "Play 1-minute blitz against the Humza bot!",
   instructions:
-    "You play White, 1+0. Score Black pieces you capture: Q10 R5 B3 N3 P1. Checkmate is at least 40. Other results keep captures.",
+    "You play White, 1+0. Score Black pieces you capture: Q10 R5 B3 N3 P1. Checkmate is at least 40. Win on time: captures + 15. Other results keep captures.",
   points: 40,
   collectMs: 15_000, // 15 seconds collection time after all games finish
   initialTimeMs: 60_000, // 1+0 time control

@@ -1,0 +1,251 @@
+/* Executive order: a gold-trimmed decree. Colours come from the theme variables. */
+
+.order-paper {
+  --order-gold: color-mix(in srgb, var(--highlight) 70%, #c9a227);
+  --order-ink: color-mix(in srgb, var(--foreground) 85%, #1b2a6b);
+  position: relative;
+  display: grid;
+  gap: 0.9rem;
+  border: 3px double var(--order-gold);
+  border-radius: var(--radius-panel, 0.75rem);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 1.9rem,
+      color-mix(in srgb, var(--line) 35%, transparent) 1.9rem calc(1.9rem + 1px)
+    ),
+    var(--surface);
+  color: var(--surface-foreground);
+  padding: 1rem;
+  box-shadow:
+    inset 0 0 0 6px color-mix(in srgb, var(--order-gold) 18%, transparent),
+    0 0.6rem 1.4rem color-mix(in srgb, var(--foreground) 22%, transparent);
+}
+
+.order-head {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  border-bottom: 2px solid var(--order-gold);
+  padding-bottom: 0.6rem;
+}
+
+.order-head p {
+  margin: 0;
+}
+
+.order-seal {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border: 3px solid var(--order-gold);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--order-gold) 35%, var(--surface)) 55%,
+    var(--surface) 56%
+  );
+  color: var(--order-gold);
+  font-size: 1.4rem;
+}
+
+.order-office {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.order-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--order-ink);
+}
+
+.order-sub {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.order-prompt {
+  margin: 0;
+}
+
+.order-status {
+  margin: 0;
+  font-weight: 700;
+  color: var(--accent);
+  transition: color 200ms ease;
+}
+
+.order-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-line {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 0.7rem;
+  align-items: center;
+  width: 100%;
+  min-height: 3.5rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-control, 0.6rem);
+  background: var(--background);
+  color: var(--foreground);
+  padding: 0.55rem 0.8rem;
+  font: inherit;
+  text-align: left;
+  touch-action: manipulation;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+button.order-line:disabled {
+  cursor: default;
+}
+
+.order-line[data-ticked] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--background));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.order-section {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  color: var(--order-gold);
+}
+
+.order-box {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 2px solid currentColor;
+  border-radius: 0.3rem;
+}
+
+.order-tick {
+  width: 2.3rem;
+  height: 2.3rem;
+  margin: -0.4rem -0.2rem 0 0;
+  color: var(--accent);
+}
+
+.order-country {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.order-verdict {
+  position: absolute;
+  top: -0.7rem;
+  right: 0.5rem;
+  border: 3px solid var(--muted);
+  border-radius: 0.35rem;
+  background: var(--background);
+  padding: 0.05rem 0.5rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.order-verdict[data-made] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.order-sign {
+  display: grid;
+  justify-items: end;
+  color: var(--order-ink);
+}
+
+.order-scrawl {
+  width: min(60%, 14rem);
+  height: 3rem;
+}
+
+.order-sign-line {
+  width: min(70%, 18rem);
+  border-top: 2px solid currentColor;
+  padding-top: 0.2rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.8rem;
+  font-style: italic;
+  text-align: right;
+}
+
+/* Stage */
+
+.order-paper[data-size="stage"] {
+  width: min(100%, 72rem);
+  margin: 0 auto;
+  padding: 2rem 2.5rem;
+}
+
+.order-head[data-size="stage"] .order-seal {
+  width: 5.5rem;
+  height: 5.5rem;
+  font-size: 2.6rem;
+}
+
+.order-head[data-size="stage"] .order-office {
+  font-size: 22px;
+}
+
+.order-head[data-size="stage"] .order-title {
+  font-size: 48px;
+}
+
+.order-head[data-size="stage"] .order-sub {
+  font-size: 26px;
+}
+
+.order-line[data-size="stage"] {
+  grid-template-columns: auto 1fr auto;
+  min-height: 5.5rem;
+  padding: 0.8rem 1.4rem;
+}
+
+.order-line[data-size="stage"] .order-section {
+  font-size: 40px;
+}
+
+.order-line[data-size="stage"] .order-country {
+  font-size: 48px;
+}
+
+.order-line[data-size="stage"] .order-verdict {
+  top: -1.1rem;
+  right: 1.2rem;
+  font-size: 26px;
+  border-width: 4px;
+}
+
+.executive-order-stage .order-scrawl {
+  height: 5rem;
+}
+
+.executive-order-stage .order-sign-line {
+  font-size: 24px;
+}
