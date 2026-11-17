@@ -6410,3 +6410,46 @@ Ran `npm run load:realtime`: harness assertions passed for 10/25/50/75/100 simul
 These are **not** acceptable responsiveness results despite the harness passing its functional assertions. The older verification report records materially better timings. A clean baseline/profile comparison is needed before attributing the degradation to this PR, the emulator or desktop load. No timing checks were weakened, unrelated processes stopped, or live-path refactor undertaken during verification.
 
 Exact next stage: profile/compare the local realtime bottleneck, then inspect the authenticated admin rehearsals in a signed-in browser and test real phones/projector. The implementation's previous unit/type/lint/build results remain recorded above; this follow-up changes documentation only.
+
+## 17 November 2026 — Realtime baseline isolation after PR #28
+
+Status: investigation milestone complete; performance remains unresolved. Synced the C: checkout to merged `master` `eb5af9d`; investigation branch `codex/realtime-load-investigation`. No deployment, secrets changes or production resources used.
+
+Created an independent detached worktree at `artifacts/realtime-baseline` on pre-merge `c540380`, with its own lockfile-installed dependencies (`npm ci --ignore-scripts --no-audit --no-fund`). The baseline has no copied secret files. Refreshed the main checkout dependencies with the same command. Measurements below ran sequentially, without concurrent test/build jobs. The ignored baseline worktree remains available for profiling.
+
+| Checkout / workload                                | Answer ack p95 | Stage updates/s | Stage gap p95 |
+| -------------------------------------------------- | -------------: | --------------: | ------------: |
+| Merged master, 80 guests, 10 Hz driving inputs     |        1176 ms |             1.3 |       1708 ms |
+| Pre-merge c540380, 80 guests, 10 Hz driving inputs |        1117 ms |             1.3 |       2095 ms |
+| Merged master, 80 guests, no inputs                |        1165 ms |             4.5 |        238 ms |
+| Merged master, 80 guests, 10 Hz neutral inputs     |        1000 ms |             1.3 |       1848 ms |
+
+All use the existing local workerd harness, ring track and six-second race windows. Every run passed its functional assertions, and none sent full guest snapshots during the measured race window. These timing results are not a responsiveness pass, nor production or physical-phone measurements. The answer burst happens before racing, so its latency is separate from the input-mode comparisons.
+
+Commands (PowerShell; run individually with inherited overrides cleared):
+
+```powershell
+$env:LOAD_SIZES='80'; npm run load:realtime
+$env:LOAD_SIZES='80'; $env:LOAD_INPUT_HZ='0'; npm run load:realtime
+$env:LOAD_SIZES='80'; $env:LOAD_NEUTRAL='1'; npm run load:realtime
+```
+
+For the baseline use the first command from `artifacts/realtime-baseline`. Environment overrides were scoped to each command process, not persisted to project configuration.
+
+Findings: the pre-merge checkout reproduces the problem, so these runs do not establish a regression caused by PR #28. Turning off input traffic restores near-target update cadence; neutral packets reproduce the slowdown without kart movement. This narrows the investigation towards packet handling, input persistence and local event-delivery overhead, rather than movement alone. It does not distinguish those costs or prove a production bottleneck. The input path already caches the roster and batches durable writes at ticks.
+
+Tried a transient WeakMap cache for socket attachment deserialisation with an accompanying test candidate. The same driving run produced answer p95 1045 ms, 1.5 updates/s, and stage gap p95 1782 ms: insufficient evidence of meaningful improvement. Reverted the experiment and test candidate before committing. No runtime code, scheduling, scoring, checks or test thresholds changed.
+
+Validation: all four measured harness runs passed. Typecheck and lint passed (29 existing warnings); the initial room/party-round regression run passed 20 tests. The final batching-change validation is recorded below. No new browser runner was added. Authenticated admin walkthroughs still require a signed-in browser; the previously observed real Stockfish response remains recorded above.
+
+Exact next stage: instrument/measure input event delivery versus the existing tick's input persistence in the local harness, retaining the no-input and neutral controls. Separately diagnose quiz acknowledgement cost. Establish a reproducible improvement before changing the production path; a broad refactor requires owner agreement. Complete authenticated admin walkthroughs and physical phone/projector checks when those are available.
+
+### Retained fix — batch private choice-answer snapshots
+
+The ordinary choice-answer path rebuilt a private snapshot before sending every durable acknowledgement. It now acknowledges after the existing commit and queues the answering socket into the existing 30 ms broadcast flush. That flush shares room-wide/audience projections across pending phones and facilitators, deduplicates overlapping recipients and preserves per-phone specialisation. Replayed receipts also request reconciliation. Closing a socket or destroying a room clears pending references. This is a transient delivery queue, not a new business-state store, scheduler, socket or persistence path.
+
+Two isolated 80-guest driving runs with this change recorded answer ack p95 **388 / 380 ms**, versus **1176 ms** on merged master before the change. Whole-run public builds fell from 238 to 140; statistics builds from 207 to 114. The harness still showed only 1.3 stage updates/s while driving, so the kart-input issue remains unresolved. The retained change addresses acknowledgement work only; it is not a claim of full venue readiness.
+
+Tests added alongside the change cover concurrent phones receiving acknowledgement before their own accepted-answer snapshot and receipt replay reconciling again. Existing durable-restart, duplicate-answer, patch, room-destruction, hidden-answer, voter-privacy and moderation tests cover the surrounding paths. Final targeted suite: 8 files / 49 tests passed. `npm run typecheck` passed; `npm run lint` passed with 29 existing warnings and structure passed. No client graph/assets changed, so the build was not rerun for this Worker-only change. No physical-device or authenticated admin walkthrough was completed in this stage.
+
+Exact next stage remains input event/persistence profiling (or a venue-like run when authorised), plus the authenticated admin and physical-device walkthroughs. Review the focused acknowledgement batching PR before merging; do not treat the local kart results as a performance pass.

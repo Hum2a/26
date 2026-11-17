@@ -452,6 +452,7 @@ export class PartyRoom extends DurableObject<Env> {
   private lastViews = new Map<string, SentView>();
   private readonly viewEpoch = randomToken(6);
   private viewCount = 0;
+  private privateSnapshots = new Set<WebSocket>();
   private dirty = new Set<BroadcastScope>();
   private broadcastFlush: ReturnType<typeof setTimeout> | undefined;
 
@@ -1647,6 +1648,7 @@ export class PartyRoom extends DurableObject<Env> {
       this.broadcastFlush = undefined;
     }
     this.dirty.clear();
+    this.privateSnapshots.clear();
     this.lastViews.clear();
     this.rateBuckets.clear();
     this.kartArrivals = new KartInputBuffer();
@@ -2811,6 +2813,7 @@ export class PartyRoom extends DurableObject<Env> {
     void code;
     void reason;
     void wasClean;
+    this.privateSnapshots.delete(ws);
     const attachment = this.attachment(ws);
     if (
       attachment?.role === "guest" &&
@@ -3763,6 +3766,7 @@ export class PartyRoom extends DurableObject<Env> {
       return;
     }
     if (prior) {
+      this.queuePrivateSnapshot(ws);
       const stored = JSON.parse(prior.resultJson) as {
         accepted?: boolean;
         error?: string;
@@ -3824,7 +3828,7 @@ export class PartyRoom extends DurableObject<Env> {
         now,
       });
     });
-    this.sendSnapshot(ws);
+    this.queuePrivateSnapshot(ws);
     if (accepted) {
       this.broadcastFacilitators();
     }
@@ -4421,6 +4425,12 @@ export class PartyRoom extends DurableObject<Env> {
    * single fan-out, so a burst of joins or answers does not rebuild the room
    * once per change. A phase deadline flushes at once.
    */
+  /** Durable answers are acknowledged immediately; share projection work at the next flush. */
+  private queuePrivateSnapshot(ws: WebSocket): void {
+    this.privateSnapshots.add(ws);
+    this.broadcastFlush ??= setTimeout(() => this.flushBroadcasts(), broadcastWindowMs);
+  }
+
   private broadcast(urgent = false): void {
     this.refreshKartIngressClock();
     this.markDirty("all", urgent);
@@ -4447,7 +4457,9 @@ export class PartyRoom extends DurableObject<Env> {
     }
     const scopes = this.dirty;
     this.dirty = new Set();
-    if (scopes.size === 0) {
+    const privateSockets = this.privateSnapshots;
+    this.privateSnapshots = new Set();
+    if (scopes.size === 0 && privateSockets.size === 0) {
       return;
     }
     const roles: SocketRole[] | undefined = scopes.has("all")
@@ -4460,13 +4472,22 @@ export class PartyRoom extends DurableObject<Env> {
         ? "broadcast:all"
         : scopes.has("facilitators")
           ? "broadcast:facilitators"
-          : "broadcast:stage",
+          : scopes.size === 0
+            ? "broadcast:private"
+            : "broadcast:stage",
       0,
       Date.now(),
     );
-    const sockets = roles
-      ? roles.flatMap((role) => this.ctx.getWebSockets(role))
-      : this.ctx.getWebSockets();
+    const sockets = [
+      ...new Set([
+        ...(scopes.size === 0
+          ? []
+          : roles
+            ? roles.flatMap((role) => this.ctx.getWebSockets(role))
+            : this.ctx.getWebSockets()),
+        ...privateSockets,
+      ]),
+    ];
     if (sockets.length === 0) {
       return;
     }
@@ -4659,7 +4680,11 @@ export class PartyRoom extends DurableObject<Env> {
           : "stage";
     let parts = shared?.partsByAudience.get(audience);
     if (!parts) {
-      parts = this.snapshotParts(audience, shared?.roomWide.statistics, shared?.roomWide);
+      parts = this.snapshotParts(
+        audience,
+        shared?.roomWide.statistics,
+        shared?.roomWide,
+      );
       shared?.partsByAudience.set(audience, parts);
     }
     const snapshot = this.buildSnapshot(
