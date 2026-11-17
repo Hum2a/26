@@ -6332,3 +6332,19 @@ Before dress rehearsal: upgrade Cloudflare to Workers Paid (\$5/mo) and Images P
 **Unverified:** real phones (tags, banners, buzzes, roulette, sound prompt), projector audio in a room, the 80-racer load with opponents on.
 
 **Next:** two-phone race on staging with item rules v2; decide whether to swap `kart-park-grand-prix` into `order`.
+
+## 16 November 2026 — Full-screen guest race
+
+**Status:** local on `kart-party-feel`. Not deployed.
+
+During a race or the grid, the driving view fills the window on every size. The phone bar, dock, heading and long instruction stay hidden until the finish, which keeps the result card. A fine pointer gets the steering slider plus Accelerate, Brake and Drift along the bottom, with keyboard and optional mouse steering. A coarse pointer gets a steer-only zone and those same three buttons; sliding the zone does not change speed. A guest who picks the slider still gets the slider.
+
+**Files:** `apps/web/src/kart/kart.css`, `TouchController.tsx`, `GuestKart.tsx`, `SteeringPad.tsx`, `kart.test.tsx`, `apps/web/e2e/kart-lobby.spec.ts`.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 29 existing warnings, structure check passed. `npx vitest run src/kart/kart.test.tsx src/kart/controller-input.test.tsx` in `apps/web` — 34 passed. `npm run build` passed, bundle within budget.
+
+**Manual:** computed styles of the race frame at 976×679, 390×844 and 844×390. The view matched the window, the finish layout stayed the short strip with the dock visible. No live race was driven in `/play`.
+
+**Next:** drive one race on a phone and one on a desktop window.
+
+A computer now uses the desktop renderer (full frame rate, sharper picture, keyboard hint). A phone keeps the steer zone and pedals, and draws the full-screen view at 1× so it does not drop to the 30 fps budget as soon as the picture fills the screen.

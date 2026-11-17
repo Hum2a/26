@@ -11,6 +11,25 @@ import type { SelfPrediction } from "./self-prediction";
 import "./kart.css";
 const KartCanvas = lazy(() => import("./KartCanvas"));
 
+/** A finger uses the phone renderer. A mouse gets the desktop one. */
+const coarsePointer = "(pointer: coarse)";
+function usePhoneRenderer() {
+  const [phone, setPhone] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      Boolean(window.matchMedia?.(coarsePointer).matches),
+  );
+  useEffect(() => {
+    const media = window.matchMedia?.(coarsePointer);
+    if (!media) return;
+    const follow = () => setPhone(media.matches);
+    follow();
+    media.addEventListener("change", follow);
+    return () => media.removeEventListener("change", follow);
+  }, []);
+  return phone;
+}
+
 export function KartDriverView({
   race,
   reducedMotion,
@@ -33,6 +52,7 @@ export function KartDriverView({
     onReadiness?.(race.raceId, map || renderState === "usable");
   }, [onReadiness, race.raceId, map, renderState]);
   const graphics = useKartGraphics(race.participantCount ?? race.participants.length);
+  const phone = usePhoneRenderer();
   return (
     <div className="kart-driver-view" data-readiness={map ? "map" : renderState}>
       <div
@@ -52,7 +72,7 @@ export function KartDriverView({
             <KartCanvas
               key={`${race.raceId}-${attempt}`}
               race={race}
-              mobile
+              mobile={phone}
               reducedMotion={
                 reducedMotion || (paused && race.effectsEnabled === undefined)
               }

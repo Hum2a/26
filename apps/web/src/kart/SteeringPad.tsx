@@ -12,10 +12,9 @@ const pedalOffset = (pedal: KartPedal) =>
   pedal === "gas" ? -1 : pedal === "brake" ? 1 : 0;
 
 /**
- * One thumb drives: slide sideways to steer, push up to accelerate and pull
- * down to brake, which leaves the other thumb free for drift. The native
- * slider remains the keyboard/assistive-technology interface to steering;
- * the keyboard pedals are W/S or the arrow keys.
+ * Slide sideways to steer. Releasing returns to centre. An optional pedal axis
+ * can accelerate and brake from the same thumb; the race leaves that off and
+ * uses separate buttons. The native slider remains the keyboard interface.
  */
 export function SteeringPad({
   value,

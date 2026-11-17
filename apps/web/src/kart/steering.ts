@@ -38,17 +38,19 @@ export function pedalFromPointer(y: number, top: number, height: number): KartPe
 
 /**
  * Steering from thumb travel since the thumb landed, so touching the pad never
- * jerks the kart. Full lock is a comfortable thumb movement (between 48 and
- * 90 px, about a third of the pad), and a gentle curve keeps small
- * corrections small while still reaching full lock.
+ * jerks the kart. Full lock is a real slide across the zone (about half of it,
+ * between 64 and 180 px). A wider dead zone and stepped output keep a resting
+ * thumb from twitching the kart.
  */
 export function steerFromTravel(dx: number, width: number): number {
   if (!Number.isFinite(dx) || !Number.isFinite(width) || width <= 0) return 0;
-  const range = Math.max(48, Math.min(90, width * 0.32));
+  const range = Math.max(64, Math.min(180, width * 0.55));
   const raw = Math.max(-1, Math.min(1, dx / range));
-  const deadZone = 0.06;
+  const deadZone = 0.1;
   if (Math.abs(raw) <= deadZone) return 0;
   const linear = (Math.abs(raw) - deadZone) / (1 - deadZone);
-  // Mild curve keeps fine corrections gentle without delaying hard left/right flips.
-  return Math.sign(raw) * linear ** 1.2;
+  const curved = Math.sign(raw) * linear ** 1.35;
+  const stepped = Math.round(curved * 16) / 16;
+  if (stepped === 0) return 0;
+  return Math.abs(stepped) > 0.98 ? Math.sign(stepped) : stepped;
 }

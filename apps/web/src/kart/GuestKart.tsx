@@ -140,8 +140,8 @@ export function GuestKart({
           ? "Preparing your driving view — choose Map view to drive now"
           : layout === "grid"
             ? self?.gridPosition
-              ? `Grid slot ${self.gridPosition}${race?.participantCount ? ` of ${race.participantCount}` : ""} · push up right on GO for a rocket start`
-              : "Push up right on GO for a rocket start"
+              ? `Grid slot ${self.gridPosition}${race?.participantCount ? ` of ${race.participantCount}` : ""} · hold accelerate and steer right on GO for a rocket start`
+              : "Hold accelerate and steer right on GO for a rocket start"
             : "";
   const instruction = !connected
     ? "Connection lost — controls released"
@@ -160,7 +160,7 @@ export function GuestKart({
     <section
       className="kart-phone"
       aria-label="Sprint controller"
-      // Short landscape phones turn this into a full-screen driving view.
+      // A race or the grid fills the screen; the controls sit on that view.
       data-layout={layout}
     >
       {contactFeedback.overlay}
@@ -442,8 +442,8 @@ export function GuestKart({
       ) : null}
       {!complete ? (
         <p className="kart-help">
-          Thumb pad: slide to steer, push up to accelerate, pull down to brake · Slider:
-          A accelerate, B brake / reverse · R: drift / boost
+          Slide the steering zone to turn. Accelerate, Brake and Drift are separate
+          buttons. A slider is there if you prefer it.
           <br />
           Keyboard: arrows or WASD · Space: drift · E: item · R: back to track.
         </p>
