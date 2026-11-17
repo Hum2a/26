@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import type { LobbySnapshot } from "@26/shared";
 import { PhaseTransition } from "../anim/PhaseTransition";
@@ -18,6 +18,8 @@ import "./phone-preview.css";
 export function QuestionStagePreview() {
   const { version = "", questionId = "" } = useParams();
   const [params] = useSearchParams();
+  const [beat, setBeat] = useState(0);
+  const [startedAt] = useState(() => Date.now());
   const reader = useCallback(
     () => readQuestionPreview(version, questionId),
     [version, questionId],
@@ -50,9 +52,15 @@ export function QuestionStagePreview() {
   const phase = rehearsalPhase(params.get("phase"), data.question);
   const snapshot = {
     phase,
+    players: [],
+    serverNow: startedAt,
+    deadlineAt:
+      data.question.kind === "choice" && data.question.push && phase === "collect"
+        ? startedAt + data.question.push.windowMs
+        : null,
     paused: false,
     held: !data.interactive,
-    play: rehearsalPlay(data.question, phase),
+    play: rehearsalPlay(data.question, phase, { beat }),
   } as unknown as LobbySnapshot;
   return (
     <SafeArea dev={false}>
@@ -68,6 +76,16 @@ export function QuestionStagePreview() {
         <PhaseTransition phase={`${questionId}/${phase}/${params.get("take")}`} stage>
           <StagePlay snapshot={snapshot} />
         </PhaseTransition>
+        {phase === "prompt" &&
+        data.question.kind === "choice" &&
+        data.question.optionSequence ? (
+          <Button
+            disabled={beat >= data.question.options.length}
+            onClick={() => setBeat((value) => value + 1)}
+          >
+            Reveal next option
+          </Button>
+        ) : null}
         <p className="stage-rehearsal-notice">
           No live game is connected. Phone actions stay in the phone preview. Answers,
           countdowns and scores are not simulated.

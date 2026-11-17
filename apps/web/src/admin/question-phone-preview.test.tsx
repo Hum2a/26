@@ -186,3 +186,47 @@ it.each([
   if (fields.kind === "guess")
     expect(screen.getByRole("button", { name: "Sample guest 1" })).toBeTruthy();
 });
+
+it("loads the push round with a rehearsal clock and banks a bail directly", async () => {
+  vi.mocked(readQuestionPreview).mockResolvedValue({
+    ...preview,
+    question: publicQuestionSchema.parse({
+      ...preview.question,
+      outcome: "push",
+      push: {
+        lines: ["first search", "second search"],
+        banks: [100, 200],
+        lineMs: 6000,
+        windowMs: 15000,
+      },
+      options: [
+        { id: "bail", label: "BAIL" },
+        { id: "hold", label: "Keep going" },
+      ],
+    }),
+  });
+  mount();
+  expect(await screen.findByText("first search")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: /BAIL/ }));
+  expect(await screen.findByText("You bailed with")).toBeTruthy();
+});
+
+it("rehearses staged options without exposing the later choices", async () => {
+  vi.mocked(readQuestionPreview).mockResolvedValue({
+    ...preview,
+    question: publicQuestionSchema.parse({
+      ...preview.question,
+      optionSequence: { shown: 2, total: 2 },
+    }),
+  });
+  mount("?phase=prompt");
+  await screen.findByRole("button", { name: "Reveal next option" });
+  expect(screen.queryByRole("button", { name: "Test circle" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Reveal next option" }));
+  expect(
+    (screen.getByRole("button", { name: "Test circle" }) as HTMLButtonElement).disabled,
+  ).toBe(true);
+  expect(screen.queryByRole("button", { name: "Test square" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Reveal next option" }));
+  expect(screen.getByRole("button", { name: "Test square" })).toBeTruthy();
+});

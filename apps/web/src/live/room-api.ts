@@ -25,6 +25,7 @@ export async function createLobby(
   requestId: string,
   rehearsal?: RehearsalConfig,
   kind?: "kart",
+  joinCode?: string,
 ): Promise<LobbyCreated | { error: string }> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 30_000);
@@ -37,6 +38,7 @@ export async function createLobby(
         requestId,
         ...(rehearsal ? { rehearsal } : {}),
         ...(kind ? { kind } : {}),
+        ...(joinCode ? { joinCode } : {}),
       }),
       signal: controller.signal,
     });
@@ -125,6 +127,24 @@ export async function resumeGuest(): Promise<GuestSession | undefined> {
   }
 }
 
+/** Leaves the current room and clears the guest cookie so a new code can be joined. */
+export async function leaveLobby(): Promise<void> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 12_000);
+  try {
+    const response = await fetch("/api/rooms/leave", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: clientApiHeaders({ "content-type": "application/json" }),
+      body: "{}",
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error("We couldn’t leave the lobby. Try again.");
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 export async function lookupStage(
   code: string,
 ): Promise<LobbySnapshot | { error: string }> {
@@ -161,6 +181,7 @@ export type PlayAction =
   | "developer-bots"
   | "start-birthday"
   | "start-kart"
+  | "restart-kart"
   | "start-kart-rehearsal"
   | "kart-course-on"
   | "kart-course-off"

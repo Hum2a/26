@@ -104,3 +104,26 @@ it("makes dated inflation questions ready with reachable exact scoring answers",
     [],
   );
 });
+
+it("has three sourced photo rounds, a complete Pokémon rehearsal and no retired catalogue entries", () => {
+  const rooms = birthdayPack.catalogue.filter((q) => q.id.startsWith("accommodation-"));
+  expect(rooms).toHaveLength(3);
+  for (const q of rooms) {
+    const playable = toPlayable(q);
+    expect(playable).toBeDefined();
+    const preview = questionPreview(birthdayPack, q);
+    expect(preview.question?.image?.src).toBe(`/assets/questions/${q.id}/photo.jpg`);
+    expect(preview.question?.image?.credit).toMatch(/CC BY/);
+    expect(preview.question).not.toHaveProperty("correctOption");
+  }
+  const pokemon = birthdayPack.catalogue.find((q) => q.id === "whos-that-pokemon")!;
+  expect(questionPreview(birthdayPack, pokemon)).toMatchObject({
+    interactive: true,
+    question: { kind: "choice", options: expect.any(Array) },
+  });
+  expect(toPlayable(pokemon)).toBeDefined();
+  for (const q of birthdayPack.catalogue)
+    expect(q.id).not.toMatch(
+      /^(who-said-it-|subculture-|council-|trolley-your-mum$|trolley-mamdani-africa$|trolley-freddo-multiverse$|ai-turing-test$|tribunal-reddit$)/,
+    );
+});

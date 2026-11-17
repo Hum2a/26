@@ -1,3 +1,4 @@
+export * from "./kart/kart-rollback-schema.ts";
 import { kartRaceSchema, kartLookHistorySchema } from "./kart/kart-race-schema.ts";
 import { kartContactHistorySchema } from "./kart/kart-contacts.ts";
 import { kartRecapSchema } from "./kart/kart-recap.ts";
@@ -247,10 +248,8 @@ export const issuedCredentialSchema = z.object({
 
 export type IssuedCredential = z.infer<typeof issuedCredentialSchema>;
 
-/** Six unambiguous characters. A join code can be issued again later. */
-export const joinCodeSchema = z
-  .string()
-  .regex(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/i);
+/** Six letters or digits; generated codes omit ambiguous characters. */
+export const joinCodeSchema = z.string().regex(/^[A-Z0-9]{6}$/i);
 
 export type JoinCode = z.infer<typeof joinCodeSchema>;
 
@@ -356,6 +355,19 @@ export const publicChoiceSchema = z
   .strict();
 
 const publicQuestionCore = {
+  image: z
+    .object({
+      src: z
+        .string()
+        .regex(/^\/assets\/questions\/[a-z0-9-]+\/[a-z0-9-]+\.(?:png|jpg|webp)$/),
+      credit: z.string().min(1).max(200),
+      creditUrl: z
+        .string()
+        .regex(/^https:\/\/creativecommons\.org\/licenses\/[a-z-]+\/[0-9.]+\/?$/)
+        .optional(),
+    })
+    .strict()
+    .optional(),
   id: z.string().regex(contentLimits.questionId),
   index: z.number().int().min(1).max(contentLimits.packMax),
   total: z.number().int().min(1).max(contentLimits.packMax),
@@ -447,7 +459,14 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
     .object({
       ...publicQuestionCore,
       kind: z.literal("choice"),
-      options: z.array(publicChoiceSchema).min(2).max(contentLimits.pollOptionMax),
+      options: z.array(publicChoiceSchema).min(0).max(contentLimits.pollOptionMax),
+      optionSequence: z
+        .object({
+          shown: z.number().int().min(0).max(16),
+          total: z.number().int().min(2).max(16),
+        })
+        .strict()
+        .optional(),
       /** Absent for an ordinary question with one right option. */
       outcome: z.enum(["poll", "threshold", "multiple", "push"]).optional(),
       /** Push-your-luck: the lines, their pace and the bank after each. Never the Raid. */
@@ -456,7 +475,15 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
       modifiers: z.array(z.enum(["double", "steal", "robin-hood", "share"])).max(4),
       suppressSpeedBonus: z.boolean(),
     })
-    .strict(),
+    .strict()
+    .refine(
+      (q) =>
+        q.optionSequence
+          ? q.optionSequence.shown === q.options.length &&
+            q.optionSequence.shown <= q.optionSequence.total
+          : q.options.length >= 2,
+      "Provide at least two options, or a valid staged sequence.",
+    ),
   z
     .object({
       ...publicQuestionCore,

@@ -7,7 +7,7 @@ export const kartEndReasonSchema = z.enum([
   "race-ended",
 ]);
 export type KartEndReason = z.infer<typeof kartEndReasonSchema>;
-const activeMs = z.number().int().nonnegative().max(180_000);
+const activeMs = z.number().int().nonnegative().max(540_000);
 export const kartRecapSchema = z
   .object({
     version: z.literal(1),

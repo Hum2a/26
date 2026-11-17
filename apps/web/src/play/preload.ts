@@ -29,9 +29,12 @@ export function questionImages(snapshot: LobbySnapshot | undefined): string[] {
   if (!question || !("options" in question) || !Array.isArray(question.options)) {
     return [];
   }
-  return question.options.flatMap((option) =>
-    "image" in option && typeof option.image === "string" ? [option.image] : [],
-  );
+  return [
+    ...(question.image ? [question.image.src] : []),
+    ...question.options.flatMap((option) =>
+      "image" in option && typeof option.image === "string" ? [option.image] : [],
+    ),
+  ];
 }
 
 const kartWarm: Partial<Record<"phone" | "stage", Promise<unknown>>> = {};

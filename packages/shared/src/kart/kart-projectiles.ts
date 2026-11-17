@@ -29,7 +29,7 @@ export const kartProjectileTuning = {
 } as const;
 const actorIdSchema = z.string().min(1).max(120);
 const projectileIdSchema = z.string().regex(/^projectile-[1-9][0-9]{0,15}$/);
-const activeMsSchema = z.number().int().min(0).max(180000);
+const activeMsSchema = z.number().int().min(0).max(540000);
 export const kartProjectileSchema = z
   .object({
     id: projectileIdSchema,
@@ -41,8 +41,8 @@ export const kartProjectileSchema = z
     vz: z.number().finite(),
     height: z.number().finite().nonnegative(),
     createdAt: activeMsSchema,
-    expiresAt: z.number().int().min(1).max(186000),
-    armedAt: z.number().int().min(0).max(180500),
+    expiresAt: z.number().int().min(1).max(546000),
+    armedAt: z.number().int().min(0).max(540500),
     bounces: z.number().int().min(0).max(kartProjectileTuning.maxBounces),
     hitPlayers: z.array(actorIdSchema).max(100),
     targetId: actorIdSchema.optional(),
@@ -77,6 +77,8 @@ export const kartProjectileEventSchema = z
     projectileId: z.union([projectileIdSchema, z.literal("all")]),
     playerId: actorIdSchema.optional(),
     item: kartItemSchema.optional(),
+    /** Who fired the item that landed (hit and shield events). */
+    by: actorIdSchema.optional(),
   })
   .strict();
 export type KartProjectileEvent = z.infer<typeof kartProjectileEventSchema>;
@@ -342,7 +344,7 @@ export function stepKartProjectiles(
   if (
     !Number.isSafeInteger(toMs) ||
     toMs < world.elapsedMs ||
-    toMs > 180000 ||
+    toMs > 540000 ||
     toMs - world.elapsedMs > kartProjectileTuning.stepMs ||
     actors.length > 100
   )
@@ -364,6 +366,8 @@ export function stepKartProjectiles(
         atMs: toMs,
         projectileId: item.id,
         playerId: actor.playerId,
+        item: item.kind,
+        by: item.owner,
       };
       hits.push(record(next, event));
     }
@@ -462,4 +466,26 @@ export function stepKartProjectiles(
     return true;
   });
   return { world: next, actors: updated, hits };
+}
+
+/** How long a landed item stays in the public hit feed. */
+export const kartHitFeedMs = 3000;
+/** Recent landed items for the hit feed: newest last, at most six. */
+export function recentKartHits(world: KartProjectileWorld) {
+  return world.history
+    .filter(
+      (event) =>
+        (event.kind === "hit" || event.kind === "shield") &&
+        event.playerId !== undefined &&
+        event.atMs >= world.elapsedMs - kartHitFeedMs,
+    )
+    .slice(-6)
+    .map((event) => ({
+      eventId: event.eventId,
+      atMs: event.atMs,
+      kind: event.kind as "hit" | "shield",
+      target: event.playerId!,
+      ...(event.by ? { by: event.by } : {}),
+      ...(event.item ? { item: event.item } : {}),
+    }));
 }

@@ -21,21 +21,21 @@
 
 ## Product and implementation
 
-| Document                                     | What it covers                                             |
-| :------------------------------------------- | :--------------------------------------------------------- |
-| [Party game plan](party-game-plan.md)        | Product requirements, agreed decisions and architecture    |
-| [Build prompts](build-prompts.md)            | The implementation sequence and acceptance criteria        |
-| [Admin experience](admin-experience-plan.md) | Host workflows and the control-panel design                |
-| [Realtime plan](jackbox-realtime-plan.md)    | Live presentation, connections and room updates            |
-| [Photo wall](photo-wall-plan.md)             | Uploads, moderation, queues and projector presentation     |
-| [Kart evolution](kart-evolution-plan.md)     | Complete upstream comparison and staged incorporation plan |
-| [Kart mini-game](kart-minigame.md)           | Driving, multiplayer rehearsal and engine provenance       |
-| [Quality-of-life map](qol-map.md)            | Improvements across the party experience                   |
-| [Developer tools](developer-tools.md)        | Connected bots, staged loads, reconnects and reports       |
-| [Performance pass](performance.md)           | Loading, live-room optimisations and repeatable checks     |
+| Document                                         | What it covers                                               |
+| :----------------------------------------------- | :----------------------------------------------------------- |
+| [Party game plan](party-game-plan.md)            | Product requirements, agreed decisions and architecture      |
+| [Build prompts](build-prompts.md)                | The implementation sequence and acceptance criteria          |
+| [Admin experience](admin-experience-plan.md)     | Host workflows and the control-panel design                  |
+| [Realtime plan](jackbox-realtime-plan.md)        | Live presentation, connections and room updates              |
+| [Photo wall](photo-wall-plan.md)                 | Uploads, moderation, queues and projector presentation       |
+| [Kart evolution](kart-evolution-plan.md)         | Complete upstream comparison and staged incorporation plan   |
+| [Kart mini-game](kart-minigame.md)               | Driving, multiplayer rehearsal and engine provenance         |
+| [Quality-of-life map](qol-map.md)                | Improvements across the party experience                     |
+| [Developer tools](developer-tools.md)            | Connected bots, staged loads, reconnects and reports         |
+| [Performance pass](performance.md)               | Loading, live-room optimisations and repeatable checks       |
 | [Performance & plan audit](performance-audit.md) | Long-session memory, hot-path bottlenecks & Cloudflare plans |
-| [Data inventory](data-inventory.md)          | Stored data, access and retention                          |
-| [Lines-of-code report](loc-report.md)        | Generated repository size report                           |
+| [Data inventory](data-inventory.md)              | Stored data, access and retention                            |
+| [Lines-of-code report](loc-report.md)            | Generated repository size report                             |
 
 ## Questions and presenter material
 

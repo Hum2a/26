@@ -2,8 +2,8 @@ import { z } from "zod";
 
 export const kartContactEventSchema = z
   .object({
-    eventId: z.number().int().min(0).max(18_000_100),
-    atMs: z.number().int().min(0).max(180_000),
+    eventId: z.number().int().min(0).max(54_000_100),
+    atMs: z.number().int().min(0).max(540_000),
     playerId: z.string().min(1).max(120),
   })
   .strict();

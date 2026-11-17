@@ -79,7 +79,7 @@ describe("push your luck", () => {
       (item) => item.id === "cursed-search-history",
     )!;
     expect(question.status).toBe("ready");
-    expect(birthdayPack.order).not.toContain("cursed-search-history");
+    expect(birthdayPack.order).toContain("cursed-search-history");
     expect(toPlayable(question)).toMatchObject({
       kind: "choice",
       outcome: { kind: "push" },

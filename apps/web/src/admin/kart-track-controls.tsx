@@ -30,7 +30,7 @@ export function KartTrackControls() {
       </p>
       <p>
         {frozen
-          ? "This race's course is frozen. Create a fresh kart lobby for another race."
+          ? "This race's course is frozen. After the podium, choose Race again for the same join code."
           : "Choose before starting. The course, laps, CPU racers and starting grid freeze when you start the race. More laps give a longer race window. CPU racers start behind the guests, take places on the track and never score."}
       </p>
       <form

@@ -25,7 +25,7 @@ export function GuestChess({
 
   useEffect(() => {
     pendingMoveRef.current = null;
-  }, [snapshotFen, snapshotStatus]);
+  }, [snapshotFen, snapshotStatus, pending]);
 
   // Block play if no chess snapshot yet (backend not ready)
   if (!chessSnapshot) {

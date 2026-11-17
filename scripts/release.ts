@@ -86,8 +86,7 @@ if (command === "migrate") {
     if (shouldRunChecks) {
       console.log("Checking the release before any migrations or deployment.");
       const fullChecks = command === "full" || argv.includes("--full-checks");
-      for (const args of releaseCheckSteps(fullChecks))
-        runCommand(npmCommand(), args);
+      for (const args of releaseCheckSteps(fullChecks)) runCommand(npmCommand(), args);
     }
   }
   if (command === "secrets-sync") {

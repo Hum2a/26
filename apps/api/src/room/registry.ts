@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { lobbyCreatedSchema, type LobbyCreated } from "@26/shared";
+import { joinCodeSchema, lobbyCreatedSchema, type LobbyCreated } from "@26/shared";
 import { randomToken } from "./codes.ts";
 import { digestMismatchMessage } from "./limits.ts";
 import { ensureRegistrySchema } from "./schema.ts";
@@ -180,16 +180,29 @@ export class RoomCodeRegistry extends DurableObject<Env> {
     digest: string;
     now: string;
     kind?: "party" | "kart";
+    joinCode?: string;
   }): Promise<
     | { ok: true; result: CreateResult }
     | { ok: false; error: "digest_mismatch" | "busy" | "invalid"; message: string }
   > {
     if (input.kind !== undefined && input.kind !== "party" && input.kind !== "kart")
       return { ok: false, error: "invalid", message: "Choose a valid lobby type." };
+    const code =
+      input.joinCode === undefined
+        ? undefined
+        : joinCodeSchema.safeParse(input.joinCode.trim().toUpperCase());
+    if (code && !code.success)
+      return {
+        ok: false,
+        error: "invalid",
+        message: "Use exactly six letters or numbers for the lobby code.",
+      };
+    const customCode = code?.success ? code.data.toUpperCase() : undefined;
     const prior = this.readCreate(input.requestId);
     if (prior) {
       if (
         prior.digest !== input.digest ||
+        (customCode !== undefined && prior.stored.joinCode !== customCode) ||
         (prior.stored.kind ?? "party") !== (input.kind ?? "party")
       ) {
         return { ok: false, error: "digest_mismatch", message: digestMismatchMessage };
@@ -200,7 +213,13 @@ export class RoomCodeRegistry extends DurableObject<Env> {
       return { ok: true, result: this.withoutPending(prior.stored) };
     }
 
-    const allocated = this.allocate(input.now);
+    const allocated = this.allocate(input.now, customCode);
+    if (!allocated)
+      return {
+        ok: false,
+        error: "invalid",
+        message: "That lobby code is already in use. Choose another.",
+      };
     const pending: StoredCreate = {
       pending: true,
       gameId: allocated.gameId,
@@ -217,14 +236,18 @@ export class RoomCodeRegistry extends DurableObject<Env> {
     return this.finish(input.requestId, pending, input.now);
   }
 
-  private allocate(now: string): { gameId: string; joinCode: string } {
+  private allocate(
+    now: string,
+    customCode?: string,
+  ): { gameId: string; joinCode: string } | null {
     for (let attempt = 0; attempt < 8; attempt += 1) {
       const gameId = randomToken(12);
-      const joinCode = randomToken(6);
+      const joinCode = customCode ?? randomToken(6);
       const claimed = this.claimSync(joinCode, gameId, now);
       if (claimed.ok) {
         return { gameId, joinCode };
       }
+      if (!claimed.ok && claimed.reason === "code" && customCode) return null;
     }
     throw new Error("Could not allocate a room code.");
   }

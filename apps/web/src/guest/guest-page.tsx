@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import type { GuestSession, LobbySnapshot } from "@26/shared";
 import {
   Button,
@@ -12,7 +12,7 @@ import {
 } from "../ui/primitives";
 import { JoinMark } from "../lobby/join-mark";
 import { NameCloud, NameReveal } from "../lobby/name-cloud";
-import { joinLobby, redeemTransfer, resumeGuest } from "../live/room-api";
+import { joinLobby, leaveLobby, redeemTransfer, resumeGuest } from "../live/room-api";
 import { openRoomSocket } from "../live/room-socket";
 import { PhaseTransition } from "../anim/PhaseTransition";
 import { kartRaceScene } from "../kart/race-scene";
@@ -60,6 +60,7 @@ export function GuestPage({
 } = {}) {
   const params = useParams();
   const [search] = useSearchParams();
+  const navigate = useNavigate();
   const linked =
     roomCodeFromQuery(search.get("room")) ?? roomCodeFromQuery(params.code ?? null);
   const [session, setSession] = useState<GuestSession | undefined>(rehearsalSession);
@@ -102,6 +103,8 @@ export function GuestPage({
   const [avatarPending, setAvatarPending] = useState(false);
   // Bumped when the guest puts off the photo card, so the stored choice is read again.
   const [, setAvatarSkips] = useState(0);
+  const kartFinishRequest = useRef<string | null>(null);
+  const [kartFinishNotice, setKartFinishNotice] = useState("");
   const kartRecoveryRequest = useRef<string | null>(null);
   const [kartRecoveryPending, setKartRecoveryPending] = useState(false);
   const [kartRecoveryNotice, setKartRecoveryNotice] = useState("");
@@ -182,6 +185,8 @@ export function GuestPage({
       onSnapshot(next) {
         if (recoveryRace.current !== next.play?.kart?.raceId) {
           recoveryRace.current = next.play?.kart?.raceId;
+          kartFinishRequest.current = null;
+          setKartFinishNotice("");
           kartRecoveryRequest.current = null;
           kartItemRequest.current = null;
           setKartItemPending(false);
@@ -239,6 +244,15 @@ export function GuestPage({
         );
       },
       onAck(ack) {
+        if (ack.requestId === kartFinishRequest.current) {
+          kartFinishRequest.current = null;
+          setKartFinishNotice(
+            ack.accepted
+              ? "Finish saved — watch the stage"
+              : (ack.error ?? "Your finish could not be saved."),
+          );
+          return;
+        }
         if (ack.requestId === kartItemRequest.current) {
           kartItemRequest.current = null;
           setKartItemPending(false);
@@ -355,34 +369,61 @@ export function GuestPage({
     const form = new FormData(event.currentTarget);
     const enteredName = String(form.get("nickname") ?? "");
     setBusy(true);
-    const payload = JSON.stringify([linked ?? code, enteredName]);
-    if (joinRequest.current?.payload !== payload)
-      joinRequest.current = { payload, requestId: crypto.randomUUID() };
-    const joined = await joinLobby({
-      code: linked ?? code,
-      nickname: enteredName,
-      requestId: joinRequest.current.requestId,
-    }).catch(() => ({
-      error: "We couldn’t join the room. Check your connection and try again.",
-      uncertain: true,
-    }));
-    setBusy(false);
-    if ("error" in joined) {
-      // A refused attempt is finished. A later tap must be able to join after
-      // the host reopens entry; uncertain network retries keep the same receipt.
-      if (joined.uncertain === false) joinRequest.current = null;
-      if (joined.error.toLowerCase().includes("nickname")) {
-        setNicknameError(joined.error);
-      } else {
-        setNicknameError("");
-        setNotice(joined.error);
+    try {
+      const payload = JSON.stringify([linked ?? code, enteredName]);
+      if (joinRequest.current?.payload !== payload)
+        joinRequest.current = { payload, requestId: crypto.randomUUID() };
+      const joined = await joinLobby({
+        code: linked ?? code,
+        nickname: enteredName,
+        requestId: joinRequest.current.requestId,
+      }).catch(() => ({
+        error: "We couldn’t join the room. Check your connection and try again.",
+        uncertain: true,
+      }));
+      if ("error" in joined) {
+        // A refused attempt is finished. A later tap must be able to join after
+        // the host reopens entry; uncertain network retries keep the same receipt.
+        if (joined.uncertain === false) joinRequest.current = null;
+        if (joined.error.toLowerCase().includes("nickname")) {
+          setNicknameError(joined.error);
+        } else {
+          setNicknameError("");
+          setNotice(joined.error);
+        }
+        return;
       }
-      return;
+      setNicknameError("");
+      rememberNickname(enteredName);
+      setSession(joined);
+      setNotice(`You are in. This phone is ${joined.nickname}.`);
+    } finally {
+      setBusy(false);
     }
-    setNicknameError("");
-    rememberNickname(enteredName);
-    setSession(joined);
-    setNotice(`You are in. This phone is ${joined.nickname}.`);
+  }
+
+  async function onLeaveLobby() {
+    if (busy || checkingSession || rehearsalCredential) return;
+    setBusy(true);
+    try {
+      socketRef.current?.close();
+      await leaveLobby();
+    } catch {
+      /* Local state still clears so the join form returns. */
+    } finally {
+      setBusy(false);
+    }
+    setSnapshot(undefined);
+    setPending(false);
+    pendingRequest.current = null;
+    inFlight.current = false;
+    joinRequest.current = null;
+    setSession(undefined);
+    setConnection("idle");
+    setSeenOpen(false);
+    setCode("");
+    setNotice("You left the lobby. Enter a new join code when you are ready.");
+    void navigate("/join", { replace: true });
   }
 
   async function onRedeem(event: FormEvent<HTMLFormElement>) {
@@ -395,19 +436,28 @@ export function GuestPage({
     }
     const codeToRedeem = transferCode.trim().toUpperCase();
     const payload = JSON.stringify([joinCode, codeToRedeem]);
-    if (transferRequest.current?.payload !== payload)
-      transferRequest.current = { payload, requestId: crypto.randomUUID() };
     setBusy(true);
-    const redeemed = await redeemTransfer({
-      joinCode,
-      code: codeToRedeem,
-      requestId: transferRequest.current.requestId,
-    }).catch(() => ({
-      error:
-        "We couldn’t confirm the phone transfer. Check your connection and try again.",
-      uncertain: true,
-    }));
-    setBusy(false);
+    let redeemed:
+      | Awaited<ReturnType<typeof redeemTransfer>>
+      | {
+          error: string;
+          uncertain: true;
+        };
+    try {
+      if (transferRequest.current?.payload !== payload)
+        transferRequest.current = { payload, requestId: crypto.randomUUID() };
+      redeemed = await redeemTransfer({
+        joinCode,
+        code: codeToRedeem,
+        requestId: transferRequest.current.requestId,
+      }).catch(() => ({
+        error:
+          "We couldn’t confirm the phone transfer. Check your connection and try again.",
+        uncertain: true,
+      }));
+    } finally {
+      setBusy(false);
+    }
     if ("error" in redeemed) {
       if (redeemed.uncertain === false) transferRequest.current = null;
       setNotice(redeemed.error);
@@ -712,6 +762,15 @@ export function GuestPage({
                   onSubmit={(event) => void onRedeem(event)}
                 />
               ) : null}
+              {!rehearsalCredential ? (
+                <Button
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => void onLeaveLobby()}
+                >
+                  {busy ? "Leaving…" : "Leave lobby"}
+                </Button>
+              ) : null}
             </YouMenu>
           }
           overlays={
@@ -828,10 +887,10 @@ export function GuestPage({
           ) : null}
           {replacedNotice && !rehearsalSession ? (
             <Button
+              disabled={busy}
               onClick={() => {
                 setReplacedNotice(undefined);
-                setSession(undefined);
-                setNotice("You have not joined a room.");
+                void onLeaveLobby();
               }}
             >
               Join another room
@@ -884,6 +943,15 @@ export function GuestPage({
                       onChoose={onDriver}
                     />
                   ) : null}
+                  {!rehearsalCredential ? (
+                    <Button
+                      variant="secondary"
+                      disabled={busy}
+                      onClick={() => void onLeaveLobby()}
+                    >
+                      {busy ? "Leaving…" : "Leave lobby"}
+                    </Button>
+                  ) : null}
                 </div>
               ) : null}
               <PhaseTransition
@@ -896,6 +964,14 @@ export function GuestPage({
                   <GuestPlay
                     connected={connection === "open"}
                     onKartInput={(input) => socketRef.current?.submitKartInput(input)}
+                    onKartFinish={(report) => {
+                      const id = socketRef.current?.submitKartFinish?.(report);
+                      if (id) {
+                        kartFinishRequest.current = id;
+                        setKartFinishNotice("Finish recorded — saving your time…");
+                      }
+                    }}
+                    kartFinishNotice={kartFinishNotice}
                     onKartRecover={(raceId) => {
                       const requestId = socketRef.current?.submitKartRecovery?.(raceId);
                       if (requestId) {

@@ -1,3 +1,4 @@
+import { retiredBirthdayQuestions } from "../src/questions/packs/birthday/retired.ts";
 import { expect, it } from "vitest";
 import { pointsFor } from "../src/questions/multiple-choice.ts";
 import { publicQuestionSchema } from "@26/shared";
@@ -24,7 +25,7 @@ const proposals = ["B", "A", "B", "A", "B", "A", "B", "B", "A", "B"];
 it.each(slugs)(
   "plays the sourced replacement %s round without leaking its answer in rehearsal",
   (slug) => {
-    const q = birthdayPack.catalogue.find((q) => q.id === `who-said-it-${slug}`);
+    const q = retiredBirthdayQuestions.find((q) => q.id === `who-said-it-${slug}`);
     if (q?.kind !== "choice") throw new Error("Choice draft required");
     expect(q.status).toBe("ready");
     expect(q.presentation).toBe("who-said-it");
@@ -44,7 +45,8 @@ it.each(slugs)(
         deadlineAt: 21000,
       }).points,
     ).toBe(100);
-    expect(birthdayPack.order).toContain(q.id);
+    expect(birthdayPack.order).not.toContain(q.id);
+    expect(birthdayPack.catalogue.some((entry) => entry.id === q.id)).toBe(false);
     const preview = questionPreview(birthdayPack, q);
     expect(preview.interactive).toBe(true);
     expect(preview.limitation).toBeNull();
@@ -64,18 +66,18 @@ it.each(slugs)(
 
 it("uses sourced excerpts while retaining stable ids, question count and release isolation", () => {
   expect(
-    birthdayPack.catalogue.find((q) => q.id === "who-said-it-crying-ceo")?.prompt,
+    retiredBirthdayQuestions.find((q) => q.id === "who-said-it-crying-ceo")?.prompt,
   ).toContain("freedom and democracy");
   expect(
-    birthdayPack.catalogue.find((q) => q.id === "who-said-it-grief-pipeline")?.prompt,
+    retiredBirthdayQuestions.find((q) => q.id === "who-said-it-grief-pipeline")?.prompt,
   ).toContain("extraordinary effort");
   expect(
     JSON.stringify(
-      birthdayPack.catalogue.filter((q) => q.id.startsWith("who-said-it-")),
+      retiredBirthdayQuestions.filter((q) => q.id.startsWith("who-said-it-")),
     ),
   ).not.toContain("I laid off 15%");
   expect(
-    birthdayPack.catalogue.filter((q) => q.id.startsWith("who-said-it-")),
+    retiredBirthdayQuestions.filter((q) => q.id.startsWith("who-said-it-")),
   ).toHaveLength(10);
   expect(validatePack(birthdayPack).filter((i) => i.level === "error")).toEqual([]);
   expect(birthdayPack.release).toBe("draft");

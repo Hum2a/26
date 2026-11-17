@@ -26,6 +26,10 @@ Every later prompt starts by reading this file.
 - Photos: Cloudflare R2
 - Tests: Vitest (unit + component via Testing Library + jsdom), @cloudflare/vitest-pool-workers (DO/Worker), Playwright (e2e), Node bot harness (load)
 
+## Kart timing decision (17 November 2026)
+
+The owner approved trusted device-recorded finish durations and local rollback prediction for new kart races (`device-v1`). This is the kart exception to server-only timers/finishes: the phone measures active elapsed time and sends ordered lap splits; the room still validates identity, membership, admission, settlement, ties and points, persists before acknowledging, and owns phases. Existing stored races keep server timing. See `docs/kart-rollback-plan.md`.
+
 ## Architecture rules
 
 - The server is authoritative. Clients send intents and render state. They never compute scores, timers or phase changes.

@@ -98,14 +98,16 @@ describe("recordWav cleanup", () => {
         }),
       },
     });
-    vi.stubGlobal("AudioContext", class {
-      constructor() {
-        throw new Error("AudioContext failed");
-      }
-    });
+    vi.stubGlobal(
+      "AudioContext",
+      class {
+        constructor() {
+          throw new Error("AudioContext failed");
+        }
+      },
+    );
 
     await expect(recordWav()).rejects.toThrow("AudioContext failed");
     expect(stopTrack).toHaveBeenCalledTimes(1);
   });
 });
-

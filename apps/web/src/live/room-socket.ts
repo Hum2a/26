@@ -8,6 +8,7 @@ import {
   type LobbySnapshot,
   type KartFrame,
   type KartInput,
+  type KartFinish,
   type DriverStyle,
   type WallFrame,
   type WallReaction,
@@ -63,6 +64,9 @@ export function mergeKartFrame(
     snapshot.paused ||
     snapshot.held ||
     (play.kart.ended && !frame.kart.ended) ||
+    (frame.kart.rollback &&
+      play.kart.rollback &&
+      frame.kart.rollback.revision < play.kart.rollback.revision) ||
     frame.kart.elapsedMs < play.kart.elapsedMs
   ) {
     return "stale";
@@ -136,6 +140,7 @@ function registerDebugDrop(drop: () => void): (() => void) | undefined {
 }
 
 type CommandBody =
+  | { kind: "command"; requestId: string; name: "kart-finish"; report: KartFinish }
   | {
       kind: "command";
       requestId: string;
@@ -246,6 +251,7 @@ export function openRoomSocket(options: {
   submitDuel: (value: number) => string;
   submitTroll: (kind: string, targetId: string, mediaId?: string) => string;
   submitDraft: (text: string) => void;
+  submitKartFinish?: (report: KartFinish) => string;
   submitKartInput: (input: KartInput) => void;
   submitKartRecovery?: (raceId: string) => string;
   submitKartItem?: (raceId: string) => string;
@@ -958,6 +964,13 @@ export function openRoomSocket(options: {
     submitTroll,
     submitDraft,
     submitKartInput,
+    submitKartFinish: (report: KartFinish) =>
+      sendCommand({
+        kind: "command",
+        requestId: crypto.randomUUID(),
+        name: "kart-finish",
+        report,
+      }),
     submitKartRecovery: (raceId: string) =>
       sendCommand({
         kind: "command",

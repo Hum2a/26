@@ -269,7 +269,7 @@ export function stepDriving(
     profile.rollingResistance +
     profile.drag * forward * forward +
     (!fresh ? Math.abs(forward) * 1.5 : 0) +
-    (offRoad && !airborne ? Math.abs(forward) * 1.8 : 0);
+    (offRoad && !airborne ? Math.abs(forward) * 1.1 : 0);
   let speed = forward;
   if (input.brake && !airborne) {
     speed =
@@ -278,7 +278,7 @@ export function stepDriving(
         : Math.max(-profile.reverseSpeed, forward - profile.acceleration * dt);
   } else {
     const engine =
-      input.gas && fresh ? thrust * boost * (airborne ? 0.15 : offRoad ? 0.4 : 1) : 0;
+      input.gas && fresh ? thrust * boost * (airborne ? 0.15 : offRoad ? 0.58 : 1) : 0;
     speed += (engine - Math.sign(forward) * resistance) * dt;
     if (!engine && Math.sign(speed) !== Math.sign(forward)) speed = 0;
   }
@@ -298,7 +298,8 @@ export function stepDriving(
         ((profile.driftTurnBase ?? 0.12) +
           (profile.driftTurnBase ? 0.9 : 0.75) * input.steer * side)
       : input.steer) * turnRate,
-    airborne ? 3 : 10,
+    // Higher rate = snappier left/right flips; still server-owned via stepDriving.
+    airborne ? 3 : 16,
     dt,
   );
   next.heading +=
@@ -308,7 +309,7 @@ export function stepDriving(
   // Remove lateral velocity gradually while drifting, quickly under ordinary grip.
   const lateral =
     (body.vx * -nz + body.vz * nx) *
-    Math.exp(-(airborne ? 1.2 : drifting ? 2.2 : offRoad ? 7 : 14) * dt);
+    Math.exp(-(airborne ? 1.2 : drifting ? 2.2 : offRoad ? 9.5 : 14) * dt);
   next.vx = nx * speed - nz * lateral;
   next.vz = nz * speed + nx * lateral;
   const moved = moveWithWalls(next, dt, walls, profile.radius, handling);

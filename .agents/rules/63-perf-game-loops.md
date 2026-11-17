@@ -41,7 +41,7 @@ renderer.setAnimationLoop(() => {
 
 `useKartControls` may poll gamepads in rAF; it must cancel the frame on disable. Troll overlays that use rAF (`screen-trolls`) must stop on effect cleanup and on reduced motion.
 
-Clamp delta time so a backgrounded tab does not step 5s of physics on wake. The **room** still owns race time; the phone only interpolates public poses plus local self-prediction.
+Clamp delta time so a backgrounded tab does not step 5s of physics on wake. The **room** owns phases and scoring. In explicitly versioned `device-v1` kart races, the phone also records active finish duration using a monotonic clock, with bounded rollback of its own physics and checkpoint state. Existing races retain room timing. A one-off React update for the finish-submission beat is allowed; poses never use per-frame React state.
 
 ## Kart (Three.js)
 

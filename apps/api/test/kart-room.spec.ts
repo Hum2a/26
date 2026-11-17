@@ -975,7 +975,7 @@ it("accepts authenticated-driver controls, rejects stale/forged/late inputs and 
   expect(JSON.stringify(view.kart)).not.toContain("sequence");
 });
 
-it("persists lap winners once, ignores client times, and continues to scores and the final podium", async () => {
+it("persists legacy server-timed lap winners once and continues to scores and the final podium", async () => {
   const { stub, players, now, credential } = await setup();
   const raceId = (await stub.snapshotFor("guest", players[0])).play!.kart!.raceId;
   await runInDurableObject(stub, (_instance, state) => {
@@ -983,6 +983,9 @@ it("persists lap winners once, ignores client times, and continues to scores and
       store = createSqlStore(sql),
       q = questionFor(store.readRoom());
     if (q?.kind !== "kart") throw new Error("Kart required");
+    const legacy = readKart(sql, q.id)!;
+    delete legacy.timingMode;
+    writeRoundState(sql, q.id, "kart-race", legacy);
     for (
       let elapsed = 0;
       elapsed < 45_000 && store.readRoom().phase === "collect";
@@ -1097,7 +1100,7 @@ it("persists full-room control queues before a tick and replays them after evict
   expect(guest.participants).toHaveLength(1);
   expect(guest.participants[0]!.playerId).toBe(players[99]);
   expect(guest.inputCursor).toBe(2);
-  expect(guest.leaderboard).toHaveLength(9); // Top eight plus this phone's own place.
+  expect(guest.leaderboard).toHaveLength(10); // Top eight, the driver just ahead and this phone.
   expect(JSON.stringify(guest)).not.toContain("inputUntil");
 });
 

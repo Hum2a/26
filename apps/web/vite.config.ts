@@ -71,9 +71,7 @@ function readDevVar(name: string): string {
   return readEnvValue(devVarsPath, name);
 }
 
-function resolveClientApiKeyForEnvironment(
-  target: "staging" | "production",
-): string {
+function resolveClientApiKeyForEnvironment(target: "staging" | "production"): string {
   const fromProcess = process.env.VITE_CLIENT_API_KEY?.trim();
   if (fromProcess) {
     return fromProcess;
@@ -347,31 +345,24 @@ function partyThemes(): Plugin {
     transformIndexHtml: {
       order: "pre",
       handler(html) {
-        const { style, themeColor } = themeDocumentHead();
-        const themeColorTag = `<meta name="theme-color" content="${themeColor}" />`;
-        let next = html;
-        if (/<meta\s+name="theme-color"/i.test(next)) {
-          next = next.replace(
-            /<meta\s+name="theme-color"\s+content="[^"]*"\s*\/?>/i,
-            themeColorTag,
-          );
-        }
-        if (next.includes('id="party-themes"')) {
-          return next;
-        }
-        const tags = [
-          /<meta\s+name="theme-color"/i.test(next) ? "" : themeColorTag,
-          `<style id="party-themes">\n${style}\n    </style>`,
-        ]
-          .filter((tag) => tag.length > 0)
-          .join("\n    ");
-        const withTheme = next.replace(/<html\b([^>]*)>/, (_match, attrs: string) => {
-          if (/\bdata-theme=/.test(attrs)) {
-            return `<html${attrs}>`;
-          }
-          return `<html${attrs} data-theme="${DEFAULT_THEME_ID}">`;
-        });
-        return withTheme.replace("</head>", `    ${tags}\n  </head>`);
+        const { style, chrome } = themeDocumentHead();
+        const stripped = html.replace(
+          /[ \t]*<meta\s+name="(?:theme-color|color-scheme|supported-color-schemes)"[^>]*>\r?\n?/gi,
+          "",
+        );
+        const withTheme = stripped.replace(
+          /<html\b([^>]*)>/,
+          (_match, attrs: string) => {
+            if (/\bdata-theme=/.test(attrs)) {
+              return `<html${attrs}>`;
+            }
+            return `<html${attrs} data-theme="${DEFAULT_THEME_ID}">`;
+          },
+        );
+        const styleTag = withTheme.includes('id="party-themes"')
+          ? ""
+          : `<style id="party-themes">\n${style}\n    </style>\n    `;
+        return withTheme.replace("</head>", `    ${chrome}\n    ${styleTag}</head>`);
       },
     },
   };
@@ -423,6 +414,8 @@ export default defineConfig(({ command }) => ({
     host: true,
     port: 5173,
     strictPort: true,
+    // Discord tests use a temporary trycloudflare.com link to this machine.
+    allowedHosts: [".trycloudflare.com"],
   },
   preview: {
     port: 4173,

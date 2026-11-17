@@ -312,3 +312,27 @@ for (const enabled of [false, true])
       }),
     );
   });
+
+it("identifies trusted device timing and links to the real rollback rehearsal", async () => {
+  const player = playingFixture.players[0]!;
+  const race = createKartRace("device-host", [
+    { playerId: player.playerId, name: player.nickname },
+  ]);
+  race.timingMode = "device-v1";
+  setupControls({
+    ...playingFixture,
+    play: { ...playingFixture.play!, kart: projectKartRace(race, null, 100) },
+  });
+  await mountControls(
+    <>
+      <h1>Live controls</h1>
+      <KartCourseControls />
+    </>,
+  );
+  expect(screen.getByText(/Trusted device timing/)).toBeTruthy();
+  expect(
+    screen
+      .getByRole("link", { name: "Rehearse rollback and device timing" })
+      .getAttribute("href"),
+  ).toBe("/admin/kart?view=rollback");
+});

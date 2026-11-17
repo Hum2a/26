@@ -1,4 +1,4 @@
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import {
@@ -9,7 +9,7 @@ import {
   parkWalls,
 } from "@26/shared";
 import { vfxRehearsalRace } from "./vfx-rehearsal";
-import { createCircuit } from "./circuit";
+import { createCircuit, kartTagName } from "./circuit";
 import { kartCameraPose, smoothKartPose, kartVehiclePose } from "./presentation";
 import { driftEffectDescription } from "./drift-effects";
 
@@ -528,62 +528,70 @@ it("renders available boxes, deployed oil and shields with the existing resource
   circuit.dispose();
 });
 
-it("disposes driver label sprites, materials and textures when a driver leaves", () => {
-  const ctx2d = {
-    fillStyle: "",
-    strokeStyle: "",
-    lineWidth: 0,
-    font: "",
-    textAlign: "left",
-    textBaseline: "alphabetic",
-    beginPath: vi.fn(),
-    arc: vi.fn(),
-    fill: vi.fn(),
-    stroke: vi.fn(),
-    fillText: vi.fn(),
-  } as unknown as CanvasRenderingContext2D;
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((kind) =>
-    kind === "2d" ? ctx2d : null,
-  );
-  const palette = Object.fromEntries(
-    ["ground", "road", "accent", "highlight", "ink", "muted"].map((k) => [
-      k,
-      new THREE.Color(),
-    ]),
-  ) as Parameters<typeof createCircuit>[0];
-  const circuit = createCircuit(palette, false);
-  const twoDrivers = projectKartRace(
-    createKartRace("labels", [
-      { playerId: "a", name: "Amina" },
-      { playerId: "b", name: "Baseer" },
-    ]),
-    null,
-    100,
-  );
-  circuit.update(twoDrivers, 0.1, false);
-  const sprites = circuit.scene.children.filter(
-    (child): child is THREE.Sprite => child instanceof THREE.Sprite,
-  );
-  expect(sprites).toHaveLength(2);
+describe("kart name tags", () => {
+  it("keep short nicknames and shorten long ones", () => {
+    expect(kartTagName("  Chen ")).toBe("Chen");
+    expect(kartTagName("Bartholomew the Great")).toBe("Bartholomew…");
+    expect(kartTagName("Twelve chars")).toBe("Twelve chars");
+  });
 
-  const departing = sprites[1]!;
-  const matDispose = vi.spyOn(departing.material, "dispose");
-  const texDispose = departing.material.map
-    ? vi.spyOn(departing.material.map, "dispose")
-    : undefined;
+  it("disposes driver label sprites, materials and textures when a driver leaves", () => {
+    const ctx2d = {
+      fillStyle: "",
+      strokeStyle: "",
+      lineWidth: 0,
+      font: "",
+      textAlign: "left",
+      textBaseline: "alphabetic",
+      beginPath: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      fillText: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((kind) =>
+      kind === "2d" ? ctx2d : null,
+    );
+    const palette = Object.fromEntries(
+      ["ground", "road", "accent", "highlight", "ink", "muted"].map((k) => [
+        k,
+        new THREE.Color(),
+      ]),
+    ) as Parameters<typeof createCircuit>[0];
+    const circuit = createCircuit(palette, false);
+    const twoDrivers = projectKartRace(
+      createKartRace("labels", [
+        { playerId: "a", name: "Amina" },
+        { playerId: "b", name: "Baseer" },
+      ]),
+      null,
+      100,
+    );
+    circuit.update(twoDrivers, 0.1, false);
+    const sprites = circuit.scene.children.filter(
+      (child): child is THREE.Sprite => child instanceof THREE.Sprite,
+    );
+    expect(sprites).toHaveLength(2);
 
-  const oneDriver = {
-    ...twoDrivers,
-    participants: twoDrivers.participants.filter((driver) => driver.playerId === "a"),
-  };
-  circuit.update(oneDriver, 0.1, false);
+    const departing = sprites[1]!;
+    const matDispose = vi.spyOn(departing.material, "dispose");
+    const texDispose = departing.material.map
+      ? vi.spyOn(departing.material.map, "dispose")
+      : undefined;
 
-  const remaining = circuit.scene.children.filter(
-    (child): child is THREE.Sprite => child instanceof THREE.Sprite,
-  );
-  expect(remaining).toHaveLength(1);
-  expect(remaining[0]).toBe(sprites[0]);
-  expect(matDispose).toHaveBeenCalledOnce();
-  if (texDispose) expect(texDispose).toHaveBeenCalledOnce();
-  circuit.dispose();
+    const oneDriver = {
+      ...twoDrivers,
+      participants: twoDrivers.participants.filter((driver) => driver.playerId === "a"),
+    };
+    circuit.update(oneDriver, 0.1, false);
+
+    const remaining = circuit.scene.children.filter(
+      (child): child is THREE.Sprite => child instanceof THREE.Sprite,
+    );
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]).toBe(sprites[0]);
+    expect(matDispose).toHaveBeenCalledOnce();
+    if (texDispose) expect(texDispose).toHaveBeenCalledOnce();
+    circuit.dispose();
+  });
 });

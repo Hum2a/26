@@ -1,3 +1,4 @@
+import { retiredBirthdayQuestions } from "../src/questions/packs/birthday/retired.ts";
 import { expect, it } from "vitest";
 import { contentLimits } from "@26/shared";
 import { birthdayPack } from "../src/questions/packs/birthday/manifest.ts";
@@ -31,7 +32,9 @@ const completed = [
   "dial-british-politics",
 ];
 const byId = (id: string) => {
-  const q = birthdayPack.catalogue.find((q) => q.id === id);
+  const q = [...birthdayPack.catalogue, ...retiredBirthdayQuestions].find(
+    (q) => q.id === id,
+  );
   if (!q) throw new Error(`Missing question: ${id}`);
   return q;
 };
@@ -207,7 +210,7 @@ it("rehearses a catalogue beyond the eighty-question live order limit", () => {
   ).toEqual([]);
   expect(
     birthdayPack.catalogue.filter((q) => q.id.startsWith("who-said-it-")).length,
-  ).toBe(10);
+  ).toBe(0);
   expect(validatePack(birthdayPack).filter((i) => i.level === "error")).toEqual([]);
   expect(
     birthdayPack.catalogue

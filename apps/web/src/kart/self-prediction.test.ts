@@ -262,3 +262,130 @@ describe("self prediction", () => {
     expect(Math.hypot(later.x - start.x, later.z - start.z)).toBeGreaterThan(0.05);
   });
 });
+
+function deviceFrame(elapsed = 1000, revision = 1): KartRaceView {
+  const view = race(elapsed);
+  const d = self(view);
+  return {
+    ...view,
+    timingMode: "device-v1",
+    rollback: {
+      revision,
+      appliedSequence: 0,
+      recovery: 0,
+      body: createDrivingBody(d.x, d.z, d.heading),
+      lap: {
+        angle: Math.atan2(d.z, d.x),
+        distance: 0,
+        checkpoint: 0,
+        done: 0,
+        splits: [],
+      },
+      input: idle,
+    },
+  };
+}
+it("replays unprocessed controls from exact velocity, rejects stale checkpoints, and keeps driving beyond one missing tick", () => {
+  const p = createSelfPrediction(),
+    frame = deviceFrame();
+  frame.rollback!.body.vx = 4;
+  frame.rollback!.body.vz = 3;
+  p.running(true, 0);
+  p.server(frame, 0, 0);
+  p.published({ ...gas, raceId: frame.raceId, sequence: 1 }, 0);
+  const before = p.pose(200)!;
+  const correction = deviceFrame(1100, 2);
+  correction.rollback!.body = { ...frame.rollback!.body };
+  p.server(correction, 200, 0);
+  const corrected = p.pose(500)!;
+  expect(corrected.speed).toBeGreaterThan(0);
+  p.server(deviceFrame(1000, 1), 500, 0);
+  expect(p.pose(500)).toEqual(corrected);
+  const later = p.pose(1500)!;
+  expect(Math.hypot(later.x - before.x, later.z - before.z)).toBeGreaterThan(1);
+});
+it("excludes host pauses, discards pre-recovery controls, and bounds suspension catchup", () => {
+  const p = createSelfPrediction(),
+    frame = deviceFrame();
+  p.running(true, 0);
+  p.server(frame, 0, 0);
+  p.input(gas, 0);
+  p.pose(200);
+  p.running(false, 200);
+  const paused = p.pose(10000);
+  expect(p.pose(20000)).toEqual(paused);
+  p.running(true, 20000);
+  expect(p.pose(20200)!.speed).toBeGreaterThan(0);
+  const recovered = deviceFrame(1400, 3);
+  recovered.rollback!.recovery = 1;
+  recovered.rollback!.body.x = 100;
+  p.server(recovered, 20200, 0);
+  expect(p.pose(20200)!.x).toBe(100);
+  const beforeSuspension = p.pose(20200)!;
+  const afterSuspension = p.pose(60000)!;
+  expect(afterSuspension.x).toBe(beforeSuspension.x);
+  expect(afterSuspension.z).toBe(beforeSuspension.z);
+});
+it("freezes one local finish duration and resets it for a replacement race", () => {
+  const p = createSelfPrediction(),
+    frame = deviceFrame();
+  frame.rollback!.body = { ...createDrivingBody(43, -0.04, Math.PI / 2), vz: 10 };
+  frame.rollback!.lap = {
+    angle: -0.001,
+    distance: Math.PI * 2 - 0.001,
+    checkpoint: 7,
+    done: 0,
+    splits: [],
+  };
+  p.running(true, 0);
+  p.server(frame, 0, 0);
+  p.pose(20);
+  const finish = p.finish();
+  expect(finish).toEqual({ raceId: frame.raceId, elapsedMs: 1020, lapsMs: [1020] });
+  p.pose(2000);
+  expect(p.finish()).toBe(finish);
+  p.server({ ...deviceFrame(), raceId: "replacement" }, 3000, 0);
+  expect(p.finish()).toBeUndefined();
+});
+
+it("measures a finish in active monotonic time across a long host pause", () => {
+  const p = createSelfPrediction(),
+    frame = deviceFrame();
+  frame.rollback!.body = { ...createDrivingBody(43, -0.04, Math.PI / 2), vz: 10 };
+  frame.rollback!.lap = {
+    angle: -0.001,
+    distance: Math.PI * 2 - 0.001,
+    checkpoint: 7,
+    done: 0,
+    splits: [],
+  };
+  p.running(true, 0);
+  p.server(frame, 0, 0);
+  p.running(false, 0);
+  p.pose(10000);
+  expect(p.finish()).toBeUndefined();
+  p.running(true, 10000);
+  p.pose(10020);
+  expect(p.finish()!.elapsedMs).toBe(1020);
+});
+
+it("applies a recovery checkpoint before replay can invent a finish from the old position", () => {
+  const p = createSelfPrediction(),
+    frame = deviceFrame();
+  frame.rollback!.body = { ...createDrivingBody(43, -0.04, Math.PI / 2), vz: 10 };
+  frame.rollback!.lap = {
+    angle: -0.001,
+    distance: Math.PI * 2 - 0.001,
+    checkpoint: 7,
+    done: 0,
+    splits: [],
+  };
+  p.running(true, 0);
+  p.server(frame, 0, 0);
+  const recovery = deviceFrame(1020, 2);
+  recovery.rollback!.recovery = 1;
+  recovery.rollback!.body.x = 100;
+  p.server(recovery, 20, 0);
+  expect(p.finish()).toBeUndefined();
+  expect(p.pose(20)!.x).toBe(100);
+});

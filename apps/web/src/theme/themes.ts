@@ -1797,7 +1797,49 @@ function themeBlock(selector: string, theme: PartyTheme): string {
   return `  ${selector} {\n    color-scheme: ${theme.colorScheme};\n${colours.join("\n")}\n  }`;
 }
 
-export function themeDocumentHead(): { style: string; themeColor: string } {
+/**
+ * Browser chrome (toolbar, status bar, overscroll) follows the active theme.
+ * One unqualified `theme-color` is not enough: Safari applies the tag that
+ * matches the system scheme, and Chrome applies the unqualified tag. Both
+ * queries carry the same app background, and `color-scheme` is the theme's
+ * own scheme, so the chrome cannot fall back to the system colour.
+ */
+const themeColorMedia = [
+  "(prefers-color-scheme: light)",
+  "(prefers-color-scheme: dark)",
+] as const;
+
+export function browserChromeFor(theme: PartyTheme): {
+  colorScheme: ColorScheme;
+  themeColor: string;
+  themeColorMedia: typeof themeColorMedia;
+} {
+  return {
+    colorScheme: theme.colorScheme,
+    themeColor: theme.colors.background,
+    themeColorMedia,
+  };
+}
+
+export function themeChromeTags(theme: PartyTheme): string {
+  const chrome = browserChromeFor(theme);
+  const tags = [
+    `<meta name="color-scheme" content="${chrome.colorScheme}" />`,
+    `<meta name="supported-color-schemes" content="${chrome.colorScheme}" />`,
+    `<meta name="theme-color" content="${chrome.themeColor}" />`,
+    ...chrome.themeColorMedia.map(
+      (media) =>
+        `<meta name="theme-color" content="${chrome.themeColor}" media="${media}" />`,
+    ),
+  ];
+  return tags.join("\n    ");
+}
+
+export function themeDocumentHead(): {
+  style: string;
+  themeColor: string;
+  chrome: string;
+} {
   const fallback = themes[DEFAULT_THEME_ID];
   const themed = Object.values(themes).map((theme) =>
     themeBlock(`[data-theme="${theme.id}"]`, theme),
@@ -1805,6 +1847,7 @@ export function themeDocumentHead(): { style: string; themeColor: string } {
   return {
     style: `${themeBlock(":root", fallback)}\n${themed.join("\n")}`,
     themeColor: fallback.colors.background,
+    chrome: themeChromeTags(fallback),
   };
 }
 

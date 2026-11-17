@@ -69,16 +69,21 @@ export function AnalyticsPage() {
         ) : (
           <ul className="admin-card-grid-wide">
             {eligible.map((card) => (
-              <li
-                key={card.id}
-                className="admin-card"
-              >
+              <li key={card.id} className="admin-card">
                 <div className="admin-card-header">
                   <span className="admin-card-title">
-                    <span className="admin-status-dot" data-tone="ok" aria-hidden="true" />
+                    <span
+                      className="admin-status-dot"
+                      data-tone="ok"
+                      aria-hidden="true"
+                    />
                     Podium card
                   </span>
-                  {card.illustrative ? <span className="admin-badge" data-tone="muted">Illustrative</span> : null}
+                  {card.illustrative ? (
+                    <span className="admin-badge" data-tone="muted">
+                      Illustrative
+                    </span>
+                  ) : null}
                 </div>
                 <div className="admin-card-body">
                   <p className="text-lg font-bold">{card.stage}</p>

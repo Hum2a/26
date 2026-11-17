@@ -6,6 +6,7 @@ import {
 } from "../questions/registry.ts";
 import {
   acceptKartInputs,
+  acceptKartFinish,
   kartFrames,
   KartInputBuffer,
   releaseKartInputs,
@@ -19,8 +20,6 @@ import {
 import { readRoundState } from "../questions/round-state.ts";
 import { readAdmission } from "./admission.ts";
 import {
-  handleChessClockAlarm,
-  createChessRound,
   pauseChessClocks,
   resumeChessClocks,
   executeChessMove,
@@ -147,6 +146,7 @@ import {
   applyReaction,
   cloudRows,
   EMPTY_VOTER_REACTIONS,
+  markKicked,
   recentAdjustments,
   revealNames,
   seedDemoNames,
@@ -211,7 +211,11 @@ import {
 } from "../wall/snapshot.ts";
 import { syncWall } from "../wall/queue.ts";
 import { seedSampleRoom, type SampleMedia } from "./sample.ts";
-import { reportWallImageFailed, type WallSettingsChange } from "../wall/moderation.ts";
+import {
+  declineWaitingFor,
+  reportWallImageFailed,
+  type WallSettingsChange,
+} from "../wall/moderation.ts";
 
 type WallCommand =
   | {
@@ -449,6 +453,7 @@ export class PartyRoom extends DurableObject<Env> {
   private lastViews = new Map<string, SentView>();
   private readonly viewEpoch = randomToken(6);
   private viewCount = 0;
+  private privateSnapshots = new Set<WebSocket>();
   private dirty = new Set<BroadcastScope>();
   private broadcastFlush: ReturnType<typeof setTimeout> | undefined;
 
@@ -664,6 +669,34 @@ export class PartyRoom extends DurableObject<Env> {
       this.broadcast();
     }
     return result;
+  }
+
+  /**
+   * Guest leaves of their own accord: remove them from the active roster and
+   * close their sockets. The HTTP route also clears the guest cookie.
+   */
+  async leaveGuest(input: {
+    playerId: string;
+    secret: string;
+    now: string;
+  }): Promise<{ ok: true }> {
+    const existing = this.readRoom();
+    if (!existing) return { ok: true };
+    const check = await this.verifyGuest(
+      input.playerId,
+      input.secret,
+      new Date(input.now),
+    );
+    if (!check.ok) return { ok: true };
+    this.ctx.storage.transactionSync(() => {
+      if (!markKicked(this.ctx.storage.sql, input.playerId, input.now)) return;
+      declineWaitingFor(this.ctx.storage.sql, input.playerId);
+      syncWall(this.ctx.storage.sql, "tick", Date.parse(input.now));
+      this.ctx.storage.sql.exec(`UPDATE room SET state_version = state_version + 1`);
+    });
+    this.closePlayerSockets(input.playerId, removedSessionMessage);
+    this.broadcast();
+    return { ok: true };
   }
 
   async resumeGuest(input: {
@@ -966,44 +999,7 @@ export class PartyRoom extends DurableObject<Env> {
   private async runDueJobs(now: number, raceTick: (only: boolean) => void) {
     await commitAndArm(this.ctx.storage, (sql) => {
       this.flushKartInputs(sql);
-      const baseStore = createGameStore(sql);
-      // Compose chess callbacks with existing lifecycle callbacks
-      const baseOnScheduledJob = baseStore.onScheduledJob;
-      const baseOnEnterPhase = baseStore.onEnterPhase;
-
-      const store: GameStore = {
-        ...baseStore,
-        onScheduledJob: (job, now) => {
-          // Call base handler first (kart-tick, trolls)
-          if (baseOnScheduledJob) {
-            baseOnScheduledJob(job, now);
-          }
-          // Then handle chess-specific jobs
-          if (job.payload.startsWith("chess-clock:")) {
-            const gameId = job.payload.substring("chess-clock:".length);
-            handleChessClockAlarm(sql, store, gameId, now);
-          }
-        },
-        onEnterPhase: (room, now) => {
-          // Call base handler first (scoring, trolls, wall, export, etc.)
-          if (baseOnEnterPhase) {
-            baseOnEnterPhase(room, now);
-          }
-          // Then handle chess-specific phase entry
-          if (room.phase === "collect") {
-            const question = questionFor(room);
-            if (question?.kind === "chess") {
-              const participants = sql
-                .exec<{ player_id: string }>(
-                  `SELECT player_id FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
-                )
-                .toArray()
-                .map((r) => r.player_id);
-              createChessRound(sql, store, question, participants, now);
-            }
-          }
-        },
-      };
+      const store = createGameStore(sql);
       const before = store.readRoom();
       const due = sql
         .exec<{ payload: string }>(
@@ -1653,6 +1649,7 @@ export class PartyRoom extends DurableObject<Env> {
       this.broadcastFlush = undefined;
     }
     this.dirty.clear();
+    this.privateSnapshots.clear();
     this.lastViews.clear();
     this.rateBuckets.clear();
     this.kartArrivals = new KartInputBuffer();
@@ -2665,6 +2662,15 @@ export class PartyRoom extends DurableObject<Env> {
       );
       return;
     }
+    if (command.name === "kart-finish") {
+      await this.acceptKartFinishReport(
+        ws,
+        attachment,
+        command.requestId,
+        command.report,
+      );
+      return;
+    }
     if (command.name === "kart-recover" || command.name === "kart-use-item") {
       await this.acceptKartAction(
         ws,
@@ -2817,6 +2823,7 @@ export class PartyRoom extends DurableObject<Env> {
     void code;
     void reason;
     void wasClean;
+    this.privateSnapshots.delete(ws);
     const attachment = this.attachment(ws);
     if (
       attachment?.role === "guest" &&
@@ -3015,6 +3022,58 @@ export class PartyRoom extends DurableObject<Env> {
     if (accepted) {
       this.broadcast();
     }
+  }
+
+  private async acceptKartFinishReport(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    requestId: string,
+    report: unknown,
+  ): Promise<void> {
+    if (attachment.role !== "guest") {
+      this.send(ws, {
+        kind: "ack",
+        scope: "private",
+        requestId,
+        accepted: false,
+        error: "Only a racing phone can report a finish.",
+      });
+      return;
+    }
+    const digest = await payloadDigest({
+      name: "kart-finish",
+      report: JSON.stringify(report) ?? "null",
+    });
+    let result: { accepted: boolean; error?: string } = { accepted: false };
+    await commitAndArm(this.ctx.storage, (sql) => {
+      const prior = this.readReceipt(attachment.principalId, requestId);
+      if (prior) {
+        result =
+          prior.digest === digest
+            ? JSON.parse(prior.resultJson)
+            : {
+                accepted: false,
+                error: "That request id was already used for another action.",
+              };
+        return;
+      }
+      this.flushKartInputs(sql);
+      const store = createGameStore(sql),
+        q = questionFor(store.readRoom());
+      const finish =
+        q?.kind === "kart"
+          ? acceptKartFinish(sql, store, q, attachment.principalId, report, Date.now())
+          : { ok: false as const, message: "No kart race is running." };
+      result = finish.ok
+        ? { accepted: true }
+        : { accepted: false, error: finish.message };
+      if (finish.ok && q?.kind === "kart" && readKart(sql, q.id)?.ended)
+        advance(store, Date.now());
+      this.writeReceipt(attachment.principalId, requestId, digest, result);
+    });
+    if (result.accepted) this.broadcast();
+    else this.sendSnapshot(ws);
+    this.send(ws, { kind: "ack", scope: "private", requestId, ...result });
   }
 
   private async acceptKartAction(
@@ -3769,6 +3828,7 @@ export class PartyRoom extends DurableObject<Env> {
       return;
     }
     if (prior) {
+      this.queuePrivateSnapshot(ws);
       const stored = JSON.parse(prior.resultJson) as {
         accepted?: boolean;
         error?: string;
@@ -3830,7 +3890,7 @@ export class PartyRoom extends DurableObject<Env> {
         now,
       });
     });
-    this.sendSnapshot(ws);
+    this.queuePrivateSnapshot(ws);
     if (accepted) {
       this.broadcastFacilitators();
     }
@@ -4427,6 +4487,12 @@ export class PartyRoom extends DurableObject<Env> {
    * single fan-out, so a burst of joins or answers does not rebuild the room
    * once per change. A phase deadline flushes at once.
    */
+  /** Durable answers are acknowledged immediately; share projection work at the next flush. */
+  private queuePrivateSnapshot(ws: WebSocket): void {
+    this.privateSnapshots.add(ws);
+    this.broadcastFlush ??= setTimeout(() => this.flushBroadcasts(), broadcastWindowMs);
+  }
+
   private broadcast(urgent = false): void {
     this.refreshKartIngressClock();
     this.markDirty("all", urgent);
@@ -4453,7 +4519,9 @@ export class PartyRoom extends DurableObject<Env> {
     }
     const scopes = this.dirty;
     this.dirty = new Set();
-    if (scopes.size === 0) {
+    const privateSockets = this.privateSnapshots;
+    this.privateSnapshots = new Set();
+    if (scopes.size === 0 && privateSockets.size === 0) {
       return;
     }
     const roles: SocketRole[] | undefined = scopes.has("all")
@@ -4466,13 +4534,22 @@ export class PartyRoom extends DurableObject<Env> {
         ? "broadcast:all"
         : scopes.has("facilitators")
           ? "broadcast:facilitators"
-          : "broadcast:stage",
+          : scopes.size === 0
+            ? "broadcast:private"
+            : "broadcast:stage",
       0,
       Date.now(),
     );
-    const sockets = roles
-      ? roles.flatMap((role) => this.ctx.getWebSockets(role))
-      : this.ctx.getWebSockets();
+    const sockets = [
+      ...new Set([
+        ...(scopes.size === 0
+          ? []
+          : roles
+            ? roles.flatMap((role) => this.ctx.getWebSockets(role))
+            : this.ctx.getWebSockets()),
+        ...privateSockets,
+      ]),
+    ];
     if (sockets.length === 0) {
       return;
     }
@@ -4665,7 +4742,11 @@ export class PartyRoom extends DurableObject<Env> {
           : "stage";
     let parts = shared?.partsByAudience.get(audience);
     if (!parts) {
-      parts = this.snapshotParts(audience, shared?.roomWide.statistics, shared?.roomWide);
+      parts = this.snapshotParts(
+        audience,
+        shared?.roomWide.statistics,
+        shared?.roomWide,
+      );
       shared?.partsByAudience.set(audience, parts);
     }
     const snapshot = this.buildSnapshot(
@@ -5215,6 +5296,7 @@ function acceptRoundCommand(
 }
 
 function readCommand(body: unknown):
+  | { requestId: string; name: "kart-finish"; report: unknown }
   | {
       requestId: string;
       name: "kart-recover" | "kart-use-item";
@@ -5297,6 +5379,8 @@ function readCommand(body: unknown):
   if (typeof record.requestId !== "string" || !validRequestId(record.requestId)) {
     return null;
   }
+  if (record.name === "kart-finish")
+    return { requestId: record.requestId, name: "kart-finish", report: record.report };
   if (record.name === "kart-input")
     return {
       requestId: record.requestId,

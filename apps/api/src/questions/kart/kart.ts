@@ -1,3 +1,4 @@
+import { kartFinishSchema, createDrivingBody } from "@26/shared";
 import {
   kartInputSchema,
   kartStageModeSchema,
@@ -44,8 +45,10 @@ import { questionFor } from "../registry.ts";
 const key = "kart-race";
 export const readKart = (sql: SqlStorage, id: string) =>
   readRoundState<KartRace>(sql, id, key);
-const write = (sql: SqlStorage, id: string, race: KartRace) =>
+const write = (sql: SqlStorage, id: string, race: KartRace) => {
+  race.checkpointRevision = (race.checkpointRevision ?? 0) + 1;
   writeRoundState(sql, id, key, race);
+};
 
 type RoomKartSettings = { settings?: KartSettings; history?: KartSettingHistory };
 export const readRoomKartItems = (sql: SqlStorage) =>
@@ -410,6 +413,9 @@ export function enterKart(
     race.itemRules = readRoomKartItems(sql).rules;
     // Room races time each kart's first throttle against GO for a start boost.
     race.launchVersion = 1;
+    race.timingMode = "device-v1";
+    // Guests see the karts around them by default; Live controls can hide them.
+    race.opponentsEnabled = true;
     write(sql, q.id, race);
     writeRoundState(sql, q.id, "kart-session", {
       raceId,
@@ -846,8 +852,6 @@ type KartFrameIndex = {
   driverIndexById: Map<string, number>;
   participantById: Map<string, KartRaceView["participants"][number]>;
   participantByNumber: Map<number, KartRaceView["participants"][number]>;
-  topLeaders: KartRaceView["leaderboard"];
-  leaderIndexById: Map<string, number>;
 };
 
 function buildKartFrameIndex(race: KartRace, full: KartRaceView): KartFrameIndex {
@@ -861,16 +865,10 @@ function buildKartFrameIndex(race: KartRace, full: KartRaceView): KartFrameIndex
     participantById.set(participant.playerId, participant);
     participantByNumber.set(participant.number, participant);
   }
-  const leaderIndexById = new Map<string, number>();
-  for (let i = 0; i < full.leaderboard.length; i += 1) {
-    leaderIndexById.set(full.leaderboard[i]!.playerId, i);
-  }
   return {
     driverIndexById,
     participantById,
     participantByNumber,
-    topLeaders: full.leaderboard.slice(0, 8),
-    leaderIndexById,
   };
 }
 
@@ -911,17 +909,30 @@ export function phoneRaceView(
   const selfParticipant = shared
     ? shared.participantById.get(selfPlayerId)
     : full.participants.find((d) => d.playerId === selfPlayerId);
-  const selfLeaderPos = shared
-    ? shared.leaderIndexById.get(selfPlayerId)
-    : full.leaderboard.findIndex((d) => d.playerId === selfPlayerId);
-  const leaderboard = shared
-    ? selfLeaderPos !== undefined && selfLeaderPos >= 8
-      ? [...shared.topLeaders, full.leaderboard[selfLeaderPos]!]
-      : shared.topLeaders.slice()
-    : full.leaderboard.filter((d, i) => i < 8 || d.playerId === selfPlayerId);
+  const leaderboard = phoneLeaderboard(full.leaderboard, selfPlayerId);
   return {
     ...full,
     selfPlayerId,
+    ...(race.timingMode === "device-v1" && selfDriver
+      ? {
+          rollback: {
+            revision: race.checkpointRevision ?? 0,
+            appliedSequence: selfDriver.sequence,
+            recovery: selfDriver.lap?.recoveries ?? 0,
+            body:
+              selfDriver.physics ??
+              createDrivingBody(selfDriver.x, selfDriver.z, selfDriver.heading),
+            lap: {
+              angle: selfDriver.angle,
+              distance: selfDriver.distance,
+              checkpoint: selfDriver.checkpoint,
+              done: selfDriver.lapsDone ?? 0,
+              splits: selfDriver.lapTimes ?? [],
+            },
+            input: selfDriver.input,
+          },
+        }
+      : {}),
     presentation: kartItemsPresentation(
       race,
       selfPlayerId,
@@ -945,6 +956,7 @@ export function phoneRaceView(
     inputCursor: lastSequence ?? Math.max(0, selfDriver?.sequence ?? 0),
     participants: selfParticipant ? [selfParticipant] : [],
     nearby,
+    // Top eight, yourself, and the drivers directly ahead and behind you.
     leaderboard,
   };
 }
@@ -986,4 +998,54 @@ export function kartFrames(sql: SqlStorage, q: KartQuestion) {
     forPhone: (playerId: string) =>
       phoneRaceView(race, full, playerId, cursors.get(playerId), shared),
   };
+}
+
+/** A phone's shortlist: the top eight plus its own row and the rows either side. */
+export function phoneLeaderboard<T extends { playerId: string }>(
+  rows: readonly T[],
+  selfPlayerId: string | null,
+): T[] {
+  const self = selfPlayerId
+    ? rows.findIndex((row) => row.playerId === selfPlayerId)
+    : -1;
+  return rows.filter((_, i) => i < 8 || (self >= 0 && Math.abs(i - self) <= 1));
+}
+
+/** Trusted casual timing. Identity, phase, membership and settlement remain room-owned. */
+export function acceptKartFinish(
+  sql: SqlStorage,
+  store: GameStore,
+  q: KartQuestion,
+  playerId: string,
+  raw: unknown,
+  now: number,
+): { ok: true } | { ok: false; message: string } {
+  const report = kartFinishSchema.safeParse(raw);
+  const room = store.readRoom();
+  if (!report.success)
+    return { ok: false, message: "Invalid finish time or lap splits." };
+  if (room.phase !== "collect" || room.paused || room.hold)
+    return {
+      ok: false,
+      message: "Finish reports are available only while the race is running.",
+    };
+  const due = collectDue(sql, store)?.due_at;
+  if (due == null || now >= due)
+    return { ok: false, message: "The finish window has closed." };
+  const race = readKart(sql, q.id);
+  if (
+    !race ||
+    race.ended ||
+    race.raceId !== report.data.raceId ||
+    !sql
+      .exec("SELECT 1 FROM player WHERE player_id = ? AND revoked_at IS NULL", playerId)
+      .toArray().length
+  )
+    return { ok: false, message: "This phone cannot finish that race." };
+  const next = reduceKart(race, { type: "device-finish", playerId, ...report.data });
+  if (next === race)
+    return { ok: false, message: "That finish cannot be accepted in this race." };
+  write(sql, q.id, next);
+  sql.exec("UPDATE room SET state_version = state_version + 1");
+  return { ok: true };
 }

@@ -326,7 +326,9 @@ function suppliedIssues(
       question.id,
       "collection",
       question.collectMs,
-      question.kind === "wordle" || question.kind === "kart"
+      question.kind === "wordle" ||
+        question.kind === "kart" ||
+        question.kind === "chess"
         ? 180_000
         : contentLimits.collectMaxMs,
     ),
@@ -538,7 +540,9 @@ function validatePlayableQuestions(
         question.id,
         "collection",
         question.collectMs,
-        question.kind === "wordle" || question.kind === "kart"
+        question.kind === "wordle" ||
+          question.kind === "kart" ||
+          question.kind === "chess"
           ? 180_000
           : contentLimits.collectMaxMs,
       ),
@@ -828,7 +832,7 @@ function validKart(q: { trackId: string; timeLimitMs: number; collectMs: number 
   const limit =
     q.trackId === "party-ring-v1"
       ? 45000
-      : q.trackId === "mario-circuit-v1"
+      : q.trackId === "mario-circuit-v1" || q.trackId === "26-park-v1"
         ? 180000
         : 0;
   return limit > 0 && q.timeLimitMs === limit && q.collectMs === limit;

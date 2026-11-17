@@ -71,7 +71,9 @@ export function AdminResultsPage() {
                 data-tone={snapshot.phase === "podium" ? "ok" : "warn"}
                 aria-hidden="true"
               />
-              <span className="admin-mono-tag">{snapshot.phase === "podium" ? "FINAL" : "LIVE"}</span>
+              <span className="admin-mono-tag">
+                {snapshot.phase === "podium" ? "FINAL" : "LIVE"}
+              </span>
               <h2 className="admin-card-title">
                 {snapshot.phase === "podium" ? "Final standings" : "Current scores"}
               </h2>
@@ -89,7 +91,9 @@ export function AdminResultsPage() {
                           {player.nickname}
                           {player.removed ? " · removed" : ""}
                         </span>
-                        <strong className="admin-mono-tag">{player.points} points</strong>
+                        <strong className="admin-mono-tag">
+                          {player.points} points
+                        </strong>
                       </li>
                     ))}
                   </ul>
@@ -108,11 +112,15 @@ export function AdminResultsPage() {
               {snapshot.highlights?.length ? (
                 <ul className="results-highlights admin-data-list">
                   {snapshot.highlights.map((card) => (
-                    <li key={card.id} className="admin-data-row">{card.results}</li>
+                    <li key={card.id} className="admin-data-row">
+                      {card.results}
+                    </li>
                   ))}
                 </ul>
               ) : (
-                <p>Comparison cards appear when the room has enough accepted answers.</p>
+                <p>
+                  Comparison cards appear when the room has enough accepted answers.
+                </p>
               )}
             </div>
           </section>

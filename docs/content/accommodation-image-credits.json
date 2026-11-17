@@ -1,0 +1,29 @@
+[
+  {
+    "id": "accommodation-01",
+    "file": "FantoftStudentVillage.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:FantoftStudentVillage.jpg",
+    "author": "Aqwis",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "changes": "Resized to fit 1200 × 900 and JPEG recompressed; no crop or retouch."
+  },
+  {
+    "id": "accommodation-02",
+    "file": "Interior in Halden prison.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Interior_in_Halden_prison.jpg",
+    "author": "Justis- og politidepartementet",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "changes": "Resized to fit 1200 × 900 and JPEG recompressed; no crop or retouch."
+  },
+  {
+    "id": "accommodation-03",
+    "file": "Tietgenkollegiet Student Residence Copenhagen Ørestad 2014 01.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Tietgenkollegiet_Student_Residence_Copenhagen_%C3%98restad_2014_01.jpg",
+    "author": "Julian Herzog (Website)",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "changes": "Resized to fit 1200 × 900 and JPEG recompressed; no crop or retouch."
+  }
+]

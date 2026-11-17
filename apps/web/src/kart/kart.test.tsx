@@ -691,6 +691,12 @@ it("lays out each kart state for landscape and keeps race notices visible over t
   const view = render(<GuestKart snapshot={base} />);
   expect(phone().getAttribute("data-layout")).toBe("grid");
   await waitFor(() => expect(notice()?.textContent).toContain("Grid slot 2 of 2"));
+  // One big tap turns race sound on, and the prompt then leaves.
+  const prompt = screen.getByRole("button", { name: "🔊 Tap for race sound" });
+  act(() => prompt.click());
+  await waitFor(() =>
+    expect(screen.queryByRole("button", { name: "🔊 Tap for race sound" })).toBeNull(),
+  );
   expect(notice()?.parentElement).toBe(phone());
   expect(notice()?.tagName).not.toBe("P");
   // Racing: no notice while driving normally.
@@ -754,11 +760,11 @@ it("sends a control change at once when the room's gap allows, merging rapid cha
   );
   const view = renderHook(() => useKartSocket(race, true, send));
   expect(send).toHaveBeenCalledTimes(1);
-  // Within the 90 ms gap: held back, then sent once with the latest controls.
+  // Within the 85 ms gap: held back, then sent once with the latest controls.
   act(() => view.result.current({ ...kartNeutral, gas: true }));
   act(() => view.result.current({ ...kartNeutral, gas: true, steer: -1 }));
   expect(send).toHaveBeenCalledTimes(1);
-  act(() => vi.advanceTimersByTime(90));
+  act(() => vi.advanceTimersByTime(85));
   expect(send).toHaveBeenCalledTimes(2);
   expect(send.mock.lastCall![0]).toMatchObject({ gas: true, steer: -1 });
   // After the gap: straight away, without waiting for the heartbeat.
@@ -778,7 +784,7 @@ it("sends a control change at once when the room's gap allows, merging rapid cha
     act(() => vi.advanceTimersByTime(17));
   }
   for (let i = 1; i < times.length; i++)
-    expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(90);
+    expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(85);
   view.unmount();
 });
 
@@ -857,4 +863,20 @@ it("explains accepted bounce stun on the phone while keeping held controls ready
   race.elapsedMs = 200;
   view.rerender(<GuestKart snapshot={{ ...snapshot }} />);
   expect(screen.getByText("Wrong way — turn around")).toBeTruthy();
+});
+
+it("keeps the input heartbeat running when the device wall clock changes", () => {
+  vi.useFakeTimers();
+  const race = projectKartRace(
+    createKartRace("clock-input", [{ playerId: "mine", name: "Amina" }]),
+    "mine",
+    0,
+  );
+  const send = vi.fn();
+  const view = renderHook(() => useKartSocket(race, true, send));
+  const first = send.mock.calls.length;
+  vi.setSystemTime(Date.now() - 3600000);
+  act(() => vi.advanceTimersByTime(200));
+  expect(send.mock.calls.length).toBeGreaterThan(first);
+  view.unmount();
 });

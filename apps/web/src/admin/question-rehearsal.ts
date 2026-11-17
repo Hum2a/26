@@ -28,7 +28,29 @@ export function rehearsalPlay(
   } = {},
 ): PlaySnapshot {
   return playSnapshotSchema.parse({
-    question,
+    question:
+      question.kind === "choice" && question.optionSequence && phase === "prompt"
+        ? {
+            ...question,
+            options: question.options.slice(0, beat),
+            optionSequence: {
+              ...question.optionSequence,
+              shown: Math.min(beat, question.options.length),
+            },
+          }
+        : question,
+    ...(question.kind === "chess"
+      ? {
+          chess: {
+            totalGames: 3,
+            inProgress: 3,
+            finished: 0,
+            results: { playerWins: 0, botWins: 0, draws: 0, aborts: 0 },
+            recentEvents: [],
+            standings: [],
+          },
+        }
+      : {}),
     selfAnswer: answer,
     selfBallot: ballot,
     submissionCount: answer || ballot ? 1 : 0,

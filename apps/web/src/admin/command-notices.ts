@@ -10,6 +10,8 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "kart-items-clear") return "Active kart track items cleared.";
   if (action === "start-kart")
     return "The kart race has started. The starting grid is frozen.";
+  if (action === "restart-kart")
+    return "Back in the lobby with the same join code. Start kart race when ready.";
   if (action === "open-joining")
     return "New players can join, including during the game.";
   if (action === "close-joining")

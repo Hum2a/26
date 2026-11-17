@@ -6,8 +6,8 @@ import {
   type KartRaceView,
 } from "@26/shared";
 
-/** The room drops controls that arrive under 80 ms apart; leave room for jitter. */
-const minGapMs = 90;
+/** The room drops controls that arrive under 80 ms apart; leave a little jitter room. */
+const minGapMs = 85;
 /** Re-send held controls so the room keeps them fresh. */
 const heartbeatMs = 100;
 
@@ -16,7 +16,7 @@ const same = (a: KartControls, b: KartControls) =>
 
 /**
  * Adapter over openRoomSocket: no second connection, queued controls or
- * client-owned race clock. A change is sent straight away (or as soon as the
+ * second race state. A change is sent straight away (or as soon as the
  * room's minimum gap allows) rather than waiting for the next heartbeat.
  */
 export function useKartSocket(
@@ -47,14 +47,14 @@ export function useKartSocket(
     const publish = () => {
       window.clearTimeout(pending.current);
       pending.current = undefined;
-      lastSent.current = Date.now();
+      lastSent.current = performance.now();
       sent.current = { ...controls.current };
       sender.current?.({ raceId, sequence: ++sequence.current, ...controls.current });
     };
     publisher.current = publish;
     publish();
     const interval = window.setInterval(() => {
-      if (Date.now() - lastSent.current >= minGapMs) publish();
+      if (performance.now() - lastSent.current >= minGapMs) publish();
     }, heartbeatMs);
     const reset = () => {
       controls.current = { ...kartNeutral };
@@ -79,7 +79,7 @@ export function useKartSocket(
     controls.current = running ? value : { ...kartNeutral };
     const publish = publisher.current;
     if (!publish || same(controls.current, sent.current)) return;
-    const wait = lastSent.current + minGapMs - Date.now();
+    const wait = lastSent.current + minGapMs - performance.now();
     if (wait <= 0) publish();
     else if (pending.current === undefined)
       pending.current = window.setTimeout(publish, wait);
