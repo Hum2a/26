@@ -1,5 +1,6 @@
+import type { SelfPrediction } from "./self-prediction";
 import { importedRoute } from "../../../../packages/shared/src/kart/kart-route";
-import { useId, type ReactNode } from "react";
+import { useId, useEffect, useRef, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   ringCourse,
@@ -58,12 +59,28 @@ function MapFace({
 export function KartMap({
   race,
   personal = false,
+  prediction,
   children,
 }: {
   race: KartRaceView;
   personal?: boolean;
+  prediction?: SelfPrediction;
   children?: ReactNode;
 }) {
+  const marker = useRef<SVGGElement | null>(null);
+  useEffect(
+    () =>
+      prediction?.subscribe((pose) => {
+        marker.current?.setAttribute(
+          "transform",
+          `translate(${mapX(race.trackId, pose.x)} ${mapZ(race.trackId, pose.z)})`,
+        );
+        marker.current
+          ?.querySelector("[aria-label='Your heading']")
+          ?.setAttribute("d", mapHeadingPath(pose.heading));
+      }),
+    [prediction, race.trackId],
+  );
   const imported = race.trackId === "mario-circuit-v1";
   const park = race.trackId === parkTrackId;
   const px = (x: number) => mapX(race.trackId, x);
@@ -294,9 +311,19 @@ export function KartMap({
       {drivers.map((driver) => (
         <motion.g
           key={driver.playerId}
+          ref={personal && driver.playerId === race.selfPlayerId ? marker : undefined}
+          transform={
+            prediction && driver.playerId === race.selfPlayerId
+              ? `translate(${px(driver.x)} ${pz(driver.z)})`
+              : undefined
+          }
           data-map-player={driver.playerId}
           initial={false}
-          animate={{ x: px(driver.x), y: pz(driver.z) }}
+          animate={
+            prediction && driver.playerId === race.selfPlayerId
+              ? undefined
+              : { x: px(driver.x), y: pz(driver.z) }
+          }
           transition={{ duration: reduced ? 0 : 0.18, ease: "linear" }}
         >
           <title>{`#${driver.number} ${driver.name} · ${driver.status === "FINISHED" ? "Finished" : driver.status === "DNF" ? "DNF" : `${Math.round(driver.progress * 100)}%`}`}</title>
@@ -323,7 +350,8 @@ export function KartMap({
               stroke="var(--background)"
               strokeWidth="0.4"
               initial={false}
-              animate={{ d: mapHeadingPath(driver.heading) }}
+              d={prediction ? mapHeadingPath(driver.heading) : undefined}
+              animate={prediction ? undefined : { d: mapHeadingPath(driver.heading) }}
               transition={{ duration: reduced ? 0.1 : 0.18, ease: "easeOut" }}
             />
           ) : null}

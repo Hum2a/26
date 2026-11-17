@@ -1,3 +1,4 @@
+export * from "./kart/kart-rollback-schema.ts";
 import { kartRaceSchema, kartLookHistorySchema } from "./kart/kart-race-schema.ts";
 import { kartContactHistorySchema } from "./kart/kart-contacts.ts";
 import { kartRecapSchema } from "./kart/kart-recap.ts";

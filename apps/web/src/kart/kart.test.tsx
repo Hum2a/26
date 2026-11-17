@@ -864,3 +864,15 @@ it("explains accepted bounce stun on the phone while keeping held controls ready
   view.rerender(<GuestKart snapshot={{ ...snapshot }} />);
   expect(screen.getByText("Wrong way — turn around")).toBeTruthy();
 });
+
+it("keeps the input heartbeat running when the device wall clock changes", () => {
+  vi.useFakeTimers();
+  const race = projectKartRace(createKartRace("clock-input", [{ playerId: "mine", name: "Amina" }]), "mine", 0);
+  const send = vi.fn();
+  const view = renderHook(() => useKartSocket(race, true, send));
+  const first = send.mock.calls.length;
+  vi.setSystemTime(Date.now() - 3600000);
+  act(() => vi.advanceTimersByTime(200));
+  expect(send.mock.calls.length).toBeGreaterThan(first);
+  view.unmount();
+});

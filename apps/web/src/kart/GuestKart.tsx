@@ -1,13 +1,13 @@
 import { AnimatePresence, motion } from "motion/react";
 import { usePrefersReducedMotion } from "../anim/use-reduced-motion";
-import type { LobbySnapshot, KartInput, KartControls } from "@26/shared";
+import type { LobbySnapshot, KartInput, KartControls, KartFinish } from "@26/shared";
 import { KartDriverView } from "./KartDriverView";
 import { TouchController } from "./TouchController";
 import { useKartSocket } from "./useKartSocket";
 import { PowerUpControl } from "./PowerUpControl";
 import { Button } from "../ui/primitives";
 import { DriftGauge } from "./DriftGauge";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { kartNeutral, resolveKartSettings } from "@26/shared";
 import { createSelfPrediction } from "./self-prediction";
 import { KartCountdown } from "./KartCountdown";
@@ -26,6 +26,8 @@ export function GuestKart({
   snapshot,
   connected = true,
   onInput,
+  onFinish,
+  finishNotice,
   onRecover,
   onUseItem,
   itemPending,
@@ -37,6 +39,8 @@ export function GuestKart({
   snapshot: LobbySnapshot;
   connected?: boolean;
   onInput?: (input: KartInput) => void;
+  onFinish?: (report: KartFinish) => void;
+  finishNotice?: string;
   onRecover?: (raceId: string) => void;
   onUseItem?: (raceId: string) => void;
   itemPending?: boolean;
@@ -84,8 +88,77 @@ export function GuestKart({
     (viewReadiness.raceId === race.raceId && viewReadiness.usable);
   const open =
     snapshot.phase === "collect" && !snapshot.paused && !snapshot.held && connected;
-  const driveOpen = open && viewUsable;
-  const send = useKartSocket(race, driveOpen && !recoveryPending, onInput);
+  const [prediction] = useState(createSelfPrediction);
+  const [finishRaceId, setFinishRaceId] = useState("");
+  const finishSent = useRef("");
+  const finishCallback = useRef(onFinish);
+  useEffect(() => {
+    finishCallback.current = onFinish;
+  }, [onFinish]);
+  const hasInput = Boolean(onInput);
+  const localFinish = Boolean(race && finishRaceId === race.raceId);
+  const driveOpen = open && viewUsable && !localFinish;
+  const sendInput = useCallback(
+    (input: KartInput) => {
+      prediction.published(input, performance.now());
+      onInput?.(input);
+    },
+    [prediction, onInput],
+  );
+  const send = useKartSocket(
+    race,
+    driveOpen && !recoveryPending,
+    onInput ? sendInput : undefined,
+  );
+  useEffect(() => {
+    if (race?.timingMode !== "device-v1" || !hasInput) return;
+    const now = performance.now();
+    prediction.running(
+      snapshot.phase === "collect" && !snapshot.paused && !snapshot.held,
+      now,
+    );
+    prediction.server(race, now, 0);
+    let frame = 0;
+    const running =
+      snapshot.phase === "collect" &&
+      !snapshot.paused &&
+      !snapshot.held &&
+      !race.ended &&
+      !localFinish;
+    const tick = () => {
+      if (document.hidden || !running) return;
+      prediction.pose(performance.now());
+      const report = prediction.finish();
+      if (report && finishSent.current !== report.raceId) {
+        finishSent.current = report.raceId;
+        setFinishRaceId(report.raceId);
+        finishCallback.current?.(report);
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    if (running && !document.hidden) frame = requestAnimationFrame(tick);
+    const release = () => prediction.input(kartNeutral, performance.now());
+    const visibility = () => {
+      release();
+      cancelAnimationFrame(frame);
+      if (!document.hidden && running) frame = requestAnimationFrame(tick);
+    };
+    window.addEventListener("blur", release);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("blur", release);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, [
+    race,
+    snapshot.phase,
+    snapshot.paused,
+    snapshot.held,
+    prediction,
+    hasInput,
+    localFinish,
+  ]);
   const laps = raceLaps(race);
   const [soundAsked, setSoundAsked] = useState(false);
   const feedback = useRaceFeedback(race, { open: driveOpen && !recoveryPending });
@@ -108,7 +181,6 @@ export function GuestKart({
   });
   // Draws this phone's kart from its own controls straight away; the room
   // still decides where the kart really is and corrects the drawing.
-  const [prediction] = useState(createSelfPrediction);
   const feel = resolveKartSettings(race?.settings);
   if (feel.prediction !== "off") prediction.configure(feel.prediction);
   const change = (value: KartControls) => {
@@ -130,32 +202,38 @@ export function GuestKart({
           ? "race"
           : "grid";
   // Shown over the full-screen driving view, where the ordinary status line is hidden.
-  const raceNotice = !connected
-    ? "Connection lost — controls released"
-    : snapshot.paused || snapshot.held
-      ? "Paused — controls released"
-      : recoveryPending
-        ? "Returning to the track — controls released"
-        : !viewUsable
-          ? "Preparing your driving view — choose Map view to drive now"
-          : layout === "grid"
-            ? self?.gridPosition
-              ? `Grid slot ${self.gridPosition}${race?.participantCount ? ` of ${race.participantCount}` : ""} · push up right on GO for a rocket start`
-              : "Push up right on GO for a rocket start"
-            : "";
-  const instruction = !connected
-    ? "Connection lost — controls released"
-    : snapshot.paused || snapshot.held
-      ? "Paused — controls released"
-      : race?.ended || complete
-        ? "Race complete — watch the stage"
-        : snapshot.phase !== "collect" && !rehearsal
-          ? "Your driving view opens here. Accelerate right on GO for a rocket start."
-          : race && !self
-            ? snapshot.mode === "kart"
-              ? "You’re watching this race from the side."
-              : "You’re watching this race. Join the next round."
-            : "Drive on this screen. Accelerate and follow the circuit.";
+  const raceNotice =
+    localFinish && !complete
+      ? finishNotice || "Finish recorded — waiting for the room to save your time"
+      : !connected
+        ? "Connection lost — controls released"
+        : snapshot.paused || snapshot.held
+          ? "Paused — controls released"
+          : recoveryPending
+            ? "Returning to the track — controls released"
+            : !viewUsable
+              ? "Preparing your driving view — choose Map view to drive now"
+              : layout === "grid"
+                ? self?.gridPosition
+                  ? `Grid slot ${self.gridPosition}${race?.participantCount ? ` of ${race.participantCount}` : ""} · push up right on GO for a rocket start`
+                  : "Push up right on GO for a rocket start"
+                : "";
+  const instruction =
+    localFinish && !complete
+      ? finishNotice || "Finish recorded — saving your time…"
+      : !connected
+        ? "Connection lost — controls released"
+        : snapshot.paused || snapshot.held
+          ? "Paused — controls released"
+          : race?.ended || complete
+            ? "Race complete — watch the stage"
+            : snapshot.phase !== "collect" && !rehearsal
+              ? "Your driving view opens here. Accelerate right on GO for a rocket start."
+              : race && !self
+                ? snapshot.mode === "kart"
+                  ? "You’re watching this race from the side."
+                  : "You’re watching this race. Join the next round."
+                : "Drive on this screen. Accelerate and follow the circuit.";
   return (
     <section
       className="kart-phone"
@@ -284,7 +362,9 @@ export function GuestKart({
           paused={!driveOpen}
           onReadiness={onReadiness}
           prediction={
-            onInput && !recoveryPending && feel.prediction !== "off"
+            onInput &&
+            !recoveryPending &&
+            (race?.timingMode === "device-v1" || feel.prediction !== "off")
               ? prediction
               : undefined
           }
@@ -367,6 +447,7 @@ export function GuestKart({
       )}
       {race?.ended && self ? (
         <KartRecapPanel
+          timingMode={race.timingMode}
           recap={recap}
           selfPlayerId={self.playerId}
           names={{ [self.playerId]: self.name }}

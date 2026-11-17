@@ -975,7 +975,7 @@ it("accepts authenticated-driver controls, rejects stale/forged/late inputs and 
   expect(JSON.stringify(view.kart)).not.toContain("sequence");
 });
 
-it("persists lap winners once, ignores client times, and continues to scores and the final podium", async () => {
+it("persists legacy server-timed lap winners once and continues to scores and the final podium", async () => {
   const { stub, players, now, credential } = await setup();
   const raceId = (await stub.snapshotFor("guest", players[0])).play!.kart!.raceId;
   await runInDurableObject(stub, (_instance, state) => {
@@ -983,6 +983,9 @@ it("persists lap winners once, ignores client times, and continues to scores and
       store = createSqlStore(sql),
       q = questionFor(store.readRoom());
     if (q?.kind !== "kart") throw new Error("Kart required");
+    const legacy = readKart(sql, q.id)!;
+    delete legacy.timingMode;
+    writeRoundState(sql, q.id, "kart-race", legacy);
     for (
       let elapsed = 0;
       elapsed < 45_000 && store.readRoom().phase === "collect";

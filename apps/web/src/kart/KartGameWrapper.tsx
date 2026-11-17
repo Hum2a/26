@@ -70,6 +70,7 @@ export default function KartGameWrapper({
         <div className="kart-stage-view">
           {race.ended ? (
             <KartRecapPanel
+              timingMode={race.timingMode}
               recap={
                 race.presentation && race.presentation.version !== 2
                   ? race.presentation.recap
