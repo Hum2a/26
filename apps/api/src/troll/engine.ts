@@ -624,12 +624,16 @@ export function trollSnapshot(
   shared?: TrollSnapshotShared,
 ): TrollSnapshotValue {
   const room = shared ? shared.room : store.readRoom();
-  const locked = shared ? shared.locked : room.questionCount <= 0 || room.questionIndex < 1;
+  const locked = shared
+    ? shared.locked
+    : room.questionCount <= 0 || room.questionIndex < 1;
   const token = !selfPlayerId
     ? "locked"
     : locked
       ? "locked"
-      : (shared ? (shared.tokenStates.get(selfPlayerId) ?? "ready") : tokenState(sql, selfPlayerId)) === "spent"
+      : (shared
+            ? (shared.tokenStates.get(selfPlayerId) ?? "ready")
+            : tokenState(sql, selfPlayerId)) === "spent"
         ? "spent"
         : "ready";
   const disabled = shared ? shared.disabled : disabledTrollKinds(sql);
@@ -652,7 +656,8 @@ export function trollSnapshot(
   const openEffects = shared ? shared.openEffects : selfPlayerId ? readOpen(sql) : [];
   const filteredEffects = selfPlayerId
     ? openEffects.filter(
-        (effect) => effect.actor_id === selfPlayerId || effect.target_id === selfPlayerId,
+        (effect) =>
+          effect.actor_id === selfPlayerId || effect.target_id === selfPlayerId,
       )
     : [];
   const active =
@@ -672,7 +677,9 @@ export function trollSnapshot(
                     ? ("target" as const)
                     : ("actor" as const),
                 status:
-                  effect.status === "queued" ? ("queued" as const) : ("active" as const),
+                  effect.status === "queued"
+                    ? ("queued" as const)
+                    : ("active" as const),
                 expiresAt: publicExpiry(store, effect),
                 label: definition.label,
                 escape: effect.status === "active" ? definition.escape : null,

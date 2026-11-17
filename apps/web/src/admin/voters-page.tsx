@@ -43,10 +43,7 @@ export function VotersPage() {
       </p>
       <CommandFeedback scope="voters" />
 
-      <section
-        className="admin-card"
-        aria-label="Picks on the big screen"
-      >
+      <section className="admin-card" aria-label="Picks on the big screen">
         <div className="admin-card-header">
           <h2 className="admin-card-title">Picks on the big screen</h2>
           <span className="admin-badge" data-tone={hidden ? "warn" : "ok"}>
@@ -71,7 +68,9 @@ export function VotersPage() {
               onClick={() =>
                 void execute(
                   { action: hidden ? "voters-question" : "voters-hidden" },
-                  hidden ? "Show picks on the big screen" : "Hide picks on the big screen",
+                  hidden
+                    ? "Show picks on the big screen"
+                    : "Hide picks on the big screen",
                   "voters",
                 )
               }
@@ -156,7 +155,8 @@ export function VotersPage() {
         <div className="admin-card-body">
           <p>
             {withPhotos.length} of {snapshot.players.length} players have a photo.
-            Removing one takes it off every screen at once; the guest may take a new one.
+            Removing one takes it off every screen at once; the guest may take a new
+            one.
           </p>
           {snapshot.players.length === 0 ? (
             <p>No players yet.</p>
@@ -201,10 +201,10 @@ export function VotersPage() {
                       <span className="text-sm text-muted">No photo</span>
                     )}
                   </motion.li>
-              ))}
-            </AnimatePresence>
-          </ul>
-        )}
+                ))}
+              </AnimatePresence>
+            </ul>
+          )}
         </div>
       </section>
 

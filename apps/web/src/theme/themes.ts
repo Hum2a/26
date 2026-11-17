@@ -1835,7 +1835,11 @@ export function themeChromeTags(theme: PartyTheme): string {
   return tags.join("\n    ");
 }
 
-export function themeDocumentHead(): { style: string; themeColor: string; chrome: string } {
+export function themeDocumentHead(): {
+  style: string;
+  themeColor: string;
+  chrome: string;
+} {
   const fallback = themes[DEFAULT_THEME_ID];
   const themed = Object.values(themes).map((theme) =>
     themeBlock(`[data-theme="${theme.id}"]`, theme),

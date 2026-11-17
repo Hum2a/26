@@ -41,7 +41,11 @@ export function KartDriverView({
         data-inset={inset}
       >
         <div className="kart-driver-map">
-          <KartMap race={race} personal prediction={race.timingMode === "device-v1" ? prediction : undefined} />
+          <KartMap
+            race={race}
+            personal
+            prediction={race.timingMode === "device-v1" ? prediction : undefined}
+          />
         </div>
         {!map && race.selfPlayerId ? (
           <Suspense

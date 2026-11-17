@@ -71,9 +71,7 @@ function readDevVar(name: string): string {
   return readEnvValue(devVarsPath, name);
 }
 
-function resolveClientApiKeyForEnvironment(
-  target: "staging" | "production",
-): string {
+function resolveClientApiKeyForEnvironment(target: "staging" | "production"): string {
   const fromProcess = process.env.VITE_CLIENT_API_KEY?.trim();
   if (fromProcess) {
     return fromProcess;
@@ -352,12 +350,15 @@ function partyThemes(): Plugin {
           /[ \t]*<meta\s+name="(?:theme-color|color-scheme|supported-color-schemes)"[^>]*>\r?\n?/gi,
           "",
         );
-        const withTheme = stripped.replace(/<html\b([^>]*)>/, (_match, attrs: string) => {
-          if (/\bdata-theme=/.test(attrs)) {
-            return `<html${attrs}>`;
-          }
-          return `<html${attrs} data-theme="${DEFAULT_THEME_ID}">`;
-        });
+        const withTheme = stripped.replace(
+          /<html\b([^>]*)>/,
+          (_match, attrs: string) => {
+            if (/\bdata-theme=/.test(attrs)) {
+              return `<html${attrs}>`;
+            }
+            return `<html${attrs} data-theme="${DEFAULT_THEME_ID}">`;
+          },
+        );
         const styleTag = withTheme.includes('id="party-themes"')
           ? ""
           : `<style id="party-themes">\n${style}\n    </style>\n    `;

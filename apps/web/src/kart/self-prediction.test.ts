@@ -370,11 +370,21 @@ it("measures a finish in active monotonic time across a long host pause", () => 
 });
 
 it("applies a recovery checkpoint before replay can invent a finish from the old position", () => {
-  const p = createSelfPrediction(), frame = deviceFrame();
-  frame.rollback!.body = { ...createDrivingBody(43, -.04, Math.PI / 2), vz: 10 };
-  frame.rollback!.lap = { angle: -.001, distance: Math.PI * 2 - .001, checkpoint: 7, done: 0, splits: [] };
-  p.running(true, 0); p.server(frame, 0, 0);
-  const recovery = deviceFrame(1020, 2); recovery.rollback!.recovery = 1; recovery.rollback!.body.x = 100;
+  const p = createSelfPrediction(),
+    frame = deviceFrame();
+  frame.rollback!.body = { ...createDrivingBody(43, -0.04, Math.PI / 2), vz: 10 };
+  frame.rollback!.lap = {
+    angle: -0.001,
+    distance: Math.PI * 2 - 0.001,
+    checkpoint: 7,
+    done: 0,
+    splits: [],
+  };
+  p.running(true, 0);
+  p.server(frame, 0, 0);
+  const recovery = deviceFrame(1020, 2);
+  recovery.rollback!.recovery = 1;
+  recovery.rollback!.body.x = 100;
   p.server(recovery, 20, 0);
   expect(p.finish()).toBeUndefined();
   expect(p.pose(20)!.x).toBe(100);

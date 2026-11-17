@@ -188,10 +188,7 @@ it("skips storage writes on unchanged snapshots and separates games on gameId ch
 
   // Switching to another room clears previous game's remembered standings.
   view.rerender(
-    <RanksTab
-      nickname="Amina"
-      snapshot={{ ...playingFixture, gameId: "NEWROOM1" }}
-    />,
+    <RanksTab nickname="Amina" snapshot={{ ...playingFixture, gameId: "NEWROOM1" }} />,
   );
   expect(screen.queryByText("Place 2 of 4")).toBeNull();
   setItemSpy.mockRestore();

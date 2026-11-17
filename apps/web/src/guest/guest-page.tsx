@@ -437,10 +437,12 @@ export function GuestPage({
     const codeToRedeem = transferCode.trim().toUpperCase();
     const payload = JSON.stringify([joinCode, codeToRedeem]);
     setBusy(true);
-    let redeemed: Awaited<ReturnType<typeof redeemTransfer>> | {
-      error: string;
-      uncertain: true;
-    };
+    let redeemed:
+      | Awaited<ReturnType<typeof redeemTransfer>>
+      | {
+          error: string;
+          uncertain: true;
+        };
     try {
       if (transferRequest.current?.payload !== payload)
         transferRequest.current = { payload, requestId: crypto.randomUUID() };

@@ -68,7 +68,10 @@ export function QuestionPage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.16, ease: "easeOut" }}
         >
-          <section className="admin-question-wording admin-card" aria-label="Question wording">
+          <section
+            className="admin-question-wording admin-card"
+            aria-label="Question wording"
+          >
             <div className="admin-card-header">
               <span
                 className="admin-status-dot"
@@ -101,7 +104,9 @@ export function QuestionPage() {
                   {question.options.length ? (
                     <ol className="admin-question-options admin-data-list">
                       {question.options.map((option) => (
-                        <li key={option.id} className="admin-data-row">{option.label}</li>
+                        <li key={option.id} className="admin-data-row">
+                          {option.label}
+                        </li>
                       ))}
                     </ol>
                   ) : (
@@ -128,7 +133,10 @@ export function QuestionPage() {
                   {question.missing.length ? (
                     <ul className="admin-question-gaps admin-data-list">
                       {question.missing.map((item, index) => (
-                        <li key={`${item.code}/${item.name}/${index}`} className="admin-data-row">
+                        <li
+                          key={`${item.code}/${item.name}/${index}`}
+                          className="admin-data-row"
+                        >
                           <strong>{item.name}</strong>
                           <p>{item.detail}</p>
                         </li>

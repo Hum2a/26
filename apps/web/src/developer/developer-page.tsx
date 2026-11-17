@@ -204,7 +204,11 @@ export function DeveloperPage() {
       ) : null}
       <section className="admin-card" aria-label="Bot population">
         <div className="admin-card-header">
-          <span className="admin-status-dot" data-tone={count > 0 ? "ok" : "muted"} aria-hidden="true" />
+          <span
+            className="admin-status-dot"
+            data-tone={count > 0 ? "ok" : "muted"}
+            aria-hidden="true"
+          />
           <span className="admin-mono-tag">{count} BOTS ACTIVE</span>
           <h2 className="admin-card-title">Build up the room</h2>
         </div>
@@ -214,8 +218,8 @@ export function DeveloperPage() {
             places
           </p>
           <p>
-            Each preset sets the total bot count. Existing bots are kept when scaling up.
-            Removing bots keeps their accepted actions and rehearsal history.
+            Each preset sets the total bot count. Existing bots are kept when scaling
+            up. Removing bots keeps their accepted actions and rehearsal history.
           </p>
           <div className="admin-actions">
             {[10, 25, 50, 75, 100].map((n) => (
@@ -276,7 +280,9 @@ export function DeveloperPage() {
             data-tone={settings.auto ? "ok" : "muted"}
             aria-hidden="true"
           />
-          <span className="admin-mono-tag">{settings.auto ? "AUTO-PILOT ACTIVE" : "MANUAL MODE"}</span>
+          <span className="admin-mono-tag">
+            {settings.auto ? "AUTO-PILOT ACTIVE" : "MANUAL MODE"}
+          </span>
           <h2 className="admin-card-title">Choose the traffic</h2>
         </div>
         <div className="admin-card-body space-y-3">
@@ -340,7 +346,10 @@ export function DeveloperPage() {
               <select
                 value={settings.participation}
                 onChange={(event) =>
-                  setSettings({ ...settings, participation: Number(event.target.value) })
+                  setSettings({
+                    ...settings,
+                    participation: Number(event.target.value),
+                  })
                 }
               >
                 {[25, 50, 75, 100].map((n) => (
@@ -431,8 +440,8 @@ export function DeveloperPage() {
         </div>
         <div className="admin-card-body space-y-3">
           <p>
-            Run the show here to keep the bot fleet on this page. Leaving Developer tools
-            stops its connections.
+            Run the show here to keep the bot fleet on this page. Leaving Developer
+            tools stops its connections.
           </p>
           <div className="admin-actions">
             {snapshot.kartLobby ? (
@@ -453,7 +462,11 @@ export function DeveloperPage() {
                 snapshot.phase !== "lobby"
               }
               onClick={() =>
-                void execute({ action: "start" }, "Start illustrative demo", "developer")
+                void execute(
+                  { action: "start" },
+                  "Start illustrative demo",
+                  "developer",
+                )
               }
             >
               Start illustrative demo
@@ -522,8 +535,8 @@ export function DeveloperPage() {
             </Link>
           </div>
           <p>
-            Opening another room in this browser changes its room access. Stop these bots
-            before switching rooms.
+            Opening another room in this browser changes its room access. Stop these
+            bots before switching rooms.
           </p>
         </div>
       </section>

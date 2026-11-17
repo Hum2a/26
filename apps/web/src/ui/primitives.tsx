@@ -14,10 +14,7 @@ import { Link, type LinkProps } from "react-router";
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight";
 
-function buttonClasses(
-  variant: "primary" | "secondary" | "danger",
-  className: string,
-) {
+function buttonClasses(variant: "primary" | "secondary" | "danger", className: string) {
   const tone =
     variant === "primary"
       ? "bg-accent text-accent-foreground"

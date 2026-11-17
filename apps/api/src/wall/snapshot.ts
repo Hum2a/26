@@ -156,7 +156,9 @@ export function wallSnapshot(
     const index = order!.indexOf(postId);
     return index === -1 ? null : index + 1;
   };
-  const showing = shared ? shared.showing : rows.find((row) => row.status === "showing");
+  const showing = shared
+    ? shared.showing
+    : rows.find((row) => row.status === "showing");
   const photo = (row: Row, withCaption: boolean): Photo => ({
     postId: row.post_id,
     mediaId: row.media_id,
@@ -165,7 +167,9 @@ export function wallSnapshot(
     frame: wallFrameSchema.catch("polaroid").parse(row.frame),
   });
   const publicCaptions = settings.captions || audience === "control";
-  const isOwnerCaption = Boolean(showing && !publicCaptions && showing.player_id === selfPlayerId);
+  const isOwnerCaption = Boolean(
+    showing && !publicCaptions && showing.player_id === selfPlayerId,
+  );
   const waitingCount = shared ? shared.waiting : order!.length;
   let base: WallSnapshot;
   if (shared && !isOwnerCaption && audience !== "control") {
@@ -203,7 +207,9 @@ export function wallSnapshot(
           const nextId = order![0];
           return nextId ? rows.find((row) => row.post_id === nextId) : undefined;
         })();
-    const podium = shared ? shared.podium : createSqlStore(sql).readRoom().phase === "podium";
+    const podium = shared
+      ? shared.podium
+      : createSqlStore(sql).readRoom().phase === "podium";
     const reel = podium
       ? readReel(sql).map((row) => ({
           mediaId: row.media_id,
