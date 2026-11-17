@@ -1,3 +1,4 @@
+import { QuestionImage } from "./question-image";
 import { lazy, Suspense } from "react";
 const KartGameWrapper = lazy(() => import("../kart/KartGameWrapper"));
 import { motion } from "motion/react";
@@ -104,7 +105,12 @@ function StageBeat({
         </Suspense>
       </KartDriversProvider>
     );
-  if (play.question.kind === "chess" && play.chess && "totalGames" in play.chess) {
+  if (
+    play.question.kind === "chess" &&
+    play.chess &&
+    "totalGames" in play.chess &&
+    !["scores", "final", "podium"].includes(snapshot.phase)
+  ) {
     return <ChessStage snapshot={play.chess} />;
   }
   const leadBoard =
@@ -152,6 +158,7 @@ function StageBeat({
       ) : null}
       {custom ?? (
         <>
+          <QuestionImage question={play.question} />
           <QuestionView play={play} omitBoard={false} />
           {play.explanation ? <p className="stage-answer">{play.explanation}</p> : null}
         </>

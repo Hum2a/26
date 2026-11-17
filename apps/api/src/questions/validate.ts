@@ -326,7 +326,9 @@ function suppliedIssues(
       question.id,
       "collection",
       question.collectMs,
-      question.kind === "wordle" || question.kind === "kart"
+      question.kind === "wordle" ||
+        question.kind === "kart" ||
+        question.kind === "chess"
         ? 180_000
         : contentLimits.collectMaxMs,
     ),
@@ -538,7 +540,9 @@ function validatePlayableQuestions(
         question.id,
         "collection",
         question.collectMs,
-        question.kind === "wordle" || question.kind === "kart"
+        question.kind === "wordle" ||
+          question.kind === "kart" ||
+          question.kind === "chess"
           ? 180_000
           : contentLimits.collectMaxMs,
       ),

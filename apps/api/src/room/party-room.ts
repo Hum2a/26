@@ -19,8 +19,6 @@ import {
 import { readRoundState } from "../questions/round-state.ts";
 import { readAdmission } from "./admission.ts";
 import {
-  handleChessClockAlarm,
-  createChessRound,
   pauseChessClocks,
   resumeChessClocks,
   executeChessMove,
@@ -999,44 +997,7 @@ export class PartyRoom extends DurableObject<Env> {
   private async runDueJobs(now: number, raceTick: (only: boolean) => void) {
     await commitAndArm(this.ctx.storage, (sql) => {
       this.flushKartInputs(sql);
-      const baseStore = createGameStore(sql);
-      // Compose chess callbacks with existing lifecycle callbacks
-      const baseOnScheduledJob = baseStore.onScheduledJob;
-      const baseOnEnterPhase = baseStore.onEnterPhase;
-
-      const store: GameStore = {
-        ...baseStore,
-        onScheduledJob: (job, now) => {
-          // Call base handler first (kart-tick, trolls)
-          if (baseOnScheduledJob) {
-            baseOnScheduledJob(job, now);
-          }
-          // Then handle chess-specific jobs
-          if (job.payload.startsWith("chess-clock:")) {
-            const gameId = job.payload.substring("chess-clock:".length);
-            handleChessClockAlarm(sql, store, gameId, now);
-          }
-        },
-        onEnterPhase: (room, now) => {
-          // Call base handler first (scoring, trolls, wall, export, etc.)
-          if (baseOnEnterPhase) {
-            baseOnEnterPhase(room, now);
-          }
-          // Then handle chess-specific phase entry
-          if (room.phase === "collect") {
-            const question = questionFor(room);
-            if (question?.kind === "chess") {
-              const participants = sql
-                .exec<{ player_id: string }>(
-                  `SELECT player_id FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC`,
-                )
-                .toArray()
-                .map((r) => r.player_id);
-              createChessRound(sql, store, question, participants, now);
-            }
-          }
-        },
-      };
+      const store = createGameStore(sql);
       const before = store.readRoom();
       const due = sql
         .exec<{ payload: string }>(

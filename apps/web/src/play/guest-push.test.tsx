@@ -119,3 +119,10 @@ it("keeps BAIL off the projector and counts the room's bails", () => {
   expect(screen.queryByRole("button")).toBeNull();
   expect(screen.getByText("1 of 1 have bailed")).toBeTruthy();
 });
+
+it("keeps the revealed search lines visible while the room is paused", () => {
+  const paused = snapshot({ phase: "collect", paused: true, remainingMs: 16000 });
+  render(<GuestPush snapshot={paused} push={push} observedAt={0} />);
+  expect(screen.getByText("incognito")).toBeTruthy();
+  expect(screen.queryByText("Surrey")).toBeNull();
+});

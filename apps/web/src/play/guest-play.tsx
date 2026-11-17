@@ -1,3 +1,4 @@
+import { QuestionImage } from "./question-image";
 import { lazy, Suspense } from "react";
 // The race and its track geometry load when a kart round arrives, not on joining.
 const GuestKart = lazy(() =>
@@ -188,6 +189,7 @@ export function GuestPlay({
           </p>
         ) : null}
         <h1 className="phone-prompt">{play.question.prompt}</h1>
+        <QuestionImage question={play.question} />
         {play.question.instructions ? (
           <p className="text-base text-muted">{play.question.instructions}</p>
         ) : null}

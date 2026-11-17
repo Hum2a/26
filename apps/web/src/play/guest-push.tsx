@@ -36,9 +36,10 @@ export function GuestPush({
   const clock = usePhaseCountdown(snapshot, observedAt);
   const collecting = snapshot.phase === "collect";
   const revealed = play.reveal?.kind === "choice" ? play.reveal : undefined;
+  const remaining = snapshot.paused ? snapshot.remainingMs : clock?.remainingMs;
   const elapsed =
-    collecting && clock?.remainingMs !== null && clock?.remainingMs !== undefined
-      ? Math.max(0, push.windowMs - clock.remainingMs)
+    collecting && remaining !== null && remaining !== undefined
+      ? Math.max(0, push.windowMs - remaining)
       : 0;
   const shown = revealed
     ? push.lines.length

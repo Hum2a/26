@@ -6236,6 +6236,7 @@ Conclude the merge commit when ready and test solo chess (`/chess`) or a party r
 Status: complete locally on branch `feature/admin-pages-dashboard-redesign`. Not deployed.
 
 Redesigned the internal page layout and presentation across all global and room-scoped `/admin` pages into a cohesive, mission-control dashboard:
+
 - **Design system components** (`apps/web/src/ui/admin.css`):
   - `.admin-card`, `.admin-card-header`, `.admin-card-title`, `.admin-card-body`, `.admin-card-footer` for structured control boxes with crisp borders, subtle elevation and dark glass header chrome.
   - `.admin-status-dot` with pulsing live indicator rings for `ok`, `warn`, `danger`, and `muted` operational states.
@@ -6358,3 +6359,54 @@ Local `http://localhost:5173/`: served HTML has `color-scheme` `dark` and `#1411
 ### Exact next stage
 
 Deploy when asked. Do not start the next prompt automatically.
+
+## 17 November 2026 — Custom codes and party-round repairs
+
+Status: complete locally on `codex/party-rounds-and-room-codes`. No deployment or remote resource changes.
+
+### What changed
+
+- Verified `C:\Users\Humza\Programming\Personal\26`, clean at start, fetched all remotes and confirmed `master` and `origin/master` both at `c540380` before branching.
+- Optional custom six-letter/digit codes in Admin → Rooms, normalised and reserved by the existing registry, with collision refusal and durable idempotent creation. Guest join fields/links accept the same alphabet; random generation remains unchanged.
+- `optionReveal: "one-at-a-time"` on choice questions, demonstrated by `favourite-genre`. Existing receipted Advance reveals one more option, with no prompt deadline; the following Advance after the last option opens answering. Unseen labels/images stay out of public snapshots. The existing lifecycle now has manual-phase, advance and leave-phase hooks; no extra scheduler or command channel.
+- Removed the three named trolley variants, all current “who said it” entries, AI Turing Test, all British subcultures, Reddit tribunal and the old council/dystopia questions from the active catalogue/order. Their source documents are retained in `retired.ts` for format/source reference. The reusable quotation presentation remains. Old saved orders filter these retired IDs for future starts; already-frozen room scripts do not change.
+- Three ready `accommodation-01/02/03` photo questions: Fantoft student housing, Halden prison corridor, Tietgen student residence. Local JPEGs are 96–168 KB; credits, licences and transformations recorded in `docs/content/accommodation-image-credits.json`. Explicit public question images use the existing media references and shared phone/stage rendering, with licence links and neutral numbered filenames.
+- Completed `whos-that-pokemon`: Jigglypuff with Clefairy, Wigglytuff and Chansey decoys. Four colour PNGs and a separate black SVG silhouette; no client answer key. It is ready and included in the default order.
+- Repaired Cursed Search History phone/stage rehearsals: roster and clock context, immediate BAIL acceptance in the isolated adapter, fixed bank line and paused-line display. Existing server scoring/raid logic remains authoritative in live games.
+- Chess is ready and in the default order. Manual and scheduled entry share the same setup/clock handlers. Two one-minute clocks fit inside the 120-second ceiling. Closing/skipping settles capture points once under the actual question id; chess results feed the ordinary quiz standings. Host live controls show per-game health, clocks, captures and recent results. Its preview endpoint now matches the public schema, and the real phone/Stockfish engine works through an explicitly isolated practice adapter. Chess is owned by the admin content feature rather than exempted as pending.
+- Guess-the-guest uses the existing roster/majority runtime and actual rehearsal renderer; `group-chat-figurine` is in the default order. Three new ready fictional scenarios (`guess-emotional-support`, `guess-council-coup`, `guess-airport-lounge`) are catalogue-only until the host adds them to Running order.
+- Restored the existing closed-room recovery button's intended “Join another room” label; its existing router regression now passes.
+- Updated question authoring/data inventory and regenerated the private birthday answer key/running order.
+
+### Checks recorded so far
+
+- `npm run typecheck` — passed.
+- `npm run lint` — passed, including the final rerun; 29 existing react-refresh warnings, structure check passed.
+- `npm run build` — passed including content preflight, secret scan (934 files), and bundle budget (entry JS about 218 KB gzip). Final rerun passed before the final wording-only correction to the Halden explanation.
+- `npm run test -w @26/api -- party-rounds custom-codes chess birthday who-said-it trolley-additions party-concepts content-preflight question-authoring push-luck vote phase end-destroy` — 25 files / 167 tests passed.
+- Follow-up `npm run test -w @26/api -- party-rounds birthday-order birthday-assets-prices push-luck` — 5 files / 18 tests passed, including old saved-order filtering.
+- Focused UI run covering router recovery, live controls, phone/stage previews, Pokémon, push pause, rooms/custom codes, admin ownership, chess practice and host chess view — 11 files / 74 tests passed.
+- Final full suite: `npm run test:unit -w @26/web -- --maxWorkers=2 --reporter=dot` — 197 files / 873 tests passed (282 seconds). Earlier overlapping runs are not treated as passes.
+- Existing room/quiz/answer-flow regressions: `npm run test -w @26/api -- test/room.spec.ts test/quiz.spec.ts test/rounds.spec.ts` — 3 files / 22 tests passed.
+- Final `npm run content:check` — passed; only the unrelated Nextdoor and property-price drafts are incomplete.
+- `git diff --check` — passed.
+
+### Manual verification and limitations
+
+Inspected all three downloaded JPEGs locally and checked their subject/source mapping; Halden is a corridor rather than a common room. No browser runner was added or used. Phone widths, a physical phone/projector, real Stockfish WASM in an authenticated browser and an 80-phone chess show remain unverified. The existing bot move protocol retains its documented casual-trust model: phone worker selects bot moves; the room validates legality and owns clocks/scoring. Nextdoor/property-price drafts remain unrelated incomplete content.
+
+### Exact next stage
+
+Try Admin → Rooms custom code; Admin → Question packs → Favourite genre get-ready reveal steps; Pokémon/push/chess phone/stage rehearsal. Select any additional questions that should use staged options, and explicitly add desired new guest scenarios to Running order. Deploy only when requested.
+
+## 17 November 2026 — Push and follow-up verification
+
+Committed the implementation as `b12414f`, pushed `codex/party-rounds-and-room-codes`, and opened PR #28 against `master`: https://github.com/Hum2a/26/pull/28 . No merge or deployment.
+
+Used the computer-use skill to check the existing local browser at `http://localhost:5173/chess`. The real Stockfish WASM loaded, White played e2–e4, Black replied e7–e5, and the UI returned to “Your move”. Admin → Rooms redirected to administrator sign-in; authenticated room creation and phone/stage walkthroughs remain unverified. No authentication was bypassed.
+
+Ran `npm run load:realtime`: harness assertions passed for 10/25/50/75/100 simulated guests, but timings were poor above 25. Answer ack p95 was 208/354/757/1297/2132 ms respectively. At 75 guests, stage updates were 1/s with p95 gaps 3023 ms; at 100, 0.8/s with p95 gaps 3388 ms. A separate `LOAD_SIZES=80 npm run load:realtime` reproduced the issue: answer ack p50 753 / p95 1503 / max 1589 ms, stage updates 0.8/s, stage gap p95 3042 ms. Both were local workerd, ring kart track, six-second driving windows at ten inputs/second; neither measures an 80-player chess game or production latency. No full guest snapshots were sent during the measured race windows.
+
+These are **not** acceptable responsiveness results despite the harness passing its functional assertions. The older verification report records materially better timings. A clean baseline/profile comparison is needed before attributing the degradation to this PR, the emulator or desktop load. No timing checks were weakened, unrelated processes stopped, or live-path refactor undertaken during verification.
+
+Exact next stage: profile/compare the local realtime bottleneck, then inspect the authenticated admin rehearsals in a signed-in browser and test real phones/projector. The implementation's previous unit/type/lint/build results remain recorded above; this follow-up changes documentation only.

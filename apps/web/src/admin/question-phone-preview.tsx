@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+const ChessRehearsal = lazy(() =>
+  import("../chess/chess-rehearsal").then((module) => ({
+    default: module.ChessRehearsal,
+  })),
+);
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Link, useParams, useSearchParams } from "react-router";
 import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
@@ -74,6 +79,9 @@ function PhoneRehearsal({
   const [answer, setAnswer] = useState<PlaySnapshot["selfAnswer"]>(null);
   const [ballot, setBallot] = useState<PlaySnapshot["selfBallot"]>(null);
   const [beat, setBeat] = useState(0);
+  const [startedAt] = useState(() => Date.now());
+  const [clockNow, setClockNow] = useState(startedAt);
+  const [pausedDuration, setPausedDuration] = useState(0);
   const [paused, setPaused] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
@@ -102,6 +110,16 @@ function PhoneRehearsal({
   const play = rehearsalPlay(question, phase, { answer, ballot, beat });
   const snapshot = {
     phase,
+    players: [],
+    serverNow: clockNow,
+    deadlineAt:
+      question.kind === "choice" && question.push && phase === "collect"
+        ? startedAt + question.push.windowMs + pausedDuration
+        : null,
+    remainingMs:
+      question.kind === "choice" && question.push
+        ? Math.max(0, startedAt + question.push.windowMs + pausedDuration - clockNow)
+        : null,
     paused,
     held: !interactive,
     play,
@@ -134,21 +152,54 @@ function PhoneRehearsal({
           ) : null}
         </AnimatePresence>
         <PhaseTransition phase={phase}>
-          <GuestPlay
-            snapshot={snapshot}
-            selectedId={selectedId}
-            pending={pending}
-            onSelect={setSelectedId}
-            onSubmit={() => {
-              if (selectedId) setAnswer({ kind: "choice", optionId: selectedId });
-            }}
-            onEstimate={(value) => setAnswer({ kind: "slider", value })}
-            onRank={(placements) => setAnswer({ kind: "rank", placements })}
-            onText={(body) => void sendText(body)}
-            onBallot={(candidateId) => setBallot({ candidateId })}
-            onDuel={(value) => setAnswer({ kind: "duel", value })}
-          />
+          {question.kind === "chess" ? (
+            <Suspense fallback={<p role="status">Loading chess engine…</p>}>
+              <ChessRehearsal snapshot={snapshot} />
+            </Suspense>
+          ) : (
+            <GuestPlay
+              snapshot={snapshot}
+              observedAt={clockNow}
+              onChoose={(optionId) =>
+                setAnswer({
+                  kind: "choice",
+                  optionId,
+                  ...(question.kind === "choice" && question.push
+                    ? {
+                        pushLine: Math.min(
+                          question.push.lines.length - 1,
+                          Math.floor(
+                            Math.max(0, Date.now() - startedAt - pausedDuration) /
+                              question.push.lineMs,
+                          ),
+                        ),
+                      }
+                    : {}),
+                })
+              }
+              selectedId={selectedId}
+              pending={pending}
+              onSelect={setSelectedId}
+              onSubmit={() => {
+                if (selectedId) setAnswer({ kind: "choice", optionId: selectedId });
+              }}
+              onEstimate={(value) => setAnswer({ kind: "slider", value })}
+              onRank={(placements) => setAnswer({ kind: "rank", placements })}
+              onText={(body) => void sendText(body)}
+              onBallot={(candidateId) => setBallot({ candidateId })}
+              onDuel={(value) => setAnswer({ kind: "duel", value })}
+            />
+          )}
         </PhaseTransition>
+        {phase === "prompt" && question.kind === "choice" && question.optionSequence ? (
+          <Button
+            variant="secondary"
+            disabled={beat >= question.options.length}
+            onClick={() => setBeat((value) => value + 1)}
+          >
+            Reveal next option
+          </Button>
+        ) : null}
         {phase === "vote" && question.kind === "vote" && question.flow ? (
           <Button
             variant="secondary"
@@ -160,7 +211,15 @@ function PhoneRehearsal({
             Next rehearsal ballot
           </Button>
         ) : null}
-        <Button variant="secondary" onClick={() => setPaused((value) => !value)}>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            const now = Date.now();
+            if (paused) setPausedDuration((value) => value + now - clockNow);
+            setClockNow(now);
+            setPaused((value) => !value);
+          }}
+        >
           {paused ? "Resume preview" : "Pause preview"}
         </Button>
       </PhoneShell>

@@ -99,6 +99,9 @@ export type GameStore = {
   hasAnswer(playerId: string, phaseGeneration: number): boolean;
   saveAnswer(playerId: string, phaseGeneration: number, at: number): void;
   onEnterPhase?(room: RoomClock, now: number): void;
+  onLeavePhase?(room: RoomClock, now: number): void;
+  onAdvance?(now: number): boolean;
+  manualPhase?(room: RoomClock): boolean;
   nextPhaseOverride?(room: RoomClock, now: number): RoomPhase | undefined;
   /** How many fun-fact sentences this room can show. Absent on stores that do not play them. */
   funFactCount?(): number;
@@ -320,6 +323,7 @@ export function advance(store: GameStore, now: number): boolean {
       });
     }
   }
+  if (store.onAdvance?.(now)) return true;
   return changePhase(store, now, "advance");
 }
 
@@ -687,6 +691,7 @@ function moveTo(
     return false;
   }
   try {
+    store.onLeavePhase?.(room, now);
     endPhase(store, room.roundId, now);
     openPhase(store, next, now);
     cancelGameplay(store, expected);
@@ -783,7 +788,8 @@ function scheduleGameplay(store: GameStore, room: RoomClock, now: number): void 
     room.hold ||
     room.phase === "podium" ||
     room.phase === "lobby" ||
-    room.phase === "facts"
+    room.phase === "facts" ||
+    store.manualPhase?.(room)
   ) {
     return;
   }

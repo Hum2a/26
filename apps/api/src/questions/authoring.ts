@@ -121,6 +121,7 @@ const missingContestants: MissingRequirement = {
 export function choiceQuestion(
   input: SharedInput & {
     options?: QuestionOption[];
+    optionReveal?: "one-at-a-time";
     outcome?: ChoiceOutcome;
     correctOption?: Answer<string>;
     speedBonus?: { maxPoints: number } | null;
@@ -146,6 +147,7 @@ export function choiceQuestion(
       kind: "choice",
       outcome,
       options: input.options ?? [],
+      ...(input.optionReveal ? { optionReveal: input.optionReveal } : {}),
       correctOption:
         outcome.kind === "correct"
           ? (input.correctOption ?? { missing: missingChoice })
@@ -497,6 +499,7 @@ export function toPlayable(
       kind: "choice",
       outcome: question.outcome,
       options: question.options,
+      ...(question.optionReveal ? { optionReveal: question.optionReveal } : {}),
       correctOptionId: question.correctOption.known,
       speedBonus: question.speedBonus,
       modifiers: question.modifiers,

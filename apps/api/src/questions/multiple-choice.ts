@@ -1,3 +1,4 @@
+import { readRoundState, writeRoundState } from "./round-state.ts";
 import {
   freezeRaid,
   pushBailOptionId,
@@ -7,7 +8,12 @@ import {
 } from "./push-luck.ts";
 import { enterKart, tickKart, kartScores, projectKart } from "./kart/kart.ts";
 import { enterRehearsalPhase, tickRehearsal } from "../developer/rehearsal.ts";
-import { projectChessGameSnapshot } from "./chess/chess-mechanic.ts";
+import {
+  createChessRound,
+  handleChessClockAlarm,
+  finishChessRound,
+  projectChessGameSnapshot,
+} from "./chess/chess-mechanic.ts";
 import { playSnapshotSchema, type PlaySnapshot } from "@26/shared";
 import {
   submissionGate,
@@ -197,6 +203,33 @@ export function createGameStore(sql: SqlStorage): GameStore {
   const store = createSqlStore(sql);
   const gameStore: GameStore = {
     ...store,
+    manualPhase(room) {
+      const question = questionFor(room);
+      return (
+        room.phase === "prompt" &&
+        question?.kind === "choice" &&
+        question.optionReveal === "one-at-a-time"
+      );
+    },
+    onAdvance() {
+      const room = store.readRoom();
+      const question = questionFor(room);
+      if (
+        room.phase !== "prompt" ||
+        question?.kind !== "choice" ||
+        question.optionReveal !== "one-at-a-time"
+      )
+        return false;
+      const shown = readRoundState<number>(sql, question.id, "option-sequence") ?? 0;
+      if (shown >= question.options.length) return false;
+      writeRoundState(sql, question.id, "option-sequence", shown + 1);
+      store.writeRoom({ ...room, phaseGeneration: room.phaseGeneration + 1 });
+      return true;
+    },
+    onLeavePhase(room, now) {
+      if (room.phase === "collect" && questionFor(room)?.kind === "chess")
+        finishChessRound(sql, gameStore, now);
+    },
     onEnterPhase(room, now) {
       if (room.phase === "podium") {
         queueFinalExport(sql, now);
@@ -206,6 +239,17 @@ export function createGameStore(sql: SqlStorage): GameStore {
       const current = createSqlStore(sql).readRoom();
       const question = questionFor(current);
       if (question?.kind === "kart") enterKart(sql, createSqlStore(sql), question, now);
+      if (question?.kind === "chess" && current.phase === "collect") {
+        const participants = sql
+          .exec<{ player_id: string }>(
+            "SELECT player_id FROM player WHERE revoked_at IS NULL ORDER BY rowid ASC",
+          )
+          .toArray()
+          .map((row) => row.player_id);
+        createChessRound(sql, gameStore, question, participants, now);
+      }
+      if (question?.kind === "chess" && current.phase === "reveal")
+        finishChessRound(sql, gameStore, now);
       if (
         current.questionCount > 0 &&
         question?.kind === "vote" &&
@@ -265,6 +309,15 @@ export function createGameStore(sql: SqlStorage): GameStore {
       const question = questionFor(store.readRoom());
       if (job.payload === "kart-tick" && question?.kind === "kart") {
         tickKart(sql, createGameStore(sql), question, job, now);
+        return;
+      }
+      if (job.payload.startsWith("chess-clock:")) {
+        handleChessClockAlarm(
+          sql,
+          gameStore,
+          job.payload.slice("chess-clock:".length),
+          now,
+        );
         return;
       }
       completeScheduledTroll(sql, job, now);
@@ -662,7 +715,7 @@ export function preparePlayShared(
       reveal: scored ? choiceReveal(sql, question) : null,
       liveSample: picksHidden ? null : liveNames(sql, question, room),
       attributions: picksHidden ? null : publicAttributions(sql, question, room),
-      publicQuestion: buildChoicePublicQuestion(question, room),
+      publicQuestion: buildChoicePublicQuestion(sql, question, room),
     };
   } else if (
     question.kind === "slider" ||
@@ -708,18 +761,30 @@ export function preparePlayShared(
   return base;
 }
 
-function buildChoicePublicQuestion(question: ChoiceQuestion, room: RoomClock) {
+function buildChoicePublicQuestion(
+  sql: SqlStorage,
+  question: ChoiceQuestion,
+  room: RoomClock,
+) {
+  const sequential = question.optionReveal === "one-at-a-time";
+  const shown =
+    sequential && (room.phase === "intro" || room.phase === "prompt")
+      ? room.phase === "intro"
+        ? 0
+        : (readRoundState<number>(sql, question.id, "option-sequence") ?? 0)
+      : question.options.length;
   return {
     ...publicQuestionCore(question, room.questionIndex + 1, room.questionCount),
-    options: question.options.map((option) => ({
+    ...(sequential
+      ? { optionSequence: { shown, total: question.options.length } }
+      : {}),
+    options: question.options.slice(0, shown).map((option) => ({
       id: option.id,
       label: option.label,
       ...(option.image ? { image: option.image } : {}),
     })),
     kind: "choice" as const,
-    ...(question.outcome.kind === "correct"
-      ? {}
-      : { outcome: question.outcome.kind }),
+    ...(question.outcome.kind === "correct" ? {} : { outcome: question.outcome.kind }),
     ...(question.outcome.kind === "push"
       ? {
           push: {
@@ -787,11 +852,7 @@ export function projectPlay(
       room,
       audience === "guest" ? selfPlayerId : undefined,
     );
-    const totals = shared
-      ? shared.totals
-      : scored
-        ? standings(sql)
-        : [];
+    const totals = shared ? shared.totals : scored ? standings(sql) : [];
     const selfRow =
       scored && audience === "guest" && selfPlayerId
         ? shared
@@ -830,8 +891,11 @@ export function projectPlay(
       audience,
       selfPlayerId,
     );
-    if (!chessSnapshot) return null;
 
+    const totals = shared ? shared.totals : scored ? standings(sql) : [];
+    const selfRow = selfPlayerId
+      ? totals.find((row) => row.playerId === selfPlayerId)
+      : undefined;
     const index = room.questionIndex + 1;
     const total = room.questionCount;
 
@@ -851,16 +915,26 @@ export function projectPlay(
           playerTimeMs: question.initialTimeMs,
           botTimeMs: question.initialTimeMs,
         },
-        chess: chessSnapshot,
+        ...(chessSnapshot ? { chess: chessSnapshot } : {}),
         submissionCount: 0,
         selfAnswer: null,
         selfBallot: null,
         ballot: null,
         duel: null,
         reveal: null,
-        selfAward: null,
-        selfStanding: null,
-        standings: null,
+        selfAward: lookupSelfAward(
+          sql,
+          question,
+          audience,
+          scored,
+          selfPlayerId,
+          shared,
+        ),
+        selfStanding:
+          scored && selfRow
+            ? { place: selfRow.place, points: selfRow.points, players: totals.length }
+            : null,
+        standings: scored ? lookupAudienceStandings(totals, audience, shared) : null,
         liveSample: null,
         attributions: null,
       },
@@ -901,11 +975,13 @@ export function projectPlay(
       ? shared.totalsById.get(selfPlayerId)
       : totals.find((row) => row.playerId === selfPlayerId)
     : undefined;
-  const picksHidden = shared ? shared.picksHidden : readVoterDisplay(sql).mode === "hidden";
+  const picksHidden = shared
+    ? shared.picksHidden
+    : readVoterDisplay(sql).mode === "hidden";
   const view = {
     question: choiceShared
       ? choiceShared.publicQuestion
-      : buildChoicePublicQuestion(question, room),
+      : buildChoicePublicQuestion(sql, question, room),
     submissionCount,
     selfAnswer: self
       ? question.outcome.kind === "multiple"
@@ -1335,7 +1411,11 @@ function standings(sql: SqlStorage): StandingRow[] {
     }))
     .sort((left, right) => {
       if (right.points !== left.points) return right.points - left.points;
-      return left.nickname < right.nickname ? -1 : left.nickname > right.nickname ? 1 : 0;
+      return left.nickname < right.nickname
+        ? -1
+        : left.nickname > right.nickname
+          ? 1
+          : 0;
     });
   let place = 0;
   let previous = Number.POSITIVE_INFINITY;

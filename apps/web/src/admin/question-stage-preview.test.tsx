@@ -124,3 +124,22 @@ it("uses the same explicitly labelled stand-in ballots as the phone", async () =
   expect(await screen.findByRole("heading", { name: "Voting" })).toBeTruthy();
   expect(screen.getByText("Sample line 1")).toBeTruthy();
 });
+
+it("renders the push stage rehearsal without a live roster", async () => {
+  vi.mocked(readQuestionPreview).mockResolvedValue({
+    ...preview,
+    question: publicQuestionSchema.parse({
+      ...preview.question,
+      outcome: "push",
+      push: {
+        lines: ["first search", "second search"],
+        banks: [100, 200],
+        lineMs: 6000,
+        windowMs: 15000,
+      },
+    }),
+  });
+  mount();
+  expect(await screen.findByText("first search")).toBeTruthy();
+  expect(screen.getByText("0 of 0 have bailed")).toBeTruthy();
+});

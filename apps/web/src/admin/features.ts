@@ -7,12 +7,7 @@ import type { LobbySnapshot } from "@26/shared";
  * `adminExempt`. See `.agents/rules/50-admin-coverage.md`.
  */
 export type AdminNavGroup =
-  | "start"
-  | "catalogue"
-  | "tonight"
-  | "screens"
-  | "after"
-  | "you";
+  "start" | "catalogue" | "tonight" | "screens" | "after" | "you";
 
 export type AdminFeature = {
   id: string;
@@ -90,7 +85,12 @@ export const adminFeatures: readonly AdminFeature[] = [
     summary:
       "Manage the birthday running order and inspect questions, answers, readiness and media.",
     rehearsal: "Each question opens on a rehearsal phone and stage with no room.",
-    owns: ["apps/api/src/questions", "apps/web/src/play", "apps/web/src/photo"],
+    owns: [
+      "apps/api/src/questions",
+      "apps/web/src/play",
+      "apps/web/src/photo",
+      "apps/web/src/chess",
+    ],
   },
   {
     id: "kart",
@@ -285,7 +285,6 @@ export const adminExempt: Readonly<Record<string, string>> = {
   "apps/web/src/admin": "The admin workspace itself.",
   "apps/web/src/anim": "Shared animation helpers used by every surface.",
   "apps/web/src/api": "Shared request helpers.",
-  "apps/web/src/chess": "Chess mechanic (admin view pending, catalogue-only).",
   "apps/web/src/ui": "Shared primitives and layout.",
 };
 

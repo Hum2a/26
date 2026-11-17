@@ -463,3 +463,7 @@ The code-versioned kart-tracks-v2 catalogue derives counts/lengths from driving,
 - Kart item rules may carry `luck: "position"`, stored with the existing room
   item rules and their history.
 - No personal data, new table, scheduler or browser storage.
+
+### Custom codes and round presentation (17 November 2026)
+
+The room-code registry may store a host-chosen six-letter/digit public join code in the existing `code` table. Creation receipts include the normalised code in their payload digest; credentials remain independent. The existing room `round_state` table stores `option-sequence` (a count, keyed by question id) and `chess-question` (the real question id, keyed by frozen chess round id). These contain no additional guest personal data. Chess game and ledger records retain their existing access and retention policies. Public photo prompts are repository assets with photographer/licence credits; their answers and source notes remain server-side until reveal. Isolated admin chess practice, guesses and push previews have no socket or persistence.
