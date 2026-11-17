@@ -21,7 +21,11 @@ export function Highlights({
   reduce: boolean;
 }) {
   const cards = [
-    { key: "captured", label: "Points stolen from Stockfish", value: highlights.roomCaptured },
+    {
+      key: "captured",
+      label: "Points stolen from Stockfish",
+      value: highlights.roomCaptured,
+    },
     { key: "queens", label: "Queens taken", value: highlights.queensTaken },
     { key: "moves", label: "Moves played", value: highlights.movesPlayed },
     { key: "time", label: "Beat the bot on time", value: highlights.timeWins },

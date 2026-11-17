@@ -572,7 +572,11 @@ function chessHighlights(
     movesPlayed += moves;
     if (game.status === "timeout" && game.winner === "player") timeWins++;
     if (moves > 0 && (!longestGame || moves > longestGame.value)) {
-      longestGame = { playerId: game.playerId, nickname: nickname(game.playerId), value: moves };
+      longestGame = {
+        playerId: game.playerId,
+        nickname: nickname(game.playerId),
+        value: moves,
+      };
     }
     if (capturedPoints > 0 && (!biggestHaul || capturedPoints > biggestHaul.value)) {
       biggestHaul = {
@@ -584,7 +588,11 @@ function chessHighlights(
     if (game.winner === "player" && game.terminatedAt !== undefined) {
       const took = Math.max(0, game.terminatedAt - state.startedAt);
       if (!fastestWin || took < fastestWin.value) {
-        fastestWin = { playerId: game.playerId, nickname: nickname(game.playerId), value: took };
+        fastestWin = {
+          playerId: game.playerId,
+          nickname: nickname(game.playerId),
+          value: took,
+        };
       }
     }
   }
@@ -629,9 +637,7 @@ export function projectControlSnapshot(
   };
 }
 
-function determineEvent(
-  game: ChessPlayerGame,
-): ChessHallEvent {
+function determineEvent(game: ChessPlayerGame): ChessHallEvent {
   if (game.status === "aborted") return "abort";
   if (game.status === "resignation") return "resign";
   if (game.status === "timeout" && game.winner === "player") return "timeout-win";

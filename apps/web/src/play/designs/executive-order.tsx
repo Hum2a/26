@@ -99,7 +99,9 @@ function OrderPhone({
   play,
   controls,
   question,
-}: Extract<PresentationProps, { surface: "phone" }> & { question: ChoiceQuestionView }) {
+}: Extract<PresentationProps, { surface: "phone" }> & {
+  question: ChoiceQuestionView;
+}) {
   const motionSet = useDesignMotion();
   const [draft, setDraft] = useState<string[]>([]);
   const accepted =
@@ -143,7 +145,10 @@ function OrderPhone({
                 key={option.id}
                 initial={{ opacity: 0, x: motionSet.move(-16) }}
                 animate={{ opacity: reveal && !made ? 0.6 : 1, x: 0 }}
-                transition={{ ...motionSet.spring, delay: motionSet.delay(index * 0.08) }}
+                transition={{
+                  ...motionSet.spring,
+                  delay: motionSet.delay(index * 0.08),
+                }}
               >
                 <button
                   type="button"
@@ -212,7 +217,9 @@ function OrderPhone({
 function OrderStage({
   play,
   question,
-}: Extract<PresentationProps, { surface: "stage" }> & { question: ChoiceQuestionView }) {
+}: Extract<PresentationProps, { surface: "stage" }> & {
+  question: ChoiceQuestionView;
+}) {
   const motionSet = useDesignMotion();
   const reveal = revealOf(play);
   const correct = reveal?.correctOptionIds ?? [];
@@ -232,7 +239,10 @@ function OrderStage({
                 data-size="stage"
                 initial={{ opacity: 0, y: motionSet.move(24) }}
                 animate={{ opacity: reveal && !made ? 0.55 : 1, y: 0 }}
-                transition={{ ...motionSet.spring, delay: motionSet.delay(index * 0.12) }}
+                transition={{
+                  ...motionSet.spring,
+                  delay: motionSet.delay(index * 0.12),
+                }}
               >
                 <span className="order-section" aria-hidden="true">
                   §{index + 1}

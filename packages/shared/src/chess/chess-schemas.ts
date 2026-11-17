@@ -149,7 +149,11 @@ export const chessHallEventSchema = z.enum([
 export type ChessHallEvent = z.infer<typeof chessHallEventSchema>;
 
 const chessHallNamedSchema = z
-  .object({ playerId: z.string(), nickname: z.string(), value: z.number().int().min(0) })
+  .object({
+    playerId: z.string(),
+    nickname: z.string(),
+    value: z.number().int().min(0),
+  })
   .nullable();
 
 /**

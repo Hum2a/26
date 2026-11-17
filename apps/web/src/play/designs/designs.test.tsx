@@ -190,7 +190,9 @@ describe("custom question designs", () => {
     const sign = screen.getByRole("button", { name: /sign it/i });
     expect(sign).toHaveProperty("disabled", true);
     fireEvent.click(screen.getByRole("button", { name: "Baghdaddystan" }));
-    fireEvent.click(screen.getByRole("button", { name: "The United States of Israel" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "The United States of Israel" }),
+    );
     expect(screen.getByText(/2 countries invented/)).toBeTruthy();
     fireEvent.click(sign);
     expect(onText).toHaveBeenCalledWith(

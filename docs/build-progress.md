@@ -6502,6 +6502,7 @@ Chrome verification used the owner's running Chrome through the existing browser
 The admin session was not signed in. Requested the owner's normal staging sign-in asynchronously and left the sign-in page available in Chrome, including the original user tab. Did not retrieve or enter login codes, read credential files, or bypass authentication. Consequently **new live-room creation, live device-finish/reconnect verification, the authenticated rollback bench, and the remote 80-client run are not yet verified**. The existing Developer tools fleet can open actual WebSockets on staging, so it can supply the remote load once signed in; a new runner is unnecessary for that initial measurement. The locally measured 1.2 updates/s is not claimed as a Cloudflare production measurement.
 
 Exact next stage: after the owner signs in to staging, create a disposable new kart lobby (device-v1), use the real phone/stage renderers to inspect finish receipts, pause/resume/recovery and reconnect, then run the existing developer fleet with 80 clients and capture stage update cadence and reply latency. Continue with physical phones and venue Wi-Fi/projector checks afterwards. Review the formatting/verification PR; do not merge or deploy production without owner instruction.
+
 ## 17 November 2026: Trump made-up countries question, chess round in the running order
 
 ### Status
