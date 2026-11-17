@@ -240,8 +240,8 @@ export function wordleQuestion(
 export function rankQuestion(
   input: SharedInput & {
     mode?: "complete" | "partial";
-    scoring?: "consensus";
-    input?: "ordered";
+    scoring?: "consensus" | "placement";
+    input?: "ordered" | "buckets";
     ties?: "forbidden" | "shared";
     items?: { id: string; label: string }[];
     tiers?: { id: string; label: string }[];

@@ -70,7 +70,11 @@ export function adminQuestion(
       } else add("Odd player", question.odd);
     }
   } else if (question.kind === "rank") {
-    add("Ranking", question.mode);
+    add(question.input === "buckets" ? "Sorting" : "Ranking", question.mode);
+    if (question.input === "buckets") {
+      add("Scoring", "Proportional correct assignments, rounded down; no speed bonus");
+      add("Quotes", question.items.length);
+    }
     add("Ties", question.ties);
     add("Tiers", question.tiers.map((tier) => tier.label).join(", ") || "Not set");
   } else if (question.kind === "vote") {

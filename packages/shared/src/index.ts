@@ -309,6 +309,8 @@ export const contentLimits = {
   /** A poll may list more options, such as every party on a ballot. */
   pollOptionMax: 16,
   rankMax: 8,
+  bucketMax: 40,
+  bucketLabelMax: 300,
   collectMinMs: 15_000,
   collectMaxMs: 45_000,
   packMax: 80,
@@ -510,13 +512,46 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
       ...publicQuestionCore,
       kind: z.literal("rank"),
       mode: z.enum(["complete", "partial"]),
-      scoring: z.literal("consensus").optional(),
-      input: z.literal("ordered").optional(),
+      scoring: z.enum(["consensus", "placement"]).optional(),
+      input: z.enum(["ordered", "buckets"]).optional(),
       ties: z.enum(["forbidden", "shared"]),
-      items: z.array(publicChoiceSchema).min(2).max(8),
+      items: z
+        .array(
+          z
+            .object({
+              id: publicOptionIdSchema,
+              label: z.string().min(1).max(contentLimits.bucketLabelMax),
+            })
+            .strict(),
+        )
+        .min(2)
+        .max(contentLimits.bucketMax),
       tiers: z.array(publicChoiceSchema).min(2).max(8),
     })
-    .strict(),
+    .strict()
+    .superRefine((question, context) => {
+      if (question.input === "buckets") {
+        if (
+          question.scoring !== "placement" ||
+          question.mode !== "complete" ||
+          question.ties !== "shared"
+        )
+          context.addIssue({
+            code: "custom",
+            message:
+              "Bucket sorting requires complete shared placements and placement scoring.",
+          });
+      } else if (
+        question.scoring === "placement" ||
+        question.items.length > contentLimits.rankMax ||
+        question.items.some((item) => item.label.length > contentLimits.labelMax)
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Ordinary rankings retain their item and label limits.",
+        });
+      }
+    }),
   z
     .object({
       ...publicQuestionCore,
@@ -637,7 +672,7 @@ const selfAnswerSchema = z
     z
       .object({
         kind: z.literal("rank"),
-        placements: z.array(publicPlacementSchema).max(8),
+        placements: z.array(publicPlacementSchema).max(contentLimits.bucketMax),
       })
       .strict(),
     z
@@ -793,7 +828,10 @@ const revealSchema = z
               .object({
                 tierId: publicOptionIdSchema,
                 label: z.string().min(1).max(80),
-                itemIds: z.array(publicOptionIdSchema).min(1).max(8),
+                itemIds: z
+                  .array(publicOptionIdSchema)
+                  .min(1)
+                  .max(contentLimits.bucketMax),
               })
               .strict(),
           )
@@ -805,7 +843,7 @@ const revealSchema = z
               .object({
                 nickname: z.string().min(1).max(24).nullable(),
                 points: z.number().int().nonnegative(),
-                placements: z.array(publicPlacementSchema).max(8),
+                placements: z.array(publicPlacementSchema).max(contentLimits.bucketMax),
               })
               .strict(),
           )

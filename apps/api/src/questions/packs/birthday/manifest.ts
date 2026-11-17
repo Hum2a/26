@@ -1,4 +1,5 @@
 import { accommodation01 } from "./accommodation-01.ts";
+import { edOrHumza } from "./ed-or-humza.ts";
 import { accommodation02 } from "./accommodation-02.ts";
 import { accommodation03 } from "./accommodation-03.ts";
 import { guessemotionalsupport } from "./guess-emotional-support.ts";
@@ -107,6 +108,7 @@ export const birthdayPack: QuestionPack = {
     "kart-sprint",
   ],
   catalogue: withPointsTrolls([
+    edOrHumza,
     accommodation01,
     accommodation02,
     accommodation03,
