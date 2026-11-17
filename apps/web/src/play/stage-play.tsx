@@ -352,6 +352,40 @@ function RankView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolean 
     return null;
   }
   const reveal = play.reveal?.kind === "rank" ? play.reveal : undefined;
+  if (play.question.input === "buckets") {
+    const question = play.question;
+    return (
+      <div className="grid gap-4">
+        <p className="stage-prompt">{question.prompt}</p>
+        <p>Assign all {question.items.length} quotes on your phone, then send.</p>
+        <p>{play.submissionCount} submissions in.</p>
+        {reveal ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {question.tiers.map((tier) => (
+              <section key={tier.id} aria-label={`${tier.label} quotes`}>
+                <h2>{tier.label}</h2>
+                <ul className="grid gap-3">
+                  {question.items
+                    .filter((item) =>
+                      reveal.order.some(
+                        (group) =>
+                          group.tierId === tier.id && group.itemIds.includes(item.id),
+                      ),
+                    )
+                    .map((item) => (
+                      <li key={item.id}>{item.label}</li>
+                    ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <p>Each correct assignment earns a share of the round’s points.</p>
+        )}
+        {omitBoard ? null : <Standings play={play} />}
+      </div>
+    );
+  }
   return (
     <div className="grid gap-4">
       <p className="stage-prompt">{play.question.prompt}</p>

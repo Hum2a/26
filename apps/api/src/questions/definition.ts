@@ -120,8 +120,8 @@ export type RankPlacement = { itemId: string; tierId: string };
 
 export type RankBody = {
   kind: "rank";
-  scoring?: "consensus";
-  input?: "ordered";
+  scoring?: "consensus" | "placement";
+  input?: "ordered" | "buckets";
   mode: "complete" | "partial";
   ties: "forbidden" | "shared";
   items: { id: string; label: string }[];

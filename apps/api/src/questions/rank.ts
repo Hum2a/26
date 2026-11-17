@@ -112,6 +112,21 @@ export function pointsForRanking(
   if (!placements) {
     return { points: 0, detail: "missing" };
   }
+  if (question.scoring === "placement") {
+    const truth = new Map(
+      question.truth.flatMap((group) =>
+        group.itemIds.map((id) => [id, group.tierId] as const),
+      ),
+    );
+    const submitted = new Map(placements.map((entry) => [entry.itemId, entry.tierId]));
+    const correct = question.items.filter(
+      (item) => truth.get(item.id) === submitted.get(item.id),
+    ).length;
+    return {
+      points: Math.floor((question.points * correct) / question.items.length),
+      detail: `placed-${correct}/${question.items.length}`,
+    };
+  }
   const truthRank = rankMap(
     question.truth.map((group) => [group.tierId, group.itemIds]),
   );
@@ -311,9 +326,14 @@ export function rankReveal(
   if (!scored) {
     return null;
   }
-  const rows = sql
-    .exec<{ nickname: string; payload: string; points: number }>(
-      `SELECT player.nickname, round_response.payload,
+  // Bucket rounds reveal the key and each phone's own answer, not every guest's
+  // full list to every other guest (up to 80 × 40 placements per snapshot).
+  const rows =
+    question.input === "buckets"
+      ? []
+      : sql
+          .exec<{ nickname: string; payload: string; points: number }>(
+            `SELECT player.nickname, round_response.payload,
               COALESCE(score_ledger.points, 0) AS points
        FROM round_response
        JOIN player ON player.player_id = round_response.player_id
@@ -323,9 +343,9 @@ export function rankReveal(
        WHERE round_response.question_id = ? AND round_response.kind = 'rank'
          AND player.revoked_at IS NULL
        ORDER BY player.rowid ASC`,
-      question.id,
-    )
-    .toArray();
+            question.id,
+          )
+          .toArray();
   return {
     kind: "rank" as const,
     order: (question.scoring === "consensus"
@@ -370,17 +390,23 @@ export function rankHostResponses(sql: SqlStorage, question: RankQuestion) {
       if (!Array.isArray(parsed.placements)) {
         return [];
       }
-      const summary = parsed.placements
-        .map((placement) => {
-          const item = question.items.find(
-            (entry) => entry.id === placement.itemId,
-          )?.label;
-          const tier = question.tiers.find(
-            (entry) => entry.id === placement.tierId,
-          )?.label;
-          return `${item ?? placement.itemId} ${tier ?? placement.tierId}`;
-        })
-        .join(", ");
+      const summary =
+        question.input === "buckets"
+          ? `${parsed.placements.length} quotes assigned · ${question.tiers.map((tier) => `${tier.label}: ${parsed.placements!.filter((entry) => entry.tierId === tier.id).length}`).join(" · ")}`.slice(
+              0,
+              200,
+            )
+          : parsed.placements
+              .map((placement) => {
+                const item = question.items.find(
+                  (entry) => entry.id === placement.itemId,
+                )?.label;
+                const tier = question.tiers.find(
+                  (entry) => entry.id === placement.tierId,
+                )?.label;
+                return `${item ?? placement.itemId} ${tier ?? placement.tierId}`;
+              })
+              .join(", ");
       if (!summary) {
         return [];
       }
