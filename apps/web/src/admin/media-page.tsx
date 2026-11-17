@@ -72,8 +72,8 @@ export function MediaPage() {
             {snapshot.photoBias?.enabled !== false
               ? "On: iPhone uploads get a deliberately rough display."
               : "Off: clean photos are shown."}{" "}
-            Android photos use the best accepted copy. Unknown devices stay neutral. Clean
-            copies are always kept; these admin previews show them.
+            Android photos use the best accepted copy. Unknown devices stay neutral.
+            Clean copies are always kept; these admin previews show them.
           </p>
           <p className="admin-mono-tag">
             {snapshot.photoBias?.iphonePhotos ?? 0} iPhone ·{" "}
@@ -117,8 +117,8 @@ export function MediaPage() {
                       className="admin-data-row"
                     >
                       <span>
-                        Host {entry.enabled ? "enabled bias" : "restored clean photos"} ·{" "}
-                        {new Date(entry.atMs).toLocaleString("en-GB")}
+                        Host {entry.enabled ? "enabled bias" : "restored clean photos"}{" "}
+                        · {new Date(entry.atMs).toLocaleString("en-GB")}
                       </span>
                     </motion.li>
                   ))}

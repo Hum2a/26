@@ -12,9 +12,7 @@ function uuidFromRandomValues(cryptoObj: Crypto): string {
   cryptoObj.getRandomValues(bytes);
   bytes[6] = (bytes[6]! & 0x0f) | 0x40;
   bytes[8] = (bytes[8]! & 0x3f) | 0x80;
-  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
-    "",
-  );
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
@@ -26,9 +24,7 @@ export function newRequestId(cryptoObj: Crypto = globalThis.crypto): string {
 }
 
 /** Fill crypto.randomUUID when missing so existing call sites keep working on LAN HTTP. */
-export function installRequestIdPolyfill(
-  cryptoObj: Crypto = globalThis.crypto,
-): void {
+export function installRequestIdPolyfill(cryptoObj: Crypto = globalThis.crypto): void {
   if (typeof cryptoObj?.randomUUID === "function") return;
   if (typeof cryptoObj?.getRandomValues !== "function") return;
   Object.defineProperty(cryptoObj, "randomUUID", {

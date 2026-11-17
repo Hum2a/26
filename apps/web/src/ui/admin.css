@@ -246,7 +246,8 @@
   opacity: 0.6;
 }
 @keyframes admin-dot-pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
   }
   50% {
@@ -288,7 +289,9 @@
   border-radius: var(--radius-panel);
   background: color-mix(in srgb, var(--surface) 92%, var(--background));
   box-shadow: inset 0 1px 0 0 color-mix(in srgb, #fff 4%, transparent);
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 .admin-stat:hover {
   border-color: color-mix(in srgb, var(--line) 100%, var(--accent));
@@ -484,7 +487,9 @@
   border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
   border-radius: var(--radius-panel);
   background: var(--surface);
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 .admin-room-list li:hover {
   border-color: color-mix(in srgb, var(--line) 100%, var(--accent));
@@ -511,8 +516,9 @@
   padding: 1.25rem 1.4rem;
   display: grid;
   gap: 1rem;
-  box-shadow: 0 8px 30px -12px color-mix(in srgb, black 60%, transparent),
-              inset 0 1px 0 0 color-mix(in srgb, var(--accent) 30%, transparent);
+  box-shadow:
+    0 8px 30px -12px color-mix(in srgb, black 60%, transparent),
+    inset 0 1px 0 0 color-mix(in srgb, var(--accent) 30%, transparent);
 }
 /* Room overview: one card per admin feature, built from `adminFeatures`. */
 .admin-feature-grid {

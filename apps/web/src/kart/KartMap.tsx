@@ -47,9 +47,7 @@ function MapFace({
         clipPath={`url(#${clip})`}
         preserveAspectRatio="xMidYMid slice"
         data-map-face={playerId}
-        onError={
-          rawHref && href !== rawHref ? () => evictMediaUrl(rawHref) : undefined
-        }
+        onError={rawHref && href !== rawHref ? () => evictMediaUrl(rawHref) : undefined}
       />
     </>
   );
@@ -90,11 +88,11 @@ export function KartMap({
   const nextSector = personal ? nextMapSector(race) : undefined;
   const drivers = personal
     ? [
-      ...race.participants.filter((driver) => driver.playerId === race.selfPlayerId),
-      ...(race.nearby ?? [])
-        .filter((driver) => driver.playerId !== race.selfPlayerId)
-        .slice(0, 8),
-    ]
+        ...race.participants.filter((driver) => driver.playerId === race.selfPlayerId),
+        ...(race.nearby ?? [])
+          .filter((driver) => driver.playerId !== race.selfPlayerId)
+          .slice(0, 8),
+      ]
     : race.participants;
   const leaders = new Map(
     race.leaderboard.slice(0, 3).map((row, i) => [row.playerId, i]),
@@ -142,39 +140,39 @@ export function KartMap({
       )}
       {race.courseEnabled
         ? (park ? parkCourse : imported ? soloCourse : ringCourse).map((feature) => {
-          const pose = courseFeaturePose(feature, race.elapsedMs);
-          return (
-            <motion.g
-              key={feature.id}
-              initial={false}
-              animate={{
-                x: px(pose.x),
-                y: pz(pose.z),
-                rotate: (feature.heading * 180) / Math.PI,
-              }}
-              transition={{ duration: reduced ? 0.1 : 0.18, ease: "easeOut" }}
-              aria-label={`Track ${feature.kind}`}
-            >
-              <rect
-                x={-feature.length / 2}
-                y={-feature.width / 2}
-                width={feature.length}
-                height={feature.width}
-                fill={
-                  feature.kind === "hazard" ? "var(--foreground)" : "var(--accent)"
-                }
-              />
-              <text
-                textAnchor="middle"
-                dominantBaseline="central"
-                fill="var(--background)"
-                fontSize="3"
+            const pose = courseFeaturePose(feature, race.elapsedMs);
+            return (
+              <motion.g
+                key={feature.id}
+                initial={false}
+                animate={{
+                  x: px(pose.x),
+                  y: pz(pose.z),
+                  rotate: (feature.heading * 180) / Math.PI,
+                }}
+                transition={{ duration: reduced ? 0.1 : 0.18, ease: "easeOut" }}
+                aria-label={`Track ${feature.kind}`}
               >
-                {feature.kind === "boost" ? "»" : feature.kind === "ramp" ? "↗" : "!"}
-              </text>
-            </motion.g>
-          );
-        })
+                <rect
+                  x={-feature.length / 2}
+                  y={-feature.width / 2}
+                  width={feature.length}
+                  height={feature.width}
+                  fill={
+                    feature.kind === "hazard" ? "var(--foreground)" : "var(--accent)"
+                  }
+                />
+                <text
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fill="var(--background)"
+                  fontSize="3"
+                >
+                  {feature.kind === "boost" ? "»" : feature.kind === "ramp" ? "↗" : "!"}
+                </text>
+              </motion.g>
+            );
+          })
         : null}
       {park &&
         Array.from({ length: 8 }, (_, i) => {

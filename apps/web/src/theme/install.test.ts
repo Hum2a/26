@@ -53,11 +53,7 @@ describe("browser chrome", () => {
       [...document.querySelectorAll('meta[name="theme-color"]')].map((tag) =>
         tag.getAttribute("media"),
       ),
-    ).toEqual([
-      null,
-      "(prefers-color-scheme: light)",
-      "(prefers-color-scheme: dark)",
-    ]);
+    ).toEqual([null, "(prefers-color-scheme: light)", "(prefers-color-scheme: dark)"]);
 
     applyTheme("26-basic");
     expect(document.querySelectorAll('meta[name="theme-color"]')).toHaveLength(3);

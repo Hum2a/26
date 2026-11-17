@@ -486,11 +486,14 @@ describe("release.ts validation and approved deploys with fakes", () => {
   it("deploy runs checks when explicitly requested with --checks", () => {
     const checked = runRelease(["deploy", "--env", "staging", "--checks"]);
     assert.equal(checked.status, 0, checked.stderr);
-    assert.deepEqual(loggedCommands(checked.log, "NPM"), [
-      ...checkSteps,
-      "run build",
+    assert.deepEqual(loggedCommands(checked.log, "NPM"), [...checkSteps, "run build"]);
+    const withApi = runRelease([
+      "deploy",
+      "--env",
+      "staging",
+      "--checks",
+      "--full-checks",
     ]);
-    const withApi = runRelease(["deploy", "--env", "staging", "--checks", "--full-checks"]);
     assert.equal(withApi.status, 0, withApi.stderr);
     assert.deepEqual(loggedCommands(withApi.log, "NPM"), [
       ...checkSteps,

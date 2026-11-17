@@ -79,19 +79,19 @@ export function StagePresentation({
           <header className="projector-top">
             <Wordmark />
             {connected &&
-              !lobby &&
-              !hidden &&
-              clock &&
-              !(
-                snapshot.play?.question.kind === "kart" && snapshot.phase === "collect"
-              ) ? (
+            !lobby &&
+            !hidden &&
+            clock &&
+            !(
+              snapshot.play?.question.kind === "kart" && snapshot.phase === "collect"
+            ) ? (
               <StageCountdown
                 {...clock}
                 label={
                   snapshot.paused
                     ? "Paused."
                     : snapshot.play?.question.kind === "kart" &&
-                      snapshot.phase === "reveal"
+                        snapshot.phase === "reveal"
                       ? "The reveal"
                       : clock.label
                 }

@@ -35,17 +35,16 @@ export function RehearsalControls() {
     void execute({ action }, action, "developer");
   return (
     <>
-      <section
-        className="admin-card min-w-0"
-        aria-label="Rehearsal controls"
-      >
+      <section className="admin-card min-w-0" aria-label="Rehearsal controls">
         <div className="admin-card-header">
           <span
             className="admin-status-dot"
             data-tone={rehearsal.runner === "running" ? "ok" : "muted"}
             aria-hidden="true"
           />
-          <span className="admin-mono-tag">RUNNER: {rehearsal.runner.toUpperCase()}</span>
+          <span className="admin-mono-tag">
+            RUNNER: {rehearsal.runner.toUpperCase()}
+          </span>
           <h2 className="admin-card-title">Isolated rehearsal</h2>
         </div>
         <div className="admin-card-body space-y-3">
@@ -102,8 +101,8 @@ export function RehearsalControls() {
           </Button>
           <p>
             Jump and repeat stop the runner and clear that question’s rehearsal answers
-            and points. Other questions keep their history. These controls are unavailable
-            in ordinary rooms.
+            and points. Other questions keep their history. These controls are
+            unavailable in ordinary rooms.
           </p>
           <RehearsalFields
             value={value}
@@ -129,10 +128,7 @@ export function RehearsalControls() {
           </Button>
         </div>
       </section>
-      <section
-        className="admin-card min-w-0"
-        aria-label="Failure scenarios"
-      >
+      <section className="admin-card min-w-0" aria-label="Failure scenarios">
         <div className="admin-card-header">
           <span className="admin-mono-tag">CHAOS TESTING</span>
           <h2 className="admin-card-title">Try a failure</h2>
@@ -158,7 +154,9 @@ export function RehearsalControls() {
                 disabled={
                   locked ||
                   (scenario === "deadline-burst" &&
-                    (snapshot.phase !== "collect" || snapshot.paused || !!snapshot.held))
+                    (snapshot.phase !== "collect" ||
+                      snapshot.paused ||
+                      !!snapshot.held))
                 }
                 onClick={() =>
                   void execute(
@@ -182,10 +180,7 @@ export function RehearsalControls() {
           </p>
         </div>
       </section>
-      <section
-        className="admin-card min-w-0"
-        aria-label="Automatic rehearsal checks"
-      >
+      <section className="admin-card min-w-0" aria-label="Automatic rehearsal checks">
         <div className="admin-card-header">
           <span className="admin-status-dot" data-tone="ok" aria-hidden="true" />
           <h2 className="admin-card-title">Automatic checks</h2>
@@ -199,21 +194,19 @@ export function RehearsalControls() {
                   data-tone={check.status === "pass" ? "ok" : "warn"}
                   aria-hidden="true"
                 />
-                <span className="admin-mono-tag">{check.status.toUpperCase()}</span> · {check.detail}
+                <span className="admin-mono-tag">{check.status.toUpperCase()}</span> ·{" "}
+                {check.detail}
               </li>
             ))}
           </ul>
           <p>
             Checks cover duplicate score rows, phase deadlines, eligible bot answer
-            counts, connections and refused actions. Missing answers for mechanics without
-            a countable submission remain waiting.
+            counts, connections and refused actions. Missing answers for mechanics
+            without a countable submission remain waiting.
           </p>
         </div>
       </section>
-      <section
-        className="admin-card min-w-0"
-        aria-label="Rehearsal timeline"
-      >
+      <section className="admin-card min-w-0" aria-label="Rehearsal timeline">
         <div className="admin-card-header">
           <h2 className="admin-card-title">Live activity</h2>
         </div>
@@ -221,7 +214,10 @@ export function RehearsalControls() {
           <p>
             New activity appears as grouped notifications. The full history stays here.
           </p>
-          <Button variant="secondary" onClick={() => setNotifications((value) => !value)}>
+          <Button
+            variant="secondary"
+            onClick={() => setNotifications((value) => !value)}
+          >
             {notifications ? "Pause live notifications" : "Resume live notifications"}
           </Button>
           <Disclosure title="Event history">
@@ -250,7 +246,9 @@ export function RehearsalControls() {
               {rehearsal.events
                 .filter(
                   (event) =>
-                    filter === "all" || event.kind === filter || event.status === filter,
+                    filter === "all" ||
+                    event.kind === filter ||
+                    event.status === filter,
                 )
                 .map((event) => (
                   <motion.li
@@ -260,10 +258,15 @@ export function RehearsalControls() {
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.15, ease: "easeOut" }}
                   >
-                    <time dateTime={new Date(event.at).toISOString()} className="admin-mono-tag">
+                    <time
+                      dateTime={new Date(event.at).toISOString()}
+                      className="admin-mono-tag"
+                    >
                       {new Date(event.at).toLocaleTimeString("en-GB")}
                     </time>{" "}
-                    · <strong>{event.actor}</strong> · {event.detail} · <span className="admin-mono-tag">{event.status}</span> · {event.phase}
+                    · <strong>{event.actor}</strong> · {event.detail} ·{" "}
+                    <span className="admin-mono-tag">{event.status}</span> ·{" "}
+                    {event.phase}
                     {event.questionId ? ` / ${event.questionId}` : ""}
                   </motion.li>
                 ))}

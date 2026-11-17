@@ -867,7 +867,11 @@ it("explains accepted bounce stun on the phone while keeping held controls ready
 
 it("keeps the input heartbeat running when the device wall clock changes", () => {
   vi.useFakeTimers();
-  const race = projectKartRace(createKartRace("clock-input", [{ playerId: "mine", name: "Amina" }]), "mine", 0);
+  const race = projectKartRace(
+    createKartRace("clock-input", [{ playerId: "mine", name: "Amina" }]),
+    "mine",
+    0,
+  );
   const send = vi.fn();
   const view = renderHook(() => useKartSocket(race, true, send));
   const first = send.mock.calls.length;
