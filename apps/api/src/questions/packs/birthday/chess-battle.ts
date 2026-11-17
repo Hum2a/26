@@ -10,7 +10,7 @@ export const chessBattle = chessQuestion({
   status: "ready",
   prompt: "Play 1-minute blitz against the Humza bot!",
   instructions:
-    "You play White, 1+0. Score Black pieces you capture: Q10 R5 B3 N3 P1. Checkmate is at least 40. Other results keep captures.",
+    "You play White, 1+0. Score Black pieces you capture: Q10 R5 B3 N3 P1. Checkmate is at least 40. Win on time: captures + 15. Other results keep captures.",
   points: 40,
   collectMs: 120_000, // Both one-minute clocks fit inside the round.
   initialTimeMs: 60_000, // 1+0 time control

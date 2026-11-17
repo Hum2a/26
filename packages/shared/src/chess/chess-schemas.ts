@@ -137,6 +137,46 @@ export const chessGuestSnapshotSchema = z.object({
 });
 export type ChessGuestSnapshot = z.infer<typeof chessGuestSnapshotSchema>;
 
+export const chessHallEventSchema = z.enum([
+  "checkmate-win",
+  "checkmate-loss",
+  "draw",
+  "timeout",
+  "timeout-win",
+  "resign",
+  "abort",
+]);
+export type ChessHallEvent = z.infer<typeof chessHallEventSchema>;
+
+const chessHallNamedSchema = z
+  .object({
+    playerId: z.string(),
+    nickname: z.string(),
+    value: z.number().int().min(0),
+  })
+  .nullable();
+
+/**
+ * Aggregate fun facts for the big screen. Counts and names only, never a board.
+ */
+export const chessHighlightsSchema = z.object({
+  /** Black material the whole room has taken. */
+  roomCaptured: z.number().int().min(0),
+  /** Black queens the room has captured. */
+  queensTaken: z.number().int().min(0),
+  /** Guests who beat the bot on time. */
+  timeWins: z.number().int().min(0),
+  /** Guest moves played across every board. */
+  movesPlayed: z.number().int().min(0),
+  /** Most guest moves in one game. */
+  longestGame: chessHallNamedSchema,
+  /** Quickest win, in milliseconds from the round start. */
+  fastestWin: chessHallNamedSchema,
+  /** Most material captured by one guest. */
+  biggestHaul: chessHallNamedSchema,
+});
+export type ChessHighlights = z.infer<typeof chessHighlightsSchema>;
+
 /**
  * Public snapshot for stage/projector (aggregate only, no individual boards).
  */
@@ -150,19 +190,13 @@ export const chessStageSnapshotSchema = z.object({
     draws: z.number(),
     aborts: z.number(),
   }),
+  highlights: chessHighlightsSchema.optional(),
   // Recent events for announcements
   recentEvents: z.array(
     z.object({
       playerId: z.string(),
       nickname: z.string(),
-      event: z.enum([
-        "checkmate-win",
-        "checkmate-loss",
-        "draw",
-        "timeout",
-        "resign",
-        "abort",
-      ]),
+      event: chessHallEventSchema,
       timestamp: z.number(),
       capturedPoints: z.number().int().min(0),
       score: z.number().int().min(0),
@@ -175,6 +209,10 @@ export const chessStageSnapshotSchema = z.object({
       capturedPoints: z.number().int().min(0),
       score: z.number().int().min(0),
       finished: z.boolean(),
+      /** Guest moves played so far, for the big screen's progress view. */
+      moves: z.number().int().min(0).optional(),
+      /** Guest clock left, in milliseconds. */
+      timeLeftMs: z.number().int().min(0).optional(),
     }),
   ),
 });
@@ -193,18 +231,12 @@ export const chessControlSnapshotSchema = z.object({
     draws: z.number(),
     aborts: z.number(),
   }),
+  highlights: chessHighlightsSchema.optional(),
   recentEvents: z.array(
     z.object({
       playerId: z.string(),
       nickname: z.string(),
-      event: z.enum([
-        "checkmate-win",
-        "checkmate-loss",
-        "draw",
-        "timeout",
-        "resign",
-        "abort",
-      ]),
+      event: chessHallEventSchema,
       timestamp: z.number(),
       capturedPoints: z.number().int().min(0),
       score: z.number().int().min(0),
@@ -217,6 +249,10 @@ export const chessControlSnapshotSchema = z.object({
       capturedPoints: z.number().int().min(0),
       score: z.number().int().min(0),
       finished: z.boolean(),
+      /** Guest moves played so far, for the big screen's progress view. */
+      moves: z.number().int().min(0).optional(),
+      /** Guest clock left, in milliseconds. */
+      timeLeftMs: z.number().int().min(0).optional(),
     }),
   ),
   // Individual game statuses for monitoring

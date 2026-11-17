@@ -9,6 +9,9 @@ export const chessPiecePoints = {
   q: 10,
 } as const;
 
+/** Bonus on top of captures when the bot runs out of time. Chosen 17 November 2026. */
+export const chessTimeWinBonus = 15;
+
 /** 8 pawns + 2 knights + 2 bishops + 2 rooks + queen. */
 export const chessStartingBlackMaterial =
   8 * chessPiecePoints.p +
@@ -47,7 +50,8 @@ export function chessCapturedPoints(pieces: readonly string[]): number {
 /**
  * Round score from captured Black material.
  * Checkmate awards at least the starting Black total; promotions can exceed it.
- * Other results keep captures only — they never add win/draw/loss points.
+ * A win on time adds a flat bonus to captures.
+ * Other results keep captures only — they never add draw/loss points.
  */
 export function chessRoundScore(input: {
   capturedPoints: number;
@@ -57,6 +61,9 @@ export function chessRoundScore(input: {
   const captured = Math.max(0, input.capturedPoints);
   if (input.status === "checkmate" && input.winner === "player") {
     return Math.max(captured, chessStartingBlackMaterial);
+  }
+  if (input.status === "timeout" && input.winner === "player") {
+    return captured + chessTimeWinBonus;
   }
   return captured;
 }

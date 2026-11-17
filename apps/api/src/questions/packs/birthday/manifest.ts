@@ -46,6 +46,7 @@ import { dialPopCulture } from "./dial-pop-culture.ts";
 import { dialLondonGeography } from "./dial-london-geography.ts";
 import { dialBritishPolitics } from "./dial-british-politics.ts";
 import { chessBattle } from "./chess-battle.ts";
+import { trumpMadeUpCountry } from "./trump-made-up-country.ts";
 
 /**
  * Working catalogue for Humza's questions.
@@ -89,6 +90,7 @@ export const birthdayPack: QuestionPack = {
     "inflation-cheeseburger",
     "how-italian-is-humza",
     "christianity-branches",
+    "trump-made-up-country",
     "guess-tab-oyster",
     "guess-tab-car-insurance",
     "guess-tab-soho-pint",
@@ -154,6 +156,7 @@ export const birthdayPack: QuestionPack = {
     dialLondonGeography,
     dialBritishPolitics,
     chessBattle,
+    trumpMadeUpCountry,
   ]),
 };
 

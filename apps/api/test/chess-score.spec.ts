@@ -5,6 +5,7 @@ import {
   chessPiecePoints,
   chessRoundScore,
   chessStartingBlackMaterial,
+  chessTimeWinBonus,
   pointsForChessPiece,
   type ChessPlayerGame,
 } from "@26/shared";
@@ -258,11 +259,25 @@ describe("results do not award their own points", () => {
     ).toBe(1);
   });
 
-  it("gives no points from a result with nothing captured, except checkmate", () => {
+  it("adds the time-win bonus on top of captures when the bot flags", () => {
+    const captures = play([
+      { from: "e2", to: "e4" },
+      { from: "d7", to: "d5" },
+      { from: "e4", to: "d5" },
+    ]);
+    expect(
+      calculateChessScore({ ...captures, status: "timeout", winner: "player" }),
+    ).toBe(1 + chessTimeWinBonus);
+    expect(
+      chessRoundScore({ capturedPoints: 0, status: "timeout", winner: "player" }),
+    ).toBe(15);
+    expect(
+      chessRoundScore({ capturedPoints: 7, status: "timeout-draw", winner: "draw" }),
+    ).toBe(7);
+  });
+
+  it("gives no points from a result with nothing captured, except a win", () => {
     const start = initializeChessRound(roundId, [playerId], now).games[playerId];
-    expect(calculateChessScore({ ...start, winner: "player", status: "timeout" })).toBe(
-      0,
-    );
     expect(calculateChessScore({ ...start, winner: "draw", status: "stalemate" })).toBe(
       0,
     );

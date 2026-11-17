@@ -334,6 +334,7 @@ export const customPresentationIds = [
   "deed-poll",
   "redacted-file",
   "whos-that-pokemon",
+  "executive-order",
 ] as const;
 
 export type CustomPresentationId = (typeof customPresentationIds)[number];

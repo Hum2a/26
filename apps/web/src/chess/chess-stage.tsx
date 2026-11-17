@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import NumberFlow from "@number-flow/react";
 import type { ChessControlSnapshot, ChessStageSnapshot } from "@26/shared";
+import { Highlights, Progress } from "./chess-stage-extras";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { contentColours } from "../theme/themes";
 import { PlayerAvatar } from "../ui/player-avatar";
@@ -24,7 +25,8 @@ const eventText = {
   "checkmate-win": "Checkmate!",
   "checkmate-loss": "Checkmated",
   draw: "Draw",
-  timeout: "Time out",
+  timeout: "Flagged",
+  "timeout-win": "Won on time!",
   resign: "Resigned",
   abort: "Aborted",
 } as const;
@@ -88,6 +90,12 @@ export function ChessStage({
         <NumberFlow value={totalGames} /> {totalGames === 1 ? "board" : "boards"} in
         play
       </p>
+
+      {snapshot.highlights ? (
+        <Highlights highlights={snapshot.highlights} reduce={reduce} />
+      ) : null}
+
+      {standings.length > 0 ? <Progress standings={standings} reduce={reduce} /> : null}
 
       <div className="chess-hall-body">
         {standings.length > 0 ? (

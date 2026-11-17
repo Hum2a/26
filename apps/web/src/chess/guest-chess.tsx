@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { LobbySnapshot } from "@26/shared";
 import { ChessGame } from "./chess-game";
+import { ChessGuide } from "./chess-guide";
 import { QuestionExperience } from "../play/question-experience";
 import type { ChessMoveParams, ChessResignParams } from "../live/room-socket";
 
@@ -101,6 +102,8 @@ export function GuestChess({
           pending={pending}
           onEngineError={setEngineError}
         />
+
+        <ChessGuide />
 
         {/* Sending and the result are drawn on the board itself. */}
         {snapshot.paused ? (

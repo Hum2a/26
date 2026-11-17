@@ -6522,3 +6522,19 @@ After stopping both local dev servers and completing other checks, the existing 
 Exact next stage: review the focused verification-fix PR; complete authenticated remote finish/reconnect and 80-client tests through normal staging sign-in, then physical phones/projector on venue-like Wi-Fi. Profile the separately recorded room input/event-delivery bottleneck before claiming smooth 80-phone stage updates. Production deployment remains outside this stage.
 
 Staging refresh: deployed committed runtime `9dc49fd` with `npm run deploy:staging` under the existing staging/testing authorisation. Version **`b630980f-0b69-4622-b17e-3c5a7064eb09`** replaced `687bcb06-ded2-4b30-a3e5-1f14ca1152a4`; startup 159 ms. Health returned `ok: true`, `staging`, `0.0.5`, and remote `/assets/index-R5BRnRfo.js` matched the staged build. No secrets were changed or uploaded and production was not deployed. Follow-up PR: **https://github.com/Hum2a/26/pull/33**; local checks passed, GitHub checks were still pending at handoff. The deployed authenticated bench itself remains unverified because staging sign-in is unavailable; the Chrome receipt screenshot above is from local development.
+
+## 17 November 2026: Trump made-up countries question, chess round in the running order
+
+### Status
+
+- New question `trump-made-up-country` (choice, multiple outcome: The United States of Israel and The Islamic Republic of Japan). Ready, in the running order after `christianity-branches`.
+- Bespoke design `executive-order` (`apps/web/src/play/designs/executive-order.tsx`): a gold-trimmed "Executive Order No. 26" decree. Guests tick countries with an animated marker tick and sign it with a scrawl ("Sign it. Bigly."); the reveal stamps each line "100% made up" or "Not him. Just a pun." Stage shows the decree with live signature count. Added to `customPresentationIds`, the registry and the design bench fixtures (bench reveal for a multiple outcome uses a stand-in pair, never the answer key).
+- `chess-battle` is no longer forced to draft and is in the running order before `kart-sprint`.
+- Chess scoring: a win on time (`status: "timeout"`, `winner: "player"`) now scores captures + `chessTimeWinBonus` (15). Chosen on 17 November 2026 at the user's request. Checkmate is unchanged (at least 40). Existing tests that asserted 0 for a time win were updated to the new rule.
+- Chess stage snapshot: optional `highlights` (room captures, queens taken, time wins, moves played, longest game, fastest win, biggest haul) and per-standing `moves` / `timeLeftMs`. New hall event `timeout-win`. Aggregate only, no boards. Each game's PGN is now parsed once per projection instead of twice.
+- Chess big screen: highlight cards and an "Every board" grid (stable nickname order, moves, points, clock bar that turns red under 20%).
+- Chess phone: always-visible piece-value strip (Q10 R5 B3 N3 P1) and a folded "How to score + handy tricks" panel (scoring rules, tap/drag, premoves, cancel premove, low-time beep, sound, promotion, resign).
+
+### Next stage
+
+Rehearse the chess round with two browser tabs from `/admin` to see the new hall and phone guide on real screens.
