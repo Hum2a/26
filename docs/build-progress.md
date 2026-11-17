@@ -6560,3 +6560,17 @@ Final full `npm run test:unit`: **200 files / 896 tests passed**. Final typechec
 Exact next stage: review the sorting change; assign confirmed speakers in the source list when available, rehearse on real phone sizes, and explicitly add the ready round to the running order. Resolve the separate Trump option-id validation failure before claiming a fully green content/build check.
 
 Review: https://github.com/Hum2a/26/pull/34. Source commit `ae52017`; no merge or deployment performed.
+
+## 17 November 2026 — Merged master release and option-id unblock
+
+The owner requested pulling merged work into master and deploying. Fast-forwarded the C: checkout's `master` from `09fda24` to `613bb98` (PR #34 included). Used staging, consistent with the earlier deployment scope; production was not requested explicitly and remains unchanged.
+
+The initial `content:check` still failed on the merged Trump question. Created `codex/fix-release-option-ids` from the pulled master and shortened its three overlength internal ids: `united-states-of-israel` → `us-israel`, `islamic-republic-of-japan` → `japan-republic`, and `tel-aviva-la-vida` → `tel-aviva-vida`. Updated the two exact-set answer references. Visible labels, prompt, correct choices, points and presentation are unchanged; existing room scripts remain frozen. Added an authoring regression covering valid ids, the intended exact set, interactive public preview and no public answer-key array.
+
+Fresh checks passed: `content:check`, typecheck, lint/structure (30 existing warnings), formatting of the changed files, and 26 authoring/sorting tests. The staging release build also passed compilation, generated-secret stripping, artifact checks, gzip budgets and content preflight. The earlier 200-file / 896-test web suite on the source-equivalent merged tree remains recorded above; it was not rerun for this server-side id correction. Known incomplete drafts, including the unassigned Ed/Humza speakers, remain outside the running order.
+
+Release source: committed `c8e8106`, based on merged master `613bb98`. Follow-up fix PR: https://github.com/Hum2a/26/pull/35; no automatic merge or push to master. The first `npm run deploy:staging` uploaded 65 new assets after transient retries, then stalled without confirming Worker publication. Deployment history and the public entry still showed the old release. Stopped that attempt and retried the same authorised staging command; its build regenerated some asset hashes, then uploaded and published successfully. No configuration, secrets, migrations or paid resources were changed to overcome the transient upload problem.
+
+Deployed staging version: **`0bc19929-ed2a-4555-be9c-d05b897f424f`**, replacing `b630980f-0b69-4622-b17e-3c5a7064eb09`; startup 176 ms. Live health returned `ok: true`, `staging`, `0.0.5`. The remote entry `/assets/index-yE8MvDXe.js` matched the retry build's output, its deployed guest bundle contained the whole-list sorting submission control, and unauthenticated admin content remained forbidden (HTTP 403). Logs are ignored `artifacts/merged-deploy-staging-retry.log` and `artifacts/merged-deploy-verification.json`. This is deployment/asset verification, not an authenticated multiplayer or physical-device walkthrough. Ed/Humza remains a draft pending speaker assignments.
+
+Exact next stage: merge the small option-id fix PR back into master, then assign quote speakers when available and rehearse the authenticated round. Production remains unchanged. The C: checkout is returned to master after recording this release.
