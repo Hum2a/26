@@ -37,9 +37,19 @@ export function KartRollbackBench() {
     [connected, setConnected] = useState(true);
   const [report, setReport] = useState<KartFinish>();
   const [notice, setNotice] = useState("");
-  const change = (kind: "correction" | "old" | "recovery" | "finish") =>
+  const change = (kind: "correction" | "old" | "recovery" | "finish") => {
+    if (kind === "finish") {
+      setReport(undefined);
+      setNotice("");
+    }
     setRace((previous) => {
-      const seed = previous.rollback!;
+      // This is an isolated finish scenario, not a delayed checkpoint for an old race.
+      // A fresh id also makes it usable after idle, expiry or an earlier sample finish.
+      const base =
+        kind === "finish"
+          ? sample(Number(previous.raceId.split("-").at(-1)) + 1)
+          : previous;
+      const seed = base.rollback!;
       if (kind === "old")
         return {
           ...previous,
@@ -50,7 +60,7 @@ export function KartRollbackBench() {
           },
         };
       return {
-        ...previous,
+        ...base,
         rollback: {
           ...seed,
           revision: seed.revision + 2,
@@ -72,13 +82,14 @@ export function KartRollbackBench() {
         },
       };
     });
+  };
   return (
     <section aria-label="Rollback rehearsal" className="admin-kart-pane">
       <h2>Rollback and device timing</h2>
       <p>
         Isolated stand-in driver using the real phone renderer. These labelled sample
         checkpoints simulate network corrections. Nothing is sent or scored. Switch to
-        Map view if 3D is unavailable.
+        Map view if 3D is unavailable. Finish line sample starts a fresh stand-in run.
       </p>
       <div className="flex flex-wrap gap-3">
         <Button variant="secondary" onClick={() => change("correction")}>
