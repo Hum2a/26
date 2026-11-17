@@ -6558,3 +6558,5 @@ The subsequent isolated legacy `rounds.spec.ts` Durable Object regression passed
 Final full `npm run test:unit`: **200 files / 896 tests passed**. Final typecheck, lint/structure and formatting passed. Build compilation/artifact/budget checks succeeded but the overall build remains failed at the separate Trump content preflight described above; no fully green build claim is made. No deployment was performed.
 
 Exact next stage: review the sorting change; assign confirmed speakers in the source list when available, rehearse on real phone sizes, and explicitly add the ready round to the running order. Resolve the separate Trump option-id validation failure before claiming a fully green content/build check.
+
+Review: https://github.com/Hum2a/26/pull/34. Source commit `ae52017`; no merge or deployment performed.
