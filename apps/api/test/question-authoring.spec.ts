@@ -25,11 +25,33 @@ import { inflationFreddo } from "../src/questions/packs/birthday/inflation-fredd
 import { inflationPetrol } from "../src/questions/packs/birthday/inflation-petrol.ts";
 import { commonPassword } from "../src/questions/packs/birthday/common-password.ts";
 import { completeAWordle } from "../src/questions/packs/birthday/complete-a-wordle.ts";
+import { trumpMadeUpCountry } from "../src/questions/packs/birthday/trump-made-up-country.ts";
+import { questionPreview } from "../src/room/question-preview.ts";
 
 const fixtureOptions = [
   { id: "yes", label: "Yes" },
   { id: "no", label: "No" },
 ];
+
+it("projects the Trump exact-set question with valid option ids and no public answer key", () => {
+  expect(
+    trumpMadeUpCountry.options.every((option) =>
+      contentLimits.optionId.test(option.id),
+    ),
+  ).toBe(true);
+  expect(trumpMadeUpCountry.outcome).toEqual({
+    kind: "multiple",
+    optionIds: ["us-israel", "japan-republic"],
+  });
+  const preview = questionPreview(birthdayPack, trumpMadeUpCountry);
+  expect(preview.interactive).toBe(true);
+  expect(preview.question).toMatchObject({ kind: "choice", outcome: "multiple" });
+  expect(
+    preview.question?.kind === "choice" &&
+      preview.question.options.map((option) => option.label),
+  ).toEqual(trumpMadeUpCountry.options.map((option) => option.label));
+  expect(JSON.stringify(preview)).not.toContain('"optionIds"');
+});
 
 function partyPack(overrides: Partial<QuestionPack> = {}): QuestionPack {
   return {
