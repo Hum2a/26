@@ -7,6 +7,7 @@ export const favouriteGenre = choiceQuestion({
   presentation: "now-playing",
   title: "Favourite genre",
   prompt: "What is my favourite genre of music?",
+  optionReveal: "one-at-a-time",
   options: [
     { id: "white-girl", label: "White girl bangers" },
     { id: "persona", label: "Persona music" },

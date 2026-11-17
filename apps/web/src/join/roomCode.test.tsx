@@ -11,12 +11,16 @@ describe("room code", () => {
     expect(screen.queryByLabelText("Join code")).toBeNull();
   });
 
-  it("uppercases and rejects characters outside the room alphabet", () => {
+  it("accepts custom alphanumeric codes and caps them at six characters", () => {
     const onChange = vi.fn();
     render(<JoinRoomCode roomQuery={null} value="" onChange={onChange} />);
     fireEvent.change(screen.getByLabelText("Join code"), {
       target: { value: "ab0oI1z" },
     });
-    expect(onChange).toHaveBeenCalledWith("ABZ");
+    expect(onChange).toHaveBeenCalledWith("AB0OI1");
   });
+});
+
+it("keeps custom codes containing I, O, 0 and 1 in join links", () => {
+  expect(roomCodeFromQuery("solo01")).toBe("SOLO01");
 });

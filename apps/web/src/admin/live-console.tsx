@@ -1,3 +1,4 @@
+import { ChessControls } from "./chess-controls";
 import { phaseLabel } from "../live/phase-label";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
@@ -189,7 +190,14 @@ export function LiveConsole() {
             ? onLastFact
               ? "Show the podium"
               : "Next fact"
-            : "Advance";
+            : phase === "prompt" &&
+                snapshot.play?.question.kind === "choice" &&
+                snapshot.play.question.optionSequence
+              ? snapshot.play.question.optionSequence.shown <
+                snapshot.play.question.optionSequence.total
+                ? `Reveal next option (${snapshot.play.question.optionSequence.shown}/${snapshot.play.question.optionSequence.total})`
+                : "Open answering"
+              : "Advance";
   const shownFact =
     phase === "facts"
       ? snapshot.funFactList?.cards[snapshot.funFactList.index]
@@ -230,7 +238,8 @@ export function LiveConsole() {
           </div>
           <div className="admin-card-body">
             <p>
-              One lap · up to 80 racers. The saved course and time limit are shown below.
+              One lap · up to 80 racers. The saved course and time limit are shown
+              below.
             </p>
             <p>
               Created {new Date(snapshot.kartLobby!.createdAt).toLocaleString("en-GB")}.
@@ -439,6 +448,7 @@ export function LiveConsole() {
             ) : null}
             {snapshot.play?.explanation ? <p>{snapshot.play.explanation}</p> : null}
           </section>
+          <ChessControls />
           <LiveResponses locked={locked} />
           <WallQuickPanel />
           <KartCourseControls />
@@ -533,7 +543,9 @@ export function LiveConsole() {
                 <div>
                   <dt>Phones connected</dt>
                   <dd>
-                    <span className="admin-mono-tag">{snapshot.connections?.guests ?? "Unavailable"}</span>
+                    <span className="admin-mono-tag">
+                      {snapshot.connections?.guests ?? "Unavailable"}
+                    </span>
                   </dd>
                 </div>
                 <div>
@@ -554,7 +566,9 @@ export function LiveConsole() {
                 <div>
                   <dt>Stage content</dt>
                   <dd>
-                    <span className="admin-mono-tag">{snapshot.stageHidden ? "Hidden" : "Visible"}</span>
+                    <span className="admin-mono-tag">
+                      {snapshot.stageHidden ? "Hidden" : "Visible"}
+                    </span>
                   </dd>
                 </div>
               </dl>

@@ -29,7 +29,8 @@ export function PhonePreviewPanel({
       <p>
         Compare the actual guest and projector layouts. These controls change both
         screens. Phone answers stay in the phone rehearsal; no live game is connected.
-        Reveal answers, countdowns and scores are not simulated.
+        Answer keys and party scores are not simulated. Cursed Search History uses a
+        rehearsal countdown; chess runs isolated practice against the real bot.
       </p>
       {questionId === "kart-sprint" ? (
         <p>

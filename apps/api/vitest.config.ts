@@ -65,6 +65,8 @@ export default defineConfig({
           name: "room",
           include: [
             "test/room.spec.ts",
+            "test/custom-codes.spec.ts",
+            "test/party-rounds.spec.ts",
             "test/end-destroy.spec.ts",
             "test/push-luck-room.spec.ts",
             "test/player-control.spec.ts",

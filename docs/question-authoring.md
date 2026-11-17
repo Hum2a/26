@@ -59,6 +59,8 @@ Helpers live in `apps/api/src/questions/authoring.ts`. Defaults live only in `ap
 | One-against-one number                  | `duelQuestion`                                              | `duel`   |
 | Two contestants, everyone else predicts | `finaleQuestion`                                            | `finale` |
 
+A choice can set `optionReveal: "one-at-a-time"`. In the get-ready/prompt beat, the host uses **Reveal next option** (or the usual advance shortcut) once per option. The room durably saves the count, withholds unseen labels and images from public snapshots, and waits without a prompt deadline. Once all options are visible, **Open answering** starts the normal answer window. Guests cannot select before that phase. `favourite-genre` uses this flow; other choices retain their existing flow. The isolated phone and stage previews offer the same option steps.
+
 A choice option may include `image: "/assets/questions/<question-id>/<option-id>.png"`. Use a real PNG in `apps/web/public/assets/questions/`. Phone cards and stage options contain the illustration inside their existing dimensions; the visible label stays the accessible button name. Content preflight checks that every referenced option image exists.
 
 For a quotation A/B round, use a choice with `presentation: "who-said-it"` and put the quote in its public `prompt`. Keep the ordinary 200-character prompt limit; do not silently shorten a quotation. A factual “who said it” needs an exact source and verified attribution. Keep unsourced lines as drafts with a `quote-source` requirement and a missing `verified-attribution` answer; preserve a supplied answer only in private notes until verified. Their phone rehearsal labels the quote and attribution unverified. Explicitly authorised parody needs clear fictional framing, without attributing invented statements to real people. The design bench uses invented stand-ins, never a real answer key.
@@ -120,7 +122,7 @@ When an ordinary setting is omitted, the helper uses `apps/api/src/questions/def
 - Duel: 50 points, a solo player if the room is odd, a shared tie, a missing opponent forfeits.
 - Finale: 70 points for the contestants, 30 for a correct prediction, 20 seconds to predict.
 
-Windows must be a whole number of milliseconds from 15 to 45 seconds. Points are a whole number from 0 to 1000. A question id is 1 to 40 characters, lowercase letters, digits, and hyphens. A prompt is 1 to 200 characters. Option ids are 1 to 16 characters in the same slug form. Labels are 1 to 80 characters. A pack order holds at most 80 rounds. Wordle and the imported kart circuit may use up to 180 seconds.
+Ordinary answer windows must be a whole number of milliseconds from 15 to 45 seconds. Chess uses a 120-second round ceiling for two one-minute clocks. Points are a whole number from 0 to 1000. A question id is 1 to 40 characters, lowercase letters, digits, and hyphens. A prompt is 1 to 200 characters. Option ids are 1 to 16 characters in the same slug form. Labels are 1 to 80 characters. A pack order holds at most 80 rounds. Wordle and the imported kart circuit may use up to 180 seconds.
 
 The catalogue may hold more than 80 entries; that limit applies to the live running order. An unordered question's isolated phone rehearsal shows `1 / 1`. A question in a running order keeps its position and that order's total.
 
@@ -179,7 +181,7 @@ A phone design receives the phone's `open`, `pending`, `selectedId`, and the sel
 
 The Question packs phone preview is an isolated controller layout rehearsal, labelled with no running race. For a real multi-device rehearsal, use a fresh local lobby and Admin → Live controls → Start local kart rehearsal. That explicit development start is rejected in staging/production. Full contracts, engine provenance, scoring, rendering limits and the quiz/race/podium sequence are in [kart-minigame.md](kart-minigame.md). `kart-sprint` is the final round in the default birthday order.
 
-The Tribunal/chaos ideas are recorded in [content/tribunal-and-chaos.md](content/tribunal-and-chaos.md). A real Reddit/community/listing round needs its genuine source and answer. The figurine self-vote bonus and Cursed Search History push-your-luck round are implemented and ready in the catalogue, outside the running order. The spoken-debate round was dropped. Reddit tribunal, Ferrier estate, Nextdoor and property price stay explicit drafts until their genuine sources, answers and assets are supplied.
+The Tribunal/chaos ideas are recorded in [content/tribunal-and-chaos.md](content/tribunal-and-chaos.md). The removed trolley variants, all current “who said it” questions, AI Turing Test, British subcultures, Reddit tribunal and old council/dystopia rounds are retained only in `packs/birthday/retired.ts` as source/format references; they are absent from the active catalogue. The quotation presentation remains reusable. Three sourced **Uni accommodation or prison?** photo rounds replace council/dystopia; image provenance is in [accommodation-image-credits.json](content/accommodation-image-credits.json). Pokémon now has a complete Jigglypuff silhouette round. Chess, guest-voting figurine and Cursed Search History are included in the default order. Three new fictional `guess-*` scenarios are ready in the catalogue and can be added explicitly through Running order. Nextdoor and property price remain incomplete drafts. Existing rooms keep their frozen scripts; removed IDs are filtered out of previously saved orders for future starts. An order containing only retired rounds falls back to the current default order; the host can explicitly save their preferred revision.
 
 ## Arrange and start the birthday pack
 
@@ -191,3 +193,11 @@ For a race without the birthday quiz, choose **Admin → Kart → Create kart lo
 Join from a second tab or phone, connect the stage and use **Start kart race** in
 Live controls. This freezes just the existing `kart-sprint` without changing the
 birthday running order. There is no guest account or new CMS.
+
+## Chess in the quiz
+
+`chess-battle` is a ready 1+0 round. The room creates games on both manual and timed entry, validates moves, persists scores under the actual question id, freezes clocks on pause, and settles captured-piece points when the round closes. The projector shows aggregate progress, then the ordinary quiz standings. Live controls show individual game health, clocks, captures and results; the question preview runs the actual phone/engine with an explicitly isolated practice adapter. Bot move selection still uses the existing casual-trust phone worker; the server validates legality and computes points.
+
+## Custom lobby codes
+
+Admin → Rooms accepts an optional six-character lobby code using A–Z and 0–9 (case insensitive). Blank generates the existing random code. Reserved codes cannot collide; retries reuse the original room. The code is public routing information, never a host or guest credential.

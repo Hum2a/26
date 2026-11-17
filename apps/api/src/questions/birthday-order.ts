@@ -28,9 +28,15 @@ export function readBirthdayOrder(sql: SqlStorage): BirthdayOrder {
   const row = sql
     .exec<{ payload: string }>("SELECT payload FROM pack_order WHERE id = 'birthday'")
     .toArray()[0];
-  return row
-    ? birthdayOrderSchema.parse(JSON.parse(row.payload))
-    : { revision: 0, ids: [...birthdayPack.order], updatedAt: null, history: [] };
+  if (!row)
+    return { revision: 0, ids: [...birthdayPack.order], updatedAt: null, history: [] };
+  const saved = birthdayOrderSchema.parse(JSON.parse(row.payload));
+  // Apply the owner's explicit removals to future starts, never to frozen room scripts.
+  // Keep the stored revision until the host explicitly saves their revised order.
+  const retired =
+    /^(?:who-said-it-|subculture-|council-|trolley-your-mum$|trolley-mamdani-africa$|trolley-freddo-multiverse$|ai-turing-test$|tribunal-reddit$)/;
+  const ids = saved.ids.filter((id) => !retired.test(id));
+  return { ...saved, ids: ids.length ? ids : [...birthdayPack.order] };
 }
 
 /** Called within the registry's synchronous transaction, including the receipt. */

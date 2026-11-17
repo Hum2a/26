@@ -1,3 +1,4 @@
+import { publicQuestionImage } from "../questions/project.ts";
 import { adminQuestionPreviewSchema, type AdminQuestionPreview } from "@26/shared";
 import {
   isKnown,
@@ -15,6 +16,7 @@ export function questionPreview(
   // The catalogue may exceed the 40-question live limit without breaking its previews.
   const ordered = orderedIndex >= 0;
   const core = {
+    ...publicQuestionImage(q),
     id: q.id,
     index: ordered ? orderedIndex + 1 : 1,
     total: ordered ? pack.order.length : 1,
@@ -33,13 +35,16 @@ export function questionPreview(
     case "chess":
       fields = {
         kind: q.kind,
-        initialTimeMs: q.initialTimeMs,
-        incrementMs: q.incrementMs,
+        playerTimeMs: q.initialTimeMs,
+        botTimeMs: q.initialTimeMs,
       };
       break;
     case "choice":
       fields = {
         kind: q.kind,
+        ...(q.optionReveal
+          ? { optionSequence: { shown: q.options.length, total: q.options.length } }
+          : {}),
         options: q.options.map(({ id, label, image }) => ({
           id,
           label,
@@ -158,18 +163,20 @@ export function questionPreview(
   const limitation =
     q.kind === "kart"
       ? "Controller layout rehearsal only. No race, WebGL simulation, socket or scores run in this preview."
-      : unsupported
-        ? "Draft layout only. The requested interaction is not implemented yet; this shows the current placeholder mechanic."
-        : q.requirements?.some((item) => item.name === "quote-source")
-          ? "Draft rehearsal: this quote and its attribution are unverified. These are proposed choices, not confirmed sources."
-          : q.requirements?.some((item) => item.name === "personal-source")
-            ? "Draft rehearsal: these are example options. No genuine Humza response or final decoys have been confirmed."
-            : q.kind === "vote" ||
-                q.kind === "guess" ||
-                q.kind === "duel" ||
-                q.kind === "finale"
-              ? "Player names and submitted lines in this preview are stand-ins. No room is connected."
-              : null;
+      : q.kind === "chess"
+        ? "Isolated chess practice against the real bot. No room is connected and no party points are awarded; stage totals are stand-ins."
+        : unsupported
+          ? "Draft layout only. The requested interaction is not implemented yet; this shows the current placeholder mechanic."
+          : q.requirements?.some((item) => item.name === "quote-source")
+            ? "Draft rehearsal: this quote and its attribution are unverified. These are proposed choices, not confirmed sources."
+            : q.requirements?.some((item) => item.name === "personal-source")
+              ? "Draft rehearsal: these are example options. No genuine Humza response or final decoys have been confirmed."
+              : q.kind === "vote" ||
+                  q.kind === "guess" ||
+                  q.kind === "duel" ||
+                  q.kind === "finale"
+                ? "Player names and submitted lines in this preview are stand-ins. No room is connected."
+                : null;
   const parsed = adminQuestionPreviewSchema.safeParse({
     question: { ...core, ...fields },
     limitation,

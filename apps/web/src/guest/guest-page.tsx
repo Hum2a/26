@@ -878,7 +878,7 @@ export function GuestPage({
                 void onLeaveLobby();
               }}
             >
-              Leave lobby
+              Join another room
             </Button>
           ) : null}
           <ReconnectBanner

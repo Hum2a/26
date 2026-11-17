@@ -31,7 +31,7 @@ const sceneColours = {
  * the browser, so nothing here names the answer before the reveal.
  */
 function silhouetteSrc(questionId: string): string {
-  return `/assets/questions/${questionId}/silhouette.png`;
+  return `/assets/questions/${questionId}/silhouette.${questionId === "whos-that-pokemon" ? "svg" : "png"}`;
 }
 
 /**
