@@ -48,7 +48,7 @@ The owner approved trusted device-recorded finish durations and local rollback p
 
 - Naming: `<domain>:<action>` (e.g. `test:unit`, `questions:check`, `email:preview`, `dev:jump`)
 - A fresh checkout is prepared with `npm install`, then `npm run setup`. Setup installs dependencies, syncs environment files, generates a missing local client API key, copies agent instructions, generates Worker types, installs Playwright Chromium, and migrates and seeds the local database. It leaves an existing local key unchanged and does not deploy or upload secrets.
-- For your own local or staging administrator identity, follow [Agent access](docs/agent-access.md). Use `npm run auth:agent` from an authorised checkout and keep codes and cookies out of tool logs and PRs.
+- For your own local or staging administrator identity, follow the repository-root guide `docs/agent-access.md`. Use `npm run auth:agent` from an authorised checkout and keep codes and cookies out of tool logs and PRs.
 
 - This is a separate birthday project. Never change LifeSmart, use its production resources or copy its pupil-specific rules into this project.
 - The plan's agreed decisions take precedence over its suggested defaults. Later explicit user decisions take precedence over both. Record material implementation choices.
