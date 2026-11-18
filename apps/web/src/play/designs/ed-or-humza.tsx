@@ -286,7 +286,7 @@ function QuoteStack({
         className="ed-card"
         aria-labelledby={quoteId}
         data-expanded={expanded || !long ? "" : undefined}
-        style={{ touchAction: editable ? "none" : "manipulation" }}
+        style={{ touchAction: editable ? "pan-y" : "manipulation" }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
