@@ -6631,6 +6631,24 @@ Status: the freeze removal and the esports question merged as PR #39 and PR #40;
 
 Watch CI on PR #41: it is the first typecheck, lint and test run for the trends code (`npm run agents:sync` has run). Fix what fails, merge, deploy staging and rehearse trends with eight or more phones, then production. Choose the running-order slot for `esports-tag`.
 
+## 18 November 2026 — Where are we? map round
+
+Implemented the `map-guess` mechanic in the existing room, score ledger and snapshot pipeline. A server-owned 40-second collection window opens with the clue photo. Each player sends one pin through the existing receipted socket command path. At reveal, phones see their own guess and the location, and the stage sees the anonymous spread and the three closest named guesses when attribution is enabled. Scoring starts at 100 points and falls by distance, with no speed bonus.
+
+The phone and projector reuse Leaflet with a [bundled Natural Earth basemap](map-guess-basemap.md). The module and map load for this question only. The initial map supports world and city-scale guesses. The round uses a still photo. No imagery provider account or tile service is required.
+
+The `where-are-we` birthday draft is in the catalogue only. Open **Admin → Question packs → Where are we? → Phone preview** to try placing and locking a pin without a live room. The Worker integration test uses an isolated fixture to check scoring, pause refusal, duplicate and replay handling, persistence after eviction, and audience projections. The phone component test covers selected, sending and accepted states. A live phone and projector rehearsal with the party photo has not been run.
+
+Validation passed: `npm run typecheck`, `npm run lint` (30 existing warnings), `npm run build` (artifact scan, gzip budgets and content preflight), and `npm run test -w @26/api -- map-guess bucket-room question-authoring admin-rooms-auth` (43 tests). `npm run test:unit` passed all 904 tests discovered when the run started. The final focused web rerun passed all 20 tests across the map, guest page, stage page and admin feature registry.
+
+Next: supply the credited photo, location name and coordinates. Fill the draft, rehearse with the actual assets and add it to the birthday running order when approved.
+
+## 18 November 2026 — Cubic review workflow and map follow-up
+
+When Cubic runs on a PR, wait for its review of the latest pushed commit, check the summary and inline comments, and repeat after fixes. If Cubic is unavailable or never reports, note that in the handoff. The rule lives in `55-agent-workflow.md` and was copied with `npm run agents:sync`.
+
+The follow-up for PR #42 requires a photo clue, honours hidden picks in both live broadcasts and direct snapshots, and omits unsent pins from the phone reveal. The focused Worker and phone tests passed, along with lint and the build. The next content step is to add the real clue and rehearse the round.
+
 ## 18 November 2026 — Missing question pictures
 
 Status: filled the pictures that could be filled without inventing a personal listing or Nextdoor post. No deploy.
@@ -6667,6 +6685,7 @@ Credits: full licence table is `docs/content/question-image-credits.md` (not ser
 ### Left for the owner
 
 - **nextdoor-paranoia** — need a real post or redacted screenshot and the confirmed explanation. Do not fabricate a neighbourhood.
+- **where-are-we** — map-guess draft from PR #43; still needs a credited clue photo, place name and coordinates.
 - **ed-or-humza** — speakers, not pictures.
 
 ### Commands and results
@@ -6696,4 +6715,4 @@ Also: optional `alt` on public question images; Who’s-that-Pokémon silhouette
 
 ### Exact next stage
 
-Slot `property-price-roulette` in Running order if wanted. Nextdoor still needs a real post.
+Slot `property-price-roulette` in Running order if wanted. Nextdoor still needs a real post. `where-are-we` still needs its clue photo and coordinates.

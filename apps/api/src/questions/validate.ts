@@ -1,5 +1,5 @@
 import { assertPushOutcome, pushBailOptionId } from "./push-luck.ts";
-import { contentLimits, questionOptionImageSchema } from "@26/shared";
+import { contentLimits, mapPinSchema, questionOptionImageSchema } from "@26/shared";
 import { implementedTrollKinds } from "../troll/catalogue.ts";
 import { toPlayable } from "./authoring.ts";
 import {
@@ -375,6 +375,11 @@ function suppliedIssues(
 }
 
 function knownAnswerIssues(question: AuthoredQuestion): ContentIssue[] {
+  if (question.kind === "map-guess") {
+    return isKnown(question.target)
+      ? mapTargetIssues(question.id, question.target.known)
+      : [];
+  }
   if (question.kind === "wordle") {
     const answer = isKnown(question.answer) ? question.answer.known : null;
     return answer === null || /^[A-Z]{5}$/.test(answer)
@@ -820,6 +825,8 @@ function checkPlayable(question: Question): ContentIssue[] {
     }
     return [];
   }
+  if (question.kind === "map-guess")
+    return mapTargetIssues(question.id, question.target);
   if (question.kind === "wordle") {
     const answer = question.answer;
     return answer === null || /^[A-Z]{5}$/.test(answer)
@@ -899,4 +906,22 @@ function validKart(q: { trackId: string; timeLimitMs: number; collectMs: number 
         ? 180000
         : 0;
   return limit > 0 && q.timeLimitMs === limit && q.collectMs === limit;
+}
+
+function mapTargetIssues(
+  id: string,
+  target: { lat: number; lng: number; label: string },
+): ContentIssue[] {
+  return mapPinSchema.safeParse({ lat: target.lat, lng: target.lng }).success &&
+    Math.abs(target.lat) <= 85 &&
+    target.label.trim().length > 0 &&
+    target.label.length <= 100
+    ? []
+    : [
+        issue(
+          "error",
+          "map-guess",
+          `${id} needs valid map coordinates and a short location name.`,
+        ),
+      ];
 }

@@ -66,6 +66,9 @@ export function questionPreview(
           : {}),
       };
       break;
+    case "map-guess":
+      fields = { kind: q.kind };
+      break;
     case "wordle":
       fields = { kind: q.kind, wordLength: q.wordLength, maxGuesses: q.maxGuesses };
       break;
@@ -161,24 +164,28 @@ export function questionPreview(
   };
   const unsupported = q.requirements?.some((item) => configured[item.name] === false);
   const limitation =
-    q.kind === "rank" && q.input === "buckets" && !isKnown(q.truth)
-      ? "Draft sorting rehearsal. Speaker assignments are incomplete; no answers or scores are invented."
-      : q.kind === "kart"
-        ? "Controller layout rehearsal only. No race, WebGL simulation, socket or scores run in this preview."
-        : q.kind === "chess"
-          ? "Isolated chess practice against the real bot. No room is connected and no party points are awarded; stage totals are stand-ins."
-          : unsupported
-            ? "Draft layout only. The requested interaction is not implemented yet; this shows the current placeholder mechanic."
-            : q.requirements?.some((item) => item.name === "quote-source")
-              ? "Draft rehearsal: this quote and its attribution are unverified. These are proposed choices, not confirmed sources."
-              : q.requirements?.some((item) => item.name === "personal-source")
-                ? "Draft rehearsal: these are example options. No genuine Humza response or final decoys have been confirmed."
-                : q.kind === "vote" ||
-                    q.kind === "guess" ||
-                    q.kind === "duel" ||
-                    q.kind === "finale"
-                  ? "Player names and submitted lines in this preview are stand-ins. No room is connected."
-                  : null;
+    q.kind === "map-guess"
+      ? q.status === "draft"
+        ? "Draft map rehearsal. The clue photo and location are missing. You can practise placing and sending a pin."
+        : "Isolated map rehearsal. Sending a pin does not score it."
+      : q.kind === "rank" && q.input === "buckets" && !isKnown(q.truth)
+        ? "Draft sorting rehearsal. Speaker assignments are incomplete; no answers or scores are invented."
+        : q.kind === "kart"
+          ? "Controller layout rehearsal only. No race, WebGL simulation, socket or scores run in this preview."
+          : q.kind === "chess"
+            ? "Isolated chess practice against the real bot. No room is connected and no party points are awarded; stage totals are stand-ins."
+            : unsupported
+              ? "Draft layout only. The requested interaction is not implemented yet; this shows the current placeholder mechanic."
+              : q.requirements?.some((item) => item.name === "quote-source")
+                ? "Draft rehearsal: this quote and its attribution are unverified. These are proposed choices, not confirmed sources."
+                : q.requirements?.some((item) => item.name === "personal-source")
+                  ? "Draft rehearsal: these are example options. No genuine Humza response or final decoys have been confirmed."
+                  : q.kind === "vote" ||
+                      q.kind === "guess" ||
+                      q.kind === "duel" ||
+                      q.kind === "finale"
+                    ? "Player names and submitted lines in this preview are stand-ins. No room is connected."
+                    : null;
   const parsed = adminQuestionPreviewSchema.safeParse({
     question: { ...core, ...fields },
     limitation,

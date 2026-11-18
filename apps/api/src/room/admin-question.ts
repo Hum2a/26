@@ -35,6 +35,8 @@ export function adminQuestion(
     );
     add("Modifiers", question.modifiers?.join(", ") || "None");
     add("Suppress speed bonus", question.suppressSpeedBonus ? "Yes" : "No");
+  } else if (question.kind === "map-guess") {
+    add("Scoring", "Distance from the real location. No speed bonus.");
   } else if (question.kind === "wordle") {
     add("Guesses", question.maxGuesses);
     add("Letters", question.wordLength);
@@ -162,6 +164,11 @@ function answerFor(
     return isKnown(question.correctOption) && question.correctOption.known !== null
       ? recorded([label(question.correctOption.known)])
       : missing;
+  }
+  if (question.kind === "map-guess") {
+    if (!isKnown(question.target)) return missing;
+    const { label, lat, lng } = question.target.known;
+    return recorded([label, `${lat}, ${lng}`]);
   }
   if (question.kind === "wordle")
     return isKnown(question.answer) ? recorded([question.answer.known]) : missing;

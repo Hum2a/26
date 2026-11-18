@@ -35,6 +35,7 @@ import { inflationMealDeal } from "./inflation-meal-deal.ts";
 import { inflationSausageRoll } from "./inflation-sausage-roll.ts";
 import { inflationCheeseburger } from "./inflation-cheeseburger.ts";
 import { commonPassword } from "./common-password.ts";
+import { whereAreWe } from "./where-are-we.ts";
 import { completeAWordle } from "./complete-a-wordle.ts";
 import { guessTabOyster } from "./guess-tab-oyster.ts";
 import { guessTabCarInsurance } from "./guess-tab-car-insurance.ts";
@@ -109,6 +110,7 @@ export const birthdayPack: QuestionPack = {
     "kart-sprint",
   ],
   catalogue: withPointsTrolls([
+    whereAreWe,
     edOrHumza,
     accommodation01,
     accommodation02,

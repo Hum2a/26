@@ -26,7 +26,8 @@ export function readTrendInput(
   index: number,
 ): TrendInput | null {
   const question = questions[index];
-  if (!question) return null;
+  // Map guesses have graded distances, with their own result map on stage.
+  if (!question || question.kind === "map-guess") return null;
   const players = sql
     .exec<{
       player_id: string;
@@ -673,6 +674,7 @@ export function hasRightAndWrong(question: Question): boolean {
     case "duel":
     case "finale":
       return true;
+    case "map-guess":
     case "rank":
     case "vote":
       return false;
