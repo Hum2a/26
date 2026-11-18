@@ -9,7 +9,7 @@
   -webkit-user-select: none;
   user-select: none;
 }
-.guess-map .leaflet-container {
+.guess-map.leaflet-container {
   height: 100%;
   background: #b3d8e7;
   touch-action: none;
