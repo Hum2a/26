@@ -416,7 +416,7 @@ function SortStage({
   return (
     <section className="design-stage ed-or-humza-stage" aria-label="Ed or Humza?">
       <QuestionTag play={play}>Quote sort</QuestionTag>
-      <StagePrompt text="Ed or Humza?" />
+      <StagePrompt text={question.prompt} />
       {!reveal ? (
         <p className="design-stage-line">
           Sort every quote on your phone.{" "}
