@@ -444,8 +444,6 @@ body:has(.kart-phone) {
   transform: translate(-50%, -50%);
   pointer-events: none;
   transition:
-    left 0.06s ease-out,
-    top 0.08s ease-out,
     background 0.12s ease,
     border-color 0.12s ease;
 }
@@ -1208,9 +1206,8 @@ body:has(.kart-phone) {
     border-radius: var(--radius-panel);
   }
   .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-thumb-knob {
-    width: auto;
-    height: 62%;
-    left: calc(50% + var(--steer) * 40%);
+    width: 4.5rem;
+    height: 4.5rem;
   }
   .kart-phone:is([data-layout="race"], [data-layout="grid"])
     .kart-steering

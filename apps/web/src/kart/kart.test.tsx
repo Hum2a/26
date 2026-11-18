@@ -223,17 +223,16 @@ it("steers the thumb pad from where the thumb lands, clamps travel, ignores a se
   expect(steerFromPointer(-200, 0, 100)).toBe(-1);
   expect(steerFromPointer(300, 0, 100)).toBe(1);
   expect(steerFromPointer(20, 0, 0)).toBe(0);
-  // Travel from the landing point: dead zone, a gentle curve, then full lock.
+  // From the centre, travel is a straight line and the edge is full lock.
   expect(steerFromTravel(0, 300)).toBe(0);
-  expect(steerFromTravel(8, 300)).toBe(0);
+  expect(steerFromTravel(8, 300)).toBeCloseTo(8 / 150);
   const half = steerFromTravel(80, 300);
-  expect(half).toBeGreaterThan(0.15);
-  expect(half).toBeLessThan(0.7);
-  expect(steerFromTravel(-80, 300)).toBe(-half);
+  expect(half).toBeCloseTo(80 / 150);
+  expect(steerFromTravel(-80, 300)).toBeCloseTo(-half);
+  expect(steerFromTravel(150, 300)).toBe(1);
   expect(steerFromTravel(200, 300)).toBe(1);
   expect(steerFromTravel(-900, 300)).toBe(-1);
-  // A narrow pad still needs a deliberate slide, not a small flick.
-  expect(steerFromTravel(30, 100)).toBeLessThan(1);
+  expect(steerFromTravel(30, 100)).toBeCloseTo(0.6);
   expect(steerFromTravel(70, 100)).toBe(1);
   expect(steerFromTravel(10, 0)).toBe(0);
   class TestPointer extends MouseEvent {
