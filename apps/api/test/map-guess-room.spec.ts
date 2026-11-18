@@ -2,8 +2,7 @@ import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
 import { withClientApiQuery } from "./client-api-key.ts";
 import { mapGuessQuestion, toPlayable } from "../src/questions/authoring.ts";
-import { preparePlayShared } from "../src/questions/multiple-choice.ts";
-import { createSqlStore } from "../src/room/sql-store.ts";
+import type { LobbySnapshot } from "@26/shared";
 import { writeRoundState } from "../src/questions/round-state.ts";
 
 it("locks map pins once, replays receipts, restores a pin after eviction and reveals the location only after scoring", async () => {
@@ -120,8 +119,36 @@ it("locks map pins once, replays receipts, restores a pin after eviction and rev
     requestId: crypto.randomUUID(),
     nowMs: Date.now(),
   });
+  const projector = await room.fetch(
+    new Request(
+      withClientApiQuery(`http://example.com/ws/${made.result.gameId}?role=stage`),
+      {
+        headers: {
+          Upgrade: "websocket",
+          Origin: "http://example.com",
+          Cookie: `26_room_presentation=${made.result.presentation.credentialId}.${made.result.presentation.secret}`,
+        },
+      },
+    ),
+  );
+  expect(projector.status).toBe(101);
+  const stageSocket = projector.webSocket!;
+  stageSocket.accept();
+  await next(stageSocket, (message) => message.kind === "snapshot");
+  const stageBroadcast = (matches: (sample: string[] | null) => boolean) =>
+    next(stageSocket, (message) => {
+      if (message.kind !== "snapshot") return false;
+      const play = (message.snapshot as LobbySnapshot).play;
+      return (
+        play?.question.kind === "map-guess" &&
+        play.submissionCount === 1 &&
+        matches(play.liveSample)
+      );
+    });
+  const visible = stageBroadcast((names) => names?.includes("Map guest") ?? false);
   const requestId = crypto.randomUUID();
   expect((await send(pin, requestId)).accepted).toBe(true);
+  await visible;
   expect((await send(pin, requestId)).accepted).toBe(true);
   expect((await send(pin)).accepted).toBe(false);
   expect(
@@ -135,16 +162,13 @@ it("locks map pins once, replays receipts, restores a pin after eviction and rev
       requestId: crypto.randomUUID(),
       nowMs: Date.now(),
     });
+  const hidden = stageBroadcast((names) => names === null);
   expect((await setVoterDisplay("voters-hidden")).ok).toBe(true);
+  await hidden;
   expect((await room.snapshotFor("stage")).play?.liveSample).toBeNull();
   expect((await room.snapshotFor("guest", guest.playerId)).play?.liveSample).toBeNull();
-  await runInDurableObject(room, (_instance, state) => {
-    const sql = state.storage.sql;
-    expect(
-      preparePlayShared(sql, createSqlStore(sql).readRoom())?.special?.liveSample,
-    ).toBeNull();
-  });
   expect((await setVoterDisplay("voters-question")).ok).toBe(true);
+  stageSocket.close();
   socket.close();
   await evictDurableObject(room);
   expect((await room.snapshotFor("guest", guest.playerId)).play?.selfAnswer).toEqual({

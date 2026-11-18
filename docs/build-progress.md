@@ -6645,6 +6645,6 @@ Next: supply the credited photo, location name and coordinates. Fill the draft, 
 
 ## 18 November 2026 — Cubic review workflow and map follow-up
 
-Future PR work waits for Cubic's review of the latest pushed commit, checks the summary and inline comments, and repeats after fixes. The rule lives in `55-agent-workflow.md` and was copied with `npm run agents:sync`.
+When Cubic runs on a PR, wait for its review of the latest pushed commit, check the summary and inline comments, and repeat after fixes. If Cubic is unavailable or never reports, note that in the handoff. The rule lives in `55-agent-workflow.md` and was copied with `npm run agents:sync`.
 
 The follow-up for PR #42 requires a photo clue, honours hidden picks in both live broadcasts and direct snapshots, and omits unsent pins from the phone reveal. The focused Worker and phone tests passed, along with lint and the build. The next content step is to add the real clue and rehearse the round.
