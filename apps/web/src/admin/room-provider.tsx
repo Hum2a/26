@@ -26,6 +26,7 @@ export type CommandScope =
   | "room"
   | "media"
   | "voters"
+  | "analytics"
   | "results"
   | "health"
   | "trolls"

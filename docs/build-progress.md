@@ -6608,3 +6608,25 @@ Backspace and the on-screen Delete action now use the selected tile or the lette
 Validation passed for typecheck, lint and structure (30 existing warnings), formatting, the build and its bundle budgets, and 38 focused web tests. The full web suite (`npm run test:unit -w @26/web -- --maxWorkers=2`) passed 904 tests across 200 files, including regressions for the late acknowledgement, same-session transfer, native paste field, and deletion after editing a filled tile.
 
 Exact next stage: review and merge PR #38, then use the authenticated Wordle rehearsal for a real-device check. No deployment was performed.
+
+## 18 November 2026 — Answer trends, freeze removal and the esports tag question
+
+Status: the freeze removal and the esports question merged as PR #39 and PR #40; answer trends are in PR #41 (branch `claude/answer-trends-pr`, merged with master after #38-#40). **Not verified**: the dependency install on this machine was cancelled part-way, so `node_modules` is incomplete (`zod` files missing) and typecheck, lint, content check and every test suite could not run. Nothing here is labelled passed. No deployment.
+
+### What changed
+
+- **Production freeze removed** at the owner's request. `assertDeployAllowed` no longer checks dates; `--override-freeze` is accepted and ignored by `release.ts` and `release.sh`. Release guard, support and integration tests now assert that production deploys on the old party-weekend dates. `docs/deployment.md`, `event-runbook.md` and `decisions-for-humza.md` updated.
+- **Answer trends** after every question, for every mechanic:
+  - `packages/shared/src/trends/trend-schema.ts` (card, stage, phone and host schemas) and `trend-engine.ts` (pure analysis). 24 facets: platform, browser, dark mode, iOS version, screen size, screen sharpness, language, time zone, connection lag, dropouts, memory, reduced motion, orientation, data saver, speed quarter, last-second answers, table position, arrival order, trolls sent, troll victims, photo-sharers, profile photos, last-question streak and name length. Measures: right-answer rate, option preference, numeric level and miss (sliders, kart time, Wordle guesses, chess points) and answer speed. Answer cards cover consensus, split, favourite, lone wolf, ghost options, hardest or easiest so far, typed variety, average time, guess bias, the crowd's middle guess and going bust. Record cards cover fastest finger, closest guess, wildest guess and best result. Comparisons need three guests on each side (`trendMinimumGroup`). Device and behaviour cards never name anyone.
+  - `apps/api/src/stats/trend-source.ts` reads choice, multiple, push, typed (hidden answers never quoted), slider, rank, vote, guess, Wordle, chess, kart, duel and finale answers with the device context saved on each answer. `trend-room.ts` caches the analysis in memory per question (keyed on ledger, players, device reports and hidden answers) and builds stage `trends`, guest `selfTrends` and control `trendControl`. `trend-settings.ts` adds the room columns `trend_stage`, `trend_phones`, `trend_hidden` and `trend_history`.
+  - Host commands: `trends-stage-shown/hidden`, `trends-phones-shown/hidden`, `trends-card-hide/restore` (with `trendCardId`), through routes, `PartyRoom.hostAction` and `applyHostAction`, with notices and the `analytics` command scope.
+  - Web: `apps/web/src/play/trends.tsx` + `trends.css`. The projector shows a side panel during the reveal and scores (kart only at scores), rotating cards every seven seconds with animated bars; it fades only, under reduced motion. Phones lazy-load "You and the room", warmed during answering. Admin → Analytics adds switches, every candidate card with hide/restore, earlier questions and a stand-in rehearsal using the real engine and components.
+  - Tests written, not run: `apps/api/test/trends.spec.ts`, `apps/api/test/trends-room.spec.ts`, `apps/web/src/play/trends.test.tsx`, `apps/web/src/admin/trends-panel.test.tsx`.
+- **New question** `esports-tag` (choice, ready, catalogue only): "What was Humza's longest running official tag when competing in esports?" Seven options as supplied; C (the empty tag, rendered with U+3164) is correct. B keeps its spaces as non-breaking spaces. `contentLimits.optionMax` raised from 6 to 8 for scored choices; the authoring test now checks that seven are accepted and nine refused.
+- Stale test fix: `award-points.spec.ts` now expects at least two birthday polls (the other trolley polls were retired on 16 November).
+- `scripts/check-structure.mjs` and `.agents/rules/05-structure.md` allow `packages/shared/src/trends/`. Run `npm run agents:sync` once dependencies are installed.
+- Readiness sweep written to `docs/readiness-plan-2026-11-18.md`.
+
+### Exact next stage
+
+Watch CI on PR #41: it is the first typecheck, lint and test run for the trends code (`npm run agents:sync` has run). Fix what fails, merge, deploy staging and rehearse trends with eight or more phones, then production. Choose the running-order slot for `esports-tag`.

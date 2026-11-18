@@ -16,4 +16,8 @@ There is no model call. `factsForWording` is the only record a future wording pa
 
 The end-of-night facts beat is a separate catalogue in `fun-facts.ts`. It uses each guest's latest device report, and it does not change the highlight rules or the group of 5. A sentence may only repeat a numerator, denominator, percent or part count stored on its fact. The room shows one card at a time. The archive freezes those sentences, so they remain after detailed device rows are removed.
 
+## Answer trends
+
+After each reveal the projector rotates cards on how groups answered that question, and each phone gets a few lines on how its guest compared. The pure engine is `packages/shared/src/trends/trend-engine.ts`; `trend-source.ts` reads one question into its input (every mechanic: choice, multiple, push, typed, slider, rank, vote, guess, wordle, chess, kart, duel, finale), `trend-room.ts` caches the analysis in memory per question and builds the stage, guest and host fields, and `trend-settings.ts` holds the host's switches and hidden cards. Facets cover devices (platform, browser, dark mode, iOS version, screen size and sharpness, language, time zone, connection, dropouts, memory, reduced motion, orientation, data saver) and behaviour (speed, last-second answers, table position, arrival order, trolls sent and received, photo-sharing, profile photos, last-question streak, name length). A comparison needs three guests on each side (`trendMinimumGroup`), lower than the podium's five because these are playful asides. Device and behaviour cards never name anyone.
+
 Illustrative demo rooms label their cards `Illustrative`. An empty room does not borrow sample numbers.

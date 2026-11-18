@@ -1,4 +1,5 @@
 import { useAdminRoom } from "./room-provider";
+import { TrendsPanel } from "./trends-panel";
 
 /**
  * Room analytics for the host: the statistics the room has already
@@ -55,6 +56,8 @@ export function AnalyticsPage() {
           />
         </dl>
       </section>
+
+      <TrendsPanel />
 
       <section className="admin-task-section" aria-label="Podium highlights">
         <div className="admin-page-heading">

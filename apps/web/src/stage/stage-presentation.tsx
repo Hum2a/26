@@ -7,6 +7,7 @@ import { Button } from "../ui/primitives";
 import { JoinMark } from "../lobby/join-mark";
 import { NameCloud, NameReveal } from "../lobby/name-cloud";
 import { StagePlay } from "../play/stage-play";
+import { StageTrends } from "../play/trends";
 import { PhaseTransition } from "../anim/PhaseTransition";
 import { kartRaceScene } from "../kart/race-scene";
 import { withClientApiKey } from "../api/client-key";
@@ -62,6 +63,14 @@ export function StagePresentation({
   const lobby = snapshot.phase === "lobby";
   const hidden = snapshot.stageHidden && !lobby;
   const collecting = ["collect", "vote", "predict"].includes(snapshot.phase);
+  // Answer trends sit beside the reveal and the scores. A kart reveal keeps the
+  // whole screen for its results; its trends wait for the scores beat.
+  const trends =
+    snapshot.trends &&
+    (snapshot.phase === "scores" ||
+      (snapshot.phase === "reveal" && snapshot.play?.question.kind !== "kart"))
+      ? snapshot.trends
+      : undefined;
   return (
     <SafeArea dev={false}>
       <StageFullscreen controls={false} onExit={onSetup}>
@@ -134,13 +143,28 @@ export function StagePresentation({
             </section>
           ) : (
             <>
-              <PhaseTransition
-                phase={snapshot.phase}
-                scene={kartRaceScene(snapshot)}
-                stage
-              >
-                <StagePlay snapshot={snapshot} observedAt={observedAt} />
-              </PhaseTransition>
+              {/* One wrapper always, so trends arriving never remount the round. */}
+              <div className="projector-with-trends">
+                <PhaseTransition
+                  phase={snapshot.phase}
+                  scene={kartRaceScene(snapshot)}
+                  stage
+                >
+                  <StagePlay snapshot={snapshot} observedAt={observedAt} />
+                </PhaseTransition>
+                <AnimatePresence>
+                  {trends ? (
+                    <motion.div
+                      key="trends"
+                      className="projector-trends-slot"
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <StageTrends trends={trends} />
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </div>
               {collecting && snapshot.play && snapshot.play.question.kind !== "kart" ? (
                 <WaitingLine
                   count={snapshot.play.submissionCount}

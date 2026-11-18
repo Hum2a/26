@@ -95,6 +95,13 @@ export type {
   WallStep,
 } from "./wall.ts";
 export type { FunFactCard, StatCard } from "./stats.ts";
+export * from "./trends/trend-schema.ts";
+export * from "./trends/trend-engine.ts";
+import {
+  questionTrendsSchema,
+  selfTrendsSchema,
+  trendControlSchema,
+} from "./trends/trend-schema.ts";
 export { resultsStatusSchema } from "./archive.ts";
 export type { ResultsStatus } from "./archive.ts";
 export * from "./chess/chess-schemas.ts";
@@ -1427,6 +1434,15 @@ export const lobbySnapshotSchema = z
       .optional(),
     highlights: z.array(statCardSchema).max(8).optional(),
     recap: z.array(statCardSchema).max(6).optional(),
+    /**
+     * Stage only, during the reveal and scores: how groups in the room
+     * answered the question just revealed. Absent when the host hides them.
+     */
+    trends: questionTrendsSchema.optional(),
+    /** One guest's phone only: how their answer compared with the room. */
+    selfTrends: selfTrendsSchema.optional(),
+    /** Control only: trend switches, every candidate card and recent questions. */
+    trendControl: trendControlSchema.optional(),
     /** The sentence currently on the projector. Guests may also learn whether it includes them. */
     funFact: z
       .object({
