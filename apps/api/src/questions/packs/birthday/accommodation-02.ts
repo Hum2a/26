@@ -26,6 +26,7 @@ export const accommodation02 = choiceQuestion({
       asset: "/assets/questions/accommodation-02/photo.jpg",
       creditUrl: "https://creativecommons.org/licenses/by/2.0",
       credit: "Justis- og politidepartementet · CC BY 2.0",
+      alt: "Bright interior corridor of a residential building",
     },
   ],
   explanation:

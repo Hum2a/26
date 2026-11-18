@@ -224,10 +224,9 @@ it("rehearses a catalogue beyond the eighty-question live order limit", () => {
             "council-thamesmead-south",
             "council-blackbird-leys",
             "apology-video-auction",
-            "nextdoor-paranoia",
             "group-chat-figurine",
             "cursed-search-history",
-            "property-price-roulette",
+            "where-are-we",
             // Intentional draft until every quote's speaker is assigned.
             "ed-or-humza",
           ].includes(q.id),

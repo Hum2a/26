@@ -163,17 +163,18 @@ each room when **Start birthday game** is used. The illustrative demo remains a
 separate rehearsal. Review the saved running order in **Admin → Question packs**;
 do not assume a change there alters a game that has already started.
 
-Four rounds remain drafts by the host's decision on 3 November 2026:
+Four rounds remain drafts:
 
-| Round                   | Material needed                                                        |
-| ----------------------- | ---------------------------------------------------------------------- |
-| Reddit tribunal         | Original thread, exact title, outcome, top comment and answer          |
-| Ferrier estate          | Verified estate name and confirmed category                            |
-| Nextdoor paranoia       | Genuine post or screenshot and confirmed explanation                   |
-| Property price roulette | Dated listing, authorised image, rent, agent wording and numeric scale |
+| Round           | Material needed                                               |
+| --------------- | ------------------------------------------------------------- |
+| Reddit tribunal | Original thread, exact title, outcome, top comment and answer |
+| Ferrier estate  | Verified estate name and confirmed category                   |
+| Where are we?   | Credited clue photo, place name and coordinates               |
+| Ed or Humza?    | Speaker (`ed` or `humza`) for each of the 18 quotes           |
 
-Figurine and Cursed Search History are ready in the catalogue and can be rehearsed
-from their question pages. Add them explicitly to the saved order when wanted.
+Figurine, Cursed Search History, Property price roulette and Nextdoor paranoia
+are ready in the catalogue and can be rehearsed from their question pages. Add
+them explicitly to the saved order when wanted.
 The spoken debate round has been dropped. Steal, Robin Hood and Shared score are
 permitted on scored birthday choice questions; polls and other mechanics retain
 their existing restrictions. Each guest gets one troll, from question two.

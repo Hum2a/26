@@ -378,6 +378,7 @@ const publicQuestionCore = {
         .string()
         .regex(/^https:\/\/creativecommons\.org\/licenses\/[a-z-]+\/[0-9.]+\/?$/)
         .optional(),
+      alt: z.string().min(1).max(120).optional(),
     })
     .strict()
     .optional(),

@@ -3,35 +3,42 @@ import { choiceQuestion } from "../../authoring.ts";
 export const nextdoorParanoia = choiceQuestion({
   id: "nextdoor-paranoia",
   title: "Nextdoor neighbourhood watch paranoia",
-  prompt:
-    "Saw a suspicious male walking at 11:14 PM wearing a dark hoodie, looking at his phone. Paused outside number 42 for 18 seconds.",
-  instructions: "What was actually happening? Pick one, then send.",
+  prompt: "What was the suspicious vehicle actually doing?",
+  instructions: "Inspect the post. Pick one, then send.",
   options: [
     {
-      id: "deliveroo",
-      label: "A Deliveroo driver trying to find the flat door",
+      id: "newspapers",
+      label: "Delivering newspapers",
     },
     {
-      id: "pokemon",
-      label: "A teenager catching a Shiny in Pokémon GO",
+      id: "police",
+      label: "An unmarked police tail",
     },
     {
-      id: "operative",
-      label: "A plainclothes counter-terror operative",
+      id: "parent",
+      label: "A parent checking the school run",
     },
     {
-      id: "son",
-      label: "The homeowner’s own son returning from uni",
+      id: "burglary",
+      label: "Casing houses for a burglary",
     },
   ],
-  requirements: [
+  correctOption: {
+    known: "newspapers",
+  },
+  media: [
     {
-      code: "truth",
-      name: "community-source",
-      detail:
-        "Supply a real post or screenshot and its confirmed explanation; the example proposes A or B without a factual answer.",
+      name: "question",
+      kind: "image",
+      required: true,
+      asset: "/assets/questions/nextdoor-paranoia/photo.png",
+      credit:
+        "Typeset reconstruction of a post quoted by Marshall News Messenger (2024)",
+      alt: "A neighbourhood-app post from a neighbour",
     },
   ],
+  explanation:
+    "“Turned out it was the newspaper delivery guy.” Marshall News Messenger, 5 February 2024.",
   notes:
-    "Supplied illustrative text only. Do not fabricate a Nextdoor/local Facebook source, screenshot or real person. Redact identifying addresses/names from a supplied image.",
+    "Column: https://marshallnewsmessenger.com/2024/02/05/look-who-is-nextdoor-a-spying-suspicious-paranoid-snoop (5 Feb 2024). No screenshot or names published. Typeset card uses only the quoted slow-moving school-bus phrase. Catalogue only until slotted.",
 });

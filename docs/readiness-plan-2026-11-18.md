@@ -62,8 +62,8 @@ Estimated show length: about 42 rounds × 60–90 s plus chess (2 min + intro), 
 | `ed-or-humza` (18 quotes, sort into Ed or Humza)                                       | Gap    | Set `speaker` for all 18 quotes in `ed-or-humza.ts`, then add it to Running order if wanted.                                 |
 | `guess-emotional-support`, `guess-council-coup`, `guess-airport-lounge`                | Ready  | Add to Running order if wanted.                                                                                              |
 | `kart-park-grand-prix`                                                                 | Ready  | Alternative kart course; add only if a second race is wanted.                                                                |
-| `nextdoor-paranoia`                                                                    | Gap    | A real post or screenshot and its confirmed explanation, plus the correct choice. Or drop it.                                |
-| `property-price-roulette`                                                              | Gap    | Dated listing, authorised photo, monthly rent, agent wording and slider scale. Or drop it.                                   |
+| `nextdoor-paranoia`                                                                    | Ready  | Typeset Marshall News Messenger (5 Feb 2024) post; catalogue only until added to Running order.                              |
+| `property-price-roulette`                                                              | Ready  | Sourced Winkworth listing at £750 pcm; catalogue only until it is added to Running order.                                    |
 
 ## 3. Features
 

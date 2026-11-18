@@ -5,6 +5,16 @@ export const colour = choiceQuestion({
   title: "Night sky",
   status: "ready",
   prompt: "Illustrative demo: which colour is the night sky in this drawing?",
+  media: [
+    {
+      name: "question",
+      kind: "image",
+      required: true,
+      asset: "/assets/questions/colour/photo.jpg",
+      credit: "Original demo illustration · CC0",
+      alt: "A drawing of a night sky",
+    },
+  ],
   options: [
     { id: "blue", label: "Blue" },
     { id: "green", label: "Green" },

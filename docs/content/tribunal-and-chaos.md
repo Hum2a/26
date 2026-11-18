@@ -2,7 +2,7 @@
 
 [Home](../../README.md) · [Documentation](../README.md) · [Event runbook](../event-runbook.md)
 
-Saved all eight supplied concepts as twelve catalogue entries. They stay out of the birthday running order. Five are ready: the apology tournament and four Council/Dystopia choices. Seven are drafts with explicit facts or mechanics missing. The separate kart sprint adds one ready entry. Together with the earlier fifty completed questions, the birthday catalogue has **56 ready / 7 draft** entries.
+Saved all eight supplied concepts as twelve catalogue entries. They stay out of the birthday running order. The sourced property-price slider and the typeset Nextdoor post are ready. Drafts still missing facts: tribunal-reddit and the retired Ferrier-sector name check.
 
 | Id                            | State                | Mechanic / missing item                                                                                                                                                                                                           |
 | ----------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -13,12 +13,12 @@ Saved all eight supplied concepts as twelve catalogue entries. They stay out of 
 | `council-thamesmead-south`    | Ready                | Choice: real housing area, also styled South Thamesmead. No unverified film-location assertion is needed for the answer.                                                                                                          |
 | `council-blackbird-leys`      | Ready                | Choice: real Oxford estate.                                                                                                                                                                                                       |
 | `apology-video-auction`       | Ready                | Existing blind tournament: 30 seconds to write, 15 seconds per match, no self-votes, 60 points to the winning author. Frozen draw resolves ties/byes; no votes means no prize. The cancellation scenario is explicitly fictional. |
-| `nextdoor-paranoia`           | Draft                | Choice. Needs a real post/screenshot and its confirmed mundane explanation. The proposed A-or-B example is not a usable answer key.                                                                                               |
+| `nextdoor-paranoia`           | Ready (not in order) | Choice. Typeset reconstruction of a Marshall News Messenger (5 Feb 2024) quoted post about a slow-moving vehicle following the school bus; answer is delivering newspapers.                                                       |
 | `group-chat-figurine`         | Ready (not in order) | Room majority guess, self-votes allowed. A self-vote scores double when the room also picks you (`selfVoteBonus: "double"`, agreed 2 November 2026).                                                                              |
 | `cursed-search-history`       | Ready (not in order) | Push your luck (`outcome: { kind: "push" }`): a line every 6 s, Raid after line 2, 3 or 4 or never, frozen when answering opens; banks 100 / 250 / 450 / 700.                                                                     |
-| `property-price-roulette`     | Draft                | Needs dated real listing, image, monthly rent, scale and genuine estate-agent reveal copy. No fictional example is treated as real evidence.                                                                                      |
+| `property-price-roulette`     | Ready (not in order) | Closest-under monthly rent, £250–£3000. Winkworth / OnTheMarket 13835770, Evening Standard 11 February 2026, £750 pcm and 79 sq ft; listing-2 interior on the phones; floorplan and extra stills kept off the public asset path.  |
 
-Unsupported mechanics have disabled, explicitly labelled layout previews. Property has no invented slider range or image. Ordinary ready choices and the apology tournament reuse the real guest renderer and existing voting engine.
+Unsupported mechanics have disabled, explicitly labelled layout previews. Ordinary ready choices, the apology tournament and the sourced property slider reuse the real guest renderer.
 
 Primary references checked 20 October 2026:
 
