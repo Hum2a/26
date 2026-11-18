@@ -169,6 +169,7 @@ export function AdminLoginPage() {
               autoComplete="one-time-code"
               pattern="[0-9]{6}"
               maxLength={6}
+              className="skin-field admin-code-input"
               value={code}
               onChange={(event) =>
                 setCode(event.target.value.replace(/\D/g, "").slice(0, 6))
