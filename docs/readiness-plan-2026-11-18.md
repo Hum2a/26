@@ -20,7 +20,7 @@ Status words: **Ready** means content is complete and validated; **Check** means
 
 ## 2. Every question in the running order (42 rounds)
 
-All 42 pass `content:check`. "Design" is a bespoke presentation; "standard" uses the shared renderer for that mechanic.
+Content check was not run in this sweep; run it before treating the `Ready` statuses as validated. "Design" is a bespoke presentation; "standard" uses the shared renderer for that mechanic.
 
 | #     | Question                                                                 | Mechanic                     | Design              | Status | Notes                                                                                                                       |
 | ----- | ------------------------------------------------------------------------ | ---------------------------- | ------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------- |
