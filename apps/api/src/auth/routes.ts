@@ -14,6 +14,7 @@ import type { Hono } from "hono";
 import {
   authBindingsFromEnv,
   configuredAdminEmails,
+  isAdministratorIdentity,
   presentBinding,
   type AuthBindings,
 } from "./bindings.ts";
@@ -122,7 +123,9 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>): void {
     if (!response.ok) {
       return authFailure("invalid", 400);
     }
-    const email = await readVerifiedEmail(response, ready.adminEmails);
+    const email = await readVerifiedEmail(response, (address) =>
+      ready.adminEmails.includes(address),
+    );
     if (!email) {
       return authFailure("invalid", 400);
     }
@@ -153,7 +156,9 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>): void {
       typeof body.code === "string"
         ? body.code.trim()
         : "";
-    if (!ready.adminEmails.includes(email) || !/^\d{6}$/.test(code)) {
+    const allowed = (address: string) =>
+      isAdministratorIdentity(ready.bindings, address);
+    if (!allowed(email) || !/^\d{6}$/.test(code)) {
       return authFailure("invalid", 400);
     }
     const headers = new Headers(c.req.raw.headers);
@@ -168,7 +173,7 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>): void {
     );
     if (!response.ok)
       return authFailure("invalid", response.status === 429 ? 429 : 400);
-    const verified = await readVerifiedEmail(response, ready.adminEmails);
+    const verified = await readVerifiedEmail(response, allowed);
     if (!verified) return authFailure("invalid", 400);
     return jsonData(
       adminSessionSchema.parse({ signedIn: true, email: verified }),
@@ -422,7 +427,7 @@ function credentialFailure(
 
 async function readVerifiedEmail(
   response: Response,
-  adminEmails: readonly string[],
+  accepts: (email: string) => boolean,
 ): Promise<string | undefined> {
   const body: unknown = await response.json();
   if (!body || typeof body !== "object" || !("user" in body)) {
@@ -438,7 +443,7 @@ async function readVerifiedEmail(
     return undefined;
   }
   const email = user.email.toLowerCase();
-  return adminEmails.includes(email) ? email : undefined;
+  return accepts(email) ? email : undefined;
 }
 
 export async function administratorForRequest(
@@ -495,7 +500,7 @@ async function readAdministrator(
     return undefined;
   }
   const email = user.email.toLowerCase();
-  return ready.adminEmails.includes(email) ? email : undefined;
+  return isAdministratorIdentity(ready.bindings, email) ? email : undefined;
 }
 
 async function readEmailBody(request: Request): Promise<string | undefined> {

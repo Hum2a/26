@@ -2,7 +2,7 @@
 
 [Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
 
-One Better Auth instance for the configured administrators. There are no guest accounts. Public email sign-up is disabled, and both magic-link/email-OTP plugins have `disableSignUp: true`. User rows are created only by `npm run auth:seed`, and `databaseHooks.user.create.before` rejects every address that is not on the `ADMIN_EMAIL` allow-list.
+One Better Auth instance for administrators. Public sign-up is disabled, and both magic-link/email-OTP plugins have `disableSignUp: true`. `npm run auth:seed` creates human accounts from `ADMIN_EMAIL`. The trusted `npm run auth:agent` command provisions separate reserved identities on local and staging and issues one-time codes without mail. Public identity creation still requires the human allow-list. See [Agent access](../../../../docs/agent-access.md) for provisioning, sign-in and revocation.
 
 <details>
 <summary>On this page</summary>

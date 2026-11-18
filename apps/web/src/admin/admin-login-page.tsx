@@ -23,6 +23,7 @@ export function AdminLoginPage() {
   const [code, setCode] = useState("");
   const codeField = useRef<HTMLInputElement>(null);
   const [params] = useSearchParams();
+  const agent = params.get("agent") === "1";
   const returnTo = safeAdminReturnTo(params.get("returnTo"));
   const [email, setEmail] = useState("");
   const [notice, setNotice] = useState("");
@@ -83,7 +84,7 @@ export function AdminLoginPage() {
     inFlight.current = true;
     setPending(true);
     setNotice("Checking your sign-in code.");
-    const session = await confirmEmailCode(email.trim(), code);
+    const session = await confirmEmailCode(email.trim(), code, agent);
     if ("error" in session || !session.signedIn) {
       setNotice(
         "error" in session ? session.error : "That code was not accepted. Try again.",
@@ -115,7 +116,9 @@ export function AdminLoginPage() {
       }
     >
       <EntryHeading eyebrow="Behind the scenes" title="Admin sign in">
-        Everything you need to run the night. Sign in with your administrator email.
+        {agent
+          ? "Use your named agent account and a fresh code from the operator command."
+          : "Everything you need to run the night. Sign in with your administrator email."}
       </EntryHeading>
       <EntryNotice message={feedback} />
       {auth.state === "error" ? (
@@ -131,10 +134,17 @@ export function AdminLoginPage() {
           Try again
         </Button>
       ) : null}
-      <form className="entry-form" onSubmit={(event) => void onRequest(event)}>
+      <form
+        className="entry-form"
+        onSubmit={(event) => void (agent ? onCode(event) : onRequest(event))}
+      >
         <TextField
-          label="Administrator email"
-          hint="Access is restricted to the configured administrators."
+          label={agent ? "Agent account email" : "Administrator email"}
+          hint={
+            agent
+              ? "Use the account address from the command."
+              : "Access is restricted to the configured administrators."
+          }
           type="email"
           autoComplete="username"
           value={email}
@@ -149,20 +159,45 @@ export function AdminLoginPage() {
           disabled={pending}
           required
         />
-        <Button type="submit" disabled={pending}>
-          {pending
-            ? "Sending email…"
-            : sent
-              ? "Send a new code and link"
-              : "Email me a code and link"}
-        </Button>
-        <p className="entry-note">
-          One email, two ways in. Enter the six-digit code here or open the magic link
-          in your email. Both expire after five minutes.
-        </p>
+        {agent ? (
+          <>
+            <TextField
+              label="Six-digit agent code"
+              hint="Codes expire after five minutes and work once."
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              value={code}
+              onChange={(event) =>
+                setCode(event.target.value.replace(/\D/g, "").slice(0, 6))
+              }
+              required
+              disabled={pending}
+            />
+            <Button type="submit" disabled={pending || code.length !== 6}>
+              {pending ? "Checking code…" : "Sign in with agent code"}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button type="submit" disabled={pending}>
+              {pending
+                ? "Sending email…"
+                : sent
+                  ? "Send a new code and link"
+                  : "Email me a code and link"}
+            </Button>
+            <p className="entry-note">
+              One email, two ways in. Enter the six-digit code here or open the magic
+              link in your email. Both expire after five minutes.
+            </p>
+          </>
+        )}
       </form>
       <AnimatePresence initial={false}>
-        {sent ? (
+        {!agent && sent ? (
           <motion.section
             key="email-code"
             className="admin-code-panel"

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { clientApiKeyHeader } from "@26/shared";
 import { isConfiguredAdminEmail, parseAdminEmails } from "../src/auth/bindings.ts";
+import { agentAdminEmail, isAgentAdministrator } from "../src/auth/agent-identity.ts";
 import { createEmail } from "../src/auth/create-email.ts";
 import { openDatabase } from "../src/auth/create-database.ts";
 import {
@@ -109,6 +110,67 @@ function cookiePair(response: Response, name: string): string | undefined {
 }
 
 describe("administrator auth", () => {
+  it("grants the same administrator session to a provisioned agent with a one-use operator code", async () => {
+    const env = localEnv(`agent-auth-${crypto.randomUUID()}`);
+    const email = agentAdminEmail("local", "codex")!;
+    const { database, auth } = await authForRequest(env, origin);
+    await database.executor.query(
+      `INSERT INTO "user" (id, name, email, "emailVerified") VALUES ($1, $2, $3, true)`,
+      [crypto.randomUUID(), "Codex (agent)", email],
+    );
+    const code = await auth.api.createVerificationOTP({
+      body: { email, type: "sign-in" },
+    });
+    expect(
+      await send(env, "/api/admin/magic-link", { method: "POST", body: { email } }),
+    ).toHaveProperty("status", 200);
+    expect(
+      await send(env, "/api/auth/email-otp/send-verification-otp", {
+        method: "POST",
+        body: { email, type: "sign-in" },
+      }),
+    ).toHaveProperty("status", 400);
+    expect(await (await send(env, "/api/dev/inbox")).json()).toEqual({ messages: [] });
+    expect(
+      await send(env, "/api/admin/email-code/verify", {
+        method: "POST",
+        body: { email: agentAdminEmail("staging", "codex"), code },
+      }),
+    ).toHaveProperty("status", 400);
+    const signIn = () =>
+      send(env, "/api/admin/email-code/verify", {
+        method: "POST",
+        body: { email, code },
+      });
+    const verified = await signIn();
+    expect(verified.status).toBe(200);
+    const cookie = cookiePair(verified, "__Secure-better-auth.session_token");
+    expect(cookie).toBeTruthy();
+    expect(await (await send(env, "/api/admin/session", { cookie })).json()).toEqual({
+      signedIn: true,
+      email,
+    });
+    expect(await signIn()).toHaveProperty("status", 400);
+    expect(
+      await send(env, "/api/admin/sign-out", { method: "POST", body: {}, cookie }),
+    ).toHaveProperty("status", 200);
+    expect(
+      await (await send(env, "/api/admin/session", { cookie })).json(),
+    ).toMatchObject({ signedIn: false });
+  });
+
+  it("keeps agent identities distinct across environments and out of the human allow-list", () => {
+    const staging = agentAdminEmail("staging", "claude")!;
+    expect(agentAdminEmail("production", "claude")).toBeUndefined();
+    expect(agentAdminEmail("staging", "../claude")).toBeUndefined();
+    expect(isAgentAdministrator("production", staging)).toBe(false);
+    expect(isAgentAdministrator("local", staging)).toBe(false);
+    expect(isAgentAdministrator("staging", staging)).toBe(true);
+    expect(
+      isConfiguredAdminEmail({ APP_ENV: "production", ADMIN_EMAIL: staging }, staging),
+    ).toBe(false);
+  });
+
   it("prepares an empty local database before validating real auth requests", async () => {
     const env = localEnv(`cold-auth-${crypto.randomUUID()}`);
     const errors = vi.spyOn(console, "error");

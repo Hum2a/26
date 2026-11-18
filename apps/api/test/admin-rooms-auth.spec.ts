@@ -428,6 +428,7 @@ it("projects every catalogue mechanic without exposing raw authoring objects or 
     }
   }
   expect([...mechanics].sort()).toEqual([
+    "chess",
     "choice",
     "duel",
     "finale",
