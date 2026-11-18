@@ -6659,26 +6659,26 @@ How pictures work: option art is a PNG under `/assets/questions/<id>/` (schema f
 
 Flagged:
 
-| Round / file | Id | What was missing |
-| --- | --- | --- |
-| demo `candles.ts` | `candles` | Prompt asks how many candles are on **this cake**; no `media` and no file |
-| demo `colour.ts` | `colour` | Prompt asks the colour of **this drawing**; no `media` and no file |
-| design bench `preview/fixtures.ts` | `whos-that-pokemon-preview` | Renderer looks for `silhouette.png`; Piplup had no colour PNG |
-| birthday `property-price-roulette.ts` | `property-price-roulette` | Required `listing-photo` with no asset; prompt says look at the listing |
-| birthday `nextdoor-paranoia.ts` | `nextdoor-paranoia` | Requirements ask for a real post/screenshot; no media field |
-| retired `tribunal-reddit.ts` | `tribunal-reddit` | Needs a real thread, not a picture; not in the catalogue |
-| authoring fixture | `childhood-photo` | Docs/test only; not a catalogue question |
+| Round / file                          | Id                          | What was missing                                                          |
+| ------------------------------------- | --------------------------- | ------------------------------------------------------------------------- |
+| demo `candles.ts`                     | `candles`                   | Prompt asks how many candles are on **this cake**; no `media` and no file |
+| demo `colour.ts`                      | `colour`                    | Prompt asks the colour of **this drawing**; no `media` and no file        |
+| design bench `preview/fixtures.ts`    | `whos-that-pokemon-preview` | Renderer looks for `silhouette.png`; Piplup had no colour PNG             |
+| birthday `property-price-roulette.ts` | `property-price-roulette`   | Required `listing-photo` with no asset; prompt says look at the listing   |
+| birthday `nextdoor-paranoia.ts`       | `nextdoor-paranoia`         | Requirements ask for a real post/screenshot; no media field               |
+| retired `tribunal-reddit.ts`          | `tribunal-reddit`           | Needs a real thread, not a picture; not in the catalogue                  |
+| authoring fixture                     | `childhood-photo`           | Docs/test only; not a catalogue question                                  |
 
 Already supplied (checked files exist, non-empty): accommodation 01–03 JPEGs; favourite-Pokémon and Who’s-that-Pokémon PNGs plus Jigglypuff silhouette SVG; chess pieces/board/sounds; troll pack including Mum photo; Netanyahu webp. Kart GLBs are built into `public/kart-engine/` on web prebuild, not stored as question photos. Custom designs (number plates, ballot paper, album sleeves, pills, trolley lever) use CSS/Iconify, not missing bitmaps. Council-estate rounds are retired text names, replaced by the photo accommodation rounds.
 
 ### Filled
 
-| Item | File | Source / licence |
-| --- | --- | --- |
-| Demo cake (26 candles) | `apps/web/public/assets/questions/candles/photo.jpg` | Original drawing, CC0 |
-| Demo night sky (blue) | `apps/web/public/assets/questions/colour/photo.jpg` | Original drawing, CC0 |
-| Design-bench silhouette | `…/whos-that-pokemon-preview/silhouette.png` | Blacked-out Mudkip; copyrighted, private use |
-| Design-bench Piplup | `…/whos-that-pokemon-preview/piplup.png` | PokeAPI official artwork 393; copyrighted, private use |
+| Item                    | File                                                 | Source / licence                                       |
+| ----------------------- | ---------------------------------------------------- | ------------------------------------------------------ |
+| Demo cake (26 candles)  | `apps/web/public/assets/questions/candles/photo.jpg` | Original drawing, CC0                                  |
+| Demo night sky (blue)   | `apps/web/public/assets/questions/colour/photo.jpg`  | Original drawing, CC0                                  |
+| Design-bench silhouette | `…/whos-that-pokemon-preview/silhouette.png`         | Blacked-out Mudkip; copyrighted, private use           |
+| Design-bench Piplup     | `…/whos-that-pokemon-preview/piplup.png`             | PokeAPI official artwork 393; copyrighted, private use |
 
 Credits: full licence table is `docs/content/question-image-credits.md` (not served to guests). Public `apps/web/public/assets/questions/CREDITS.md` is only a pointer. Demo pack edited in place (`candles`, `colour` media only); version stays `demo-2026-09-22` because `startDemo` pins it and the owner asked to fill every flagged question without inventing a new demo version. Answers unchanged.
 
@@ -6712,6 +6712,17 @@ The owner attached the Winkworth listing originals (not the earlier preview thum
 Rent is the OnTheMarket headline for listing 13835770: **£750 pcm**. Closest-under number entry, scale £0–£4000. Reveal uses the agent wording that there is no kitchen and a microwave is supplied. Copyrighted listing photographs, private party use.
 
 Also: optional `alt` on public question images; Who’s-that-Pokémon silhouette files are required only for ready questions; Julian Herzog (Website) in the private credits file.
+
+Merged `origin/master` (PR #43 map-guess) with a merge commit. Conflicts: `apps/web/src/play/question-image.tsx` (kept named `alt`, map-guess fallback, and generic fallback) and `docs/build-progress.md` (kept both the map-round log and this fill log).
+
+### Commands and results after the merge
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 30 existing react-refresh warnings; structure check passed
+- `npm run format:check` — passed
+- `npm run content:check` — passed; incomplete drafts: `where-are-we`, `ed-or-humza`, `nextdoor-paranoia`
+- `npx vitest run --project auth test/birthday-assets-prices.spec.ts test/content-preflight.spec.ts test/question-authoring.spec.ts test/party-concepts.spec.ts test/new-party-concepts.spec.ts test/map-guess-score.spec.ts` in `apps/api` — 53 passed
+- `npx vitest run src/play/question-image.test.tsx src/play/designs/whos-that-pokemon.test.tsx src/play/question-option-image.test.tsx src/play/preload.test.ts src/play/map-guess.test.tsx` in `apps/web` — 14 passed
 
 ### Exact next stage
 

@@ -13,7 +13,9 @@ it("saves all eight concepts without inventing a Reddit ending, local post, list
     expect(q.status).toBe("draft");
     expect(toPlayable(q)).toBeUndefined();
   }
-  const listing = birthdayPack.catalogue.find((q) => q.id === "property-price-roulette")!;
+  const listing = birthdayPack.catalogue.find(
+    (q) => q.id === "property-price-roulette",
+  )!;
   expect(birthdayPack.order).not.toContain(listing.id);
   expect(listing.status).toBe("ready");
   expect(toPlayable(listing)).toMatchObject({

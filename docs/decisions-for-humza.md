@@ -48,12 +48,12 @@ A countdown that _holds_ the grid inside the race (changing race timing) was not
 
 Each is a file in `apps/api/src/questions/packs/birthday/`. Fill its `requirements`, run `npm run content:check`, then add it in Running order.
 
-| Round                   | File                         | Needs                                                                      |
-| ----------------------- | ---------------------------- | -------------------------------------------------------------------------- |
-| Reddit tribunal         | `tribunal-reddit.ts`         | Original thread, exact title, outcome, top comment, correct choice         |
-| Ferrier estate          | `council-ferrier-sector.ts`  | Verified estate name and confirmed category                                |
-| Nextdoor paranoia       | `nextdoor-paranoia.ts`       | Genuine post or screenshot and confirmed explanation                       |
-| Where are we?           | `where-are-we.ts`            | Credited clue photo, place name and coordinates                            |
+| Round             | File                        | Needs                                                              |
+| ----------------- | --------------------------- | ------------------------------------------------------------------ |
+| Reddit tribunal   | `tribunal-reddit.ts`        | Original thread, exact title, outcome, top comment, correct choice |
+| Ferrier estate    | `council-ferrier-sector.ts` | Verified estate name and confirmed category                        |
+| Nextdoor paranoia | `nextdoor-paranoia.ts`      | Genuine post or screenshot and confirmed explanation               |
+| Where are we?     | `where-are-we.ts`           | Credited clue photo, place name and coordinates                    |
 
 Ready but not in the order: **Figurine** (`group-chat-figurine`), **Cursed Search History** (`cursed-search-history`) and **Property price roulette** (`property-price-roulette`, £750 pcm Winkworth listing). Add them in Running order if wanted.
 

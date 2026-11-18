@@ -29,5 +29,5 @@ export const propertyPriceRoulette = sliderQuestion({
   explanation:
     "£750 pcm. Winkworth listed this compact Lower Clapton studio as a long-term let. There is no kitchen; a microwave is supplied.",
   notes:
-    "Sourced listing: OnTheMarket details/13835770, Winkworth, Saratoga Road, Hackney, London E5. Headline £750 pcm (£173 pw), deposit £865.40, part furnished, long term, advertised as newly refurbished, no kitchen, microwave supplied. Floorplan (docs/content/listings/property-price-roulette/floorplan.jpg, not served to guests) is 79 sq ft / 7.3 sq m, first floor, REF 1046821. Extra listing stills: exterior.jpg, interior-a.jpg, interior-b.jpg, interior-c.jpg. Copyrighted estate-agent photographs, private party use. Keep off the running order until the host slots it.",
+    "OnTheMarket 13835770, Winkworth, Saratoga Road E5. £750 pcm, deposit £865.40, no kitchen, microwave supplied. Floorplan (docs/content/listings/property-price-roulette/floorplan.jpg, not public) 79 sq ft. Extra stills: exterior.jpg, interior-a/b/c.jpg. Copyrighted listing photos, private use. Catalogue only until slotted.",
 });
