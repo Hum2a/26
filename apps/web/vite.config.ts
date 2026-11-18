@@ -5,7 +5,7 @@ import {
   replaceLocalAdminProof,
 } from "../api/src/room/local-auth-proof.ts";
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import type { ServerResponse } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,7 +31,34 @@ const browserProofKey = browserChecks ? process.env.PARTY_BROWSER_PROOF_KEY : un
 if (browserProofKey && !/^[a-f0-9]{64}$/.test(browserProofKey)) {
   throw new Error("Browser rehearsal needs a valid ephemeral proof key.");
 }
-const localAdminProofKey = browserProofKey ?? randomBytes(32).toString("hex");
+/**
+ * One proof key for this checkout. Vite reloads this file on its own, and a
+ * fresh random key would no longer match the key already given to the Worker,
+ * so a signed-in host would be told to sign in again.
+ */
+function stableLocalAdminProofKey(): string {
+  const filePath = fileURLToPath(
+    new URL("../api/.data/local-admin-proof.key", import.meta.url),
+  );
+  try {
+    const existing = readFileSync(filePath, "utf8").trim();
+    if (/^[a-f0-9]{64}$/.test(existing)) return existing;
+  } catch {
+    /* The first local start creates the file. */
+  }
+  const created = randomBytes(32).toString("hex");
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  try {
+    writeFileSync(filePath, created, { flag: "wx" });
+    return created;
+  } catch {
+    const existing = readFileSync(filePath, "utf8").trim();
+    if (/^[a-f0-9]{64}$/.test(existing)) return existing;
+    throw new Error("Could not store the local administrator proof key.");
+  }
+}
+
+const localAdminProofKey = browserProofKey ?? stableLocalAdminProofKey();
 if (browserChecks && process.env.CLOUDFLARE_ENV) {
   throw new Error("Browser rehearsal cannot target a deployed environment.");
 }

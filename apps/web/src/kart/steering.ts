@@ -37,18 +37,34 @@ export function pedalFromPointer(y: number, top: number, height: number): KartPe
 }
 
 /**
- * Steering from thumb travel since the thumb landed, so touching the pad never
- * jerks the kart. Full lock is a comfortable thumb movement (between 48 and
- * 90 px, about a third of the pad), and a gentle curve keeps small
- * corrections small while still reaching full lock.
+ * Linear steer from where the thumb landed. The first touch is centre. Sliding
+ * to either edge of the zone is full lock, and anything past that edge stays there.
  */
+export function steerFromGrab(
+  fingerX: number,
+  originX: number,
+  left: number,
+  width: number,
+): number {
+  if (
+    !Number.isFinite(fingerX) ||
+    !Number.isFinite(originX) ||
+    !Number.isFinite(left) ||
+    !Number.isFinite(width) ||
+    width <= 0
+  )
+    return 0;
+  const origin = Math.max(0, Math.min(1, (originX - left) / width));
+  const finger = (fingerX - left) / width;
+  const delta = finger - origin;
+  if (delta === 0) return 0;
+  const span = delta > 0 ? 1 - origin : origin;
+  if (span <= 1e-6) return delta > 0 ? 1 : -1;
+  return Math.max(-1, Math.min(1, delta / span));
+}
+
+/** Travel measured from the centre of the zone. The edge in that direction is full lock. */
 export function steerFromTravel(dx: number, width: number): number {
   if (!Number.isFinite(dx) || !Number.isFinite(width) || width <= 0) return 0;
-  const range = Math.max(48, Math.min(90, width * 0.32));
-  const raw = Math.max(-1, Math.min(1, dx / range));
-  const deadZone = 0.06;
-  if (Math.abs(raw) <= deadZone) return 0;
-  const linear = (Math.abs(raw) - deadZone) / (1 - deadZone);
-  // Mild curve keeps fine corrections gentle without delaying hard left/right flips.
-  return Math.sign(raw) * linear ** 1.2;
+  return steerFromGrab(width / 2 + dx, width / 2, 0, width);
 }

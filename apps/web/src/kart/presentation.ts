@@ -80,9 +80,8 @@ export const extrapolateLimitSeconds = 0.25;
 
 /**
  * Carries another racer's last server pose forward along its heading at its
- * reported speed, for at most a quarter of a second. Server frames arrive five
- * times a second; without this, karts would ease towards each frame and stall
- * until the next. Drawing only: the room decides every position.
+ * reported speed, for at most a quarter of a second. Remote karts no longer
+ * use this; they blend the last two server poses instead. Drawing only.
  */
 export function extrapolateKartPose(
   pose: KartPose,
@@ -99,5 +98,29 @@ export function extrapolateKartPose(
     ...pose,
     x: pose.x + Math.cos(pose.heading) * v * age,
     z: pose.z + Math.sin(pose.heading) * v * age,
+  };
+}
+
+/**
+ * Draws another racer between the previous server pose and the new one.
+ * Progress is how far the newest gap has played: 0 is the older pose, 1 is
+ * the pose that just arrived. Height moves with the kart, so a ramp lifts the
+ * wing across the gap. Drawing only: the room decides every position.
+ */
+export function blendKartPose(from: KartPose, to: KartPose, progress: number): KartPose {
+  const t = Number.isFinite(progress) ? Math.max(0, Math.min(1, progress)) : 1;
+  const angle = Math.atan2(
+    Math.sin(to.heading - from.heading),
+    Math.cos(to.heading - from.heading),
+  );
+  const height =
+    to.height !== undefined || from.height !== undefined
+      ? (from.height ?? 0) + ((to.height ?? 0) - (from.height ?? 0)) * t
+      : undefined;
+  return {
+    x: from.x + (to.x - from.x) * t,
+    z: from.z + (to.z - from.z) * t,
+    heading: from.heading + angle * t,
+    ...(height !== undefined ? { height } : {}),
   };
 }

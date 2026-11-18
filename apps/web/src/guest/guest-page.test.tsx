@@ -224,6 +224,39 @@ it("does not ask for nickname votes in a kart-only lobby", async () => {
   await waitFor(() => expect(screen.queryByText("Sam")).toBeNull());
 }, 20_000);
 
+it("returns a kart phone from the ranks to Play when the next race opens", async () => {
+  render(
+    <MemoryRouter>
+      <GuestPage
+        rehearsalSession={{
+          gameId: "ABCDEFGH",
+          playerId,
+          nickname: "Amina",
+          joinCode: "ABCDEF",
+          stateVersion: 2,
+        }}
+        rehearsalCredential={{ playerId, secret: "rehearsal" }}
+      />
+    </MemoryRouter>,
+  );
+  await waitFor(() => expect(openRoomSocket).toHaveBeenCalled());
+  act(() => {
+    options.onConnection("open");
+    options.onSnapshot({ ...ready, mode: "kart" });
+  });
+  act(() => options.onSnapshot({ ...ready, mode: "kart", phase: "podium" }));
+  expect(tabButton(/^Ranks/).getAttribute("aria-current")).toBe("page");
+  act(() =>
+    options.onSnapshot({
+      ...ready,
+      mode: "kart",
+      phase: "lobby",
+      play: null,
+    } as LobbySnapshot),
+  );
+  expect(tabButton(/^Play/).getAttribute("aria-current")).toBe("page");
+});
+
 const wordleSession = {
   gameId: "ABCDEFGH",
   playerId,

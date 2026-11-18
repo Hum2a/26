@@ -252,9 +252,13 @@ export function GuestPage({
         // A new beat that needs this phone brings it back to Play.
         const beat = `${next.play?.question.id ?? "lobby"}/${next.phase}`;
         if (lastBeat.current !== null && lastBeat.current !== beat) {
-          // Only when answers open, so a guest mid-upload is not pulled away
-          // by the get-ready beat.
-          if (["collect", "vote", "predict"].includes(next.phase)) {
+          const kartRoom = next.mode === "kart" || next.play?.question.kind === "kart";
+          // Answers open on Play. A kart lobby also returns there for the next
+          // grid, so Race again does not leave the phone on the ranks.
+          if (
+            ["collect", "vote", "predict"].includes(next.phase) ||
+            (kartRoom && ["lobby", "intro", "prompt"].includes(next.phase))
+          ) {
             setTab("play");
           }
           if (next.phase === "scores") setRanksFresh(true);

@@ -981,7 +981,7 @@ export class PartyRoom extends DurableObject<Env> {
       return;
     }
     this.refreshKartIngressClock();
-    // A race tick fires five times a second and never makes an archive job
+    // A race tick fires ten times a second and never makes an archive job
     // due (that would be another due job), so it skips the archive's queries.
     if (!raceTickOnly)
       try {

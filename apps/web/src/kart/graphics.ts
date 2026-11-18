@@ -36,6 +36,27 @@ export const graphicsProfiles = {
   },
 } as const;
 
+/**
+ * How sharp this screen may draw. A phone keeps a pixel budget so a full-screen
+ * view does not fill the GPU. High uses that budget; Low is visibly softer.
+ * A computer uses its own screen ratio.
+ */
+export function displayPixelRatioLimit(
+  tier: GraphicsTier,
+  mobile: boolean,
+  width: number,
+  height: number,
+  devicePixelRatio: number,
+) {
+  const screen = Number.isFinite(devicePixelRatio) && devicePixelRatio > 0 ? devicePixelRatio : 1;
+  if (!mobile) return screen;
+  const area = Math.max(1, width) * Math.max(1, height);
+  const budget = Math.min(1, Math.sqrt(200_000 / area));
+  if (tier === "low") return Math.max(0.35, budget * 0.55);
+  if (tier === "balanced") return Math.max(0.45, budget * 0.75);
+  return Math.max(0.5, budget);
+}
+
 /** Local capability limits can lower decoration; they never alter race state. */
 export function safeGraphicsProfile(
   tier: GraphicsTier,

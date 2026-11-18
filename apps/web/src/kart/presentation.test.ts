@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  blendKartPose,
   boostCameraAmount,
   extrapolateKartPose,
   extrapolateLimitSeconds,
@@ -38,5 +39,32 @@ describe("extrapolateKartPose", () => {
     expect(extrapolateKartPose(pose, Number.NaN, 0.2)).toEqual(pose);
     expect(extrapolateKartPose(pose, 10, Number.NaN)).toEqual(pose);
     expect(extrapolateKartPose(pose, 10, -1)).toEqual(pose);
+  });
+});
+
+describe("blendKartPose", () => {
+  it("moves from the previous server pose to the new one, including height", () => {
+    const from = { x: 0, z: 0, heading: 0, height: 0 };
+    const to = { x: 10, z: 4, heading: Math.PI / 2, height: 2 };
+    expect(blendKartPose(from, to, 0)).toEqual(from);
+    const mid = blendKartPose(from, to, 0.5);
+    expect(mid.x).toBeCloseTo(5);
+    expect(mid.z).toBeCloseTo(2);
+    expect(mid.heading).toBeCloseTo(Math.PI / 4);
+    expect(mid.height).toBeCloseTo(1);
+    expect(blendKartPose(from, to, 1).height).toBe(2);
+  });
+
+  it("holds the newer pose once the gap has played, and shows it for a bad clock", () => {
+    const from = { x: 0, z: 0, heading: 0, height: 1 };
+    const to = { x: 8, z: -2, heading: -Math.PI / 2, height: 0 };
+    expect(blendKartPose(from, to, 3)).toMatchObject({ x: 8, z: -2, height: 0 });
+    expect(blendKartPose(from, to, Number.NaN)).toMatchObject({ x: 8, height: 0 });
+    const wrapped = blendKartPose(
+      { x: 0, z: 0, heading: Math.PI - 0.2 },
+      { x: 0, z: 0, heading: -Math.PI + 0.2 },
+      0.5,
+    );
+    expect(wrapped.heading).toBeCloseTo(Math.PI);
   });
 });

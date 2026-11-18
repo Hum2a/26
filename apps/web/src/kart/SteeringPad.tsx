@@ -3,8 +3,8 @@ import { useEffect, useRef, type CSSProperties } from "react";
 import {
   pedalFromPointer,
   pedalFromTravel,
+  steerFromGrab,
   steerFromPointer,
-  steerFromTravel,
   type KartPedal,
 } from "./steering";
 
@@ -12,10 +12,9 @@ const pedalOffset = (pedal: KartPedal) =>
   pedal === "gas" ? -1 : pedal === "brake" ? 1 : 0;
 
 /**
- * One thumb drives: slide sideways to steer, push up to accelerate and pull
- * down to brake, which leaves the other thumb free for drift. The native
- * slider remains the keyboard/assistive-technology interface to steering;
- * the keyboard pedals are W/S or the arrow keys.
+ * Slide sideways to steer. Releasing returns to centre. An optional pedal axis
+ * can accelerate and brake from the same thumb; the race leaves that off and
+ * uses separate buttons. The native slider remains the keyboard interface.
  */
 export function SteeringPad({
   value,
@@ -42,14 +41,37 @@ export function SteeringPad({
   releasePointer?: (pointerId: number) => void;
 }) {
   const ownerRef = useRef<number | null>(null);
-  /** Where the steering thumb landed; travel from here steers and works the pedals. */
+  /** Where the steering thumb landed. The first sample stays centred. */
   const origin = useRef({ x: 0, y: 0 });
+  const knobRef = useRef<HTMLSpanElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  const placeKnob = (x: number, y: number, box: DOMRect) => {
+    const knob = knobRef.current;
+    if (!knob || box.width <= 0) return;
+    const across = Math.max(0, Math.min(1, (x - box.left) / box.width));
+    const down =
+      box.height > 0 && Number.isFinite(y) && Number.isFinite(box.top)
+        ? Math.max(0, Math.min(1, (y - box.top) / box.height))
+        : 0.5;
+    knob.style.left = `${across * 100}%`;
+    knob.style.top = `${down * 100}%`;
+  };
+  const resetKnob = () => {
+    const knob = knobRef.current;
+    if (!knob) return;
+    knob.style.left = "";
+    knob.style.top = "";
+  };
   useEffect(() => {
     const resetOwner = () => {
       const previous = ownerRef.current;
       ownerRef.current = null;
       if (previous !== null) releasePointer?.(previous);
+      const knob = knobRef.current;
+      if (knob) {
+        knob.style.left = "";
+        knob.style.top = "";
+      }
     };
     const hidden = () => {
       if (document.hidden) resetOwner();
@@ -68,6 +90,7 @@ export function SteeringPad({
     releasePointer?.(pointerId);
     onChange(0);
     onPedal?.(null);
+    resetKnob();
   };
   return (
     <div
@@ -90,6 +113,7 @@ export function SteeringPad({
         input.current?.focus({ preventScroll: true });
         origin.current = { x: event.clientX, y: event.clientY };
         const landing = event.currentTarget.getBoundingClientRect();
+        if (!absolute) placeKnob(event.clientX, event.clientY, landing);
         onChange(
           absolute ? steerFromPointer(event.clientX, landing.left, landing.width) : 0,
         );
@@ -102,10 +126,11 @@ export function SteeringPad({
       onPointerMove={(event) => {
         if (disabled || ownerRef.current !== event.pointerId) return;
         const box = event.currentTarget.getBoundingClientRect();
+        if (!absolute) placeKnob(event.clientX, event.clientY, box);
         onChange(
           absolute
             ? steerFromPointer(event.clientX, box.left, box.width)
-            : steerFromTravel(event.clientX - origin.current.x, box.width),
+            : steerFromGrab(event.clientX, origin.current.x, box.left, box.width),
         );
         onPedal?.(
           absolute
@@ -126,7 +151,7 @@ export function SteeringPad({
           <span>↓</span>
         </span>
       ) : null}
-      <span className="kart-thumb-knob" aria-hidden="true" />
+      <span ref={knobRef} className="kart-thumb-knob" aria-hidden="true" />
       <input
         id="kart-steering"
         ref={input}
@@ -149,6 +174,7 @@ export function SteeringPad({
           ownerRef.current = null;
           onChange(0);
           onPedal?.(null);
+          resetKnob();
         }}
       />
     </div>

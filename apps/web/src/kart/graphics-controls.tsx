@@ -25,7 +25,7 @@ export function GraphicsControls({
         <option value="low">Low</option>
       </select>
       <motion.p
-        className={compact ? "sr-only" : undefined}
+        className={compact ? "kart-graphics-live" : undefined}
         key={`${tier}:${health}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

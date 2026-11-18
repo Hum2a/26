@@ -6334,6 +6334,40 @@ Before dress rehearsal: upgrade Cloudflare to Workers Paid (\$5/mo) and Images P
 
 **Next:** two-phone race on staging with item rules v2; decide whether to swap `kart-park-grand-prix` into `order`.
 
+## 16 November 2026 — Full-screen guest race
+
+**Status:** local on `kart-party-feel`. Not deployed.
+
+During a race or the grid, the driving view fills the window on every size. The phone bar, dock, heading and long instruction stay hidden until the finish, which keeps the result card. A fine pointer gets the steering slider plus Accelerate, Brake and Drift along the bottom, with keyboard and optional mouse steering. A coarse pointer gets a steer-only zone and those same three buttons; sliding the zone does not change speed. A guest who picks the slider still gets the slider.
+
+**Files:** `apps/web/src/kart/kart.css`, `TouchController.tsx`, `GuestKart.tsx`, `SteeringPad.tsx`, `kart.test.tsx`, `apps/web/e2e/kart-lobby.spec.ts`.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 29 existing warnings, structure check passed. `npx vitest run src/kart/kart.test.tsx src/kart/controller-input.test.tsx` in `apps/web` — 34 passed. `npm run build` passed, bundle within budget.
+
+**Manual:** computed styles of the race frame at 976×679, 390×844 and 844×390. The view matched the window, the finish layout stayed the short strip with the dock visible. No live race was driven in `/play`.
+
+**Next:** drive one race on a phone and one on a desktop window.
+
+A computer now uses the desktop renderer (full frame rate, sharper picture, keyboard hint). A phone keeps the steer zone and pedals, and draws the full-screen view at 1× so it does not drop to the 30 fps budget as soon as the picture fills the screen.
+
+## 17 November 2026 — Server pose rate test
+
+**Status:** on `kart-server-poses`, merged with `master` including device-v1 rollback. Not deployed. The steer zone follows the finger in a straight line and is included on this branch.
+
+The room still owns the race. It now steps every 100ms, and a control change is kept when it arrives at least 50ms after the previous one. Phones send a change after 55ms so a steer can land on the next step. Your own kart still uses prediction. Other karts, including the stage, blend from the previous server pose to the new one over the gap between those frames, including height, and hold the latest pose instead of coasting in a straight line. A jump of more than 8 units snaps. Reduced motion still uses the existing short fade.
+
+**Files:** `packages/shared/src/kart/kart-race-schema.ts` (`kartTickMs` 100, `kartInputGapMs` 50), `apps/api/src/questions/kart/kart.ts`, `apps/api/src/room/party-room.ts`, `apps/web/src/kart/useKartSocket.ts`, `self-prediction.ts` (comment), `presentation.ts`, `circuit.ts`, `presentation.test.ts`, `kart.test.tsx`.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 29 existing warnings, structure check passed. `npx vitest run src/kart` in `apps/web` — 45 files, 220 passed. `npx vitest run test/kart-room.spec.ts test/kart-driving.spec.ts` in `apps/api` — 2 files, 50 passed. Full `npm run test:unit` and `npm run build` were not run.
+
+**Unverified:** a two-tab race and a phone on the tunnel. Whether the room alarm actually fires every 100ms under load was not measured. This is not a production default.
+
+**Next:** drive two tabs on localhost, then one phone on the tunnel. Watch other karts turn with the packets, and a ramp on Mario circuit or 26 Park with course features on.
+
+A routine room pose within 0.75m and a small heading gap no longer tugs the driver's own kart. The phone keeps the velocity already on screen, including slip. A larger miss still eases, and a miss over 6m still snaps. `self-prediction.test.ts` — 17 passed. Typecheck and lint were not rerun for this nudge.
+
+**Merge with master (18 November 2026):** device-v1 rollback stays the predictor for new races. The quieter correction remains on the older predictor. `npm run typecheck` passed. `npm run lint` failed on an existing unused `existsSync` import in `scripts/release-integration.test.ts` (already on `master`); 30 existing warnings. `npx vitest run src/kart src/guest/guest-page.test.tsx` in `apps/web` — 46 files, 234 passed. `npx vitest run test/kart-room.spec.ts test/kart-driving.spec.ts test/kart-device-room.spec.ts test/kart-device-timing.spec.ts` in `apps/api` — 4 files, 57 passed. Full `npm run test:unit` and `npm run build` were not run.
+
 ## 16 November 2026 — Browser chrome matches the party theme
 
 Status: complete locally on `master`. Not deployed.

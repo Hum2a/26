@@ -39,14 +39,15 @@ import {
  * The room stays authoritative: it alone decides gates, finishes, items and
  * points. This only changes where the phone draws its own kart, so steering and
  * pedals respond on the next frame instead of after a network round trip and
- * the next 200 ms server tick.
+ * the next 100 ms server tick.
  *
  * Each server frame anchors the prediction. The anchor is the server's body at
  * `elapsedMs`, which reflects controls that reached the room about one round
  * trip before the frame arrived here. Replaying the phone's own recorded
- * controls from that moment to now gives the present pose. The difference from
- * the pose already on screen becomes a visual offset that eases away, so a
- * correction never snaps unless it is too large to be a prediction error.
+ * controls from that moment to now gives the present pose. A disagreement
+ * smaller than a short nudge stays on the pose already on screen, so a routine
+ * update does not tug the kart. A larger one eases away, and only a far miss
+ * snaps to the room.
  */
 
 export type PredictedPose = Pick<
@@ -71,6 +72,12 @@ const standardSpanMs = 600;
 const historyMs = 3_000;
 /** Beyond this the phone was wrong about more than timing: show the room's pose. */
 const snapDistance = 6;
+/**
+ * A routine room update is often this far from the picture because the public
+ * pose has no lateral slip. Leave the kart where it is instead of easing a tug.
+ */
+const quietDistance = 0.75;
+const quietHeading = 0.15;
 /** Visual correction rate per second (about 100 ms to settle). */
 const standardCorrectionRate = 12;
 /** "Conservative": shorter look-ahead and gentler corrections for poor networks. */
@@ -246,18 +253,31 @@ function createLegacyPrediction() {
       slowedUntil = race.elapsedMs + slowedMs;
       const replayed = advance(bodyFrom(self, race), base.at, now);
       if (shown) {
-        const dx = shown.x + error.x - replayed.x,
-          dz = shown.z + error.z - replayed.z;
-        error =
-          Math.hypot(dx, dz) > snapDistance
-            ? { x: 0, z: 0, heading: 0 }
-            : {
-                x: dx,
-                z: dz,
-                heading: wrap(shown.heading + error.heading - replayed.heading),
-              };
-      }
-      body = replayed;
+        const drawn = {
+          x: shown.x + error.x,
+          z: shown.z + error.z,
+          heading: wrap(shown.heading + error.heading),
+        };
+        const dx = drawn.x - replayed.x,
+          dz = drawn.z - replayed.z;
+        const dist = Math.hypot(dx, dz);
+        const headingGap = wrap(drawn.heading - replayed.heading);
+        if (dist > snapDistance) {
+          error = { x: 0, z: 0, heading: 0 };
+          body = replayed;
+        } else if (dist < quietDistance && Math.abs(headingGap) < quietHeading) {
+          // Keep the velocity the screen already has, including slip and glide.
+          body = { ...shown, x: drawn.x, z: drawn.z, heading: drawn.heading };
+          error = { x: 0, z: 0, heading: 0 };
+        } else {
+          const heightGap = Math.abs((shown.height ?? 0) - (replayed.height ?? 0));
+          error = { x: dx, z: dz, heading: headingGap };
+          body =
+            heightGap < 0.5
+              ? { ...replayed, height: shown.height, verticalSpeed: shown.verticalSpeed }
+              : replayed;
+        }
+      } else body = replayed;
       bodyAt = now;
     },
 

@@ -12,14 +12,14 @@ import type { KartControls } from "@26/shared";
 import { SteeringPad } from "./SteeringPad";
 import { useKartControls } from "./useKartControls";
 import { defaultKartControls } from "./gamepad";
-import { steerFromPointer, type KartPedal } from "./steering";
+import { steerFromPointer } from "./steering";
 import { usePrefersReducedMotion } from "../anim/use-reduced-motion";
 import "./kart.css";
 
-/** The full-screen landscape race layout; see kart.css. */
-const landscapeRace = "(orientation: landscape) and (max-height: 32rem)";
-const landscape = () =>
-  typeof window !== "undefined" && Boolean(window.matchMedia?.(landscapeRace).matches);
+/** Phones and tablets. The fullscreen frame itself is not tied to this. */
+const coarsePointer = "(pointer: coarse)";
+const coarse = () =>
+  typeof window !== "undefined" && Boolean(window.matchMedia?.(coarsePointer).matches);
 
 function ControlSettings({
   id,
@@ -54,10 +54,7 @@ const sliderPedals: readonly PedalButton[] = [
   ["brake", "B", "Brake / reverse"],
   ["drift", "R", "Drift / boost"],
 ];
-/** The thumb pad works the throttle and brake itself, so drift is the only button. */
-const padPedals: readonly PedalButton[] = [["drift", "R", "Drift / boost"]];
-
-/** Pointer capture keeps multiple thumbs independent; cancellation never leaves the throttle held. */
+/** Pointer capture keeps multiple thumbs independent; cancellation never leaves a pedal held. */
 export function TouchController({
   disabled = false,
   onChange,
@@ -70,7 +67,7 @@ export function TouchController({
 }: {
   disabled?: boolean;
   onChange: (value: KartControls) => void;
-  /** Host default for phones held sideways; a guest's own choice still wins. */
+  /** Host default on a phone or tablet; a guest's own choice still wins. */
   steeringDefault?: "pad-strip" | "slider" | "pad-absolute";
   onUseItem?: () => void;
   onRecover?: () => void;
@@ -78,13 +75,13 @@ export function TouchController({
   recoveryDisabled?: boolean;
   extraSettings?: ReactNode;
 }) {
-  // The native slider needs its small handle grabbed exactly, which is hard
-  // mid-race on a phone held sideways; the thumb pad accepts a touch anywhere.
-  const padByDefault = () => steeringDefault !== "slider" && landscape();
+  // A mouse can grab the slider. A finger cannot, so a phone or tablet
+  // steers from a large zone and uses separate pedal buttons.
+  const padByDefault = () => steeringDefault !== "slider" && coarse();
   const [pad, setPad] = useState(padByDefault);
   const chosen = useRef(false);
   useEffect(() => {
-    const media = window.matchMedia?.(landscapeRace);
+    const media = window.matchMedia?.(coarsePointer);
     if (!media) return;
     const follow = () => {
       if (!chosen.current) setPad(steeringDefault !== "slider" && media.matches);
@@ -105,8 +102,6 @@ export function TouchController({
   const releaseThumb = useCallback((pointerId: number) => {
     if (thumb.current === pointerId) thumb.current = null;
   }, []);
-  /** The pedal the thumb pad holds; it shows on the knob, not as extra buttons. */
-  const [padPedal, setPadPedal] = useState<KartPedal>(null);
   const [settings, setSettings] = useState(false);
   const [preferences, setPreferences] = useState(() => ({ ...defaultKartControls }));
   const [mouseSteering, setMouseSteering] = useState(false);
@@ -125,7 +120,6 @@ export function TouchController({
       pointers.current.clear();
       mouse.current = null;
       thumb.current = null;
-      setPadPedal(null);
     },
   });
   const controls = input.controls,
@@ -317,6 +311,9 @@ export function TouchController({
           </motion.p>
         ) : null}
       </AnimatePresence>
+      {!pad ? (
+        <p className="kart-keyboard-hint">Arrows or WASD to drive · Space to drift</p>
+      ) : null}
       <div
         className="kart-controller"
         data-swapped={swapped}
@@ -324,24 +321,17 @@ export function TouchController({
       >
         <div className="kart-steering">
           <label htmlFor="kart-steering">
-            {pad
-              ? "Slide to steer · up to accelerate · down to brake"
-              : "Steer left / right"}
+            {pad ? "Slide to steer" : "Steer left / right"}
           </label>
           {pad ? (
             <SteeringPad
               value={controls.steer}
-              pedal={padPedal}
               disabled={locked}
               releaseToken={input.releaseToken}
               claimPointer={claimThumb}
               releasePointer={releaseThumb}
               absolute={steeringDefault === "pad-absolute"}
               onChange={(steer) => emit({ steer })}
-              onPedal={(pedal) => {
-                setPadPedal(pedal);
-                emit({ gas: pedal === "gas", brake: pedal === "brake" });
-              }}
             />
           ) : (
             <input
@@ -380,8 +370,8 @@ export function TouchController({
             ← &nbsp; {Math.round(controls.steer * 100)} &nbsp; →
           </span>
         </div>
-        <div className="kart-pedals" data-pad={pad}>
-          {(pad ? padPedals : sliderPedals).map(([control, key, label]) => (
+        <div className="kart-pedals">
+          {sliderPedals.map(([control, key, label]) => (
             <button
               key={control}
               type="button"

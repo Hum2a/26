@@ -1,13 +1,14 @@
 import { useEffect, useRef } from "react";
 import {
+  kartInputGapMs,
   kartNeutral,
   type KartControls,
   type KartInput,
   type KartRaceView,
 } from "@26/shared";
 
-/** The room drops controls that arrive under 80 ms apart; leave a little jitter room. */
-const minGapMs = 85;
+/** The room drops controls that arrive under kartInputGapMs; leave a little jitter room. */
+const minGapMs = kartInputGapMs + 5;
 /** Re-send held controls so the room keeps them fresh. */
 const heartbeatMs = 100;
 

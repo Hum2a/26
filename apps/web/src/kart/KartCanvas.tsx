@@ -22,6 +22,7 @@ import { driverFaceUrl } from "./driver-face";
 import { useKartDrivers, type KartDrivers } from "./drivers-context";
 import {
   createFrameProbe,
+  displayPixelRatioLimit,
   safeGraphicsProfile,
   type GraphicsTier,
   type FrameHealth,
@@ -138,12 +139,23 @@ export default function KartCanvas({
         retry.remove();
       };
     }
-    const chooseProfile = () =>
-      safeGraphicsProfile(quality.current, {
+    const chooseProfile = () => {
+      const width = Math.max(1, root.clientWidth);
+      const height = Math.max(1, root.clientHeight);
+      // Keep a phone or tablet near the old driving-strip cost. A full-screen
+      // tablet otherwise fills the GPU and the picture starts skipping.
+      return safeGraphicsProfile(quality.current, {
         webgl: true,
         maxTextureSize: renderer.capabilities.maxTextureSize,
-        pixelRatioLimit: window.devicePixelRatio,
+        pixelRatioLimit: displayPixelRatioLimit(
+          quality.current,
+          mobile,
+          width,
+          height,
+          window.devicePixelRatio,
+        ),
       });
+    };
     const initialProfile = chooseProfile();
     if (!initialProfile) {
       if (
@@ -242,6 +254,10 @@ export default function KartCanvas({
       const width = Math.max(1, root.clientWidth),
         height = Math.max(1, root.clientHeight),
         aspect = width / height;
+      if (mobile) {
+        profile = chooseProfile() ?? profile;
+        renderer.setPixelRatio(profile.pixelRatio);
+      }
       renderer.setSize(width, height, false);
       if (camera instanceof THREE.PerspectiveCamera) camera.aspect = aspect;
       else {
