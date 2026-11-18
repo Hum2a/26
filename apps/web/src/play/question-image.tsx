@@ -16,9 +16,10 @@ export function QuestionImage({ question }: { question: PlaySnapshot["question"]
       <img
         src={image.src}
         alt={
-          question.kind === "map-guess"
+          image.alt ??
+          (question.kind === "map-guess"
             ? "Clue photo for the mystery location"
-            : "The building to identify"
+            : "Picture for this question")
         }
         width={1000}
         height={667}

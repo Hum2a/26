@@ -260,7 +260,11 @@ export const previewQuestions: Record<BenchId, PublicQuestion> = {
         label: "Tepig",
         image: "/assets/questions/favourite-pokemon/tepig.png",
       },
-      { id: "piplup", label: "Piplup" },
+      {
+        id: "piplup",
+        label: "Piplup",
+        image: "/assets/questions/whos-that-pokemon-preview/piplup.png",
+      },
     ],
   },
 };

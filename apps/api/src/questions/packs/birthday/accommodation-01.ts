@@ -26,6 +26,7 @@ export const accommodation01 = choiceQuestion({
       asset: "/assets/questions/accommodation-01/photo.jpg",
       creditUrl: "https://creativecommons.org/licenses/by-sa/3.0",
       credit: "Aqwis · CC BY-SA 3.0",
+      alt: "Exterior of a residential building",
     },
   ],
   explanation:

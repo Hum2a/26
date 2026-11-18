@@ -37,6 +37,8 @@ export type MediaRef = {
   asset?: string;
   credit?: string;
   creditUrl?: string;
+  /** Guest-facing image description. Must not leak the answer. */
+  alt?: string;
   required: boolean;
 };
 

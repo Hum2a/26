@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { packPublicAssets } from "../apps/api/src/questions/pack-assets.ts";
 import { questionPacks } from "../apps/api/src/questions/registry.ts";
 import {
   illustrativeStingAsset,
@@ -20,12 +21,7 @@ for (const item of validateRuntimeEffects()) {
 }
 
 for (const pack of questionPacks) {
-  const optionImages = pack.catalogue.flatMap((question) =>
-    question.kind === "choice"
-      ? question.options.flatMap((option) => (option.image ? [option.image] : []))
-      : [],
-  );
-  const missingImages = optionImages.filter(
+  const missingImages = packPublicAssets(pack).filter(
     (image) => !existsSync(path.join(root, "apps/web/public", image)),
   );
   const assets = [
