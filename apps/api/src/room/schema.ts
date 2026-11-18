@@ -496,6 +496,12 @@ export function ensurePartySchema(sql: SqlStorage): void {
   addColumn(sql, "player", "avatar_media_id", "TEXT");
   addColumn(sql, "room", "voter_display", "TEXT NOT NULL DEFAULT 'question'");
   addColumn(sql, "room", "voter_display_history", "TEXT NOT NULL DEFAULT '[]'");
+  // Answer trends: the host's projector and phone switches, hidden card ids
+  // and the last twenty changes. See `stats/trend-settings.ts`.
+  addColumn(sql, "room", "trend_stage", "TEXT NOT NULL DEFAULT 'shown'");
+  addColumn(sql, "room", "trend_phones", "TEXT NOT NULL DEFAULT 'shown'");
+  addColumn(sql, "room", "trend_hidden", "TEXT NOT NULL DEFAULT '[]'");
+  addColumn(sql, "room", "trend_history", "TEXT NOT NULL DEFAULT '[]'");
   addColumn(sql, "connection_summary", "script_errors", "INTEGER NOT NULL DEFAULT 0");
   addColumn(sql, "connection_summary", "last_script_error", "TEXT");
   addColumn(sql, "connection_summary", "last_script_error_at", "TEXT");

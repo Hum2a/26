@@ -228,10 +228,20 @@ export const adminFeatures: readonly AdminFeature[] = [
     group: "after",
     scope: "room",
     path: "analytics",
-    summary: "Room statistics, podium highlights, fun facts and activity totals.",
-    rehearsal: "Highlights preview live, including ones held back as too small.",
+    summary:
+      "Per-question answer trends, room statistics, podium highlights, fun facts and activity totals.",
+    rehearsal:
+      "Answer trends rehearse on stand-in players with the real projector and phone cards (choice, price guess, kart); highlights preview live, including ones held back as too small.",
     owns: ["apps/api/src/stats"],
-    status: (snapshot) => `${snapshot.highlights?.length ?? 0} highlights ready`,
+    status: (snapshot) => {
+      const trends = snapshot.trendControl;
+      const live = trends?.current
+        ? `${trends.current.cards.filter((card) => card.onStage).length} trend cards on screen`
+        : null;
+      return [live, `${snapshot.highlights?.length ?? 0} highlights ready`]
+        .filter(Boolean)
+        .join(" · ");
+    },
   },
   {
     id: "results",

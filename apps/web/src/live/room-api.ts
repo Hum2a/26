@@ -238,6 +238,12 @@ export type PlayAction =
   | "hide-media"
   | "voters-question"
   | "voters-hidden"
+  | "trends-stage-shown"
+  | "trends-stage-hidden"
+  | "trends-phones-shown"
+  | "trends-phones-hidden"
+  | "trends-card-hide"
+  | "trends-card-restore"
   | "avatar-clear"
   | "retry-archive"
   | "release-stuck-media"
@@ -272,6 +278,8 @@ export type PlayIntent = {
   mediaId?: string;
   trollKind?: string;
   postId?: string;
+  /** Answer trends: the card to hide or restore. */
+  trendCardId?: string;
   /** Destroy only: the join code the host typed to confirm. */
   confirmCode?: string;
   wallSettings?: {

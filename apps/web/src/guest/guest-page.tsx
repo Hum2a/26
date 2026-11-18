@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Suspense, lazy, useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import type { GuestSession, LobbySnapshot } from "@26/shared";
@@ -50,6 +50,12 @@ import { RosterProvider } from "../ui/roster";
 import { TrollTab } from "../troll/troll-tab";
 import { ThemePicker } from "../theme/theme-picker";
 import { EntryFrame, EntryHeading, EntryNotice } from "../ui/entry-frame";
+
+/** Answer trends load at the first reveal, not at join: they are an aside. */
+const loadTrends = () => import("../play/trends");
+const PhoneTrends = lazy(() =>
+  loadTrends().then((module) => ({ default: module.PhoneTrends })),
+);
 
 export function GuestPage({
   rehearsalSession,
@@ -115,6 +121,11 @@ export function GuestPage({
   const hapticBaseline = useRef<HapticView | null>(null);
   useWakeLock(session !== undefined);
   usePreloadQuestion(snapshot);
+  const answering = snapshot?.phase === "collect";
+  useEffect(() => {
+    // Warm the trends card while guests answer, so the reveal does not wait on it.
+    if (answering) void loadTrends().catch(() => undefined);
+  }, [answering]);
 
   useEffect(() => {
     function onHide() {
@@ -1024,6 +1035,12 @@ export function GuestPage({
                   <WaitingNext />
                 ) : null}
               </PhaseTransition>
+              {snapshot?.selfTrends &&
+              (snapshot.phase === "reveal" || snapshot.phase === "scores") ? (
+                <Suspense fallback={null}>
+                  <PhoneTrends trends={snapshot.selfTrends} />
+                </Suspense>
+              ) : null}
             </div>
           </ReconnectBanner>
         </PhoneShell>
