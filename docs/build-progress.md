@@ -6595,4 +6595,6 @@ In the local browser design bench, entered a sample guess using the touch keyboa
 
 Validation passed for typecheck, lint and structure (30 existing warnings), formatting, the build and its bundle budgets and content preflight, 34 focused web tests, and all eight Wordle scoring and Durable Object tests. The change is based on merged master `3fa5895` in the C: checkout.
 
-Exact next stage: review the change on `codex/wordle-qol`, then try a rejected word and a timed-out board in the authenticated rehearsal before the party. No deployment was performed.
+The final full web suite (`npm run test:unit -w @26/web -- --maxWorkers=2`) passed all 900 tests across 200 files. The rerun includes the updated question-direction fixture, which now supplies the guess list carried by a room snapshot.
+
+Exact next stage: review [PR #38](https://github.com/Hum2a/26/pull/38), then try a rejected word and a timed-out board in the authenticated rehearsal before the party. No deployment was performed.
