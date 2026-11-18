@@ -116,9 +116,9 @@ export const previewQuestions: Record<BenchId, PublicQuestion> = {
     outcome: "multiple",
     prompt: "Which of these countries has Trump made up?",
     options: [
-      { id: "united-states-of-israel", label: "The United States of Israel" },
-      { id: "islamic-republic-of-japan", label: "The Islamic Republic of Japan" },
-      { id: "tel-aviva-la-vida", label: "Tel aviva la vida" },
+      { id: "us-of-israel", label: "The United States of Israel" },
+      { id: "islamic-japan", label: "The Islamic Republic of Japan" },
+      { id: "tel-aviva", label: "Tel aviva la vida" },
       { id: "baghdaddystan", label: "Baghdaddystan" },
     ],
   },

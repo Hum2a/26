@@ -196,7 +196,7 @@ describe("custom question designs", () => {
     expect(screen.getByText(/2 countries invented/)).toBeTruthy();
     fireEvent.click(sign);
     expect(onText).toHaveBeenCalledWith(
-      JSON.stringify(["baghdaddystan", "united-states-of-israel"]),
+      JSON.stringify(["baghdaddystan", "us-of-israel"]),
     );
   });
 

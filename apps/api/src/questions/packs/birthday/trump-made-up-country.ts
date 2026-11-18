@@ -8,16 +8,16 @@ export const trumpMadeUpCountry = choiceQuestion({
   instructions: "Select all that apply.",
   outcome: {
     kind: "multiple",
-    optionIds: ["united-states-of-israel", "islamic-republic-of-japan"],
+    optionIds: ["us-of-israel", "islamic-japan"],
   },
   explanation:
     "Trump has made up the United States of Israel and the Islamic Republic of Japan. Both, and no decoys, earns 100 points.",
   notes:
     "User confirmed the first two options are correct. Exact-set scoring like christianity-branches: both without a decoy = 100, otherwise 0.",
   options: [
-    { id: "united-states-of-israel", label: "The United States of Israel" },
-    { id: "islamic-republic-of-japan", label: "The Islamic Republic of Japan" },
-    { id: "tel-aviva-la-vida", label: "Tel aviva la vida" },
+    { id: "us-of-israel", label: "The United States of Israel" },
+    { id: "islamic-japan", label: "The Islamic Republic of Japan" },
+    { id: "tel-aviva", label: "Tel aviva la vida" },
     { id: "baghdaddystan", label: "Baghdaddystan" },
   ],
 });
