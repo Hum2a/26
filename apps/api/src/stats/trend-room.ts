@@ -35,19 +35,20 @@ export type RoomTrends = {
 
 /**
  * Memory cache for one room's answer trends. Analysis runs once per question
- * when its reveal opens and again only if its scores, players, device reports
- * or hidden answers change, so a broadcast to eighty phones reuses it. Past
- * questions are summarised once for the host. After a restart the cache
- * rebuilds from SQL; it is never the authority for anything.
+ * when its reveal opens and again only when something it reads changes (see
+ * `cacheKey`), so a broadcast to eighty phones reuses it. Earlier questions
+ * are analysed once for the host. After a restart the cache rebuilds from
+ * SQL; it is never the authority for anything.
  */
 export class TrendCache {
-  private current: { key: string; analysis: TrendAnalysis | null; prompt: string } | null =
-    null;
+  private current: {
+    key: string;
+    analysis: TrendAnalysis | null;
+    prompt: string;
+  } | null = null;
   private lines = new Map<string, SelfTrends | null>();
-  private past = new Map<
-    string,
-    { prompt: string; responses: number; headlines: string[] }
-  >();
+  /** Earlier questions' analyses, so their headlines follow the current hidden cards. */
+  private past = new Map<string, { prompt: string; analysis: TrendAnalysis | null }>();
 
   read(sql: SqlStorage, stored: StoredRoom): RoomTrends {
     const settings = readTrendSettings(sql);
@@ -64,14 +65,10 @@ export class TrendCache {
       this.lines.clear();
     }
     const analysis = this.current.analysis;
-    const stage = analysis ? pickStageCards(analysis, new Set(settings.hiddenCards)) : [];
-    if (analysis) {
-      this.past.set(question.id, {
-        prompt: question.prompt,
-        responses: analysis.responses,
-        headlines: stage.slice(0, 3).map((card) => card.headline),
-      });
-    }
+    const stage = analysis
+      ? pickStageCards(analysis, new Set(settings.hiddenCards))
+      : [];
+    this.past.set(question.id, { prompt: question.prompt, analysis });
     return { settings, analysis, stage, prompt: question.prompt };
   }
 
@@ -133,12 +130,16 @@ export class TrendCache {
               })),
             }
           : null,
-      recent: this.recent(sql, stored),
+      recent: this.recent(sql, stored, hidden),
     };
   }
 
   /** Up to twelve earlier questions, newest first, summarised once each. */
-  private recent(sql: SqlStorage, stored: StoredRoom): TrendControl["recent"] {
+  private recent(
+    sql: SqlStorage,
+    stored: StoredRoom,
+    hidden: ReadonlySet<string>,
+  ): TrendControl["recent"] {
     const questions = playableQuestions(stored);
     const last = doneQuestionPhases.has(stored.phase)
       ? stored.questionIndex
@@ -148,26 +149,26 @@ export class TrendCache {
       if (rows.length >= 12) break;
       const question = questions[index]!;
       if (index === stored.questionIndex && trendPhases.has(stored.phase)) continue;
-      let summary = this.past.get(question.id);
-      if (!summary) {
+      let past = this.past.get(question.id);
+      if (!past) {
         const input = readTrendInput(sql, questions, index);
-        const analysis = input ? analyseTrends(input) : null;
-        summary = {
+        past = {
           prompt: question.prompt,
-          responses: analysis?.responses ?? 0,
-          headlines: analysis
-            ? pickStageCards(analysis)
-                .slice(0, 3)
-                .map((card) => card.headline)
-            : [],
+          analysis: input ? analyseTrends(input) : null,
         };
-        this.past.set(question.id, summary);
+        this.past.set(question.id, past);
       }
       rows.push({
         questionId: question.id,
-        prompt: clip(summary.prompt, 240),
-        responses: summary.responses,
-        headlines: summary.headlines,
+        prompt: clip(past.prompt, 240),
+        responses: past.analysis?.responses ?? 0,
+        // The same hidden cards as the live projector, whether or not this
+        // question was revealed in this process.
+        headlines: past.analysis
+          ? pickStageCards(past.analysis, hidden)
+              .slice(0, 3)
+              .map((card) => card.headline)
+          : [],
       });
     }
     return rows;
@@ -179,28 +180,66 @@ function playableQuestions(stored: StoredRoom): readonly Question[] {
   return resolved.status === "playable" ? resolved.pack.questions : [];
 }
 
+/**
+ * A fingerprint of everything `readTrendInput` reads, in one query: this
+ * question's answers and scores, scores and adjustments so far, the roster
+ * (names, photos, client class), device reports, reconnects and the laggy
+ * threshold, trolls, uploads and the vote ballot. Raw round-trip times are
+ * bucketed at the facet's 150 ms line, so routine ping updates do not
+ * recompute the analysis every second during a reveal.
+ */
 function cacheKey(sql: SqlStorage, version: string, questionId: string): string {
-  const ledger = sql
-    .exec<{ n: number; s: number }>(
-      `SELECT COUNT(*) AS n, COALESCE(SUM(points), 0) AS s FROM score_ledger WHERE question_id = ?`,
-      questionId,
+  const row = sql
+    .exec<Record<string, number | string | null>>(
+      `SELECT
+         (SELECT COUNT(*) || '/' || COALESCE(SUM(points), 0) || '/' || COALESCE(MAX(created_at), 0)
+            FROM score_ledger WHERE question_id = ?) AS ledger,
+         (SELECT COUNT(*) || '/' || COALESCE(SUM(points), 0) FROM score_ledger) AS totals,
+         (SELECT COUNT(*) || '/' || COALESCE(SUM(points), 0) || '/' || COALESCE(MAX(created_at), 0)
+            FROM score_adjustment) AS adjustments,
+         (SELECT group_concat(player_id || '=' || nickname || '=' || client_class || '='
+                   || COALESCE(avatar_media_id, '') || '=' || COALESCE(revoked_at, ''), '|')
+            FROM player) AS roster,
+         (SELECT COUNT(*) || '/' || COALESCE(MAX(created_at), 0) FROM device_context) AS devices,
+         (SELECT COALESCE(SUM(reconnects), 0) || '/'
+                   || COALESCE(SUM(CASE WHEN rtt_median_ms >= 150 THEN 1 ELSE 0 END), 0) || '/'
+                   || COUNT(rtt_median_ms)
+            FROM connection_summary) AS connections,
+         (SELECT COUNT(*) || '/' || COALESCE(SUM(refunded), 0) FROM troll_effect) AS trolls,
+         (SELECT COUNT(*) FROM media_upload WHERE status = 'accepted') AS uploads,
+         (SELECT COUNT(*) || '/' || COALESCE(MAX(received_at), 0)
+            FROM choice_answer WHERE question_id = ?) AS choices,
+         (SELECT COUNT(*) || '/' || COALESCE(MAX(received_at), 0)
+            FROM round_response WHERE question_id = ?) AS responses,
+         (SELECT COUNT(*) || '/' || COALESCE(MAX(received_at), 0)
+            FROM vote_ballot WHERE question_id = ?) AS ballots,
+         (SELECT COUNT(*) || '/' || COALESCE(SUM(included), 0)
+            FROM vote_candidate WHERE question_id = ?) AS candidates,
+         (SELECT COUNT(*) || '/' || COALESCE(SUM(position_revision), 0)
+            FROM chess_game WHERE round_id = ?) AS chess`,
+      ...Array.from({ length: 6 }, () => questionId),
     )
-    .toArray()[0];
-  const players = sql
-    .exec<{ n: number }>(`SELECT COUNT(*) AS n FROM player WHERE revoked_at IS NULL`)
-    .toArray()[0];
-  const devices = sql
-    .exec<{ n: number }>(`SELECT COUNT(*) AS n FROM device_context`)
     .toArray()[0];
   return [
     version,
     questionId,
-    ledger?.n ?? 0,
-    ledger?.s ?? 0,
-    players?.n ?? 0,
-    devices?.n ?? 0,
+    fingerprint(
+      Object.values(row ?? {})
+        .map((value) => String(value ?? ""))
+        .join(";"),
+    ),
     [...hiddenAuthors(sql, questionId)].sort().join(","),
   ].join(":");
+}
+
+/** FNV-1a, so a roster of eighty names becomes a short cache key. */
+function fingerprint(text: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `${text.length}.${(hash >>> 0).toString(36)}`;
 }
 
 function clip(text: string, max: number): string {

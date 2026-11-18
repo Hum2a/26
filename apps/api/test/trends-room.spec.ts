@@ -108,7 +108,9 @@ async function answer(stub: Stub, gameId: string, player: Player, optionId: stri
         resolve(message.accepted === true);
       }
     });
-    socket.send(JSON.stringify({ kind: "command", requestId, name: "answer", optionId }));
+    socket.send(
+      JSON.stringify({ kind: "command", requestId, name: "answer", optionId }),
+    );
   });
   socket.close();
   return accepted;
@@ -122,7 +124,11 @@ async function revealedRoom() {
     iphones.push(await join(stub, `Apple${index}`, iphoneAgent));
     androids.push(await join(stub, `Droid${index}`, androidAgent));
   }
-  await stub.startDemo({ ...control, requestId: crypto.randomUUID(), nowMs: Date.now() });
+  await stub.startDemo({
+    ...control,
+    requestId: crypto.randomUUID(),
+    nowMs: Date.now(),
+  });
   await untilPhase(stub, control, "collect");
   const play = (await stub.snapshotFor("stage")).play;
   if (play?.question.kind !== "choice") throw new Error("Expected a choice question");
@@ -191,7 +197,9 @@ it("switches trends off the stage and phones, refuses bad requests, and replays"
   expect(first.ok).toBe(true);
   expect((await stub.snapshotFor("stage")).trends).toBeUndefined();
   // Phones keep their lines: the switches are separate.
-  expect((await stub.snapshotFor("guest", iphones[0]!.playerId)).selfTrends).toBeDefined();
+  expect(
+    (await stub.snapshotFor("guest", iphones[0]!.playerId)).selfTrends,
+  ).toBeDefined();
   await evictDurableObject(stub);
   expect(await stub.hostAction(hideStage)).toEqual(first);
   expect((await stub.snapshotFor("control")).trendControl?.history).toHaveLength(1);
@@ -203,7 +211,9 @@ it("switches trends off the stage and phones, refuses bad requests, and replays"
     nowMs: Date.now(),
   });
   expect(hidePhones.ok).toBe(true);
-  expect((await stub.snapshotFor("guest", iphones[0]!.playerId)).selfTrends).toBeUndefined();
+  expect(
+    (await stub.snapshotFor("guest", iphones[0]!.playerId)).selfTrends,
+  ).toBeUndefined();
   const host = await stub.snapshotFor("control");
   expect(host.trendControl?.stage).toBe("hidden");
   expect(host.trendControl?.phones).toBe("hidden");
@@ -218,6 +228,32 @@ it("switches trends off the stage and phones, refuses bad requests, and replays"
       })
     ).ok,
   ).toBe(false);
+});
+
+it("adds the trend columns to a room created before them", async () => {
+  const { stub } = await setup();
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    for (const column of [
+      "trend_stage",
+      "trend_phones",
+      "trend_hidden",
+      "trend_history",
+    ]) {
+      sql.exec(`ALTER TABLE room DROP COLUMN ${column}`);
+    }
+    sql.exec("UPDATE schema_meta SET version = 15 WHERE id = 1");
+  });
+  await evictDurableObject(stub);
+  const host = await stub.snapshotFor("control");
+  expect(host.trendControl?.stage).toBe("shown");
+  await runInDurableObject(stub, (_instance, state) => {
+    expect(
+      state.storage.sql
+        .exec<{ version: number }>("SELECT version FROM schema_meta")
+        .toArray()[0]?.version,
+    ).toBe(16);
+  });
 });
 
 it("hides one card, refuses hiding it twice, and restores it", async () => {
@@ -235,9 +271,9 @@ it("hides one card, refuses hiding it twice, and restores it", async () => {
   expect(
     (await stub.snapshotFor("stage")).trends?.cards.map((card) => card.id),
   ).not.toContain(target.id);
-  const hostCard = (await stub.snapshotFor("control")).trendControl?.current?.cards.find(
-    (card) => card.id === target.id,
-  );
+  const hostCard = (
+    await stub.snapshotFor("control")
+  ).trendControl?.current?.cards.find((card) => card.id === target.id);
   expect(hostCard?.hidden).toBe(true);
   const again = await stub.hostAction({ ...hide, requestId: crypto.randomUUID() });
   expect(again.ok).toBe(false);
@@ -262,7 +298,7 @@ it("hides one card, refuses hiding it twice, and restores it", async () => {
       })
     ).ok,
   ).toBe(true);
-  expect((await stub.snapshotFor("stage")).trends?.cards.map((card) => card.id)).toContain(
-    target.id,
-  );
+  expect(
+    (await stub.snapshotFor("stage")).trends?.cards.map((card) => card.id),
+  ).toContain(target.id);
 });

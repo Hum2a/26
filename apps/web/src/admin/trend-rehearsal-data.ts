@@ -1,9 +1,4 @@
-import type {
-  TrendDevice,
-  TrendInput,
-  TrendPlayer,
-  TrendResponse,
-} from "@26/shared";
+import type { TrendDevice, TrendInput, TrendPlayer, TrendResponse } from "@26/shared";
 
 /**
  * Stand-in rooms for rehearsing answer trends with no guests. The numbers

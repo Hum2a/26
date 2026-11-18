@@ -7,13 +7,16 @@
   min-width: 0;
 }
 
+/* The slot itself drives the two columns, so the layout holds while it fades out. */
 @media (min-width: 1100px) {
-  .projector-with-trends[data-trends] {
-    grid-template-columns: minmax(0, 1fr) clamp(19rem, 27vw, 32rem);
+  .projector-with-trends:has(> .projector-trends-slot) {
+    grid-template-columns: minmax(0, 1fr) clamp(24rem, 34vw, 44rem);
   }
 }
 
+/* Spans the row so the sticky panel has room to stay in view. */
 .projector-trends-slot {
+  align-self: stretch;
   min-width: 0;
 }
 
@@ -288,6 +291,42 @@
 
 .admin-trend-stage-preview {
   max-width: 34rem;
+}
+
+/*
+ * On the real projector nothing goes below the stage's 40px floor
+ * (`stage/tokens.css`). The admin rehearsal preview sits outside `.stage-safe`
+ * and keeps the compact sizes above.
+ */
+.stage-safe .projector-trends .trends-eyebrow,
+.stage-safe .projector-trends .trends-count,
+.stage-safe .projector-trends .trend-detail,
+.stage-safe .projector-trends .trend-figure span,
+.stage-safe .projector-trends .trend-bar-label,
+.stage-safe .projector-trends .trend-bar-value {
+  font-size: max(40px, 1.6vw);
+}
+
+.stage-safe .projector-trends .trend-headline {
+  font-size: max(48px, 2.8vw);
+}
+
+.stage-safe .projector-trends .trend-figure strong {
+  font-size: max(72px, 5vw);
+}
+
+.stage-safe .projector-trends .trend-icon {
+  width: max(72px, 4vw);
+  height: max(72px, 4vw);
+}
+
+.stage-safe .projector-trends .trend-bar-track {
+  height: max(16px, 1.2vh);
+}
+
+.stage-safe .projector-trends .trends-dots li {
+  width: 16px;
+  height: 16px;
 }
 
 @media (prefers-reduced-motion: reduce) {

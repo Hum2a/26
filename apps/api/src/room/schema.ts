@@ -416,7 +416,8 @@ const scheduleStatements = [
   )`,
 ];
 
-const PARTY_SCHEMA_VERSION = 15;
+/** 16: answer-trend switches on the room row (`trend_*`). */
+const PARTY_SCHEMA_VERSION = 16;
 const REGISTRY_SCHEMA_VERSION = 1;
 
 function hasTable(sql: SqlStorage, name: string): boolean {
@@ -511,14 +512,14 @@ export function ensurePartySchema(sql: SqlStorage): void {
   addColumn(sql, "room", "photo_bias_history", "TEXT NOT NULL DEFAULT '[]'");
   addColumn(sql, "media_upload", "photo_family", "TEXT NOT NULL DEFAULT 'unknown'");
   if (!existing) {
-    sql.exec("INSERT INTO schema_meta (id, version) VALUES (1, 15)");
+    sql.exec("INSERT INTO schema_meta (id, version) VALUES (1, 16)");
     return;
   }
-  if (existing.version >= 1 && existing.version <= 14) {
-    sql.exec("UPDATE schema_meta SET version = 15 WHERE id = 1");
+  if (existing.version >= 1 && existing.version <= 15) {
+    sql.exec("UPDATE schema_meta SET version = 16 WHERE id = 1");
     return;
   }
-  if (existing.version !== 15) {
+  if (existing.version !== 16) {
     throw new Error(`Unsupported room schema version ${existing.version}.`);
   }
 }

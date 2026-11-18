@@ -59,23 +59,36 @@ export function readTrendInput(
       .map((row) => [row.player_id, row]),
   );
   const ledger = sql
-    .exec<{ question_id: string; player_id: string; points: number; detail: string }>(
-      `SELECT question_id, player_id, points, detail FROM score_ledger`,
-    )
+    .exec<{
+      question_id: string;
+      player_id: string;
+      points: number;
+      detail: string;
+      created_at: number;
+    }>(`SELECT question_id, player_id, points, detail, created_at FROM score_ledger`)
     .toArray();
   const adjustments = sql
-    .exec<{ player_id: string; points: number }>(
-      `SELECT player_id, points FROM score_adjustment`,
+    .exec<{ player_id: string; points: number; created_at: number }>(
+      `SELECT player_id, points, created_at FROM score_adjustment`,
     )
     .toArray();
   const earlier = new Set(questions.slice(0, index).map((item) => item.id));
   const scoreBefore = new Map<string, number>();
   for (const row of ledger) {
     if (earlier.has(row.question_id)) {
-      scoreBefore.set(row.player_id, (scoreBefore.get(row.player_id) ?? 0) + row.points);
+      scoreBefore.set(
+        row.player_id,
+        (scoreBefore.get(row.player_id) ?? 0) + row.points,
+      );
     }
   }
+  // Host adjustments count only if made before this question's results were
+  // recorded, so a later correction does not move someone into the leaders.
+  const settledAt = ledger
+    .filter((row) => row.question_id === question.id)
+    .reduce((first, row) => Math.min(first, row.created_at), Number.POSITIVE_INFINITY);
   for (const row of adjustments) {
+    if (row.created_at >= settledAt) continue;
     scoreBefore.set(row.player_id, (scoreBefore.get(row.player_id) ?? 0) + row.points);
   }
   const trolls = sql
@@ -130,7 +143,9 @@ export function readTrendInput(
       .map((row) => [row.player_id, row]),
   );
   const device = (contextId: string | null, playerId: string) =>
-    (contextId ? contexts.get(contextId) : undefined) ?? latestByPlayer.get(playerId) ?? null;
+    (contextId ? contexts.get(contextId) : undefined) ??
+    latestByPlayer.get(playerId) ??
+    null;
   const read = readResponses(sql, question, points, device);
   return {
     question: read.question,
@@ -192,7 +207,12 @@ function readResponses(
           kind: "push",
           options,
           pickVerb: "went for",
-          numeric: { noun: "points banked", unit: "pts", better: "higher", truth: null },
+          numeric: {
+            noun: "points banked",
+            unit: "pts",
+            better: "higher",
+            truth: null,
+          },
           scored: true,
           success: "banked points",
           timed: false,
@@ -203,7 +223,12 @@ function readResponses(
             row.option_id === "bail"
               ? [
                   `bail-${
-                    pushLineAt(outcome, row.received_at, row.deadline_at, question.collectMs) + 1
+                    pushLineAt(
+                      outcome,
+                      row.received_at,
+                      row.deadline_at,
+                      question.collectMs,
+                    ) + 1
                   }`,
                 ]
               : ["hold"],
@@ -221,7 +246,10 @@ function readResponses(
       question: {
         ...base,
         kind: multiple ? "multiple" : "choice",
-        options: question.options.map((option) => ({ id: option.id, label: option.label })),
+        options: question.options.map((option) => ({
+          id: option.id,
+          label: option.label,
+        })),
         pickVerb: multiple ? "ticked" : "picked",
         numeric: null,
         scored,
@@ -244,7 +272,11 @@ function readResponses(
       })),
     };
   }
-  if (question.kind === "typed" || question.kind === "slider" || question.kind === "rank") {
+  if (
+    question.kind === "typed" ||
+    question.kind === "slider" ||
+    question.kind === "rank"
+  ) {
     const rows = sql
       .exec<{
         player_id: string;
@@ -284,11 +316,15 @@ function readResponses(
       return {
         question: {
           ...base,
-          options: [...labels].map(([key, label]) => ({ id: `t:${key}`.slice(0, 120), label })),
+          options: [...labels].map(([key, label]) => ({
+            id: `t:${key}`.slice(0, 120),
+            label,
+          })),
           pickVerb: "typed",
           numeric: null,
           scored: true,
-          success: question.scoring === "commonness" ? "matched someone" : "got it right",
+          success:
+            question.scoring === "commonness" ? "matched someone" : "got it right",
           timed: true,
         },
         responses,
@@ -331,7 +367,9 @@ function readResponses(
     return {
       question: {
         ...base,
-        options: buckets ? [] : question.items.map((item) => ({ id: item.id, label: item.label })),
+        options: buckets
+          ? []
+          : question.items.map((item) => ({ id: item.id, label: item.label })),
         pickVerb: "ranked first",
         numeric: { noun: "points", unit: "pts", better: "higher", truth: null },
         scored: false,
@@ -370,7 +408,10 @@ function readResponses(
         question.id,
       )
       .toArray()
-      .filter((row) => !row.owner_id || !hidden.has(row.owner_id) || question.kind === "guess");
+      .filter(
+        (row) =>
+          !row.owner_id || !hidden.has(row.owner_id) || question.kind === "guess",
+      );
     const quotable = new Set(candidates.map((row) => row.candidate_id));
     const rows = sql
       .exec<{
@@ -442,7 +483,10 @@ function readResponses(
           value: won ? board.guesses.length : null,
           correct: board.status === "playing" && !won ? false : won,
           points: pointsOf(row.player_id),
-          elapsedMs: Math.max(0, row.received_at - (row.deadline_at - question.collectMs)),
+          elapsedMs: Math.max(
+            0,
+            row.received_at - (row.deadline_at - question.collectMs),
+          ),
           windowMs: question.collectMs,
           device: device(row.device_context_id, row.player_id),
         },
@@ -463,7 +507,12 @@ function readResponses(
   }
   if (question.kind === "chess") {
     const games = sql
-      .exec<{ player_id: string; winner: string | null; status: string; ply_count: number }>(
+      .exec<{
+        player_id: string;
+        winner: string | null;
+        status: string;
+        ply_count: number;
+      }>(
         `SELECT player_id, winner, status, ply_count FROM chess_game WHERE round_id = ?`,
         question.id,
       )
@@ -546,7 +595,10 @@ function readResponses(
         value: row.value,
         correct: scoredBy(row.player_id),
         points: pointsOf(row.player_id),
-        elapsedMs: Math.max(0, row.received_at - (row.deadline_at - question.collectMs)),
+        elapsedMs: Math.max(
+          0,
+          row.received_at - (row.deadline_at - question.collectMs),
+        ),
         windowMs: question.collectMs,
         device: device(row.device_context_id, row.player_id),
       })),
@@ -584,13 +636,7 @@ function scoredHistory(
 ): { questionId: string; accuracy: number }[] {
   const history: { questionId: string; accuracy: number }[] = [];
   for (const question of questions.slice(0, index)) {
-    const judged =
-      (question.kind === "choice" &&
-        (question.outcome.kind === "correct" || question.outcome.kind === "multiple")) ||
-      (question.kind === "typed" && question.scoring !== "commonness") ||
-      question.kind === "wordle" ||
-      question.kind === "slider";
-    if (!judged) continue;
+    if (!hasRightAndWrong(question)) continue;
     const rows = ledger.filter(
       (row) => row.question_id === question.id && guests.has(row.player_id),
     );
@@ -601,6 +647,36 @@ function scoredHistory(
     });
   }
   return history;
+}
+
+/**
+ * Whether a guest can score or miss on this question, so it belongs in the
+ * game's accuracy history and the "last question's winners" streak. This
+ * matches `scored` in `readResponses`. Polls, room-split thresholds, open
+ * votes and proportional rankings have no right or wrong answer.
+ */
+export function hasRightAndWrong(question: Question): boolean {
+  switch (question.kind) {
+    case "choice":
+      return (
+        question.outcome.kind === "correct" ||
+        question.outcome.kind === "multiple" ||
+        question.outcome.kind === "push"
+      );
+    case "guess":
+      return question.scoring !== "none";
+    case "typed":
+    case "slider":
+    case "wordle":
+    case "chess":
+    case "kart":
+    case "duel":
+    case "finale":
+      return true;
+    case "rank":
+    case "vote":
+      return false;
+  }
 }
 
 function readField(payload: string, field: string): unknown {
@@ -619,7 +695,8 @@ export function toTrendDevice(json: string): TrendDevice | null {
   let report: NormalisedDeviceReport;
   try {
     const parsed: unknown = JSON.parse(json);
-    if (!parsed || typeof parsed !== "object" || !("deviceFamily" in parsed)) return null;
+    if (!parsed || typeof parsed !== "object" || !("deviceFamily" in parsed))
+      return null;
     report = parsed as NormalisedDeviceReport;
   } catch {
     return null;

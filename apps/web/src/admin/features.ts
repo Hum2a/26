@@ -235,9 +235,11 @@ export const adminFeatures: readonly AdminFeature[] = [
     owns: ["apps/api/src/stats"],
     status: (snapshot) => {
       const trends = snapshot.trendControl;
-      const live = trends?.current
-        ? `${trends.current.cards.filter((card) => card.onStage).length} trend cards on screen`
-        : null;
+      const live = !trends?.current
+        ? null
+        : trends.stage === "hidden"
+          ? "Trends off the big screen"
+          : `${trends.current.cards.filter((card) => card.onStage).length} trend cards on screen`;
       return [live, `${snapshot.highlights?.length ?? 0} highlights ready`]
         .filter(Boolean)
         .join(" · ");

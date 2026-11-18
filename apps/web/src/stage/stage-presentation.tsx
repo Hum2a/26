@@ -144,7 +144,7 @@ export function StagePresentation({
           ) : (
             <>
               {/* One wrapper always, so trends arriving never remount the round. */}
-              <div className="projector-with-trends" data-trends={trends ? "" : undefined}>
+              <div className="projector-with-trends">
                 <PhaseTransition
                   phase={snapshot.phase}
                   scene={kartRaceScene(snapshot)}

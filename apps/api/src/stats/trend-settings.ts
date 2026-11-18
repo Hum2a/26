@@ -88,7 +88,11 @@ export function changeTrendSettings(
     hidden = hidden.filter((item) => item !== id);
   }
   const stage =
-    change === "stage-hidden" ? "hidden" : change === "stage-shown" ? "shown" : settings.stage;
+    change === "stage-hidden"
+      ? "hidden"
+      : change === "stage-shown"
+        ? "shown"
+        : settings.stage;
   const phones =
     change === "phones-hidden"
       ? "hidden"

@@ -11,7 +11,11 @@ import { Button } from "../ui/primitives";
 import { PhoneTrends, StageTrends, TrendCardView } from "../play/trends";
 import { useAdminRoom } from "./room-provider";
 import { CommandFeedback } from "./command-feedback";
-import { rehearsalTrendInput, trendScenarios, type TrendScenario } from "./trend-rehearsal-data";
+import {
+  rehearsalTrendInput,
+  trendScenarios,
+  type TrendScenario,
+} from "./trend-rehearsal-data";
 
 const changeCopy: Record<TrendControl["history"][number]["change"], string> = {
   "stage-shown": "showed trends on the big screen",
@@ -50,8 +54,9 @@ export function TrendsPanel() {
       </div>
       <p>
         After each reveal the projector rotates up to six cards on how groups answered:
-        iPhone against Android, dark mode, the fastest quarter, the leaders, the trolls and
-        more. Phones show each guest how they compared. Device cards never name anyone.
+        iPhone against Android, dark mode, the fastest quarter, the leaders, the trolls
+        and more. Phones show each guest how they compared. Device cards never name
+        anyone.
       </p>
       <CommandFeedback scope="analytics" />
 
@@ -66,20 +71,30 @@ export function TrendsPanel() {
               disabled={locked || !control}
               onClick={() =>
                 void execute(
-                  { action: stageHidden ? "trends-stage-shown" : "trends-stage-hidden" },
-                  stageHidden ? "Show trends on the big screen" : "Hide trends on the big screen",
+                  {
+                    action: stageHidden ? "trends-stage-shown" : "trends-stage-hidden",
+                  },
+                  stageHidden
+                    ? "Show trends on the big screen"
+                    : "Hide trends on the big screen",
                   "analytics",
                 )
               }
             >
-              {stageHidden ? "Show trends on the big screen" : "Hide trends on the big screen"}
+              {stageHidden
+                ? "Show trends on the big screen"
+                : "Hide trends on the big screen"}
             </Button>
             <Button
               variant="secondary"
               disabled={locked || !control}
               onClick={() =>
                 void execute(
-                  { action: phonesHidden ? "trends-phones-shown" : "trends-phones-hidden" },
+                  {
+                    action: phonesHidden
+                      ? "trends-phones-shown"
+                      : "trends-phones-hidden",
+                  },
                   phonesHidden ? "Show trends on phones" : "Hide trends on phones",
                   "analytics",
                 )
@@ -108,7 +123,9 @@ export function TrendsPanel() {
                 </AnimatePresence>
               </ol>
             ) : (
-              <p className="text-sm text-muted">No changes yet. Both are on by default.</p>
+              <p className="text-sm text-muted">
+                No changes yet. Both are on by default.
+              </p>
             )}
           </div>
         </section>
@@ -128,7 +145,9 @@ export function TrendsPanel() {
             <>
               <p>{current.prompt}</p>
               {current.cards.length === 0 ? (
-                <p>No trends stood out this time. The big screen shows nothing extra.</p>
+                <p>
+                  No trends stood out this time. The big screen shows nothing extra.
+                </p>
               ) : (
                 <ul className="admin-trend-cards" aria-label="Candidate cards">
                   <AnimatePresence initial={false}>
@@ -144,10 +163,15 @@ export function TrendsPanel() {
                         className="admin-card"
                       >
                         <div className="admin-card-header">
-                          <span className="admin-badge" data-tone={card.onStage ? "ok" : "muted"}>
-                            {card.hidden ? "Hidden" : card.onStage ? "On the big screen" : "Standby"}
+                          <span
+                            className="admin-badge"
+                            data-tone={card.onStage && !stageHidden ? "ok" : "muted"}
+                          >
+                            {cardBadge(card, stageHidden)}
                           </span>
-                          <span className="admin-mono-tag">score {Math.round(card.score)}</span>
+                          <span className="admin-mono-tag">
+                            score {Math.round(card.score)}
+                          </span>
                         </div>
                         <div className="admin-card-body">
                           <TrendCardView card={card} size="compact" />
@@ -157,7 +181,9 @@ export function TrendsPanel() {
                             onClick={() =>
                               void execute(
                                 {
-                                  action: card.hidden ? "trends-card-restore" : "trends-card-hide",
+                                  action: card.hidden
+                                    ? "trends-card-restore"
+                                    : "trends-card-hide",
                                   trendCardId: card.id,
                                 },
                                 card.hidden ? "Restore trend card" : "Hide trend card",
@@ -176,8 +202,8 @@ export function TrendsPanel() {
             </>
           ) : (
             <p>
-              Trends appear here when a question is revealed, with every candidate card and
-              which ones the big screen is showing.
+              Trends appear here when a question is revealed, with every candidate card
+              and which ones the big screen is showing.
             </p>
           )}
         </div>
@@ -193,7 +219,8 @@ export function TrendsPanel() {
               {control.recent.map((row) => (
                 <li key={row.questionId} className="admin-data-row grid gap-1">
                   <span className="font-bold">
-                    {row.prompt} <span className="admin-mono-tag">{row.responses} answers</span>
+                    {row.prompt}{" "}
+                    <span className="admin-mono-tag">{row.responses} answers</span>
                   </span>
                   {row.headlines.length ? (
                     <span className="text-muted">{row.headlines.join(" · ")}</span>
@@ -212,6 +239,13 @@ export function TrendsPanel() {
       <TrendsRehearsal />
     </section>
   );
+}
+
+/** What the projector is actually doing with a card, given the room switch. */
+function cardBadge(card: { hidden: boolean; onStage: boolean }, stageHidden: boolean) {
+  if (card.hidden) return "Hidden";
+  if (!card.onStage) return "Standby";
+  return stageHidden ? "Selected (big screen off)" : "On the big screen";
 }
 
 /**

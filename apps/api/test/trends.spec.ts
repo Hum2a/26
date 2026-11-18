@@ -14,6 +14,9 @@ import {
   type TrendQuestion,
   type TrendResponse,
 } from "@26/shared";
+import { toPlayable } from "../src/questions/authoring.ts";
+import { birthdayPack } from "../src/questions/packs/birthday/manifest.ts";
+import { hasRightAndWrong } from "../src/stats/trend-source.ts";
 
 const iphone: TrendDevice = {
   family: "iphone",
@@ -43,7 +46,11 @@ const android: TrendDevice = {
   memoryGb: 8,
 };
 
-function player(index: number, device: TrendDevice | null, extra: Partial<TrendPlayer> = {}): TrendPlayer {
+function player(
+  index: number,
+  device: TrendDevice | null,
+  extra: Partial<TrendPlayer> = {},
+): TrendPlayer {
   return {
     playerId: `p${index}`,
     nickname: `Guest${index}`,
@@ -128,11 +135,21 @@ describe("answer trends", () => {
   it("covers devices, behaviour, records and the answer itself", () => {
     const analysis = analyseTrends(splitRoom());
     const facets = new Set(analysis.cards.map((card) => card.facet));
-    for (const facet of ["answer", "platform", "browser", "theme", "screen", "speed", "fastest"]) {
+    for (const facet of [
+      "answer",
+      "platform",
+      "browser",
+      "theme",
+      "screen",
+      "speed",
+      "fastest",
+    ]) {
       expect(facets.has(facet), facet).toBe(true);
     }
     // Every facet the engine knows is listed for the host's legend.
-    expect(trendFacetIds).toEqual(expect.arrayContaining(["platform", "standing", "trolls"]));
+    expect(trendFacetIds).toEqual(
+      expect.arrayContaining(["platform", "standing", "trolls"]),
+    );
   });
 
   it("never names a guest on a device or behaviour card", () => {
@@ -179,7 +196,9 @@ describe("answer trends", () => {
 
   it("reports the hardest question so far against the game history", () => {
     const input = splitRoom();
-    const accuracy = analyseTrends(input).cards.find((card) => card.facet === "accuracy");
+    const accuracy = analyseTrends(input).cards.find(
+      (card) => card.facet === "accuracy",
+    );
     expect(accuracy?.headline).toBe("The hardest question so far");
     expect(accuracy?.detail).toBe("6 of 12 got it right. A new low for the room.");
   });
@@ -192,7 +211,9 @@ describe("answer trends", () => {
     expect(lines.map((line) => line.text)).toContain(
       "100% of your fellow iPhone users got it right.",
     );
-    expect(lines.some((line) => line.text === "The fastest answer in the room.")).toBe(true);
+    expect(lines.some((line) => line.text === "The fastest answer in the room.")).toBe(
+      true,
+    );
     expect(selfTrendLines(analysis, "nobody")).toBeNull();
   });
 
@@ -253,6 +274,27 @@ describe("answer trends", () => {
     for (const card of first.cards) {
       expect(() => trendCardSchema.parse(publicTrendCard(card))).not.toThrow();
     }
+  });
+
+  it("counts every right-or-wrong mechanic in the game's accuracy history", () => {
+    const scored = birthdayPack.catalogue
+      .map((question) => toPlayable(question))
+      .filter(
+        (question): question is NonNullable<typeof question> => question !== undefined,
+      );
+    const byKind = (kind: string) =>
+      scored.filter((question) => question.kind === kind);
+    for (const kind of ["chess", "kart", "wordle", "slider", "typed"]) {
+      expect(byKind(kind).every(hasRightAndWrong), kind).toBe(true);
+    }
+    expect(byKind("guess").every(hasRightAndWrong)).toBe(true);
+    expect(byKind("vote").some(hasRightAndWrong)).toBe(false);
+    expect(byKind("rank").some(hasRightAndWrong)).toBe(false);
+    const polls = scored.filter(
+      (question) => question.kind === "choice" && question.outcome.kind === "poll",
+    );
+    expect(polls.length).toBeGreaterThan(0);
+    expect(polls.some(hasRightAndWrong)).toBe(false);
   });
 
   it("stays quiet for an empty question", () => {

@@ -77,6 +77,14 @@ it("lists every candidate card and what the big screen shows, with earlier quest
   expect(within(earlier).getByText("Near-unanimous: 80% picked Hagakure")).toBeTruthy();
 });
 
+it("does not claim a card is on the big screen while the projector switch is off", async () => {
+  setupControls(fixture(control({ stage: "hidden" })));
+  await mountControls(<AnalyticsPage />);
+  const current = screen.getByRole("region", { name: "Trends for this question" });
+  expect(within(current).getByText("Selected (big screen off)")).toBeTruthy();
+  expect(within(current).queryByText("On the big screen")).toBeNull();
+});
+
 it.each([
   ["shown", "Hide trends on the big screen", "trends-stage-hidden"],
   ["hidden", "Show trends on the big screen", "trends-stage-shown"],
@@ -126,13 +134,17 @@ it("rehearses the real projector and phone cards on stand-ins without calling th
   setupControls(fixture(control({ current: null, recent: [] })));
   await mountControls(<AnalyticsPage />);
   vi.mocked(playRoom).mockClear();
-  expect(screen.getByText(/Trends appear here when a question is revealed/)).toBeTruthy();
+  expect(
+    screen.getByText(/Trends appear here when a question is revealed/),
+  ).toBeTruthy();
   const rehearsal = screen.getByRole("region", { name: "Trend rehearsal" });
   expect(within(rehearsal).getByText(/24 stand-in players/)).toBeTruthy();
   expect(
     within(rehearsal).getByRole("complementary", { name: "How the room answered" }),
   ).toBeTruthy();
-  expect(within(rehearsal).getByRole("region", { name: "You and the room" })).toBeTruthy();
+  expect(
+    within(rehearsal).getByRole("region", { name: "You and the room" }),
+  ).toBeTruthy();
   for (const label of ["Price guess", "Kart race", "Shuffle stand-ins"]) {
     fireEvent.click(within(rehearsal).getByRole("button", { name: label }));
   }

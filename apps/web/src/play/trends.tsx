@@ -96,18 +96,25 @@ export function TrendGlyph({ icon }: { icon: TrendIcon }) {
  */
 export function StageTrends({ trends }: { trends: QuestionTrends }) {
   const reduce = useReducedMotion() ?? false;
-  const [index, setIndex] = useState(0);
   const count = trends.cards.length;
+  const questionId = trends.questionId;
+  // The rotation belongs to one question: a new question starts at its first card.
+  const [rotation, setRotation] = useState({ questionId, index: 0 });
+  const index =
+    rotation.questionId === questionId ? rotation.index % Math.max(1, count) : 0;
   useEffect(() => {
-    setIndex(0);
     if (count <= 1) return;
     const timer = window.setInterval(
-      () => setIndex((current) => (current + 1) % count),
+      () =>
+        setRotation((current) => ({
+          questionId,
+          index: current.questionId === questionId ? (current.index + 1) % count : 1,
+        })),
       trendRotateMs,
     );
     return () => window.clearInterval(timer);
-  }, [trends.questionId, count]);
-  const card = trends.cards[index % Math.max(1, count)];
+  }, [questionId, count]);
+  const card = trends.cards[index];
   if (!card) return null;
   return (
     <motion.aside
@@ -133,7 +140,9 @@ export function StageTrends({ trends }: { trends: QuestionTrends }) {
           initial={{ opacity: 0, y: reduce ? 0 : 18 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: reduce ? 0 : -12 }}
-          transition={reduce ? { duration: 0.18 } : { duration: 0.35, ease: [0.2, 0, 0, 1] }}
+          transition={
+            reduce ? { duration: 0.18 } : { duration: 0.35, ease: [0.2, 0, 0, 1] }
+          }
         >
           <TrendCardView card={card} size="stage" reduce={reduce} />
         </motion.div>
@@ -181,7 +190,10 @@ export function TrendCardView({
       {card.bars.length > 0 ? (
         <ul className="trend-bars" aria-label="Comparison">
           {card.bars.map((bar, position) => (
-            <li key={`${bar.label}:${position}`} data-highlight={bar.highlight || undefined}>
+            <li
+              key={`${bar.label}:${position}`}
+              data-highlight={bar.highlight || undefined}
+            >
               <span className="trend-bar-label">{bar.label}</span>
               <span className="trend-bar-track" aria-hidden="true">
                 <motion.span
@@ -191,7 +203,11 @@ export function TrendCardView({
                   transition={
                     reduce
                       ? { duration: 0 }
-                      : { duration: 0.7, delay: 0.15 + position * 0.12, ease: [0.2, 0, 0, 1] }
+                      : {
+                          duration: 0.7,
+                          delay: 0.15 + position * 0.12,
+                          ease: [0.2, 0, 0, 1],
+                        }
                   }
                 />
               </span>
@@ -213,7 +229,9 @@ export function PhoneTrends({ trends }: { trends: SelfTrends }) {
       aria-label="You and the room"
       initial={{ opacity: 0, y: reduce ? 0 : 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={reduce ? { duration: 0.2 } : { duration: 0.4, delay: 0.5, ease: [0.2, 0, 0, 1] }}
+      transition={
+        reduce ? { duration: 0.2 } : { duration: 0.4, delay: 0.5, ease: [0.2, 0, 0, 1] }
+      }
     >
       <h2 className="phone-trends-title">You and the room</h2>
       <ul className="phone-trends-lines">
