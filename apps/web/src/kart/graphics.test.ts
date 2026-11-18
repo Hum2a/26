@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { createFrameProbe, graphicsTier, safeGraphicsProfile } from "./graphics";
+import { createFrameProbe, displayPixelRatioLimit, graphicsTier, safeGraphicsProfile } from "./graphics";
 
 it("caps graphics by actual capabilities and refuses unusable WebGL without changing manual preference", () => {
   expect(
@@ -59,4 +59,13 @@ it("ignores warm-up and suspended time and measures sustained frame cadence", ()
   result = undefined;
   for (let now = 50_001; now < 58_000; now += 16) result = probe.sample(now) ?? result;
   expect(result).toBe("smooth");
+});
+
+it("draws a phone sharper on High than on Low for the same screen", () => {
+  const high = displayPixelRatioLimit("high", true, 900, 700, 2);
+  const low = displayPixelRatioLimit("low", true, 900, 700, 2);
+  expect(high).toBeGreaterThan(low);
+  expect(high).toBeLessThanOrEqual(1);
+  expect(low).toBeGreaterThanOrEqual(0.35);
+  expect(displayPixelRatioLimit("high", false, 900, 700, 2)).toBe(2);
 });

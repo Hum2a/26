@@ -22,6 +22,7 @@ import { driverFaceUrl } from "./driver-face";
 import { useKartDrivers, type KartDrivers } from "./drivers-context";
 import {
   createFrameProbe,
+  displayPixelRatioLimit,
   safeGraphicsProfile,
   type GraphicsTier,
   type FrameHealth,
@@ -143,14 +144,16 @@ export default function KartCanvas({
       const height = Math.max(1, root.clientHeight);
       // Keep a phone or tablet near the old driving-strip cost. A full-screen
       // tablet otherwise fills the GPU and the picture starts skipping.
-      const phoneRatio = Math.max(
-        0.5,
-        Math.min(1, Math.sqrt(200_000 / (width * height))),
-      );
       return safeGraphicsProfile(quality.current, {
         webgl: true,
         maxTextureSize: renderer.capabilities.maxTextureSize,
-        pixelRatioLimit: mobile ? phoneRatio : window.devicePixelRatio,
+        pixelRatioLimit: displayPixelRatioLimit(
+          quality.current,
+          mobile,
+          width,
+          height,
+          window.devicePixelRatio,
+        ),
       });
     };
     const initialProfile = chooseProfile();

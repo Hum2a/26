@@ -130,7 +130,9 @@ export const kartRaceSchema = z
   })
   .strict();
 export type KartRaceView = z.infer<typeof kartRaceSchema>;
-export const kartTickMs = 200;
+export const kartTickMs = 100;
+/** Controls closer than this are the same hold, not a new intent. */
+export const kartInputGapMs = 50;
 export const kartNeutral = { steer: 0, gas: false, brake: false, drift: false };
 export const kartControlsSchema = z
   .object({

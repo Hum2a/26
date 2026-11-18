@@ -797,11 +797,11 @@ it("sends a control change at once when the room's gap allows, merging rapid cha
   );
   const view = renderHook(() => useKartSocket(race, true, send));
   expect(send).toHaveBeenCalledTimes(1);
-  // Within the 85 ms gap: held back, then sent once with the latest controls.
+  // Within the 55 ms gap: held back, then sent once with the latest controls.
   act(() => view.result.current({ ...kartNeutral, gas: true }));
   act(() => view.result.current({ ...kartNeutral, gas: true, steer: -1 }));
   expect(send).toHaveBeenCalledTimes(1);
-  act(() => vi.advanceTimersByTime(85));
+  act(() => vi.advanceTimersByTime(55));
   expect(send).toHaveBeenCalledTimes(2);
   expect(send.mock.lastCall![0]).toMatchObject({ gas: true, steer: -1 });
   // After the gap: straight away, without waiting for the heartbeat.
@@ -813,7 +813,7 @@ it("sends a control change at once when the room's gap allows, merging rapid cha
   // Unchanged controls are not re-sent outside the heartbeat.
   act(() => view.result.current({ ...kartNeutral, brake: true }));
   expect(send).toHaveBeenCalledTimes(before + 1);
-  // Consecutive sends never arrive closer than the room's 80 ms rule.
+  // Consecutive sends never arrive closer than the room's 50 ms rule.
   const times: number[] = [];
   send.mockImplementation(() => times.push(Date.now()));
   for (let i = 0; i < 20; i++) {
@@ -821,7 +821,7 @@ it("sends a control change at once when the room's gap allows, merging rapid cha
     act(() => vi.advanceTimersByTime(17));
   }
   for (let i = 1; i < times.length; i++)
-    expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(85);
+    expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(55);
   view.unmount();
 });
 

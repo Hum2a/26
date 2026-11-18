@@ -6348,3 +6348,20 @@ During a race or the grid, the driving view fills the window on every size. The 
 **Next:** drive one race on a phone and one on a desktop window.
 
 A computer now uses the desktop renderer (full frame rate, sharper picture, keyboard hint). A phone keeps the steer zone and pedals, and draws the full-screen view at 1× so it does not drop to the 30 fps budget as soon as the picture fills the screen.
+
+## 17 November 2026 — Server pose rate test
+
+**Status:** local on `kart-server-poses`, branched from `kart-drive-view`. Not deployed. The uncommitted steer-zone edits are stashed as "steer zone, kept off kart-server-poses" and are not on this branch.
+
+The room still owns the race. It now steps every 100ms, and a control change is kept when it arrives at least 50ms after the previous one. Phones send a change after 55ms so a steer can land on the next step. Your own kart still uses prediction. Other karts, including the stage, blend from the previous server pose to the new one over the gap between those frames, including height, and hold the latest pose instead of coasting in a straight line. A jump of more than 8 units snaps. Reduced motion still uses the existing short fade.
+
+**Files:** `packages/shared/src/kart/kart-race-schema.ts` (`kartTickMs` 100, `kartInputGapMs` 50), `apps/api/src/questions/kart/kart.ts`, `apps/api/src/room/party-room.ts`, `apps/web/src/kart/useKartSocket.ts`, `self-prediction.ts` (comment), `presentation.ts`, `circuit.ts`, `presentation.test.ts`, `kart.test.tsx`.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 29 existing warnings, structure check passed. `npx vitest run src/kart` in `apps/web` — 45 files, 220 passed. `npx vitest run test/kart-room.spec.ts test/kart-driving.spec.ts` in `apps/api` — 2 files, 50 passed. Full `npm run test:unit` and `npm run build` were not run.
+
+**Unverified:** a two-tab race and a phone on the tunnel. Whether the room alarm actually fires every 100ms under load was not measured. This is not a production default.
+
+**Next:** drive two tabs on localhost, then one phone on the tunnel. Watch other karts turn with the packets, and a ramp on Mario circuit or 26 Park with course features on.
+
+A routine room pose within 0.75m and a small heading gap no longer tugs the driver's own kart. The phone keeps the velocity already on screen, including slip. A larger miss still eases, and a miss over 6m still snaps. `self-prediction.test.ts` — 17 passed. Typecheck and lint were not rerun for this nudge.
+

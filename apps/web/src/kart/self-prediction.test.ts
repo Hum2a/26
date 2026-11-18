@@ -126,6 +126,24 @@ describe("self prediction", () => {
     expect(settled.x).toBeCloseTo(self(corrected).x, 1);
   });
 
+  it("leaves the kart still when a routine room update is only a short nudge", () => {
+    const prediction = createSelfPrediction();
+    prediction.input(gas, 1_000);
+    prediction.server(race(1_000), 1_000, 0);
+    const before = prediction.pose(1_100)!;
+    const nudged = race(1_100);
+    Object.assign(self(nudged), {
+      x: before.x + 0.2,
+      z: before.z,
+      heading: before.heading,
+      speed: before.speed,
+    });
+    prediction.server(nudged, 1_100, 0);
+    const after = prediction.pose(1_100)!;
+    expect(Math.hypot(after.x - before.x, after.z - before.z)).toBeLessThan(0.05);
+    expect(after.heading).toBeCloseTo(before.heading, 3);
+  });
+
   it("snaps to the room when the phone is far out", () => {
     const prediction = createSelfPrediction();
     prediction.server(race(1_000), 1_000, 0);

@@ -1262,6 +1262,11 @@ body:has(.kart-phone) {
   .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-graphics {
     justify-content: end;
   }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-graphics-live {
+    font-size: 0.65rem;
+    line-height: 1.2;
+    text-align: end;
+  }
   .kart-phone:is([data-layout="race"], [data-layout="grid"])
     .kart-driver-viewport[data-view="chase"]
     .kart-driver-map {

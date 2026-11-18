@@ -14,7 +14,7 @@ import {
 } from "@26/shared";
 import type { KartRaceView } from "@26/shared";
 import { driftEffectDescription, driftStrength } from "./drift-effects";
-import { extrapolateKartPose, smoothKartPose, type KartPose } from "./presentation";
+import { blendKartPose, smoothKartPose, type KartPose } from "./presentation";
 import { createDriverRig } from "./driver-rig";
 import { kartAssetPaths } from "@26/shared";
 import { vehiclePose } from "./vehicle-pose";
@@ -471,11 +471,9 @@ export function createCircuit(
   const poses = new Map<string, KartPose>();
   let predictedPlayerId: string | undefined;
   let glideEnabled = true;
-  /** When each racer's server pose last changed, on the effect clock. */
-  const serverSeen = new Map<
-    string,
-    { x: number; z: number; heading: number; at: number }
-  >();
+  /** Last two server poses for each other racer, on the effect clock. */
+  const serverSpan = new Map<string, { from: ServerSample; to: ServerSample }>();
+  type ServerSample = KartPose & { at: number };
   const travel = new Map<string, number>();
   const featurePoses = new Map<string, { x: number; z: number }>();
   const labels = new Map<string, THREE.Sprite>();
@@ -532,29 +530,45 @@ export function createCircuit(
     labels.set(key, sprite);
     return sprite;
   }
-  /** The server pose carried forward since it last changed (not under reduced motion). */
-  function glide(
-    driver: KartPose & { playerId: string; speed: number },
-    reduced: boolean,
-  ) {
-    const seen = serverSeen.get(driver.playerId);
-    if (
-      !seen ||
-      seen.x !== driver.x ||
-      seen.z !== driver.z ||
-      seen.heading !== driver.heading
-    ) {
-      serverSeen.set(driver.playerId, {
-        x: driver.x,
-        z: driver.z,
-        heading: driver.heading,
-        at: effectTime,
-      });
-      return driver;
+  function serverSample(
+    driver: KartPose & { playerId: string },
+    at: number,
+  ): ServerSample {
+    return {
+      x: driver.x,
+      z: driver.z,
+      heading: driver.heading,
+      ...(driver.height !== undefined ? { height: driver.height } : {}),
+      at,
+    };
+  }
+  function sameServerPose(sample: ServerSample, driver: KartPose) {
+    return (
+      sample.x === driver.x &&
+      sample.z === driver.z &&
+      sample.heading === driver.heading &&
+      (sample.height ?? 0) === (driver.height ?? 0)
+    );
+  }
+  /**
+   * Other racers play the newest server gap: from the previous pose to the
+   * one that just arrived, over the time between those frames. A predicted
+   * kart does not come through here.
+   */
+  function glide(driver: KartPose & { playerId: string }, reduced: boolean) {
+    const known = serverSpan.get(driver.playerId);
+    if (!known || !sameServerPose(known.to, driver)) {
+      const to = serverSample(driver, effectTime);
+      serverSpan.set(driver.playerId, { from: known?.to ?? to, to });
     }
-    return reduced || !glideEnabled
-      ? driver
-      : extrapolateKartPose(driver, driver.speed, effectTime - seen.at);
+    const span = serverSpan.get(driver.playerId)!;
+    const gap = span.to.at - span.from.at;
+    if (reduced || !glideEnabled || gap <= 0) return driver;
+    return blendKartPose(span.from, span.to, (effectTime - span.to.at) / gap);
+  }
+  function holdServerPose(driver: KartPose & { playerId: string }) {
+    const to = serverSample(driver, effectTime);
+    serverSpan.set(driver.playerId, { from: to, to });
   }
   function update(
     race: KartRaceView,
@@ -582,7 +596,7 @@ export function createCircuit(
     if (effectRaceId !== race.raceId) {
       emission.clear();
       poses.clear();
-      serverSeen.clear();
+      serverSpan.clear();
       travel.clear();
       featurePoses.clear();
       projectilePoses.clear();
@@ -610,7 +624,7 @@ export function createCircuit(
     for (const id of poses.keys())
       if (!present.has(id)) {
         poses.delete(id);
-        serverSeen.delete(id);
+        serverSpan.delete(id);
         travel.delete(id);
         emission.delete(id);
       }
@@ -624,15 +638,23 @@ export function createCircuit(
       const driver = drivers[i]!,
         previous = poses.get(driver.playerId),
         // A predicted kart is already smooth; easing it again would add lag.
-        pose =
-          driver.playerId === predictedPlayerId
-            ? {
-                x: driver.x,
-                z: driver.z,
-                heading: driver.heading,
-                ...(driver.height !== undefined ? { height: driver.height } : {}),
-              }
-            : smoothKartPose(previous ?? driver, glide(driver, reduced), dt, reduced);
+        serverPose = {
+          x: driver.x,
+          z: driver.z,
+          heading: driver.heading,
+          ...(driver.height !== undefined ? { height: driver.height } : {}),
+        },
+        followed = driver.playerId === predictedPlayerId,
+        jumped =
+          previous !== undefined &&
+          Math.hypot(serverPose.x - previous.x, serverPose.z - previous.z) > 8,
+        pose = followed
+          ? serverPose
+          : reduced || !glideEnabled || jumped
+            ? smoothKartPose(previous ?? driver, serverPose, dt, reduced)
+            : glide(driver, reduced);
+      if (!followed && (reduced || !glideEnabled) && !jumped) glide(driver, true);
+      if (!followed && jumped) holdServerPose(driver);
       poses.set(driver.playerId, pose);
       const height = pose.height ?? 0;
       const { x, z, heading } = pose,
@@ -984,7 +1006,7 @@ export function createCircuit(
       instances.forEach((i) => i.dispose());
       emission.clear();
       poses.clear();
-      serverSeen.clear();
+      serverSpan.clear();
       travel.clear();
       featurePoses.clear();
       labels.clear();

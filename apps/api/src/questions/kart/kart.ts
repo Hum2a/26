@@ -2,6 +2,7 @@ import {
   kartInputSchema,
   kartStageModeSchema,
   kartLimitMs,
+  kartInputGapMs,
   kartTickMs,
   createKartRace,
   reduceKart,
@@ -515,7 +516,7 @@ export class KartInputBuffer {
       if (
         parsed.data.raceId !== input.raceId ||
         parsed.data.sequence <= input.sequence ||
-        at - previous.at < 80
+        at - previous.at < kartInputGapMs
       )
         return;
     }
@@ -689,7 +690,7 @@ export function acceptKartInputs(
     const previous = queues.get(playerId);
     if (
       previous &&
-      (now - previous.at < 80 || parsed.data.sequence <= previous.lastSequence)
+      (now - previous.at < kartInputGapMs || parsed.data.sequence <= previous.lastSequence)
     )
       return false;
     const at = elapsedAt(due, room.paused, now, q.timeLimitMs);
