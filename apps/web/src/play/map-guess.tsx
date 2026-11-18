@@ -207,7 +207,7 @@ export function GuestMapGuess({
   const accepted =
     play.selfAnswer?.kind === "map-guess" ? play.selfAnswer.pin : undefined;
   const reveal = play.reveal?.kind === "map-guess" ? play.reveal : undefined;
-  const pin = accepted ?? draft;
+  const pin = reveal ? accepted : (accepted ?? draft);
   return (
     <>
       {reveal ? (

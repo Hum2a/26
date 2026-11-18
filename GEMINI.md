@@ -215,6 +215,7 @@ Detailed, file-scoped rules live in `.agents/rules/60-perf-*.md` (synced to `.cu
 
 - **Small, focused PRs.** One concern per branch. Do not mix a mechanic change with a folder move, a dependency bump, and a visual rewrite.
 - **Never push to `master` or `main`.** Open a PR against `master`. Do not merge unless the owner asked.
+- **Cubic review.** When Cubic runs on an open PR you are handling, automatically wait for its review of the latest pushed commit. Read the review summary and inline comments even if the check passed. Verify each finding against the diff, fix valid findings within scope, and record why any finding needs no change or falls outside the scope. Rerun the affected checks, push the fixes, and repeat for the new commit. If Cubic is unavailable or never reports, state that in the handoff. Where it is running, finish this loop before handing off an open PR or merging with the owner's authorisation.
 - **No force-push** to shared branches. No `--force` / `--force-with-lease` on `master`.
 - **Do not deploy**, create paid cloud resources, or change staging/production secrets unless the owner asked in this turn.
 - **Do not add Playwright or other E2E/browser runners.** The owner has prohibited them. Prove behaviour with typecheck, lint, Vitest (jsdom / workers pool), and existing Node script tests.

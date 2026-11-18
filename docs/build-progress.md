@@ -6642,3 +6642,9 @@ The `where-are-we` birthday draft is in the catalogue only. Open **Admin → Que
 Validation passed: `npm run typecheck`, `npm run lint` (30 existing warnings), `npm run build` (artifact scan, gzip budgets and content preflight), and `npm run test -w @26/api -- map-guess bucket-room question-authoring admin-rooms-auth` (43 tests). `npm run test:unit` passed all 904 tests discovered when the run started. The final focused web rerun passed all 20 tests across the map, guest page, stage page and admin feature registry.
 
 Next: supply the credited photo, location name and coordinates. Fill the draft, rehearse with the actual assets and add it to the birthday running order when approved.
+
+## 18 November 2026 — Cubic review workflow and map follow-up
+
+When Cubic runs on a PR, wait for its review of the latest pushed commit, check the summary and inline comments, and repeat after fixes. If Cubic is unavailable or never reports, note that in the handoff. The rule lives in `55-agent-workflow.md` and was copied with `npm run agents:sync`.
+
+The follow-up for PR #42 requires a photo clue, honours hidden picks in both live broadcasts and direct snapshots, and omits unsent pins from the phone reveal. The focused Worker and phone tests passed, along with lint and the build. The next content step is to add the real clue and rehearse the round.

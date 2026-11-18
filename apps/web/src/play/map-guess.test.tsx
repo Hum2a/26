@@ -22,7 +22,7 @@ it("requires a pin before sending and only locks when the saved answer arrives",
   );
   const play = { selfAnswer: null, reveal: null } as PlaySnapshot;
   const onSubmit = vi.fn();
-  const { rerender, unmount } = render(
+  const { rerender, unmount, container } = render(
     <GuestMapGuess play={play} open pending={false} onSubmit={onSubmit} />,
   );
   try {
@@ -51,6 +51,27 @@ it("requires a pin before sending and only locks when the saved answer arrives",
       "disabled",
       true,
     );
+    const revealed: PlaySnapshot = {
+      ...play,
+      reveal: {
+        kind: "map-guess",
+        target: { lat: 0, lng: 0 },
+        label: "Real spot",
+        pins: [],
+        closest: [],
+      },
+    };
+    rerender(
+      <GuestMapGuess
+        play={{ ...saved, reveal: revealed.reveal }}
+        open={false}
+        pending={false}
+      />,
+    );
+    expect(container.querySelector('path[stroke="#12459b"]')).not.toBeNull();
+    rerender(<GuestMapGuess play={revealed} open={false} pending={false} />);
+    expect(screen.getByText("Real spot")).toBeTruthy();
+    expect(container.querySelector('path[stroke="#12459b"]')).toBeNull();
   } finally {
     unmount();
     Object.assign(Browser, { svg: originalSvg });

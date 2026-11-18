@@ -389,7 +389,8 @@ export function missingRequirements(question: AuthoredQuestion): MissingRequirem
     if (!isKnown(question.target)) add(question.target.missing);
     if (
       !question.media?.some(
-        ({ name, asset, credit }) => name === "question" && asset && credit,
+        ({ name, kind, asset, credit }) =>
+          name === "question" && kind === "image" && asset && credit,
       )
     ) {
       add({

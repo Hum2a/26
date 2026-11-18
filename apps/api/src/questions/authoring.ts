@@ -221,7 +221,7 @@ export function mapGuessQuestion(
   const media = [
     ...(input.media ?? []).filter(({ name }) => name !== "question"),
     {
-      ...input.media?.find(({ name }) => name === "question"),
+      ...input.media?.find(({ name, kind }) => name === "question" && kind === "image"),
       name: "question",
       kind: "image" as const,
       required: true,
