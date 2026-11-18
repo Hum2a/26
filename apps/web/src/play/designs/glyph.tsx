@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import { emptyWordleBoard, type WordleBoard, type WordleMark } from "@26/shared";
-import { Button } from "../../ui/primitives";
+import { Button, Disclosure, TextField } from "../../ui/primitives";
+import { PhoneDock } from "../../controller/phone-dock";
 import type { PresentationProps } from "../presentation";
 import { LiveCount, QuestionTag, StagePrompt, useDesignMotion } from "./kit";
 import "./glyph.css";
@@ -13,12 +14,19 @@ const meaning = {
   present: "in another position",
   correct: "right position",
 };
+const wordLength = 5;
+const emptyDraft = {
+  letters: " ".repeat(wordLength),
+  cursor: 0,
+  tileSelected: false,
+  notice: "",
+};
 
 /** Classic single-board Glyph. Only the server's marks arrive here. */
 export function Glyph(props: PresentationProps) {
   if (props.play.question.kind !== "wordle") return undefined;
   return props.surface === "phone" ? (
-    <GlyphPhone {...props} />
+    <GlyphPhone key={props.play.question.id} {...props} />
   ) : (
     <GlyphStage {...props} />
   );
@@ -30,12 +38,18 @@ function GlyphPhone({
   phase,
 }: Extract<PresentationProps, { surface: "phone" }>) {
   const motionSet = useDesignMotion();
+  const present = useIsPresent();
   const board =
     play.selfAnswer?.kind === "wordle" ? play.selfAnswer : emptyWordleBoard();
-  const [entry, setEntry] = useState({ attempt: board.guesses.length, value: "" });
+  const attempt = board.guesses.length;
+  const [entry, setEntry] = useState({ attempt, ...emptyDraft });
   // An acknowledgement snapshot clears only the accepted row. Rejections retain the draft.
-  const draft = entry.attempt === board.guesses.length ? entry.value : "";
-  const open = controls.open && board.status === "playing";
+  const draft = entry.attempt === attempt ? entry : emptyDraft;
+  const open = present && controls.open && board.status === "playing";
+  const word = draft.letters.toUpperCase();
+  const full = !word.includes(" ");
+  const hasLetters = Boolean(draft.letters.trim());
+  const duplicate = full && board.guesses.some((guess) => guess.word === word);
   const keys = new Map<string, WordleMark>();
   for (const guess of board.guesses)
     for (let i = 0; i < 5; i++) {
@@ -44,58 +58,141 @@ function GlyphPhone({
       if (!keys.has(letter) || priority[mark] > priority[keys.get(letter)!])
         keys.set(letter, mark);
     }
-  function key(value: string) {
+  function updateDraft(update: Partial<typeof emptyDraft>) {
+    setEntry((current) => ({
+      ...(current.attempt === attempt ? current : emptyDraft),
+      attempt,
+      ...update,
+    }));
+  }
+  function replaceDraft(letters: string) {
+    updateDraft({
+      letters: letters.padEnd(wordLength, " "),
+      cursor: letters.length,
+      tileSelected: false,
+      notice: "",
+    });
+  }
+  function edit(value: string) {
     if (!open) return;
-    if (value === "Enter") {
-      if (draft.length === 5) controls.onText(draft);
+    controls.onWordleEdit?.();
+    setEntry((current) => {
+      const { letters, cursor, tileSelected } =
+        current.attempt === attempt ? current : emptyDraft;
+      const removing = value === "Backspace" || value === "Delete";
+      const position = value === "Backspace" && !tileSelected ? cursor - 1 : cursor;
+      if (position < 0 || position >= wordLength) return current;
+      return {
+        attempt,
+        letters: `${letters.slice(0, position)}${removing ? " " : value}${letters.slice(position + 1)}`,
+        cursor: removing ? position : position + 1,
+        tileSelected: false,
+        notice: "",
+      };
+    });
+  }
+  function submit() {
+    if (!open || duplicate) return;
+    if (!full) {
+      updateDraft({ notice: "Fill all five tiles before checking." });
       return;
     }
-    const next =
-      value === "Backspace" ? draft.slice(0, -1) : `${draft}${value}`.slice(0, 5);
-    setEntry({ attempt: board.guesses.length, value: next });
+    updateDraft({ notice: "" });
+    controls.onText(word);
   }
   const reveal = play.reveal?.kind === "wordle" ? play.reveal : undefined;
-  const status =
-    board.status === "won"
+  const status = reveal
+    ? board.status === "won"
+      ? `Solved in ${attempt}!`
+      : "Puzzle complete."
+    : board.status === "won"
       ? `Solved in ${board.guesses.length}! Watch the stage.`
       : board.status === "lost"
         ? "Six guesses used. The answer will appear on the stage."
         : phase === "collect"
-          ? `Guess ${board.guesses.length + 1} of 6`
+          ? `Guess ${attempt + 1} of 6${open ? " · Tap a tile to edit it" : ""}`
           : "Six guesses. Five letters. One word.";
+  const feedback = controls.pending
+    ? "Checking your word…"
+    : duplicate && open
+      ? "You’ve already tried that word. Change a letter and try again."
+      : (open && (draft.notice || controls.wordleFeedback)) || status;
   return (
     <section
       className="design-phone glyph"
       aria-label="Wordle game"
       tabIndex={0}
       onKeyDown={(event) => {
-        if (event.ctrlKey || event.metaKey || event.altKey) return;
         if (
-          /^[a-z]$/i.test(event.key) ||
-          event.key === "Enter" ||
-          event.key === "Backspace"
-        ) {
-          event.preventDefault();
-          key(event.key.length === 1 ? event.key.toUpperCase() : event.key);
+          !open ||
+          event.defaultPrevented ||
+          event.ctrlKey ||
+          event.metaKey ||
+          event.altKey ||
+          event.nativeEvent.isComposing
+        )
+          return;
+        const { key } = event;
+        if (event.target instanceof HTMLInputElement && key !== "Enter") return;
+        // Enter on a focused control should run that control's native action.
+        if (
+          key === "Enter" &&
+          event.target instanceof Element &&
+          event.target.closest("button")
+        )
+          return;
+        if (key === "Enter") {
+          if (!event.repeat) submit();
+        } else if (key === "ArrowLeft" || key === "ArrowRight") {
+          updateDraft({
+            cursor: Math.max(
+              0,
+              Math.min(wordLength, draft.cursor + (key === "ArrowLeft" ? -1 : 1)),
+            ),
+            tileSelected: false,
+          });
+        } else if (key === "Backspace" || key === "Delete" || /^[a-z]$/i.test(key)) {
+          edit(key.length === 1 ? key.toUpperCase() : key);
+        } else return;
+        event.preventDefault();
+      }}
+      onPaste={(event) => {
+        if (!open) return;
+        event.preventDefault();
+        const pasted = event.clipboardData.getData("text/plain").trim();
+        controls.onWordleEdit?.();
+        if (!/^[a-z]{5}$/i.test(pasted)) {
+          updateDraft({ notice: "Paste a single five-letter word." });
+          return;
         }
+        replaceDraft(pasted.toUpperCase());
       }}
     >
       <QuestionTag play={play}>The word lab</QuestionTag>
       <h1 className="phone-prompt">{play.question.prompt}</h1>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.p
-          className="glyph-status"
-          role="status"
-          key={status}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={motionSet.soft}
-        >
-          {controls.pending ? "Checking your word…" : status}
-        </motion.p>
-      </AnimatePresence>
-      <WordleGrid board={board} draft={draft} />
+      <div className="glyph-status" role="status" aria-atomic="true">
+        <span className="sr-only">{feedback}</span>
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.p
+            key={feedback}
+            aria-hidden="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={motionSet.soft}
+          >
+            {feedback}
+          </motion.p>
+        </AnimatePresence>
+      </div>
+      <WordleGrid
+        board={board}
+        draft={phase === "collect" && board.status === "playing" ? draft.letters : ""}
+        cursor={draft.cursor}
+        onEdit={
+          open ? (cursor) => updateDraft({ cursor, tileSelected: true }) : undefined
+        }
+      />
       <p className="glyph-legend">
         <span>✓ Right place</span>
         <span>↔ Wrong place</span>
@@ -114,46 +211,90 @@ function GlyphPhone({
           </motion.p>
         ) : null}
       </AnimatePresence>
-      <div
-        className="glyph-keyboard"
-        aria-label="Letter keyboard"
-        aria-busy={controls.pending}
-      >
-        {["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"].map((row) => (
-          <div className="glyph-key-row" key={row}>
-            {[...row].map((letter) => (
-              <Button
-                key={letter}
-                variant="secondary"
-                className="glyph-key"
-                data-mark={keys.get(letter)}
-                disabled={!open}
-                onClick={() => key(letter)}
-                aria-label={
-                  keys.has(letter) ? `${letter}, ${meaning[keys.get(letter)!]}` : letter
-                }
-              >
-                {letter}
-                <small aria-hidden="true">
-                  {keys.has(letter) ? symbols[keys.get(letter)!] : ""}
-                </small>
-              </Button>
-            ))}
+      {!reveal && board.status === "playing" ? (
+        <div
+          className="glyph-keyboard"
+          aria-label="Letter keyboard"
+          aria-busy={controls.pending}
+        >
+          {["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"].map((row) => (
+            <div className="glyph-key-row" key={row}>
+              {[...row].map((letter) => (
+                <Button
+                  key={letter}
+                  variant="secondary"
+                  className="glyph-key"
+                  data-mark={keys.get(letter)}
+                  disabled={!open}
+                  onClick={() => edit(letter)}
+                  aria-label={
+                    keys.has(letter)
+                      ? `${letter}, ${meaning[keys.get(letter)!]}`
+                      : letter
+                  }
+                >
+                  {letter}
+                  <small aria-hidden="true">
+                    {keys.has(letter) ? symbols[keys.get(letter)!] : ""}
+                  </small>
+                </Button>
+              ))}
+            </div>
+          ))}
+          <div className="glyph-actions">
+            <Button
+              variant="secondary"
+              disabled={!open || !hasLetters}
+              onClick={() => edit("Backspace")}
+            >
+              Delete
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={!open || !hasLetters}
+              onClick={() => {
+                controls.onWordleEdit?.();
+                updateDraft(emptyDraft);
+              }}
+            >
+              Clear word
+            </Button>
           </div>
-        ))}
-        <div className="glyph-actions">
+          {phase === "collect" ? (
+            <Disclosure title="Type or paste a word">
+              <TextField
+                label="Your guess"
+                hint="Type five letters or touch and hold to paste."
+                value={draft.letters.trimEnd()}
+                maxLength={wordLength}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="go"
+                disabled={!open}
+                onChange={(event) => {
+                  controls.onWordleEdit?.();
+                  replaceDraft(
+                    event.target.value.replace(/[^a-z ]/gi, "").slice(0, wordLength),
+                  );
+                }}
+              />
+            </Disclosure>
+          ) : null}
+        </div>
+      ) : null}
+      {phase === "collect" && board.status === "playing" ? (
+        <PhoneDock>
           <Button
-            variant="secondary"
-            disabled={!open || !draft}
-            onClick={() => key("Backspace")}
+            type="button"
+            disabled={!open || !full || duplicate}
+            onClick={submit}
+            aria-busy={controls.pending || undefined}
           >
-            Delete
-          </Button>
-          <Button disabled={!open || draft.length !== 5} onClick={() => key("Enter")}>
             {controls.pending ? "Checking…" : "Check word"}
           </Button>
-        </div>
-      </div>
+        </PhoneDock>
+      ) : null}
     </section>
   );
 }
@@ -161,15 +302,19 @@ function GlyphPhone({
 export function WordleGrid({
   board,
   draft = "",
+  cursor,
+  onEdit,
 }: {
   board: WordleBoard;
   draft?: string;
+  cursor?: number;
+  onEdit?: (column: number) => void;
 }) {
   const motionSet = useDesignMotion();
   return (
     <div className="glyph-board" aria-label="Your six guesses">
       {Array.from({ length: 6 }, (_, row) => {
-        const guess = board.guesses[row];
+        const guess = board.guesses.at(row);
         const word = guess?.word ?? (row === board.guesses.length ? draft : "");
         return (
           <div
@@ -178,8 +323,23 @@ export function WordleGrid({
             aria-label={`Guess ${row + 1}${guess ? `: ${guess.word}` : ""}`}
           >
             {Array.from({ length: 5 }, (_, column) => {
-              const letter = word[column] ?? "",
+              const letter = word[column]?.trim().toUpperCase() ?? "",
                 mark = guess?.marks[column];
+              const editable = !guess && row === board.guesses.length && onEdit;
+              if (editable)
+                return (
+                  <button
+                    type="button"
+                    key={`${column}-draft`}
+                    className="glyph-cell glyph-edit-cell"
+                    data-cursor={cursor === column || undefined}
+                    aria-label={`Edit letter ${column + 1}${letter ? `: ${letter}` : ": empty"}`}
+                    aria-pressed={cursor === column}
+                    onClick={() => editable(column)}
+                  >
+                    {letter}
+                  </button>
+                );
               return (
                 <motion.span
                   key={`${column}-${mark ?? "draft"}`}
@@ -231,14 +391,14 @@ function GlyphStage({ play }: Extract<PresentationProps, { surface: "stage" }>) 
         ))}
       </div>
       <p className="glyph-stage-instruction">
-        {reveal
-          ? "The word is out."
-          : "Solve it on your phone. Six guesses. Two minutes."}
+        {reveal ? "The word is out." : "Solve it on your phone. You have six guesses."}
       </p>
       <p>✓ Right place · ↔ Wrong place · × Not in the word</p>
       {reveal ? (
         <p className="stage-answer">
-          {reveal.solvedCount} of {reveal.responseCount} players who tried solved it.
+          {reveal.responseCount === 0
+            ? "No guesses were submitted."
+            : `${reveal.solvedCount} of ${reveal.responseCount} ${reveal.responseCount === 1 ? "player" : "players"} who tried solved it.`}
         </p>
       ) : (
         <p className="glyph-stage-count">

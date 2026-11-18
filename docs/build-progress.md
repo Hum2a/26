@@ -6585,9 +6585,33 @@ Typecheck, lint and structure (30 existing warnings), formatting, the staging bu
 
 Review in [PR #37](https://github.com/Hum2a/26/pull/37) against master `4c42aee`. The next operator action is to merge the PR and use the documented agent sign-in for future staging rehearsals.
 
+## 18 November 2026 — Wordle playability
+
+Updated the shared Glyph phone renderer for live play and Admin → Question packs → Complete a wordle → Phone preview. Players can tap a tile to replace its letter, move between tiles with the arrow keys, paste a five-letter guess, or clear the current row. The live phone's existing action dock holds **Check word**. A rejected word stays editable with feedback beside the board, and a word already accepted on the current board is flagged before sending. The room still validates words, records guesses and marks, and awards points. The target and word list stay server-side.
+
+Guess entry pauses with the room and while the phone reconnects. A confirmed guess advances the row. A solved or exhausted board keeps its guesses visible and removes the input controls. Players who tried before the clock expired see their round result. The projector gives the six-guess limit and uses the room's actual timer for timing, with clear wording when nobody submitted a guess.
+
+In the local browser design bench, entered a sample guess using the touch keyboard, corrected its second letter, and submitted it. The phone displayed **Solved in 1**. The board and controls fit at 320, 390 and 430 CSS pixels wide and at 660 × 320. That bench uses a stand-in word. The authenticated staging and physical-device flows were not exercised.
+
+Validation passed for typecheck, lint and structure (30 existing warnings), formatting, the build and its bundle budgets and content preflight, 34 focused web tests, and all eight Wordle scoring and Durable Object tests. The change is based on merged master `3fa5895` in the C: checkout.
+
+The final full web suite (`npm run test:unit -w @26/web -- --maxWorkers=2`) passed all 900 tests across 200 files. The rerun includes the updated question-direction fixture, which now supplies the guess list carried by a room snapshot.
+
+Exact next stage: review [PR #38](https://github.com/Hum2a/26/pull/38), then try a rejected word and a timed-out board in the authenticated rehearsal before the party. No deployment was performed.
+
+### Cubic review follow-up
+
+Addressed all four review findings on PR #38. The guest socket clears Wordle feedback and retires the pending guess when the room leaves that collection round. Late acknowledgements can no longer report on the next round. Leaving the lobby, completing a phone transfer, and losing the active phone session also clear Wordle state, including a transfer that keeps the same player and room IDs.
+
+Backspace and the on-screen Delete action now use the selected tile or the letter just typed. **Type or paste a word** opens a native editable field connected to the same draft, so players can use the phone’s paste menu or keyboard. In the local browser at 390 CSS pixels, pasted a word into the field, replaced the second letter, and confirmed that deleting it preserved the third. The physical-phone long-press menu remains unverified.
+
+Validation passed for typecheck, lint and structure (30 existing warnings), formatting, the build and its bundle budgets, and 38 focused web tests. The full web suite (`npm run test:unit -w @26/web -- --maxWorkers=2`) passed 904 tests across 200 files, including regressions for the late acknowledgement, same-session transfer, native paste field, and deletion after editing a filled tile.
+
+Exact next stage: review and merge PR #38, then use the authenticated Wordle rehearsal for a real-device check. No deployment was performed.
+
 ## 18 November 2026 — Answer trends, freeze removal and the esports tag question
 
-Status: implemented on branch `claude/answer-trends` (from `master` `3fa5895`), uncommitted. **Not verified**: the dependency install on this machine was cancelled part-way, so `node_modules` is incomplete (`zod` files missing) and typecheck, lint, content check and every test suite could not run. Nothing here is labelled passed. No deployment.
+Status: the freeze removal and the esports question merged as PR #39 and PR #40; answer trends are in PR #41 (branch `claude/answer-trends-pr`, merged with master after #38-#40). **Not verified**: the dependency install on this machine was cancelled part-way, so `node_modules` is incomplete (`zod` files missing) and typecheck, lint, content check and every test suite could not run. Nothing here is labelled passed. No deployment.
 
 ### What changed
 
@@ -6605,4 +6629,4 @@ Status: implemented on branch `claude/answer-trends` (from `master` `3fa5895`), 
 
 ### Exact next stage
 
-Finish `npm install`, then run `npm run agents:sync`, `npm run typecheck`, `npm run lint`, `npm run content:check`, `npm run test:release`, `npm run test:unit` and `npm run test -w @26/api -- trends question-authoring award-points party-concepts voters-room`, and fix what fails. Then commit, open a PR, deploy staging and rehearse trends with eight or more phones. Choose the running-order slot for `esports-tag`.
+Watch CI on PR #41: it is the first typecheck, lint and test run for the trends code (`npm run agents:sync` has run). Fix what fails, merge, deploy staging and rehearse trends with eight or more phones, then production. Choose the running-order slot for `esports-tag`.

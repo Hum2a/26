@@ -84,7 +84,7 @@ npm run deploy:staging:full
 bash release.sh --deploy=production
 ```
 
-The `release.sh` script handles version bumping, requires master and a clean tree before the bump, runs checks, then deploys. After that point it sets `SKIP_GIT_CHECK=true` so generated artefacts from the bump/checks do not fail `release.ts`'s git check. It still passes `--override-freeze` through. `release.sh` does not accept `--skip-git-check`.
+The `release.sh` script handles version bumping, requires master and a clean tree before the bump, runs checks, then deploys. After that point it sets `SKIP_GIT_CHECK=true` so generated artefacts from the bump/checks do not fail `release.ts`'s git check. `release.sh` does not accept `--skip-git-check`.
 
 **Direct approach (bypasses version bumping):**
 
@@ -94,18 +94,18 @@ npm run deploy:prod
 
 **Production safeguards by command type:**
 
-| Command type                                    | Freeze check | Clean master |
-| ----------------------------------------------- | ------------ | ------------ |
-| deploy/full to production or both               | Required     | Required     |
-| deploy/full to staging only, or any `--dry-run` | Not required | Not required |
-| secrets-sync (any target)                       | Not required | Not required |
-| standalone migrate (`db:migrate:*`)             | Not required | Not required |
+| Command type                                    | Clean master |
+| ----------------------------------------------- | ------------ |
+| deploy/full to production or both               | Required     |
+| deploy/full to staging only, or any `--dry-run` | Not required |
+| secrets-sync (any target)                       | Not required |
+| standalone migrate (`db:migrate:*`)             | Not required |
 
 Raw vendor commands (`npx wrangler deploy`, `npx wrangler secret put`, the auth and archive migration scripts run directly) are outside these safeguards.
 
-Pass `--override-freeze` for emergency deploys during freeze period (20 Nov-22 Nov UTC).
+There is no date freeze. The party-weekend production freeze (20 to 22 November) was removed at the owner's request on 18 November 2026. `--override-freeze` is still accepted so older scripts parse, and it does nothing. A deploy still restarts every room and drops every phone's connection, so avoid deploying while a game is running.
 
-A git-check bypass (`SKIP_GIT_CHECK=true` or `--skip-git-check` on `release.ts`) never skips freeze. Use it only from a trusted wrapper that has already required clean master. Direct `npm run deploy:prod` still reads git and fails closed if git is unavailable. Git is read only for a real production deploy: staging deploys and dry runs do not need it.
+A git-check bypass (`SKIP_GIT_CHECK=true` or `--skip-git-check` on `release.ts`) should be used only from a trusted wrapper that has already required clean master. Direct `npm run deploy:prod` still reads git and fails closed if git is unavailable. Git is read only for a real production deploy: staging deploys and dry runs do not need it.
 
 `npm run test:release` runs `release.ts` and `release.sh` against fake git, npm, npx, curl and gh, on Windows as well as Linux. It refuses to run a release command unless those fakes answer, and sets an invalid `CLOUDFLARE_API_TOKEN` so a real Wrangler could not use a saved login. The `release.sh` tests use a throwaway repository with a local bare remote.
 
@@ -117,9 +117,9 @@ Wrangler warns that the secret names are missing from `env.staging.vars`. That w
 
 `npm run deploy:both` and `npm run deploy:both:full` run staging and then production. Plain deploy commands (`deploy:staging`, `deploy:prod`, `deploy:both`) build and deploy directly without running the test suite (use `--checks` to opt in). Full commands (`deploy:staging:full`, `deploy:prod:full`, `deploy:both:full`) run the full test suite (typecheck, content preflight, unit tests, linter, release tests, and the isolated API suite `@26/api`), migrate the database schemas, and deploy with secrets attached (`--secrets-file`). Combined commands (`deploy:both` and `deploy:both:full`) build the web and Worker package once, deploy staging, retarget the generated `wrangler.json` for production from `apps/api/wrangler.jsonc`, and deploy the same build to production. `npm run release` retains its existing checks and tells the deploy command those checks have already run.
 
-Add `-- --dry-run` to a secrets-sync or deploy command to check names or packaging without uploading, migrating or deploying. A deploy dry run builds the package but needs no freeze override and does not run the full pre-release check suite.
+Add `-- --dry-run` to a secrets-sync or deploy command to check names or packaging without uploading, migrating or deploying. A deploy dry run builds the package but does not run the full pre-release check suite.
 
-Production is frozen from 20 November 2026 at 00:00 until 22 November at 12:00, London time. An explicitly requested emergency deployment can use `--override-freeze`; `--skip-checks` separately skips the pre-release checks when necessary. These flags work through both `npm run release -- ...` and the direct deploy commands. Packaging and generated Worker target checks still run.
+`--skip-checks` skips the pre-release checks when necessary. It works through both `npm run release -- ...` and the direct deploy commands. Packaging and generated Worker target checks still run.
 
 ## Production build
 

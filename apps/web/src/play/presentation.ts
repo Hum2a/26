@@ -15,6 +15,8 @@ export type PhoneControls = {
   onSubmit: () => void;
   onRank: (placements: TierPlacement[]) => void;
   onText: (body: string) => void;
+  wordleFeedback?: string;
+  onWordleEdit?: () => void;
 };
 
 export type PresentationProps =

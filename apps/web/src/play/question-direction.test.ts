@@ -81,7 +81,11 @@ it("only calls an answer accepted once the room's snapshot carries it", async ()
   ).toBe("accepted");
   expect(
     answerStatus(
-      snapshot("wordle", {}, { selfAnswer: { kind: "wordle", status: "playing" } }),
+      snapshot(
+        "wordle",
+        {},
+        { selfAnswer: { kind: "wordle", status: "playing", guesses: [] } },
+      ),
       false,
     ),
   ).toBe("open");
