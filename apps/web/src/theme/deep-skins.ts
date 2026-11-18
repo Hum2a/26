@@ -2,8 +2,9 @@ import type { ThemeSkin } from "./skins";
 
 /**
  * The deep layer of a skin: how a family looks and moves beyond its ground,
- * corners and mark. Every value is drawn in `theme-deep.css` from the theme's
- * own colour variables. Nothing here introduces a colour.
+ * corners and mark. Every value is drawn from the theme's own colour variables:
+ * in `theme-deep.css`, except the theme-level scenes, which live in
+ * `theme-scenes.css`. Nothing here introduces a colour.
  *
  * - type: the typefaces and heading case.
  * - scene: an illustrated background behind the page (never on a question).

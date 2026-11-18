@@ -6839,3 +6839,18 @@ All 80 themes have a flavour and a voice. Examples:
 ### Exact next stage
 
 Read CI on the PR and fix any failures or cubic review threads. Then preview themes with `?theme=<id>` on a phone and the projector, checking that scenes stay faint behind questions and that bursts and transitions feel right.
+
+### cubic follow-up and CI measurements
+
+- Long marks (`P10`, `XIII`, `1111`) widen their box on the phone and projector instead of overflowing.
+- `strength` is now required on every flavour, like the other identity dimensions.
+- The projector's reveal burst plays once per reveal. Hiding the stage or reconnecting mutes it rather than remounting it.
+- The lobby keeps "Join on your phone" as plain text with the theme's invite beside it. The phone's waiting state stays "Waiting for the next question." with the theme's line beside it.
+- Reduced motion now also stops the animated parts of scene pieces, such as clock hands.
+- Sparks fly straight out. Circled marks carry a text variation selector because Ⓜ has an emoji form.
+- `identity.test.ts` ignores commented-out or empty rules, checks scene strengths are drawn, and checks every ornament and strength is used. `voices.test.ts` guards the won and missed lines too.
+- CI measured the built entry CSS at 28,165 bytes gzip, against 20,779 on master. The 34kB limit keeps about 20% headroom.
+- The theme flavours load at start-up so a stored theme paints without a late swap. That adds about 14kB minified (2.4kB gzip) to every route, so the Playwright cold-script budgets for `/` and `/admin/login` rose by 20kB, to 720kB and 730kB.
+- Prettier on master's `where-are-we.tsx`, which was failing `format:check`.
+- Not caused by this branch: master's Playwright run already fails 35 specs, including the `/join` and `/host` cold-script budgets. Two more failed on this branch's earlier run with timing errors outside the theme code: `admin-sections` (a confirm dialog left open) and `kart-cpu-race` (start-boost timing).
+- `npx vitest run src/theme` in `apps/web`: 22 passed. `npx prettier --check .` passed.

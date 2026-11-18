@@ -132,7 +132,7 @@ export type ThemeFlavour = Partial<FamilyValues> & {
   transition: PhaseMotion;
   numerals: NumeralStyle;
   ornament: Ornament;
-  strength?: SceneStrength;
+  strength: SceneStrength;
 };
 
 export type ThemeIdentity = ThemeSkin &
@@ -157,6 +157,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "rise",
     numerals: "plain",
     ornament: "none",
+    strength: "normal",
   },
 
   // Personal to 26
@@ -172,6 +173,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "zoom",
     numerals: "tabular",
     ornament: "chevron",
+    strength: "normal",
   },
   "humza-after-hours": {
     scene: "skyline",
@@ -188,6 +190,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "glitch",
     numerals: "segment",
     ornament: "prompt",
+    strength: "normal",
   },
   "main-character": {
     type: "serif",
@@ -205,6 +208,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "slide",
     numerals: "segment",
     ornament: "dot",
+    strength: "normal",
   },
   "26-karat": {
     marks: "roman",
@@ -212,6 +216,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "zoom",
     numerals: "serif",
     ornament: "diamond",
+    strength: "normal",
   },
   "november-nights": {
     scene: "fireworks",
@@ -220,6 +225,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "fade",
     numerals: "plain",
     ornament: "spark",
+    strength: "normal",
   },
   "birthday-exe": {
     scene: "popups",
@@ -230,6 +236,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "shutter",
     numerals: "tabular",
     ornament: "hash",
+    strength: "normal",
   },
   "the-humza-show": {
     marks: "alpha",
@@ -237,6 +244,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "flip",
     numerals: "outline",
     ornament: "star",
+    strength: "normal",
   },
   "quarter-life-deluxe": {
     scene: "sparkles",
@@ -245,6 +253,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "drop",
     numerals: "outline",
     ornament: "plus",
+    strength: "normal",
   },
 
   // Quiz and chaos
@@ -255,6 +264,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "skew",
     numerals: "stamped",
     ornament: "cross",
+    strength: "normal",
   },
   "final-answer": {
     scene: "clocks",
@@ -267,6 +277,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "iris",
     numerals: "tabular",
     ornament: "diamond",
+    strength: "normal",
   },
   "big-red-button": {
     scene: "alarm",
@@ -287,6 +298,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "shutter",
     numerals: "segment",
     ornament: "square",
+    strength: "normal",
   },
   "plot-twist": {
     scene: "questions",
@@ -295,6 +307,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "flip",
     numerals: "plain",
     ornament: "asterisk",
+    strength: "normal",
   },
   "steal-the-spotlight": {
     scene: "spotlights",
@@ -315,6 +328,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "drop",
     numerals: "tabular",
     ornament: "flower",
+    strength: "normal",
   },
 
   // Dark and atmospheric
@@ -329,6 +343,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "blur",
     numerals: "serif",
     ornament: "leaf",
+    strength: "normal",
   },
   "petrol-and-peach": {
     scene: "rain",
@@ -337,6 +352,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "slide",
     numerals: "segment",
     ornament: "bolt",
+    strength: "normal",
   },
   ultraviolet: {
     scene: "aurora",
@@ -357,6 +373,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "drop",
     numerals: "plain",
     ornament: "dot",
+    strength: "normal",
   },
   "peach-please": {
     scene: "hearts",
@@ -365,6 +382,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "zoom",
     numerals: "serif",
     ornament: "heart",
+    strength: "normal",
   },
   "blue-hour": {
     marks: "lower",
@@ -372,6 +390,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "blur",
     numerals: "plain",
     ornament: "moon",
+    strength: "normal",
   },
   "retro-future": {
     marks: "numeric",
@@ -379,6 +398,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "shutter",
     numerals: "segment",
     ornament: "chevron",
+    strength: "normal",
   },
   "poolside-2000": {
     scene: "waves",
@@ -387,6 +407,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "slide",
     numerals: "tabular",
     ornament: "wave",
+    strength: "normal",
   },
   "paper-party": {
     marks: "alpha",
@@ -394,6 +415,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "flip",
     numerals: "stamped",
     ornament: "pencil",
+    strength: "normal",
   },
   "lavender-menace": {
     scene: "petals",
@@ -402,6 +424,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "blur",
     numerals: "serif",
     ornament: "asterisk",
+    strength: "normal",
   },
 
   // Personal to the night
@@ -413,6 +436,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "wipe",
     numerals: "tabular",
     ornament: "square",
+    strength: "normal",
   },
   "humza-according-to-everyone": {
     scene: "chatter",
@@ -421,6 +445,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "slide",
     numerals: "plain",
     ornament: "quote",
+    strength: "normal",
   },
   "the-humza-archives": {
     scene: "polaroids",
@@ -429,6 +454,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "flip",
     numerals: "stamped",
     ornament: "section",
+    strength: "normal",
   },
   "21-november": {
     texture: "holo",
@@ -439,6 +465,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "drop",
     numerals: "outline",
     ornament: "star",
+    strength: "normal",
   },
 
   // Persona
@@ -451,6 +478,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "iris",
     numerals: "serif",
     ornament: "diamond",
+    strength: "normal",
   },
   "persona-2-innocent-birthday": {
     scene: "embers",
@@ -459,6 +487,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "wipe",
     numerals: "outline",
     ornament: "spark",
+    strength: "normal",
   },
   "persona-3-midnight-hour": {
     scene: "moon",
@@ -476,6 +505,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "zoom",
     numerals: "tabular",
     ornament: "heart",
+    strength: "normal",
   },
   "persona-4-golden-hour": {
     scene: "static",
@@ -493,6 +523,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "skew",
     numerals: "stamped",
     ornament: "star",
+    strength: "normal",
   },
   "the-velvet-room": {
     scene: "curtains",
@@ -501,6 +532,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "iris",
     numerals: "serif",
     ornament: "diamond",
+    strength: "normal",
   },
   "cafe-leblanc": {
     scene: "rain",
@@ -525,6 +557,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "blur",
     numerals: "serif",
     ornament: "diamond",
+    strength: "normal",
   },
   "final-fantasy-vii-mako": {
     scene: "streams",
@@ -533,6 +566,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "zoom",
     numerals: "segment",
     ornament: "triangle",
+    strength: "normal",
   },
   "pokemon-pallet-town": {
     scene: "grass",
@@ -541,6 +575,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "wipe",
     numerals: "tabular",
     ornament: "dot",
+    strength: "normal",
   },
   "pokemon-gengar-hours": {
     scene: "ghosts",
@@ -549,6 +584,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "blur",
     numerals: "outline",
     ornament: "cross",
+    strength: "normal",
   },
   "smash-final-destination": {
     scene: "stars",
@@ -557,6 +593,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "zoom",
     numerals: "outline",
     ornament: "plus",
+    strength: "normal",
   },
   "scarlet-nexus-brain-drive": {
     scene: "hexes",
@@ -567,6 +604,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "glitch",
     numerals: "segment",
     ornament: "slashes",
+    strength: "normal",
   },
   "gta-vi-vice-birthday": {
     marks: "alpha",
@@ -574,6 +612,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "wipe",
     numerals: "segment",
     ornament: "chevron",
+    strength: "normal",
   },
   "ps2-memory-card": {
     marks: "buttons",
@@ -581,6 +620,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "blur",
     numerals: "tabular",
     ornament: "square",
+    strength: "normal",
   },
 
   // Anime
@@ -602,6 +642,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "drop",
     numerals: "tabular",
     ornament: "plus",
+    strength: "normal",
   },
   "my-hero-academia-plus-ultra": {
     heading: "highlighter",
@@ -610,6 +651,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "skew",
     numerals: "outline",
     ornament: "plus",
+    strength: "normal",
   },
   "naruto-hidden-leaf": {
     type: "condensed",
@@ -621,6 +663,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "blur",
     numerals: "plain",
     ornament: "leaf",
+    strength: "normal",
   },
   "bunny-girl-senpai-after-school": {
     scene: "petals",
@@ -629,6 +672,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "fade",
     numerals: "serif",
     ornament: "spark",
+    strength: "normal",
   },
   "tsukigakirei-moonlit-walk": {
     type: "serif",
@@ -640,6 +684,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "blur",
     numerals: "serif",
     ornament: "moon",
+    strength: "normal",
   },
   "your-name-twilight-thread": {
     heading: "gradient",
@@ -650,6 +695,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "wipe",
     numerals: "plain",
     ornament: "wave",
+    strength: "normal",
   },
   "fullmetal-alchemist-equivalent-exchange": {
     scene: "circles",
@@ -658,6 +704,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "iris",
     numerals: "serif",
     ornament: "triangle",
+    strength: "normal",
   },
   "keijo-absolutely-necessary": {
     control: "pill-glass",
@@ -668,6 +715,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "skew",
     numerals: "stamped",
     ornament: "exclaim",
+    strength: "normal",
   },
 
   // Everyday
@@ -680,6 +728,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "slide",
     numerals: "stamped",
     ornament: "hash",
+    strength: "normal",
   },
   "tea-obviously": {
     scene: "steam",
@@ -689,6 +738,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "drop",
     numerals: "serif",
     ornament: "leaf",
+    strength: "normal",
   },
   "rum-and-coke": {
     marks: "alpha",
@@ -696,6 +746,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "slide",
     numerals: "tabular",
     ornament: "dot",
+    strength: "normal",
   },
   "usual-table-laptop-open": {
     scene: "windows",
@@ -706,6 +757,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "slide",
     numerals: "tabular",
     ornament: "prompt",
+    strength: "normal",
   },
 
   // Cars
@@ -715,6 +767,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "slide",
     numerals: "segment",
     ornament: "bolt",
+    strength: "normal",
   },
   "toyota-prius-plus": {
     scene: "clouds",
@@ -723,6 +776,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "fade",
     numerals: "tabular",
     ornament: "plus",
+    strength: "normal",
   },
 
   // School
@@ -732,6 +786,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "flip",
     numerals: "serif",
     ornament: "check",
+    strength: "normal",
   },
   "greenshaw-next-chapter": {
     scene: "chalk",
@@ -740,6 +795,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "wipe",
     numerals: "plain",
     ornament: "chevron",
+    strength: "normal",
   },
   "portsmouth-student-save-file": {
     scene: "pixels",
@@ -749,6 +805,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "shutter",
     numerals: "segment",
     ornament: "hash",
+    strength: "normal",
   },
 
   // Work
@@ -759,6 +816,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "slide",
     numerals: "stamped",
     ornament: "arrow",
+    strength: "normal",
   },
   "mchumza-birthday-meal": {
     type: "rounded",
@@ -767,6 +825,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "drop",
     numerals: "segment",
     ornament: "star",
+    strength: "normal",
   },
   "spoon-world-portsmouth-edition": {
     marks: "numeric",
@@ -774,6 +833,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "fade",
     numerals: "stamped",
     ornament: "dot",
+    strength: "normal",
   },
   "fratton-park-matchday-shift": {
     marks: "numeric",
@@ -781,6 +841,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "wipe",
     numerals: "segment",
     ornament: "dot",
+    strength: "normal",
   },
   "stamford-bridge-on-the-clock": {
     heading: "glow",
@@ -789,6 +850,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "slide",
     numerals: "tabular",
     ornament: "chevron",
+    strength: "normal",
   },
   "goodwood-all-access": {
     scene: "chequered",
@@ -797,6 +859,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "skew",
     numerals: "outline",
     ornament: "flag",
+    strength: "normal",
   },
   "queens-centre-court": {
     scene: "court",
@@ -807,6 +870,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "slide",
     numerals: "serif",
     ornament: "dot",
+    strength: "normal",
   },
   "twickenham-under-the-floodlights": {
     marks: "circled",
@@ -814,6 +878,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "zoom",
     numerals: "stamped",
     ornament: "cross",
+    strength: "normal",
   },
   "corestream-risk-accepted": {
     scene: "chart",
@@ -822,6 +887,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "wipe",
     numerals: "tabular",
     ornament: "arrow",
+    strength: "normal",
   },
   "501-fun-maximum-fun": {
     scene: "dartboard",
@@ -830,6 +896,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "zoom",
     numerals: "segment",
     ornament: "target",
+    strength: "normal",
   },
 
   // Musicians
@@ -839,6 +906,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "zoom",
     numerals: "outline",
     ornament: "arrow",
+    strength: "normal",
   },
   "bbno-birthday-budget": {
     heading: "highlighter",
@@ -849,6 +917,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "slide",
     numerals: "tabular",
     ornament: "dollar",
+    strength: "normal",
   },
   "yung-gravy-gravy-boat": {
     scene: "drips",
@@ -857,6 +926,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "blur",
     numerals: "serif",
     ornament: "wave",
+    strength: "normal",
   },
   "rick-astley-never-gonna-log-you-out": {
     scene: "vinyl",
@@ -865,6 +935,7 @@ const flavours: Record<ThemeId, ThemeFlavour> = {
     transition: "slide",
     numerals: "plain",
     ornament: "note",
+    strength: "normal",
   },
 };
 
@@ -876,11 +947,7 @@ export function identityFor(id: ThemeId): ThemeIdentity {
   if (cached) return cached;
   const skin = skinFor(id);
   const flavour = flavours[id];
-  const merged = { ...skin, ...deepSkinFor(skin), ...flavour };
-  const identity = {
-    ...merged,
-    strength: flavour.strength ?? "normal",
-  } as ThemeIdentity;
+  const identity = { ...skin, ...deepSkinFor(skin), ...flavour } as ThemeIdentity;
   resolved.set(id, identity);
   return identity;
 }
@@ -910,7 +977,7 @@ export const identityDimensions = [
 /** Kahoot-style shapes on the phone; the projector letters them A, B, C. */
 const classicShapes = ["▲", "◆", "●", "■", "★", "⬢"] as const;
 
-/** Text presentation, so a suit or die never turns into a colour emoji. */
+/** Text presentation, so a suit, die or circled Ⓜ never turns into a colour emoji. */
 const text = (symbol: string) => `${symbol}︎`;
 
 const markSets: Record<Exclude<MarkStyle, "classic">, readonly string[]> = {
@@ -935,7 +1002,7 @@ const markSets: Record<Exclude<MarkStyle, "classic">, readonly string[]> = {
     "XVI",
   ],
   numeric: Array.from({ length: 16 }, (_, index) => String(index + 1)),
-  circled: [..."ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅ"],
+  circled: [..."ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅ"].map(text),
   buttons: ["△", "○", "✕", "□"],
   suits: ["♠", "♥", "♦", "♣"].map(text),
   greek: [..."αβγδεζηθικλμνξοπ"],

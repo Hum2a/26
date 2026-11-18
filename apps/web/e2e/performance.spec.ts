@@ -12,10 +12,13 @@ test.beforeEach(async ({ page }) => {
 });
 
 for (const [path, heading, scriptBudget] of [
-  ["/", "A little older.", 700_000],
+  // / and /admin/login rose by 20kB on 18 November 2026 for theme identities:
+  // the 80 theme flavours load with the theme at start-up so a stored theme
+  // paints without a late swap (about 14kB minified, 2.4kB gzip).
+  ["/", "A little older.", 720_000],
   ["/join", "Join the room", 950_000],
   ["/host", "Projector setup", 850_000],
-  ["/admin/login", "Admin sign in", 710_000],
+  ["/admin/login", "Admin sign in", 730_000],
 ] as const) {
   test(`keeps ${path} within its cold script budget`, async ({ page }) => {
     const errors: string[] = [];

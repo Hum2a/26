@@ -230,6 +230,10 @@ html[data-strength="bold"] .deep-scene {
   overflow: visible;
   pointer-events: none;
 }
+/* Hidden, not removed, so the same burst never plays twice. */
+.celebration[data-muted] {
+  visibility: hidden;
+}
 .celebration[data-size="stage"] {
   --reach-scale: 3.2;
   --size-scale: 2.2;
@@ -323,7 +327,8 @@ html[data-celebrate="sparks"] .celebration i {
   background: var(--highlight);
   box-shadow: 0 0 8px var(--highlight);
   animation-name: celebrate-burst;
-  --spin: 0deg;
+  /* Sparks fly straight out. !important beats each piece's inline spin. */
+  --spin: 0deg !important;
 }
 html[data-celebrate="stars"] .celebration i {
   background: var(--highlight);

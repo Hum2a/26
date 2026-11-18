@@ -8,6 +8,7 @@ import {
   numeralStyles,
   optionMark,
   ornamentGlyphs,
+  sceneStrengths,
   themeIdsWithFlavour,
   transitions,
 } from "./identity";
@@ -24,6 +25,16 @@ import scenesCss from "./theme-scenes.css?raw";
 const minimumDifferences = 5;
 
 const ids = Object.keys(themes) as ThemeId[];
+
+/**
+ * True when a live rule for `selector` exists: outside a comment, followed
+ * (perhaps after more of a selector list) by a block with a declaration.
+ */
+function draws(css: string, selector: string): boolean {
+  const live = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`${escaped}[^{};]*\\{[^}]*:`).test(live);
+}
 
 describe("theme identities", () => {
   it("gives every theme an identity", () => {
@@ -47,22 +58,39 @@ describe("theme identities", () => {
     expect(close).toEqual([]);
   });
 
-  it("draws every scene, celebration, numeral style and ornament", () => {
+  it("draws every scene, celebration, numeral style, ornament and strength", () => {
     const sheets = [deepCss, scenesCss, identityCss].join("\n");
-    for (const scene of deepScenes.filter((value) => value !== "none")) {
-      expect(sheets, scene).toContain(`[data-scene="${scene}"]`);
-    }
-    for (const celebrate of celebrations) {
-      expect(sheets, celebrate).toContain(`[data-celebrate="${celebrate}"]`);
-    }
-    for (const style of numeralStyles.filter((value) => value !== "plain")) {
-      expect(sheets, style).toContain(`[data-numerals="${style}"]`);
-    }
-    for (const ornament of Object.keys(ornamentGlyphs).filter(
-      (value) => value !== "none",
-    )) {
-      expect(sheets, ornament).toContain(`[data-ornament="${ornament}"]`);
-    }
+    const expectDrawn = (attribute: string, values: readonly string[]) => {
+      for (const value of values) {
+        expect(draws(sheets, `[data-${attribute}="${value}"]`), value).toBe(true);
+      }
+    };
+    expectDrawn(
+      "scene",
+      deepScenes.filter((value) => value !== "none"),
+    );
+    expectDrawn("celebrate", celebrations);
+    expectDrawn(
+      "numerals",
+      numeralStyles.filter((value) => value !== "plain"),
+    );
+    expectDrawn(
+      "ornament",
+      Object.keys(ornamentGlyphs).filter((value) => value !== "none"),
+    );
+    expectDrawn(
+      "strength",
+      sceneStrengths.filter((value) => value !== "normal"),
+    );
+  });
+
+  it("does not count a rule that only survives in a comment", () => {
+    const selector = '[data-scene="moon"]';
+    expect(draws(`/* html${selector} .x { opacity: 1; } */`, selector)).toBe(false);
+    expect(draws(`html${selector} .x {}`, selector)).toBe(false);
+    expect(
+      draws(`html${selector} .x,\nhtml${selector} .y {\n  opacity: 1;\n}`, selector),
+    ).toBe(true);
   });
 
   it("uses every scene and new dimension value at least once", () => {
@@ -75,6 +103,8 @@ describe("theme identities", () => {
     expect(used("celebrate").size).toBe(celebrations.length);
     expect(used("transition").size).toBe(transitions.length);
     expect(used("numerals").size).toBe(numeralStyles.length);
+    expect(used("ornament").size).toBe(Object.keys(ornamentGlyphs).length);
+    expect(used("strength").size).toBe(sceneStrengths.length);
     const marks = used("marks");
     for (const style of markStyles) expect(marks.has(style), style).toBe(true);
   });

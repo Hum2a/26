@@ -7,7 +7,8 @@ import { usePrefersReducedMotion } from "./use-reduced-motion";
  * on the page. Pure CSS: eighteen
  * pieces, played once over about 1.6 seconds, then still. It never takes a
  * tap and is hidden from assistive technology. Reduced motion draws nothing.
- * Remount it (with a new key) to play it again.
+ * Remount it (with a new key) to play it again. `muted` hides it without
+ * remounting, so showing it again never replays the same burst.
  */
 const pieces = Array.from({ length: 18 }, (_, index) => ({
   "--i": index,
@@ -26,13 +27,20 @@ const pieces = Array.from({ length: 18 }, (_, index) => ({
 
 export const Celebration = memo(function Celebration({
   size = "phone",
+  muted = false,
 }: {
   size?: "phone" | "stage";
+  muted?: boolean;
 }) {
   const reduce = usePrefersReducedMotion();
   if (reduce) return null;
   return (
-    <span className="celebration" data-size={size} aria-hidden="true">
+    <span
+      className="celebration"
+      data-size={size}
+      data-muted={muted || undefined}
+      aria-hidden="true"
+    >
       {pieces.map((style, index) => (
         <i key={index} style={style} />
       ))}

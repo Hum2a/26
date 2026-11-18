@@ -9,7 +9,7 @@ import { NameCloud, NameReveal } from "../lobby/name-cloud";
 import { StagePlay } from "../play/stage-play";
 import { StageTrends } from "../play/trends";
 import { Celebration } from "../anim/Celebration";
-import { useThemeVoice } from "../theme/voices";
+import { defaultVoice, useThemeVoice } from "../theme/voices";
 import { PhaseTransition } from "../anim/PhaseTransition";
 import { kartRaceScene } from "../kart/race-scene";
 import { withClientApiKey } from "../api/client-key";
@@ -20,6 +20,9 @@ import { StageFullscreen } from "./fullscreen";
 import { StageCountdown } from "./Countdown";
 import { WaitingLine } from "./WaitingLine";
 import { AnimatePresence, motion } from "motion/react";
+
+/** What guests do with the code. Every theme keeps it; its own invite sits above. */
+const joinInstruction = defaultVoice.invite;
 
 /** Long enough that a Wi-Fi blip passes unremarked; short enough to act on. */
 const stageOfflineHintMs = 15_000;
@@ -80,9 +83,15 @@ export function StagePresentation({
         <div className="skin-ground" aria-hidden="true">
           <LiquidGround />
           <SkinMotif />
-          {/* The theme's burst, once per reveal, behind the question so it never covers it. */}
-          {connected && !hidden && snapshot.phase === "reveal" && snapshot.play ? (
-            <Celebration key={`:${snapshot.revealNonce}`} size="stage" />
+          {/* The theme's burst, once per reveal, behind the question so it never
+              covers it. Hiding the stage or a reconnect only mutes it: the key
+              changes with a new reveal alone, so the same reveal never replays. */}
+          {snapshot.phase === "reveal" && snapshot.play ? (
+            <Celebration
+              key={`:${snapshot.revealNonce}`}
+              size="stage"
+              muted={!connected || hidden}
+            />
           ) : null}
         </div>
         <main
@@ -131,7 +140,11 @@ export function StagePresentation({
           ) : lobby ? (
             <section className="projector-lobby" aria-label="In the lobby">
               <div className="projector-invitation">
-                <p>{voice.invite}</p>
+                {/* The instruction stays plain; the theme's line only sits beside it. */}
+                {voice.invite !== joinInstruction ? (
+                  <p className="projector-voice">{voice.invite}</p>
+                ) : null}
+                <p>{joinInstruction}</p>
                 <p className="projector-code">{snapshot.joinCode}</p>
                 <JoinMark code={snapshot.joinCode} />
                 <p>{snapshot.players.length} players in the room</p>

@@ -101,6 +101,12 @@
 .projector-invitation p {
   overflow-wrap: anywhere;
 }
+/* The theme's invite: flavour above the plain instruction, never instead of it. */
+.projector-invitation .projector-voice {
+  color: var(--accent);
+  font-family: var(--font-display, Georgia, serif);
+  font-weight: 800;
+}
 .projector-names {
   min-width: 0;
   display: grid;

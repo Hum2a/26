@@ -34,8 +34,11 @@ describe("theme voices", () => {
 
   it("never replaces the state words a guest relies on", () => {
     for (const id of ids) {
-      const { locked, waiting } = voices[id];
-      expect(`${locked} ${waiting}`, id).not.toMatch(/\bSending\b|\+\d+ points/);
+      // Won and missed sit right beside "+N points" and "No points this time".
+      const { locked, waiting, won, missed } = voices[id];
+      expect(`${locked} ${waiting} ${won} ${missed}`, id).not.toMatch(
+        /\bSending\b|\+\d+ points/,
+      );
     }
   });
 });

@@ -21,7 +21,9 @@ export function GuestMultiple({
 }) {
   const [draft, setDraft] = useState<string[]>([]);
   const motionKit = useDesignMotion();
-  // The projector's marks, so a ticked answer matches the big screen.
+  // The projector's marks, so a ticked answer matches the big screen. This
+  // grid has always lettered its tiles A, B, C, so "stage" keeps 26 basic's
+  // classic letters here; every other style is the same on both surfaces.
   const { marks } = useThemeIdentity();
   if (play.question.kind !== "choice") return null;
   const accepted =

@@ -1235,3 +1235,13 @@ html[data-scene="comets"] .deep-scene i:nth-child(-n + 8) {
     transform: translateX(-60vw);
   }
 }
+
+/* Pieces draw some scenes with their own ::before/::after (a clock hand, a
+   lantern flame). The shared rule in theme-deep.css stops the pieces and the
+   scene's own pseudo-elements; this stops the pieces' too. */
+@media (prefers-reduced-motion: reduce) {
+  .deep-scene *::before,
+  .deep-scene *::after {
+    animation: none !important;
+  }
+}
