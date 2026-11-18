@@ -22,7 +22,9 @@ describe("awardsPoints", () => {
     const polls = birthdayPack.catalogue.filter(
       (q) => q.kind === "choice" && q.outcome.kind === "poll",
     );
-    expect(polls.length).toBeGreaterThanOrEqual(5);
+    // Mock election and the trolley problem; the other trolley polls were
+    // retired from the catalogue on 16 November 2026.
+    expect(polls.length).toBeGreaterThanOrEqual(2);
     for (const poll of polls) expect(awardsPoints(poll)).toBe(false);
     const scored = birthdayPack.catalogue.filter(
       (q) => q.kind === "choice" && q.outcome.kind === "correct" && q.points > 0,

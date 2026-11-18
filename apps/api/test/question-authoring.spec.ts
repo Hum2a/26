@@ -428,7 +428,7 @@ describe("question authoring", () => {
     expect(JSON.stringify(view)).not.toContain("Jon Harvey");
   });
 
-  it("lets a poll list up to 16 options but keeps an ordinary choice at 6", () => {
+  it("lets a poll list up to 16 options but keeps an ordinary choice at 8", () => {
     const many = Array.from({ length: 16 }, (_, index) => ({
       id: `party-${index}`,
       label: `Party ${index}`,
@@ -444,6 +444,13 @@ describe("question authoring", () => {
       id: "crowded",
       title: "Crowded",
       prompt: "Pick one.",
+      options: many.slice(0, 9),
+      correctOption: { known: "party-0" },
+    });
+    const seven = choiceQuestion({
+      id: "seven",
+      title: "Seven",
+      prompt: "Pick one.",
       options: many.slice(0, 7),
       correctOption: { known: "party-0" },
     });
@@ -455,8 +462,8 @@ describe("question authoring", () => {
       options: [...many, { id: "party-16", label: "Party 16" }],
     });
     const pack = partyPack({
-      catalogue: [ballot, crowded, tooMany],
-      order: ["ballot", "crowded", "too-many"],
+      catalogue: [ballot, crowded, seven, tooMany],
+      order: ["ballot", "crowded", "seven", "too-many"],
     });
     const failing = validatePack(pack)
       .filter((item) => item.level === "error")

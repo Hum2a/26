@@ -48,6 +48,7 @@ import { dialLondonGeography } from "./dial-london-geography.ts";
 import { dialBritishPolitics } from "./dial-british-politics.ts";
 import { chessBattle } from "./chess-battle.ts";
 import { trumpMadeUpCountry } from "./trump-made-up-country.ts";
+import { esportsTag } from "./esports-tag.ts";
 
 /**
  * Working catalogue for Humza's questions.
@@ -159,6 +160,7 @@ export const birthdayPack: QuestionPack = {
     dialBritishPolitics,
     chessBattle,
     trumpMadeUpCountry,
+    esportsTag,
   ]),
 };
 
