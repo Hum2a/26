@@ -156,5 +156,4 @@ Regenerate Worker types after changing bindings:
 npm run cf-typegen
 ```
 
-
 aden was here

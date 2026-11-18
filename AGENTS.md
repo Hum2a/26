@@ -23,6 +23,10 @@ Every later prompt starts by reading this file.
 - Photos: Cloudflare R2
 - Tests: Vitest (unit + component via Testing Library + jsdom), @cloudflare/vitest-pool-workers (DO/Worker), Playwright (e2e), Node bot harness (load)
 
+## Kart timing decision (17 November 2026)
+
+The owner approved trusted device-recorded finish durations and local rollback prediction for new kart races (`device-v1`). This is the kart exception to server-only timers/finishes: the phone measures active elapsed time and sends ordered lap splits; the room still validates identity, membership, admission, settlement, ties and points, persists before acknowledging, and owns phases. Existing stored races keep server timing. See `docs/kart-rollback-plan.md`.
+
 ## Architecture rules
 
 - The server is authoritative. Clients send intents and render state. They never compute scores, timers or phase changes.
@@ -807,7 +811,7 @@ renderer.setAnimationLoop(() => {
 
 `useKartControls` may poll gamepads in rAF; it must cancel the frame on disable. Troll overlays that use rAF (`screen-trolls`) must stop on effect cleanup and on reduced motion.
 
-Clamp delta time so a backgrounded tab does not step 5s of physics on wake. The **room** still owns race time; the phone only interpolates public poses plus local self-prediction.
+Clamp delta time so a backgrounded tab does not step 5s of physics on wake. The **room** owns phases and scoring. In explicitly versioned `device-v1` kart races, the phone also records active finish duration using a monotonic clock, with bounded rollback of its own physics and checkpoint state. Existing races retain room timing. A one-off React update for the finish-submission beat is allowed; poses never use per-frame React state.
 
 ## Kart (Three.js)
 

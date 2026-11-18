@@ -1,3 +1,4 @@
+import { QuestionImage } from "./question-image";
 import { lazy, Suspense } from "react";
 // The race and its track geometry load when a kart round arrives, not on joining.
 const GuestKart = lazy(() =>
@@ -7,7 +8,12 @@ const GuestChess = lazy(() =>
   import("../chess/guest-chess").then((chess) => ({ default: chess.GuestChess })),
 );
 import { KartDriversProvider } from "../kart/KartDriversProvider";
-import type { KartInput, ChessMoveParams, ChessResignParams } from "@26/shared";
+import type {
+  KartFinish,
+  KartInput,
+  ChessMoveParams,
+  ChessResignParams,
+} from "@26/shared";
 import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
 import { QuestionOptionImage } from "./question-option-image";
 import { OptionText } from "./controls/OptionText";
@@ -40,6 +46,8 @@ export function GuestPlay({
   onBallot,
   onDuel,
   onKartInput,
+  onKartFinish,
+  kartFinishNotice,
   onKartRecover,
   onKartUseItem,
   kartItemPending,
@@ -58,6 +66,8 @@ export function GuestPlay({
   /** Sends one option at once, without a separate selection step. */
   onChoose?: (optionId: string) => void;
   onKartInput?: (input: KartInput) => void;
+  onKartFinish?: (report: KartFinish) => void;
+  kartFinishNotice?: string;
   onKartRecover?: (raceId: string) => void;
   onKartUseItem?: (raceId: string) => void;
   kartItemPending?: boolean;
@@ -95,6 +105,8 @@ export function GuestPlay({
               onUseItem={onKartUseItem}
               itemPending={kartItemPending}
               itemNotice={kartItemNotice}
+              onFinish={onKartFinish}
+              finishNotice={kartFinishNotice}
               onRecover={onKartRecover}
               recoveryPending={kartRecoveryPending}
               recoveryNotice={kartRecoveryNotice}
@@ -188,6 +200,7 @@ export function GuestPlay({
           </p>
         ) : null}
         <h1 className="phone-prompt">{play.question.prompt}</h1>
+        <QuestionImage question={play.question} />
         {play.question.instructions ? (
           <p className="text-base text-muted">{play.question.instructions}</p>
         ) : null}

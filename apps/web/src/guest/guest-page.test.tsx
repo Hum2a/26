@@ -185,7 +185,9 @@ it("shows Leave lobby in the You menu and returns to the join form", async () =>
   await waitFor(() => expect(leaveLobby).toHaveBeenCalled());
   expect(await screen.findByRole("heading", { name: "Join the room" })).toBeTruthy();
   expect(
-    await screen.findByText("You left the lobby. Enter a new join code when you are ready."),
+    await screen.findByText(
+      "You left the lobby. Enter a new join code when you are ready.",
+    ),
   ).toBeTruthy();
 }, 20_000);
 

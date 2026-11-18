@@ -103,6 +103,8 @@ export function GuestPage({
   const [avatarPending, setAvatarPending] = useState(false);
   // Bumped when the guest puts off the photo card, so the stored choice is read again.
   const [, setAvatarSkips] = useState(0);
+  const kartFinishRequest = useRef<string | null>(null);
+  const [kartFinishNotice, setKartFinishNotice] = useState("");
   const kartRecoveryRequest = useRef<string | null>(null);
   const [kartRecoveryPending, setKartRecoveryPending] = useState(false);
   const [kartRecoveryNotice, setKartRecoveryNotice] = useState("");
@@ -183,6 +185,8 @@ export function GuestPage({
       onSnapshot(next) {
         if (recoveryRace.current !== next.play?.kart?.raceId) {
           recoveryRace.current = next.play?.kart?.raceId;
+          kartFinishRequest.current = null;
+          setKartFinishNotice("");
           kartRecoveryRequest.current = null;
           kartItemRequest.current = null;
           setKartItemPending(false);
@@ -244,6 +248,15 @@ export function GuestPage({
         );
       },
       onAck(ack) {
+        if (ack.requestId === kartFinishRequest.current) {
+          kartFinishRequest.current = null;
+          setKartFinishNotice(
+            ack.accepted
+              ? "Finish saved — watch the stage"
+              : (ack.error ?? "Your finish could not be saved."),
+          );
+          return;
+        }
         if (ack.requestId === kartItemRequest.current) {
           kartItemRequest.current = null;
           setKartItemPending(false);
@@ -428,10 +441,12 @@ export function GuestPage({
     const codeToRedeem = transferCode.trim().toUpperCase();
     const payload = JSON.stringify([joinCode, codeToRedeem]);
     setBusy(true);
-    let redeemed: Awaited<ReturnType<typeof redeemTransfer>> | {
-      error: string;
-      uncertain: true;
-    };
+    let redeemed:
+      | Awaited<ReturnType<typeof redeemTransfer>>
+      | {
+          error: string;
+          uncertain: true;
+        };
     try {
       if (transferRequest.current?.payload !== payload)
         transferRequest.current = { payload, requestId: crypto.randomUUID() };
@@ -882,7 +897,7 @@ export function GuestPage({
                 void onLeaveLobby();
               }}
             >
-              Leave lobby
+              Join another room
             </Button>
           ) : null}
           <ReconnectBanner
@@ -953,6 +968,14 @@ export function GuestPage({
                   <GuestPlay
                     connected={connection === "open"}
                     onKartInput={(input) => socketRef.current?.submitKartInput(input)}
+                    onKartFinish={(report) => {
+                      const id = socketRef.current?.submitKartFinish?.(report);
+                      if (id) {
+                        kartFinishRequest.current = id;
+                        setKartFinishNotice("Finish recorded — saving your time…");
+                      }
+                    }}
+                    kartFinishNotice={kartFinishNotice}
                     onKartRecover={(raceId) => {
                       const requestId = socketRef.current?.submitKartRecovery?.(raceId);
                       if (requestId) {

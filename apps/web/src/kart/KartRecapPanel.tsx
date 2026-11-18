@@ -5,11 +5,13 @@ import "./recap.css";
 
 export function KartRecapPanel({
   recap,
+  timingMode,
   names = {},
   selfPlayerId,
   stage = false,
 }: {
   recap: KartRecap | undefined;
+  timingMode?: "device-v1";
   names?: Readonly<Record<string, string>>;
   selfPlayerId?: string;
   stage?: boolean;
@@ -53,6 +55,11 @@ export function KartRecapPanel({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
     >
+      <p>
+        {timingMode === "device-v1"
+          ? "Device-recorded finish times · CPU karts use room timing"
+          : "Room-recorded finish times"}
+      </p>
       <h3>{recap.reason === "racing" ? "Sector history" : "Race recap"}</h3>
       <p>
         {reason} · {recap.drivers.filter((row) => row.status === "FINISHED").length}{" "}

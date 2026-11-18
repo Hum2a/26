@@ -35,7 +35,9 @@ export function ChessAdminPage() {
               <li className="admin-data-row">Total games</li>
               <li className="admin-data-row">Games in progress</li>
               <li className="admin-data-row">Games finished</li>
-              <li className="admin-data-row">Results breakdown (wins, losses, draws, aborts)</li>
+              <li className="admin-data-row">
+                Results breakdown (wins, losses, draws, aborts)
+              </li>
             </ul>
           </div>
         </section>

@@ -108,6 +108,20 @@ export const previewQuestions: Record<BenchId, PublicQuestion> = {
       { id: "d", label: "Thou shalt not uncover the nakedness of thy brother's wife…" },
     ],
   },
+  "executive-order": {
+    ...core,
+    ...choice,
+    id: "trump-made-up-country",
+    presentation: "executive-order",
+    outcome: "multiple",
+    prompt: "Which of these countries has Trump made up?",
+    options: [
+      { id: "united-states-of-israel", label: "The United States of Israel" },
+      { id: "islamic-republic-of-japan", label: "The Islamic Republic of Japan" },
+      { id: "tel-aviva-la-vida", label: "Tel aviva la vida" },
+      { id: "baghdaddystan", label: "Baghdaddystan" },
+    ],
+  },
   "number-plate": {
     ...core,
     ...choice,
@@ -279,6 +293,15 @@ export function previewReveal(
         winners: [],
         everyone: false,
         met: null,
+      };
+    }
+    if (question.outcome === "multiple") {
+      // Stand-in: the first two options, never the real answer key.
+      return {
+        kind: "choice",
+        correctOptionId: null,
+        outcome: "multiple",
+        correctOptionIds: ids.slice(0, 2),
       };
     }
     if (question.outcome === "threshold") {

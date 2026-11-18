@@ -132,3 +132,22 @@ it("starts a kart-only lobby in one click from admin home", async () => {
   await screen.findByText("Kart lobby live");
   expect(vi.mocked(createLobby).mock.calls[0]?.[2]).toBe("kart");
 });
+
+it("passes a custom code when creating a lobby", async () => {
+  vi.mocked(createLobby).mockResolvedValue({
+    error: "That lobby code is already in use. Choose another.",
+  });
+  mount();
+  await screen.findByText("Your first room starts here.");
+  fireEvent.change(screen.getByRole("textbox", { name: "Custom lobby code" }), {
+    target: { value: "humza1" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Create a lobby" }));
+  await screen.findByText("That lobby code is already in use. Choose another.");
+  expect(createLobby).toHaveBeenCalledWith(
+    expect.any(String),
+    undefined,
+    undefined,
+    "HUMZA1",
+  );
+});

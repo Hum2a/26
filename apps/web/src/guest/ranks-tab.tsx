@@ -108,7 +108,8 @@ export function RanksTab({
       ? { questionId: play.question.id, points: play.selfAward }
       : null;
   const changed =
-    (nextStandings !== null && !standingsEqual(nextStandings, currentMemory.standings)) ||
+    (nextStandings !== null &&
+      !standingsEqual(nextStandings, currentMemory.standings)) ||
     (nextSelf !== null && !selfEqual(nextSelf, currentMemory.self)) ||
     (nextAward !== null && !awardEqual(nextAward, currentMemory.award));
   const nextMemory: Memory = changed

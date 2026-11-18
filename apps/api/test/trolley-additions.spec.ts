@@ -14,9 +14,7 @@ it.each([trolleyYourMum, trolleyMamdaniAfrica, trolleyFreddoMultiverse])(
   "$id is a ready, unscored trolley poll with a safe phone rehearsal",
   (authored) => {
     expect(authored.status).toBe("ready");
-    expect(birthdayPack.catalogue.filter((q) => q.id === authored.id)).toEqual([
-      authored,
-    ]);
+    expect(birthdayPack.catalogue.filter((q) => q.id === authored.id)).toEqual([]);
     const question = toPlayable(authored);
     if (question?.kind !== "choice") throw new Error("Ready choice required");
     expect(question.presentation).toBe("trolley-lever");
@@ -53,7 +51,7 @@ it.each([trolleyYourMum, trolleyMamdaniAfrica, trolleyFreddoMultiverse])(
     });
     for (const field of ["correctOption", "correctOptionId", "notes", "explanation"])
       expect(preview.question).not.toHaveProperty(field);
-    expect(birthdayPack.order).toContain(authored.id);
+    expect(birthdayPack.order).not.toContain(authored.id);
   },
 );
 

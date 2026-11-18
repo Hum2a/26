@@ -222,9 +222,9 @@ export default function KartCanvas({
         : race.trackId === "mario-circuit-v1"
           ? importedRoute
           : [
-            [-63, -63],
-            [63, 63],
-          ];
+              [-63, -63],
+              [63, 63],
+            ];
     const xs = route.map((point) => point[0]!);
     const zs = route.map((point) => point[1]!);
     const centreX = (Math.min(...xs) + Math.max(...xs)) / 2;
@@ -351,10 +351,10 @@ export default function KartCanvas({
         profile.tier !== "low",
         effects.current.preset
           ? {
-            preset: effects.current.preset,
-            paused: effects.current.paused,
-            tier: profile.tier,
-          }
+              preset: effects.current.preset,
+              paused: effects.current.paused,
+              tier: profile.tier,
+            }
           : undefined,
       );
       const stats = circuit.renderStats();
@@ -367,8 +367,8 @@ export default function KartCanvas({
       const pose = following.current ? circuit.pose(following.current) : undefined;
       const followedDriver = following.current
         ? displayRace.participants.find(
-          (driver) => driver.playerId === following.current,
-        )
+            (driver) => driver.playerId === following.current,
+          )
         : undefined;
       // Drawn position of the followed kart, for browser checks of responsiveness.
       renderer.domElement.dataset.followPose = pose

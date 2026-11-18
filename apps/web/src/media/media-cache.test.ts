@@ -65,9 +65,7 @@ describe("room media blob cache", () => {
     expect(await preloadMediaUrl(failing)).toBeNull();
     expect(getCachedMediaUrl(failing)).toBeNull();
 
-    const { result } = renderHook(() =>
-      useCachedMediaSrc(failing, { preload: false }),
-    );
+    const { result } = renderHook(() => useCachedMediaSrc(failing, { preload: false }));
     expect(result.current).toBe(failing);
   });
 
@@ -119,4 +117,3 @@ describe("room media blob cache", () => {
     });
   });
 });
-

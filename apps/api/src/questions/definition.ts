@@ -35,6 +35,8 @@ export type MediaRef = {
   kind: "image" | "audio";
   /** Set when the file is already in the repository. */
   asset?: string;
+  credit?: string;
+  creditUrl?: string;
   required: boolean;
 };
 
@@ -91,6 +93,7 @@ export type QuestionOption = { id: string; label: string; image?: string };
 
 export type ChoiceBody = {
   kind: "choice";
+  optionReveal?: "one-at-a-time";
   outcome: ChoiceOutcome;
   options: QuestionOption[];
   speedBonus: { maxPoints: number } | null;

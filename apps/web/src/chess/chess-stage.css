@@ -182,3 +182,111 @@
     transition-duration: 0.2s;
   }
 }
+
+/* Highlights: totals and named records */
+
+.chess-hall-highlights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+}
+
+.chess-hall-fact {
+  display: grid;
+  gap: 0.3rem;
+  align-content: center;
+  border: 2px solid color-mix(in srgb, var(--chess-gold) 55%, transparent);
+  border-radius: var(--radius-panel, 0.75rem);
+  background: color-mix(in srgb, var(--chess-ink) 70%, transparent);
+  color: var(--chess-ivory);
+  padding: 0.9rem 1.2rem;
+}
+
+.chess-hall-fact[data-record] {
+  border-color: var(--chess-gold);
+}
+
+.chess-hall-fact-value {
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--chess-gold);
+}
+
+.chess-hall-fact-label {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.chess-hall-fact-who {
+  font-size: 32px;
+  font-weight: 800;
+}
+
+/* Every board */
+
+.chess-hall-progress {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chess-hall-tile {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.6rem;
+  align-items: center;
+  border-radius: var(--radius-control, 0.6rem);
+  background: color-mix(in srgb, var(--chess-ivory) 10%, transparent);
+  padding: 0.5rem 0.7rem;
+  transition:
+    opacity 300ms ease,
+    background-color 300ms ease;
+}
+
+.chess-hall-tile[data-finished] {
+  opacity: 0.55;
+}
+
+.chess-hall-tile[data-low] {
+  background: color-mix(in srgb, var(--chess-check) 30%, transparent);
+}
+
+.chess-hall-tile-name {
+  overflow: hidden;
+  font-size: 22px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chess-hall-tile-meta {
+  grid-column: 1 / -1;
+  font-size: 18px;
+  opacity: 0.85;
+}
+
+.chess-hall-clock {
+  grid-column: 1 / -1;
+  height: 0.35rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--chess-ivory) 15%, transparent);
+}
+
+.chess-hall-clock > span {
+  display: block;
+  height: 100%;
+  background: var(--chess-gold);
+  transform-origin: left;
+}
+
+.chess-hall-tile[data-low] .chess-hall-clock > span {
+  background: var(--chess-check);
+}

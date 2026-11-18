@@ -6,6 +6,71 @@ import { payloadDigest } from "../src/room/digest.ts";
 import { answerDuplicateMessage, answerUnknownMessage } from "../src/room/limits.ts";
 
 describe("illustrative multiple choice", () => {
+  it("acknowledges durable answers before batching each phone’s own accepted view", async () => {
+    const created = await createRoom();
+    const stub = room(created.gameId);
+    await stub.startDemo({
+      ...control(created),
+      requestId: crypto.randomUUID(),
+      nowMs: Date.now(),
+    });
+    await untilPhase(stub, created, "collect");
+    const players = [];
+    for (const nickname of ["Batch A", "Batch B"]) {
+      const player = await stub.joinPlayer({
+        nickname,
+        requestId: crypto.randomUUID(),
+        now: new Date().toISOString(),
+      });
+      if (!player.ok) throw new Error(player.message);
+      players.push(player);
+    }
+    const sockets = [];
+    for (const player of players) {
+      const socket = await connect(stub, created.gameId, guestCookie(player));
+      await nextMatching(socket, (message) => message.kind === "snapshot");
+      sockets.push(socket);
+    }
+    try {
+      await Promise.all(
+        sockets.map(async (socket, index) => {
+          const optionId = index === 0 ? "circle" : "star";
+          const requestId = crypto.randomUUID();
+          let acknowledged = false;
+          const observe = () =>
+            nextMatching(socket, (message) => {
+              if (message.kind === "ack" && message.requestId === requestId) {
+                expect(message.accepted).toBe(true);
+                acknowledged = true;
+              }
+              const snapshot = message.snapshot as
+                { play?: { selfAnswer?: { optionId?: string } } } | undefined;
+              return (
+                message.kind === "snapshot" &&
+                snapshot?.play?.selfAnswer?.optionId === optionId
+              );
+            });
+          const view = observe();
+          const command = JSON.stringify({
+            kind: "command",
+            name: "answer",
+            requestId,
+            optionId,
+          });
+          socket.send(command);
+          await view;
+          expect(acknowledged).toBe(true);
+          acknowledged = false;
+          const replay = observe();
+          socket.send(command);
+          await replay;
+          expect(acknowledged).toBe(true);
+        }),
+      );
+    } finally {
+      for (const socket of sockets) socket.close();
+    }
+  });
   it("lets a guest arriving at reveal play the next question, including reconnecting through a pause", async () => {
     const created = await createRoom();
     const stub = room(created.gameId);

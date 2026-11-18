@@ -1,5 +1,10 @@
 import {
   createDrivingBody,
+  advanceKartLap,
+  parkRoute,
+  type KartInput,
+  type KartFinish,
+  type KartRollback,
   indexWalls,
   kartTrackId,
   ringCourse,
@@ -23,11 +28,13 @@ import {
 } from "@26/shared";
 import {
   importedSurfaceAt,
+  importedTrackProgress,
+  importedLapLength,
   nearbyImportedWalls,
 } from "../../../../packages/shared/src/kart/kart-track";
 
 /**
- * Cosmetic prediction of this phone's own kart.
+ * Legacy cosmetic prediction. Device-v1 races use the exact rollback path below.
  *
  * The room stays authoritative: it alone decides gates, finishes, items and
  * points. This only changes where the phone draws its own kart, so steering and
@@ -127,7 +134,7 @@ const wrap = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
 
 export type SelfPrediction = ReturnType<typeof createSelfPrediction>;
 
-export function createSelfPrediction() {
+function createLegacyPrediction() {
   let maxSpanMs = standardSpanMs;
   let correctionRate = standardCorrectionRate;
   let inputs: Sample[] = [];
@@ -294,5 +301,249 @@ export function createSelfPrediction() {
     },
 
     reset,
+  };
+}
+
+/** A bounded replay of this kart only. Rendering offsets never feed back into physics. */
+function createRollbackPrediction() {
+  type Sample = { at: number; input: DrivingInput; sequence?: number };
+  let race: KartRaceView | undefined;
+  let env: Environment | undefined;
+  let body: DrivingBody | undefined;
+  let lap: KartRollback["lap"] | undefined;
+  let revision = -1,
+    recovery = -1,
+    simulatedAt = 0;
+  let clock = { at: 0, elapsed: 0 },
+    active = false,
+    initialised = false,
+    needsAnchor = true;
+  let samples: Sample[] = [];
+  let control: DrivingInput = neutral;
+  let finished: KartFinish | undefined;
+  let error = { x: 0, z: 0, heading: 0 };
+  let lastDraw = 0;
+  const elapsed = (now: number) =>
+    clock.elapsed + (active ? Math.max(0, now - clock.at) : 0);
+  function reset() {
+    race = undefined;
+    body = undefined;
+    lap = undefined;
+    revision = -1;
+    recovery = -1;
+    samples = [];
+    finished = undefined;
+    initialised = false;
+    error = { x: 0, z: 0, heading: 0 };
+  }
+  function advance(to: number) {
+    if (!body || !env || !race || !lap || finished || !active) return;
+    to = Math.min(to, race.timeLimitMs);
+    // Tab suspension must never cause thousands of physics steps on resumption.
+    if (to - simulatedAt > historyMs) {
+      simulatedAt = to;
+      return;
+    }
+    while (simulatedAt + stepMs <= to && !finished) {
+      for (const sample of samples)
+        if (sample.at <= simulatedAt) control = sample.input;
+      const speed = Math.hypot(body.vx, body.vz);
+      body = stepDriving(
+        { ...body, courseMs: simulatedAt },
+        control,
+        stepMs,
+        env.profile,
+        env.walls(body.x, body.z, env.profile.radius + speed * 0.02),
+        env.offRoad(body.x, body.z) ||
+          (race.powers?.effects.some(
+            (e) =>
+              e.playerId === race!.selfPlayerId &&
+              race!.elapsedMs + e.slowedMs > simulatedAt,
+          ) ??
+            false),
+        true,
+        env.features,
+        env.handling,
+      );
+      simulatedAt += stepMs;
+      const park = race.trackId === parkTrackId;
+      const ring = race.trackId === kartTrackId;
+      const projection = ring
+        ? undefined
+        : park
+          ? parkRoute.progress(body.x, body.z)
+          : importedTrackProgress(body.x, body.z);
+      const length = ring
+        ? Math.PI * 2
+        : park
+          ? parkRoute.lapLength
+          : importedLapLength;
+      const next = advanceKartLap(lap, {
+        along: projection?.along ?? Math.atan2(body.z, body.x),
+        lapLength: length,
+        speed: Math.hypot(body.vx, body.vz),
+        stepMs,
+        ...(projection ? { routeDistance: projection.distance } : {}),
+      });
+      lap = {
+        ...lap,
+        angle: next.angle,
+        distance: next.distance,
+        checkpoint: next.checkpoint,
+      };
+      if (next.finished) {
+        const time = Math.max(1, Math.round(simulatedAt));
+        const splits: number[] = [...lap.splits, time];
+        if (lap.done + 1 >= (race.laps ?? 1))
+          finished = { raceId: race.raceId, elapsedMs: time, lapsMs: splits };
+        else
+          lap = {
+            ...lap,
+            done: lap.done + 1,
+            splits,
+            checkpoint: 0,
+            distance: next.distance - length,
+          };
+      }
+    }
+  }
+  return {
+    reset,
+    running(value: boolean, now: number) {
+      if (active === value) return;
+      if (initialised) {
+        advance(elapsed(now));
+        clock = { elapsed: elapsed(now), at: now };
+      }
+      active = value;
+      if (value) needsAnchor = true;
+    },
+    input(value: DrivingInput, now: number, sequence?: number) {
+      const at = initialised ? elapsed(now) : 0;
+      samples.push({ at, input: { ...value }, sequence });
+      // At most 300 controls, even if a noisy controller fires faster than the wire.
+      samples = samples.filter((s) => s.at >= at - historyMs).slice(-300);
+    },
+    server(next: KartRaceView, now: number, roundTripMs: number) {
+      if (race?.raceId !== next.raceId) reset();
+      if (!next.rollback || next.ended) {
+        body = undefined;
+        return;
+      }
+      if (next.rollback.revision <= revision) return;
+      const seed = next.rollback;
+      if (!initialised) {
+        clock = {
+          elapsed:
+            next.elapsedMs + (active ? Math.max(0, Math.min(500, roundTripMs / 2)) : 0),
+          at: now,
+        };
+        initialised = true;
+      }
+      if (!active) clock = { elapsed: next.elapsedMs, at: now };
+      else if (needsAnchor || next.elapsedMs > elapsed(now)) {
+        clock = { elapsed: Math.max(elapsed(now), next.elapsedMs), at: now };
+        needsAnchor = false;
+      }
+      const to = elapsed(now);
+      const recovered = recovery !== -1 && recovery !== seed.recovery;
+      if (!recovered) advance(to);
+      const shown = body
+        ? {
+            x: body.x + error.x,
+            z: body.z + error.z,
+            heading: body.heading + error.heading,
+          }
+        : undefined;
+      race = next;
+      env = environment(next);
+      revision = seed.revision;
+      if (finished) return;
+      if (recovered) samples = [];
+      recovery = seed.recovery;
+      // A very delayed checkpoint cannot erase driving outside retained history.
+      if (body && to - next.elapsedMs > historyMs && !recovered) return;
+      samples = samples.filter((s) =>
+        s.sequence !== undefined
+          ? s.sequence > seed.appliedSequence
+          : s.at > next.elapsedMs,
+      );
+      body = { ...seed.body, featureCooldowns: { ...seed.body.featureCooldowns } };
+      lap = { ...seed.lap, splits: [...seed.lap.splits] };
+      control = seed.input;
+      simulatedAt = next.elapsedMs;
+      advance(to);
+      if (
+        shown &&
+        !recovered &&
+        Math.hypot(shown.x - body.x, shown.z - body.z) <= snapDistance
+      )
+        error = {
+          x: shown.x - body.x,
+          z: shown.z - body.z,
+          heading: wrap(shown.heading - body.heading),
+        };
+      else error = { x: 0, z: 0, heading: 0 };
+      lastDraw = now;
+    },
+    finish: () => finished,
+    pose(now: number): PredictedPose | undefined {
+      advance(elapsed(now));
+      if (!body) return undefined;
+      const fade = Math.exp((-12 * Math.max(0, now - lastDraw)) / 1000);
+      error = { x: error.x * fade, z: error.z * fade, heading: error.heading * fade };
+      lastDraw = now;
+      return {
+        x: body.x + error.x,
+        z: body.z + error.z,
+        heading: body.heading + error.heading,
+        speed: body.vx * Math.cos(body.heading) + body.vz * Math.sin(body.heading),
+        turnRate: Math.max(-10, Math.min(10, body.turn)),
+        height: Math.max(0, body.height ?? 0),
+      };
+    },
+  };
+}
+
+export function createSelfPrediction() {
+  const legacy = createLegacyPrediction(),
+    rollback = createRollbackPrediction();
+  let device = false;
+  const listeners = new Set<(pose: PredictedPose) => void>();
+  return {
+    configure: legacy.configure,
+    input(value: DrivingInput, now: number) {
+      legacy.input(value, now);
+      rollback.input(value, now);
+    },
+    published(value: KartInput, now: number) {
+      rollback.input(value, now, value.sequence);
+    },
+    running(value: boolean, now: number) {
+      rollback.running(value, now);
+    },
+    server(race: KartRaceView, now: number, rtt: number) {
+      device = race.timingMode === "device-v1";
+      if (device) rollback.server(race, now, rtt);
+      else legacy.server(race, now, rtt);
+    },
+    subscribe(listener: (pose: PredictedPose) => void) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    pose(now: number) {
+      const pose = device ? rollback.pose(now) : legacy.pose(now);
+      if (pose) for (const listener of listeners) listener(pose);
+      return pose;
+    },
+    finish() {
+      return device ? rollback.finish() : undefined;
+    },
+    reset() {
+      legacy.reset();
+      rollback.reset();
+    },
   };
 }

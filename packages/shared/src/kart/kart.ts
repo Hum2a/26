@@ -1,3 +1,4 @@
+import { kartFinishSchema } from "./kart-rollback-schema.ts";
 import { type KartSettings, type KartSettingHistory } from "./kart-settings.ts";
 import {
   parkTrackId,
@@ -155,6 +156,8 @@ type Driver = Omit<
   launch?: "perfect" | "good" | "late";
 };
 export type KartRace = {
+  timingMode?: "device-v1";
+  checkpointRevision?: number;
   raceId: string;
   elapsedMs: number;
   ended: boolean;
@@ -690,11 +693,12 @@ export function reduceKartTimeline(
   return settleRace(next);
 }
 
-/** Pure server reducer: phones supply controls, never positions, times or points. */
+/** Room reducer. Device timing is an explicit opt-in; points remain room-owned. */
 export function reduceKart(
   race: KartRace,
   event:
     | { type: "input"; playerId: string; value: KartInput }
+    | { type: "device-finish"; playerId: string; elapsedMs: number; lapsMs: number[] }
     | { type: "tick"; elapsedMs: number }
     | { type: "release" }
     | { type: "recover"; playerId: string }
@@ -706,6 +710,33 @@ export function reduceKart(
   if (race.ended && event.type !== "clear-items" && event.type !== "items-spawning")
     return race;
   if (event.type === "tick") return reduceKartTimeline(race, [], event.elapsedMs);
+  if (event.type === "device-finish") {
+    const report = kartFinishSchema.safeParse({
+      raceId: race.raceId,
+      elapsedMs: event.elapsedMs,
+      lapsMs: event.lapsMs,
+    });
+    const driver = race.drivers.find((d) => d.playerId === event.playerId);
+    if (
+      race.timingMode !== "device-v1" ||
+      !report.success ||
+      !driver ||
+      driver.cpu ||
+      driver.status !== "RACING" ||
+      event.elapsedMs > (race.timeLimitMs ?? kartLimitMs) ||
+      event.lapsMs.length !== (race.laps ?? 1)
+    )
+      return race;
+    const next = copyRace(race);
+    const finished = next.drivers.find((d) => d.playerId === event.playerId)!;
+    finished.status = "FINISHED";
+    finished.lapTimeMs = event.elapsedMs;
+    finished.lapTimes = [...event.lapsMs];
+    finished.progress = 1;
+    finished.checkpoint = 8;
+    finished.speed = 0;
+    return settleRace(next);
+  }
   const next = copyRace(race);
   if (event.type === "end") return settleRace(next, true);
   if (event.type === "items-spawning" || event.type === "clear-items") {
@@ -1134,7 +1165,7 @@ function stepDriver(
       checkpoint: 0,
       progress: d.progress,
     };
-  } else if (lap.finished) {
+  } else if (lap.finished && !(race?.timingMode === "device-v1" && !d.cpu)) {
     d.status = "FINISHED";
     // The finish time is the whole race.
     d.lapTimeMs = elapsed;
@@ -1215,6 +1246,7 @@ export function projectKartRace(
       : originalFinish;
   return kartRaceSchema.parse({
     raceId: race.raceId,
+    timingMode: race.timingMode,
     courseEnabled: race.courseEnabled ?? false,
     ...(race.opponentsEnabled ? { opponentsEnabled: true } : {}),
     ...(race.settings && Object.keys(race.settings).length > 0

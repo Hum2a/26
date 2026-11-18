@@ -22,6 +22,7 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
   const [next, setNext] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
   const [notice, setNotice] = useState("");
   const [current, setCurrent] = useState<LobbySnapshot | null>(null);
   const [reload, setReload] = useState(0);
@@ -68,7 +69,12 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
     setBusy(true);
     createId.current ??= crypto.randomUUID();
     try {
-      const result = await createLobby(createId.current);
+      const result = await createLobby(
+        createId.current,
+        undefined,
+        undefined,
+        joinCode.trim().toUpperCase() || undefined,
+      );
       if ("error" in result) {
         setNotice(result.error);
         return;
@@ -119,6 +125,20 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
           ? "See the selected room, open a lobby, or jump into tonight’s controls. Creating or switching rooms selects one room for this browser, including its stage."
           : "Every saved lobby, newest first. Opening a room selects it for this browser, including its stage."}
       </p>
+      <label>
+        Custom lobby code (optional){" "}
+        <input
+          aria-label="Custom lobby code"
+          value={joinCode}
+          disabled={busy}
+          maxLength={6}
+          placeholder="Random if blank"
+          onChange={(event) => {
+            setJoinCode(event.target.value.toUpperCase());
+            createId.current = undefined;
+          }}
+        />
+      </label>
       <EntryNotice message={loading ? "Finding your rooms…" : notice} />
       {notice ? (
         <LinkButton variant="secondary" to="/admin/login?returnTo=%2Fadmin%2Frooms">
@@ -157,7 +177,9 @@ export function RoomsPage({ overview = false }: { overview?: boolean }) {
             </div>
           </dl>
           <div className="admin-actions">
-            <LinkButton to={`/admin/rooms/${current.gameId}`}>Return to room</LinkButton>
+            <LinkButton to={`/admin/rooms/${current.gameId}`}>
+              Return to room
+            </LinkButton>
             <LinkButton variant="secondary" to={`/admin/rooms/${current.gameId}/live`}>
               Live controls
             </LinkButton>
@@ -358,10 +380,7 @@ export function RoomOverview() {
                 : "Your room, live."}
           </h1>
         </div>
-        <span
-          className="admin-badge"
-          data-tone={connection === "open" ? "ok" : "warn"}
-        >
+        <span className="admin-badge" data-tone={connection === "open" ? "ok" : "warn"}>
           <span
             className="admin-status-dot"
             data-tone={connection === "open" ? "ok" : "warn"}

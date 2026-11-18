@@ -176,9 +176,7 @@ export function retargetGeneratedWorkerConfig(
   }>(wranglerText);
   const envConfig = parsed.env?.[environment];
   if (!envConfig) {
-    throw new Error(
-      `apps/api/wrangler.jsonc has no env.${environment} configuration.`,
-    );
+    throw new Error(`apps/api/wrangler.jsonc has no env.${environment} configuration.`);
   }
   const next: GeneratedWorkerConfig = { ...config };
   for (const sibling of Object.values(parsed.env ?? {})) {

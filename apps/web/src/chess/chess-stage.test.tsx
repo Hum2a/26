@@ -64,3 +64,35 @@ it("shows the hall: totals, the points table and recent finishes, never a board"
   expect(view.container.querySelector(".chess-square")).toBeNull();
   expect(screen.queryByRole("region", { name: "Boards" })).toBeNull();
 });
+
+it("shows highlights and every board's progress when the room sends them", () => {
+  render(
+    <ChessStage
+      snapshot={{
+        ...snapshot,
+        highlights: {
+          roomCaptured: 17,
+          queensTaken: 1,
+          timeWins: 2,
+          movesPlayed: 48,
+          longestGame: { playerId: bilal, nickname: "Bilal", value: 31 },
+          fastestWin: { playerId: amina, nickname: "Amina", value: 34_000 },
+          biggestHaul: { playerId: amina, nickname: "Amina", value: 12 },
+        },
+        standings: snapshot.standings.map((row, index) => ({
+          ...row,
+          moves: 10 + index,
+          timeLeftMs: index === 0 ? 30_000 : 4_000,
+        })),
+      }}
+    />,
+  );
+  const highlights = screen.getByRole("region", { name: "Highlights" });
+  expect(highlights.textContent).toContain("Queens taken");
+  expect(highlights.textContent).toContain("Amina · 34s");
+  expect(highlights.textContent).toContain("Bilal · 31 moves");
+  const boards = screen.getByRole("region", { name: "Every board" });
+  const tiles = within(boards).getAllByRole("listitem");
+  expect(tiles[1]!.textContent).toContain("11 moves");
+  expect(tiles[1]!.getAttribute("data-low")).toBe("true");
+});

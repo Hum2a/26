@@ -9,6 +9,8 @@ import {
   chessCapturedPoints,
   chessRoundScore,
   type ChessGuestSnapshot,
+  type ChessHallEvent,
+  type ChessHighlights,
   type ChessStageSnapshot,
   type ChessControlSnapshot,
   type ChessMoveCommand,
@@ -484,34 +486,53 @@ export function projectStageSnapshot(
     else if (game.status === "aborted") results.aborts++;
   }
 
+  // Parse each game's PGN once per projection; 80 boards share this pass.
+  const scored = new Map(
+    games.map((game) => {
+      const pieces = capturedPiecesFromPgn(game.pgn);
+      const capturedPoints = chessCapturedPoints(pieces);
+      return [
+        game.playerId,
+        {
+          pieces,
+          capturedPoints,
+          score: chessRoundScore({
+            capturedPoints,
+            status: game.status,
+            winner: game.winner,
+          }),
+        },
+      ] as const;
+    }),
+  );
+  const nickname = (playerId: string) => nicknameMap.get(playerId) ?? "Guest";
+  const scoreOf = (playerId: string) =>
+    scored.get(playerId) ?? { pieces: [], capturedPoints: 0, score: 0 };
+
   // Recent terminal events (last 10)
   const recentEvents = games
     .filter((g) => g.terminatedAt !== undefined)
     .sort((a, b) => (b.terminatedAt ?? 0) - (a.terminatedAt ?? 0))
     .slice(0, 10)
-    .map((g) => {
-      const scoring = chessScoreView(g);
-      return {
-        playerId: g.playerId,
-        nickname: nicknameMap.get(g.playerId) ?? "Guest",
-        event: determineEvent(g),
-        timestamp: g.terminatedAt!,
-        capturedPoints: scoring.capturedPoints,
-        score: scoring.score,
-      };
-    });
+    .map((g) => ({
+      playerId: g.playerId,
+      nickname: nickname(g.playerId),
+      event: determineEvent(g),
+      timestamp: g.terminatedAt!,
+      capturedPoints: scoreOf(g.playerId).capturedPoints,
+      score: scoreOf(g.playerId).score,
+    }));
 
   const standings = games
-    .map((g) => {
-      const scoring = chessScoreView(g);
-      return {
-        playerId: g.playerId,
-        nickname: nicknameMap.get(g.playerId) ?? "Guest",
-        capturedPoints: scoring.capturedPoints,
-        score: scoring.score,
-        finished: g.status !== "in-progress" && g.status !== "waiting",
-      };
-    })
+    .map((g) => ({
+      playerId: g.playerId,
+      nickname: nickname(g.playerId),
+      capturedPoints: scoreOf(g.playerId).capturedPoints,
+      score: scoreOf(g.playerId).score,
+      finished: g.status !== "in-progress" && g.status !== "waiting",
+      moves: guestMoves(g),
+      timeLeftMs: g.playerTimeMs,
+    }))
     .sort((a, b) => b.score - a.score || b.capturedPoints - a.capturedPoints);
 
   return {
@@ -519,8 +540,70 @@ export function projectStageSnapshot(
     inProgress: state.gamesInProgress,
     finished: state.gamesFinished,
     results,
+    highlights: chessHighlights(state, games, scoreOf, nickname),
     recentEvents,
     standings,
+  };
+}
+
+/** Moves the guest (White) has made: White moves on odd plies. */
+function guestMoves(game: Pick<ChessPlayerGame, "plyCount">): number {
+  return Math.ceil(game.plyCount / 2);
+}
+
+function chessHighlights(
+  state: ChessRoundState,
+  games: readonly ChessPlayerGame[],
+  scoreOf: (playerId: string) => { pieces: string[]; capturedPoints: number },
+  nickname: (playerId: string) => string,
+): ChessHighlights {
+  let roomCaptured = 0;
+  let queensTaken = 0;
+  let timeWins = 0;
+  let movesPlayed = 0;
+  let longestGame: ChessHighlights["longestGame"] = null;
+  let fastestWin: ChessHighlights["fastestWin"] = null;
+  let biggestHaul: ChessHighlights["biggestHaul"] = null;
+  for (const game of games) {
+    const { pieces, capturedPoints } = scoreOf(game.playerId);
+    const moves = guestMoves(game);
+    roomCaptured += capturedPoints;
+    queensTaken += pieces.filter((piece) => piece.toLowerCase() === "q").length;
+    movesPlayed += moves;
+    if (game.status === "timeout" && game.winner === "player") timeWins++;
+    if (moves > 0 && (!longestGame || moves > longestGame.value)) {
+      longestGame = {
+        playerId: game.playerId,
+        nickname: nickname(game.playerId),
+        value: moves,
+      };
+    }
+    if (capturedPoints > 0 && (!biggestHaul || capturedPoints > biggestHaul.value)) {
+      biggestHaul = {
+        playerId: game.playerId,
+        nickname: nickname(game.playerId),
+        value: capturedPoints,
+      };
+    }
+    if (game.winner === "player" && game.terminatedAt !== undefined) {
+      const took = Math.max(0, game.terminatedAt - state.startedAt);
+      if (!fastestWin || took < fastestWin.value) {
+        fastestWin = {
+          playerId: game.playerId,
+          nickname: nickname(game.playerId),
+          value: took,
+        };
+      }
+    }
+  }
+  return {
+    roomCaptured,
+    queensTaken,
+    timeWins,
+    movesPlayed,
+    longestGame,
+    fastestWin,
+    biggestHaul,
   };
 }
 
@@ -554,11 +637,10 @@ export function projectControlSnapshot(
   };
 }
 
-function determineEvent(
-  game: ChessPlayerGame,
-): "checkmate-win" | "checkmate-loss" | "draw" | "timeout" | "resign" | "abort" {
+function determineEvent(game: ChessPlayerGame): ChessHallEvent {
   if (game.status === "aborted") return "abort";
   if (game.status === "resignation") return "resign";
+  if (game.status === "timeout" && game.winner === "player") return "timeout-win";
   if (game.status === "timeout" || game.status === "timeout-draw") return "timeout";
   if (game.status === "checkmate") {
     return game.winner === "player" ? "checkmate-win" : "checkmate-loss";
@@ -588,11 +670,15 @@ export function updateRoundAggregates(state: ChessRoundState): ChessRoundState {
  * Black (bot) material captured by White, from the server-validated PGN.
  */
 export function capturedBlackMaterial(pgn: string): number {
+  return chessCapturedPoints(capturedPiecesFromPgn(pgn));
+}
+
+function capturedPiecesFromPgn(pgn: string): string[] {
   const chess = new Chess();
   if (pgn) {
     chess.loadPgn(pgn);
   }
-  return chessCapturedPoints(capturedBlackPieces(chess.history({ verbose: true })));
+  return capturedBlackPieces(chess.history({ verbose: true }));
 }
 
 export function chessScoreView(

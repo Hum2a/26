@@ -119,6 +119,19 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     }
     const body = await readJson(c.req.raw);
     const requestId = readRequestId(body);
+    const rawCode = field(body, "joinCode");
+    const customCode =
+      rawCode === undefined
+        ? undefined
+        : joinCodeSchema.safeParse(
+            typeof rawCode === "string" ? rawCode.trim().toUpperCase() : rawCode,
+          );
+    if (customCode && !customCode.success)
+      return roomFailure(
+        400,
+        "invalid",
+        "Use exactly six letters or numbers for the lobby code.",
+      );
     const rehearsalValue = field(body, "rehearsal");
     const kind = field(body, "kind") ?? "party";
     if (
@@ -142,8 +155,10 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     const created = await codes(c.env).createLobby({
       requestId,
       kind,
+      ...(customCode?.success ? { joinCode: customCode.data } : {}),
       digest: await payloadDigest({
         action: "create",
+        ...(customCode?.success ? { joinCode: customCode.data } : {}),
         ...(kind === "kart" ? { kind } : {}),
         ...(rehearsal?.success ? { rehearsal: JSON.stringify(rehearsal.data) } : {}),
       }),

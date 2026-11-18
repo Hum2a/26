@@ -25,6 +25,7 @@ export async function createLobby(
   requestId: string,
   rehearsal?: RehearsalConfig,
   kind?: "kart",
+  joinCode?: string,
 ): Promise<LobbyCreated | { error: string }> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 30_000);
@@ -37,6 +38,7 @@ export async function createLobby(
         requestId,
         ...(rehearsal ? { rehearsal } : {}),
         ...(kind ? { kind } : {}),
+        ...(joinCode ? { joinCode } : {}),
       }),
       signal: controller.signal,
     });

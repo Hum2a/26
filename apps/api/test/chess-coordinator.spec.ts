@@ -7,6 +7,7 @@ import {
   calculateChessScore,
   projectGuestSnapshot,
   updateRoundAggregates,
+  projectStageSnapshot,
 } from "../src/questions/chess/chess-coordinator.ts";
 
 describe("Chess Coordinator", () => {
@@ -325,14 +326,14 @@ describe("Chess Coordinator", () => {
   });
 
   describe("calculateChessScore", () => {
-    it("does not award points for a win with nothing captured", () => {
+    it("awards only the time-win bonus for a win on time with nothing captured", () => {
       const state = initializeChessRound(roundId, [playerId], now);
       const game = {
         ...state.games[playerId],
         winner: "player" as const,
         status: "timeout" as const,
       };
-      expect(calculateChessScore(game)).toBe(0);
+      expect(calculateChessScore(game)).toBe(15);
     });
 
     it("does not award draw points with nothing captured", () => {
@@ -414,6 +415,47 @@ describe("Chess Coordinator", () => {
       expect(updated.allGamesComplete).toBe(true);
       expect(updated.gamesInProgress).toBe(0);
       expect(updated.gamesFinished).toBe(2);
+    });
+  });
+
+  describe("projectStageSnapshot highlights", () => {
+    it("adds room totals, named records and per-board progress for the big screen", () => {
+      const state = initializeChessRound(roundId, [playerId, "player2"], now);
+      const winner = {
+        ...state.games[playerId],
+        pgn: "1. e4 d5 2. exd5",
+        plyCount: 3,
+        playerTimeMs: 21_000,
+        status: "timeout" as const,
+        winner: "player" as const,
+        terminatedAt: state.startedAt + 20_000,
+      };
+      const projected = projectStageSnapshot(
+        updateRoundAggregates({
+          ...state,
+          games: { ...state.games, [playerId]: winner },
+        }),
+        new Map([
+          [playerId, "Amina"],
+          ["player2", "Bilal"],
+        ]),
+      );
+      expect(projected.highlights).toEqual({
+        roomCaptured: 1,
+        queensTaken: 0,
+        timeWins: 1,
+        movesPlayed: 2,
+        longestGame: { playerId, nickname: "Amina", value: 2 },
+        fastestWin: { playerId, nickname: "Amina", value: 20_000 },
+        biggestHaul: { playerId, nickname: "Amina", value: 1 },
+      });
+      expect(projected.recentEvents[0]).toMatchObject({
+        event: "timeout-win",
+        score: 16,
+      });
+      const amina = projected.standings.find((row) => row.playerId === playerId);
+      expect(amina).toMatchObject({ moves: 2, timeLeftMs: 21_000, score: 16 });
+      expect(JSON.stringify(projected)).not.toContain("fen");
     });
   });
 });

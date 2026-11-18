@@ -1,5 +1,5 @@
-/** Unambiguous room alphabet. O, 0, I, and 1 are left out. */
-export const roomAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+/** Hosts may choose any six letters or digits; generated codes stay unambiguous. */
+export const roomAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 export function sanitizeRoomCode(value: string): string {
   const allowed = new Set(roomAlphabet);

@@ -1,6 +1,13 @@
 import { deepSkinFor } from "./deep-skins";
 import { skinFor } from "./skins";
-import { DEFAULT_THEME_ID, isThemeId, themes, type ThemeId } from "./themes";
+import {
+  browserChromeFor,
+  DEFAULT_THEME_ID,
+  isThemeId,
+  themes,
+  type PartyTheme,
+  type ThemeId,
+} from "./themes";
 
 const themeStorageKey = "26-theme";
 
@@ -59,10 +66,49 @@ export function applyTheme(id: ThemeId) {
   root.dataset.align = deep.align;
   ensureTextureLayer();
   root.style.colorScheme = theme.colorScheme;
-  document
-    .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", theme.colors.background);
+  applyBrowserChrome(theme);
   rememberTheme(id);
+}
+
+/**
+ * Keep the browser toolbar, status bar and overscroll on the theme background.
+ * Every `theme-color` tag (unqualified, light and dark) gets that colour, and
+ * `color-scheme` follows the theme so a light system does not paint a light bar
+ * over a dark party, or the reverse.
+ */
+function applyBrowserChrome(theme: PartyTheme) {
+  const chrome = browserChromeFor(theme);
+  themeColorMeta().setAttribute("content", chrome.themeColor);
+  for (const media of chrome.themeColorMedia) {
+    themeColorMeta(media).setAttribute("content", chrome.themeColor);
+  }
+  schemeMeta("color-scheme").setAttribute("content", chrome.colorScheme);
+  schemeMeta("supported-color-schemes").setAttribute("content", chrome.colorScheme);
+}
+
+function themeColorMeta(media?: string): HTMLMetaElement {
+  const selector = media
+    ? `meta[name="theme-color"][media="${media}"]`
+    : 'meta[name="theme-color"]:not([media])';
+  return ensureMeta(selector, "theme-color", media);
+}
+
+function schemeMeta(name: "color-scheme" | "supported-color-schemes"): HTMLMetaElement {
+  return ensureMeta(`meta[name="${name}"]`, name);
+}
+
+function ensureMeta(selector: string, name: string, media?: string): HTMLMetaElement {
+  const found = document.head.querySelector(selector);
+  if (found instanceof HTMLMetaElement) {
+    return found;
+  }
+  const meta = document.createElement("meta");
+  meta.setAttribute("name", name);
+  if (media) {
+    meta.setAttribute("media", media);
+  }
+  document.head.append(meta);
+  return meta;
 }
 
 /**

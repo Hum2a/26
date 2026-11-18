@@ -6236,6 +6236,7 @@ Conclude the merge commit when ready and test solo chess (`/chess`) or a party r
 Status: complete locally on branch `feature/admin-pages-dashboard-redesign`. Not deployed.
 
 Redesigned the internal page layout and presentation across all global and room-scoped `/admin` pages into a cohesive, mission-control dashboard:
+
 - **Design system components** (`apps/web/src/ui/admin.css`):
   - `.admin-card`, `.admin-card-header`, `.admin-card-title`, `.admin-card-body`, `.admin-card-footer` for structured control boxes with crisp borders, subtle elevation and dark glass header chrome.
   - `.admin-status-dot` with pulsing live indicator rings for `ok`, `warn`, `danger`, and `muted` operational states.
@@ -6351,7 +6352,7 @@ A computer now uses the desktop renderer (full frame rate, sharper picture, keyb
 
 ## 17 November 2026 — Server pose rate test
 
-**Status:** local on `kart-server-poses`, branched from `kart-drive-view`. Not deployed. The uncommitted steer-zone edits are stashed as "steer zone, kept off kart-server-poses" and are not on this branch.
+**Status:** on `kart-server-poses`, merged with `master` including device-v1 rollback. Not deployed. The steer zone follows the finger in a straight line and is included on this branch.
 
 The room still owns the race. It now steps every 100ms, and a control change is kept when it arrives at least 50ms after the previous one. Phones send a change after 55ms so a steer can land on the next step. Your own kart still uses prediction. Other karts, including the stage, blend from the previous server pose to the new one over the gap between those frames, including height, and hold the latest pose instead of coasting in a straight line. A jump of more than 8 units snaps. Reduced motion still uses the existing short fade.
 
@@ -6365,3 +6366,209 @@ The room still owns the race. It now steps every 100ms, and a control change is 
 
 A routine room pose within 0.75m and a small heading gap no longer tugs the driver's own kart. The phone keeps the velocity already on screen, including slip. A larger miss still eases, and a miss over 6m still snaps. `self-prediction.test.ts` — 17 passed. Typecheck and lint were not rerun for this nudge.
 
+**Merge with master (18 November 2026):** device-v1 rollback stays the predictor for new races. The quieter correction remains on the older predictor. `npm run typecheck` passed. `npm run lint` failed on an existing unused `existsSync` import in `scripts/release-integration.test.ts` (already on `master`); 30 existing warnings. `npx vitest run src/kart src/guest/guest-page.test.tsx` in `apps/web` — 46 files, 234 passed. `npx vitest run test/kart-room.spec.ts test/kart-driving.spec.ts test/kart-device-room.spec.ts test/kart-device-timing.spec.ts` in `apps/api` — 4 files, 57 passed. Full `npm run test:unit` and `npm run build` were not run.
+
+## 16 November 2026 — Browser chrome matches the party theme
+
+Status: complete locally on `master`. Not deployed.
+
+Safari applies the `theme-color` tag that matches the system scheme, and Chrome applies the unqualified tag. A single tag left one browser on the system colour while the page used the party background. The head now sets `color-scheme` to the theme's own scheme and writes the theme background into the unqualified, light, and dark `theme-color` tags. Choosing a theme updates all three. The web app manifest splash colours stay `#14110e`, the 26 basic background.
+
+### Files
+
+- `apps/web/index.html`, `apps/web/vite.config.ts`, `apps/web/src/theme/themes.ts`, `apps/web/src/theme/install.ts`
+- `apps/web/src/theme/install.test.ts`, `apps/web/src/controller/viewport.test.tsx`
+
+### Commands and results
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 29 existing react-refresh warnings; structure check passed
+- `npx vitest run src/theme/install.test.ts src/theme/skins.test.ts src/controller/viewport.test.tsx` (in `apps/web`) — 3 files, 8 passed
+- `npm run build` — passed (secrets scan clean across 906 files; bundle within gzip budgets; content preflight passed)
+
+### Manual verification
+
+Local `http://localhost:5173/`: served HTML has `color-scheme` `dark` and `#14110e` on all three `theme-color` tags. `?theme=26-basic` paints `rgb(20, 17, 14)` with those tags. `?theme=confetti-department` paints `rgb(255, 248, 240)` (`#fff8f0`) and switches `color-scheme` to `light` on every tag. Not checked on a physical iPhone or Android toolbar.
+
+### Exact next stage
+
+Deploy when asked. Do not start the next prompt automatically.
+
+## 17 November 2026 — Custom codes and party-round repairs
+
+Status: complete locally on `codex/party-rounds-and-room-codes`. No deployment or remote resource changes.
+
+### What changed
+
+- Verified `C:\Users\Humza\Programming\Personal\26`, clean at start, fetched all remotes and confirmed `master` and `origin/master` both at `c540380` before branching.
+- Optional custom six-letter/digit codes in Admin → Rooms, normalised and reserved by the existing registry, with collision refusal and durable idempotent creation. Guest join fields/links accept the same alphabet; random generation remains unchanged.
+- `optionReveal: "one-at-a-time"` on choice questions, demonstrated by `favourite-genre`. Existing receipted Advance reveals one more option, with no prompt deadline; the following Advance after the last option opens answering. Unseen labels/images stay out of public snapshots. The existing lifecycle now has manual-phase, advance and leave-phase hooks; no extra scheduler or command channel.
+- Removed the three named trolley variants, all current “who said it” entries, AI Turing Test, all British subcultures, Reddit tribunal and the old council/dystopia questions from the active catalogue/order. Their source documents are retained in `retired.ts` for format/source reference. The reusable quotation presentation remains. Old saved orders filter these retired IDs for future starts; already-frozen room scripts do not change.
+- Three ready `accommodation-01/02/03` photo questions: Fantoft student housing, Halden prison corridor, Tietgen student residence. Local JPEGs are 96–168 KB; credits, licences and transformations recorded in `docs/content/accommodation-image-credits.json`. Explicit public question images use the existing media references and shared phone/stage rendering, with licence links and neutral numbered filenames.
+- Completed `whos-that-pokemon`: Jigglypuff with Clefairy, Wigglytuff and Chansey decoys. Four colour PNGs and a separate black SVG silhouette; no client answer key. It is ready and included in the default order.
+- Repaired Cursed Search History phone/stage rehearsals: roster and clock context, immediate BAIL acceptance in the isolated adapter, fixed bank line and paused-line display. Existing server scoring/raid logic remains authoritative in live games.
+- Chess is ready and in the default order. Manual and scheduled entry share the same setup/clock handlers. Two one-minute clocks fit inside the 120-second ceiling. Closing/skipping settles capture points once under the actual question id; chess results feed the ordinary quiz standings. Host live controls show per-game health, clocks, captures and recent results. Its preview endpoint now matches the public schema, and the real phone/Stockfish engine works through an explicitly isolated practice adapter. Chess is owned by the admin content feature rather than exempted as pending.
+- Guess-the-guest uses the existing roster/majority runtime and actual rehearsal renderer; `group-chat-figurine` is in the default order. Three new ready fictional scenarios (`guess-emotional-support`, `guess-council-coup`, `guess-airport-lounge`) are catalogue-only until the host adds them to Running order.
+- Restored the existing closed-room recovery button's intended “Join another room” label; its existing router regression now passes.
+- Updated question authoring/data inventory and regenerated the private birthday answer key/running order.
+
+### Checks recorded so far
+
+- `npm run typecheck` — passed.
+- `npm run lint` — passed, including the final rerun; 29 existing react-refresh warnings, structure check passed.
+- `npm run build` — passed including content preflight, secret scan (934 files), and bundle budget (entry JS about 218 KB gzip). Final rerun passed before the final wording-only correction to the Halden explanation.
+- `npm run test -w @26/api -- party-rounds custom-codes chess birthday who-said-it trolley-additions party-concepts content-preflight question-authoring push-luck vote phase end-destroy` — 25 files / 167 tests passed.
+- Follow-up `npm run test -w @26/api -- party-rounds birthday-order birthday-assets-prices push-luck` — 5 files / 18 tests passed, including old saved-order filtering.
+- Focused UI run covering router recovery, live controls, phone/stage previews, Pokémon, push pause, rooms/custom codes, admin ownership, chess practice and host chess view — 11 files / 74 tests passed.
+- Final full suite: `npm run test:unit -w @26/web -- --maxWorkers=2 --reporter=dot` — 197 files / 873 tests passed (282 seconds). Earlier overlapping runs are not treated as passes.
+- Existing room/quiz/answer-flow regressions: `npm run test -w @26/api -- test/room.spec.ts test/quiz.spec.ts test/rounds.spec.ts` — 3 files / 22 tests passed.
+- Final `npm run content:check` — passed; only the unrelated Nextdoor and property-price drafts are incomplete.
+- `git diff --check` — passed.
+
+### Manual verification and limitations
+
+Inspected all three downloaded JPEGs locally and checked their subject/source mapping; Halden is a corridor rather than a common room. No browser runner was added or used. Phone widths, a physical phone/projector, real Stockfish WASM in an authenticated browser and an 80-phone chess show remain unverified. The existing bot move protocol retains its documented casual-trust model: phone worker selects bot moves; the room validates legality and owns clocks/scoring. Nextdoor/property-price drafts remain unrelated incomplete content.
+
+### Exact next stage
+
+Try Admin → Rooms custom code; Admin → Question packs → Favourite genre get-ready reveal steps; Pokémon/push/chess phone/stage rehearsal. Select any additional questions that should use staged options, and explicitly add desired new guest scenarios to Running order. Deploy only when requested.
+
+## 17 November 2026 — Push and follow-up verification
+
+Committed the implementation as `b12414f`, pushed `codex/party-rounds-and-room-codes`, and opened PR #28 against `master`: https://github.com/Hum2a/26/pull/28 . No merge or deployment.
+
+Used the computer-use skill to check the existing local browser at `http://localhost:5173/chess`. The real Stockfish WASM loaded, White played e2–e4, Black replied e7–e5, and the UI returned to “Your move”. Admin → Rooms redirected to administrator sign-in; authenticated room creation and phone/stage walkthroughs remain unverified. No authentication was bypassed.
+
+Ran `npm run load:realtime`: harness assertions passed for 10/25/50/75/100 simulated guests, but timings were poor above 25. Answer ack p95 was 208/354/757/1297/2132 ms respectively. At 75 guests, stage updates were 1/s with p95 gaps 3023 ms; at 100, 0.8/s with p95 gaps 3388 ms. A separate `LOAD_SIZES=80 npm run load:realtime` reproduced the issue: answer ack p50 753 / p95 1503 / max 1589 ms, stage updates 0.8/s, stage gap p95 3042 ms. Both were local workerd, ring kart track, six-second driving windows at ten inputs/second; neither measures an 80-player chess game or production latency. No full guest snapshots were sent during the measured race windows.
+
+These are **not** acceptable responsiveness results despite the harness passing its functional assertions. The older verification report records materially better timings. A clean baseline/profile comparison is needed before attributing the degradation to this PR, the emulator or desktop load. No timing checks were weakened, unrelated processes stopped, or live-path refactor undertaken during verification.
+
+Exact next stage: profile/compare the local realtime bottleneck, then inspect the authenticated admin rehearsals in a signed-in browser and test real phones/projector. The implementation's previous unit/type/lint/build results remain recorded above; this follow-up changes documentation only.
+
+## 17 November 2026 — Realtime baseline isolation after PR #28
+
+Status: investigation milestone complete; performance remains unresolved. Synced the C: checkout to merged `master` `eb5af9d`; investigation branch `codex/realtime-load-investigation`. No deployment, secrets changes or production resources used.
+
+Created an independent detached worktree at `artifacts/realtime-baseline` on pre-merge `c540380`, with its own lockfile-installed dependencies (`npm ci --ignore-scripts --no-audit --no-fund`). The baseline has no copied secret files. Refreshed the main checkout dependencies with the same command. Measurements below ran sequentially, without concurrent test/build jobs. The ignored baseline worktree remains available for profiling.
+
+| Checkout / workload                                | Answer ack p95 | Stage updates/s | Stage gap p95 |
+| -------------------------------------------------- | -------------: | --------------: | ------------: |
+| Merged master, 80 guests, 10 Hz driving inputs     |        1176 ms |             1.3 |       1708 ms |
+| Pre-merge c540380, 80 guests, 10 Hz driving inputs |        1117 ms |             1.3 |       2095 ms |
+| Merged master, 80 guests, no inputs                |        1165 ms |             4.5 |        238 ms |
+| Merged master, 80 guests, 10 Hz neutral inputs     |        1000 ms |             1.3 |       1848 ms |
+
+All use the existing local workerd harness, ring track and six-second race windows. Every run passed its functional assertions, and none sent full guest snapshots during the measured race window. These timing results are not a responsiveness pass, nor production or physical-phone measurements. The answer burst happens before racing, so its latency is separate from the input-mode comparisons.
+
+Commands (PowerShell; run individually with inherited overrides cleared):
+
+```powershell
+$env:LOAD_SIZES='80'; npm run load:realtime
+$env:LOAD_SIZES='80'; $env:LOAD_INPUT_HZ='0'; npm run load:realtime
+$env:LOAD_SIZES='80'; $env:LOAD_NEUTRAL='1'; npm run load:realtime
+```
+
+For the baseline use the first command from `artifacts/realtime-baseline`. Environment overrides were scoped to each command process, not persisted to project configuration.
+
+Findings: the pre-merge checkout reproduces the problem, so these runs do not establish a regression caused by PR #28. Turning off input traffic restores near-target update cadence; neutral packets reproduce the slowdown without kart movement. This narrows the investigation towards packet handling, input persistence and local event-delivery overhead, rather than movement alone. It does not distinguish those costs or prove a production bottleneck. The input path already caches the roster and batches durable writes at ticks.
+
+Tried a transient WeakMap cache for socket attachment deserialisation with an accompanying test candidate. The same driving run produced answer p95 1045 ms, 1.5 updates/s, and stage gap p95 1782 ms: insufficient evidence of meaningful improvement. Reverted the experiment and test candidate before committing. No runtime code, scheduling, scoring, checks or test thresholds changed.
+
+Validation: all four measured harness runs passed. Typecheck and lint passed (29 existing warnings); the initial room/party-round regression run passed 20 tests. The final batching-change validation is recorded below. No new browser runner was added. Authenticated admin walkthroughs still require a signed-in browser; the previously observed real Stockfish response remains recorded above.
+
+Exact next stage: instrument/measure input event delivery versus the existing tick's input persistence in the local harness, retaining the no-input and neutral controls. Separately diagnose quiz acknowledgement cost. Establish a reproducible improvement before changing the production path; a broad refactor requires owner agreement. Complete authenticated admin walkthroughs and physical phone/projector checks when those are available.
+
+### Retained fix — batch private choice-answer snapshots
+
+The ordinary choice-answer path rebuilt a private snapshot before sending every durable acknowledgement. It now acknowledges after the existing commit and queues the answering socket into the existing 30 ms broadcast flush. That flush shares room-wide/audience projections across pending phones and facilitators, deduplicates overlapping recipients and preserves per-phone specialisation. Replayed receipts also request reconciliation. Closing a socket or destroying a room clears pending references. This is a transient delivery queue, not a new business-state store, scheduler, socket or persistence path.
+
+Two isolated 80-guest driving runs with this change recorded answer ack p95 **388 / 380 ms**, versus **1176 ms** on merged master before the change. Whole-run public builds fell from 238 to 140; statistics builds from 207 to 114. The harness still showed only 1.3 stage updates/s while driving, so the kart-input issue remains unresolved. The retained change addresses acknowledgement work only; it is not a claim of full venue readiness.
+
+Tests added alongside the change cover concurrent phones receiving acknowledgement before their own accepted-answer snapshot and receipt replay reconciling again. Existing durable-restart, duplicate-answer, patch, room-destruction, hidden-answer, voter-privacy and moderation tests cover the surrounding paths. Final targeted suite: 8 files / 49 tests passed. `npm run typecheck` passed; `npm run lint` passed with 29 existing warnings and structure passed. No client graph/assets changed, so the build was not rerun for this Worker-only change. No physical-device or authenticated admin walkthrough was completed in this stage.
+
+Exact next stage remains input event/persistence profiling (or a venue-like run when authorised), plus the authenticated admin and physical-device walkthroughs. Review the focused acknowledgement batching PR before merging; do not treat the local kart results as a performance pass.
+
+## 17 November 2026 — Rollback/device timing design prepared
+
+Status: design prepared, implementation not started. Updated the C: checkout to merged master `8acddfa` (PR #29 included), then created `codex/kart-rollback-netcode`.
+
+The owner explicitly chose trusted device-reported finish times for this casual party game. That decision is recorded in `docs/kart-rollback-plan.md`; the plan covers complete self-only rollback checkpoints, monotonic paused-time-aware input/finish timing, idempotent finish receipts, preserved legacy server-timed races, host visibility and privacy, bounded replay and required test coverage. The existing prediction freezes after 600 ms and reconstructs incomplete physics, so changing only its smoothing constants would not implement the requested behaviour.
+
+Runtime files are unchanged. Implementation requires a substantial change across prediction, transport, server lifecycle and result settlement. Stopped before that refactor as required by `.agents/rules/55-agent-workflow.md` ("Ask (or stop and report) before a large refactor"). No feature-completion or rollback-performance claim is made. No deployment or remote resource changes.
+
+Exact next stage: obtain approval for the documented refactor, then implement and test the complete device-v1 path alongside legacy server timing. Do not use device wall-clock dates or trust an unreceipted client finish as accepted UI.
+
+Design-stage checks: typecheck passed; lint and structure passed (29 existing warnings); diff whitespace check passed. No rollback feature tests were run because runtime implementation has not started.
+
+## 17 November 2026 — Kart rollback and trusted device finishes implemented
+
+Status: implemented on `codex/kart-rollback-netcode` in `C:/Users/Humza/Programming/Personal/26`, based on latest fetched master `8acddfa`. The owner approved the documented refactor and explicitly selected trusted device times. No deployment or paid/remote resource change was made.
+
+New room races persist `timingMode: device-v1`; existing stored races remain server-timed. The existing room socket now carries a tracked `kart-finish` command with race id, integer duration and ordered cumulative lap splits. The room validates identity, active membership, race/mode/lap count, pause/hold, deadline, CPU exclusion and settlement, persists through the existing receipt path before acknowledgement, and awards points through the existing ledger. Equal times share places. Simulated human finish crossings remain provisional in device mode; CPU finishes retain room timing. Replays cannot rewrite a saved time, and unreported racers at host closure/time-out receive DNF.
+
+Self-only compact frames now include exact physics/lap state, a durable checkpoint revision, recovery epoch and the last **simulated** input sequence, separately from the ingress cursor. The existing predictor restores that checkpoint and replays bounded local controls with shared 20 ms driving/checkpoint functions. It preserves lateral velocity, ramp/cooldown/drift/boost state, rejects older checkpoints, smooths visual correction separately, bounds history to three seconds/300 controls, and avoids an unbounded tab-resume loop. A monotonic active clock excludes host pauses and does not subtract network stalls. Input heartbeat scheduling also uses monotonic time, so changing the device wall clock cannot suppress controls. A locally detected finish is frozen once, remains pending until the room responds, and retries with its original request id after reconnect. Both the real 3D phone view and lightweight map use that local pose. Remote karts retain the existing interpolation path.
+
+Admin Live controls identify the frozen timing source and retain pause/end management. Admin → Kart → Rollback & timing (`/admin/kart?view=rollback`) uses the actual phone renderer in an explicitly isolated adapter, with delayed/older correction, recovery, pause/resume, disconnect/reconnect and pending/accepted finish samples. Results identify device timing and CPU room timing. The existing full-race duration limit is nine minutes (three circuit laps); recap/contact/finish/item validation now accepts that supported window rather than failing after three minutes, with boundary and item-restore regression coverage. Canonical agent rules record the owner-approved timing exception and were synced; the data inventory records the added state.
+
+Validation:
+
+- Full `npm run test:unit`: **197 files / 877 tests passed**. The final focused web suite subsequently passed **7 files / 97 tests**, including the newly added rehearsal, host source display, recap, transport replay, stale checkpoint and monotonic finish tests. The last monotonic input-heartbeat change passed the kart component/hook suite (**25 tests**). A final recovery-at-the-finish-line regression fix passed all **21 predictor tests**; a newer recovery is applied before advancing the superseded position.
+- `npm run test -w @26/api -- --run kart`: **29 files / 205 tests passed**, including real Worker receipt/restart/tie/privacy/refusal coverage and pure provisional finish, CPU, long-race and item-state tests. The legacy server-finish regression explicitly restores an older stored race without the new mode.
+- Typecheck, lint/structure (**29 existing warnings**, no errors), build, artifact checks, gzip budget and content preflight passed. Existing incomplete birthday draft notices for `nextdoor-paranoia` and `property-price-roulette` remain; they were not changed in this mechanic stage.
+- No browser runner was added. Physical phones, authenticated live admin and venue Wi-Fi/projector were not manually verified. The real phone rehearsal is component-tested; local simulation is not a physical-device performance claim.
+
+Performance: the isolated existing harness with **80 phones at 10 Hz** passed, recording answer acknowledgement p95 **379 ms**, stage **1.2 updates/s**, stage gap p95 **1737 ms**, and mean phone traffic **8.43 KiB/s** as reported by that harness. The no-input control passed with **4.5 updates/s**, gap p95 **238 ms**, answer acknowledgement p95 **356 ms**, and mean phone traffic **30.73 KiB/s** at the higher frame rate. Logs are local ignored `artifacts/kart-rollback-load-isolated.log` and `artifacts/kart-rollback-load-no-input.log`; environment overrides were process-scoped. An earlier concurrently loaded sample was slower (1.0 updates/s) and is not used as the isolated comparison. The pre-existing input/event-delivery bottleneck remains; this stage removes the phone's 600 ms local prediction freeze, not that room bottleneck. No full venue-readiness claim is made.
+
+Exact next stage: review this focused PR, then verify two physical phones and projector on venue-like Wi-Fi, including a finish arriving around host pause/end and a reconnect. Continue profiling the separately documented room input/event-delivery bottleneck before claiming instant 80-phone stage updates. Do not deploy or merge without owner instruction.
+
+## 17 November 2026 — Staging deployed; authenticated Chrome verification pending
+
+Status: the owner authorised staging deployment and Chrome testing. Worked in the C: checkout, updated to merged master `09fda24`, then created `codex/staging-kart-verification`. Production was not deployed or modified.
+
+The merged GitHub check (`44058831736`) failed at `format:check` with 43 files. Applied the locked Prettier formatter to exactly those reported files, without changing runtime behaviour or removing checks. The formatting-only commit is `e995bf9`. The existing GitHub workflow still contains its legacy browser steps; no browser runner, package or extension was added or installed locally for this stage.
+
+Pre-deployment checks passed: `npm run format:check`; `npm run typecheck`; `npm run lint` and structure (29 existing warnings); `npm run test:unit` (198 files / 884 tests); `npm run test:release` (81 tests); kart API tests (29 files / 205 tests); troll/wall formatting regression coverage (3 files / 15 tests). The staging packaging dry run and the real staging build passed artifact checks, gzip budget and content preflight. Existing incomplete birthday draft notices remain unchanged.
+
+Deployed with `npm run deploy:staging`, using the existing personal account, staging Worker, Durable Objects, R2 bucket and installed Wrangler. No secret values were opened, no secrets were uploaded or changed, no Neon migration ran, and no new paid resource was requested. Previous staging version: `cb7862da-7b07-4aa5-ab22-2a51ff3faeb9`. New deployed version: **`687bcb06-ded2-4b30-a3e5-1f14ca1152a4`**, serving `https://26-staging.humza.website`. Worker startup was reported as 184 ms. The health endpoint returned `ok: true`, environment `staging`, version `0.0.5`; its public entry script `/assets/index-DBsDHI6q.js` matched the locally built staging HTML. Public health alone is not used as proof of the source revision.
+
+Chrome verification used the owner's running Chrome through the existing browser connection. The deployed `/kart` page loaded the actual 3D circuit and controls. Opened Course set-up, selected the floor-boost rehearsal, verified its paused state, resumed, used Back to track (the HUD showed 16 m from grid), and paused again. No error/warning console entries were returned during these checks. Screenshot: local ignored `artifacts/staging-kart-chrome.png`. This verifies loading and the exercised controls; it is not a sustained-driving, finish-time, phone GPU or network-capacity measurement. A main-element keyboard attempt timed out and the raw CDP input method was unsupported; subsequent page observations remained healthy, so neither is labelled a confirmed game crash. Temporary CDP performance collection was disabled after the check and the practice page was left paused.
+
+The admin session was not signed in. Requested the owner's normal staging sign-in asynchronously and left the sign-in page available in Chrome, including the original user tab. Did not retrieve or enter login codes, read credential files, or bypass authentication. Consequently **new live-room creation, live device-finish/reconnect verification, the authenticated rollback bench, and the remote 80-client run are not yet verified**. The existing Developer tools fleet can open actual WebSockets on staging, so it can supply the remote load once signed in; a new runner is unnecessary for that initial measurement. The locally measured 1.2 updates/s is not claimed as a Cloudflare production measurement.
+
+Exact next stage: after the owner signs in to staging, create a disposable new kart lobby (device-v1), use the real phone/stage renderers to inspect finish receipts, pause/resume/recovery and reconnect, then run the existing developer fleet with 80 clients and capture stage update cadence and reply latency. Continue with physical phones and venue Wi-Fi/projector checks afterwards. Review the formatting/verification PR; do not merge or deploy production without owner instruction.
+
+## 17 November 2026 — Verification workarounds and rehearsal fixes
+
+Status: continued the authorised staging/testing work without requiring access to the owner's computer. PR #31 was already merged; fetched latest master `f836ee0` in the C: checkout and created `codex/kart-verification-fixes`. Production remains unchanged.
+
+Fixed the release integration tests' dependency on real local operator configuration. CI run `44062462755` failed because `.dev.vars.staging` did not exist; the earlier local pass depended on that file being present. The command tests now copy public release scripts and Wrangler configuration into a disposable project with clearly dummy secret values, retain fake-command tripwires, and assert dummy values do not leak to output. Tests no longer read or restore the real generated build configuration. No runtime authentication or deployment behaviour changed.
+
+Chrome testing found that **Finish line sample** could stop producing a finish after the isolated rollback rehearsal had been idle. Its checkpoint still belonged to an old sample race. Starting this scenario now creates a fresh stand-in race and clears the prior sample receipt. A regression test failed before the fix and passes afterwards. The actual phone renderer was checked in Chrome after idle: the sample reported a pending device duration, Accept sample finish became available, and acceptance displayed Chequered flag. These are explicitly sample receipts, not live-room results. Screenshot: local ignored `artifacts/kart-rollback-idle-fixed.png`.
+
+Used the existing development-only local inbox and normal sign-in confirmation; staging authentication was not weakened. A real local rehearsal connected **80/80 bot WebSockets**, accepted **80 answers**, and showed **0 refused / 0 pending** (reply p95 608 ms in the initial demo run; a separate birthday run reported 1034 ms). Those interactive runs overlapped other verification work and are functional checks, not isolated performance measurements. An ordinary kart lobby correctly refused bots and directed the host to an isolated rehearsal. The attempted kart browser run lost local dev-server connections around concurrent builds; no valid kart cadence or finish result is claimed from that attempt. Temporary local dev servers were stopped afterwards.
+
+The normal staging email sign-in was requested, but no usable code was received. Existing Outlook access was signed out. No credential files were opened, mailbox login bypassed, new operator endpoint added, or staging account permissions changed. Remote live-room finish/reconnect and 80-client staging measurements remain unverified. No browser runner or new testing dependency was installed.
+
+Validation: full `npm run test:unit` passed **198 files / 885 tests**; `npm run test:release` passed **81 tests** after the final fixture-isolation change. Typecheck, lint/structure (29 existing warnings), formatting, staging build, artifact checks, gzip budget and content preflight passed. The focused rollback bench/predictor/component suite passed **3 files / 48 tests**. Existing incomplete birthday drafts remain unchanged.
+
+After stopping both local dev servers and completing other checks, the existing isolated `load:realtime` harness passed with **80 clients at 10 Hz**, ring track, six-second race window: answer ack p95 **668 ms**, stage **1.0 updates/s**, stage gap p95 **2303 ms**, mean phone traffic **7.81 KiB/s**, and no full guest snapshots during the race. The sequential no-input control passed with answer ack p95 **428 ms**, **4.3 updates/s**, stage gap p95 **236 ms**, and mean phone traffic **30.14 KiB/s**. Logs: ignored `artifacts/staging-followup-load.log` and `artifacts/staging-followup-load-no-input.log`. These reproduce the input-related local bottleneck; they are not a performance pass or a remote Cloudflare measurement. No runtime input-path changes were made in this verification fix.
+
+Exact next stage: review the focused verification-fix PR; complete authenticated remote finish/reconnect and 80-client tests through normal staging sign-in, then physical phones/projector on venue-like Wi-Fi. Profile the separately recorded room input/event-delivery bottleneck before claiming smooth 80-phone stage updates. Production deployment remains outside this stage.
+
+Staging refresh: deployed committed runtime `9dc49fd` with `npm run deploy:staging` under the existing staging/testing authorisation. Version **`b630980f-0b69-4622-b17e-3c5a7064eb09`** replaced `687bcb06-ded2-4b30-a3e5-1f14ca1152a4`; startup 159 ms. Health returned `ok: true`, `staging`, `0.0.5`, and remote `/assets/index-R5BRnRfo.js` matched the staged build. No secrets were changed or uploaded and production was not deployed. Follow-up PR: **https://github.com/Hum2a/26/pull/33**; local checks passed, GitHub checks were still pending at handoff. The deployed authenticated bench itself remains unverified because staging sign-in is unavailable; the Chrome receipt screenshot above is from local development.
+
+## 17 November 2026: Trump made-up countries question, chess round in the running order
+
+### Status
+
+- New question `trump-made-up-country` (choice, multiple outcome: The United States of Israel and The Islamic Republic of Japan). Ready, in the running order after `christianity-branches`.
+- Bespoke design `executive-order` (`apps/web/src/play/designs/executive-order.tsx`): a gold-trimmed "Executive Order No. 26" decree. Guests tick countries with an animated marker tick and sign it with a scrawl ("Sign it. Bigly."); the reveal stamps each line "100% made up" or "Not him. Just a pun." Stage shows the decree with live signature count. Added to `customPresentationIds`, the registry and the design bench fixtures (bench reveal for a multiple outcome uses a stand-in pair, never the answer key).
+- `chess-battle` is no longer forced to draft and is in the running order before `kart-sprint`.
+- Chess scoring: a win on time (`status: "timeout"`, `winner: "player"`) now scores captures + `chessTimeWinBonus` (15). Chosen on 17 November 2026 at the user's request. Checkmate is unchanged (at least 40). Existing tests that asserted 0 for a time win were updated to the new rule.
+- Chess stage snapshot: optional `highlights` (room captures, queens taken, time wins, moves played, longest game, fastest win, biggest haul) and per-standing `moves` / `timeLeftMs`. New hall event `timeout-win`. Aggregate only, no boards. Each game's PGN is now parsed once per projection instead of twice.
+- Chess big screen: highlight cards and an "Every board" grid (stable nickname order, moves, points, clock bar that turns red under 20%).
+- Chess phone: always-visible piece-value strip (Q10 R5 B3 N3 P1) and a folded "How to score + handy tricks" panel (scoring rules, tap/drag, premoves, cancel premove, low-time beep, sound, promotion, resign).
+
+### Next stage
+
+Rehearse the chess round with two browser tabs from `/admin` to see the new hall and phone guide on real screens.

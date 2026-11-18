@@ -1,3 +1,4 @@
+import { kartRollbackSchema } from "./kart-rollback-schema.ts";
 /**
  * The race view every page validates in a room snapshot. It stays apart from
  * kart.ts so the join and lobby pages do not load the driving code or track geometry.
@@ -82,6 +83,8 @@ export const kartDriverSchema = z
 export type KartDriver = z.infer<typeof kartDriverSchema>;
 export const kartRaceSchema = z
   .object({
+    timingMode: z.literal("device-v1").optional(),
+    rollback: kartRollbackSchema.optional(),
     raceId: z.string(),
     trackId: z.enum([kartTrackId, importedTrackId, parkTrackId]),
     timeLimitMs: z.number().int().positive().max(kartMaxLimitMs),

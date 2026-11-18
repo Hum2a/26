@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createKartRace,
   projectKartRace,
+  createDrivingBody,
   type KartFrame,
   type LobbySnapshot,
 } from "@26/shared";
@@ -50,6 +51,22 @@ describe("mergeKartFrame", () => {
     expect(merged.serverNow).toBe(9_000);
     expect(merged.stateVersion).toBe(5);
     expect(merged.joinCode).toBe(base.joinCode);
+  });
+
+  it("rejects an older rollback checkpoint even at equal room time", () => {
+    const base = raceSnapshot("race-1"),
+      next = frame("race-1", 4);
+    const seed = {
+      revision: 4,
+      appliedSequence: 2,
+      recovery: 0,
+      body: createDrivingBody(0, 0, 0),
+      lap: { angle: 0, distance: 0, checkpoint: 0, done: 0, splits: [] },
+      input: { steer: 0, gas: false, brake: false, drift: false },
+    };
+    base.play!.kart!.rollback = seed;
+    next.kart.rollback = { ...seed, revision: 3 };
+    expect(mergeKartFrame(base, next)).toBe("stale");
   });
 
   it("asks for a snapshot when the phone has none for this race", () => {
@@ -239,6 +256,22 @@ describe("openRoomSocket liveness", () => {
     client.close();
   });
 
+  it("retries a frozen finish report with the same request id after reconnect", () => {
+    const client = open("guest"),
+      first = FakeSocket.instances[0]!;
+    first.open();
+    const report = { raceId: "device", elapsedMs: 12345, lapsMs: [12345] };
+    const requestId = client.submitKartFinish!(report);
+    const command = first.sent.find((value) => value.includes('"kart-finish"'))!;
+    expect(JSON.parse(command)).toMatchObject({ requestId, report });
+    first.close(1006, "");
+    window.dispatchEvent(new Event("online"));
+    const next = FakeSocket.instances.at(-1)!;
+    next.open();
+    expect(next.sent).toContain(command);
+    client.close();
+  });
+
   it("replays a recovery with its original request id after reconnecting", () => {
     const client = open("guest");
     const first = FakeSocket.instances[0]!;
@@ -312,7 +345,9 @@ describe("openRoomSocket liveness", () => {
       const socket = FakeSocket.instances[0]!;
       socket.open();
       vi.advanceTimersByTime(1_000);
-      const initialTimeProbes = socket.sent.filter((msg) => msg.startsWith("time:")).length;
+      const initialTimeProbes = socket.sent.filter((msg) =>
+        msg.startsWith("time:"),
+      ).length;
       expect(initialTimeProbes).toBe(5);
       socket.sent.length = 0;
 

@@ -354,7 +354,7 @@ function Tray({
                 🚫
               </span>
             ) : (
-                <TrayPhoto
+              <TrayPhoto
                 src={withClientApiKey(`/api/rooms/${gameId}/media/${item.mediaId}`)}
               />
             )}

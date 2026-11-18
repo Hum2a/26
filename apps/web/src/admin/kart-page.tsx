@@ -1,3 +1,4 @@
+import { KartRollbackBench } from "./kart-rollback-bench";
 import { AnimatePresence, motion } from "motion/react";
 import { Link, useSearchParams } from "react-router";
 import { Button, LinkButton } from "../ui/primitives";
@@ -32,6 +33,7 @@ const views = [
   ["collisions", "Collisions"],
   ["trials", "Time trials"],
   ["start", "Race start"],
+  ["rollback", "Rollback & timing"],
   ["recap", "Race results"],
   ["items", "Items sandbox"],
   ["tracks", "Tracks & modes"],
@@ -86,21 +88,23 @@ export function AdminKartPage() {
               <div className="admin-card-body space-y-3">
                 <p>
                   Press Start driving below. Use the arrow keys and Space, or the
-                  on-screen phone controls. Solo practice has no room connection or party
-                  points.
+                  on-screen phone controls. Solo practice has no room connection or
+                  party points.
                 </p>
                 <p>
                   Graphics are local to each screen. Inside Course set-up, compare Auto,
-                  High and Low, then rehearse room sizes of 16 and 21. Auto also measures
-                  visible frames while driving and lowers detail after sustained slow
-                  frames; choose High to override it. It does not benchmark a phone model.
+                  High and Low, then rehearse room sizes of 16 and 21. Auto also
+                  measures visible frames while driving and lowers detail after
+                  sustained slow frames; choose High to override it. It does not
+                  benchmark a phone model.
                 </p>
                 <p>
                   Charge Mini, Super and Ultra turbos by holding drift, then release. On
-                  the opening straight, take the left lane for a floor boost and ramp; the
-                  right lane has a moving sweeper. Keep accelerating to glide and brake to
-                  descend. Course set-up inside the driving view can switch each feature
-                  off, clear the track or restore it. Changes reset and pause practice.
+                  the opening straight, take the left lane for a floor boost and ramp;
+                  the right lane has a moving sweeper. Keep accelerating to glide and
+                  brake to descend. Course set-up inside the driving view can switch
+                  each feature off, clear the track or restore it. Changes reset and
+                  pause practice.
                 </p>
                 <iframe
                   className="admin-kart-drive-frame"
@@ -128,6 +132,8 @@ export function AdminKartPage() {
             <KartTrialBench />
           ) : view === "start" ? (
             <KartStartBench />
+          ) : view === "rollback" ? (
+            <KartRollbackBench />
           ) : view === "recap" ? (
             <KartRecapBench />
           ) : view === "items" ? (
@@ -148,7 +154,10 @@ export function AdminKartPage() {
               />
             </section>
           ) : (
-            <section className="admin-kart-pane admin-card" aria-label="Multiplayer rehearsal">
+            <section
+              className="admin-kart-pane admin-card"
+              aria-label="Multiplayer rehearsal"
+            >
               <div className="admin-card-header">
                 <span className="admin-status-dot" data-tone="ok" aria-hidden="true" />
                 <span className="admin-mono-tag">80 RACERS · 3 MIN LIMIT</span>
@@ -163,27 +172,30 @@ export function AdminKartPage() {
                 </p>
                 <ol className="list-decimal space-y-2 pl-6">
                   <li>
-                    Choose Create kart lobby above. Its Live controls open with a new join
-                    code.
+                    Choose Create kart lobby above. Its Live controls open with a new
+                    join code.
                   </li>
-                  <li>Connect the stage and join from each phone using the room code.</li>
+                  <li>
+                    Connect the stage and join from each phone using the room code.
+                  </li>
                   <li>
                     Choose Start kart race when everyone is ready. Advance through the
-                    get-ready beats, then drive. The race leads to results and the podium.
+                    get-ready beats, then drive. The race leads to results and the
+                    podium.
                   </li>
                   <li>
-                    After the podium, choose Race again on Live controls to keep the same
-                    join code, then Start kart race.
+                    After the podium, choose Race again on Live controls to keep the
+                    same join code, then Start kart race.
                   </li>
                 </ol>
                 <p>
                   The grid freezes when the race starts. Late arrivals can join the room
                   and watch. Open Rooms to see every open lobby, Destroy room on Live
-                  controls to clear one, or Remove a guest under Players. Guests can Leave
-                  lobby from the You menu on their phone. To rehearse without guests, join
-                  the new lobby from a private second tab and open its stage. Pause, end
-                  the race or switch course features off from Live controls. Layout
-                  previews do not start a race or change a room.
+                  controls to clear one, or Remove a guest under Players. Guests can
+                  Leave lobby from the You menu on their phone. To rehearse without
+                  guests, join the new lobby from a private second tab and open its
+                  stage. Pause, end the race or switch course features off from Live
+                  controls. Layout previews do not start a race or change a room.
                 </p>
                 <Link className="entry-text-link" to="/admin/rooms">
                   Open rooms →

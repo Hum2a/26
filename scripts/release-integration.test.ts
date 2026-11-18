@@ -15,7 +15,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { resolveBash, resolveCommand } from "./command.mjs";
 import { projectRoot } from "./env-files.ts";
-import { deployFreeze, workerRelease } from "./release-support.ts";
+import {
+  deployFreeze,
+  workerRelease,
+  requiredWorkerSecrets,
+} from "./release-support.ts";
 
 /**
  * Command-level tests for scripts/release.ts and release.sh.
@@ -36,7 +40,6 @@ import { deployFreeze, workerRelease } from "./release-support.ts";
  */
 
 const root = projectRoot();
-const releaseScript = path.join(root, "scripts/release.ts");
 const generatedConfigPath = workerRelease("production").generatedConfigPath;
 const insideFreeze = deployFreeze.from + 60 * 60 * 1000;
 const outsideFreeze = deployFreeze.from - 24 * 60 * 60 * 1000;
@@ -92,7 +95,7 @@ if (tool === "NPM" && args[0] === "run") {
         },
       ],
     };
-    const generated = ${JSON.stringify(generatedConfigPath)};
+    const generated = path.resolve(process.cwd(), ${JSON.stringify(path.relative(root, generatedConfigPath))});
     fs.mkdirSync(path.dirname(generated), { recursive: true });
     fs.writeFileSync(generated, JSON.stringify(config));
   }
@@ -210,7 +213,7 @@ function assertFakesResolve(
 
 function withStubs(
   extra: Record<string, string | undefined>,
-  run: (env: NodeJS.ProcessEnv) => Omit<RunResult, "log">,
+  run: (env: NodeJS.ProcessEnv, fixtureRoot: string) => Omit<RunResult, "log">,
   options: { realGit?: boolean } = {},
 ): RunResult {
   const dir = mkdtempSync(path.join(tmpdir(), "release-stubs-"));
@@ -220,20 +223,39 @@ function withStubs(
   writeFileSync(logFile, "");
   installFakes(binDir, logFile, options.realGit === true);
   const env = stubEnv(binDir, extra);
-  const previousConfig = existsSync(generatedConfigPath)
-    ? readFileSync(generatedConfigPath, "utf8")
-    : undefined;
   try {
     assertFakesResolve(env, logFile, options.realGit === true);
-    const result = run(env);
+    const result = run(env, path.join(dir, "project"));
     return { ...result, log: readFileSync(logFile, "utf8") };
   } finally {
-    if (previousConfig === undefined) {
-      rmSync(generatedConfigPath, { force: true });
-    } else {
-      writeFileSync(generatedConfigPath, previousConfig);
-    }
     rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/** Disposable operator configuration: never read a developer's real credentials. */
+function prepareReleaseFixture(work: string): void {
+  mkdirSync(path.join(work, "scripts"), { recursive: true });
+  mkdirSync(path.join(work, "apps/api"), { recursive: true });
+  writeFileSync(path.join(work, "package.json"), '{"type":"module"}');
+  for (const file of [
+    "release.ts",
+    "release-support.ts",
+    "env-files.ts",
+    "command.mjs",
+  ]) {
+    copyFileSync(path.join(root, "scripts", file), path.join(work, "scripts", file));
+  }
+  const config = readFileSync(path.join(root, "apps/api/wrangler.jsonc"), "utf8");
+  writeFileSync(path.join(work, "apps/api/wrangler.jsonc"), config);
+  for (const environment of ["staging", "production"] as const) {
+    const values = requiredWorkerSecrets(config, environment).map(
+      (key) =>
+        `${key}=${key === "BETTER_AUTH_URL" ? workerRelease(environment).origin : `release-test-dummy-${key.toLowerCase()}`}`,
+    );
+    writeFileSync(
+      path.join(work, `apps/api/.dev.vars.${environment}`),
+      values.join("\n") + "\n",
+    );
   }
 }
 
@@ -247,16 +269,17 @@ function runRelease(
   extraEnv: Record<string, string> = {},
   options: { nowMs?: number } = {},
 ): RunResult {
-  return withStubs(extraEnv, (env) => {
+  return withStubs(extraEnv, (env, work) => {
+    prepareReleaseFixture(work);
     const result = spawnSync(
       process.execPath,
       [
         "--experimental-strip-types",
         clockImport(options.nowMs ?? outsideFreeze),
-        releaseScript,
+        path.join(work, "scripts/release.ts"),
         ...args,
       ],
-      { cwd: root, encoding: "utf8", env, timeout: 30_000, windowsHide: true },
+      { cwd: work, encoding: "utf8", env, timeout: 30_000, windowsHide: true },
     );
     return {
       status: result.status ?? 1,
@@ -481,16 +504,23 @@ describe("release.ts validation and approved deploys with fakes", () => {
     assert.equal(npx.length, 2);
     assert.match(npx[0] ?? "", /--secrets-file/);
     assert.match(npx[1] ?? "", /--secrets-file/);
+    assert.doesNotMatch(
+      result.stdout + result.stderr + result.log,
+      /release-test-dummy-/,
+    );
   });
 
   it("deploy runs checks when explicitly requested with --checks", () => {
     const checked = runRelease(["deploy", "--env", "staging", "--checks"]);
     assert.equal(checked.status, 0, checked.stderr);
-    assert.deepEqual(loggedCommands(checked.log, "NPM"), [
-      ...checkSteps,
-      "run build",
+    assert.deepEqual(loggedCommands(checked.log, "NPM"), [...checkSteps, "run build"]);
+    const withApi = runRelease([
+      "deploy",
+      "--env",
+      "staging",
+      "--checks",
+      "--full-checks",
     ]);
-    const withApi = runRelease(["deploy", "--env", "staging", "--checks", "--full-checks"]);
     assert.equal(withApi.status, 0, withApi.stderr);
     assert.deepEqual(loggedCommands(withApi.log, "NPM"), [
       ...checkSteps,

@@ -1,9 +1,9 @@
-import { tribunalReddit } from "./tribunal-reddit.ts";
-import { councilBroadwaterFarm } from "./council-broadwater-farm.ts";
-import { councilRedoubtNewBabylon } from "./council-redoubt-new-babylon.ts";
-import { councilFerrierSector } from "./council-ferrier-sector.ts";
-import { councilThamesmeadSouth } from "./council-thamesmead-south.ts";
-import { councilBlackbirdLeys } from "./council-blackbird-leys.ts";
+import { accommodation01 } from "./accommodation-01.ts";
+import { accommodation02 } from "./accommodation-02.ts";
+import { accommodation03 } from "./accommodation-03.ts";
+import { guessemotionalsupport } from "./guess-emotional-support.ts";
+import { guesscouncilcoup } from "./guess-council-coup.ts";
+import { guessairportlounge } from "./guess-airport-lounge.ts";
 import { apologyVideoAuction } from "./apology-video-auction.ts";
 import { nextdoorParanoia } from "./nextdoor-paranoia.ts";
 import { groupChatFigurine } from "./group-chat-figurine.ts";
@@ -24,9 +24,6 @@ import { realNameVinDiesel } from "./real-name-vin-diesel.ts";
 import { realNameJamieFoxx } from "./real-name-jamie-foxx.ts";
 import { redPillBluePill } from "./red-pill-blue-pill.ts";
 import { trolleyProblem } from "./trolley-problem.ts";
-import { trolleyYourMum } from "./trolley-your-mum.ts";
-import { trolleyMamdaniAfrica } from "./trolley-mamdani-africa.ts";
-import { trolleyFreddoMultiverse } from "./trolley-freddo-multiverse.ts";
 import { favouritePokemon } from "./favourite-pokemon.ts";
 import { whosThatPokemon } from "./whos-that-pokemon.ts";
 import { howItalianIsHumza } from "./how-italian-is-humza.ts";
@@ -38,32 +35,18 @@ import { inflationSausageRoll } from "./inflation-sausage-roll.ts";
 import { inflationCheeseburger } from "./inflation-cheeseburger.ts";
 import { commonPassword } from "./common-password.ts";
 import { completeAWordle } from "./complete-a-wordle.ts";
-import { whoSaidItEmpathy } from "./who-said-it-empathy.ts";
-import { whoSaidItFreedom } from "./who-said-it-freedom.ts";
-import { whoSaidItSleep } from "./who-said-it-sleep.ts";
-import { whoSaidItSalvation } from "./who-said-it-salvation.ts";
-import { whoSaidItCryingCeo } from "./who-said-it-crying-ceo.ts";
-import { whoSaidItNihilism } from "./who-said-it-nihilism.ts";
-import { whoSaidItTechnology } from "./who-said-it-technology.ts";
-import { whoSaidItPerformanceReview } from "./who-said-it-performance-review.ts";
-import { whoSaidItAbsoluteForce } from "./who-said-it-absolute-force.ts";
-import { whoSaidItGriefPipeline } from "./who-said-it-grief-pipeline.ts";
 import { guessTabOyster } from "./guess-tab-oyster.ts";
 import { guessTabCarInsurance } from "./guess-tab-car-insurance.ts";
 import { guessTabSohoPint } from "./guess-tab-soho-pint.ts";
 import { guessTabEvCharge } from "./guess-tab-ev-charge.ts";
-import { aiTuringTest } from "./ai-turing-test.ts";
 import { heathrowSearchQuery } from "./heathrow-search-query.ts";
 import { rankDrivingSins } from "./rank-driving-sins.ts";
-import { subcultureCheeseRollers } from "./subculture-cheese-rollers.ts";
-import { subcultureGurners } from "./subculture-gurners.ts";
-import { subculturePuddleStompers } from "./subculture-puddle-stompers.ts";
-import { subcultureRantersMuggletonians } from "./subculture-ranters-muggletonians.ts";
 import { datingExitExcuse } from "./dating-exit-excuse.ts";
 import { dialPopCulture } from "./dial-pop-culture.ts";
 import { dialLondonGeography } from "./dial-london-geography.ts";
 import { dialBritishPolitics } from "./dial-british-politics.ts";
 import { chessBattle } from "./chess-battle.ts";
+import { trumpMadeUpCountry } from "./trump-made-up-country.ts";
 
 /**
  * Working catalogue for Humza's questions.
@@ -79,10 +62,10 @@ export const birthdayPack: QuestionPack = {
   profile: "party",
   illustrative: false,
   order: [
-    "council-broadwater-farm",
-    "council-redoubt-new-babylon",
-    "council-thamesmead-south",
-    "council-blackbird-leys",
+    "accommodation-01",
+    "accommodation-02",
+    "accommodation-03",
+
     "apology-video-auction",
     "favourite-genre",
     "leviticus-18-7",
@@ -91,15 +74,13 @@ export const birthdayPack: QuestionPack = {
     "mock-election",
     "red-pill-blue-pill",
     "trolley-problem",
-    "trolley-your-mum",
-    "trolley-mamdani-africa",
-    "trolley-freddo-multiverse",
     "real-name-count-binface",
     "real-name-zack-polanski",
     "real-name-tommy-robinson",
     "real-name-vin-diesel",
     "real-name-jamie-foxx",
     "favourite-pokemon",
+    "whos-that-pokemon",
     "common-password",
     "complete-a-wordle",
     "inflation-freddo",
@@ -109,40 +90,30 @@ export const birthdayPack: QuestionPack = {
     "inflation-cheeseburger",
     "how-italian-is-humza",
     "christianity-branches",
-    "who-said-it-empathy",
-    "who-said-it-freedom",
-    "who-said-it-sleep",
-    "who-said-it-salvation",
-    "who-said-it-crying-ceo",
-    "who-said-it-nihilism",
-    "who-said-it-technology",
-    "who-said-it-performance-review",
-    "who-said-it-absolute-force",
-    "who-said-it-grief-pipeline",
+    "trump-made-up-country",
     "guess-tab-oyster",
     "guess-tab-car-insurance",
     "guess-tab-soho-pint",
     "guess-tab-ev-charge",
-    "ai-turing-test",
     "heathrow-search-query",
     "rank-driving-sins",
-    "subculture-cheese-rollers",
-    "subculture-gurners",
-    "subculture-puddle-stompers",
-    "subculture-ranters-muggletonians",
     "dating-exit-excuse",
     "dial-pop-culture",
     "dial-london-geography",
     "dial-british-politics",
+    "chess-battle",
+    "group-chat-figurine",
+    "cursed-search-history",
     "kart-sprint",
   ],
   catalogue: withPointsTrolls([
-    tribunalReddit,
-    councilBroadwaterFarm,
-    councilRedoubtNewBabylon,
-    councilFerrierSector,
-    councilThamesmeadSouth,
-    councilBlackbirdLeys,
+    accommodation01,
+    accommodation02,
+    accommodation03,
+    guessemotionalsupport,
+    guesscouncilcoup,
+    guessairportlounge,
+
     apologyVideoAuction,
     nextdoorParanoia,
     groupChatFigurine,
@@ -158,9 +129,6 @@ export const birthdayPack: QuestionPack = {
     mockElection,
     redPillBluePill,
     trolleyProblem,
-    trolleyYourMum,
-    trolleyMamdaniAfrica,
-    trolleyFreddoMultiverse,
     realNameCountBinface,
     realNameZackPolanski,
     realNameTommyRobinson,
@@ -177,32 +145,18 @@ export const birthdayPack: QuestionPack = {
     inflationCheeseburger,
     howItalianIsHumza,
     christianityBranches,
-    whoSaidItEmpathy,
-    whoSaidItFreedom,
-    whoSaidItSleep,
-    whoSaidItSalvation,
-    whoSaidItCryingCeo,
-    whoSaidItNihilism,
-    whoSaidItTechnology,
-    whoSaidItPerformanceReview,
-    whoSaidItAbsoluteForce,
-    whoSaidItGriefPipeline,
     guessTabOyster,
     guessTabCarInsurance,
     guessTabSohoPint,
     guessTabEvCharge,
-    aiTuringTest,
     heathrowSearchQuery,
     rankDrivingSins,
-    subcultureCheeseRollers,
-    subcultureGurners,
-    subculturePuddleStompers,
-    subcultureRantersMuggletonians,
     datingExitExcuse,
     dialPopCulture,
     dialLondonGeography,
     dialBritishPolitics,
     chessBattle,
+    trumpMadeUpCountry,
   ]),
 };
 
