@@ -6707,9 +6707,9 @@ Owner supplied Hackney listing originals; see the follow-up below.
 
 Status: `property-price-roulette` is ready (catalogue only). No deploy.
 
-The owner attached the Winkworth listing originals (not the earlier preview thumbnails). Public clue is `apps/web/public/assets/questions/property-price-roulette/photo.jpg` (interior with loft bed and microwave). Extra stills `exterior.jpg`, `interior-a.jpg`, `interior-b.jpg`, `interior-c.jpg` sit beside it. The floorplan (Saratoga Road, E5, 79 sq ft) is `docs/content/listings/property-price-roulette/floorplan.jpg` so guests cannot fetch the address from `/assets`.
+The owner attached the Winkworth listing originals (listing-2.jpg as the public clue; listing-0/1/3/4 as extras). Public clue is `apps/web/public/assets/questions/property-price-roulette/photo.jpg`. Extra stills `exterior.jpg`, `interior-a.jpg`, `interior-b.jpg`, `interior-c.jpg` sit beside it. The slider round has no extra reveal-image channel, so those stills are not projected to phones. The floorplan (Saratoga Road, E5, 79 sq ft) is `docs/content/listings/property-price-roulette/floorplan.jpg` so guests cannot fetch the address from `/assets`.
 
-Rent is the OnTheMarket headline for listing 13835770: **£750 pcm**. Closest-under number entry, scale £0–£4000. Reveal uses the agent wording that there is no kitchen and a microwave is supplied. Copyrighted listing photographs, private party use.
+Rent is **£750 pcm** (OnTheMarket 13835770; Evening Standard 11 February 2026). Closest-under number entry, scale £250–£3000, step £10. Reveal quotes the agent wording (including “accomodation”) and the 79 sq ft size. Credit: © Winkworth / OnTheMarket, copyrighted, private use. Guest preview must not include 750.
 
 Also: optional `alt` on public question images; Who’s-that-Pokémon silhouette files are required only for ready questions; Julian Herzog (Website) in the private credits file.
 
@@ -6723,6 +6723,8 @@ Merged `origin/master` (PR #43 map-guess) with a merge commit. Conflicts: `apps/
 - `npm run content:check` — passed; incomplete drafts: `where-are-we`, `ed-or-humza`, `nextdoor-paranoia`
 - `npx vitest run --project auth test/birthday-assets-prices.spec.ts test/content-preflight.spec.ts test/question-authoring.spec.ts test/party-concepts.spec.ts test/new-party-concepts.spec.ts test/map-guess-score.spec.ts` in `apps/api` — 53 passed
 - `npx vitest run src/play/question-image.test.tsx src/play/designs/whos-that-pokemon.test.tsx src/play/question-option-image.test.tsx src/play/preload.test.ts src/play/map-guess.test.tsx` in `apps/web` — 14 passed
+
+Owner follow-up: scale £250–£3000, Evening Standard 11 February 2026 as the evidence date, verbatim agent wording (including “accomodation”) and 79 sq ft on the reveal, credit © Winkworth / OnTheMarket. `content:check` no longer lists this round as incomplete. `nextdoor-paranoia` left untouched.
 
 ### Exact next stage
 

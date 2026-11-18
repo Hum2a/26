@@ -3,15 +3,16 @@ import { sliderQuestion } from "../../authoring.ts";
 export const propertyPriceRoulette = sliderQuestion({
   id: "property-price-roulette",
   title: "Property price roulette: Rightmove horror show",
-  prompt: "How much is this London “studio flat” per month?",
+  prompt:
+    "How much is this London “studio flat” per month? Winkworth listing, February 2026.",
   instructions:
     "Enter a monthly rent in pounds. Closest without going over wins. Ties share the win; all over means no winner.",
   scoring: "under",
   input: "number",
-  minimum: 0,
-  maximum: 4000,
-  step: 1,
-  initial: 0,
+  minimum: 250,
+  maximum: 3000,
+  step: 10,
+  initial: 250,
   unit: "£",
   truth: {
     known: 750,
@@ -22,12 +23,40 @@ export const propertyPriceRoulette = sliderQuestion({
       kind: "image",
       required: true,
       asset: "/assets/questions/property-price-roulette/photo.jpg",
-      credit: "Listing photograph · copyrighted, private use",
+      credit: "© Winkworth / OnTheMarket · copyrighted, private use",
       alt: "Interior of a compact London studio advertised as a flat",
+    },
+    {
+      name: "listing-extra-exterior",
+      kind: "image",
+      required: false,
+      asset: "/assets/questions/property-price-roulette/exterior.jpg",
+      credit: "© Winkworth / OnTheMarket · copyrighted, private use",
+    },
+    {
+      name: "listing-extra-interior-a",
+      kind: "image",
+      required: false,
+      asset: "/assets/questions/property-price-roulette/interior-a.jpg",
+      credit: "© Winkworth / OnTheMarket · copyrighted, private use",
+    },
+    {
+      name: "listing-extra-interior-b",
+      kind: "image",
+      required: false,
+      asset: "/assets/questions/property-price-roulette/interior-b.jpg",
+      credit: "© Winkworth / OnTheMarket · copyrighted, private use",
+    },
+    {
+      name: "listing-extra-interior-c",
+      kind: "image",
+      required: false,
+      asset: "/assets/questions/property-price-roulette/interior-c.jpg",
+      credit: "© Winkworth / OnTheMarket · copyrighted, private use",
     },
   ],
   explanation:
-    "£750 pcm. Winkworth listed this compact Lower Clapton studio as a long-term let. There is no kitchen; a microwave is supplied.",
+    "£750 pcm (Evening Standard, 11 February 2026). Winkworth: a “charming studio flat”, “perfect pied de terre or low key accomodation. There is no kitchen in the property but a microwave is supplied.” 79 sq ft.",
   notes:
-    "OnTheMarket 13835770, Winkworth, Saratoga Road E5. £750 pcm, deposit £865.40, no kitchen, microwave supplied. Floorplan (docs/content/listings/property-price-roulette/floorplan.jpg, not public) 79 sq ft. Extra stills: exterior.jpg, interior-a/b/c.jpg. Copyrighted listing photos, private use. Catalogue only until slotted.",
+    "Winkworth / OnTheMarket 13835770, Evening Standard 11 Feb 2026. Saratoga Road, Lower Clapton, E5. £750 pcm. Floorplan 79 sq ft off guest path. Extra stills exterior.jpg, interior-a/b/c.jpg. © Winkworth / OnTheMarket, copyrighted, private use. Catalogue only.",
 });

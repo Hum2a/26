@@ -29,24 +29,24 @@ recompressed; no crop or retouch. Demo drawings were exported at 1000 × 667 JPE
 These files are shipped only for this private, non-commercial birthday party.
 They are **not** licensed for public redistribution.
 
-| File                                       | Question                | Source                                                                   | Author                            | Licence                  |
-| ------------------------------------------ | ----------------------- | ------------------------------------------------------------------------ | --------------------------------- | ------------------------ |
-| `favourite-pokemon/turtwig.png`            | Favourite Pokémon       | [PokeAPI official artwork 387](https://github.com/PokeAPI/sprites)       | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
-| `favourite-pokemon/mudkip.png`             | Favourite Pokémon       | PokeAPI official artwork 258                                             | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
-| `favourite-pokemon/tepig.png`              | Favourite Pokémon       | PokeAPI official artwork 498                                             | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
-| `favourite-pokemon/osama-bin-laden.png`    | Favourite Pokémon       | News-wire portrait already in this repository                            | Photograph of a public figure     | Copyrighted, private use |
-| `whos-that-pokemon/jigglypuff.png`         | Who’s that Pokémon?     | PokeAPI official artwork 39                                              | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
-| `whos-that-pokemon/clefairy.png`           | Who’s that Pokémon?     | PokeAPI official artwork 35                                              | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
-| `whos-that-pokemon/wigglytuff.png`         | Who’s that Pokémon?     | PokeAPI official artwork 40                                              | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
-| `whos-that-pokemon/chansey.png`            | Who’s that Pokémon?     | PokeAPI official artwork 113                                             | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
-| `whos-that-pokemon/silhouette.svg`         | Who’s that Pokémon?     | PokeAPI dream-world 39.svg, fills/strokes blackened                      | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
-| `whos-that-pokemon-preview/silhouette.png` | Design-bench stand-in   | Blacked-out Mudkip from `favourite-pokemon/mudkip.png`                   | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
-| `whos-that-pokemon-preview/piplup.png`     | Design-bench stand-in   | [PokeAPI official artwork 393](https://github.com/PokeAPI/sprites)       | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
-| `property-price-roulette/photo.jpg`        | Property price roulette | Winkworth / OnTheMarket listing 13835770 interior (microwave / loft bed) | Estate-agent listing photograph   | Copyrighted, private use |
-| `property-price-roulette/exterior.jpg`     | Property price roulette | Same listing, street frontage                                            | Estate-agent listing photograph   | Copyrighted, private use |
-| `property-price-roulette/interior-a.jpg`   | Property price roulette | Same listing, interior toward the door                                   | Estate-agent listing photograph   | Copyrighted, private use |
-| `property-price-roulette/interior-b.jpg`   | Property price roulette | Same listing, loft / fold-down table                                     | Estate-agent listing photograph   | Copyrighted, private use |
-| `property-price-roulette/interior-c.jpg`   | Property price roulette | Same listing, further interior                                           | Estate-agent listing photograph   | Copyrighted, private use |
+| File                                       | Question                | Source                                                                         | Author                            | Licence                  |
+| ------------------------------------------ | ----------------------- | ------------------------------------------------------------------------------ | --------------------------------- | ------------------------ |
+| `favourite-pokemon/turtwig.png`            | Favourite Pokémon       | [PokeAPI official artwork 387](https://github.com/PokeAPI/sprites)             | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
+| `favourite-pokemon/mudkip.png`             | Favourite Pokémon       | PokeAPI official artwork 258                                                   | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
+| `favourite-pokemon/tepig.png`              | Favourite Pokémon       | PokeAPI official artwork 498                                                   | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
+| `favourite-pokemon/osama-bin-laden.png`    | Favourite Pokémon       | News-wire portrait already in this repository                                  | Photograph of a public figure     | Copyrighted, private use |
+| `whos-that-pokemon/jigglypuff.png`         | Who’s that Pokémon?     | PokeAPI official artwork 39                                                    | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
+| `whos-that-pokemon/clefairy.png`           | Who’s that Pokémon?     | PokeAPI official artwork 35                                                    | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
+| `whos-that-pokemon/wigglytuff.png`         | Who’s that Pokémon?     | PokeAPI official artwork 40                                                    | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
+| `whos-that-pokemon/chansey.png`            | Who’s that Pokémon?     | PokeAPI official artwork 113                                                   | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
+| `whos-that-pokemon/silhouette.svg`         | Who’s that Pokémon?     | PokeAPI dream-world 39.svg, fills/strokes blackened                            | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
+| `whos-that-pokemon-preview/silhouette.png` | Design-bench stand-in   | Blacked-out Mudkip from `favourite-pokemon/mudkip.png`                         | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
+| `whos-that-pokemon-preview/piplup.png`     | Design-bench stand-in   | [PokeAPI official artwork 393](https://github.com/PokeAPI/sprites)             | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
+| `property-price-roulette/photo.jpg`        | Property price roulette | listing-2.jpg, Winkworth / OnTheMarket 13835770 (Evening Standard 11 Feb 2026) | © Winkworth / OnTheMarket         | Copyrighted, private use |
+| `property-price-roulette/exterior.jpg`     | Property price roulette | listing-0.jpg, same listing                                                    | © Winkworth / OnTheMarket         | Copyrighted, private use |
+| `property-price-roulette/interior-a.jpg`   | Property price roulette | listing-1.jpg, same listing                                                    | © Winkworth / OnTheMarket         | Copyrighted, private use |
+| `property-price-roulette/interior-b.jpg`   | Property price roulette | listing-3.jpg, same listing                                                    | © Winkworth / OnTheMarket         | Copyrighted, private use |
+| `property-price-roulette/interior-c.jpg`   | Property price roulette | listing-4.jpg, same listing                                                    | © Winkworth / OnTheMarket         | Copyrighted, private use |
 
 The matching floorplan (Saratoga Road, E5, 79 sq ft) is stored at
 `docs/content/listings/property-price-roulette/floorplan.jpg` and is **not**

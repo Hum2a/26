@@ -22,6 +22,8 @@ it("saves all eight concepts without inventing a Reddit ending, local post, list
     kind: "slider",
     scoring: "under",
     truth: 750,
+    minimum: 250,
+    maximum: 3000,
   });
   const figurine = birthdayPack.catalogue.find((q) => q.id === "group-chat-figurine")!;
   expect(figurine.status).toBe("ready");

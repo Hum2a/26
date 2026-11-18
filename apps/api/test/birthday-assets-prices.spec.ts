@@ -166,13 +166,22 @@ it("ships every picture a catalogue names, including demo cake and sky drawings"
   );
   const listingPreview = questionPreview(birthdayPack, listing!);
   expect(listingPreview.question?.image?.alt).toMatch(/studio/i);
+  expect(listingPreview.question?.image?.credit).toMatch(/Winkworth/);
+  expect(JSON.stringify(listingPreview.question)).not.toMatch(/750/);
   expect(listingPreview.question).not.toHaveProperty("truth");
   expect(listingPreview.question).not.toHaveProperty("explanation");
   const playable = toPlayable(listing!);
   if (playable?.kind !== "slider") throw new Error("Ready listing slider required");
   expect(() => assertSliderQuestion(playable)).not.toThrow();
   expect(playable.scoring).toBe("under");
+  expect(playable.minimum).toBe(250);
+  expect(playable.maximum).toBe(3000);
+  expect(playable.step).toBe(10);
   expect(playable.truth).toBe(750);
+  expect(listing?.explanation).toContain("charming studio flat");
+  expect(listing?.explanation).toContain("low key accomodation");
+  expect(listing?.explanation).toContain("79 sq ft");
+  expect(listing?.explanation).toContain("11 February 2026");
   expect(pointsForEstimate(playable, 750)).toEqual({
     points: 0,
     detail: "requires-room-settlement",
