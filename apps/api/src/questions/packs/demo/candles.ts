@@ -12,6 +12,7 @@ export const candles = choiceQuestion({
       required: true,
       asset: "/assets/questions/candles/photo.jpg",
       credit: "Original demo illustration · CC0",
+      alt: "A birthday cake with candles",
     },
   ],
   options: [

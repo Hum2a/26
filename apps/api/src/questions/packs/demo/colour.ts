@@ -12,6 +12,7 @@ export const colour = choiceQuestion({
       required: true,
       asset: "/assets/questions/colour/photo.jpg",
       credit: "Original demo illustration · CC0",
+      alt: "A drawing of a night sky",
     },
   ],
   options: [

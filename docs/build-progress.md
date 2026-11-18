@@ -6662,11 +6662,10 @@ Already supplied (checked files exist, non-empty): accommodation 01–03 JPEGs; 
 | Design-bench silhouette | `…/whos-that-pokemon-preview/silhouette.png` | Blacked-out Mudkip; copyrighted, private use |
 | Design-bench Piplup | `…/whos-that-pokemon-preview/piplup.png` | PokeAPI official artwork 393; copyrighted, private use |
 
-Credits: `apps/web/public/assets/questions/CREDITS.md` (existing accommodation JSON kept). Demo version id stays `demo-2026-09-22` (pinned by `startDemo`); answers unchanged.
+Credits: full licence table is `docs/content/question-image-credits.md` (not served to guests). Public `apps/web/public/assets/questions/CREDITS.md` is only a pointer. Demo pack edited in place (`candles`, `colour` media only); version stays `demo-2026-09-22` because `startDemo` pins it and the owner asked to fill every flagged question without inventing a new demo version. Answers unchanged.
 
 ### Left for the owner
 
-- **property-price-roulette** — need a dated listing, authorised photo, monthly rent and agent wording. A stock London bedsit would invent the evidence.
 - **nextdoor-paranoia** — need a real post or redacted screenshot and the confirmed explanation. Do not fabricate a neighbourhood.
 - **ed-or-humza** — speakers, not pictures.
 
@@ -6677,9 +6676,24 @@ Credits: `apps/web/public/assets/questions/CREDITS.md` (existing accommodation J
 - `npx vitest run --project auth test/birthday-assets-prices.spec.ts test/content-preflight.spec.ts test/question-authoring.spec.ts test/party-concepts.spec.ts` in `apps/api` — 49 passed
 - `npx vitest run src/play/designs/whos-that-pokemon.test.tsx src/play/question-option-image.test.tsx src/play/preload.test.ts` in `apps/web` — 10 passed
 - `npm run content:check` — passed; still reports the incomplete birthday drafts above
+- `npm run build` — passed on the first fill commit (artifact scan, gzip budget, content preflight)
 
-Not verified in a browser (no Playwright). No `npm run build` (client graph unchanged except static public files).
+Not verified in a browser (no Playwright).
 
 ### Exact next stage
 
-Owner supplies a real Rightmove-style listing and/or Nextdoor source if those drafts should ship, then “make this question ready”.
+Owner supplied Hackney listing originals; see the follow-up below.
+
+## 18 November 2026 — Hackney listing photos and credit hygiene
+
+Status: `property-price-roulette` is ready (catalogue only). No deploy.
+
+The owner attached the Winkworth listing originals (not the earlier preview thumbnails). Public clue is `apps/web/public/assets/questions/property-price-roulette/photo.jpg` (interior with loft bed and microwave). Extra stills `exterior.jpg`, `interior-a.jpg`, `interior-b.jpg`, `interior-c.jpg` sit beside it. The floorplan (Saratoga Road, E5, 79 sq ft) is `docs/content/listings/property-price-roulette/floorplan.jpg` so guests cannot fetch the address from `/assets`.
+
+Rent is the OnTheMarket headline for listing 13835770: **£750 pcm**. Closest-under number entry, scale £0–£4000. Reveal uses the agent wording that there is no kitchen and a microwave is supplied. Copyrighted listing photographs, private party use.
+
+Also: optional `alt` on public question images; Who’s-that-Pokémon silhouette files are required only for ready questions; Julian Herzog (Website) in the private credits file.
+
+### Exact next stage
+
+Slot `property-price-roulette` in Running order if wanted. Nextdoor still needs a real post.

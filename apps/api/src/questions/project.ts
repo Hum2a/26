@@ -40,6 +40,7 @@ export function publicQuestionImage(question: { media?: readonly MediaRef[] }) {
           src: image.asset,
           credit: image.credit,
           ...(image.creditUrl ? { creditUrl: image.creditUrl } : {}),
+          ...(image.alt ? { alt: image.alt } : {}),
         },
       }
     : {};

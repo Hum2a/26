@@ -63,7 +63,7 @@ Estimated show length: about 42 rounds × 60–90 s plus chess (2 min + intro), 
 | `guess-emotional-support`, `guess-council-coup`, `guess-airport-lounge`                | Ready  | Add to Running order if wanted.                                                                                              |
 | `kart-park-grand-prix`                                                                 | Ready  | Alternative kart course; add only if a second race is wanted.                                                                |
 | `nextdoor-paranoia`                                                                    | Gap    | A real post or screenshot and its confirmed explanation, plus the correct choice. Or drop it.                                |
-| `property-price-roulette`                                                              | Gap    | Dated listing, authorised photo, monthly rent, agent wording and slider scale. Or drop it.                                   |
+| `property-price-roulette`                                                              | Ready  | Sourced Winkworth listing at £750 pcm; catalogue only until it is added to Running order.                                    |
 
 ## 3. Features
 

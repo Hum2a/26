@@ -157,9 +157,40 @@ it("ships every picture a catalogue names, including demo cake and sky drawings"
     (q) => q.id === "property-price-roulette",
   );
   expect(listing?.media?.[0]?.required).toBe(true);
-  expect(listing?.media?.[0]?.asset).toBeUndefined();
-  expect(packPublicAssets(birthdayPack)).not.toContain(
+  expect(listing?.media?.[0]?.asset).toBe(
     "/assets/questions/property-price-roulette/photo.jpg",
+  );
+  expect(listing?.status).toBe("ready");
+  expect(packPublicAssets(birthdayPack)).toContain(
+    "/assets/questions/property-price-roulette/photo.jpg",
+  );
+  const listingPreview = questionPreview(birthdayPack, listing!);
+  expect(listingPreview.question?.image?.alt).toMatch(/studio/i);
+  expect(listingPreview.question).not.toHaveProperty("truth");
+  expect(listingPreview.question).not.toHaveProperty("explanation");
+  const playable = toPlayable(listing!);
+  if (playable?.kind !== "slider") throw new Error("Ready listing slider required");
+  expect(() => assertSliderQuestion(playable)).not.toThrow();
+  expect(playable.scoring).toBe("under");
+  expect(playable.truth).toBe(750);
+  expect(pointsForEstimate(playable, 750)).toEqual({
+    points: 0,
+    detail: "requires-room-settlement",
+  });
+  for (const extra of ["exterior", "interior-a", "interior-b", "interior-c"] as const) {
+    const file = publicFile(`/assets/questions/property-price-roulette/${extra}.jpg`);
+    expect(existsSync(file), extra).toBe(true);
+    expect([...readFileSync(file).subarray(0, 2)]).toEqual([0xff, 0xd8]);
+  }
+  const floorplan = fileURLToPath(
+    new URL(
+      "../../../docs/content/listings/property-price-roulette/floorplan.jpg",
+      import.meta.url,
+    ).href,
+  );
+  expect(existsSync(floorplan)).toBe(true);
+  expect(packPublicAssets(birthdayPack)).not.toContain(
+    "/assets/questions/property-price-roulette/floorplan.jpg",
   );
   for (const id of ["candles", "colour"] as const) {
     const preview = questionPreview(

@@ -2,7 +2,7 @@
 
 [Home](../../README.md) · [Documentation](../README.md) · [Event runbook](../event-runbook.md)
 
-Saved all eight supplied concepts as twelve catalogue entries. They stay out of the birthday running order. Five are ready: the apology tournament and four Council/Dystopia choices. Seven are drafts with explicit facts or mechanics missing. The separate kart sprint adds one ready entry. Together with the earlier fifty completed questions, the birthday catalogue has **56 ready / 7 draft** entries.
+Saved all eight supplied concepts as twelve catalogue entries. They stay out of the birthday running order. Six are ready including the sourced property-price slider. Drafts still missing facts: tribunal-reddit, nextdoor-paranoia, and the retired Ferrier-sector name check.
 
 | Id                            | State                | Mechanic / missing item                                                                                                                                                                                                           |
 | ----------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -16,9 +16,9 @@ Saved all eight supplied concepts as twelve catalogue entries. They stay out of 
 | `nextdoor-paranoia`           | Draft                | Choice. Needs a real post/screenshot and its confirmed mundane explanation. The proposed A-or-B example is not a usable answer key.                                                                                               |
 | `group-chat-figurine`         | Ready (not in order) | Room majority guess, self-votes allowed. A self-vote scores double when the room also picks you (`selfVoteBonus: "double"`, agreed 2 November 2026).                                                                              |
 | `cursed-search-history`       | Ready (not in order) | Push your luck (`outcome: { kind: "push" }`): a line every 6 s, Raid after line 2, 3 or 4 or never, frozen when answering opens; banks 100 / 250 / 450 / 700.                                                                     |
-| `property-price-roulette`     | Draft                | Needs dated real listing, image, monthly rent, scale and genuine estate-agent reveal copy. No fictional example is treated as real evidence.                                                                                      |
+| `property-price-roulette`     | Ready (not in order) | Closest-under monthly rent. Winkworth / OnTheMarket listing 13835770 at £750 pcm; interior photo on the phones; floorplan kept off the public asset path.                                                                         |
 
-Unsupported mechanics have disabled, explicitly labelled layout previews. Property has no invented slider range or image. Ordinary ready choices and the apology tournament reuse the real guest renderer and existing voting engine.
+Unsupported mechanics have disabled, explicitly labelled layout previews. Ordinary ready choices, the apology tournament and the sourced property slider reuse the real guest renderer.
 
 Primary references checked 20 October 2026:
 

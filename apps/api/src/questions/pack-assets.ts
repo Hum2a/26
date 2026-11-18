@@ -34,6 +34,9 @@ export function silhouetteAsset(question: AuthoredQuestion): string | undefined 
   if (question.presentation !== "whos-that-pokemon") {
     return undefined;
   }
+  if (question.status !== "ready") {
+    return undefined;
+  }
   const ext = question.id === "whos-that-pokemon" ? "svg" : "png";
   return `/assets/questions/${question.id}/silhouette.${ext}`;
 }

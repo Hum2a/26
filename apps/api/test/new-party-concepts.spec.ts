@@ -5,11 +5,7 @@ import { toPlayable } from "../src/questions/authoring.ts";
 import { validatePack } from "../src/questions/validate.ts";
 
 it("saves all eight concepts without inventing a Reddit ending, local post, listing or special mechanic", () => {
-  for (const id of [
-    "tribunal-reddit",
-    "nextdoor-paranoia",
-    "property-price-roulette",
-  ]) {
+  for (const id of ["tribunal-reddit", "nextdoor-paranoia"]) {
     const q = [...birthdayPack.catalogue, ...retiredBirthdayQuestions].find(
       (q) => q.id === id,
     )!;
@@ -17,6 +13,14 @@ it("saves all eight concepts without inventing a Reddit ending, local post, list
     expect(q.status).toBe("draft");
     expect(toPlayable(q)).toBeUndefined();
   }
+  const listing = birthdayPack.catalogue.find((q) => q.id === "property-price-roulette")!;
+  expect(birthdayPack.order).not.toContain(listing.id);
+  expect(listing.status).toBe("ready");
+  expect(toPlayable(listing)).toMatchObject({
+    kind: "slider",
+    scoring: "under",
+    truth: 750,
+  });
   const figurine = birthdayPack.catalogue.find((q) => q.id === "group-chat-figurine")!;
   expect(figurine.status).toBe("ready");
   expect(birthdayPack.order).toContain("group-chat-figurine");

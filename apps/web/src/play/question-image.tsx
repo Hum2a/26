@@ -15,7 +15,7 @@ export function QuestionImage({ question }: { question: PlaySnapshot["question"]
     >
       <img
         src={image.src}
-        alt="Picture for this question"
+        alt={image.alt ?? "Picture for this question"}
         width={1000}
         height={667}
         decoding="async"
