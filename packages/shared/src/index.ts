@@ -305,7 +305,8 @@ export const contentLimits = {
   pointsMin: 0,
   pointsMax: 1000,
   optionMin: 2,
-  optionMax: 6,
+  /** Raised from 6 on 18 November 2026 for the seven-option esports tag question. */
+  optionMax: 8,
   /** A poll may list more options, such as every party on a ballot. */
   pollOptionMax: 16,
   rankMax: 8,
