@@ -141,7 +141,27 @@ describe("admin entry", () => {
     fireEvent.change(code, { target: { value: "654321" } });
     fireEvent.click(screen.getByRole("button", { name: "Sign in with code" }));
     expect(await screen.findByText("Rooms destination")).toBeTruthy();
-    expect(confirmEmailCode).toHaveBeenLastCalledWith("admin@example.test", "654321");
+    expect(confirmEmailCode).toHaveBeenLastCalledWith(
+      "admin@example.test",
+      "654321",
+      false,
+    );
+  });
+
+  it("signs a named agent in with an operator code without requesting an email", async () => {
+    const email = "codex.staging@agents.26.humza.invalid";
+    vi.mocked(confirmEmailCode).mockResolvedValueOnce({ signedIn: true, email });
+    mount("/admin/login?agent=1&returnTo=%2Fadmin%2Frooms");
+    fireEvent.change(await screen.findByLabelText("Agent account email"), {
+      target: { value: email },
+    });
+    fireEvent.change(screen.getByLabelText("Six-digit agent code"), {
+      target: { value: "123456" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in with agent code" }));
+    expect(await screen.findByText("Rooms destination")).toBeTruthy();
+    expect(confirmEmailCode).toHaveBeenCalledWith(email, "123456", true);
+    expect(requestMagicLink).not.toHaveBeenCalled();
   });
 
   it("protects admin and redirects to login", async () => {

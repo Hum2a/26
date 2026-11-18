@@ -11,6 +11,7 @@
 | I want to…                          | Read this                                                                             |
 | :---------------------------------- | :------------------------------------------------------------------------------------ |
 | Run the app locally                 | [Setup and commands](../README.md#local-app)                                          |
+| Give an agent its own admin login   | [Agent access](agent-access.md)                                                       |
 | Decide what Humza must choose or do | [Decisions for Humza](decisions-for-humza.md)                                         |
 | Rehearse the whole night on staging | [Rehearsal kit](rehearsal-kit.md)                                                     |
 | Present or operate the party        | [Event runbook](event-runbook.md)                                                     |
