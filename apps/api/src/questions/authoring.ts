@@ -15,6 +15,8 @@ import {
   type AuthoredSlider,
   type AuthoredTyped,
   type AuthoredWordle,
+  type AuthoredMapGuess,
+  type MapTarget,
   type AuthoredVote,
   type ChoiceOutcome,
   type ChoiceQuestion,
@@ -208,6 +210,31 @@ export function typedQuestion(
       maxLength: input.maxLength ?? ordinaryDefaults.typedMaxLength,
       scoring: input.scoring,
       accepted: input.accepted ?? { missing: missingAccepted },
+    },
+    input.status,
+  );
+}
+
+export function mapGuessQuestion(
+  input: Omit<SharedInput, "points" | "collectMs"> & { target: Answer<MapTarget> },
+): AuthoredMapGuess {
+  const media = [
+    ...(input.media ?? []).filter(({ name }) => name !== "question"),
+    {
+      ...input.media?.find(({ name }) => name === "question"),
+      name: "question",
+      kind: "image" as const,
+      required: true,
+    },
+  ];
+  return finish(
+    {
+      ...shared(
+        { ...input, media, collectMs: ordinaryDefaults.mapGuessCollectMs },
+        ordinaryDefaults.mapGuessPoints,
+      ),
+      kind: "map-guess",
+      target: input.target,
     },
     input.status,
   );
@@ -525,6 +552,11 @@ export function toPlayable(
       input: question.input,
     };
     return playable;
+  }
+  if (question.kind === "map-guess") {
+    return isKnown(question.target)
+      ? { ...core, kind: question.kind, target: question.target.known }
+      : undefined;
   }
   if (question.kind === "wordle") {
     return isKnown(question.answer)

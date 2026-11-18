@@ -26,6 +26,7 @@ export function preloadImages(paths: readonly string[]): void {
 /** Option pictures for the question already on screen. Nothing from later questions. */
 export function questionImages(snapshot: LobbySnapshot | undefined): string[] {
   const question = snapshot?.play?.question;
+  if (question?.kind === "map-guess") return question.image ? [question.image.src] : [];
   if (!question || !("options" in question) || !Array.isArray(question.options)) {
     return [];
   }
@@ -67,6 +68,12 @@ export function usePreloadQuestion(
     }
     if (kind === "kart") {
       warmKart(surface);
+    }
+    if (kind === "map-guess") {
+      void import("./map-guess").catch(() => undefined);
+      void import("./map-guess-world")
+        .then(({ loadWorld }) => loadWorld())
+        .catch(() => undefined);
     }
   }, [questionId, kind, images, surface]);
 }

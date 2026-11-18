@@ -45,6 +45,8 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
       return play.question.outcome === "multiple"
         ? "Select all that apply, then send"
         : "Pick one, then send your answer";
+    case "map-guess":
+      return "Drop a pin, then send";
     case "slider":
       return play.question.input === "number"
         ? "Enter your price, then lock it in"

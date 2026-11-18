@@ -1,6 +1,9 @@
 import { QuestionImage } from "./question-image";
 import { lazy, Suspense } from "react";
-// The race and its track geometry load when a kart round arrives, not on joining.
+const GuestMapGuess = lazy(() =>
+  import("./map-guess").then((m) => ({ default: m.GuestMapGuess })),
+);
+// The race and track geometry load when a kart round arrives.
 const GuestKart = lazy(() =>
   import("../kart/GuestKart").then((kart) => ({ default: kart.GuestKart })),
 );
@@ -14,7 +17,7 @@ import type {
   ChessMoveParams,
   ChessResignParams,
 } from "@26/shared";
-import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
+import type { LobbySnapshot, MapPin, PlaySnapshot } from "@26/shared";
 import { QuestionOptionImage } from "./question-option-image";
 import { OptionText } from "./controls/OptionText";
 import { SubmitButton } from "./controls/SubmitButton";
@@ -40,6 +43,7 @@ export function GuestPlay({
   onSelect,
   onSubmit,
   onEstimate,
+  onMapPin,
   onRank,
   onText,
   onDraft,
@@ -83,6 +87,7 @@ export function GuestPlay({
   pending: boolean;
   onSelect: (optionId: string) => void;
   onSubmit: () => void;
+  onMapPin?: (pin: MapPin) => void;
   onEstimate: (value: number) => void;
   onRank: (placements: { itemId: string; tierId: string }[]) => void;
   onText: (body: string) => void;
@@ -207,11 +212,25 @@ export function GuestPlay({
           </p>
         ) : null}
         <h1 className="phone-prompt">{play.question.prompt}</h1>
-        <QuestionImage question={play.question} />
+        {(play.question.kind !== "map-guess" ||
+          (snapshot.phase !== "intro" && snapshot.phase !== "prompt")) && (
+          <QuestionImage question={play.question} />
+        )}
         {play.question.instructions ? (
           <p className="text-base text-muted">{play.question.instructions}</p>
         ) : null}
         {play.explanation ? <p>{play.explanation}</p> : null}
+        {play.question.kind === "map-guess" ? (
+          <Suspense fallback={<p role="status">Loading the map…</p>}>
+            <GuestMapGuess
+              key={play.question.id}
+              play={play}
+              open={open && connected !== false && Boolean(onMapPin)}
+              pending={pending}
+              onSubmit={onMapPin}
+            />
+          </Suspense>
+        ) : null}
         {play.question.kind === "slider" ? (
           <GuestSlider
             play={play}

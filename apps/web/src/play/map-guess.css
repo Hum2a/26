@@ -1,0 +1,36 @@
+.guess-map {
+  width: 100%;
+  height: clamp(12rem, 42dvh, 25rem);
+  background: #b3d8e7;
+  border-radius: 0.65rem;
+  isolation: isolate;
+}
+.guess-map:focus-visible {
+  outline: 3px solid currentColor;
+}
+.guess-map-label {
+  display: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0 0.2rem;
+  color: #1b3946;
+  text-shadow:
+    0 0 2px white,
+    0 0 3px white;
+}
+.guess-map-label::before {
+  display: none;
+}
+.guess-map-country {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #193936;
+}
+.guess-map-show-countries .guess-map-country,
+.guess-map-show-cities .guess-map-city {
+  display: block;
+}
+.stage-map-guess .guess-map {
+  height: clamp(14rem, 42dvh, 36rem);
+}

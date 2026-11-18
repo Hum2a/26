@@ -43,21 +43,22 @@ Register that export in `catalogue` inside `apps/api/src/questions/packs/birthda
 
 Helpers live in `apps/api/src/questions/authoring.ts`. Defaults live only in `apps/api/src/questions/defaults.ts`.
 
-| Idea                                    | Helper                                                      | Mechanic |
-| --------------------------------------- | ----------------------------------------------------------- | -------- |
-| Pick one option                         | `choiceQuestion`                                            | `choice` |
-| Vote with no right answer               | `choiceQuestion` with `outcome: { kind: "poll" }`           | `choice` |
-| The room's split decides who scores     | `choiceQuestion` with `outcome: { kind: "threshold", ... }` | `choice` |
-| Push your luck: bail before a Raid      | `choiceQuestion` with `outcome: { kind: "push", ... }`      | `choice` |
-| Solve a five-letter word in six guesses | `wordleQuestion`                                            | `wordle` |
-| Drive a one-lap sprint                  | `kartQuestion`                                              | `kart`   |
-| Type a short answer                     | `typedQuestion`                                             | `typed`  |
-| Estimate a number                       | `sliderQuestion`                                            | `slider` |
-| Put items in order                      | `rankQuestion`                                              | `rank`   |
-| Write a line, then vote                 | `voteQuestion`                                              | `vote`   |
-| Name a person                           | `guessQuestion`                                             | `guess`  |
-| One-against-one number                  | `duelQuestion`                                              | `duel`   |
-| Two contestants, everyone else predicts | `finaleQuestion`                                            | `finale` |
+| Idea                                    | Helper                                                      | Mechanic    |
+| --------------------------------------- | ----------------------------------------------------------- | ----------- |
+| Pick one option                         | `choiceQuestion`                                            | `choice`    |
+| Vote with no right answer               | `choiceQuestion` with `outcome: { kind: "poll" }`           | `choice`    |
+| The room's split decides who scores     | `choiceQuestion` with `outcome: { kind: "threshold", ... }` | `choice`    |
+| Push your luck: bail before a Raid      | `choiceQuestion` with `outcome: { kind: "push", ... }`      | `choice`    |
+| Solve a five-letter word in six guesses | `wordleQuestion`                                            | `wordle`    |
+| Guess where a clue photo was taken      | `mapGuessQuestion`                                          | `map-guess` |
+| Drive a one-lap sprint                  | `kartQuestion`                                              | `kart`      |
+| Type a short answer                     | `typedQuestion`                                             | `typed`     |
+| Estimate a number                       | `sliderQuestion`                                            | `slider`    |
+| Put items in order                      | `rankQuestion`                                              | `rank`      |
+| Write a line, then vote                 | `voteQuestion`                                              | `vote`      |
+| Name a person                           | `guessQuestion`                                             | `guess`     |
+| One-against-one number                  | `duelQuestion`                                              | `duel`      |
+| Two contestants, everyone else predicts | `finaleQuestion`                                            | `finale`    |
 
 A choice can set `optionReveal: "one-at-a-time"`. In the get-ready/prompt beat, the host uses **Reveal next option** (or the usual advance shortcut) once per option. The room durably saves the count, withholds unseen labels and images from public snapshots, and waits without a prompt deadline. Once all options are visible, **Open answering** starts the normal answer window. Guests cannot select before that phase. `favourite-genre` uses this flow; other choices retain their existing flow. The isolated phone and stage previews offer the same option steps.
 
@@ -74,6 +75,8 @@ A guess can set `selfVoteBonus: "double"` with majority scoring and self-votes a
 A typed question lists its accepted spellings. The first is shown at the reveal. Matching ignores case, accents, punctuation, hyphens and spacing, and forgives a small typo: none up to 4 letters, one up to 9, two beyond that. Wrong answers stay off the stage.
 
 A Wordle question supplies `answer: { known: "ABCDE" }` with exactly five uppercase letters. Defaults are six guesses, two minutes and 100 points for a solve, with no speed bonus. The server validates guesses against Encore Glyph’s frozen word list, always allowing the supplied target. Repeated letters use two-pass marking. Only the guest sees their own board; the stage gets finished-board progress and the target at reveal. A reconnect restores the saved board. In Question packs, its phone rehearsal checks guesses through an authenticated, stateless server endpoint; it never starts a room or awards points.
+
+A map guess gives each guest 40 seconds to place and send one pin. Supply a credited clue photo as required `question` media and set `target.known` to the real `{ lat, lng, label }`. Use a neutral filename, remove embedded GPS metadata, and check that the displayed credit does not disclose the answer. Put any story Baseer should tell afterwards in the reveal explanation. The highest score is 100, with points falling by distance (half at about 693 km). The world basemap shows countries and selected cities, so use a clue that can be guessed at that scale.
 
 If the idea needs an interaction that is not in that list, say so and still save a draft. Do not force it into the wrong mechanic, and do not start a new scoring engine.
 

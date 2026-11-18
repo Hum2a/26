@@ -24,6 +24,7 @@ apps/kart-solo/public/draco
 # Vendored Stockfish engine build, kept byte-for-byte with upstream.
 apps/web/public/chess-engine/*.js
 # Generated files: regenerate them rather than reformat.
+apps/web/public/assets/maps/world.geojson
 apps/api/src/questions/wordle/dictionary/validity-words.ts
 docs/loc-report.md
 scripts/env-files.d.ts
