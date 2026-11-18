@@ -83,6 +83,7 @@ export function makeEdOrHumza(quotes: readonly EdOrHumzaQuote[] = edOrHumzaQuote
     id: "ed-or-humza",
     title: "Ed or Humza?",
     prompt: "Who said it? Sort every quote into Ed or Humza.",
+    presentation: "ed-or-humza",
     instructions:
       "Pick Ed or Humza for every quote. You can change your picks before sending the whole list.",
     input: "buckets",
@@ -111,7 +112,7 @@ export function makeEdOrHumza(quotes: readonly EdOrHumzaQuote[] = edOrHumzaQuote
             .filter((group) => group.itemIds.length > 0),
         },
     notes:
-      "Personal quotes supplied by Humza, 17 November 2026; wording preserved, speakers unconfirmed. Set speaker only after confirmation; null keeps this a draft. One whole-list submission; 80 points proportional to correct placements, rounded down; two minutes, no speed bonus. Append up to 40 quotes of 300 characters with unique stable ids. Speaker assignments stay server-side. Include in the running order only when confirmed and explicitly requested.",
+      "Personal quotes supplied by Humza, 17 November 2026; wording preserved, speakers unconfirmed. TODO owner: set each speaker to ed or humza; null keeps this a draft. Card-stack presentation ed-or-humza. One whole-list submission; 80 points proportional to correct placements, rounded down; two minutes, no speed bonus. Speaker keys stay server-side.",
   });
 }
 

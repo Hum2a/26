@@ -60,9 +60,11 @@ describe("Ed or Humza whole-list sorting", () => {
   it("rehearses the full list without leaking an answer key or inventing assignments", () => {
     const preview = questionPreview(birthdayPack, edOrHumza);
     expect(preview.interactive).toBe(true);
+    expect(edOrHumza.presentation).toBe("ed-or-humza");
     expect(preview.question).toMatchObject({
       input: "buckets",
       scoring: "placement",
+      presentation: "ed-or-humza",
       tiers: [
         { id: "ed", label: "Ed" },
         { id: "humza", label: "Humza" },

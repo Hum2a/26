@@ -167,6 +167,7 @@ export function GuestPlay({
       onSubmit,
       onRank,
       onText,
+      onMapPin,
       wordleFeedback,
       onWordleEdit,
     },

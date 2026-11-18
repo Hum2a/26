@@ -14,6 +14,8 @@ import { TrolleyLever } from "./trolley-lever";
 import { WhoSaidIt } from "./who-said-it";
 import { WhosThatPokemon } from "./whos-that-pokemon";
 import { ExecutiveOrder } from "./executive-order";
+import { WhereAreWe } from "./where-are-we";
+import { EdOrHumza } from "./ed-or-humza";
 
 /** One design per custom presentation id. A missing id fails the typecheck. */
 export const designs: Record<CustomPresentationId, QuestionPresentation> = {
@@ -31,4 +33,6 @@ export const designs: Record<CustomPresentationId, QuestionPresentation> = {
   "redacted-file": RedactedFile,
   "whos-that-pokemon": WhosThatPokemon,
   "executive-order": ExecutiveOrder,
+  "where-are-we": WhereAreWe,
+  "ed-or-humza": EdOrHumza,
 };
