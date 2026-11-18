@@ -1,9 +1,11 @@
 import { CautionTape } from "../anim/CautionTape";
+import { useThemeVoice } from "../theme/voices";
 
 export function WaitingNext() {
+  const voice = useThemeVoice();
   return (
     <div className="tape-host">
-      <p>Waiting for the next question.</p>
+      <p>{voice.waiting}</p>
       <CautionTape />
     </div>
   );

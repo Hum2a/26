@@ -5,6 +5,8 @@ import { Button } from "../ui/primitives";
 import { SubmitButton } from "./controls/SubmitButton";
 import { roundSubmitState } from "./controls/submit-state";
 import { useDesignMotion } from "./designs/kit";
+import { optionMark } from "../theme/identity";
+import { useThemeIdentity } from "../theme/use-theme-identity";
 
 export function GuestMultiple({
   play,
@@ -19,6 +21,8 @@ export function GuestMultiple({
 }) {
   const [draft, setDraft] = useState<string[]>([]);
   const motionKit = useDesignMotion();
+  // The projector's marks, so a ticked answer matches the big screen.
+  const { marks } = useThemeIdentity();
   if (play.question.kind !== "choice") return null;
   const accepted =
     play.selfAnswer?.kind === "multiple" ? play.selfAnswer.optionIds : undefined;
@@ -49,7 +53,7 @@ export function GuestMultiple({
               }
             >
               <span className="question-choice-mark" aria-hidden="true">
-                {String.fromCharCode(65 + index)}
+                {optionMark(marks, index, "stage")}
               </span>
               {option.label}
               {reveal?.correctOptionIds?.includes(option.id) ? " — correct" : ""}

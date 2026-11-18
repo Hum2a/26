@@ -15,14 +15,14 @@ import {
 import { RosterAvatar } from "../ui/roster";
 import { useRoster } from "../ui/roster-context";
 import { QuestionOptionImage } from "./question-option-image";
+import { optionMark } from "../theme/identity";
+import { useThemeIdentity } from "../theme/use-theme-identity";
 import "./vote-board.css";
 
 type ChoicePlay = PlaySnapshot & {
   question: Extract<PlaySnapshot["question"], { kind: "choice" }>;
 };
 type ChoiceReveal = Extract<NonNullable<PlaySnapshot["reveal"]>, { kind: "choice" }>;
-
-const letters = "ABCDEFGHIJKLMNOP";
 
 /**
  * The big-screen board for a choice question. Each option grows with its share
@@ -38,6 +38,7 @@ export function VoteBoard({ play }: { play: PlaySnapshot }) {
 }
 
 function ChoiceBoard({ play }: { play: ChoicePlay }) {
+  const { marks } = useThemeIdentity();
   const options = play.question.options;
   const reveal = play.reveal?.kind === "choice" ? play.reveal : undefined;
   const voters = play.voters ?? null;
@@ -71,6 +72,7 @@ function ChoiceBoard({ play }: { play: ChoicePlay }) {
                 <VoteOption
                   key={option.id}
                   index={index}
+                  mark={optionMark(marks, index, "stage")}
                   label={option.label}
                   image={option.image}
                   share={shares[index]!}
@@ -130,6 +132,7 @@ function BoardHeader({
 
 const VoteOption = memo(function VoteOption({
   index,
+  mark,
   label,
   image,
   share,
@@ -139,6 +142,7 @@ const VoteOption = memo(function VoteOption({
   result,
 }: {
   index: number;
+  mark: string;
   label: string;
   image?: string;
   share: VoteShare;
@@ -187,7 +191,7 @@ const VoteOption = memo(function VoteOption({
       {image ? <QuestionOptionImage src={image} /> : null}
       <div className="vote-option-head">
         <span className="vote-option-letter" aria-hidden="true">
-          {letters[index] ?? "•"}
+          {mark}
         </span>
         <span className="vote-option-label">{label}</span>
         <AnimatePresence initial={false}>
@@ -260,6 +264,7 @@ const VoteOption = memo(function VoteOption({
 
 type VoteOptionProps = {
   index: number;
+  mark: string;
   label: string;
   image?: string;
   share: VoteShare;
@@ -273,6 +278,7 @@ type VoteOptionProps = {
 function sameOption(before: VoteOptionProps, after: VoteOptionProps): boolean {
   return (
     before.index === after.index &&
+    before.mark === after.mark &&
     before.label === after.label &&
     before.image === after.image &&
     before.sized === after.sized &&

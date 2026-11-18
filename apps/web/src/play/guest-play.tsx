@@ -35,6 +35,8 @@ import { GuestPush } from "./guest-push";
 import { renderPresentation } from "./presentation";
 import { QuestionExperience } from "./question-experience";
 import { motion, useReducedMotion } from "motion/react";
+import { optionMark } from "../theme/identity";
+import { useThemeIdentity } from "../theme/use-theme-identity";
 
 export function GuestPlay({
   snapshot,
@@ -98,6 +100,9 @@ export function GuestPlay({
   onDuel: (value: number) => void;
 }) {
   const reduce = useReducedMotion();
+  // A mark per option, so an answer is never told apart by colour alone. Its
+  // style follows the theme and matches the projector's.
+  const { marks } = useThemeIdentity();
   const play = snapshot.play;
   if (!play) {
     return null;
@@ -365,7 +370,7 @@ export function GuestPlay({
                     onClick={() => onSelect(option.id)}
                   >
                     <span className="question-choice-mark" aria-hidden="true">
-                      {answerShapes[index % answerShapes.length]}
+                      {optionMark(marks, index, "phone")}
                     </span>
                     {option.image ? <QuestionOptionImage src={option.image} /> : null}
                     <OptionText text={`${option.label}${note}`} />
@@ -396,9 +401,6 @@ export function GuestPlay({
     </QuestionExperience>
   );
 }
-
-/** One shape per option, so an answer is never told apart by colour alone. */
-const answerShapes = ["▲", "◆", "●", "■", "★", "⬢"] as const;
 
 /** Phone label suffix at the reveal: the right answer, or the room's count and who scored. */
 export function choiceNote(

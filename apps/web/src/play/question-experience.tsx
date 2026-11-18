@@ -3,6 +3,8 @@ import type { CSSProperties, ReactNode } from "react";
 import type { LobbySnapshot } from "@26/shared";
 import "./question-experience.css";
 import { answerStatus, questionDirection } from "./question-direction";
+import { useThemeVoice } from "../theme/voices";
+import { Celebration } from "../anim/Celebration";
 
 /** The shared phone stage. Bespoke designs own their visual inside this frame. */
 export function QuestionExperience({
@@ -15,6 +17,7 @@ export function QuestionExperience({
   children: ReactNode;
 }) {
   const reduce = useReducedMotion();
+  const voice = useThemeVoice();
   const play = snapshot.play;
   if (!play) return null;
   const cue = questionDirection(snapshot, pending);
@@ -33,7 +36,7 @@ export function QuestionExperience({
         ? {
             tone: "won",
             title: `+${award} points`,
-            line: "Nice. Check Ranks for your place.",
+            line: voice.won,
           }
         : {
             tone: "missed",
@@ -41,7 +44,7 @@ export function QuestionExperience({
             line:
               play.question.index >= play.question.total
                 ? "That was the last one. Watch the stage for the podium."
-                : "Plenty more to come.",
+                : voice.missed,
           }
       : revealed && status === "accepted" && play.question.kind !== "kart"
         ? // The room gives no award for a round that cannot score, such as a poll.
@@ -108,7 +111,9 @@ export function QuestionExperience({
               {result?.tone === "missed" ? (
                 <span className="answer-state-glyph">–</span>
               ) : result ? (
-                <span className="answer-state-glyph">★</span>
+                <span className="answer-state-glyph">
+                  {result.tone === "won" ? voice.glyph : "★"}
+                </span>
               ) : status === "accepted" ? (
                 <motion.svg viewBox="0 0 24 24">
                   <motion.path
@@ -139,10 +144,13 @@ export function QuestionExperience({
                   : status === "accepted"
                     ? revealed
                       ? "Your answer is in. See the stage for the result."
-                      : "The room has your answer. Watch the stage."
+                      : voice.locked
                     : "Hold on while the room confirms it."}
               </span>
             </span>
+            {result?.tone === "won" ? (
+              <Celebration key={`${play.question.id}:won`} />
+            ) : null}
             {players > 0 && !revealed ? (
               <span
                 className="answer-state-count"
