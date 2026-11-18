@@ -6724,8 +6724,14 @@ Merged `origin/master` (PR #43 map-guess) with a merge commit. Conflicts: `apps/
 - `npx vitest run --project auth test/birthday-assets-prices.spec.ts test/content-preflight.spec.ts test/question-authoring.spec.ts test/party-concepts.spec.ts test/new-party-concepts.spec.ts test/map-guess-score.spec.ts` in `apps/api` — 53 passed
 - `npx vitest run src/play/question-image.test.tsx src/play/designs/whos-that-pokemon.test.tsx src/play/question-option-image.test.tsx src/play/preload.test.ts src/play/map-guess.test.tsx` in `apps/web` — 14 passed
 
-Owner follow-up: scale £250–£3000, Evening Standard 11 February 2026 as the evidence date, verbatim agent wording (including “accomodation”) and 79 sq ft on the reveal, credit © Winkworth / OnTheMarket. `content:check` no longer lists this round as incomplete. `nextdoor-paranoia` left untouched.
+Owner follow-up: scale £250–£3000, Evening Standard 11 February 2026 as the evidence date, verbatim agent wording (including “accomodation”) and 79 sq ft on the reveal, credit © Winkworth / OnTheMarket. `content:check` no longer lists this round as incomplete.
+
+## 18 November 2026 — Nextdoor paranoia typeset post
+
+Status: `nextdoor-paranoia` is ready (catalogue only). No deploy.
+
+The owner chose a typeset neighbourhood-app card rather than inventing a screenshot. `apps/web/public/assets/questions/nextdoor-paranoia/photo.png` shows “A neighbour”, a redacted name bar, a generic neighbourhood, and only the quoted line about a slow moving vehicle following the school bus every morning. No Nextdoor logo. Source: Marshall News Messenger, 5 February 2024. Choice prompt: “What was the suspicious vehicle actually doing?” Correct option: Delivering newspapers. Reveal quotes “Turned out it was the newspaper delivery guy.” The old hoodie post is gone.
 
 ### Exact next stage
 
-Slot `property-price-roulette` in Running order if wanted. Nextdoor still needs a real post. `where-are-we` still needs its clue photo and coordinates.
+Slot `property-price-roulette` and `nextdoor-paranoia` in Running order if wanted. `where-are-we` still needs its clue photo and coordinates.

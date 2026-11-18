@@ -5,7 +5,7 @@ import { toPlayable } from "../src/questions/authoring.ts";
 import { validatePack } from "../src/questions/validate.ts";
 
 it("saves all eight concepts without inventing a Reddit ending, local post, listing or special mechanic", () => {
-  for (const id of ["tribunal-reddit", "nextdoor-paranoia"]) {
+  for (const id of ["tribunal-reddit"]) {
     const q = [...birthdayPack.catalogue, ...retiredBirthdayQuestions].find(
       (q) => q.id === id,
     )!;
@@ -13,6 +13,21 @@ it("saves all eight concepts without inventing a Reddit ending, local post, list
     expect(q.status).toBe("draft");
     expect(toPlayable(q)).toBeUndefined();
   }
+  const nextdoor = birthdayPack.catalogue.find((q) => q.id === "nextdoor-paranoia")!;
+  expect(birthdayPack.order).not.toContain(nextdoor.id);
+  expect(nextdoor.status).toBe("ready");
+  expect(toPlayable(nextdoor)).toMatchObject({
+    kind: "choice",
+    correctOptionId: "newspapers",
+  });
+  expect(nextdoor.prompt).not.toMatch(/hoodie/i);
+  if (nextdoor.kind !== "choice") throw new Error("Choice required");
+  expect(nextdoor.options.map((option) => option.id)).toEqual([
+    "newspapers",
+    "police",
+    "parent",
+    "burglary",
+  ]);
   const listing = birthdayPack.catalogue.find(
     (q) => q.id === "property-price-roulette",
   )!;

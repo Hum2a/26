@@ -224,7 +224,6 @@ it("rehearses a catalogue beyond the eighty-question live order limit", () => {
             "council-thamesmead-south",
             "council-blackbird-leys",
             "apology-video-auction",
-            "nextdoor-paranoia",
             "group-chat-figurine",
             "cursed-search-history",
             "where-are-we",

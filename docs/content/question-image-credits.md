@@ -47,6 +47,7 @@ They are **not** licensed for public redistribution.
 | `property-price-roulette/interior-a.jpg`   | Property price roulette | listing-1.jpg, same listing                                                    | © Winkworth / OnTheMarket         | Copyrighted, private use |
 | `property-price-roulette/interior-b.jpg`   | Property price roulette | listing-3.jpg, same listing                                                    | © Winkworth / OnTheMarket         | Copyrighted, private use |
 | `property-price-roulette/interior-c.jpg`   | Property price roulette | listing-4.jpg, same listing                                                    | © Winkworth / OnTheMarket         | Copyrighted, private use |
+| `nextdoor-paranoia/photo.png`              | Nextdoor paranoia       | Typeset reconstruction of a post quoted by Marshall News Messenger (2024)      | 26.humza.website                  | Original typeset card    |
 
 The matching floorplan (Saratoga Road, E5, 79 sq ft) is stored at
 `docs/content/listings/property-price-roulette/floorplan.jpg` and is **not**

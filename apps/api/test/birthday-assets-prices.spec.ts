@@ -209,6 +209,26 @@ it("ships every picture a catalogue names, including demo cake and sky drawings"
     expect(preview.question?.image?.src).toBe(`/assets/questions/${id}/photo.jpg`);
     expect(preview.question?.image?.credit).toMatch(/CC0/);
   }
+  const nextdoor = birthdayPack.catalogue.find((q) => q.id === "nextdoor-paranoia")!;
+  expect(nextdoor.status).toBe("ready");
+  expect(nextdoor.media?.[0]?.asset).toBe(
+    "/assets/questions/nextdoor-paranoia/photo.png",
+  );
+  const nextdoorFile = publicFile("/assets/questions/nextdoor-paranoia/photo.png");
+  expect(existsSync(nextdoorFile)).toBe(true);
+  expect([...readFileSync(nextdoorFile).subarray(0, 8)]).toEqual(pngMagic);
+  const nextdoorPreview = questionPreview(birthdayPack, nextdoor);
+  expect(nextdoorPreview.interactive).toBe(true);
+  expect(nextdoorPreview.question?.image?.credit).toMatch(/Marshall News Messenger/);
+  expect(nextdoorPreview.question).not.toHaveProperty("correctOption");
+  expect(nextdoorPreview.question).not.toHaveProperty("explanation");
+  expect(JSON.stringify(nextdoorPreview.question)).not.toMatch(/hoodie/i);
+  expect(JSON.stringify(nextdoorPreview.question)).not.toMatch(
+    /newspaper delivery guy/i,
+  );
+  expect(publicQuestionSchema.safeParse(nextdoorPreview.question).success).toBe(true);
+  expect(nextdoor.explanation).toContain("newspaper delivery guy");
+  expect(nextdoor.prompt).toBe("What was the suspicious vehicle actually doing?");
   for (const asset of [
     "/assets/questions/whos-that-pokemon-preview/silhouette.png",
     "/assets/questions/whos-that-pokemon-preview/piplup.png",
