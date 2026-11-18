@@ -118,8 +118,12 @@
   grid-area: letter;
   flex: none;
   place-items: center;
-  width: 1.5em;
+  /* Grows for a longer theme mark (P10, XIII, 1111) instead of overflowing. */
+  min-width: 1.5em;
+  width: auto;
   height: 1.5em;
+  padding-inline: 0.25em;
+  white-space: nowrap;
   border-radius: var(--radius-control, 0.6em);
   background: var(--tone);
   color: var(--accent-foreground, var(--background));

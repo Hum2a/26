@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { applyTheme } from "./install";
+import { applyTheme, themeChangeEvent } from "./install";
 import { themeDocumentHead, themes } from "./themes";
 
 const chromeSelector =
@@ -58,6 +58,35 @@ describe("browser chrome", () => {
     applyTheme("26-basic");
     expect(document.querySelectorAll('meta[name="theme-color"]')).toHaveLength(3);
     expect(themeColors()).toEqual([dark, dark, dark]);
+  });
+});
+
+describe("theme identity", () => {
+  it("applies the theme's own flavour over its family and announces the change", () => {
+    const seen: unknown[] = [];
+    const listener = (event: Event) => seen.push((event as CustomEvent).detail);
+    window.addEventListener(themeChangeEvent, listener);
+    applyTheme("persona-3-midnight-hour");
+    const root = document.documentElement.dataset;
+    // The glow family draws stars; this theme overrides it with its own moon.
+    expect(root.skin).toBe("glow");
+    expect(root.scene).toBe("moon");
+    expect(root).toMatchObject({
+      marks: "roman",
+      celebrate: "rings",
+      transition: "glitch",
+      numerals: "segment",
+      ornament: "moon",
+      strength: "bold",
+    });
+    applyTheme("26-basic");
+    expect(document.documentElement.dataset).toMatchObject({
+      scene: "none",
+      marks: "classic",
+      ornament: "none",
+    });
+    window.removeEventListener(themeChangeEvent, listener);
+    expect(seen).toEqual(["persona-3-midnight-hour", "26-basic"]);
   });
 });
 

@@ -258,8 +258,12 @@
 .question-choice-mark {
   display: grid;
   place-items: center;
-  width: 2rem;
+  /* Grows for a longer theme mark (P10, XIII, 1111) instead of overflowing. */
+  min-width: 2rem;
+  width: auto;
   height: 2rem;
+  padding-inline: 0.3rem;
+  white-space: nowrap;
   border-radius: 0.65rem;
   background: var(--hue);
   color: var(--hue-ink);

@@ -6783,3 +6783,74 @@ Not verified on a physical phone or projector (no Playwright).
 ### Exact next stage
 
 Owner supplies the `where-are-we` clue photo, place name and coordinates, and `ed-or-humza` speakers. Then make each ready and add to Running order only if wanted.
+
+## 18 November 2026 — Every theme has its own identity
+
+Status: implemented on `claude/deep-themes` (from master `5f50912`, then merged with the latest master including #44 and #45). Owner request: make each theme feel like its own product, not a recolour, with a strong foundation.
+
+### Foundation
+
+- `apps/web/src/theme/identity.ts`: a per-theme identity on top of the family skin and deep layer. `Record<ThemeId, ThemeFlavour>`, so a new theme fails the typecheck without one. A flavour can override any family value (scene, type, texture, control, panel, heading, motion, align) and must choose six theme-level dimensions:
+  - marks: 14 option-mark styles, shared by phone and projector via `optionMark()`. `classic` keeps 26 basic's phone shapes and projector letters.
+  - celebrate: 17 one-shot bursts.
+  - transition: 12 phase hand-overs.
+  - numerals: 6 number styles.
+  - ornament: 31 glyphs.
+  - strength: scene strength.
+- `install.ts` writes the merged identity to `<html>` (`data-marks`, `data-celebrate`, `data-transition`, `data-numerals`, `data-ornament`, `data-strength`, plus overridden family values) and fires `26-theme-change`. `use-theme-identity.ts` follows it with `useSyncExternalStore`.
+- `voices.ts`: six short lines of chrome flavour per theme (waiting, locked, won, missed, the projector invite and the result glyph). States, points, instructions and question copy are unchanged; 26 basic keeps the original wording.
+- `theme-scenes.css`: 50 new scenes built from the existing 24 scene pieces with shared fall/rise/float movements. `theme-identity.css`: numerals, ornaments, scene strength and the celebration shapes.
+- `anim/Celebration.tsx`: 18 CSS pieces, about 1.6s, once. It plays on the phone result when a guest scores, and in the projector's ground at each reveal, behind the question. Nothing renders under reduced motion.
+- `PhaseTransition`: per-theme phone transitions. The projector only nudges (transform or blur) and stays at full opacity, as its readability test requires. Reduced motion is unchanged.
+- Choice tiles (`guest-play`, `guest-multiple`) and the projector vote board use the theme's marks.
+
+### Every theme
+
+All 80 themes have a flavour and a voice. Examples:
+
+- Persona 3 Midnight Hour: a giant moon, Roman marks, a glitch transition and segment numerals.
+- November Nights: fireworks.
+- 501 Fun: a dartboard with a 180 voice.
+- Rick Astley: a spinning vinyl record and musical notes.
+- PS2: △○✕□ marks.
+- Persona 5: suit marks and calling cards.
+- HumzaOS: F-key marks and a >\_ prompt.
+- bbno$: lower-case voice and coins.
+
+`identity.test.ts` enforces it:
+
+- every pair of themes differs in at least five visible dimensions beyond colour and voice;
+- every scene, celebration, numeral style and ornament is drawn in CSS;
+- every value is used by at least one theme.
+
+`voices.test.ts` checks every theme's lines: none empty, all short, a unique "won" line per theme, and no line that impersonates a state.
+
+### Budget and rules
+
+- Entry CSS budget raised from 28kB to 34kB gzip in `scripts/web-bundle-budget.json`, with the reason recorded. The new stylesheets are about 8.5kB gzip before minification and apply on every screen.
+- `.agents/rules/45-themes.md` gains an Identity section; `npm run agents:sync` ran.
+
+### Checks
+
+- `npx vitest run src/theme` in `apps/web`: 21 tests passed (identities, voices, skins, deep skins, install).
+- Prettier on the changed files.
+- The local dependency install is partial, so motion, zod and framer-motion files are missing. Local `tsc -b apps/web` therefore reports hundreds of errors in untouched files too. The PhaseTransition and other motion-based suites cannot load locally. Typecheck, lint, the full web suite and the build or bundle budget are left to CI on the PR and are not claimed here.
+
+### Exact next stage
+
+Read CI on the PR and fix any failures or cubic review threads. Then preview themes with `?theme=<id>` on a phone and the projector, checking that scenes stay faint behind questions and that bursts and transitions feel right.
+
+### cubic follow-up and CI measurements
+
+- Long marks (`P10`, `XIII`, `1111`) widen their box on the phone and projector instead of overflowing.
+- `strength` is now required on every flavour, like the other identity dimensions.
+- The projector's reveal burst plays once per reveal. Hiding the stage or reconnecting mutes it rather than remounting it.
+- The lobby keeps "Join on your phone" as plain text with the theme's invite beside it. The phone's waiting state stays "Waiting for the next question." with the theme's line beside it.
+- Reduced motion now also stops the animated parts of scene pieces, such as clock hands.
+- Sparks fly straight out. Circled marks carry a text variation selector because Ⓜ has an emoji form.
+- `identity.test.ts` ignores commented-out or empty rules, checks scene strengths are drawn, and checks every ornament and strength is used. `voices.test.ts` guards the won and missed lines too.
+- CI measured the built entry CSS at 28,165 bytes gzip, against 20,779 on master. The 34kB limit keeps about 20% headroom.
+- The theme flavours load at start-up so a stored theme paints without a late swap. That adds about 14kB minified (2.4kB gzip) to every route, so the Playwright cold-script budgets for `/` and `/admin/login` rose by 20kB, to 720kB and 730kB.
+- Prettier on master's `where-are-we.tsx`, which was failing `format:check`.
+- Not caused by this branch: master's Playwright run already fails 35 specs, including the `/join` and `/host` cold-script budgets. Two more failed on this branch's earlier run with timing errors outside the theme code: `admin-sections` (a confirm dialog left open) and `kart-cpu-race` (start-boost timing).
+- `npx vitest run src/theme` in `apps/web`: 22 passed. `npx prettier --check .` passed.

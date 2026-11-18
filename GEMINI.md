@@ -500,6 +500,22 @@ A skin family also has a deep layer in `apps/web/src/theme/deep-skins.ts`, drawn
 
 Choose the combination for the idea, not the last family. A new value goes in both `deep-skins.ts` and `theme-deep.css`, built only from the theme's colour variables. Reduced motion stops every scene and texture animation, turns panel arrivals into a short fade, and turns off glass blur.
 
+## Identity (every theme)
+
+A family is a starting point, not the finished theme. Every theme has its own flavour in `apps/web/src/theme/identity.ts` (`Record<ThemeId, …>`, so a new theme fails the typecheck without one) and its own voice in `voices.ts`. `install.ts` writes the merged identity onto `<html>`.
+
+- **Overrides.** A flavour may replace any family value: a different scene, type, texture, control, panel, heading, motion or align. Use this so themes in one family stop looking alike.
+- **Scene.** Besides the family scenes, `theme-scenes.css` draws theme-level scenes (aurora, a skyline, a circuit board, a film strip, fireworks, pop-up windows, balloons, sparkles, dice, clocks, an alarm beacon, pixels, question marks, steam, ripples, rain, bubbles, hearts, clouds, waves, petals, polaroids, speech bubbles, butterflies, embers, a moon, TV static, curtains, crystals, streams, grass, ghosts, hexes, an aura, capsules, leaves, fireflies, comets, transmutation circles, lanterns, app windows, chalk, parcels, chequered flags, a court, a chart, a dartboard, coins, drips and a vinyl record). Same rules as family scenes: faint, slow, bright shapes off the left third.
+- **Marks.** How options are lettered on phones and the projector: `classic` (phone shapes, projector letters; 26 basic only), or one shared style on both screens (`alpha`, `lower`, `roman`, `numeric`, `circled`, `buttons`, `suits`, `greek`, `kana`, `binary`, `dice`, `fkeys`, `players`). Use `optionMark()`; never hard-code A, B, C. Sets with an emoji form (suits, dice, circled letters) carry a text variation selector so they never become colour emoji; the other sets use symbols with no emoji form.
+- **Celebrate.** The one-shot burst (`anim/Celebration.tsx`) when a guest scores and at the projector's reveal: `confetti`, `sparks`, `stars`, `petals`, `pixels`, `bubbles`, `hearts`, `leaves`, `coins`, `notes`, `embers`, `bolts`, `snow`, `balloons`, `butterflies`, `cards` or `rings`. Eighteen CSS pieces, about 1.6 seconds, never loops, behind the question on the projector, nothing under reduced motion.
+- **Transition.** How `PhaseTransition` hands one phone phase to the next: `rise`, `fade`, `slide`, `wipe`, `iris`, `zoom`, `flip`, `glitch`, `drop`, `skew`, `blur` or `shutter`. The projector only nudges (transform or blur), never fades from nothing or clips the question. Reduced motion is a short fade everywhere.
+- **Numerals.** Scores, timers and counts: `plain`, `tabular`, `segment`, `serif`, `outline` or `stamped`.
+- **Ornament.** One text glyph before the phone cue and eyebrow labels (`spark` ✦, `prompt` `>_`, `note` ♪…). Decoration only; its CSS alternative text is empty.
+- **Strength.** How strongly the scene shows: `faint`, `normal` or `bold`.
+- **Voice.** Six short lines of chrome flavour: `waiting`, `locked`, `won`, `missed`, `invite` and `glyph`. They sit beside the states, never replace them: "Locked in", "Sending…", points, instructions and question copy stay the same in every theme. Keep them short, British English, and never quote song lyrics.
+
+`identity.test.ts` requires every pair of themes to differ in at least five visible dimensions (beyond colour and voice). Every scene, celebration, numeral style, ornament and scene strength needs a live CSS rule (marks and transitions are drawn in code), and every scene and identity value, including each mark style and transition, must be used by at least one theme. Choose a new theme's flavour for the idea, then run the test; if it names a close pair, change a scene, marks, celebration, transition or override until it passes.
+
 ## Icons
 
 Icon packs are installed in `@26/web`. Search the live set before adding an icon, and import one icon at a time. Do not trace a logo from a brand site or a fan page. If Simple Icons has no slug, say so and use a generic icon.
@@ -539,7 +555,7 @@ The favicon stays the 26 basic mark.
 ## Check
 
 - `npx tsc -b apps/web`
-- `npx vitest run src/theme` in `apps/web` (skins and deep skins)
+- `npx vitest run src/theme` in `apps/web` (skins, deep skins and identities)
 - Preview with `?theme=its-id` and confirm the ground, corners, mark, and finish are visible while the question text stays readable. If the theme has a motif, the icon shows in the margin and a point on the heading still hits the heading.
 
 ### Render budgets, memoisation, layout, perceived performance, phone UX

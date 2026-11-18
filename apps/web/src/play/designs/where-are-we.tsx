@@ -26,7 +26,8 @@ export function WhereAreWe(props: PresentationProps) {
   const reveal =
     props.play.reveal?.kind === "map-guess" ? props.play.reveal : undefined;
   return props.surface === "phone" ? (
-    <WherePhone key={props.play.question.id}
+    <WherePhone
+      key={props.play.question.id}
       play={props.play}
       phase={props.phase}
       controls={props.controls}
