@@ -184,7 +184,11 @@ test("wrangler.jsonc attaches one custom domain per remote Worker", () => {
 test("direct production and combined deploys are allowed at any date", () => {
   const options = { dryRun: false, overrideFreeze: false };
   // The old party-weekend freeze (20 to 22 Nov) was removed on 18 Nov 2026.
-  for (const at of ["2026-11-05T19:00:00Z", "2026-11-20T00:00:00Z", "2026-11-21T19:30:00Z"]) {
+  for (const at of [
+    "2026-11-05T19:00:00Z",
+    "2026-11-20T00:00:00Z",
+    "2026-11-21T19:30:00Z",
+  ]) {
     const now = Date.parse(at);
     assertDeployAllowed(["staging"], options, now);
     for (const targets of [["production"], ["staging", "production"]] as const) {
