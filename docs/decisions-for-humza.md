@@ -53,6 +53,7 @@ Each is a file in `apps/api/src/questions/packs/birthday/`. Fill its `requiremen
 | Reddit tribunal | `tribunal-reddit.ts`        | Original thread, exact title, outcome, top comment, correct choice |
 | Ferrier estate  | `council-ferrier-sector.ts` | Verified estate name and confirmed category                        |
 | Where are we?   | `where-are-we.ts`           | Credited clue photo, place name and coordinates                    |
+| Ed or Humza?    | `ed-or-humza.ts`            | Speaker (`ed` or `humza`) for each of the 18 quotes                |
 
 Ready but not in the order: **Figurine** (`group-chat-figurine`), **Cursed Search History** (`cursed-search-history`), **Property price roulette** (`property-price-roulette`, £750 pcm Winkworth listing) and **Nextdoor paranoia** (`nextdoor-paranoia`, Marshall News Messenger 5 Feb 2024). Add them in Running order if wanted.
 

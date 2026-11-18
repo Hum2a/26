@@ -16,7 +16,7 @@ Saved all eight supplied concepts as twelve catalogue entries. They stay out of 
 | `nextdoor-paranoia`           | Ready (not in order) | Choice. Typeset reconstruction of a Marshall News Messenger (5 Feb 2024) quoted post about a slow-moving vehicle following the school bus; answer is delivering newspapers.                                                       |
 | `group-chat-figurine`         | Ready (not in order) | Room majority guess, self-votes allowed. A self-vote scores double when the room also picks you (`selfVoteBonus: "double"`, agreed 2 November 2026).                                                                              |
 | `cursed-search-history`       | Ready (not in order) | Push your luck (`outcome: { kind: "push" }`): a line every 6 s, Raid after line 2, 3 or 4 or never, frozen when answering opens; banks 100 / 250 / 450 / 700.                                                                     |
-| `property-price-roulette`     | Ready (not in order) | Closest-under monthly rent, £250–£3000. Winkworth / OnTheMarket 13835770, Evening Standard 11 February 2026, £750 pcm and 79 sq ft; listing-2.jpg on the phones; floorplan kept off the public asset path.                        |
+| `property-price-roulette`     | Ready (not in order) | Closest-under monthly rent, £250–£3000. Winkworth / OnTheMarket 13835770, Evening Standard 11 February 2026, £750 pcm and 79 sq ft; listing-2 interior on the phones; floorplan and extra stills kept off the public asset path.  |
 
 Unsupported mechanics have disabled, explicitly labelled layout previews. Ordinary ready choices, the apology tournament and the sourced property slider reuse the real guest renderer.
 

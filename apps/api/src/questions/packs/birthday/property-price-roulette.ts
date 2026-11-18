@@ -26,37 +26,9 @@ export const propertyPriceRoulette = sliderQuestion({
       credit: "© Winkworth / OnTheMarket · copyrighted, private use",
       alt: "Interior of a compact London studio advertised as a flat",
     },
-    {
-      name: "listing-extra-exterior",
-      kind: "image",
-      required: false,
-      asset: "/assets/questions/property-price-roulette/exterior.jpg",
-      credit: "© Winkworth / OnTheMarket · copyrighted, private use",
-    },
-    {
-      name: "listing-extra-interior-a",
-      kind: "image",
-      required: false,
-      asset: "/assets/questions/property-price-roulette/interior-a.jpg",
-      credit: "© Winkworth / OnTheMarket · copyrighted, private use",
-    },
-    {
-      name: "listing-extra-interior-b",
-      kind: "image",
-      required: false,
-      asset: "/assets/questions/property-price-roulette/interior-b.jpg",
-      credit: "© Winkworth / OnTheMarket · copyrighted, private use",
-    },
-    {
-      name: "listing-extra-interior-c",
-      kind: "image",
-      required: false,
-      asset: "/assets/questions/property-price-roulette/interior-c.jpg",
-      credit: "© Winkworth / OnTheMarket · copyrighted, private use",
-    },
   ],
   explanation:
     "£750 pcm (Evening Standard, 11 February 2026). Winkworth: a “charming studio flat”, “perfect pied de terre or low key accomodation. There is no kitchen in the property but a microwave is supplied.” 79 sq ft.",
   notes:
-    "Winkworth / OnTheMarket 13835770, Evening Standard 11 Feb 2026. Saratoga Road, Lower Clapton, E5. £750 pcm. Floorplan 79 sq ft off guest path. Extra stills exterior.jpg, interior-a/b/c.jpg. © Winkworth / OnTheMarket, copyrighted, private use. Catalogue only.",
+    "Winkworth / OnTheMarket 13835770, Evening Standard 11 Feb 2026. Saratoga Road, Lower Clapton, E5. £750 pcm. Floorplan and extra stills (exterior, interior-a/b/c) live under docs/content/listings/property-price-roulette/, not /assets. Public clue is the interior only. © Winkworth / OnTheMarket, copyrighted, private use. Catalogue only.",
 });

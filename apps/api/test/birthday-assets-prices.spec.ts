@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
 import { publicQuestionSchema, questionOptionImageSchema } from "@26/shared";
@@ -186,21 +187,24 @@ it("ships every picture a catalogue names, including demo cake and sky drawings"
     points: 0,
     detail: "requires-room-settlement",
   });
-  for (const extra of ["exterior", "interior-a", "interior-b", "interior-c"] as const) {
-    const file = publicFile(`/assets/questions/property-price-roulette/${extra}.jpg`);
+  const listingArchive = fileURLToPath(
+    new URL("../../../docs/content/listings/property-price-roulette/", import.meta.url)
+      .href,
+  );
+  for (const extra of [
+    "exterior",
+    "interior-a",
+    "interior-b",
+    "interior-c",
+    "floorplan",
+  ] as const) {
+    const file = join(listingArchive, `${extra}.jpg`);
     expect(existsSync(file), extra).toBe(true);
     expect([...readFileSync(file).subarray(0, 2)]).toEqual([0xff, 0xd8]);
+    expect(packPublicAssets(birthdayPack)).not.toContain(
+      `/assets/questions/property-price-roulette/${extra}.jpg`,
+    );
   }
-  const floorplan = fileURLToPath(
-    new URL(
-      "../../../docs/content/listings/property-price-roulette/floorplan.jpg",
-      import.meta.url,
-    ).href,
-  );
-  expect(existsSync(floorplan)).toBe(true);
-  expect(packPublicAssets(birthdayPack)).not.toContain(
-    "/assets/questions/property-price-roulette/floorplan.jpg",
-  );
   for (const id of ["candles", "colour"] as const) {
     const preview = questionPreview(
       demoPack,

@@ -6707,7 +6707,7 @@ Owner supplied Hackney listing originals; see the follow-up below.
 
 Status: `property-price-roulette` is ready (catalogue only). No deploy.
 
-The owner attached the Winkworth listing originals (listing-2.jpg as the public clue; listing-0/1/3/4 as extras). Public clue is `apps/web/public/assets/questions/property-price-roulette/photo.jpg`. Extra stills `exterior.jpg`, `interior-a.jpg`, `interior-b.jpg`, `interior-c.jpg` sit beside it. The slider round has no extra reveal-image channel, so those stills are not projected to phones. The floorplan (Saratoga Road, E5, 79 sq ft) is `docs/content/listings/property-price-roulette/floorplan.jpg` so guests cannot fetch the address from `/assets`.
+The owner attached the Winkworth listing originals (listing-2.jpg as the public clue; listing-0/1/3/4 as extras). Public clue is `apps/web/public/assets/questions/property-price-roulette/photo.jpg` (interior only: loft bed and microwave, no street number or nameplate). Extra stills `exterior.jpg`, `interior-a.jpg`, `interior-b.jpg`, `interior-c.jpg` and the floorplan (Saratoga Road, E5, 79 sq ft) live under `docs/content/listings/property-price-roulette/` so guests cannot fetch the building or address from `/assets`. The slider round has no extra reveal-image channel.
 
 Rent is **£750 pcm** (OnTheMarket 13835770; Evening Standard 11 February 2026). Closest-under number entry, scale £250–£3000, step £10. Reveal quotes the agent wording (including “accomodation”) and the 79 sq ft size. Credit: © Winkworth / OnTheMarket, copyrighted, private use. Guest preview must not include 750.
 
@@ -6732,6 +6732,16 @@ Status: `nextdoor-paranoia` is ready (catalogue only). No deploy.
 
 The owner chose a typeset neighbourhood-app card rather than inventing a screenshot. `apps/web/public/assets/questions/nextdoor-paranoia/photo.png` shows “A neighbour”, a redacted name bar, a generic neighbourhood, and only the quoted line about a slow moving vehicle following the school bus every morning. No Nextdoor logo. Source: Marshall News Messenger, 5 February 2024. Choice prompt: “What was the suspicious vehicle actually doing?” Correct option: Delivering newspapers. Reveal quotes “Turned out it was the newspaper delivery guy.” The old hoodie post is gone.
 
+### Commands and results after the Nextdoor rewrite and cubic follow-up
+
+Recorded on this cubic follow-up (extra listing stills moved off `/assets`; docs aligned):
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 30 existing react-refresh warnings; structure check passed
+- `npm run format:check` — passed
+- `npm run content:check` — passed; incomplete drafts: `where-are-we`, `ed-or-humza` (nextdoor-paranoia no longer listed)
+- `npx vitest run --project auth test/birthday-assets-prices.spec.ts test/content-preflight.spec.ts test/question-authoring.spec.ts test/party-concepts.spec.ts test/new-party-concepts.spec.ts test/map-guess-score.spec.ts` in `apps/api` — 53 passed
+
 ### Exact next stage
 
-Slot `property-price-roulette` and `nextdoor-paranoia` in Running order if wanted. `where-are-we` still needs its clue photo and coordinates.
+Slot `property-price-roulette` and `nextdoor-paranoia` in Running order if wanted. `where-are-we` still needs its clue photo and coordinates. `ed-or-humza` still needs speakers.

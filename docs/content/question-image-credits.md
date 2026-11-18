@@ -13,13 +13,14 @@ Accommodation provenance is also listed in
 
 ## Freely licensed / original
 
-| File                         | Question                       | Source                                                                                                                                                                              | Author                         | Licence      |
-| ---------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------------ |
-| `accommodation-01/photo.jpg` | Uni accommodation or prison 01 | [FantoftStudentVillage.jpg](https://commons.wikimedia.org/wiki/File:FantoftStudentVillage.jpg)                                                                                      | Aqwis                          | CC BY-SA 3.0 |
-| `accommodation-02/photo.jpg` | Uni accommodation or prison 02 | [Interior in Halden prison.jpg](https://commons.wikimedia.org/wiki/File:Interior_in_Halden_prison.jpg)                                                                              | Justis- og politidepartementet | CC BY 2.0    |
-| `accommodation-03/photo.jpg` | Uni accommodation or prison 03 | [Tietgenkollegiet Student Residence Copenhagen Ørestad 2014 01.jpg](https://commons.wikimedia.org/wiki/File:Tietgenkollegiet_Student_Residence_Copenhagen_%C3%98restad_2014_01.jpg) | Julian Herzog (Website)        | CC BY 4.0    |
-| `candles/photo.jpg`          | Illustrative demo: cake        | Drawn for this demo (exactly 26 candles)                                                                                                                                            | 26.humza.website               | CC0 1.0      |
-| `colour/photo.jpg`           | Illustrative demo: night sky   | Drawn for this demo (blue sky)                                                                                                                                                      | 26.humza.website               | CC0 1.0      |
+| File                          | Question                       | Source                                                                                                                                                                              | Author                         | Licence                                      |
+| ----------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | -------------------------------------------- |
+| `accommodation-01/photo.jpg`  | Uni accommodation or prison 01 | [FantoftStudentVillage.jpg](https://commons.wikimedia.org/wiki/File:FantoftStudentVillage.jpg)                                                                                      | Aqwis                          | CC BY-SA 3.0                                 |
+| `accommodation-02/photo.jpg`  | Uni accommodation or prison 02 | [Interior in Halden prison.jpg](https://commons.wikimedia.org/wiki/File:Interior_in_Halden_prison.jpg)                                                                              | Justis- og politidepartementet | CC BY 2.0                                    |
+| `accommodation-03/photo.jpg`  | Uni accommodation or prison 03 | [Tietgenkollegiet Student Residence Copenhagen Ørestad 2014 01.jpg](https://commons.wikimedia.org/wiki/File:Tietgenkollegiet_Student_Residence_Copenhagen_%C3%98restad_2014_01.jpg) | Julian Herzog (Website)        | CC BY 4.0                                    |
+| `candles/photo.jpg`           | Illustrative demo: cake        | Drawn for this demo (exactly 26 candles)                                                                                                                                            | 26.humza.website               | CC0 1.0                                      |
+| `colour/photo.jpg`            | Illustrative demo: night sky   | Drawn for this demo (blue sky)                                                                                                                                                      | 26.humza.website               | CC0 1.0                                      |
+| `nextdoor-paranoia/photo.png` | Nextdoor paranoia              | Typeset reconstruction of a post quoted by Marshall News Messenger (2024)                                                                                                           | 26.humza.website               | Original typeset card; quoted phrase sourced |
 
 Changes on the accommodation photos: resized to fit 1200 × 900 and JPEG
 recompressed; no crop or retouch. Demo drawings were exported at 1000 × 667 JPEG.
@@ -43,14 +44,11 @@ They are **not** licensed for public redistribution.
 | `whos-that-pokemon-preview/silhouette.png` | Design-bench stand-in   | Blacked-out Mudkip from `favourite-pokemon/mudkip.png`                         | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
 | `whos-that-pokemon-preview/piplup.png`     | Design-bench stand-in   | [PokeAPI official artwork 393](https://github.com/PokeAPI/sprites)             | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
 | `property-price-roulette/photo.jpg`        | Property price roulette | listing-2.jpg, Winkworth / OnTheMarket 13835770 (Evening Standard 11 Feb 2026) | © Winkworth / OnTheMarket         | Copyrighted, private use |
-| `property-price-roulette/exterior.jpg`     | Property price roulette | listing-0.jpg, same listing                                                    | © Winkworth / OnTheMarket         | Copyrighted, private use |
-| `property-price-roulette/interior-a.jpg`   | Property price roulette | listing-1.jpg, same listing                                                    | © Winkworth / OnTheMarket         | Copyrighted, private use |
-| `property-price-roulette/interior-b.jpg`   | Property price roulette | listing-3.jpg, same listing                                                    | © Winkworth / OnTheMarket         | Copyrighted, private use |
-| `property-price-roulette/interior-c.jpg`   | Property price roulette | listing-4.jpg, same listing                                                    | © Winkworth / OnTheMarket         | Copyrighted, private use |
-| `nextdoor-paranoia/photo.png`              | Nextdoor paranoia       | Typeset reconstruction of a post quoted by Marshall News Messenger (2024)      | 26.humza.website                  | Original typeset card    |
 
-The matching floorplan (Saratoga Road, E5, 79 sq ft) is stored at
-`docs/content/listings/property-price-roulette/floorplan.jpg` and is **not**
-served to guests.
+The matching floorplan and unused extra stills (listing-0/1/3/4: exterior and
+further interiors) live under
+`docs/content/listings/property-price-roulette/` and are **not** served to
+guests. The public clue is the interior photograph only; it does not show a
+street number or nameplate.
 
 PokeAPI sprites: https://github.com/PokeAPI/sprites
