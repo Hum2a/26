@@ -128,6 +128,24 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "avatar-clear") {
     return "That profile photo was removed from every screen. The guest can take a new one.";
   }
+  if (action === "trends-stage-shown") {
+    return "Answer trends show on the big screen after each reveal.";
+  }
+  if (action === "trends-stage-hidden") {
+    return "Answer trends are off the big screen. Phones are unchanged.";
+  }
+  if (action === "trends-phones-shown") {
+    return "Phones show each guest how their answer compared with the room.";
+  }
+  if (action === "trends-phones-hidden") {
+    return "Phones no longer show answer trends. The big screen is unchanged.";
+  }
+  if (action === "trends-card-hide") {
+    return "That trend card is hidden. The next best card takes its place.";
+  }
+  if (action === "trends-card-restore") {
+    return "That trend card can show again.";
+  }
   if (action === "show") {
     return "The stage content is visible.";
   }

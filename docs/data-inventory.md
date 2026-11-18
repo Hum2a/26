@@ -216,6 +216,20 @@ Each started birthday room stores its frozen private question script in existing
   count of visible profile photos. Stage and host snapshots carry each
   option's voter ids for the vote board when the question allows; guest
   snapshots never do.
+- Answer trends store only host settings on the room row: `trend_stage` and
+  `trend_phones` (`shown` by default, or `hidden`), `trend_hidden` (up to 200
+  hidden card ids) and `trend_history` (the latest 20 changes). The cards
+  themselves are derived, not stored: during the reveal and scores the room
+  reads the question's accepted answers, the device context saved with each
+  answer, the score ledger, troll effects, uploads and join order, and keeps the
+  analysis in memory only. Stage snapshots carry up to six cards; device and
+  behaviour cards carry counts and percentages, never names or player ids; record
+  cards (fastest, closest, best) name one holder as the reveal already does.
+  Each guest snapshot carries only that guest's own comparison lines. Host
+  snapshots carry every candidate card, the switches and short summaries of up
+  to 12 earlier questions. Comparisons need three guests on each side. When
+  detailed device rows expire after 30 days, trends for that room stop having
+  device facets.
 - The room stores `photo_bias_enabled` (default on), `photo_bias_revision` and a
   bounded history of the latest 20 switches (time and enabled state). Host
   snapshots include the setting, history and accepted-photo counts by family.

@@ -197,6 +197,7 @@ import {
   readTelemetry,
 } from "../device/store.ts";
 import { aggregateFacts, presentStats } from "../stats/aggregate.ts";
+import { TrendCache, type RoomTrends } from "../stats/trend-room.ts";
 import { readStatsSource } from "../stats/source.ts";
 import { funFactApplies } from "../stats/fun-facts.ts";
 import { readFunFactSelection } from "../stats/fun-source.ts";
@@ -335,6 +336,7 @@ type RoomWideSnapshotData = {
   trollShared: TrollSnapshotShared;
   wallShared: WallSnapshotShared;
   voterReactionsMap: Map<string, { playerId: string; reaction: "like" | "dislike" }[]>;
+  trends: RoomTrends;
 };
 type SnapshotParts = ReturnType<PartyRoom["snapshotParts"]>;
 type BroadcastContext = {
@@ -445,6 +447,8 @@ export class PartyRoom extends DurableObject<Env> {
   private liveDrafts = new Map<string, { text: string; shownAt: number }>();
   private draftFlush: ReturnType<typeof setTimeout> | undefined;
   private readonly meter = createRealtimeMeter();
+  /** Answer trends for the question just revealed; memory only, rebuilt from SQL. */
+  private readonly trendCache = new TrendCache();
   private database: Promise<AppDatabase> | undefined;
   private kartArrivals = new KartInputBuffer();
   private kartIngress = new KartIngressCache();
@@ -1705,6 +1709,7 @@ export class PartyRoom extends DurableObject<Env> {
     trollKind?: TrollKindName;
     postId?: string;
     wallSettings?: WallSettingsChange;
+    trendCardId?: string;
   }): Promise<PhaseCommandResult> {
     const allowed = await this.requireControl(
       input.credentialId,
@@ -1791,6 +1796,9 @@ export class PartyRoom extends DurableObject<Env> {
     if (input.wallSettings) {
       payload.wallSettings = JSON.stringify(input.wallSettings);
     }
+    if (input.trendCardId) {
+      payload.trendCardId = input.trendCardId;
+    }
     let transfer: HostActionInput["transfer"];
     if (input.action === "recover") {
       const code = randomToken(8);
@@ -1860,6 +1868,7 @@ export class PartyRoom extends DurableObject<Env> {
           trollKind: input.trollKind,
           postId: input.postId,
           wallSettings: input.wallSettings,
+          trendCardId: input.trendCardId,
           now: new Date(input.nowMs).toISOString(),
           nowMs: input.nowMs,
           transfer,
@@ -4172,6 +4181,7 @@ export class PartyRoom extends DurableObject<Env> {
       trollShared: prepareTrollShared(sql, store),
       wallShared: prepareWallShared(sql),
       voterReactionsMap: allVoterReactions(sql),
+      trends: this.trendCache.read(sql, stored),
     };
   }
 
@@ -4301,6 +4311,11 @@ export class PartyRoom extends DurableObject<Env> {
       audience === "guest" && selfPlayerId
         ? presentStats(stats, "recap", selfPlayerId, parts.facts).recap
         : undefined;
+    const roomTrends = roomWide?.trends ?? this.trendCache.read(sql, stored);
+    const trends =
+      audience === "stage" ? this.trendCache.stage(roomTrends, stageHidden) : undefined;
+    const selfTrends =
+      audience === "guest" ? this.trendCache.self(roomTrends, selfPlayerId) : undefined;
     const funFacts = parts.funFacts;
     const factIndex =
       funFacts.cards.length === 0
@@ -4441,6 +4456,7 @@ export class PartyRoom extends DurableObject<Env> {
                 ? (readKart(this.ctx.storage.sql, play.question.id)?.stageHistory ?? [])
                 : [],
             adjustments: recentAdjustments(this.ctx.storage.sql),
+            trendControl: this.trendCache.control(sql, stored, roomTrends),
             admission: readAdmission(this.ctx.storage.sql),
             kartLobby: readKartLobby(this.ctx.storage.sql),
             adminPlayers: adminPlayerRows(
@@ -4457,6 +4473,8 @@ export class PartyRoom extends DurableObject<Env> {
         : {}),
       ...(highlights && highlights.length > 0 ? { highlights } : {}),
       ...(recap && recap.length > 0 ? { recap } : {}),
+      ...(trends ? { trends } : {}),
+      ...(selfTrends ? { selfTrends } : {}),
       ...(funFact ? { funFact } : {}),
       ...(funFactList ? { funFactList } : {}),
       ...(audience === "control" ? this.archiveDiagnostic() : {}),

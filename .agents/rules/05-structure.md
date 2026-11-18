@@ -31,6 +31,7 @@ Public API is `packages/shared/src/index.ts` (`@26/shared`). Feature folders:
 - `chess/` — schemas, clocks, capture scoring.
 - `wordle/` — board reducer.
 - `map-guess/` — pin validation and distance scoring.
+- `trends/` — per-question answer-trend schemas and the pure analysis engine (device and behaviour comparisons).
 
 Cross-cutting files stay at `src/` (`rate-limit.ts`, `party-scoring.ts`, `voters.ts`, `wall.ts`, …). Do not put round UI or Durable Object code here.
 

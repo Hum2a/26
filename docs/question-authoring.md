@@ -43,22 +43,22 @@ Register that export in `catalogue` inside `apps/api/src/questions/packs/birthda
 
 Helpers live in `apps/api/src/questions/authoring.ts`. Defaults live only in `apps/api/src/questions/defaults.ts`.
 
-| Idea                                    | Helper                                                      | Mechanic |
-| --------------------------------------- | ----------------------------------------------------------- | -------- |
-| Pick one option                         | `choiceQuestion`                                            | `choice` |
-| Vote with no right answer               | `choiceQuestion` with `outcome: { kind: "poll" }`           | `choice` |
-| The room's split decides who scores     | `choiceQuestion` with `outcome: { kind: "threshold", ... }` | `choice` |
-| Push your luck: bail before a Raid      | `choiceQuestion` with `outcome: { kind: "push", ... }`      | `choice` |
-| Solve a five-letter word in six guesses | `wordleQuestion`                                            | `wordle` |
-| Guess where a clue photo was taken | `mapGuessQuestion` | `map-guess` |
-| Drive a one-lap sprint                  | `kartQuestion`                                              | `kart`   |
-| Type a short answer                     | `typedQuestion`                                             | `typed`  |
-| Estimate a number                       | `sliderQuestion`                                            | `slider` |
-| Put items in order                      | `rankQuestion`                                              | `rank`   |
-| Write a line, then vote                 | `voteQuestion`                                              | `vote`   |
-| Name a person                           | `guessQuestion`                                             | `guess`  |
-| One-against-one number                  | `duelQuestion`                                              | `duel`   |
-| Two contestants, everyone else predicts | `finaleQuestion`                                            | `finale` |
+| Idea                                    | Helper                                                      | Mechanic    |
+| --------------------------------------- | ----------------------------------------------------------- | ----------- |
+| Pick one option                         | `choiceQuestion`                                            | `choice`    |
+| Vote with no right answer               | `choiceQuestion` with `outcome: { kind: "poll" }`           | `choice`    |
+| The room's split decides who scores     | `choiceQuestion` with `outcome: { kind: "threshold", ... }` | `choice`    |
+| Push your luck: bail before a Raid      | `choiceQuestion` with `outcome: { kind: "push", ... }`      | `choice`    |
+| Solve a five-letter word in six guesses | `wordleQuestion`                                            | `wordle`    |
+| Guess where a clue photo was taken      | `mapGuessQuestion`                                          | `map-guess` |
+| Drive a one-lap sprint                  | `kartQuestion`                                              | `kart`      |
+| Type a short answer                     | `typedQuestion`                                             | `typed`     |
+| Estimate a number                       | `sliderQuestion`                                            | `slider`    |
+| Put items in order                      | `rankQuestion`                                              | `rank`      |
+| Write a line, then vote                 | `voteQuestion`                                              | `vote`      |
+| Name a person                           | `guessQuestion`                                             | `guess`     |
+| One-against-one number                  | `duelQuestion`                                              | `duel`      |
+| Two contestants, everyone else predicts | `finaleQuestion`                                            | `finale`    |
 
 A choice can set `optionReveal: "one-at-a-time"`. In the get-ready/prompt beat, the host uses **Reveal next option** (or the usual advance shortcut) once per option. The room durably saves the count, withholds unseen labels and images from public snapshots, and waits without a prompt deadline. Once all options are visible, **Open answering** starts the normal answer window. Guests cannot select before that phase. `favourite-genre` uses this flow; other choices retain their existing flow. The isolated phone and stage previews offer the same option steps.
 
