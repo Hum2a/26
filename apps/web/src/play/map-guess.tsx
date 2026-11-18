@@ -16,18 +16,20 @@ import { loadWorld } from "./map-guess-world";
 
 const noPins: MapPin[] = [];
 
-function GuessMap({
+export function GuessMap({
   editable = false,
   onPin,
   pin,
   target,
   guesses = noPins,
+  className,
 }: {
   editable?: boolean;
   onPin?: (pin: MapPin) => void;
   pin?: MapPin;
   target?: MapPin;
   guesses?: MapPin[];
+  className?: string;
 }) {
   const element = useRef<HTMLDivElement>(null);
   const instance = useRef<LeafletMap>(null);
@@ -40,17 +42,32 @@ function GuessMap({
     const board = map(element.current, {
       minZoom: 0,
       maxZoom: 8,
-      zoomSnap: 0.5,
+      zoomSnap: 0.25,
+      zoomDelta: 0.5,
+      wheelPxPerZoomLevel: 80,
+      bounceAtZoomLimits: false,
+      worldCopyJump: false,
+      inertia: true,
+      inertiaDeceleration: 2800,
+      inertiaMaxSpeed: 3500,
+      // Instant zoom avoids Leaflet's CSS zoom hitch; pan still uses transforms.
+      zoomAnimation: false,
+      fadeAnimation: false,
+      markerZoomAnimation: false,
       maxBounds: [
         [-85, -180],
         [85, 180],
       ],
       maxBoundsViscosity: 1,
-      zoomAnimation: false,
-      fadeAnimation: false,
-      markerZoomAnimation: false,
     }).setView([18, 0], 0.5);
     instance.current = board;
+    const container = board.getContainer();
+    container.style.touchAction = "none";
+    function blockPageScroll(event: Event) {
+      if (event.cancelable) event.preventDefault();
+    }
+    container.addEventListener("touchmove", blockPageScroll, { passive: false });
+    container.addEventListener("gesturestart", blockPageScroll, { passive: false });
     board.attributionControl.setPrefix(false).addAttribution("Natural Earth");
     markers.current = layerGroup().addTo(board);
     const resize = new ResizeObserver(() => board.invalidateSize({ pan: false }));
@@ -100,6 +117,8 @@ function GuessMap({
       });
     return () => {
       active = false;
+      container.removeEventListener("touchmove", blockPageScroll);
+      container.removeEventListener("gesturestart", blockPageScroll);
       resize.disconnect();
       board.remove();
       instance.current = null;
@@ -155,7 +174,7 @@ function GuessMap({
     board.fitBounds(bounds, { padding: [26, 26], maxZoom: 5, animate: false });
   }, [guesses, pin, ready, target]);
   return (
-    <div>
+    <div className={className}>
       <div
         ref={element}
         className="guess-map"

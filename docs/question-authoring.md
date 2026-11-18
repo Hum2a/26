@@ -173,7 +173,7 @@ Say `Now customise the design of this question.` The question file keeps its id 
 2. Set `presentation` to that slug on the question.
 3. Write `apps/web/src/play/designs/<slug>.tsx` and its CSS. Use the kit in `designs/kit.tsx`: `useDesignMotion` for eased, reduced-motion-safe motion, `choiceView` or `typedView` for state, `ChoiceSend` or `TypedSend` for the dock button, and `StagePrompt` for the projector question. A design returns nothing for a kind it does not draw, and the standard view takes over.
 4. Register it in `designs/registry.ts`.
-5. Look at it in development at `/design?q=<slug>&surface=phone|stage&phase=prompt|collect|reveal`. Add `&still=1` to skip to the end of every animation. The bench uses public question fields only and a stand-in reveal, never the answer key.
+5. Look at it in development at `/design?q=<slug>&surface=phone|stage&phase=prompt|collect|reveal`. Add `&still=1` to skip to the end of every animation. The bench uses public question fields only and a stand-in reveal, never the answer key. Birthday map-guess uses `where-are-we`; the Ed/Humza quote sort uses `ed-or-humza`.
 
 A phone design receives the phone's `open`, `pending`, `selectedId`, and the select, send, rank, and text handlers. The stage keeps the standard scoreboard for scores, final, and podium. Colours come from the theme variables. A colour that is the content itself, such as the red and blue pill, is a named entry in `contentColours` in `themes.ts`.
 
