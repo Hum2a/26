@@ -399,8 +399,8 @@ export function previewReveal(
         { lat: 35.7, lng: 139.7 },
       ],
       closest: [
-        { nickname: "Stand-in 1", distanceKm: 182 },
-        { nickname: "Stand-in 2", distanceKm: 1430 },
+        { nickname: "Stand-in 1", distanceKm: 178.6 },
+        { nickname: "Stand-in 2", distanceKm: 6676.4 },
       ],
     };
   }
