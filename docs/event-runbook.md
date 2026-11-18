@@ -221,7 +221,8 @@ Each step needs the owner's go-ahead; nothing here has been run.
    `npm run deploy:staging:full` to run the full test suite and migrations first). No Neon migration is needed: the new columns
    are room (Durable Object) columns, added when a room starts.
 4. Run the rehearsal below on staging.
-5. Production, before the freeze (20 November 00:00 to 22 November 12:00, London):
+5. Production (there is no date freeze since 18 November; avoid deploying while a
+   game is running, because a deploy drops every phone):
    `bash release.sh --deploy=production` (or `npm run deploy:prod`). It requires
    clean `master`, bumps the app version so `/api/health` shows a new number,
    runs the checks and deploys.
