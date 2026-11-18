@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
 import { GuestPlay } from "../guest-play";
@@ -41,11 +41,19 @@ const snapshot = (play = base, phase = "collect", paused = false) =>
     play,
     trolls: { active: [] },
   }) as unknown as LobbySnapshot;
-function phone(view = snapshot(), onText = vi.fn(), pending = false) {
+function phone(
+  view = snapshot(),
+  onText = vi.fn(),
+  pending = false,
+  wordleFeedback?: string,
+  connected = true,
+) {
   return (
     <GuestPlay
       snapshot={view}
       pending={pending}
+      wordleFeedback={wordleFeedback}
+      connected={connected}
       onText={onText}
       onSelect={vi.fn()}
       onSubmit={vi.fn()}
@@ -113,9 +121,144 @@ it("locks during prompt, pause and after six guesses; continues to show the boar
       }),
     ),
   );
-  expect(await screen.findByText(/Six guesses used/)).toBeTruthy();
+  expect(await screen.findAllByText(/Six guesses used/)).not.toHaveLength(0);
   expect(screen.getByLabelText("Your six guesses")).toBeTruthy();
-  expect(screen.getByRole("button", { name: "A" })).toHaveProperty("disabled", true);
+  expect(screen.queryByRole("button", { name: "A" })).toBeNull();
+});
+
+function typingSurface() {
+  return screen.getByRole("region", { name: "Wordle game" });
+}
+
+function pasteWord(word: string) {
+  fireEvent.paste(typingSurface(), { clipboardData: { getData: () => word } });
+}
+
+it("pastes a word, replaces individual letters and clears the active row without submitting", () => {
+  const send = vi.fn();
+  render(phone(snapshot(), send));
+  pasteWord(" crane \n");
+  fireEvent.click(screen.getByRole("button", { name: "Edit letter 1: C" }));
+  fireEvent.keyDown(typingSurface(), { key: "b" });
+  expect(screen.getByRole("button", { name: "Edit letter 1: B" })).toBeTruthy();
+  fireEvent.keyDown(typingSurface(), { key: "ArrowRight" });
+  fireEvent.keyDown(typingSurface(), { key: "o" });
+  pasteWord("NOT ONE WORD");
+  expect(screen.getByRole("button", { name: "Edit letter 3: O" })).toBeTruthy();
+  expect(send).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Check word" }));
+  expect(send).toHaveBeenCalledOnce();
+  expect(send).toHaveBeenCalledWith("BRONE");
+  fireEvent.click(screen.getByRole("button", { name: "Clear word" }));
+  expect(screen.getByRole("button", { name: "Check word" })).toHaveProperty(
+    "disabled",
+    true,
+  );
+  expect(
+    within(typingSurface()).getAllByRole("button", { name: /Edit letter \d: empty/ }),
+  ).toHaveLength(5);
+});
+
+it("removes the last typed letter after editing a filled tile", () => {
+  render(phone());
+  pasteWord("CRANE");
+  fireEvent.click(screen.getByRole("button", { name: "Edit letter 2: R" }));
+  fireEvent.click(screen.getByRole("button", { name: "L" }));
+  fireEvent.keyDown(typingSurface(), { key: "Backspace" });
+  expect(screen.getByRole("button", { name: "Edit letter 2: empty" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Edit letter 3: A" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Edit letter 4: N" }));
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  expect(screen.getByRole("button", { name: "Edit letter 4: empty" })).toBeTruthy();
+});
+
+it("accepts native text entry and clipboard paste through an editable field", () => {
+  const send = vi.fn();
+  render(phone(snapshot(), send));
+  fireEvent.click(screen.getByRole("button", { name: /Type or paste a word/ }));
+  const input = screen.getByRole("textbox", { name: "Your guess" });
+  expect(fireEvent.keyDown(input, { key: "a" })).toBe(true);
+  fireEvent.change(input, { target: { value: "apple" } });
+  expect(screen.getByRole("button", { name: "Edit letter 1: A" })).toBeTruthy();
+  fireEvent.paste(input, { clipboardData: { getData: () => " crane \n" } });
+  expect(input).toHaveProperty("value", "CRANE");
+  expect(screen.getByRole("button", { name: "Edit letter 1: C" })).toBeTruthy();
+  expect(send).not.toHaveBeenCalled();
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(send).toHaveBeenCalledWith("CRANE");
+});
+
+it("flags already accepted words locally, keeps a rejection beside the tiles, and blocks sends while reconnecting", () => {
+  const send = vi.fn();
+  const answered: PlaySnapshot = {
+    ...base,
+    selfAnswer: {
+      kind: "wordle",
+      status: "playing",
+      guesses: [
+        { word: "APPLE", marks: ["correct", "absent", "absent", "present", "absent"] },
+      ],
+    },
+  };
+  const view = render(phone(snapshot(answered), send));
+  pasteWord("apple");
+  expect(screen.getByRole("button", { name: "Check word" })).toHaveProperty(
+    "disabled",
+    true,
+  );
+  fireEvent.keyDown(typingSurface(), { key: "Enter" });
+  expect(send).not.toHaveBeenCalled();
+  expect(within(typingSurface()).getByRole("status").textContent).toContain(
+    "already tried",
+  );
+  pasteWord("zzzzz");
+  fireEvent.click(screen.getByRole("button", { name: "Check word" }));
+  view.rerender(
+    phone(snapshot(answered), send, false, "That word isn’t in the word list."),
+  );
+  expect(within(typingSurface()).getByRole("status").textContent).toContain(
+    "isn’t in the word list",
+  );
+  expect(screen.getByRole("button", { name: "Edit letter 1: Z" })).toBeTruthy();
+  view.rerender(phone(snapshot(answered), send, false, undefined, false));
+  expect(screen.getByRole("button", { name: "Check word" })).toHaveProperty(
+    "disabled",
+    true,
+  );
+  view.rerender(phone(snapshot(answered), send));
+  expect(screen.getByRole("button", { name: "Edit letter 1: Z" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Check word" })).toHaveProperty(
+    "disabled",
+    false,
+  );
+});
+
+it("uses the round result for a player who tried before time ran out", () => {
+  render(
+    phone(
+      snapshot(
+        {
+          ...base,
+          selfAward: 0,
+          selfAnswer: {
+            kind: "wordle",
+            status: "playing",
+            guesses: [
+              {
+                word: "APPLE",
+                marks: ["correct", "absent", "absent", "present", "absent"],
+              },
+            ],
+          },
+          reveal: { kind: "wordle", answer: "ABLER", solvedCount: 0, responseCount: 1 },
+        },
+        "reveal",
+      ),
+    ),
+  );
+  expect(screen.getByText("No points this time")).toBeTruthy();
+  expect(screen.queryByText("No answer from you")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Check word" })).toBeNull();
 });
 it("shows only a mystery word on stage until the server supplies a reveal", () => {
   const view = render(<StagePlay snapshot={snapshot()} />);

@@ -5,6 +5,8 @@
  * is in theme-deep.css.
  */
 @import "./theme-deep.css";
+@import "./theme-scenes.css";
+@import "./theme-identity.css";
 
 :root {
   --radius-control: 999px;

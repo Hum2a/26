@@ -25,11 +25,33 @@ import { inflationFreddo } from "../src/questions/packs/birthday/inflation-fredd
 import { inflationPetrol } from "../src/questions/packs/birthday/inflation-petrol.ts";
 import { commonPassword } from "../src/questions/packs/birthday/common-password.ts";
 import { completeAWordle } from "../src/questions/packs/birthday/complete-a-wordle.ts";
+import { trumpMadeUpCountry } from "../src/questions/packs/birthday/trump-made-up-country.ts";
+import { questionPreview } from "../src/room/question-preview.ts";
 
 const fixtureOptions = [
   { id: "yes", label: "Yes" },
   { id: "no", label: "No" },
 ];
+
+it("projects the Trump exact-set question with valid option ids and no public answer key", () => {
+  expect(
+    trumpMadeUpCountry.options.every((option) =>
+      contentLimits.optionId.test(option.id),
+    ),
+  ).toBe(true);
+  expect(trumpMadeUpCountry.outcome).toEqual({
+    kind: "multiple",
+    optionIds: ["us-israel", "japan-republic"],
+  });
+  const preview = questionPreview(birthdayPack, trumpMadeUpCountry);
+  expect(preview.interactive).toBe(true);
+  expect(preview.question).toMatchObject({ kind: "choice", outcome: "multiple" });
+  expect(
+    preview.question?.kind === "choice" &&
+      preview.question.options.map((option) => option.label),
+  ).toEqual(trumpMadeUpCountry.options.map((option) => option.label));
+  expect(JSON.stringify(preview)).not.toContain('"optionIds"');
+});
 
 function partyPack(overrides: Partial<QuestionPack> = {}): QuestionPack {
   return {
@@ -406,7 +428,7 @@ describe("question authoring", () => {
     expect(JSON.stringify(view)).not.toContain("Jon Harvey");
   });
 
-  it("lets a poll list up to 16 options but keeps an ordinary choice at 6", () => {
+  it("lets a poll list up to 16 options but keeps an ordinary choice at 8", () => {
     const many = Array.from({ length: 16 }, (_, index) => ({
       id: `party-${index}`,
       label: `Party ${index}`,
@@ -422,6 +444,13 @@ describe("question authoring", () => {
       id: "crowded",
       title: "Crowded",
       prompt: "Pick one.",
+      options: many.slice(0, 9),
+      correctOption: { known: "party-0" },
+    });
+    const seven = choiceQuestion({
+      id: "seven",
+      title: "Seven",
+      prompt: "Pick one.",
       options: many.slice(0, 7),
       correctOption: { known: "party-0" },
     });
@@ -433,8 +462,8 @@ describe("question authoring", () => {
       options: [...many, { id: "party-16", label: "Party 16" }],
     });
     const pack = partyPack({
-      catalogue: [ballot, crowded, tooMany],
-      order: ["ballot", "crowded", "too-many"],
+      catalogue: [ballot, crowded, seven, tooMany],
+      order: ["ballot", "crowded", "seven", "too-many"],
     });
     const failing = validatePack(pack)
       .filter((item) => item.level === "error")

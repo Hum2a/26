@@ -1,4 +1,4 @@
-import { contentLimits } from "@26/shared";
+import { contentLimits, type MapPin } from "@26/shared";
 
 /**
  * Server-side question documents. Guest JavaScript must not import this module.
@@ -37,6 +37,8 @@ export type MediaRef = {
   asset?: string;
   credit?: string;
   creditUrl?: string;
+  /** Guest-facing image description. Must not leak the answer. */
+  alt?: string;
   required: boolean;
 };
 
@@ -120,8 +122,8 @@ export type RankPlacement = { itemId: string; tierId: string };
 
 export type RankBody = {
   kind: "rank";
-  scoring?: "consensus";
-  input?: "ordered";
+  scoring?: "consensus" | "placement";
+  input?: "ordered" | "buckets";
   mode: "complete" | "partial";
   ties: "forbidden" | "shared";
   items: { id: string; label: string }[];
@@ -138,6 +140,16 @@ export type VoteBody = {
   tie: "shared";
   award: "authors" | "voters";
   lateJoin: "ineligible";
+};
+
+export type MapTarget = MapPin & { label: string };
+export type AuthoredMapGuess = AuthorFields & {
+  kind: "map-guess";
+  target: Answer<MapTarget>;
+};
+export type MapGuessQuestion = PlayableFields & {
+  kind: "map-guess";
+  target: MapTarget;
 };
 
 /** A typed answer, matched against accepted spellings at the reveal. */
@@ -254,6 +266,7 @@ export type AuthoredQuestion =
   | AuthoredChoice
   | AuthoredSlider
   | AuthoredRank
+  | AuthoredMapGuess
   | AuthoredWordle
   | AuthoredTyped
   | AuthoredVote
@@ -309,6 +322,7 @@ export type Question =
   | ChoiceQuestion
   | SliderQuestion
   | RankQuestion
+  | MapGuessQuestion
   | WordleQuestion
   | TypedQuestion
   | VoteQuestion
@@ -371,6 +385,21 @@ export function missingRequirements(question: AuthoredQuestion): MissingRequirem
     }
     if (!isKnown(question.correctOption)) {
       add(question.correctOption.missing);
+    }
+  }
+  if (question.kind === "map-guess") {
+    if (!isKnown(question.target)) add(question.target.missing);
+    if (
+      !question.media?.some(
+        ({ name, kind, asset, credit }) =>
+          name === "question" && kind === "image" && asset && credit,
+      )
+    ) {
+      add({
+        code: "media",
+        name: "question",
+        detail: "Supply the clue photo and its credit.",
+      });
     }
   }
   if (question.kind === "slider") {

@@ -197,6 +197,7 @@ import {
   readTelemetry,
 } from "../device/store.ts";
 import { aggregateFacts, presentStats } from "../stats/aggregate.ts";
+import { TrendCache, type RoomTrends } from "../stats/trend-room.ts";
 import { readStatsSource } from "../stats/source.ts";
 import { funFactApplies } from "../stats/fun-facts.ts";
 import { readFunFactSelection } from "../stats/fun-source.ts";
@@ -268,6 +269,7 @@ import {
 import { acceptMultiple } from "../questions/multiple.ts";
 import { acceptRanking, wrongKindRank } from "../questions/rank.ts";
 import { acceptEstimate, wrongKindEstimate } from "../questions/slider.ts";
+import { acceptMapPin } from "../questions/map-guess.ts";
 import { acceptWordleGuess } from "../questions/wordle/wordle.ts";
 import { acceptTypedAnswer } from "../questions/typed.ts";
 import {
@@ -334,6 +336,7 @@ type RoomWideSnapshotData = {
   trollShared: TrollSnapshotShared;
   wallShared: WallSnapshotShared;
   voterReactionsMap: Map<string, { playerId: string; reaction: "like" | "dislike" }[]>;
+  trends: RoomTrends;
 };
 type SnapshotParts = ReturnType<PartyRoom["snapshotParts"]>;
 type BroadcastContext = {
@@ -444,6 +447,8 @@ export class PartyRoom extends DurableObject<Env> {
   private liveDrafts = new Map<string, { text: string; shownAt: number }>();
   private draftFlush: ReturnType<typeof setTimeout> | undefined;
   private readonly meter = createRealtimeMeter();
+  /** Answer trends for the question just revealed; memory only, rebuilt from SQL. */
+  private readonly trendCache = new TrendCache();
   private database: Promise<AppDatabase> | undefined;
   private kartArrivals = new KartInputBuffer();
   private kartIngress = new KartIngressCache();
@@ -1704,6 +1709,7 @@ export class PartyRoom extends DurableObject<Env> {
     trollKind?: TrollKindName;
     postId?: string;
     wallSettings?: WallSettingsChange;
+    trendCardId?: string;
   }): Promise<PhaseCommandResult> {
     const allowed = await this.requireControl(
       input.credentialId,
@@ -1790,6 +1796,9 @@ export class PartyRoom extends DurableObject<Env> {
     if (input.wallSettings) {
       payload.wallSettings = JSON.stringify(input.wallSettings);
     }
+    if (input.trendCardId) {
+      payload.trendCardId = input.trendCardId;
+    }
     let transfer: HostActionInput["transfer"];
     if (input.action === "recover") {
       const code = randomToken(8);
@@ -1859,6 +1868,7 @@ export class PartyRoom extends DurableObject<Env> {
           trollKind: input.trollKind,
           postId: input.postId,
           wallSettings: input.wallSettings,
+          trendCardId: input.trendCardId,
           now: new Date(input.nowMs).toISOString(),
           nowMs: input.nowMs,
           transfer,
@@ -2683,6 +2693,13 @@ export class PartyRoom extends DurableObject<Env> {
     }
     if (command.name === "answer") {
       await this.acceptGuestChoice(ws, attachment, command.requestId, command.optionId);
+      return;
+    }
+    if (command.name === "map-pin") {
+      await this.acceptGuestValue(ws, attachment, command.requestId, {
+        name: "map-pin",
+        pin: command.pin,
+      });
       return;
     }
     if (command.name === "estimate") {
@@ -3660,6 +3677,7 @@ export class PartyRoom extends DurableObject<Env> {
     attachment: SocketAttachment,
     requestId: string,
     command:
+      | { name: "map-pin"; pin: unknown }
       | { name: "estimate"; value: unknown }
       | { name: "rank"; placements: unknown }
       | { name: "text"; body: unknown }
@@ -4163,6 +4181,7 @@ export class PartyRoom extends DurableObject<Env> {
       trollShared: prepareTrollShared(sql, store),
       wallShared: prepareWallShared(sql),
       voterReactionsMap: allVoterReactions(sql),
+      trends: this.trendCache.read(sql, stored),
     };
   }
 
@@ -4292,6 +4311,11 @@ export class PartyRoom extends DurableObject<Env> {
       audience === "guest" && selfPlayerId
         ? presentStats(stats, "recap", selfPlayerId, parts.facts).recap
         : undefined;
+    const roomTrends = roomWide?.trends ?? this.trendCache.read(sql, stored);
+    const trends =
+      audience === "stage" ? this.trendCache.stage(roomTrends, stageHidden) : undefined;
+    const selfTrends =
+      audience === "guest" ? this.trendCache.self(roomTrends, selfPlayerId) : undefined;
     const funFacts = parts.funFacts;
     const factIndex =
       funFacts.cards.length === 0
@@ -4432,6 +4456,7 @@ export class PartyRoom extends DurableObject<Env> {
                 ? (readKart(this.ctx.storage.sql, play.question.id)?.stageHistory ?? [])
                 : [],
             adjustments: recentAdjustments(this.ctx.storage.sql),
+            trendControl: this.trendCache.control(sql, stored, roomTrends),
             admission: readAdmission(this.ctx.storage.sql),
             kartLobby: readKartLobby(this.ctx.storage.sql),
             adminPlayers: adminPlayerRows(
@@ -4448,6 +4473,8 @@ export class PartyRoom extends DurableObject<Env> {
         : {}),
       ...(highlights && highlights.length > 0 ? { highlights } : {}),
       ...(recap && recap.length > 0 ? { recap } : {}),
+      ...(trends ? { trends } : {}),
+      ...(selfTrends ? { selfTrends } : {}),
       ...(funFact ? { funFact } : {}),
       ...(funFactList ? { funFactList } : {}),
       ...(audience === "control" ? this.archiveDiagnostic() : {}),
@@ -5159,6 +5186,7 @@ function acceptRoundCommand(
   playerId: string,
   requestId: string,
   command:
+    | { name: "map-pin"; pin: unknown }
     | { name: "estimate"; value: unknown }
     | { name: "rank"; placements: unknown }
     | { name: "text"; body: unknown }
@@ -5184,6 +5212,11 @@ function acceptRoundCommand(
       return { ok: false, message: wrongKindEstimate() };
     }
     return acceptEstimate(sql, store, playerId, command.value, now, question);
+  }
+  if (command.name === "map-pin") {
+    if (question?.kind !== "map-guess")
+      return { ok: false, message: "This question does not accept map pins." };
+    return acceptMapPin(sql, store, playerId, command.pin, now, question);
   }
   if (command.name === "rank") {
     if (!question || question.kind !== "rank") {
@@ -5305,6 +5338,7 @@ function readCommand(body: unknown):
   | { requestId: string; name: "kart-input"; input: unknown }
   | { requestId: string; name: "snapshot" }
   | { requestId: string; name: "answer"; optionId: string }
+  | { requestId: string; name: "map-pin"; pin: unknown }
   | { requestId: string; name: "estimate"; value: unknown }
   | { requestId: string; name: "rank"; placements: unknown }
   | { requestId: string; name: "text"; body: unknown }
@@ -5415,6 +5449,9 @@ function readCommand(body: unknown):
       name: "answer",
       optionId: record.optionId,
     };
+  }
+  if (record.name === "map-pin") {
+    return { requestId: record.requestId, name: "map-pin", pin: record.pin };
   }
   if (record.name === "estimate") {
     return {

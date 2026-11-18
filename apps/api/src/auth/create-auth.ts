@@ -1,5 +1,7 @@
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { emailOTP, magicLink } from "better-auth/plugins";
+import { APIError, createAuthMiddleware } from "better-auth/api";
+import { isAgentAdministrator, isAgentIdentity } from "./agent-identity.ts";
 import {
   configuredAdminEmails,
   presentBinding,
@@ -89,6 +91,23 @@ export function createAuth(
     // valid for at most this long.
     session: adminSessionOptions,
     database: input.database.auth,
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        // A public mail request must not replace an operator-issued agent code.
+        if (!ctx.request) return;
+        const email: unknown = ctx.body?.email;
+        if (typeof email === "string" && isAgentIdentity(email.trim())) {
+          if (
+            ctx.path === "/sign-in/email-otp" &&
+            isAgentAdministrator(env.APP_ENV, email.trim().toLowerCase())
+          )
+            return;
+          throw new APIError("BAD_REQUEST", {
+            message: "That request was not accepted.",
+          });
+        }
+      }),
+    },
     databaseHooks: {
       user: {
         create: {

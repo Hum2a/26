@@ -40,6 +40,7 @@ import {
   type SliderQuestion,
   type TypedQuestion,
   type WordleQuestion,
+  type MapGuessQuestion,
   type VoteQuestion,
 } from "./definition.ts";
 import {
@@ -62,6 +63,13 @@ import {
   wordleScores,
   wordleProgress,
 } from "./wordle/wordle.ts";
+import {
+  mapGuessReveal,
+  mapHostResponses,
+  publicMapQuestion,
+  readMapPin,
+  scoreMapGuesses,
+} from "./map-guess.ts";
 import { attachAudienceFields, publicQuestionCore } from "./project.ts";
 import { choiceVoters, readVoterDisplay } from "./voters.ts";
 import { questionFor, requirePlayable } from "./registry.ts";
@@ -437,6 +445,10 @@ export function recordRevealScores(
     scoreDuelQuestion(sql, question, now);
     return;
   }
+  if (question.kind === "map-guess") {
+    scoreMapGuesses(sql, question, now);
+    return;
+  }
   if (question.kind === "wordle") {
     wordleScores(sql, question, now);
     return;
@@ -638,7 +650,12 @@ export type PlayBroadcastShared = {
   };
   special?: {
     submissionCount: number;
-    reveal: unknown;
+    reveal:
+      | ReturnType<typeof mapGuessReveal>
+      | ReturnType<typeof wordleReveal>
+      | ReturnType<typeof sliderReveal>
+      | ReturnType<typeof rankReveal>
+      | ReturnType<typeof typedReveal>;
     liveSample: string[] | null;
     publicQuestion: Record<string, unknown>;
   };
@@ -668,7 +685,8 @@ export function preparePlayShared(
   const guestStandings = needsStandings ? audienceStandings(totals, "guest") : [];
   const fullStandings = needsStandings ? audienceStandings(totals, "stage") : [];
   const picksHidden =
-    question.kind === "choice" ? readVoterDisplay(sql).mode === "hidden" : false;
+    (question.kind === "choice" || question.kind === "map-guess") &&
+    readVoterDisplay(sql).mode === "hidden";
   let selfAwards: Map<string, number> | null = null;
   if (scored && awardsPoints(question)) {
     selfAwards = new Map();
@@ -721,6 +739,7 @@ export function preparePlayShared(
     question.kind === "slider" ||
     question.kind === "rank" ||
     question.kind === "typed" ||
+    question.kind === "map-guess" ||
     question.kind === "wordle"
   ) {
     const showNames = question.attribution !== "never";
@@ -733,13 +752,15 @@ export function preparePlayShared(
       reveal:
         question.kind === "wordle"
           ? wordleReveal(sql, question, scored)
-          : question.kind === "slider"
-            ? sliderReveal(sql, question, scored, showNames && scored)
-            : question.kind === "typed"
-              ? typedReveal(sql, question, scored, showNames && scored)
-              : rankReveal(sql, question, scored, showNames && scored),
+          : question.kind === "map-guess"
+            ? mapGuessReveal(sql, question, scored, showNames && !picksHidden)
+            : question.kind === "slider"
+              ? sliderReveal(sql, question, scored, showNames && scored)
+              : question.kind === "typed"
+                ? typedReveal(sql, question, scored, showNames && scored)
+                : rankReveal(sql, question, scored, showNames && scored),
       liveSample:
-        question.kind === "wordle"
+        question.kind === "wordle" || picksHidden
           ? null
           : responseNames(
               sql,
@@ -751,11 +772,13 @@ export function preparePlayShared(
       publicQuestion:
         question.kind === "wordle"
           ? publicWordleQuestion(question, index, room.questionCount)
-          : question.kind === "slider"
-            ? publicSliderQuestion(question, index, room.questionCount)
-            : question.kind === "typed"
-              ? publicTypedQuestion(question, index, room.questionCount)
-              : publicRankQuestion(question, index, room.questionCount),
+          : question.kind === "map-guess"
+            ? publicMapQuestion(question, index, room.questionCount)
+            : question.kind === "slider"
+              ? publicSliderQuestion(question, index, room.questionCount)
+              : question.kind === "typed"
+                ? publicTypedQuestion(question, index, room.questionCount)
+                : publicRankQuestion(question, index, room.questionCount),
     };
   }
   return base;
@@ -1167,7 +1190,8 @@ export function projectSpecial(
   room: RoomClock,
   audience: "guest" | "stage" | "control",
   selfPlayerId: string | undefined,
-  question: SliderQuestion | RankQuestion | TypedQuestion | WordleQuestion,
+  question:
+    SliderQuestion | RankQuestion | TypedQuestion | WordleQuestion | MapGuessQuestion,
   scored: boolean,
   shared?: PlayBroadcastShared,
 ): PlaySnapshot | null {
@@ -1198,43 +1222,69 @@ export function projectSpecial(
     question.kind === "wordle" && audience === "guest" && selfPlayerId
       ? readWordleBoard(sql, selfPlayerId, question.id)
       : undefined;
+  const pin =
+    question.kind === "map-guess" && audience === "guest" && selfPlayerId
+      ? readMapPin(sql, selfPlayerId, question.id)
+      : undefined;
+  const mapPicksHidden =
+    question.kind === "map-guess" &&
+    (shared?.picksHidden ?? readVoterDisplay(sql).mode === "hidden");
+  const mapReveal =
+    question.kind === "map-guess"
+      ? audience !== "control" && specialShared?.reveal?.kind === "map-guess"
+        ? specialShared.reveal
+        : mapGuessReveal(
+            sql,
+            question,
+            scored,
+            showNames && (audience === "control" || !mapPicksHidden),
+          )
+      : null;
   const view = {
     question: specialShared
       ? specialShared.publicQuestion
       : question.kind === "wordle"
         ? publicWordleQuestion(question, index, room.questionCount)
-        : question.kind === "slider"
-          ? publicSliderQuestion(question, index, room.questionCount)
-          : question.kind === "typed"
-            ? publicTypedQuestion(question, index, room.questionCount)
-            : publicRankQuestion(question, index, room.questionCount),
+        : question.kind === "map-guess"
+          ? publicMapQuestion(question, index, room.questionCount)
+          : question.kind === "slider"
+            ? publicSliderQuestion(question, index, room.questionCount)
+            : question.kind === "typed"
+              ? publicTypedQuestion(question, index, room.questionCount)
+              : publicRankQuestion(question, index, room.questionCount),
     submissionCount: specialShared
       ? specialShared.submissionCount
       : question.kind === "wordle"
         ? wordleProgress(sql, question.id).finishedCount
         : responseCount(sql, question.id),
-    selfAnswer: board
-      ? board
-      : question.kind === "slider" && estimate !== undefined
-        ? { kind: "slider" as const, value: estimate }
-        : question.kind === "rank" && ranking
-          ? { kind: "rank" as const, placements: ranking }
-          : question.kind === "typed" && typed !== undefined
-            ? { kind: "text" as const, body: typed }
-            : null,
+    selfAnswer: pin
+      ? { kind: "map-guess" as const, pin }
+      : board
+        ? board
+        : question.kind === "slider" && estimate !== undefined
+          ? { kind: "slider" as const, value: estimate }
+          : question.kind === "rank" && ranking
+            ? { kind: "rank" as const, placements: ranking }
+            : question.kind === "typed" && typed !== undefined
+              ? { kind: "text" as const, body: typed }
+              : null,
     selfBallot: null,
     ballot: null,
     duel: null,
     reveal:
-      specialShared && (audience !== "control" || showNames)
-        ? specialShared.reveal
-        : question.kind === "wordle"
-          ? wordleReveal(sql, question, scored)
-          : question.kind === "slider"
-            ? sliderReveal(sql, question, scored, showNames && scored)
-            : question.kind === "typed"
-              ? typedReveal(sql, question, scored, showNames && scored)
-              : rankReveal(sql, question, scored, showNames && scored),
+      question.kind === "map-guess"
+        ? mapReveal && audience === "guest"
+          ? { ...mapReveal, pins: [], closest: [] }
+          : mapReveal
+        : specialShared && (audience !== "control" || showNames)
+          ? specialShared.reveal
+          : question.kind === "wordle"
+            ? wordleReveal(sql, question, scored)
+            : question.kind === "slider"
+              ? sliderReveal(sql, question, scored, showNames && scored)
+              : question.kind === "typed"
+                ? typedReveal(sql, question, scored, showNames && scored)
+                : rankReveal(sql, question, scored, showNames && scored),
     selfAward: lookupSelfAward(sql, question, audience, scored, selfPlayerId, shared),
     selfStanding:
       audience === "guest" && showStanding && selfRow
@@ -1243,7 +1293,7 @@ export function projectSpecial(
     standings: showStanding ? lookupAudienceStandings(totals, audience, shared) : null,
     liveSample: specialShared
       ? specialShared.liveSample
-      : question.kind === "wordle"
+      : question.kind === "wordle" || mapPicksHidden
         ? null
         : responseNames(
             sql,
@@ -1262,7 +1312,9 @@ export function projectSpecial(
                 ? sliderHostResponses(sql, question)
                 : question.kind === "typed"
                   ? typedHostResponses(sql, question)
-                  : rankHostResponses(sql, question),
+                  : question.kind === "map-guess"
+                    ? mapHostResponses(sql, question, scored)
+                    : rankHostResponses(sql, question),
         }
       : {}),
   };

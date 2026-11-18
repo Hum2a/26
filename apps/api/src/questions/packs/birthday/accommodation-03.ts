@@ -26,6 +26,7 @@ export const accommodation03 = choiceQuestion({
       asset: "/assets/questions/accommodation-03/photo.jpg",
       creditUrl: "https://creativecommons.org/licenses/by/4.0",
       credit: "Julian Herzog (Website) · CC BY 4.0",
+      alt: "Circular courtyard of a residential building",
     },
   ],
   explanation:

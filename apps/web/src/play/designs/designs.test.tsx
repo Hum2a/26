@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { Browser } from "leaflet";
 import {
   customPresentationIds,
   type LobbySnapshot,
@@ -11,6 +12,27 @@ import { previewQuestions, previewReveal } from "./preview/fixtures";
 import { designs } from "./registry";
 
 afterEach(cleanup);
+
+const originalSvg = Browser.svg;
+beforeAll(() => {
+  Object.assign(Browser, { svg: true });
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    },
+  );
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ type: "FeatureCollection", features: [] })),
+  );
+});
+afterAll(() => {
+  Object.assign(Browser, { svg: originalSvg });
+  vi.unstubAllGlobals();
+});
 
 function play(
   question: PlaySnapshot["question"],

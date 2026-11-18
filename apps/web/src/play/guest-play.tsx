@@ -1,6 +1,9 @@
 import { QuestionImage } from "./question-image";
 import { lazy, Suspense } from "react";
-// The race and its track geometry load when a kart round arrives, not on joining.
+const GuestMapGuess = lazy(() =>
+  import("./map-guess").then((m) => ({ default: m.GuestMapGuess })),
+);
+// The race and track geometry load when a kart round arrives.
 const GuestKart = lazy(() =>
   import("../kart/GuestKart").then((kart) => ({ default: kart.GuestKart })),
 );
@@ -14,7 +17,7 @@ import type {
   ChessMoveParams,
   ChessResignParams,
 } from "@26/shared";
-import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
+import type { LobbySnapshot, MapPin, PlaySnapshot } from "@26/shared";
 import { QuestionOptionImage } from "./question-option-image";
 import { OptionText } from "./controls/OptionText";
 import { SubmitButton } from "./controls/SubmitButton";
@@ -32,6 +35,8 @@ import { GuestPush } from "./guest-push";
 import { renderPresentation } from "./presentation";
 import { QuestionExperience } from "./question-experience";
 import { motion, useReducedMotion } from "motion/react";
+import { optionMark } from "../theme/identity";
+import { useThemeIdentity } from "../theme/use-theme-identity";
 
 export function GuestPlay({
   snapshot,
@@ -40,9 +45,12 @@ export function GuestPlay({
   onSelect,
   onSubmit,
   onEstimate,
+  onMapPin,
   onRank,
   onText,
   onDraft,
+  wordleFeedback,
+  onWordleEdit,
   onBallot,
   onDuel,
   onKartInput,
@@ -81,14 +89,20 @@ export function GuestPlay({
   pending: boolean;
   onSelect: (optionId: string) => void;
   onSubmit: () => void;
+  onMapPin?: (pin: MapPin) => void;
   onEstimate: (value: number) => void;
   onRank: (placements: { itemId: string; tierId: string }[]) => void;
   onText: (body: string) => void;
   onDraft?: (body: string) => void;
+  wordleFeedback?: string;
+  onWordleEdit?: () => void;
   onBallot: (candidateId: string) => void;
   onDuel: (value: number) => void;
 }) {
   const reduce = useReducedMotion();
+  // A mark per option, so an answer is never told apart by colour alone. Its
+  // style follows the theme and matches the projector's.
+  const { marks } = useThemeIdentity();
   const play = snapshot.play;
   if (!play) {
     return null;
@@ -131,6 +145,7 @@ export function GuestPlay({
     snapshot.phase === "collect" &&
     !snapshot.paused &&
     !snapshot.held &&
+    (play.question.kind !== "wordle" || connected !== false) &&
     (!play.selfAnswer ||
       (play.selfAnswer.kind === "wordle" && play.selfAnswer.status === "playing")) &&
     !pending;
@@ -152,6 +167,9 @@ export function GuestPlay({
       onSubmit,
       onRank,
       onText,
+      onMapPin,
+      wordleFeedback,
+      onWordleEdit,
     },
   };
   if (play.question.kind === "choice" && play.question.push) {
@@ -200,11 +218,25 @@ export function GuestPlay({
           </p>
         ) : null}
         <h1 className="phone-prompt">{play.question.prompt}</h1>
-        <QuestionImage question={play.question} />
+        {(play.question.kind !== "map-guess" ||
+          (snapshot.phase !== "intro" && snapshot.phase !== "prompt")) && (
+          <QuestionImage question={play.question} />
+        )}
         {play.question.instructions ? (
           <p className="text-base text-muted">{play.question.instructions}</p>
         ) : null}
         {play.explanation ? <p>{play.explanation}</p> : null}
+        {play.question.kind === "map-guess" ? (
+          <Suspense fallback={<p role="status">Loading the map…</p>}>
+            <GuestMapGuess
+              key={play.question.id}
+              play={play}
+              open={open && connected !== false && Boolean(onMapPin)}
+              pending={pending}
+              onSubmit={onMapPin}
+            />
+          </Suspense>
+        ) : null}
         {play.question.kind === "slider" ? (
           <GuestSlider
             play={play}
@@ -339,7 +371,7 @@ export function GuestPlay({
                     onClick={() => onSelect(option.id)}
                   >
                     <span className="question-choice-mark" aria-hidden="true">
-                      {answerShapes[index % answerShapes.length]}
+                      {optionMark(marks, index, "phone")}
                     </span>
                     {option.image ? <QuestionOptionImage src={option.image} /> : null}
                     <OptionText text={`${option.label}${note}`} />
@@ -370,9 +402,6 @@ export function GuestPlay({
     </QuestionExperience>
   );
 }
-
-/** One shape per option, so an answer is never told apart by colour alone. */
-const answerShapes = ["▲", "◆", "●", "■", "★", "⬢"] as const;
 
 /** Phone label suffix at the reveal: the right answer, or the room's count and who scored. */
 export function choiceNote(

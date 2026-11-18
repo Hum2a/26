@@ -64,7 +64,7 @@ export const apiFolders = [
 
 export const apiFiles = ["index.ts", "log.ts", "README.md", "timeout.ts"];
 
-export const sharedFolders = ["chess", "kart", "wordle"];
+export const sharedFolders = ["chess", "kart", "map-guess", "trends", "wordle"];
 
 export const sharedFiles = [
   "admin.ts",

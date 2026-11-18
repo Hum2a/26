@@ -162,11 +162,11 @@ A guest's email address exists only if that guest asks for their results by emai
 
 These tables cover the hosts only. Guests never sign in.
 
-| Table                                        | Holds                                                                                                                                                    |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `user`, `session`, `account`, `verification` | Better Auth sign-in for configured administrators. The `session` table records the admin's IP address and user agent, which Better Auth does by default. |
-| `room_credential`                            | Hashed room credentials for the admin's rooms                                                                                                            |
-| `dev_inbox`                                  | Development only: emails caught locally instead of being sent                                                                                            |
+| Table                                        | Holds                                                                                                                                                                                   |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `user`, `session`, `account`, `verification` | Better Auth sign-in for configured administrators and named local/staging agents. The `session` table records the admin's IP address and user agent, which Better Auth does by default. |
+| `room_credential`                            | Hashed room credentials for the admin's rooms                                                                                                                                           |
+| `dev_inbox`                                  | Development only: emails caught locally instead of being sent                                                                                                                           |
 
 ## Cloudflare R2
 
@@ -216,6 +216,20 @@ Each started birthday room stores its frozen private question script in existing
   count of visible profile photos. Stage and host snapshots carry each
   option's voter ids for the vote board when the question allows; guest
   snapshots never do.
+- Answer trends store only host settings on the room row: `trend_stage` and
+  `trend_phones` (`shown` by default, or `hidden`), `trend_hidden` (up to 200
+  hidden card ids) and `trend_history` (the latest 20 changes). The cards
+  themselves are derived, not stored: during the reveal and scores the room
+  reads the question's accepted answers, the device context saved with each
+  answer, the score ledger, troll effects, uploads and join order, and keeps the
+  analysis in memory only. Stage snapshots carry up to six cards; device and
+  behaviour cards carry counts and percentages, never names or player ids; record
+  cards (fastest, closest, best) name one holder as the reveal already does.
+  Each guest snapshot carries only that guest's own comparison lines. Host
+  snapshots carry every candidate card, the switches and short summaries of up
+  to 12 earlier questions. Comparisons need three guests on each side. When
+  detailed device rows expire after 30 days, trends for that room stop having
+  device facets.
 - The room stores `photo_bias_enabled` (default on), `photo_bias_revision` and a
   bounded history of the latest 20 switches (time and enabled state). Host
   snapshots include the setting, history and accepted-photo counts by family.
@@ -468,6 +482,12 @@ The code-versioned kart-tracks-v2 catalogue derives counts/lengths from driving,
 
 The room-code registry may store a host-chosen six-letter/digit public join code in the existing `code` table. Creation receipts include the normalised code in their payload digest; credentials remain independent. The existing room `round_state` table stores `option-sequence` (a count, keyed by question id) and `chess-question` (the real question id, keyed by frozen chess round id). These contain no additional guest personal data. Chess game and ledger records retain their existing access and retention policies. Public photo prompts are repository assets with photographer/licence credits; their answers and source notes remain server-side until reveal. Isolated admin chess practice, guesses and push previews have no socket or persistence.
 
+### Quote sorting (17 November 2026)
+
+The Ed/Humza sorting variant stores one complete list of up to 40 `{ itemId, tierId }` assignments in the existing `round_response` rank payload. It uses existing guest credentials, durable receipts and score ledger; retention and deletion are unchanged. Quote text and confirmed speaker assignments live in the versioned server-side question script; unknown speakers keep the catalogue entry in draft. Public questions carry text and group names without the key. Each phone receives only its own accepted list, while the key appears at reveal. Bucket reveals omit other guests' full lists; host snapshots retain bounded per-guest assignment-count summaries. The isolated admin preview keeps choices in component memory and does not write a room response. No new table, personal identity field, browser persistence or external service is added.
+
 ### Kart trusted device timing (17 November 2026)
 
 New room races store `timingMode: device-v1` and a monotonic checkpoint revision in the existing `kart-race` round state. Each guest receives only their own exact physics body, lap cursor, recovery epoch, last simulated input sequence and controls; these fields are absent from stage/control race projections. Input history remains in bounded phone memory (three seconds, at most 300 samples), not in a new database or service. Authenticated finish reports contain race id, integer active duration and increasing cumulative lap splits. The room stores accepted durations in existing race/recap state, uses the existing receipt and score ledger, and keeps the existing room retention/deletion policy. No wall clock, device fingerprint or extra personal diagnostic is collected. Existing races without this mode retain server-simulated timing.
+
+**Where are we?** The room stores submitted guess coordinates in the existing `round_response` table and distance and points in the score ledger. The coordinates describe a pin chosen on a map. The browser does not request the device's location. The host sees submissions, the phone sees its own pin, and the projector sees anonymous pins and permitted names for the three closest after reveal. Existing room retention applies. The admin phone preview saves its practice pin only in component state.

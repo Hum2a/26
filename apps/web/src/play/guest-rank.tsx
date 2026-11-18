@@ -4,6 +4,7 @@ import type { PlaySnapshot } from "@26/shared";
 import { SubmitButton } from "./controls/SubmitButton";
 import { roundSubmitState } from "./controls/submit-state";
 import { TierAssign, type TierPlacement } from "./controls/TierAssign";
+import { BucketAssign } from "./controls/BucketAssign";
 
 export function GuestRank({
   play,
@@ -69,17 +70,27 @@ function RankControl({
 
   return (
     <div className="grid gap-3">
-      <TierAssign
-        items={question.items}
-        tiers={question.tiers}
-        ties={question.ties}
-        open={open}
-        initial={accepted ?? []}
-        onPlacements={setPlacements}
-      />
+      {question.input === "buckets" ? (
+        <BucketAssign
+          items={question.items}
+          tiers={question.tiers}
+          placements={placements}
+          open={open && !pending && !locked}
+          onPlacements={setPlacements}
+        />
+      ) : (
+        <TierAssign
+          items={question.items}
+          tiers={question.tiers}
+          ties={question.ties}
+          open={open}
+          initial={accepted ?? []}
+          onPlacements={setPlacements}
+        />
+      )}
       {open || pending || locked ? (
         <SubmitButton
-          label="Send ranking"
+          label={question.input === "buckets" ? "Send assignments" : "Send ranking"}
           state={roundSubmitState(locked, pending)}
           disabled={!ready}
           onClick={() => onSubmit(placements)}

@@ -70,8 +70,20 @@ import {
 import { returnToLobby, startRound } from "./lifecycle.ts";
 import { changeVoterDisplay } from "../questions/voters.ts";
 import { clearAvatar } from "../media/avatar.ts";
+import { changeTrendSettings } from "../stats/trend-settings.ts";
+import type { TrendChange } from "@26/shared";
 
 const shownPhases = new Set(["reveal", "scores", "final", "podium"]);
+
+/** Host commands for answer trends, by the change each one records. */
+const trendChanges: Partial<Record<string, TrendChange>> = {
+  "trends-stage-shown": "stage-shown",
+  "trends-stage-hidden": "stage-hidden",
+  "trends-phones-shown": "phones-shown",
+  "trends-phones-hidden": "phones-hidden",
+  "trends-card-hide": "card-hidden",
+  "trends-card-restore": "card-restored",
+};
 
 export type HostActionInput = {
   action: string;
@@ -97,6 +109,7 @@ export type HostActionInput = {
   trollKind?: TrollKindName;
   postId?: string;
   wallSettings?: WallSettingsChange;
+  trendCardId?: string;
   now: string;
   nowMs: number;
   transfer?: { code: string; codeHash: string; expiresAt: string };
@@ -315,6 +328,11 @@ export function applyHostAction(
       input.action === "voters-hidden" ? "hidden" : "question",
       input.nowMs,
     );
+    return {};
+  }
+  const trendChange = trendChanges[input.action];
+  if (trendChange) {
+    changeTrendSettings(sql, trendChange, input.nowMs, input.trendCardId);
     return {};
   }
   if (input.action === "avatar-clear") {

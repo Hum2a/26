@@ -1,5 +1,8 @@
 import { QuestionImage } from "./question-image";
 import { lazy, Suspense } from "react";
+const StageMapGuess = lazy(() =>
+  import("./map-guess").then((m) => ({ default: m.StageMapGuess })),
+);
 const KartGameWrapper = lazy(() => import("../kart/KartGameWrapper"));
 import { motion } from "motion/react";
 import type { LobbySnapshot, PlaySnapshot, RoomPhaseName } from "@26/shared";
@@ -158,7 +161,10 @@ function StageBeat({
       ) : null}
       {custom ?? (
         <>
-          <QuestionImage question={play.question} />
+          {(play.question.kind !== "map-guess" ||
+            (snapshot.phase !== "intro" && snapshot.phase !== "prompt")) && (
+            <QuestionImage question={play.question} />
+          )}
           <QuestionView play={play} omitBoard={false} />
           {play.explanation ? <p className="stage-answer">{play.explanation}</p> : null}
         </>
@@ -181,6 +187,13 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
         {omitBoard ? null : <Standings play={play} />}
       </>
     );
+  if (play.question.kind === "map-guess") {
+    return (
+      <Suspense fallback={<p role="status">Loading the map…</p>}>
+        <StageMapGuess play={play} />
+      </Suspense>
+    );
+  }
   if (play.question.kind === "slider") {
     return <SliderView play={play} omitBoard={omitBoard} />;
   }
@@ -352,6 +365,40 @@ function RankView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolean 
     return null;
   }
   const reveal = play.reveal?.kind === "rank" ? play.reveal : undefined;
+  if (play.question.input === "buckets") {
+    const question = play.question;
+    return (
+      <div className="grid gap-4">
+        <p className="stage-prompt">{question.prompt}</p>
+        <p>Assign all {question.items.length} quotes on your phone, then send.</p>
+        <p>{play.submissionCount} submissions in.</p>
+        {reveal ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {question.tiers.map((tier) => (
+              <section key={tier.id} aria-label={`${tier.label} quotes`}>
+                <h2>{tier.label}</h2>
+                <ul className="grid gap-3">
+                  {question.items
+                    .filter((item) =>
+                      reveal.order.some(
+                        (group) =>
+                          group.tierId === tier.id && group.itemIds.includes(item.id),
+                      ),
+                    )
+                    .map((item) => (
+                      <li key={item.id}>{item.label}</li>
+                    ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <p>Each correct assignment earns a share of the round’s points.</p>
+        )}
+        {omitBoard ? null : <Standings play={play} />}
+      </div>
+    );
+  }
   return (
     <div className="grid gap-4">
       <p className="stage-prompt">{play.question.prompt}</p>

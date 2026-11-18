@@ -76,13 +76,15 @@ export async function confirmMagicLink(token: string): Promise<AdminSession | Fa
 export async function confirmEmailCode(
   email: string,
   code: string,
+  agent = false,
 ): Promise<AdminSession | Failure> {
   const result = await authRequest("/api/admin/email-code/verify", { email, code });
   if ("error" in result) return result;
   if (!result.ok)
     return {
-      error:
-        "That code is incorrect or has expired. Try again, or request a new email.",
+      error: agent
+        ? "That agent code is incorrect or has expired. Issue a fresh code and try again."
+        : "That code is incorrect or has expired. Try again, or request a new email.",
     };
   const parsed = adminSessionSchema.safeParse(result.body);
   return parsed.success && parsed.data.signedIn

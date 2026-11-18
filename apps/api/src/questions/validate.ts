@@ -1,5 +1,5 @@
 import { assertPushOutcome, pushBailOptionId } from "./push-luck.ts";
-import { contentLimits, questionOptionImageSchema } from "@26/shared";
+import { contentLimits, mapPinSchema, questionOptionImageSchema } from "@26/shared";
 import { implementedTrollKinds } from "../troll/catalogue.ts";
 import { toPlayable } from "./authoring.ts";
 import {
@@ -235,6 +235,30 @@ function suppliedIssues(
   profile: PackProfile,
 ): ContentIssue[] {
   const issues: ContentIssue[] = [];
+  if (
+    question.kind === "rank" &&
+    question.input === "buckets" &&
+    (question.items.length < 2 ||
+      question.items.length > contentLimits.bucketMax ||
+      new Set(question.items.map((item) => item.id)).size !== question.items.length ||
+      question.items.some(
+        (item) =>
+          !contentLimits.optionId.test(item.id) ||
+          !item.label.trim() ||
+          item.label.length > contentLimits.bucketLabelMax,
+      ) ||
+      question.scoring !== "placement" ||
+      question.mode !== "complete" ||
+      question.ties !== "shared")
+  ) {
+    issues.push(
+      issue(
+        "error",
+        "rank",
+        `${question.id} needs 2 to ${contentLimits.bucketMax} distinct quotes of up to ${contentLimits.bucketLabelMax} characters and complete shared placement scoring.`,
+      ),
+    );
+  }
   if (!contentLimits.questionId.test(question.id)) {
     issues.push(
       issue(
@@ -328,7 +352,8 @@ function suppliedIssues(
       question.collectMs,
       question.kind === "wordle" ||
         question.kind === "kart" ||
-        question.kind === "chess"
+        question.kind === "chess" ||
+        (question.kind === "rank" && question.input === "buckets")
         ? 180_000
         : contentLimits.collectMaxMs,
     ),
@@ -350,6 +375,11 @@ function suppliedIssues(
 }
 
 function knownAnswerIssues(question: AuthoredQuestion): ContentIssue[] {
+  if (question.kind === "map-guess") {
+    return isKnown(question.target)
+      ? mapTargetIssues(question.id, question.target.known)
+      : [];
+  }
   if (question.kind === "wordle") {
     const answer = isKnown(question.answer) ? question.answer.known : null;
     return answer === null || /^[A-Z]{5}$/.test(answer)
@@ -542,7 +572,8 @@ function validatePlayableQuestions(
         question.collectMs,
         question.kind === "wordle" ||
           question.kind === "kart" ||
-          question.kind === "chess"
+          question.kind === "chess" ||
+          (question.kind === "rank" && question.input === "buckets")
           ? 180_000
           : contentLimits.collectMaxMs,
       ),
@@ -706,18 +737,42 @@ function checkPlayable(question: Question): ContentIssue[] {
       items.size !== question.items.length ||
       tiers.size !== question.tiers.length ||
       items.size < 2 ||
-      items.size > 8 ||
+      items.size >
+        (question.input === "buckets"
+          ? contentLimits.bucketMax
+          : contentLimits.rankMax) ||
       tiers.size < 2 ||
       tiers.size > 8 ||
-      [...question.items, ...question.tiers].some(
+      question.items.some(
         (item) =>
           !contentLimits.optionId.test(item.id) ||
           !item.label.trim() ||
-          item.label.length > contentLimits.labelMax,
+          item.label.length >
+            (question.input === "buckets"
+              ? contentLimits.bucketLabelMax
+              : contentLimits.labelMax),
+      ) ||
+      question.tiers.some(
+        (tier) =>
+          !contentLimits.optionId.test(tier.id) ||
+          !tier.label.trim() ||
+          tier.label.length > contentLimits.labelMax,
       )
     )
       return [
         issue("error", "rank", `${question.id} needs distinct valid items and tiers.`),
+      ];
+    if (
+      (question.input === "buckets") !== (question.scoring === "placement") ||
+      (question.input === "buckets" &&
+        (question.mode !== "complete" || question.ties !== "shared"))
+    )
+      return [
+        issue(
+          "error",
+          "rank",
+          `${question.id} bucket sorting needs complete shared placements and placement scoring.`,
+        ),
       ];
     if (
       question.input === "ordered" &&
@@ -743,6 +798,19 @@ function checkPlayable(question: Question): ContentIssue[] {
           ]
         : [];
     const placed = question.truth.flatMap((group) => group.itemIds);
+    if (
+      new Set(placed).size !== placed.length ||
+      placed.some((id) => !items.has(id)) ||
+      new Set(question.truth.map((group) => group.tierId)).size !==
+        question.truth.length
+    )
+      return [
+        issue(
+          "error",
+          "rank",
+          `${question.id} must place each valid item once in distinct groups.`,
+        ),
+      ];
     if (question.mode === "complete" && placed.length !== items.size) {
       return [issue("error", "rank", `${question.id} does not place every item once.`)];
     }
@@ -757,6 +825,8 @@ function checkPlayable(question: Question): ContentIssue[] {
     }
     return [];
   }
+  if (question.kind === "map-guess")
+    return mapTargetIssues(question.id, question.target);
   if (question.kind === "wordle") {
     const answer = question.answer;
     return answer === null || /^[A-Z]{5}$/.test(answer)
@@ -836,4 +906,22 @@ function validKart(q: { trackId: string; timeLimitMs: number; collectMs: number 
         ? 180000
         : 0;
   return limit > 0 && q.timeLimitMs === limit && q.collectMs === limit;
+}
+
+function mapTargetIssues(
+  id: string,
+  target: { lat: number; lng: number; label: string },
+): ContentIssue[] {
+  return mapPinSchema.safeParse({ lat: target.lat, lng: target.lng }).success &&
+    Math.abs(target.lat) <= 85 &&
+    target.label.trim().length > 0 &&
+    target.label.length <= 100
+    ? []
+    : [
+        issue(
+          "error",
+          "map-guess",
+          `${id} needs valid map coordinates and a short location name.`,
+        ),
+      ];
 }

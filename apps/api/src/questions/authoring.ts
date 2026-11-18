@@ -15,6 +15,8 @@ import {
   type AuthoredSlider,
   type AuthoredTyped,
   type AuthoredWordle,
+  type AuthoredMapGuess,
+  type MapTarget,
   type AuthoredVote,
   type ChoiceOutcome,
   type ChoiceQuestion,
@@ -213,6 +215,31 @@ export function typedQuestion(
   );
 }
 
+export function mapGuessQuestion(
+  input: Omit<SharedInput, "points" | "collectMs"> & { target: Answer<MapTarget> },
+): AuthoredMapGuess {
+  const media = [
+    ...(input.media ?? []).filter(({ name }) => name !== "question"),
+    {
+      ...input.media?.find(({ name, kind }) => name === "question" && kind === "image"),
+      name: "question",
+      kind: "image" as const,
+      required: true,
+    },
+  ];
+  return finish(
+    {
+      ...shared(
+        { ...input, media, collectMs: ordinaryDefaults.mapGuessCollectMs },
+        ordinaryDefaults.mapGuessPoints,
+      ),
+      kind: "map-guess",
+      target: input.target,
+    },
+    input.status,
+  );
+}
+
 export function wordleQuestion(
   input: SharedInput & { answer?: Answer<string> },
 ): AuthoredWordle {
@@ -240,8 +267,8 @@ export function wordleQuestion(
 export function rankQuestion(
   input: SharedInput & {
     mode?: "complete" | "partial";
-    scoring?: "consensus";
-    input?: "ordered";
+    scoring?: "consensus" | "placement";
+    input?: "ordered" | "buckets";
     ties?: "forbidden" | "shared";
     items?: { id: string; label: string }[];
     tiers?: { id: string; label: string }[];
@@ -525,6 +552,11 @@ export function toPlayable(
       input: question.input,
     };
     return playable;
+  }
+  if (question.kind === "map-guess") {
+    return isKnown(question.target)
+      ? { ...core, kind: question.kind, target: question.target.known }
+      : undefined;
   }
   if (question.kind === "wordle") {
     return isKnown(question.answer)

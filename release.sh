@@ -9,7 +9,7 @@
 #
 # Options:
 #   --deploy=both|staging|production|none   where to deploy (default: staging)
-#   --override-freeze                       deploy production during the party freeze
+#   --override-freeze                       accepted and ignored (there is no freeze now)
 #   --dry-run                               show what would happen, change nothing
 #   --skip-checks                           skip the pre-release checks
 #   --full-checks                           also run the full API suite (slow)
@@ -27,7 +27,6 @@ cd "$(dirname "$0")"
 
 bump="patch"
 deploy="staging"
-override_freeze=false
 full_checks=false
 dry_run=false
 skip_checks=false
@@ -41,7 +40,7 @@ for arg in "$@"; do
     --skip-checks) skip_checks=true ;;
     --full-checks) full_checks=true ;;
     --confirm-production) ;; # ignored; kept so old scripts still parse
-    --override-freeze) override_freeze=true ;;
+    --override-freeze) ;; # ignored; the party freeze was removed on 18 Nov 2026
     --no-github) github=false ;;
     --v1) allow_v1=true ;;
     -h|--help) sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
@@ -57,13 +56,6 @@ esac
 
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 fail() { printf '\n\033[31m%s\033[0m\n' "$*" >&2; exit 1; }
-
-# The party weekend is frozen because a deploy drops every phone's connection.
-if [[ "$dry_run" != true && ( "$deploy" == both || "$deploy" == production ) ]]; then
-  if [[ "$override_freeze" != true ]] && node --experimental-strip-types -e "import('./scripts/release-support.ts').then((m) => process.exit(m.inDeployFreeze(Date.now()) ? 0 : 1))"; then
-    fail "Production is frozen for the party weekend (20 Nov to midday 22 Nov). Pass --override-freeze only for an emergency fix."
-  fi
-fi
 
 current="$(node -p "require('./package.json').version || '0.0.0'")"
 
@@ -195,9 +187,7 @@ if [[ "$deploy" != none ]]; then
   say "Deploying v$next to $deploy"
   # Branch/cleanliness were required before the version bump. Checks and the
   # bump may leave generated files, so release.ts git state is skipped here.
-  # Freeze still goes through the common deploy entry point.
   deploy_options=(--skip-checks)
-  [[ "$override_freeze" == true ]] && deploy_options+=(--override-freeze)
   SKIP_GIT_CHECK=true npm run "deploy:$deploy" -- "${deploy_options[@]}"
   say "Checking the live sites"
   ok=true

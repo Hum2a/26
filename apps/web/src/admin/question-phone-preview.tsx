@@ -138,7 +138,7 @@ function PhoneRehearsal({
           {limitation ? ` ${limitation}` : ""}
         </p>
         <AnimatePresence>
-          {error ? (
+          {error && question.kind !== "wordle" ? (
             <motion.p
               key="rehearsal-error"
               role="alert"
@@ -183,9 +183,12 @@ function PhoneRehearsal({
               onSubmit={() => {
                 if (selectedId) setAnswer({ kind: "choice", optionId: selectedId });
               }}
+              onMapPin={(pin) => setAnswer({ kind: "map-guess", pin })}
               onEstimate={(value) => setAnswer({ kind: "slider", value })}
               onRank={(placements) => setAnswer({ kind: "rank", placements })}
               onText={(body) => void sendText(body)}
+              wordleFeedback={error}
+              onWordleEdit={() => setError(undefined)}
               onBallot={(candidateId) => setBallot({ candidateId })}
               onDuel={(value) => setAnswer({ kind: "duel", value })}
             />

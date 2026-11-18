@@ -30,6 +30,8 @@ Public API is `packages/shared/src/index.ts` (`@26/shared`). Feature folders:
 - `kart/` — race reducer, physics, tracks, items (filenames keep the `kart-` prefix).
 - `chess/` — schemas, clocks, capture scoring.
 - `wordle/` — board reducer.
+- `map-guess/` — pin validation and distance scoring.
+- `trends/` — per-question answer-trend schemas and the pure analysis engine (device and behaviour comparisons).
 
 Cross-cutting files stay at `src/` (`rate-limit.ts`, `party-scoring.ts`, `voters.ts`, `wall.ts`, …). Do not put round UI or Durable Object code here.
 
@@ -78,7 +80,7 @@ Do not recreate `src/rounds` or `src/net`. Connection UI belongs in `live/`. Ans
 
 ## How to add a new round
 
-1. **Mechanic** — Reuse `choice` / `typed` / `slider` / `rank` / `vote` / `guess` / `duel` / `finale` / `wordle` / `kart` / `chess` if it fits. Read `docs/question-authoring.md`.
+1. **Mechanic** — Reuse `choice` / `typed` / `slider` / `rank` / `vote` / `guess` / `duel` / `finale` / `wordle` / `map-guess` / `kart` / `chess` if it fits. Read `docs/question-authoring.md`.
 2. **Pack file** — `apps/api/src/questions/packs/birthday/<id>.ts` with the helper in `authoring.ts`. Register on `catalogue` only (not `order` while drafting).
 3. **Server runtime** — If it needs new scoring or persistence, add or extend `apps/api/src/questions/<mechanic>/` (or the existing quiz module). Wire `PartyRoom` through the existing plugin/command path. Persist before ack.
 4. **Shared contract** — Zod + pure reducer in `packages/shared/src/<mechanic>/` if phones and the Worker share shapes. Export from `index.ts`. Keep secrets off the public snapshot.

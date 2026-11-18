@@ -1,4 +1,5 @@
 import { accommodation01 } from "./accommodation-01.ts";
+import { edOrHumza } from "./ed-or-humza.ts";
 import { accommodation02 } from "./accommodation-02.ts";
 import { accommodation03 } from "./accommodation-03.ts";
 import { guessemotionalsupport } from "./guess-emotional-support.ts";
@@ -34,6 +35,7 @@ import { inflationMealDeal } from "./inflation-meal-deal.ts";
 import { inflationSausageRoll } from "./inflation-sausage-roll.ts";
 import { inflationCheeseburger } from "./inflation-cheeseburger.ts";
 import { commonPassword } from "./common-password.ts";
+import { whereAreWe } from "./where-are-we.ts";
 import { completeAWordle } from "./complete-a-wordle.ts";
 import { guessTabOyster } from "./guess-tab-oyster.ts";
 import { guessTabCarInsurance } from "./guess-tab-car-insurance.ts";
@@ -47,6 +49,7 @@ import { dialLondonGeography } from "./dial-london-geography.ts";
 import { dialBritishPolitics } from "./dial-british-politics.ts";
 import { chessBattle } from "./chess-battle.ts";
 import { trumpMadeUpCountry } from "./trump-made-up-country.ts";
+import { esportsTag } from "./esports-tag.ts";
 
 /**
  * Working catalogue for Humza's questions.
@@ -107,6 +110,8 @@ export const birthdayPack: QuestionPack = {
     "kart-sprint",
   ],
   catalogue: withPointsTrolls([
+    whereAreWe,
+    edOrHumza,
     accommodation01,
     accommodation02,
     accommodation03,
@@ -157,6 +162,7 @@ export const birthdayPack: QuestionPack = {
     dialBritishPolitics,
     chessBattle,
     trumpMadeUpCountry,
+    esportsTag,
   ]),
 };
 

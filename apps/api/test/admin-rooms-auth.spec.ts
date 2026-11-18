@@ -428,11 +428,13 @@ it("projects every catalogue mechanic without exposing raw authoring objects or 
     }
   }
   expect([...mechanics].sort()).toEqual([
+    "chess",
     "choice",
     "duel",
     "finale",
     "guess",
     "kart",
+    "map-guess",
     "rank",
     "slider",
     "typed",
@@ -446,6 +448,10 @@ it("rehearses authored public fields without leaking answers, notes, truth or fu
       const preview = shared.adminQuestionPreviewSchema.parse(questionPreview(pack, q));
       if (preview.question) {
         expect(preview.question.id).toBe(q.id);
+        if (q.kind === "map-guess") {
+          expect(preview.question.kind).toBe("map-guess");
+          expect(preview.question).not.toHaveProperty("target");
+        }
         for (const secret of [
           "correctOption",
           "correctOptionId",

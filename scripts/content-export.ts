@@ -132,6 +132,9 @@ function revealLine(question: Question): string {
       ""
     );
   }
+  if (question.kind === "map-guess") {
+    return question.target.label;
+  }
   if (question.kind === "wordle") {
     return `${question.answer} (six guesses, ${question.collectMs / 1000} seconds; ${question.points} points for solving)`;
   }

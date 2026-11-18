@@ -43,21 +43,22 @@ Register that export in `catalogue` inside `apps/api/src/questions/packs/birthda
 
 Helpers live in `apps/api/src/questions/authoring.ts`. Defaults live only in `apps/api/src/questions/defaults.ts`.
 
-| Idea                                    | Helper                                                      | Mechanic |
-| --------------------------------------- | ----------------------------------------------------------- | -------- |
-| Pick one option                         | `choiceQuestion`                                            | `choice` |
-| Vote with no right answer               | `choiceQuestion` with `outcome: { kind: "poll" }`           | `choice` |
-| The room's split decides who scores     | `choiceQuestion` with `outcome: { kind: "threshold", ... }` | `choice` |
-| Push your luck: bail before a Raid      | `choiceQuestion` with `outcome: { kind: "push", ... }`      | `choice` |
-| Solve a five-letter word in six guesses | `wordleQuestion`                                            | `wordle` |
-| Drive a one-lap sprint                  | `kartQuestion`                                              | `kart`   |
-| Type a short answer                     | `typedQuestion`                                             | `typed`  |
-| Estimate a number                       | `sliderQuestion`                                            | `slider` |
-| Put items in order                      | `rankQuestion`                                              | `rank`   |
-| Write a line, then vote                 | `voteQuestion`                                              | `vote`   |
-| Name a person                           | `guessQuestion`                                             | `guess`  |
-| One-against-one number                  | `duelQuestion`                                              | `duel`   |
-| Two contestants, everyone else predicts | `finaleQuestion`                                            | `finale` |
+| Idea                                    | Helper                                                      | Mechanic    |
+| --------------------------------------- | ----------------------------------------------------------- | ----------- |
+| Pick one option                         | `choiceQuestion`                                            | `choice`    |
+| Vote with no right answer               | `choiceQuestion` with `outcome: { kind: "poll" }`           | `choice`    |
+| The room's split decides who scores     | `choiceQuestion` with `outcome: { kind: "threshold", ... }` | `choice`    |
+| Push your luck: bail before a Raid      | `choiceQuestion` with `outcome: { kind: "push", ... }`      | `choice`    |
+| Solve a five-letter word in six guesses | `wordleQuestion`                                            | `wordle`    |
+| Guess where a clue photo was taken      | `mapGuessQuestion`                                          | `map-guess` |
+| Drive a one-lap sprint                  | `kartQuestion`                                              | `kart`      |
+| Type a short answer                     | `typedQuestion`                                             | `typed`     |
+| Estimate a number                       | `sliderQuestion`                                            | `slider`    |
+| Put items in order                      | `rankQuestion`                                              | `rank`      |
+| Write a line, then vote                 | `voteQuestion`                                              | `vote`      |
+| Name a person                           | `guessQuestion`                                             | `guess`     |
+| One-against-one number                  | `duelQuestion`                                              | `duel`      |
+| Two contestants, everyone else predicts | `finaleQuestion`                                            | `finale`    |
 
 A choice can set `optionReveal: "one-at-a-time"`. In the get-ready/prompt beat, the host uses **Reveal next option** (or the usual advance shortcut) once per option. The room durably saves the count, withholds unseen labels and images from public snapshots, and waits without a prompt deadline. Once all options are visible, **Open answering** starts the normal answer window. Guests cannot select before that phase. `favourite-genre` uses this flow; other choices retain their existing flow. The isolated phone and stage previews offer the same option steps.
 
@@ -74,6 +75,8 @@ A guess can set `selfVoteBonus: "double"` with majority scoring and self-votes a
 A typed question lists its accepted spellings. The first is shown at the reveal. Matching ignores case, accents, punctuation, hyphens and spacing, and forgives a small typo: none up to 4 letters, one up to 9, two beyond that. Wrong answers stay off the stage.
 
 A Wordle question supplies `answer: { known: "ABCDE" }` with exactly five uppercase letters. Defaults are six guesses, two minutes and 100 points for a solve, with no speed bonus. The server validates guesses against Encore Glyph’s frozen word list, always allowing the supplied target. Repeated letters use two-pass marking. Only the guest sees their own board; the stage gets finished-board progress and the target at reveal. A reconnect restores the saved board. In Question packs, its phone rehearsal checks guesses through an authenticated, stateless server endpoint; it never starts a room or awards points.
+
+A map guess gives each guest 40 seconds to place and send one pin. Supply a credited clue photo as required `question` media and set `target.known` to the real `{ lat, lng, label }`. Use a neutral filename, remove embedded GPS metadata, and check that the displayed credit does not disclose the answer. Put any story Baseer should tell afterwards in the reveal explanation. The highest score is 100, with points falling by distance (half at about 693 km). The world basemap shows countries and selected cities, so use a clue that can be guessed at that scale.
 
 If the idea needs an interaction that is not in that list, say so and still save a draft. Do not force it into the wrong mechanic, and do not start a new scoring engine.
 
@@ -135,6 +138,7 @@ Use the existing helper/mechanic rather than a note that asks for a different in
 - Price bid: slider helper with `scoring: "under", input: "number"`, an actual supplied/sourced truth and explicit bounds/step. Phones enter decimal pounds. Tied highest underbids share the win; all over means no winner.
 - Subjective dial: slider helper with `scoring: "consensus", truth: { known: null }`. The room median is derived from accepted eligible responses; no dummy personal answer is stored.
 - Ordered consensus: rank helper with `scoring: "consensus", input: "ordered", truth: { known: [] }`, complete mode, no ties in submissions and one tier per item. The target's equal mean positions remain tied. The phone offers drag handles and move buttons.
+- Quote sorting: rank helper with `input: "buckets", scoring: "placement", mode: "complete", ties: "shared"`. Guests assign each quote to a named group, change picks until sending, then submit the whole list once. Points are `floor(question.points × correct assignments / quote count)`; group order does not affect scoring. Supports 2–40 quotes of up to 300 characters, 2–8 group names, and up to three minutes (the Ed/Humza draft uses two minutes and the normal 80 rank points). Ordinary rankings retain their eight-item/80-character limits. Reuses the existing rank intent, durable receipts, response storage and ledger. Reveals group quotes by speaker without broadcasting every guest's whole list.
 - Three awards: vote helper with `flow: { kind: "awards", labels: [...] }`, exactly three named categories. Question points are the total available across categories; the dating round uses 180, or 60 per award. Each tied category winner receives that category's points.
 - Blind bracket: vote helper with `flow: { kind: "tournament" }`. The server freezes the random seed, pairing/byes, electorate and entries. Tied matches follow the frozen draw, no self-votes, no votes throughout means no prize.
 
@@ -169,7 +173,7 @@ Say `Now customise the design of this question.` The question file keeps its id 
 2. Set `presentation` to that slug on the question.
 3. Write `apps/web/src/play/designs/<slug>.tsx` and its CSS. Use the kit in `designs/kit.tsx`: `useDesignMotion` for eased, reduced-motion-safe motion, `choiceView` or `typedView` for state, `ChoiceSend` or `TypedSend` for the dock button, and `StagePrompt` for the projector question. A design returns nothing for a kind it does not draw, and the standard view takes over.
 4. Register it in `designs/registry.ts`.
-5. Look at it in development at `/design?q=<slug>&surface=phone|stage&phase=prompt|collect|reveal`. Add `&still=1` to skip to the end of every animation. The bench uses public question fields only and a stand-in reveal, never the answer key.
+5. Look at it in development at `/design?q=<slug>&surface=phone|stage&phase=prompt|collect|reveal`. Add `&still=1` to skip to the end of every animation. The bench uses public question fields only and a stand-in reveal, never the answer key. Birthday map-guess uses `where-are-we`; the Ed/Humza quote sort uses `ed-or-humza`.
 
 A phone design receives the phone's `open`, `pending`, `selectedId`, and the select, send, rank, and text handlers. The stage keeps the standard scoreboard for scores, final, and podium. Colours come from the theme variables. A colour that is the content itself, such as the red and blue pill, is a named entry in `contentColours` in `themes.ts`.
 

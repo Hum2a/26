@@ -4,7 +4,6 @@ import { execSync, spawnSync } from "node:child_process";
 import {
   chmodSync,
   copyFileSync,
-  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -15,11 +14,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { resolveBash, resolveCommand } from "./command.mjs";
 import { projectRoot } from "./env-files.ts";
-import {
-  deployFreeze,
-  workerRelease,
-  requiredWorkerSecrets,
-} from "./release-support.ts";
+import { workerRelease, requiredWorkerSecrets } from "./release-support.ts";
 
 /**
  * Command-level tests for scripts/release.ts and release.sh.
@@ -41,8 +36,10 @@ import {
 
 const root = projectRoot();
 const generatedConfigPath = workerRelease("production").generatedConfigPath;
-const insideFreeze = deployFreeze.from + 60 * 60 * 1000;
-const outsideFreeze = deployFreeze.from - 24 * 60 * 60 * 1000;
+// The party weekend (20 to 22 Nov) was frozen until the owner removed the
+// freeze on 18 Nov 2026. These clocks prove both dates now deploy.
+const insideFreeze = Date.parse("2026-11-20T01:00:00Z");
+const outsideFreeze = Date.parse("2026-11-19T00:00:00Z");
 
 type RunResult = {
   status: number;
@@ -530,25 +527,25 @@ describe("release.ts validation and approved deploys with fakes", () => {
   });
 });
 
-describe("release.ts freeze survives a git bypass", () => {
+describe("release.ts has no party-weekend freeze", () => {
   for (const [label, bypass, flag] of [
     ["SKIP_GIT_CHECK=true", { SKIP_GIT_CHECK: "true" }, []],
     ["--skip-git-check", {}, ["--skip-git-check"]],
   ] as const) {
-    it(`still refuses the party freeze with ${label}`, () => {
-      for (const command of ["deploy", "full"]) {
-        const result = runRelease([command, "--env", "production", ...flag], bypass, {
-          nowMs: insideFreeze,
-        });
-        assert.equal(result.status, 1, command);
-        assert.match(result.stderr, /frozen for the party weekend/);
-        assert.equal(loggedCommands(result.log, "NPM").length, 0);
-        assert.equal(loggedCommands(result.log, "NPX").length, 0);
-      }
+    it(`deploys production on the party weekend with ${label}`, () => {
+      const result = runRelease(
+        ["deploy", "--env", "production", "--skip-checks", ...flag],
+        bypass,
+        { nowMs: insideFreeze },
+      );
+      assert.equal(result.status, 0, result.stderr);
+      assert.doesNotMatch(result.stderr, /frozen/);
+      assert.deepEqual(loggedCommands(result.log, "BUILD"), ["production"]);
+      assert.equal(loggedCommands(result.log, "NPX").length, 1);
     });
   }
 
-  it("deploys in the freeze only with --override-freeze, once", () => {
+  it("accepts the old --override-freeze flag and deploys once", () => {
     const result = runRelease(
       ["deploy", "--env", "production", "--override-freeze", "--skip-checks"],
       { SKIP_GIT_CHECK: "true" },
@@ -560,7 +557,7 @@ describe("release.ts freeze survives a git bypass", () => {
     assert.equal(loggedCommands(result.log, "NPX").length, 1);
   });
 
-  it("does not freeze staging", () => {
+  it("deploys staging on the party weekend", () => {
     const result = runRelease(
       ["deploy", "--env", "staging", "--skip-checks"],
       {},
@@ -831,16 +828,20 @@ describe("release.sh wrapper", () => {
     });
   });
 
-  it("refuses frozen production before bumping", () => {
-    withFixture((fixture) => {
-      const head = git(fixture.work, ["rev-parse", "HEAD"]);
-      const frozen = runReleaseSh(fixture, ["patch", "--deploy=production"], {
-        SKIP_GIT_CHECK: "true",
-        NODE_OPTIONS: clockImport(insideFreeze),
+  it("deploys production on the party weekend, with or without the old override", () => {
+    for (const extra of [[], ["--override-freeze"]]) {
+      withFixture((fixture) => {
+        const result = runReleaseSh(
+          fixture,
+          ["patch", "--deploy=production", "--no-github", "--skip-checks", ...extra],
+          { NODE_OPTIONS: clockImport(insideFreeze) },
+        );
+        assert.equal(result.status, 0, result.stderr);
+        assert.doesNotMatch(result.stderr, /frozen/);
+        assert.deepEqual(loggedCommands(result.log, "NPM"), [
+          "run deploy:production -- --skip-checks",
+        ]);
       });
-      assert.equal(frozen.status, 1);
-      assert.match(frozen.stderr, /frozen for the party weekend/);
-      assertUntouched(fixture, head, frozen.log);
-    });
+    }
   });
 });

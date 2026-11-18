@@ -10,7 +10,7 @@ Written 5 November 2026 for the 21 November party. Everything below was built on
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | Before merging   | Read this page and the Stage A/B entries in [build-progress.md](build-progress.md). Merge `kart-mobile-multiplayer` into `master` when happy.                                                                   | All work is on the branch.                                                                                                      |
 | Before the party | Deploy to staging (`npm run release` — staging is now the default), rehearse with real phones and the projector, then deploy production with `npm run release -- --deploy=production` or `npm run deploy:prod`. | No deploy has been made. The release script now runs unit, lint and script checks first; add `--full-checks` for the API suite. |
-| Before 20 Nov    | Production deploys are refused from 20 Nov 00:00 to 22 Nov 12:00 (London). Use `--override-freeze` only for an emergency fix.                                                                                   | A deploy restarts every room and drops every phone.                                                                             |
+| During the party | Do not deploy while a game is running. The date freeze was removed on 18 Nov at your request; `--override-freeze` is now ignored.                                                                               | A deploy restarts every room and drops every phone.                                                                             |
 | Party day        | Neon console: switch off autosuspend on the production branch for the night.                                                                                                                                    | Host commands mostly use a two-minute session cookie cache now, but sign-in and archiving still need the database.              |
 | Any time         | Supply or drop the four draft questions (table below).                                                                                                                                                          | Facts cannot be invented.                                                                                                       |
 | Any time         | Fix GitHub Actions billing, or keep running `npm run github-actions:check` locally before a deploy.                                                                                                             | CI has not run since `43cbce4`.                                                                                                 |
@@ -48,14 +48,14 @@ A countdown that _holds_ the grid inside the race (changing race timing) was not
 
 Each is a file in `apps/api/src/questions/packs/birthday/`. Fill its `requirements`, run `npm run content:check`, then add it in Running order.
 
-| Round                   | File                         | Needs                                                                      |
-| ----------------------- | ---------------------------- | -------------------------------------------------------------------------- |
-| Reddit tribunal         | `tribunal-reddit.ts`         | Original thread, exact title, outcome, top comment, correct choice         |
-| Ferrier estate          | `council-ferrier-sector.ts`  | Verified estate name and confirmed category                                |
-| Nextdoor paranoia       | `nextdoor-paranoia.ts`       | Genuine post or screenshot and confirmed explanation                       |
-| Property price roulette | `property-price-roulette.ts` | Dated listing, authorised photo, monthly rent, agent wording, slider scale |
+| Round           | File                        | Needs                                                              |
+| --------------- | --------------------------- | ------------------------------------------------------------------ |
+| Reddit tribunal | `tribunal-reddit.ts`        | Original thread, exact title, outcome, top comment, correct choice |
+| Ferrier estate  | `council-ferrier-sector.ts` | Verified estate name and confirmed category                        |
+| Where are we?   | `where-are-we.ts`           | Credited clue photo, place name and coordinates                    |
+| Ed or Humza?    | `ed-or-humza.ts`            | Speaker (`ed` or `humza`) for each of the 18 quotes                |
 
-Two rounds are ready but not in the order: **Figurine** (`group-chat-figurine`) and **Cursed Search History** (`cursed-search-history`). Add them in Running order if wanted.
+Ready but not in the order: **Figurine** (`group-chat-figurine`), **Cursed Search History** (`cursed-search-history`), **Property price roulette** (`property-price-roulette`, £750 pcm Winkworth listing) and **Nextdoor paranoia** (`nextdoor-paranoia`, Marshall News Messenger 5 Feb 2024). Add them in Running order if wanted.
 
 ## 5. Known gaps (not fixed yet)
 

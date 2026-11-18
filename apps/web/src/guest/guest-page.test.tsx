@@ -17,15 +17,17 @@ vi.mock("../live/room-api", async (original) => ({
   ...(await original<typeof import("../live/room-api")>()),
   resumeGuest: vi.fn(async () => undefined),
   leaveLobby: vi.fn(async () => undefined),
+  redeemTransfer: vi.fn(),
 }));
 vi.mock("../live/room-socket", () => ({ openRoomSocket: vi.fn() }));
-import { leaveLobby } from "../live/room-api";
+import { leaveLobby, redeemTransfer } from "../live/room-api";
 
 type Options = Parameters<typeof openRoomSocket>[0];
 let options: Options;
 const socket = {
   close: vi.fn(),
   submitAnswer: vi.fn(() => "answer-1"),
+  submitText: vi.fn(() => "wordle-1"),
   submitTroll: vi.fn(() => "troll-1"),
   submitTrollEscape: vi.fn(() => "escape-1"),
   submitDraft: vi.fn(),
@@ -254,3 +256,93 @@ it("returns a kart phone from the ranks to Play when the next race opens", async
   );
   expect(tabButton(/^Play/).getAttribute("aria-current")).toBe("page");
 });
+
+const wordleSession = {
+  gameId: "ABCDEFGH",
+  playerId,
+  nickname: "Amina",
+  joinCode: "ABCDEF",
+  stateVersion: 2,
+};
+
+function wordleRound(index: number): LobbySnapshot {
+  return {
+    ...ready,
+    play: {
+      ...ready.play!,
+      question: {
+        ...ready.play!.question,
+        index,
+        id: `wordle-${index}`,
+        prompt: `Wordle ${index}`,
+        presentation: "glyph",
+        kind: "wordle",
+        wordLength: 5,
+        maxGuesses: 6,
+      },
+    },
+  };
+}
+
+async function openWordle() {
+  render(
+    <MemoryRouter>
+      <GuestPage rehearsalSession={wordleSession} />
+    </MemoryRouter>,
+  );
+  await waitFor(() => expect(openRoomSocket).toHaveBeenCalled());
+  act(() => {
+    options.onConnection("open");
+    options.onSnapshot(wordleRound(1));
+  });
+}
+
+async function sendWord() {
+  const board = await screen.findByRole("region", { name: "Wordle game" });
+  fireEvent.paste(board, { clipboardData: { getData: () => "ZZZZZ" } });
+  fireEvent.click(screen.getByRole("button", { name: "Check word" }));
+}
+
+it("ignores a late Wordle rejection after the room advances", async () => {
+  await openWordle();
+  socket.submitText.mockReturnValueOnce("previous-word");
+  await sendWord();
+  expect(socket.submitText).toHaveBeenCalledWith("ZZZZZ");
+  act(() => options.onSnapshot(wordleRound(2)));
+  await screen.findByRole("heading", { name: "Wordle 2" });
+  act(() =>
+    options.onAck({
+      requestId: "previous-word",
+      accepted: false,
+      error: "Previous error",
+    }),
+  );
+  expect(screen.queryByText("Previous error")).toBeNull();
+  await sendWord();
+  expect(socket.submitText).toHaveBeenCalledTimes(2);
+}, 20_000);
+
+it("clears a Wordle rejection when a transfer replaces the same phone session", async () => {
+  await openWordle();
+  await sendWord();
+  act(() =>
+    options.onAck({ requestId: "wordle-1", accepted: false, error: "Old rejection" }),
+  );
+  expect(await screen.findAllByText("Old rejection")).not.toHaveLength(0);
+
+  vi.mocked(redeemTransfer).mockResolvedValueOnce(wordleSession);
+  fireEvent.click(screen.getByRole("button", { name: "You: Amina" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Changed phones?" }));
+  fireEvent.change(screen.getByLabelText("Transfer code"), {
+    target: { value: "RECOVER1" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Use this phone" }));
+  await waitFor(() => expect(openRoomSocket).toHaveBeenCalledTimes(2));
+  act(() => {
+    options.onConnection("open");
+    options.onSnapshot(wordleRound(1));
+  });
+  const board = await screen.findByRole("region", { name: "Wordle game" });
+  expect(within(board).getByRole("status").textContent).toContain("Guess 1 of 6");
+  await waitFor(() => expect(screen.queryByText("Old rejection")).toBeNull());
+}, 20_000);

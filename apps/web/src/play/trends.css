@@ -1,0 +1,339 @@
+/* Answer trends: the projector's side panel and the phone's "You and the room". */
+
+.projector-with-trends {
+  display: grid;
+  gap: clamp(1rem, 2vw, 2rem);
+  align-items: start;
+  min-width: 0;
+}
+
+/* The slot itself drives the two columns, so the layout holds while it fades out. */
+@media (min-width: 1100px) {
+  .projector-with-trends:has(> .projector-trends-slot) {
+    grid-template-columns: minmax(0, 1fr) clamp(24rem, 34vw, 44rem);
+  }
+}
+
+/* Spans the row so the sticky panel has room to stay in view. */
+.projector-trends-slot {
+  align-self: stretch;
+  min-width: 0;
+}
+
+.projector-trends {
+  position: sticky;
+  top: 1rem;
+  display: grid;
+  gap: clamp(0.75rem, 1.4vh, 1.25rem);
+  min-width: 0;
+  padding: clamp(1rem, 1.6vw, 1.75rem);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-panel, 1.5rem);
+  background: var(--surface);
+  color: var(--surface-foreground, var(--foreground));
+}
+
+.trends-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.trends-eyebrow {
+  margin: 0;
+  font-size: clamp(0.9rem, 1.1vw, 1.25rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.trends-count {
+  margin: 0;
+  font-size: clamp(0.85rem, 1vw, 1.1rem);
+  opacity: 0.75;
+}
+
+.trend-card {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.trend-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.trend-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  transition: background-color 0.3s ease;
+}
+
+.trend-icon[data-tone="record"] {
+  background: color-mix(in srgb, var(--highlight) 22%, transparent);
+  color: var(--highlight);
+}
+
+.trend-card[data-size="stage"] .trend-icon {
+  width: clamp(2.75rem, 3.5vw, 4rem);
+  height: clamp(2.75rem, 3.5vw, 4rem);
+}
+
+.trend-glyph {
+  width: 60%;
+  height: 60%;
+}
+
+.trend-figure {
+  display: grid;
+  justify-items: end;
+  margin: 0;
+  text-align: end;
+  line-height: 1;
+}
+
+.trend-figure strong {
+  font-size: clamp(1.75rem, 2.4vw, 2.5rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.trend-card[data-size="stage"] .trend-figure strong {
+  font-size: clamp(2.5rem, 4.4vw, 5rem);
+}
+
+.trend-figure span {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.trend-card[data-size="stage"] .trend-figure span {
+  font-size: clamp(0.8rem, 1vw, 1.1rem);
+}
+
+.trend-headline {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.trend-card[data-size="stage"] .trend-headline {
+  font-size: clamp(1.5rem, 2.3vw, 2.7rem);
+}
+
+.trend-detail {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+
+.trend-card[data-size="stage"] .trend-detail {
+  font-size: clamp(1rem, 1.35vw, 1.5rem);
+}
+
+.trend-bars {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trend-bars li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "label value"
+    "track track";
+  gap: 0.2rem 0.5rem;
+  align-items: baseline;
+}
+
+.trend-bar-label {
+  grid-area: label;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.trend-card[data-size="stage"] .trend-bar-label,
+.trend-card[data-size="stage"] .trend-bar-value {
+  font-size: clamp(0.9rem, 1.15vw, 1.3rem);
+}
+
+.trend-bar-value {
+  grid-area: value;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.trend-bar-track {
+  grid-area: track;
+  position: relative;
+  height: 0.65rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground) 12%, transparent);
+}
+
+.trend-card[data-size="stage"] .trend-bar-track {
+  height: clamp(0.65rem, 1.1vh, 1rem);
+}
+
+.trend-bar-fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--foreground) 45%, transparent);
+}
+
+.trend-bars li[data-highlight] .trend-bar-fill {
+  background: var(--accent);
+}
+
+.trends-dots {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trends-dots li {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground) 25%, transparent);
+  transition:
+    background-color 0.3s ease,
+    transform 0.3s ease;
+}
+
+.trends-dots li[data-active] {
+  background: var(--accent);
+  transform: scale(1.3);
+}
+
+.phone-trends {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-panel, 1.25rem);
+  background: var(--surface);
+  color: var(--surface-foreground, var(--foreground));
+}
+
+.phone-trends-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.phone-trends-lines {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phone-trends-lines li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: start;
+  font-size: 1rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.phone-trends-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.admin-trend-cards {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-trend-cards > li[data-hidden] .trend-card {
+  opacity: 0.45;
+  transition: opacity 0.2s ease;
+}
+
+.admin-trend-stage-preview {
+  max-width: 34rem;
+}
+
+/*
+ * On the real projector nothing goes below the stage's 40px floor
+ * (`stage/tokens.css`). The admin rehearsal preview sits outside `.stage-safe`
+ * and keeps the compact sizes above.
+ */
+.stage-safe .projector-trends .trends-eyebrow,
+.stage-safe .projector-trends .trends-count,
+.stage-safe .projector-trends .trend-detail,
+.stage-safe .projector-trends .trend-figure span,
+.stage-safe .projector-trends .trend-bar-label,
+.stage-safe .projector-trends .trend-bar-value {
+  font-size: max(40px, 1.6vw);
+}
+
+.stage-safe .projector-trends .trend-headline {
+  font-size: max(48px, 2.8vw);
+}
+
+.stage-safe .projector-trends .trend-figure strong {
+  font-size: max(72px, 5vw);
+}
+
+.stage-safe .projector-trends .trend-icon {
+  width: max(72px, 4vw);
+  height: max(72px, 4vw);
+}
+
+.stage-safe .projector-trends .trend-bar-track {
+  height: max(16px, 1.2vh);
+}
+
+.stage-safe .projector-trends .trends-dots li {
+  width: 16px;
+  height: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trends-dots li {
+    transition: background-color 0.2s ease;
+  }
+  .trends-dots li[data-active] {
+    transform: none;
+  }
+}

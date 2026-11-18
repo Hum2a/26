@@ -2,8 +2,9 @@ import type { ThemeSkin } from "./skins";
 
 /**
  * The deep layer of a skin: how a family looks and moves beyond its ground,
- * corners and mark. Every value is drawn in `theme-deep.css` from the theme's
- * own colour variables. Nothing here introduces a colour.
+ * corners and mark. Every value is drawn from the theme's own colour variables:
+ * in `theme-deep.css`, except the theme-level scenes, which live in
+ * `theme-scenes.css`. Nothing here introduces a colour.
  *
  * - type: the typefaces and heading case.
  * - scene: an illustrated background behind the page (never on a question).
@@ -46,6 +47,58 @@ export const deepScenes = [
   "pub",
   "pitch",
   "globe",
+  // Theme-level scenes (drawn in theme-scenes.css). A family keeps one of the
+  // scenes above; a theme can pick any scene through its identity.
+  "aurora",
+  "skyline",
+  "circuit",
+  "filmstrip",
+  "fireworks",
+  "popups",
+  "balloons",
+  "sparkles",
+  "dice",
+  "clocks",
+  "alarm",
+  "pixels",
+  "questions",
+  "steam",
+  "ripples",
+  "rain",
+  "bubbles",
+  "hearts",
+  "clouds",
+  "waves",
+  "petals",
+  "polaroids",
+  "chatter",
+  "butterflies",
+  "embers",
+  "moon",
+  "static",
+  "curtains",
+  "crystals",
+  "streams",
+  "grass",
+  "ghosts",
+  "hexes",
+  "aura",
+  "capsules",
+  "leaves",
+  "fireflies",
+  "comets",
+  "circles",
+  "lanterns",
+  "windows",
+  "chalk",
+  "parcels",
+  "chequered",
+  "court",
+  "chart",
+  "dartboard",
+  "coins",
+  "drips",
+  "vinyl",
 ] as const;
 export const deepTextures = [
   "none",
@@ -102,9 +155,11 @@ export const deepMotions = [
   "mechanical",
 ] as const;
 
+export type DeepScene = (typeof deepScenes)[number];
+
 export type DeepSkin = {
   type: (typeof deepTypes)[number];
-  scene: (typeof deepScenes)[number];
+  scene: DeepScene;
   texture: (typeof deepTextures)[number];
   control: (typeof deepControls)[number];
   panel: (typeof deepPanels)[number];

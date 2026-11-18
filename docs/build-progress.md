@@ -6572,3 +6572,319 @@ Staging refresh: deployed committed runtime `9dc49fd` with `npm run deploy:stagi
 ### Next stage
 
 Rehearse the chess round with two browser tabs from `/admin` to see the new hall and phone guide on real screens.
+
+## 17 November 2026 — Ed or Humza whole-list quote sorting
+
+Status: implemented the requested single-round sorting interaction on `codex/ed-or-humza-quotes`, based on latest merged master `863a0bf` in `C:/Users/Humza/Programming/Personal/26`. No deployment or remote room change.
+
+The owner confirmed that guests sort the whole list in one round and that speakers should be assigned later, with more quotes easy to add. `packs/birthday/ed-or-humza.ts` preserves all 18 supplied lines without grammatical rewrites or invented attributions. Each entry has a stable id and `speaker: null`; set it to `ed` or `humza` after confirmation. Any null keeps `ed-or-humza` a draft. It is registered only in the catalogue and is absent from the running order. Once all speakers are recorded, the helper derives the private truth; including the ready round is a separate host action. Instructions: `docs/content/ed-or-humza.md`.
+
+Extended the existing rank mechanic with `input: buckets` / `scoring: placement`, reusing its socket intent, persistence, idempotent receipts, phase lifecycle and score ledger. Complete assignments allow shared groups; score is `floor(points × correct placements / quote count)`, independent of group order. Defaults are 80 points, two minutes and no speed bonus. This variant supports 2–40 quotes of up to 300 characters and 2–8 group names; ordinary rankings retain eight items/80-character labels. Only bucket rounds can use the longer collection ceiling (three minutes). No new CMS, state store, socket, scheduler, table or scoring engine was added.
+
+Phones show every quote with Ed/Humza controls, completion count, editable picks and one dock submission. Sending, accepted and paused states lock controls. Reconnect restores the whole accepted list. The projector shows progress until reveal, then groups quotes under the confirmed speaker. Public fields exclude the answer key; bucket reveals omit every other guest's full list, avoiding a 100 × 40 placement fan-out. Live controls retain pause/advance/end management and bounded assignment counts per guest. Question inspection identifies sorting/scoring, and the real phone rehearsal remains interactive while explicitly labelling incomplete speaker assignments. Data inventory and authoring guidance were updated.
+
+Validation so far: typecheck passed; lint/structure passed (30 existing warnings). Focused phone/stage and existing admin preview coverage passed 2 files / 18 tests. Pure sorting and legacy rank scoring passed 2 files / 9 tests. The isolated Durable Object test passed a 40-quote round: incomplete/paused refusal, success, idempotent replay, duplicate refusal, restart restoration, private/public projection, reveal, bounded host summary and one settlement. A combined multi-project room run and an additional combined legacy room regression run stalled during local runtime startup and were interrupted; neither is labelled passed. A local browser preview attempt could not connect because the development server did not finish starting; no manual viewport or visual verification is claimed.
+
+Known baseline blockers: the latest merged `trump-made-up-country` uses `united-states-of-israel` and `islamic-republic-of-japan` as option ids, exceeding the existing 16-character limit. `content:check`, the catalogue-validity tests in `question-authoring.spec.ts`, and the content stage of `npm run build` fail for that pre-existing question. The new quote draft reports only its expected missing speaker requirement. Build compilation, artifact checks and web gzip budgets completed before the content failure. Trump content is unchanged. Also removed an unused `existsSync` import left by the earlier release-test isolation fix; this restores lint without changing behaviour or weakening checks.
+
+The subsequent isolated legacy `rounds.spec.ts` Durable Object regression passed all 3 tests, including original ranking acceptance, restart restoration and once-only scoring. Full formatting passed. The interrupted combined startup attempts are not counted as verification results.
+
+Final full `npm run test:unit`: **200 files / 896 tests passed**. Final typecheck, lint/structure and formatting passed. Build compilation/artifact/budget checks succeeded but the overall build remains failed at the separate Trump content preflight described above; no fully green build claim is made. No deployment was performed.
+
+Exact next stage: review the sorting change; assign confirmed speakers in the source list when available, rehearse on real phone sizes, and explicitly add the ready round to the running order. Resolve the separate Trump option-id validation failure before claiming a fully green content/build check.
+
+Review: https://github.com/Hum2a/26/pull/34. Source commit `ae52017`; no merge or deployment performed.
+
+## 17 November 2026 — Merged master release and option-id unblock
+
+The owner requested pulling merged work into master and deploying. Fast-forwarded the C: checkout's `master` from `09fda24` to `613bb98` (PR #34 included). Used staging, consistent with the earlier deployment scope; production was not requested explicitly and remains unchanged.
+
+The initial `content:check` still failed on the merged Trump question. Created `codex/fix-release-option-ids` from the pulled master and shortened its three overlength internal ids: `united-states-of-israel` → `us-israel`, `islamic-republic-of-japan` → `japan-republic`, and `tel-aviva-la-vida` → `tel-aviva-vida`. Updated the two exact-set answer references. Visible labels, prompt, correct choices, points and presentation are unchanged; existing room scripts remain frozen. Added an authoring regression covering valid ids, the intended exact set, interactive public preview and no public answer-key array.
+
+Fresh checks passed: `content:check`, typecheck, lint/structure (30 existing warnings), formatting of the changed files, and 26 authoring/sorting tests. The staging release build also passed compilation, generated-secret stripping, artifact checks, gzip budgets and content preflight. The earlier 200-file / 896-test web suite on the source-equivalent merged tree remains recorded above; it was not rerun for this server-side id correction. Known incomplete drafts, including the unassigned Ed/Humza speakers, remain outside the running order.
+
+Release source: committed `c8e8106`, based on merged master `613bb98`. Follow-up fix PR: https://github.com/Hum2a/26/pull/35; no automatic merge or push to master. The first `npm run deploy:staging` uploaded 65 new assets after transient retries, then stalled without confirming Worker publication. Deployment history and the public entry still showed the old release. Stopped that attempt and retried the same authorised staging command; its build regenerated some asset hashes, then uploaded and published successfully. No configuration, secrets, migrations or paid resources were changed to overcome the transient upload problem.
+
+Deployed staging version: **`0bc19929-ed2a-4555-be9c-d05b897f424f`**, replacing `b630980f-0b69-4622-b17e-3c5a7064eb09`; startup 176 ms. Live health returned `ok: true`, `staging`, `0.0.5`. The remote entry `/assets/index-yE8MvDXe.js` matched the retry build's output, its deployed guest bundle contained the whole-list sorting submission control, and unauthenticated admin content remained forbidden (HTTP 403). Logs are ignored `artifacts/merged-deploy-staging-retry.log` and `artifacts/merged-deploy-verification.json`. This is deployment/asset verification, not an authenticated multiplayer or physical-device walkthrough. Ed/Humza remains a draft pending speaker assignments.
+
+Exact next stage: merge the small option-id fix PR back into master, then assign quote speakers when available and rehearse the authenticated round. Production remains unchanged. The C: checkout is returned to master after recording this release.
+
+## 18 November 2026 — Named agent sign-in
+
+Added separate local and staging admin accounts for Codex and Claude. Agent sign-in uses existing Better Auth user, verification and session storage. The `auth:agent` operator command provisions an environment-specific reserved identity, issues a five-minute single-use code, checks staging sign-in, and revokes the account. The `?agent=1` admin sign-in page accepts the operator code directly and opens the normal admin console. Public sign-up stays disabled and requests for agent sign-in emails cannot replace issued codes. The production authorization check rejects the reserved agent identities. No schema migration or additional binding is required.
+
+Provisioned both names in local PGlite and in the existing staging database. Deployed `ef471dbe-b862-47d8-be28-e65c36a4187d` to staging. The health API returned `ok: true`, and the live `/assets/index-DN8EWZdu.js` entry matched the built asset. Used `npm run auth:agent -- staging check codex` and `npm run auth:agent -- staging check claude` to verify the named sessions, read protected admin content and sign out. No credentials were printed by those checks. The browser sign-in form is covered by component tests.
+
+Typecheck, lint and structure (30 existing warnings), formatting, the staging build, artifact/bundle budgets and content preflight passed. The full web unit suite passed 897 tests across 200 files, and the focused auth and admin API suites passed 36 tests. Updated the existing catalogue projection regression to include chess, which had already been added to the catalogue. See [Agent access](agent-access.md) for provisioning and a first local or staging rehearsal.
+
+Review in [PR #37](https://github.com/Hum2a/26/pull/37) against master `4c42aee`. The next operator action is to merge the PR and use the documented agent sign-in for future staging rehearsals.
+
+## 18 November 2026 — Wordle playability
+
+Updated the shared Glyph phone renderer for live play and Admin → Question packs → Complete a wordle → Phone preview. Players can tap a tile to replace its letter, move between tiles with the arrow keys, paste a five-letter guess, or clear the current row. The live phone's existing action dock holds **Check word**. A rejected word stays editable with feedback beside the board, and a word already accepted on the current board is flagged before sending. The room still validates words, records guesses and marks, and awards points. The target and word list stay server-side.
+
+Guess entry pauses with the room and while the phone reconnects. A confirmed guess advances the row. A solved or exhausted board keeps its guesses visible and removes the input controls. Players who tried before the clock expired see their round result. The projector gives the six-guess limit and uses the room's actual timer for timing, with clear wording when nobody submitted a guess.
+
+In the local browser design bench, entered a sample guess using the touch keyboard, corrected its second letter, and submitted it. The phone displayed **Solved in 1**. The board and controls fit at 320, 390 and 430 CSS pixels wide and at 660 × 320. That bench uses a stand-in word. The authenticated staging and physical-device flows were not exercised.
+
+Validation passed for typecheck, lint and structure (30 existing warnings), formatting, the build and its bundle budgets and content preflight, 34 focused web tests, and all eight Wordle scoring and Durable Object tests. The change is based on merged master `3fa5895` in the C: checkout.
+
+The final full web suite (`npm run test:unit -w @26/web -- --maxWorkers=2`) passed all 900 tests across 200 files. The rerun includes the updated question-direction fixture, which now supplies the guess list carried by a room snapshot.
+
+Exact next stage: review [PR #38](https://github.com/Hum2a/26/pull/38), then try a rejected word and a timed-out board in the authenticated rehearsal before the party. No deployment was performed.
+
+### Cubic review follow-up
+
+Addressed all four review findings on PR #38. The guest socket clears Wordle feedback and retires the pending guess when the room leaves that collection round. Late acknowledgements can no longer report on the next round. Leaving the lobby, completing a phone transfer, and losing the active phone session also clear Wordle state, including a transfer that keeps the same player and room IDs.
+
+Backspace and the on-screen Delete action now use the selected tile or the letter just typed. **Type or paste a word** opens a native editable field connected to the same draft, so players can use the phone’s paste menu or keyboard. In the local browser at 390 CSS pixels, pasted a word into the field, replaced the second letter, and confirmed that deleting it preserved the third. The physical-phone long-press menu remains unverified.
+
+Validation passed for typecheck, lint and structure (30 existing warnings), formatting, the build and its bundle budgets, and 38 focused web tests. The full web suite (`npm run test:unit -w @26/web -- --maxWorkers=2`) passed 904 tests across 200 files, including regressions for the late acknowledgement, same-session transfer, native paste field, and deletion after editing a filled tile.
+
+Exact next stage: review and merge PR #38, then use the authenticated Wordle rehearsal for a real-device check. No deployment was performed.
+
+## 18 November 2026 — Answer trends, freeze removal and the esports tag question
+
+Status: the freeze removal and the esports question merged as PR #39 and PR #40; answer trends are in PR #41 (branch `claude/answer-trends-pr`, merged with master after #38-#40). **Not verified**: the dependency install on this machine was cancelled part-way, so `node_modules` is incomplete (`zod` files missing) and typecheck, lint, content check and every test suite could not run. Nothing here is labelled passed. No deployment.
+
+### What changed
+
+- **Production freeze removed** at the owner's request. `assertDeployAllowed` no longer checks dates; `--override-freeze` is accepted and ignored by `release.ts` and `release.sh`. Release guard, support and integration tests now assert that production deploys on the old party-weekend dates. `docs/deployment.md`, `event-runbook.md` and `decisions-for-humza.md` updated.
+- **Answer trends** after every question, for every mechanic:
+  - `packages/shared/src/trends/trend-schema.ts` (card, stage, phone and host schemas) and `trend-engine.ts` (pure analysis). 24 facets: platform, browser, dark mode, iOS version, screen size, screen sharpness, language, time zone, connection lag, dropouts, memory, reduced motion, orientation, data saver, speed quarter, last-second answers, table position, arrival order, trolls sent, troll victims, photo-sharers, profile photos, last-question streak and name length. Measures: right-answer rate, option preference, numeric level and miss (sliders, kart time, Wordle guesses, chess points) and answer speed. Answer cards cover consensus, split, favourite, lone wolf, ghost options, hardest or easiest so far, typed variety, average time, guess bias, the crowd's middle guess and going bust. Record cards cover fastest finger, closest guess, wildest guess and best result. Comparisons need three guests on each side (`trendMinimumGroup`). Device and behaviour cards never name anyone.
+  - `apps/api/src/stats/trend-source.ts` reads choice, multiple, push, typed (hidden answers never quoted), slider, rank, vote, guess, Wordle, chess, kart, duel and finale answers with the device context saved on each answer. `trend-room.ts` caches the analysis in memory per question (keyed on ledger, players, device reports and hidden answers) and builds stage `trends`, guest `selfTrends` and control `trendControl`. `trend-settings.ts` adds the room columns `trend_stage`, `trend_phones`, `trend_hidden` and `trend_history`.
+  - Host commands: `trends-stage-shown/hidden`, `trends-phones-shown/hidden`, `trends-card-hide/restore` (with `trendCardId`), through routes, `PartyRoom.hostAction` and `applyHostAction`, with notices and the `analytics` command scope.
+  - Web: `apps/web/src/play/trends.tsx` + `trends.css`. The projector shows a side panel during the reveal and scores (kart only at scores), rotating cards every seven seconds with animated bars; it fades only, under reduced motion. Phones lazy-load "You and the room", warmed during answering. Admin → Analytics adds switches, every candidate card with hide/restore, earlier questions and a stand-in rehearsal using the real engine and components.
+  - Tests written, not run: `apps/api/test/trends.spec.ts`, `apps/api/test/trends-room.spec.ts`, `apps/web/src/play/trends.test.tsx`, `apps/web/src/admin/trends-panel.test.tsx`.
+- **New question** `esports-tag` (choice, ready, catalogue only): "What was Humza's longest running official tag when competing in esports?" Seven options as supplied; C (the empty tag, rendered with U+3164) is correct. B keeps its spaces as non-breaking spaces. `contentLimits.optionMax` raised from 6 to 8 for scored choices; the authoring test now checks that seven are accepted and nine refused.
+- Stale test fix: `award-points.spec.ts` now expects at least two birthday polls (the other trolley polls were retired on 16 November).
+- `scripts/check-structure.mjs` and `.agents/rules/05-structure.md` allow `packages/shared/src/trends/`. Run `npm run agents:sync` once dependencies are installed.
+- Readiness sweep written to `docs/readiness-plan-2026-11-18.md`.
+
+### Exact next stage
+
+Watch CI on PR #41: it is the first typecheck, lint and test run for the trends code (`npm run agents:sync` has run). Fix what fails, merge, deploy staging and rehearse trends with eight or more phones, then production. Choose the running-order slot for `esports-tag`.
+
+## 18 November 2026 — Where are we? map round
+
+Implemented the `map-guess` mechanic in the existing room, score ledger and snapshot pipeline. A server-owned 40-second collection window opens with the clue photo. Each player sends one pin through the existing receipted socket command path. At reveal, phones see their own guess and the location, and the stage sees the anonymous spread and the three closest named guesses when attribution is enabled. Scoring starts at 100 points and falls by distance, with no speed bonus.
+
+The phone and projector reuse Leaflet with a [bundled Natural Earth basemap](map-guess-basemap.md). The module and map load for this question only. The initial map supports world and city-scale guesses. The round uses a still photo. No imagery provider account or tile service is required.
+
+The `where-are-we` birthday draft is in the catalogue only. Open **Admin → Question packs → Where are we? → Phone preview** to try placing and locking a pin without a live room. The Worker integration test uses an isolated fixture to check scoring, pause refusal, duplicate and replay handling, persistence after eviction, and audience projections. The phone component test covers selected, sending and accepted states. A live phone and projector rehearsal with the party photo has not been run.
+
+Validation passed: `npm run typecheck`, `npm run lint` (30 existing warnings), `npm run build` (artifact scan, gzip budgets and content preflight), and `npm run test -w @26/api -- map-guess bucket-room question-authoring admin-rooms-auth` (43 tests). `npm run test:unit` passed all 904 tests discovered when the run started. The final focused web rerun passed all 20 tests across the map, guest page, stage page and admin feature registry.
+
+Next: supply the credited photo, location name and coordinates. Fill the draft, rehearse with the actual assets and add it to the birthday running order when approved.
+
+## 18 November 2026 — Cubic review workflow and map follow-up
+
+When Cubic runs on a PR, wait for its review of the latest pushed commit, check the summary and inline comments, and repeat after fixes. If Cubic is unavailable or never reports, note that in the handoff. The rule lives in `55-agent-workflow.md` and was copied with `npm run agents:sync`.
+
+The follow-up for PR #42 requires a photo clue, honours hidden picks in both live broadcasts and direct snapshots, and omits unsent pins from the phone reveal. The focused Worker and phone tests passed, along with lint and the build. The next content step is to add the real clue and rehearse the round.
+
+## 18 November 2026 — Missing question pictures
+
+Status: filled the pictures that could be filled without inventing a personal listing or Nextdoor post. No deploy.
+
+How pictures work: option art is a PNG under `/assets/questions/<id>/` (schema forbids remote URLs). A round photo is `media` with `name: "question"`, `asset`, `credit` (optional Creative Commons `creditUrl`). The phone and projector render that through `QuestionImage`. Who’s that Pokémon loads a separate silhouette by question id, not by darkening the answer PNG. `content:check` now fails if any of those files is missing, not only option PNGs.
+
+### Audit (every pack, retired files, demo, design bench, trolls, chess, kart)
+
+Flagged:
+
+| Round / file                          | Id                          | What was missing                                                          |
+| ------------------------------------- | --------------------------- | ------------------------------------------------------------------------- |
+| demo `candles.ts`                     | `candles`                   | Prompt asks how many candles are on **this cake**; no `media` and no file |
+| demo `colour.ts`                      | `colour`                    | Prompt asks the colour of **this drawing**; no `media` and no file        |
+| design bench `preview/fixtures.ts`    | `whos-that-pokemon-preview` | Renderer looks for `silhouette.png`; Piplup had no colour PNG             |
+| birthday `property-price-roulette.ts` | `property-price-roulette`   | Required `listing-photo` with no asset; prompt says look at the listing   |
+| birthday `nextdoor-paranoia.ts`       | `nextdoor-paranoia`         | Requirements ask for a real post/screenshot; no media field               |
+| retired `tribunal-reddit.ts`          | `tribunal-reddit`           | Needs a real thread, not a picture; not in the catalogue                  |
+| authoring fixture                     | `childhood-photo`           | Docs/test only; not a catalogue question                                  |
+
+Already supplied (checked files exist, non-empty): accommodation 01–03 JPEGs; favourite-Pokémon and Who’s-that-Pokémon PNGs plus Jigglypuff silhouette SVG; chess pieces/board/sounds; troll pack including Mum photo; Netanyahu webp. Kart GLBs are built into `public/kart-engine/` on web prebuild, not stored as question photos. Custom designs (number plates, ballot paper, album sleeves, pills, trolley lever) use CSS/Iconify, not missing bitmaps. Council-estate rounds are retired text names, replaced by the photo accommodation rounds.
+
+### Filled
+
+| Item                    | File                                                 | Source / licence                                       |
+| ----------------------- | ---------------------------------------------------- | ------------------------------------------------------ |
+| Demo cake (26 candles)  | `apps/web/public/assets/questions/candles/photo.jpg` | Original drawing, CC0                                  |
+| Demo night sky (blue)   | `apps/web/public/assets/questions/colour/photo.jpg`  | Original drawing, CC0                                  |
+| Design-bench silhouette | `…/whos-that-pokemon-preview/silhouette.png`         | Blacked-out Mudkip; copyrighted, private use           |
+| Design-bench Piplup     | `…/whos-that-pokemon-preview/piplup.png`             | PokeAPI official artwork 393; copyrighted, private use |
+
+Credits: full licence table is `docs/content/question-image-credits.md` (not served to guests). Public `apps/web/public/assets/questions/CREDITS.md` is only a pointer. Demo pack edited in place (`candles`, `colour` media only); version stays `demo-2026-09-22` because `startDemo` pins it and the owner asked to fill every flagged question without inventing a new demo version. Answers unchanged.
+
+### Left for the owner
+
+- **nextdoor-paranoia** — need a real post or redacted screenshot and the confirmed explanation. Do not fabricate a neighbourhood.
+- **where-are-we** — map-guess draft from PR #43; still needs a credited clue photo, place name and coordinates.
+- **ed-or-humza** — speakers, not pictures.
+
+### Commands and results
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 30 existing react-refresh warnings; structure check passed
+- `npx vitest run --project auth test/birthday-assets-prices.spec.ts test/content-preflight.spec.ts test/question-authoring.spec.ts test/party-concepts.spec.ts` in `apps/api` — 49 passed
+- `npx vitest run src/play/designs/whos-that-pokemon.test.tsx src/play/question-option-image.test.tsx src/play/preload.test.ts` in `apps/web` — 10 passed
+- `npm run content:check` — passed; still reports the incomplete birthday drafts above
+- `npm run build` — passed on the first fill commit (artifact scan, gzip budget, content preflight)
+
+Not verified in a browser (no Playwright).
+
+### Exact next stage
+
+Owner supplied Hackney listing originals; see the follow-up below.
+
+## 18 November 2026 — Hackney listing photos and credit hygiene
+
+Status: `property-price-roulette` is ready (catalogue only). No deploy.
+
+The owner attached the Winkworth listing originals (listing-2.jpg as the public clue; listing-0/1/3/4 as extras). Public clue is `apps/web/public/assets/questions/property-price-roulette/photo.jpg` (interior only: loft bed and microwave, no street number or nameplate). Extra stills `exterior.jpg`, `interior-a.jpg`, `interior-b.jpg`, `interior-c.jpg` and the floorplan (Saratoga Road, E5, 79 sq ft) live under `docs/content/listings/property-price-roulette/` so guests cannot fetch the building or address from `/assets`. The slider round has no extra reveal-image channel.
+
+Rent is **£750 pcm** (OnTheMarket 13835770; Evening Standard 11 February 2026). Closest-under number entry, scale £250–£3000, step £10. Reveal quotes the agent wording (including “accomodation”) and the 79 sq ft size. Credit: © Winkworth / OnTheMarket, copyrighted, private use. Guest preview must not include 750.
+
+Also: optional `alt` on public question images; Who’s-that-Pokémon silhouette files are required only for ready questions; Julian Herzog (Website) in the private credits file.
+
+Merged `origin/master` (PR #43 map-guess) with a merge commit. Conflicts: `apps/web/src/play/question-image.tsx` (kept named `alt`, map-guess fallback, and generic fallback) and `docs/build-progress.md` (kept both the map-round log and this fill log).
+
+### Commands and results after the merge
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 30 existing react-refresh warnings; structure check passed
+- `npm run format:check` — passed
+- `npm run content:check` — passed; incomplete drafts: `where-are-we`, `ed-or-humza`, `nextdoor-paranoia`
+- `npx vitest run --project auth test/birthday-assets-prices.spec.ts test/content-preflight.spec.ts test/question-authoring.spec.ts test/party-concepts.spec.ts test/new-party-concepts.spec.ts test/map-guess-score.spec.ts` in `apps/api` — 53 passed
+- `npx vitest run src/play/question-image.test.tsx src/play/designs/whos-that-pokemon.test.tsx src/play/question-option-image.test.tsx src/play/preload.test.ts src/play/map-guess.test.tsx` in `apps/web` — 14 passed
+
+Owner follow-up: scale £250–£3000, Evening Standard 11 February 2026 as the evidence date, verbatim agent wording (including “accomodation”) and 79 sq ft on the reveal, credit © Winkworth / OnTheMarket. `content:check` no longer lists this round as incomplete.
+
+## 18 November 2026 — Nextdoor paranoia typeset post
+
+Status: `nextdoor-paranoia` is ready (catalogue only). No deploy.
+
+The owner chose a typeset neighbourhood-app card rather than inventing a screenshot. `apps/web/public/assets/questions/nextdoor-paranoia/photo.png` shows “A neighbour”, a redacted name bar, a generic neighbourhood, and only the quoted line about a slow moving vehicle following the school bus every morning. No Nextdoor logo. Source: Marshall News Messenger, 5 February 2024. Choice prompt: “What was the suspicious vehicle actually doing?” Correct option: Delivering newspapers. Reveal quotes “Turned out it was the newspaper delivery guy.” The old hoodie post is gone.
+
+### Commands and results after the Nextdoor rewrite and cubic follow-up
+
+Recorded on this cubic follow-up (extra listing stills moved off `/assets`; docs aligned):
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 30 existing react-refresh warnings; structure check passed
+- `npm run format:check` — passed
+- `npm run content:check` — passed; incomplete drafts: `where-are-we`, `ed-or-humza` (nextdoor-paranoia no longer listed)
+- `npx vitest run --project auth test/birthday-assets-prices.spec.ts test/content-preflight.spec.ts test/question-authoring.spec.ts test/party-concepts.spec.ts test/new-party-concepts.spec.ts test/map-guess-score.spec.ts` in `apps/api` — 53 passed
+
+### Exact next stage
+
+Slot `property-price-roulette` and `nextdoor-paranoia` in Running order if wanted. `where-are-we` still needs its clue photo and coordinates. `ed-or-humza` still needs speakers.
+
+## 18 November 2026 — Bespoke layouts for Where are we? and Ed or Humza?
+
+Status: layouts shipped; both rounds remain drafts. No deploy.
+
+PR #44 (missing pictures) was already on `origin/master`. This change only adds presentation chrome, design-bench fixtures, and map touch handling.
+
+### Design
+
+**Where are we?** Phone: compact clue photo (tap to enlarge), then a fill-height Leaflet map with `touch-action: none`, non-passive `touchmove` block so the page does not scroll/zoom while panning, transform-based pan, instant zoom (no CSS zoom hitch), large zoom buttons, centre-pin fallback, then Send pin. Projector: large clue on get-ready; map plus closest-distance list at reveal. Leaflet stays lazy-loaded (`GuessMap` chunk); no new map library.
+
+**Ed or Humza?** Eighteen quotes cannot sit as a scrolling fieldset list on ~360×640. Phone is a one-quote card stack: large Ed/Humza targets, pointer-driven swipe with `translate3d` (no layout thrash), undo, pile review with move-back, keyboard E/H and arrows, long quotes clamp then expand. Projector holds two speaker columns and staggers the true groups only at reveal. No drag library.
+
+Design bench fixtures are labelled stand-ins (demo night-sky photo, fictional harbour, invented quotes). Party question text comes from the server pack and appears on the projector only at reveal; speakers and coordinates remain draft data until the owner supplies them.
+
+### Files
+
+- `packages/shared` `customPresentationIds`: `where-are-we`, `ed-or-humza`
+- `apps/web/src/play/designs/where-are-we.tsx` / `.css` / tests
+- `apps/web/src/play/designs/ed-or-humza.tsx` / `.css` / `ed-or-humza-assign.ts` / tests
+- `apps/web/src/play/map-guess.tsx` pan/zoom/touch hardening; `GuessMap` exported
+- Question files set `presentation`; notes/TODOs for owner content
+- `docs/content/where-are-we.md`, updates to `ed-or-humza.md` and `question-authoring.md`
+
+### Commands and results
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 30 existing react-refresh warnings; structure check passed
+- `npx vitest run src/play/designs/ed-or-humza-assign.test.ts src/play/designs/ed-or-humza.test.tsx src/play/designs/where-are-we.test.tsx src/play/designs/designs.test.tsx src/play/map-guess.test.tsx` in `apps/web` — 36 passed
+- `npx vitest run --project auth test/ed-or-humza.spec.ts` in `apps/api` — 4 passed
+- `npm run content:check` — passed; incomplete drafts: `where-are-we` (photo + coordinates), `ed-or-humza` (18 speakers)
+- `npm run build` — passed (secrets scan, gzip budget, content preflight). Entry JS ~220 kB gzip; Leaflet remains on the lazy `map-guess` chunk (~45 kB gzip)
+
+Not verified on a physical phone or projector (no Playwright).
+
+### Exact next stage
+
+Owner supplies the `where-are-we` clue photo, place name and coordinates, and `ed-or-humza` speakers. Then make each ready and add to Running order only if wanted.
+
+## 18 November 2026 — Every theme has its own identity
+
+Status: implemented on `claude/deep-themes` (from master `5f50912`, then merged with the latest master including #44 and #45). Owner request: make each theme feel like its own product, not a recolour, with a strong foundation.
+
+### Foundation
+
+- `apps/web/src/theme/identity.ts`: a per-theme identity on top of the family skin and deep layer. `Record<ThemeId, ThemeFlavour>`, so a new theme fails the typecheck without one. A flavour can override any family value (scene, type, texture, control, panel, heading, motion, align) and must choose six theme-level dimensions:
+  - marks: 14 option-mark styles, shared by phone and projector via `optionMark()`. `classic` keeps 26 basic's phone shapes and projector letters.
+  - celebrate: 17 one-shot bursts.
+  - transition: 12 phase hand-overs.
+  - numerals: 6 number styles.
+  - ornament: 31 glyphs.
+  - strength: scene strength.
+- `install.ts` writes the merged identity to `<html>` (`data-marks`, `data-celebrate`, `data-transition`, `data-numerals`, `data-ornament`, `data-strength`, plus overridden family values) and fires `26-theme-change`. `use-theme-identity.ts` follows it with `useSyncExternalStore`.
+- `voices.ts`: six short lines of chrome flavour per theme (waiting, locked, won, missed, the projector invite and the result glyph). States, points, instructions and question copy are unchanged; 26 basic keeps the original wording.
+- `theme-scenes.css`: 50 new scenes built from the existing 24 scene pieces with shared fall/rise/float movements. `theme-identity.css`: numerals, ornaments, scene strength and the celebration shapes.
+- `anim/Celebration.tsx`: 18 CSS pieces, about 1.6s, once. It plays on the phone result when a guest scores, and in the projector's ground at each reveal, behind the question. Nothing renders under reduced motion.
+- `PhaseTransition`: per-theme phone transitions. The projector only nudges (transform or blur) and stays at full opacity, as its readability test requires. Reduced motion is unchanged.
+- Choice tiles (`guest-play`, `guest-multiple`) and the projector vote board use the theme's marks.
+
+### Every theme
+
+All 80 themes have a flavour and a voice. Examples:
+
+- Persona 3 Midnight Hour: a giant moon, Roman marks, a glitch transition and segment numerals.
+- November Nights: fireworks.
+- 501 Fun: a dartboard with a 180 voice.
+- Rick Astley: a spinning vinyl record and musical notes.
+- PS2: △○✕□ marks.
+- Persona 5: suit marks and calling cards.
+- HumzaOS: F-key marks and a >\_ prompt.
+- bbno$: lower-case voice and coins.
+
+`identity.test.ts` enforces it:
+
+- every pair of themes differs in at least five visible dimensions beyond colour and voice;
+- every scene, celebration, numeral style and ornament is drawn in CSS;
+- every value is used by at least one theme.
+
+`voices.test.ts` checks every theme's lines: none empty, all short, a unique "won" line per theme, and no line that impersonates a state.
+
+### Budget and rules
+
+- Entry CSS budget raised from 28kB to 34kB gzip in `scripts/web-bundle-budget.json`, with the reason recorded. The new stylesheets are about 8.5kB gzip before minification and apply on every screen.
+- `.agents/rules/45-themes.md` gains an Identity section; `npm run agents:sync` ran.
+
+### Checks
+
+- `npx vitest run src/theme` in `apps/web`: 21 tests passed (identities, voices, skins, deep skins, install).
+- Prettier on the changed files.
+- The local dependency install is partial, so motion, zod and framer-motion files are missing. Local `tsc -b apps/web` therefore reports hundreds of errors in untouched files too. The PhaseTransition and other motion-based suites cannot load locally. Typecheck, lint, the full web suite and the build or bundle budget are left to CI on the PR and are not claimed here.
+
+### Exact next stage
+
+Read CI on the PR and fix any failures or cubic review threads. Then preview themes with `?theme=<id>` on a phone and the projector, checking that scenes stay faint behind questions and that bursts and transitions feel right.
+
+### cubic follow-up and CI measurements
+
+- Long marks (`P10`, `XIII`, `1111`) widen their box on the phone and projector instead of overflowing.
+- `strength` is now required on every flavour, like the other identity dimensions.
+- The projector's reveal burst plays once per reveal. Hiding the stage or reconnecting mutes it rather than remounting it.
+- The lobby keeps "Join on your phone" as plain text with the theme's invite beside it. The phone's waiting state stays "Waiting for the next question." with the theme's line beside it.
+- Reduced motion now also stops the animated parts of scene pieces, such as clock hands.
+- Sparks fly straight out. Circled marks carry a text variation selector because Ⓜ has an emoji form.
+- `identity.test.ts` ignores commented-out or empty rules, checks scene strengths are drawn, and checks every ornament and strength is used. `voices.test.ts` guards the won and missed lines too.
+- CI measured the built entry CSS at 28,165 bytes gzip, against 20,779 on master. The 34kB limit keeps about 20% headroom.
+- The theme flavours load at start-up so a stored theme paints without a late swap. That adds about 14kB minified (2.4kB gzip) to every route, so the Playwright cold-script budgets for `/` and `/admin/login` rose by 20kB, to 720kB and 730kB.
+- Prettier on master's `where-are-we.tsx`, which was failing `format:check`.
+- Not caused by this branch: master's Playwright run already fails 35 specs, including the `/join` and `/host` cold-script budgets. Two more failed on this branch's earlier run with timing errors outside the theme code: `admin-sections` (a confirm dialog left open) and `kart-cpu-race` (start-boost timing).
+- `npx vitest run src/theme` in `apps/web`: 22 passed. `npx prettier --check .` passed.

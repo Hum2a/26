@@ -45,6 +45,7 @@ The owner approved trusted device-recorded finish durations and local rollback p
 
 - Naming: `<domain>:<action>` (e.g. `test:unit`, `questions:check`, `email:preview`, `dev:jump`)
 - A fresh checkout is prepared with `npm install`, then `npm run setup`. Setup installs dependencies, syncs environment files, generates a missing local client API key, copies agent instructions, generates Worker types, installs Playwright Chromium, and migrates and seeds the local database. It leaves an existing local key unchanged and does not deploy or upload secrets.
+- For your own local or staging administrator identity, follow the repository-root guide `docs/agent-access.md`. Use `npm run auth:agent` from an authorised checkout and keep codes and cookies out of tool logs and PRs.
 
 - This is a separate birthday project. Never change LifeSmart, use its production resources or copy its pupil-specific rules into this project.
 - The plan's agreed decisions take precedence over its suggested defaults. Later explicit user decisions take precedence over both. Record material implementation choices.
@@ -94,6 +95,8 @@ Public API is `packages/shared/src/index.ts` (`@26/shared`). Feature folders:
 - `kart/` — race reducer, physics, tracks, items (filenames keep the `kart-` prefix).
 - `chess/` — schemas, clocks, capture scoring.
 - `wordle/` — board reducer.
+- `map-guess/` — pin validation and distance scoring.
+- `trends/` — per-question answer-trend schemas and the pure analysis engine (device and behaviour comparisons).
 
 Cross-cutting files stay at `src/` (`rate-limit.ts`, `party-scoring.ts`, `voters.ts`, `wall.ts`, …). Do not put round UI or Durable Object code here.
 
@@ -142,7 +145,7 @@ Do not recreate `src/rounds` or `src/net`. Connection UI belongs in `live/`. Ans
 
 ## How to add a new round
 
-1. **Mechanic** — Reuse `choice` / `typed` / `slider` / `rank` / `vote` / `guess` / `duel` / `finale` / `wordle` / `kart` / `chess` if it fits. Read `docs/question-authoring.md`.
+1. **Mechanic** — Reuse `choice` / `typed` / `slider` / `rank` / `vote` / `guess` / `duel` / `finale` / `wordle` / `map-guess` / `kart` / `chess` if it fits. Read `docs/question-authoring.md`.
 2. **Pack file** — `apps/api/src/questions/packs/birthday/<id>.ts` with the helper in `authoring.ts`. Register on `catalogue` only (not `order` while drafting).
 3. **Server runtime** — If it needs new scoring or persistence, add or extend `apps/api/src/questions/<mechanic>/` (or the existing quiz module). Wire `PartyRoom` through the existing plugin/command path. Persist before ack.
 4. **Shared contract** — Zod + pure reducer in `packages/shared/src/<mechanic>/` if phones and the Worker share shapes. Export from `index.ts`. Keep secrets off the public snapshot.
@@ -212,6 +215,7 @@ Detailed, file-scoped rules live in `.agents/rules/60-perf-*.md` (synced to `.cu
 
 - **Small, focused PRs.** One concern per branch. Do not mix a mechanic change with a folder move, a dependency bump, and a visual rewrite.
 - **Never push to `master` or `main`.** Open a PR against `master`. Do not merge unless the owner asked.
+- **Cubic review.** When Cubic runs on an open PR you are handling, automatically wait for its review of the latest pushed commit. Read the review summary and inline comments even if the check passed. Verify each finding against the diff, fix valid findings within scope, and record why any finding needs no change or falls outside the scope. Rerun the affected checks, push the fixes, and repeat for the new commit. If Cubic is unavailable or never reports, state that in the handoff. Where it is running, finish this loop before handing off an open PR or merging with the owner's authorisation.
 - **No force-push** to shared branches. No `--force` / `--force-with-lease` on `master`.
 - **Do not deploy**, create paid cloud resources, or change staging/production secrets unless the owner asked in this turn.
 - **Do not add Playwright or other E2E/browser runners.** The owner has prohibited them. Prove behaviour with typecheck, lint, Vitest (jsdom / workers pool), and existing Node script tests.
@@ -496,6 +500,22 @@ A skin family also has a deep layer in `apps/web/src/theme/deep-skins.ts`, drawn
 
 Choose the combination for the idea, not the last family. A new value goes in both `deep-skins.ts` and `theme-deep.css`, built only from the theme's colour variables. Reduced motion stops every scene and texture animation, turns panel arrivals into a short fade, and turns off glass blur.
 
+## Identity (every theme)
+
+A family is a starting point, not the finished theme. Every theme has its own flavour in `apps/web/src/theme/identity.ts` (`Record<ThemeId, …>`, so a new theme fails the typecheck without one) and its own voice in `voices.ts`. `install.ts` writes the merged identity onto `<html>`.
+
+- **Overrides.** A flavour may replace any family value: a different scene, type, texture, control, panel, heading, motion or align. Use this so themes in one family stop looking alike.
+- **Scene.** Besides the family scenes, `theme-scenes.css` draws theme-level scenes (aurora, a skyline, a circuit board, a film strip, fireworks, pop-up windows, balloons, sparkles, dice, clocks, an alarm beacon, pixels, question marks, steam, ripples, rain, bubbles, hearts, clouds, waves, petals, polaroids, speech bubbles, butterflies, embers, a moon, TV static, curtains, crystals, streams, grass, ghosts, hexes, an aura, capsules, leaves, fireflies, comets, transmutation circles, lanterns, app windows, chalk, parcels, chequered flags, a court, a chart, a dartboard, coins, drips and a vinyl record). Same rules as family scenes: faint, slow, bright shapes off the left third.
+- **Marks.** How options are lettered on phones and the projector: `classic` (phone shapes, projector letters; 26 basic only), or one shared style on both screens (`alpha`, `lower`, `roman`, `numeric`, `circled`, `buttons`, `suits`, `greek`, `kana`, `binary`, `dice`, `fkeys`, `players`). Use `optionMark()`; never hard-code A, B, C. Sets with an emoji form (suits, dice, circled letters) carry a text variation selector so they never become colour emoji; the other sets use symbols with no emoji form.
+- **Celebrate.** The one-shot burst (`anim/Celebration.tsx`) when a guest scores and at the projector's reveal: `confetti`, `sparks`, `stars`, `petals`, `pixels`, `bubbles`, `hearts`, `leaves`, `coins`, `notes`, `embers`, `bolts`, `snow`, `balloons`, `butterflies`, `cards` or `rings`. Eighteen CSS pieces, about 1.6 seconds, never loops, behind the question on the projector, nothing under reduced motion.
+- **Transition.** How `PhaseTransition` hands one phone phase to the next: `rise`, `fade`, `slide`, `wipe`, `iris`, `zoom`, `flip`, `glitch`, `drop`, `skew`, `blur` or `shutter`. The projector only nudges (transform or blur), never fades from nothing or clips the question. Reduced motion is a short fade everywhere.
+- **Numerals.** Scores, timers and counts: `plain`, `tabular`, `segment`, `serif`, `outline` or `stamped`.
+- **Ornament.** One text glyph before the phone cue and eyebrow labels (`spark` ✦, `prompt` `>_`, `note` ♪…). Decoration only; its CSS alternative text is empty.
+- **Strength.** How strongly the scene shows: `faint`, `normal` or `bold`.
+- **Voice.** Six short lines of chrome flavour: `waiting`, `locked`, `won`, `missed`, `invite` and `glyph`. They sit beside the states, never replace them: "Locked in", "Sending…", points, instructions and question copy stay the same in every theme. Keep them short, British English, and never quote song lyrics.
+
+`identity.test.ts` requires every pair of themes to differ in at least five visible dimensions (beyond colour and voice). Every scene, celebration, numeral style, ornament and scene strength needs a live CSS rule (marks and transitions are drawn in code), and every scene and identity value, including each mark style and transition, must be used by at least one theme. Choose a new theme's flavour for the idea, then run the test; if it names a close pair, change a scene, marks, celebration, transition or override until it passes.
+
 ## Icons
 
 Icon packs are installed in `@26/web`. Search the live set before adding an icon, and import one icon at a time. Do not trace a logo from a brand site or a fan page. If Simple Icons has no slug, say so and use a generic icon.
@@ -535,7 +555,7 @@ The favicon stays the 26 basic mark.
 ## Check
 
 - `npx tsc -b apps/web`
-- `npx vitest run src/theme` in `apps/web` (skins and deep skins)
+- `npx vitest run src/theme` in `apps/web` (skins, deep skins and identities)
 - Preview with `?theme=its-id` and confirm the ground, corners, mark, and finish are visible while the question text stays readable. If the theme has a motif, the icon shows in the margin and a point on the heading still hits the heading.
 
 ### Render budgets, memoisation, layout, perceived performance, phone UX

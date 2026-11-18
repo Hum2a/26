@@ -38,6 +38,9 @@ export const kartRehearsalSchema = z
 
 import { developerToolsSchema } from "./developer.ts";
 export * from "./developer.ts";
+import { mapPinSchema } from "./map-guess/map-guess.ts";
+export { mapPinSchema, mapGuessPoints, pinDistanceKm } from "./map-guess/map-guess.ts";
+export type { MapPin } from "./map-guess/map-guess.ts";
 import { wordleBoardSchema } from "./wordle/wordle.ts";
 export {
   wordleBoardSchema,
@@ -95,6 +98,13 @@ export type {
   WallStep,
 } from "./wall.ts";
 export type { FunFactCard, StatCard } from "./stats.ts";
+export * from "./trends/trend-schema.ts";
+export * from "./trends/trend-engine.ts";
+import {
+  questionTrendsSchema,
+  selfTrendsSchema,
+  trendControlSchema,
+} from "./trends/trend-schema.ts";
 export { resultsStatusSchema } from "./archive.ts";
 export type { ResultsStatus } from "./archive.ts";
 export * from "./chess/chess-schemas.ts";
@@ -305,10 +315,13 @@ export const contentLimits = {
   pointsMin: 0,
   pointsMax: 1000,
   optionMin: 2,
-  optionMax: 6,
+  /** Raised from 6 on 18 November 2026 for the seven-option esports tag question. */
+  optionMax: 8,
   /** A poll may list more options, such as every party on a ballot. */
   pollOptionMax: 16,
   rankMax: 8,
+  bucketMax: 40,
+  bucketLabelMax: 300,
   collectMinMs: 15_000,
   collectMaxMs: 45_000,
   packMax: 80,
@@ -335,6 +348,8 @@ export const customPresentationIds = [
   "redacted-file",
   "whos-that-pokemon",
   "executive-order",
+  "where-are-we",
+  "ed-or-humza",
 ] as const;
 
 export type CustomPresentationId = (typeof customPresentationIds)[number];
@@ -365,6 +380,7 @@ const publicQuestionCore = {
         .string()
         .regex(/^https:\/\/creativecommons\.org\/licenses\/[a-z-]+\/[0-9.]+\/?$/)
         .optional(),
+      alt: z.string().min(1).max(120).optional(),
     })
     .strict()
     .optional(),
@@ -450,6 +466,12 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
   z
     .object({
       ...publicQuestionCore,
+      kind: z.literal("map-guess"),
+    })
+    .strict(),
+  z
+    .object({
+      ...publicQuestionCore,
       kind: z.literal("wordle"),
       wordLength: z.literal(5),
       maxGuesses: z.literal(6),
@@ -510,13 +532,46 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
       ...publicQuestionCore,
       kind: z.literal("rank"),
       mode: z.enum(["complete", "partial"]),
-      scoring: z.literal("consensus").optional(),
-      input: z.literal("ordered").optional(),
+      scoring: z.enum(["consensus", "placement"]).optional(),
+      input: z.enum(["ordered", "buckets"]).optional(),
       ties: z.enum(["forbidden", "shared"]),
-      items: z.array(publicChoiceSchema).min(2).max(8),
+      items: z
+        .array(
+          z
+            .object({
+              id: publicOptionIdSchema,
+              label: z.string().min(1).max(contentLimits.bucketLabelMax),
+            })
+            .strict(),
+        )
+        .min(2)
+        .max(contentLimits.bucketMax),
       tiers: z.array(publicChoiceSchema).min(2).max(8),
     })
-    .strict(),
+    .strict()
+    .superRefine((question, context) => {
+      if (question.input === "buckets") {
+        if (
+          question.scoring !== "placement" ||
+          question.mode !== "complete" ||
+          question.ties !== "shared"
+        )
+          context.addIssue({
+            code: "custom",
+            message:
+              "Bucket sorting requires complete shared placements and placement scoring.",
+          });
+      } else if (
+        question.scoring === "placement" ||
+        question.items.length > contentLimits.rankMax ||
+        question.items.some((item) => item.label.length > contentLimits.labelMax)
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Ordinary rankings retain their item and label limits.",
+        });
+      }
+    }),
   z
     .object({
       ...publicQuestionCore,
@@ -614,6 +669,7 @@ export const optionVotersSchema = z
 const selfAnswerSchema = z
   .discriminatedUnion("kind", [
     wordleBoardSchema,
+    z.object({ kind: z.literal("map-guess"), pin: mapPinSchema }).strict(),
     z
       .object({
         kind: z.literal("multiple"),
@@ -637,7 +693,7 @@ const selfAnswerSchema = z
     z
       .object({
         kind: z.literal("rank"),
-        placements: z.array(publicPlacementSchema).max(8),
+        placements: z.array(publicPlacementSchema).max(contentLimits.bucketMax),
       })
       .strict(),
     z
@@ -708,6 +764,24 @@ const duelStateSchema = z
 
 const revealSchema = z
   .discriminatedUnion("kind", [
+    z
+      .object({
+        kind: z.literal("map-guess"),
+        target: mapPinSchema,
+        label: z.string().min(1).max(100),
+        pins: z.array(mapPinSchema).max(100),
+        closest: z
+          .array(
+            z
+              .object({
+                nickname: z.string().min(1).max(24),
+                distanceKm: z.number().nonnegative(),
+              })
+              .strict(),
+          )
+          .max(3),
+      })
+      .strict(),
     z
       .object({
         kind: z.literal("wordle"),
@@ -793,7 +867,10 @@ const revealSchema = z
               .object({
                 tierId: publicOptionIdSchema,
                 label: z.string().min(1).max(80),
-                itemIds: z.array(publicOptionIdSchema).min(1).max(8),
+                itemIds: z
+                  .array(publicOptionIdSchema)
+                  .min(1)
+                  .max(contentLimits.bucketMax),
               })
               .strict(),
           )
@@ -805,7 +882,7 @@ const revealSchema = z
               .object({
                 nickname: z.string().min(1).max(24).nullable(),
                 points: z.number().int().nonnegative(),
-                placements: z.array(publicPlacementSchema).max(8),
+                placements: z.array(publicPlacementSchema).max(contentLimits.bucketMax),
               })
               .strict(),
           )
@@ -1388,6 +1465,15 @@ export const lobbySnapshotSchema = z
       .optional(),
     highlights: z.array(statCardSchema).max(8).optional(),
     recap: z.array(statCardSchema).max(6).optional(),
+    /**
+     * Stage only, during the reveal and scores: how groups in the room
+     * answered the question just revealed. Absent when the host hides them.
+     */
+    trends: questionTrendsSchema.optional(),
+    /** One guest's phone only: how their answer compared with the room. */
+    selfTrends: selfTrendsSchema.optional(),
+    /** Control only: trend switches, every candidate card and recent questions. */
+    trendControl: trendControlSchema.optional(),
     /** The sentence currently on the projector. Guests may also learn whether it includes them. */
     funFact: z
       .object({

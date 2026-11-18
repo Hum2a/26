@@ -1,4 +1,5 @@
 import type { AppEnvironment } from "@26/shared";
+import { isAgentAdministrator, isAgentIdentity } from "./agent-identity.ts";
 
 declare global {
   interface Env {
@@ -57,7 +58,12 @@ export function parseAdminEmails(value: string | undefined): string[] {
 }
 
 export function configuredAdminEmails(env: AuthBindings): string[] {
-  return parseAdminEmails(env.ADMIN_EMAIL);
+  return parseAdminEmails(env.ADMIN_EMAIL).filter((email) => !isAgentIdentity(email));
+}
+
+/** Checks identity eligibility. A valid Better Auth session is still required. */
+export function isAdministratorIdentity(env: AuthBindings, email: string): boolean {
+  return isConfiguredAdminEmail(env, email) || isAgentAdministrator(env.APP_ENV, email);
 }
 
 export function isConfiguredAdminEmail(env: AuthBindings, email: string): boolean {

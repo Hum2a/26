@@ -30,6 +30,7 @@ import {
   transferCodeSchema,
   transferIssuedSchema,
   trollKindSchema,
+  trendCardIdSchema,
   type TrollKindName,
 } from "@26/shared";
 import {
@@ -491,6 +492,12 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "hide-media",
       "voters-question",
       "voters-hidden",
+      "trends-stage-shown",
+      "trends-stage-hidden",
+      "trends-phones-shown",
+      "trends-phones-hidden",
+      "trends-card-hide",
+      "trends-card-restore",
       "avatar-clear",
       "retry-archive",
       "release-stuck-media",
@@ -988,6 +995,7 @@ function readHostDetails(
         postId?: string;
         wallSettings?: WallSettingsChange;
         confirmCode?: string;
+        trendCardId?: string;
       };
     }
   | { ok: false; message: string } {
@@ -1094,6 +1102,20 @@ function readHostDetails(
   }
   if (action === "voters-question" || action === "voters-hidden") {
     return { ok: true, fields: {} };
+  }
+  if (
+    action === "trends-stage-shown" ||
+    action === "trends-stage-hidden" ||
+    action === "trends-phones-shown" ||
+    action === "trends-phones-hidden"
+  ) {
+    return { ok: true, fields: {} };
+  }
+  if (action === "trends-card-hide" || action === "trends-card-restore") {
+    const card = trendCardIdSchema.safeParse(field(body, "trendCardId"));
+    return card.success
+      ? { ok: true, fields: { trendCardId: card.data } }
+      : { ok: false, message: "Choose a trend card from this room." };
   }
   if (action === "open-joining" || action === "close-joining") {
     return { ok: true, fields: {} };

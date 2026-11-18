@@ -32,7 +32,8 @@ export function attachAudienceFields<T extends object>(
 /** Only the explicitly public question picture; never reveal-only media. */
 export function publicQuestionImage(question: { media?: readonly MediaRef[] }) {
   const image = question.media?.find(
-    (item) => item.name === "question" && item.asset && item.credit,
+    (item) =>
+      item.name === "question" && item.kind === "image" && item.asset && item.credit,
   );
   return image?.asset && image.credit
     ? {
@@ -40,6 +41,7 @@ export function publicQuestionImage(question: { media?: readonly MediaRef[] }) {
           src: image.asset,
           credit: image.credit,
           ...(image.creditUrl ? { creditUrl: image.creditUrl } : {}),
+          ...(image.alt ? { alt: image.alt } : {}),
         },
       }
     : {};
