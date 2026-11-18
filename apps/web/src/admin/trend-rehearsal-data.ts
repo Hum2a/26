@@ -75,7 +75,9 @@ export function rehearsalTrendInput(scenario: TrendScenario, seed: number): Tren
       return {
         playerId: player.playerId,
         picks: [],
-        value: finished ? Math.round((58 + (apple ? -3 : 2) + random() * 12) * 10) / 10 : null,
+        value: finished
+          ? Math.round((58 + (apple ? -3 : 2) + random() * 12) * 10) / 10
+          : null,
         correct: finished,
         points: finished ? Math.round(random() * 100) : 0,
         elapsedMs: null,
