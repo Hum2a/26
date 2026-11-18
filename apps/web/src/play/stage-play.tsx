@@ -1,5 +1,8 @@
 import { QuestionImage } from "./question-image";
 import { lazy, Suspense } from "react";
+const StageMapGuess = lazy(() =>
+  import("./map-guess").then((m) => ({ default: m.StageMapGuess })),
+);
 const KartGameWrapper = lazy(() => import("../kart/KartGameWrapper"));
 import { motion } from "motion/react";
 import type { LobbySnapshot, PlaySnapshot, RoomPhaseName } from "@26/shared";
@@ -158,7 +161,10 @@ function StageBeat({
       ) : null}
       {custom ?? (
         <>
-          <QuestionImage question={play.question} />
+          {(play.question.kind !== "map-guess" ||
+            (snapshot.phase !== "intro" && snapshot.phase !== "prompt")) && (
+            <QuestionImage question={play.question} />
+          )}
           <QuestionView play={play} omitBoard={false} />
           {play.explanation ? <p className="stage-answer">{play.explanation}</p> : null}
         </>
@@ -181,6 +187,13 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
         {omitBoard ? null : <Standings play={play} />}
       </>
     );
+  if (play.question.kind === "map-guess") {
+    return (
+      <Suspense fallback={<p role="status">Loading the map…</p>}>
+        <StageMapGuess play={play} />
+      </Suspense>
+    );
+  }
   if (play.question.kind === "slider") {
     return <SliderView play={play} omitBoard={omitBoard} />;
   }

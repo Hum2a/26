@@ -19,6 +19,8 @@ export const ordinaryDefaults = {
   sliderPoints: 100,
   typedPoints: 100,
   wordlePoints: 100,
+  mapGuessCollectMs: 40_000,
+  mapGuessPoints: 100,
   wordleCollectMs: 120_000,
   typedMaxLength: 60,
   rankPoints: 80,

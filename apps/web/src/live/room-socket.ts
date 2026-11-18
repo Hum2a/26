@@ -6,6 +6,7 @@ import {
   newerTabMessage,
   removedSessionMessage,
   type LobbySnapshot,
+  type MapPin,
   type KartFrame,
   type KartInput,
   type KartFinish,
@@ -149,6 +150,7 @@ type CommandBody =
     }
   | { kind: "command"; requestId: string; name: "snapshot" }
   | { kind: "command"; requestId: string; name: "answer"; optionId: string }
+  | { kind: "command"; requestId: string; name: "map-pin"; pin: MapPin }
   | { kind: "command"; requestId: string; name: "estimate"; value: number }
   | {
       kind: "command";
@@ -244,6 +246,7 @@ export function openRoomSocket(options: {
 }): {
   requestSnapshot: () => string;
   submitAnswer: (optionId: string) => string;
+  submitMapPin: (pin: MapPin) => string;
   submitEstimate: (value: number) => string;
   submitRank: (placements: { itemId: string; tierId: string }[]) => string;
   submitText: (body: string) => string;
@@ -719,6 +722,15 @@ export function openRoomSocket(options: {
     });
   }
 
+  function submitMapPin(pin: MapPin): string {
+    return sendCommand({
+      kind: "command",
+      requestId: crypto.randomUUID(),
+      name: "map-pin",
+      pin,
+    });
+  }
+
   function submitEstimate(value: number): string {
     return sendCommand({
       kind: "command",
@@ -957,6 +969,7 @@ export function openRoomSocket(options: {
     requestSnapshot,
     submitAnswer,
     submitEstimate,
+    submitMapPin,
     submitRank,
     submitText,
     submitBallot,

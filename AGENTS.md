@@ -45,7 +45,7 @@ The owner approved trusted device-recorded finish durations and local rollback p
 
 - Naming: `<domain>:<action>` (e.g. `test:unit`, `questions:check`, `email:preview`, `dev:jump`)
 - A fresh checkout is prepared with `npm install`, then `npm run setup`. Setup installs dependencies, syncs environment files, generates a missing local client API key, copies agent instructions, generates Worker types, installs Playwright Chromium, and migrates and seeds the local database. It leaves an existing local key unchanged and does not deploy or upload secrets.
-- For your own local or staging administrator identity, follow [Agent access](docs/agent-access.md). Use `npm run auth:agent` from an authorised checkout and keep codes and cookies out of tool logs and PRs.
+- For your own local or staging administrator identity, follow the repository-root guide `docs/agent-access.md`. Use `npm run auth:agent` from an authorised checkout and keep codes and cookies out of tool logs and PRs.
 
 - This is a separate birthday project. Never change LifeSmart, use its production resources or copy its pupil-specific rules into this project.
 - The plan's agreed decisions take precedence over its suggested defaults. Later explicit user decisions take precedence over both. Record material implementation choices.
@@ -95,6 +95,7 @@ Public API is `packages/shared/src/index.ts` (`@26/shared`). Feature folders:
 - `kart/` — race reducer, physics, tracks, items (filenames keep the `kart-` prefix).
 - `chess/` — schemas, clocks, capture scoring.
 - `wordle/` — board reducer.
+- `map-guess/` — pin validation and distance scoring.
 
 Cross-cutting files stay at `src/` (`rate-limit.ts`, `party-scoring.ts`, `voters.ts`, `wall.ts`, …). Do not put round UI or Durable Object code here.
 
@@ -143,7 +144,7 @@ Do not recreate `src/rounds` or `src/net`. Connection UI belongs in `live/`. Ans
 
 ## How to add a new round
 
-1. **Mechanic** — Reuse `choice` / `typed` / `slider` / `rank` / `vote` / `guess` / `duel` / `finale` / `wordle` / `kart` / `chess` if it fits. Read `docs/question-authoring.md`.
+1. **Mechanic** — Reuse `choice` / `typed` / `slider` / `rank` / `vote` / `guess` / `duel` / `finale` / `wordle` / `map-guess` / `kart` / `chess` if it fits. Read `docs/question-authoring.md`.
 2. **Pack file** — `apps/api/src/questions/packs/birthday/<id>.ts` with the helper in `authoring.ts`. Register on `catalogue` only (not `order` while drafting).
 3. **Server runtime** — If it needs new scoring or persistence, add or extend `apps/api/src/questions/<mechanic>/` (or the existing quiz module). Wire `PartyRoom` through the existing plugin/command path. Persist before ack.
 4. **Shared contract** — Zod + pure reducer in `packages/shared/src/<mechanic>/` if phones and the Worker share shapes. Export from `index.ts`. Keep secrets off the public snapshot.

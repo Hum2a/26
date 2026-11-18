@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
-import type { GuestSession, LobbySnapshot } from "@26/shared";
+import type { GuestSession, LobbySnapshot, MapPin } from "@26/shared";
 import {
   Button,
   Dialog,
@@ -564,6 +564,11 @@ export function GuestPage({
     pendingRequest.current = socketRef.current?.submitAnswer(optionId) ?? null;
   }
 
+  function onMapPin(pin: MapPin) {
+    if (!beginSend(true)) return;
+    pendingRequest.current = socketRef.current?.submitMapPin(pin) ?? null;
+  }
+
   function onEstimate(value: number) {
     if (!beginSend(true)) {
       return;
@@ -1047,6 +1052,7 @@ export function GuestPage({
                     onChoose={onChoose}
                     observedAt={observedAt}
                     onEstimate={onEstimate}
+                    onMapPin={onMapPin}
                     onRank={onRank}
                     onText={onText}
                     wordleFeedback={wordleFeedback}

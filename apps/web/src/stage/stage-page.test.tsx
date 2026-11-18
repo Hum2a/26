@@ -30,6 +30,7 @@ beforeEach(() => {
     close: vi.fn(),
     requestSnapshot: vi.fn(),
     submitAnswer: vi.fn(),
+    submitMapPin: vi.fn(),
     submitEstimate: vi.fn(),
     submitRank: vi.fn(),
     submitText: vi.fn(),

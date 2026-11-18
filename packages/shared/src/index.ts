@@ -38,6 +38,9 @@ export const kartRehearsalSchema = z
 
 import { developerToolsSchema } from "./developer.ts";
 export * from "./developer.ts";
+import { mapPinSchema } from "./map-guess/map-guess.ts";
+export { mapPinSchema, mapGuessPoints, pinDistanceKm } from "./map-guess/map-guess.ts";
+export type { MapPin } from "./map-guess/map-guess.ts";
 import { wordleBoardSchema } from "./wordle/wordle.ts";
 export {
   wordleBoardSchema,
@@ -453,6 +456,12 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
   z
     .object({
       ...publicQuestionCore,
+      kind: z.literal("map-guess"),
+    })
+    .strict(),
+  z
+    .object({
+      ...publicQuestionCore,
       kind: z.literal("wordle"),
       wordLength: z.literal(5),
       maxGuesses: z.literal(6),
@@ -650,6 +659,7 @@ export const optionVotersSchema = z
 const selfAnswerSchema = z
   .discriminatedUnion("kind", [
     wordleBoardSchema,
+    z.object({ kind: z.literal("map-guess"), pin: mapPinSchema }).strict(),
     z
       .object({
         kind: z.literal("multiple"),
@@ -744,6 +754,24 @@ const duelStateSchema = z
 
 const revealSchema = z
   .discriminatedUnion("kind", [
+    z
+      .object({
+        kind: z.literal("map-guess"),
+        target: mapPinSchema,
+        label: z.string().min(1).max(100),
+        pins: z.array(mapPinSchema).max(100),
+        closest: z
+          .array(
+            z
+              .object({
+                nickname: z.string().min(1).max(24),
+                distanceKm: z.number().nonnegative(),
+              })
+              .strict(),
+          )
+          .max(3),
+      })
+      .strict(),
     z
       .object({
         kind: z.literal("wordle"),

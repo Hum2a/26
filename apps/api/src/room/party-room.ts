@@ -268,6 +268,7 @@ import {
 import { acceptMultiple } from "../questions/multiple.ts";
 import { acceptRanking, wrongKindRank } from "../questions/rank.ts";
 import { acceptEstimate, wrongKindEstimate } from "../questions/slider.ts";
+import { acceptMapPin } from "../questions/map-guess.ts";
 import { acceptWordleGuess } from "../questions/wordle/wordle.ts";
 import { acceptTypedAnswer } from "../questions/typed.ts";
 import {
@@ -2685,6 +2686,13 @@ export class PartyRoom extends DurableObject<Env> {
       await this.acceptGuestChoice(ws, attachment, command.requestId, command.optionId);
       return;
     }
+    if (command.name === "map-pin") {
+      await this.acceptGuestValue(ws, attachment, command.requestId, {
+        name: "map-pin",
+        pin: command.pin,
+      });
+      return;
+    }
     if (command.name === "estimate") {
       await this.acceptGuestValue(ws, attachment, command.requestId, {
         name: "estimate",
@@ -3660,6 +3668,7 @@ export class PartyRoom extends DurableObject<Env> {
     attachment: SocketAttachment,
     requestId: string,
     command:
+      | { name: "map-pin"; pin: unknown }
       | { name: "estimate"; value: unknown }
       | { name: "rank"; placements: unknown }
       | { name: "text"; body: unknown }
@@ -5159,6 +5168,7 @@ function acceptRoundCommand(
   playerId: string,
   requestId: string,
   command:
+    | { name: "map-pin"; pin: unknown }
     | { name: "estimate"; value: unknown }
     | { name: "rank"; placements: unknown }
     | { name: "text"; body: unknown }
@@ -5184,6 +5194,11 @@ function acceptRoundCommand(
       return { ok: false, message: wrongKindEstimate() };
     }
     return acceptEstimate(sql, store, playerId, command.value, now, question);
+  }
+  if (command.name === "map-pin") {
+    if (question?.kind !== "map-guess")
+      return { ok: false, message: "This question does not accept map pins." };
+    return acceptMapPin(sql, store, playerId, command.pin, now, question);
   }
   if (command.name === "rank") {
     if (!question || question.kind !== "rank") {
@@ -5305,6 +5320,7 @@ function readCommand(body: unknown):
   | { requestId: string; name: "kart-input"; input: unknown }
   | { requestId: string; name: "snapshot" }
   | { requestId: string; name: "answer"; optionId: string }
+  | { requestId: string; name: "map-pin"; pin: unknown }
   | { requestId: string; name: "estimate"; value: unknown }
   | { requestId: string; name: "rank"; placements: unknown }
   | { requestId: string; name: "text"; body: unknown }
@@ -5415,6 +5431,9 @@ function readCommand(body: unknown):
       name: "answer",
       optionId: record.optionId,
     };
+  }
+  if (record.name === "map-pin") {
+    return { requestId: record.requestId, name: "map-pin", pin: record.pin };
   }
   if (record.name === "estimate") {
     return {
