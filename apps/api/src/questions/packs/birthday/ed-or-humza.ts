@@ -112,7 +112,7 @@ export function makeEdOrHumza(quotes: readonly EdOrHumzaQuote[] = edOrHumzaQuote
             .filter((group) => group.itemIds.length > 0),
         },
     notes:
-      "Personal quotes supplied by Humza, 17 November 2026; wording preserved, speakers unconfirmed. TODO owner: set each speaker to ed or humza; null keeps this a draft. Card-stack presentation ed-or-humza. One whole-list submission; 80 points for correct placements, rounded down; two minutes, no speed bonus. Speaker keys stay server-side.",
+      "Personal quotes supplied by Humza, 17 November 2026; wording preserved, speakers unconfirmed. TODO owner: set each speaker to ed or humza; null keeps this a draft. Card-stack presentation ed-or-humza. One whole-list submission; 80 points proportional to correct placements, rounded down; two minutes, no speed bonus. Speaker keys stay server-side.",
   });
 }
 
