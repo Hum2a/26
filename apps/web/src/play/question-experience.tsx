@@ -25,6 +25,8 @@ export function QuestionExperience({
     play.question.total > 0 ? play.question.index / play.question.total : 0;
   const revealed = snapshot.phase === "reveal" || snapshot.phase === "scores";
   const award = play.selfAward;
+  const showAnswerState =
+    play.question.kind !== "wordle" && (status === "accepted" || status === "sending");
   const result =
     revealed && status === "accepted" && award !== null
       ? award > 0
@@ -88,7 +90,7 @@ export function QuestionExperience({
         </AnimatePresence>
       </header>
       <AnimatePresence initial={false}>
-        {status === "accepted" || status === "sending" || result ? (
+        {showAnswerState || result ? (
           <motion.div
             key={result ? `result-${result.tone}` : "answer-state"}
             className="answer-state glass"

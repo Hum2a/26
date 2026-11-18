@@ -6,7 +6,7 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
   if (snapshot.paused) return "Paused — hang tight";
   if (snapshot.held) return "Waiting for the host";
   if (snapshot.phase === "facts") return "Watch the stage";
-  if (pending) return "Sending your answer…";
+  if (pending && play?.question.kind !== "wordle") return "Sending your answer…";
   if (!play) return "Watch the stage";
   if (snapshot.phase === "reveal" || snapshot.phase === "scores")
     return "The results are in";
@@ -88,7 +88,9 @@ export function answerStatus(
     answer !== null &&
     "kind" in answer &&
     answer.kind === "wordle" &&
-    answer.status === "playing";
+    answer.status === "playing" &&
+    ((snapshot.phase !== "reveal" && snapshot.phase !== "scores") ||
+      answer.guesses.length === 0);
   if (answer && !stillPlaying) {
     return "accepted";
   }

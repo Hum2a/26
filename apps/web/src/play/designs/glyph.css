@@ -9,6 +9,18 @@
   min-height: 1.5em;
   font-weight: 700;
 }
+.glyph-edit-cell {
+  width: 100%;
+  padding: 0;
+  touch-action: manipulation;
+}
+.glyph-edit-cell[data-cursor] {
+  border-color: var(--accent);
+}
+.glyph-edit-cell:focus-visible {
+  outline: 2px solid var(--highlight);
+  outline-offset: 1px;
+}
 .glyph-board {
   display: grid;
   gap: 0.3rem;
@@ -93,7 +105,7 @@
 }
 .glyph-actions {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.4rem;
   margin-top: 0.25rem;
 }

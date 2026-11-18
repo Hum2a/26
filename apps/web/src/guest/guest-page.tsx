@@ -80,6 +80,7 @@ export function GuestPage({
   const [selectedId, setSelectedId] = useState<string>();
   const [pending, setPending] = useState(false);
   const [rejection, setRejection] = useState<string>();
+  const [wordleFeedback, setWordleFeedback] = useState<string>();
   const [snapshotPulse, setSnapshotPulse] = useState(0);
   const [seenOpen, setSeenOpen] = useState(false);
   const [tab, setTab] = useState<PhoneTab>("play");
@@ -92,6 +93,7 @@ export function GuestPage({
   const lastBeat = useRef<string | null>(null);
   const socketRef = useRef<ReturnType<typeof openRoomSocket> | null>(null);
   const pendingRequest = useRef<string | null>(null);
+  const wordleRequest = useRef<string | null>(null);
   const inFlight = useRef(false);
   // Trolls travel separately so a troll in flight never blocks an answer.
   const trollRequest = useRef<string | null>(null);
@@ -224,6 +226,7 @@ export function GuestPage({
         if (next.phase === "intro" || next.phase === "prompt") {
           setSelectedId(undefined);
           setPending(false);
+          setWordleFeedback(undefined);
         }
         setSnapshot(next);
         if (
@@ -308,6 +311,13 @@ export function GuestPage({
         pendingRequest.current = null;
         inFlight.current = false;
         setPending(false);
+        if (ack.requestId === wordleRequest.current) {
+          wordleRequest.current = null;
+          setWordleFeedback(
+            ack.accepted ? undefined : (ack.error ?? "That word was not accepted."),
+          );
+          return;
+        }
         if (!ack.accepted) {
           setRejection(ack.error ?? "That answer was not accepted.");
           return;
@@ -550,6 +560,10 @@ export function GuestPage({
       return;
     }
     pendingRequest.current = socketRef.current?.submitText(body) ?? null;
+    if (snapshot?.play?.question.kind === "wordle") {
+      wordleRequest.current = pendingRequest.current;
+      setWordleFeedback(undefined);
+    }
   }
 
   function beginTroll(): boolean {
@@ -1012,6 +1026,8 @@ export function GuestPage({
                     onEstimate={onEstimate}
                     onRank={onRank}
                     onText={onText}
+                    wordleFeedback={wordleFeedback}
+                    onWordleEdit={() => setWordleFeedback(undefined)}
                     onDraft={(body) => socketRef.current?.submitDraft(body)}
                     onBallot={onBallot}
                     onDuel={onDuel}
