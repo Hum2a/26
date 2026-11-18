@@ -43,6 +43,8 @@ export function GuestPlay({
   onRank,
   onText,
   onDraft,
+  wordleFeedback,
+  onWordleEdit,
   onBallot,
   onDuel,
   onKartInput,
@@ -85,6 +87,8 @@ export function GuestPlay({
   onRank: (placements: { itemId: string; tierId: string }[]) => void;
   onText: (body: string) => void;
   onDraft?: (body: string) => void;
+  wordleFeedback?: string;
+  onWordleEdit?: () => void;
   onBallot: (candidateId: string) => void;
   onDuel: (value: number) => void;
 }) {
@@ -131,6 +135,7 @@ export function GuestPlay({
     snapshot.phase === "collect" &&
     !snapshot.paused &&
     !snapshot.held &&
+    (play.question.kind !== "wordle" || connected !== false) &&
     (!play.selfAnswer ||
       (play.selfAnswer.kind === "wordle" && play.selfAnswer.status === "playing")) &&
     !pending;
@@ -152,6 +157,8 @@ export function GuestPlay({
       onSubmit,
       onRank,
       onText,
+      wordleFeedback,
+      onWordleEdit,
     },
   };
   if (play.question.kind === "choice" && play.question.push) {

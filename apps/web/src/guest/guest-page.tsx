@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import type { GuestSession, LobbySnapshot } from "@26/shared";
@@ -80,6 +80,7 @@ export function GuestPage({
   const [selectedId, setSelectedId] = useState<string>();
   const [pending, setPending] = useState(false);
   const [rejection, setRejection] = useState<string>();
+  const [wordleFeedback, setWordleFeedback] = useState<string>();
   const [snapshotPulse, setSnapshotPulse] = useState(0);
   const [seenOpen, setSeenOpen] = useState(false);
   const [tab, setTab] = useState<PhoneTab>("play");
@@ -92,6 +93,7 @@ export function GuestPage({
   const lastBeat = useRef<string | null>(null);
   const socketRef = useRef<ReturnType<typeof openRoomSocket> | null>(null);
   const pendingRequest = useRef<string | null>(null);
+  const wordleRequest = useRef<string | null>(null);
   const inFlight = useRef(false);
   // Trolls travel separately so a troll in flight never blocks an answer.
   const trollRequest = useRef<string | null>(null);
@@ -115,6 +117,16 @@ export function GuestPage({
   const hapticBaseline = useRef<HapticView | null>(null);
   useWakeLock(session !== undefined);
   usePreloadQuestion(snapshot);
+
+  const clearWordle = useCallback(() => {
+    if (wordleRequest.current && wordleRequest.current === pendingRequest.current) {
+      pendingRequest.current = null;
+      inFlight.current = false;
+      setPending(false);
+    }
+    wordleRequest.current = null;
+    setWordleFeedback(undefined);
+  }, []);
 
   useEffect(() => {
     function onHide() {
@@ -178,11 +190,21 @@ export function GuestPage({
       return () => {};
     }
     hapticBaseline.current = null;
+    let wordleRound: string | undefined;
     const socket = openRoomSocket({
       gameId,
       role: "guest",
       ...(rehearsalCredential ? { botSession: rehearsalCredential } : {}),
       onSnapshot(next) {
+        const question = next.play?.question;
+        const nextWordleRound =
+          next.phase === "collect" && question?.kind === "wordle"
+            ? `${question.index}/${question.id}`
+            : undefined;
+        if (wordleRound !== nextWordleRound) {
+          wordleRound = nextWordleRound;
+          clearWordle();
+        }
         if (recoveryRace.current !== next.play?.kart?.raceId) {
           recoveryRace.current = next.play?.kart?.raceId;
           kartFinishRequest.current = null;
@@ -308,6 +330,13 @@ export function GuestPage({
         pendingRequest.current = null;
         inFlight.current = false;
         setPending(false);
+        if (ack.requestId === wordleRequest.current) {
+          wordleRequest.current = null;
+          setWordleFeedback(
+            ack.accepted ? undefined : (ack.error ?? "That word was not accepted."),
+          );
+          return;
+        }
         if (!ack.accepted) {
           setRejection(ack.error ?? "That answer was not accepted.");
           return;
@@ -315,6 +344,8 @@ export function GuestPage({
         setRejection(undefined);
       },
       onReplaced(message) {
+        wordleRound = undefined;
+        clearWordle();
         avatarRequest.current = null;
         setAvatarPending(false);
         trollRequest.current = null;
@@ -341,7 +372,7 @@ export function GuestPage({
       socketRef.current = null;
       socket.close();
     };
-  }, [gameId, playerId, rehearsalCredential, sessionGeneration]);
+  }, [clearWordle, gameId, playerId, rehearsalCredential, sessionGeneration]);
 
   useEffect(() => {
     function onLeave(event: BeforeUnloadEvent) {
@@ -413,6 +444,7 @@ export function GuestPage({
     } finally {
       setBusy(false);
     }
+    clearWordle();
     setSnapshot(undefined);
     setPending(false);
     pendingRequest.current = null;
@@ -465,6 +497,7 @@ export function GuestPage({
     }
     transferRequest.current = null;
     setTransferCode("");
+    clearWordle();
     setSnapshot(undefined);
     setPending(false);
     pendingRequest.current = null;
@@ -550,6 +583,10 @@ export function GuestPage({
       return;
     }
     pendingRequest.current = socketRef.current?.submitText(body) ?? null;
+    if (snapshot?.play?.question.kind === "wordle") {
+      wordleRequest.current = pendingRequest.current;
+      setWordleFeedback(undefined);
+    }
   }
 
   function beginTroll(): boolean {
@@ -1012,6 +1049,8 @@ export function GuestPage({
                     onEstimate={onEstimate}
                     onRank={onRank}
                     onText={onText}
+                    wordleFeedback={wordleFeedback}
+                    onWordleEdit={() => setWordleFeedback(undefined)}
                     onDraft={(body) => socketRef.current?.submitDraft(body)}
                     onBallot={onBallot}
                     onDuel={onDuel}
