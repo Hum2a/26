@@ -15,7 +15,6 @@ import {
   resolveMigrateEnvironment,
   resolveReleaseTargets,
   workerRelease,
-  inDeployFreeze,
   assertDeployAllowed,
   releaseCheckSteps,
 } from "./release-support.ts";
@@ -182,38 +181,19 @@ test("wrangler.jsonc attaches one custom domain per remote Worker", () => {
   );
 });
 
-test("production deploys are frozen across the party weekend only", () => {
-  assert.equal(inDeployFreeze(Date.parse("2026-11-19T23:59:59Z")), false);
-  assert.equal(inDeployFreeze(Date.parse("2026-11-20T00:00:00Z")), true);
-  assert.equal(inDeployFreeze(Date.parse("2026-11-21T19:30:00Z")), true);
-  assert.equal(inDeployFreeze(Date.parse("2026-11-22T11:59:59Z")), true);
-  assert.equal(inDeployFreeze(Date.parse("2026-11-22T12:00:00Z")), false);
-});
-
-test("direct production and combined deploys are allowed outside the freeze", () => {
+test("direct production and combined deploys are allowed at any date", () => {
   const options = { dryRun: false, overrideFreeze: false };
-  const beforeParty = Date.parse("2026-11-05T19:00:00Z");
-  assertDeployAllowed(["staging"], options, beforeParty);
-  for (const targets of [["production"], ["staging", "production"]] as const) {
-    assertDeployAllowed(targets, options, beforeParty);
+  // The old party-weekend freeze (20 to 22 Nov) was removed on 18 Nov 2026.
+  for (const at of ["2026-11-05T19:00:00Z", "2026-11-20T00:00:00Z", "2026-11-21T19:30:00Z"]) {
+    const now = Date.parse(at);
+    assertDeployAllowed(["staging"], options, now);
+    for (const targets of [["production"], ["staging", "production"]] as const) {
+      assertDeployAllowed(targets, options, now);
+    }
   }
 });
 
-test("the common production freeze allows an explicit emergency override", () => {
-  const duringParty = Date.parse("2026-11-21T19:00:00Z");
-  const options = { dryRun: false, overrideFreeze: false };
-  assert.throws(
-    () => assertDeployAllowed(["production"], options, duringParty),
-    /frozen/,
-  );
-  assertDeployAllowed(
-    ["production"],
-    { ...options, overrideFreeze: true },
-    duringParty,
-  );
-});
-
-test("non-deploying packaging dry runs need no freeze override", () => {
+test("non-deploying packaging dry runs need no git state", () => {
   assertDeployAllowed(
     ["staging", "production"],
     { dryRun: true, overrideFreeze: false },
