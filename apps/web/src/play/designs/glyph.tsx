@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import { emptyWordleBoard, type WordleBoard, type WordleMark } from "@26/shared";
-import { Button } from "../../ui/primitives";
+import { Button, Disclosure, TextField } from "../../ui/primitives";
 import { PhoneDock } from "../../controller/phone-dock";
 import type { PresentationProps } from "../presentation";
 import { LiveCount, QuestionTag, StagePrompt, useDesignMotion } from "./kit";
@@ -15,7 +15,12 @@ const meaning = {
   correct: "right position",
 };
 const wordLength = 5;
-const emptyDraft = { letters: " ".repeat(wordLength), cursor: 0, notice: "" };
+const emptyDraft = {
+  letters: " ".repeat(wordLength),
+  cursor: 0,
+  tileSelected: false,
+  notice: "",
+};
 
 /** Classic single-board Glyph. Only the server's marks arrive here. */
 export function Glyph(props: PresentationProps) {
@@ -41,9 +46,10 @@ function GlyphPhone({
   // An acknowledgement snapshot clears only the accepted row. Rejections retain the draft.
   const draft = entry.attempt === attempt ? entry : emptyDraft;
   const open = present && controls.open && board.status === "playing";
-  const full = !draft.letters.includes(" ");
+  const word = draft.letters.toUpperCase();
+  const full = !word.includes(" ");
   const hasLetters = Boolean(draft.letters.trim());
-  const duplicate = full && board.guesses.some(({ word }) => word === draft.letters);
+  const duplicate = full && board.guesses.some((guess) => guess.word === word);
   const keys = new Map<string, WordleMark>();
   for (const guess of board.guesses)
     for (let i = 0; i < 5; i++) {
@@ -59,21 +65,28 @@ function GlyphPhone({
       ...update,
     }));
   }
+  function replaceDraft(letters: string) {
+    updateDraft({
+      letters: letters.padEnd(wordLength, " "),
+      cursor: letters.length,
+      tileSelected: false,
+      notice: "",
+    });
+  }
   function edit(value: string) {
     if (!open) return;
     controls.onWordleEdit?.();
     setEntry((current) => {
-      const { letters, cursor } = current.attempt === attempt ? current : emptyDraft;
+      const { letters, cursor, tileSelected } =
+        current.attempt === attempt ? current : emptyDraft;
       const removing = value === "Backspace" || value === "Delete";
-      const position =
-        value === "Backspace" && (cursor === wordLength || letters[cursor] === " ")
-          ? cursor - 1
-          : cursor;
+      const position = value === "Backspace" && !tileSelected ? cursor - 1 : cursor;
       if (position < 0 || position >= wordLength) return current;
       return {
         attempt,
         letters: `${letters.slice(0, position)}${removing ? " " : value}${letters.slice(position + 1)}`,
         cursor: removing ? position : position + 1,
+        tileSelected: false,
         notice: "",
       };
     });
@@ -85,7 +98,7 @@ function GlyphPhone({
       return;
     }
     updateDraft({ notice: "" });
-    controls.onText(draft.letters);
+    controls.onText(word);
   }
   const reveal = play.reveal?.kind === "wordle" ? play.reveal : undefined;
   const status = reveal
@@ -120,6 +133,7 @@ function GlyphPhone({
         )
           return;
         const { key } = event;
+        if (event.target instanceof HTMLInputElement && key !== "Enter") return;
         // Enter on a focused control should run that control's native action.
         if (
           key === "Enter" &&
@@ -135,6 +149,7 @@ function GlyphPhone({
               0,
               Math.min(wordLength, draft.cursor + (key === "ArrowLeft" ? -1 : 1)),
             ),
+            tileSelected: false,
           });
         } else if (key === "Backspace" || key === "Delete" || /^[a-z]$/i.test(key)) {
           edit(key.length === 1 ? key.toUpperCase() : key);
@@ -150,7 +165,7 @@ function GlyphPhone({
           updateDraft({ notice: "Paste a single five-letter word." });
           return;
         }
-        updateDraft({ letters: pasted.toUpperCase(), cursor: wordLength, notice: "" });
+        replaceDraft(pasted.toUpperCase());
       }}
     >
       <QuestionTag play={play}>The word lab</QuestionTag>
@@ -174,7 +189,9 @@ function GlyphPhone({
         board={board}
         draft={phase === "collect" && board.status === "playing" ? draft.letters : ""}
         cursor={draft.cursor}
-        onEdit={open ? (cursor) => updateDraft({ cursor }) : undefined}
+        onEdit={
+          open ? (cursor) => updateDraft({ cursor, tileSelected: true }) : undefined
+        }
       />
       <p className="glyph-legend">
         <span>✓ Right place</span>
@@ -243,6 +260,27 @@ function GlyphPhone({
               Clear word
             </Button>
           </div>
+          {phase === "collect" ? (
+            <Disclosure title="Type or paste a word">
+              <TextField
+                label="Your guess"
+                hint="Type five letters or touch and hold to paste."
+                value={draft.letters.trimEnd()}
+                maxLength={wordLength}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="go"
+                disabled={!open}
+                onChange={(event) => {
+                  controls.onWordleEdit?.();
+                  replaceDraft(
+                    event.target.value.replace(/[^a-z ]/gi, "").slice(0, wordLength),
+                  );
+                }}
+              />
+            </Disclosure>
+          ) : null}
         </div>
       ) : null}
       {phase === "collect" && board.status === "playing" ? (
@@ -285,7 +323,7 @@ export function WordleGrid({
             aria-label={`Guess ${row + 1}${guess ? `: ${guess.word}` : ""}`}
           >
             {Array.from({ length: 5 }, (_, column) => {
-              const letter = word[column]?.trim() ?? "",
+              const letter = word[column]?.trim().toUpperCase() ?? "",
                 mark = guess?.marks[column];
               const editable = !guess && row === board.guesses.length && onEdit;
               if (editable)

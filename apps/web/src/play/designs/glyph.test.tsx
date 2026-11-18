@@ -159,6 +159,35 @@ it("pastes a word, replaces individual letters and clears the active row without
   ).toHaveLength(5);
 });
 
+it("removes the last typed letter after editing a filled tile", () => {
+  render(phone());
+  pasteWord("CRANE");
+  fireEvent.click(screen.getByRole("button", { name: "Edit letter 2: R" }));
+  fireEvent.click(screen.getByRole("button", { name: "L" }));
+  fireEvent.keyDown(typingSurface(), { key: "Backspace" });
+  expect(screen.getByRole("button", { name: "Edit letter 2: empty" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Edit letter 3: A" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Edit letter 4: N" }));
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  expect(screen.getByRole("button", { name: "Edit letter 4: empty" })).toBeTruthy();
+});
+
+it("accepts native text entry and clipboard paste through an editable field", () => {
+  const send = vi.fn();
+  render(phone(snapshot(), send));
+  fireEvent.click(screen.getByRole("button", { name: /Type or paste a word/ }));
+  const input = screen.getByRole("textbox", { name: "Your guess" });
+  expect(fireEvent.keyDown(input, { key: "a" })).toBe(true);
+  fireEvent.change(input, { target: { value: "apple" } });
+  expect(screen.getByRole("button", { name: "Edit letter 1: A" })).toBeTruthy();
+  fireEvent.paste(input, { clipboardData: { getData: () => " crane \n" } });
+  expect(input).toHaveProperty("value", "CRANE");
+  expect(screen.getByRole("button", { name: "Edit letter 1: C" })).toBeTruthy();
+  expect(send).not.toHaveBeenCalled();
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(send).toHaveBeenCalledWith("CRANE");
+});
+
 it("flags already accepted words locally, keeps a rejection beside the tiles, and blocks sends while reconnecting", () => {
   const send = vi.fn();
   const answered: PlaySnapshot = {

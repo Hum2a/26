@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import type { GuestSession, LobbySnapshot } from "@26/shared";
@@ -118,6 +118,16 @@ export function GuestPage({
   useWakeLock(session !== undefined);
   usePreloadQuestion(snapshot);
 
+  const clearWordle = useCallback(() => {
+    if (wordleRequest.current && wordleRequest.current === pendingRequest.current) {
+      pendingRequest.current = null;
+      inFlight.current = false;
+      setPending(false);
+    }
+    wordleRequest.current = null;
+    setWordleFeedback(undefined);
+  }, []);
+
   useEffect(() => {
     function onHide() {
       if (document.visibilityState === "hidden") {
@@ -180,11 +190,21 @@ export function GuestPage({
       return () => {};
     }
     hapticBaseline.current = null;
+    let wordleRound: string | undefined;
     const socket = openRoomSocket({
       gameId,
       role: "guest",
       ...(rehearsalCredential ? { botSession: rehearsalCredential } : {}),
       onSnapshot(next) {
+        const question = next.play?.question;
+        const nextWordleRound =
+          next.phase === "collect" && question?.kind === "wordle"
+            ? `${question.index}/${question.id}`
+            : undefined;
+        if (wordleRound !== nextWordleRound) {
+          wordleRound = nextWordleRound;
+          clearWordle();
+        }
         if (recoveryRace.current !== next.play?.kart?.raceId) {
           recoveryRace.current = next.play?.kart?.raceId;
           kartFinishRequest.current = null;
@@ -226,7 +246,6 @@ export function GuestPage({
         if (next.phase === "intro" || next.phase === "prompt") {
           setSelectedId(undefined);
           setPending(false);
-          setWordleFeedback(undefined);
         }
         setSnapshot(next);
         if (
@@ -325,6 +344,8 @@ export function GuestPage({
         setRejection(undefined);
       },
       onReplaced(message) {
+        wordleRound = undefined;
+        clearWordle();
         avatarRequest.current = null;
         setAvatarPending(false);
         trollRequest.current = null;
@@ -351,7 +372,7 @@ export function GuestPage({
       socketRef.current = null;
       socket.close();
     };
-  }, [gameId, playerId, rehearsalCredential, sessionGeneration]);
+  }, [clearWordle, gameId, playerId, rehearsalCredential, sessionGeneration]);
 
   useEffect(() => {
     function onLeave(event: BeforeUnloadEvent) {
@@ -423,6 +444,7 @@ export function GuestPage({
     } finally {
       setBusy(false);
     }
+    clearWordle();
     setSnapshot(undefined);
     setPending(false);
     pendingRequest.current = null;
@@ -475,6 +497,7 @@ export function GuestPage({
     }
     transferRequest.current = null;
     setTransferCode("");
+    clearWordle();
     setSnapshot(undefined);
     setPending(false);
     pendingRequest.current = null;

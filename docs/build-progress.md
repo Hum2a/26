@@ -6598,3 +6598,13 @@ Validation passed for typecheck, lint and structure (30 existing warnings), form
 The final full web suite (`npm run test:unit -w @26/web -- --maxWorkers=2`) passed all 900 tests across 200 files. The rerun includes the updated question-direction fixture, which now supplies the guess list carried by a room snapshot.
 
 Exact next stage: review [PR #38](https://github.com/Hum2a/26/pull/38), then try a rejected word and a timed-out board in the authenticated rehearsal before the party. No deployment was performed.
+
+### Cubic review follow-up
+
+Addressed all four review findings on PR #38. The guest socket clears Wordle feedback and retires the pending guess when the room leaves that collection round. Late acknowledgements can no longer report on the next round. Leaving the lobby, completing a phone transfer, and losing the active phone session also clear Wordle state, including a transfer that keeps the same player and room IDs.
+
+Backspace and the on-screen Delete action now use the selected tile or the letter just typed. **Type or paste a word** opens a native editable field connected to the same draft, so players can use the phone’s paste menu or keyboard. In the local browser at 390 CSS pixels, pasted a word into the field, replaced the second letter, and confirmed that deleting it preserved the third. The physical-phone long-press menu remains unverified.
+
+Validation passed for typecheck, lint and structure (30 existing warnings), formatting, the build and its bundle budgets, and 38 focused web tests. The full web suite (`npm run test:unit -w @26/web -- --maxWorkers=2`) passed 904 tests across 200 files, including regressions for the late acknowledgement, same-session transfer, native paste field, and deletion after editing a filled tile.
+
+Exact next stage: review and merge PR #38, then use the authenticated Wordle rehearsal for a real-device check. No deployment was performed.
