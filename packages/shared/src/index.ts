@@ -348,6 +348,8 @@ export const customPresentationIds = [
   "redacted-file",
   "whos-that-pokemon",
   "executive-order",
+  "where-are-we",
+  "ed-or-humza",
 ] as const;
 
 export type CustomPresentationId = (typeof customPresentationIds)[number];

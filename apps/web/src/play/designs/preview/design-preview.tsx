@@ -203,6 +203,7 @@ export function DesignPreview() {
               }
             }}
             onEstimate={() => undefined}
+            onMapPin={(pin) => setAnswer({ kind: "map-guess", pin })}
             onRank={(placements: TierPlacement[]) =>
               setAnswer({ kind: "rank", placements })
             }

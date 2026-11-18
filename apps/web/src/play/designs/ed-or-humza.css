@@ -1,0 +1,262 @@
+.design-phone.ed-or-humza {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-height: 0;
+}
+
+.ed-progress,
+.ed-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.ed-stack {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  min-height: 0;
+  flex: 1;
+}
+
+.ed-card {
+  margin: 0;
+  min-height: 9rem;
+  max-height: min(42vh, 18rem);
+  overflow: auto;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 1rem 1.05rem;
+  background: var(--surface);
+  color: var(--surface-foreground);
+  touch-action: none;
+  will-change: transform;
+}
+
+.ed-card p {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 4.4vw, 1.4rem);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.ed-card:not([data-expanded]) p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  overflow: hidden;
+}
+
+.ed-card-empty {
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.ed-expand {
+  justify-self: start;
+  min-height: 2.75rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  touch-action: manipulation;
+}
+
+.ed-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.ed-bucket,
+.ed-undo,
+.ed-pile {
+  min-height: 3.35rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 0.55rem 0.75rem;
+  background: var(--surface);
+  color: var(--surface-foreground);
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 800;
+  touch-action: manipulation;
+}
+
+.ed-bucket[data-tier="ed"],
+.ed-pile[data-tier="ed"] {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+}
+
+.ed-bucket[data-tier="humza"],
+.ed-pile[data-tier="humza"] {
+  border-color: color-mix(in srgb, var(--highlight) 55%, var(--line));
+}
+
+.ed-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ed-undo {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  font-size: 1rem;
+}
+
+.ed-assigned {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+  max-height: 28vh;
+  overflow: auto;
+}
+
+.ed-assigned li {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+}
+
+.ed-assigned-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ed-assigned-actions button {
+  min-height: 2.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  touch-action: manipulation;
+}
+
+.ed-reveal-phone {
+  display: grid;
+  gap: 1rem;
+}
+
+.ed-reveal-phone h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.1rem;
+}
+
+.ed-reveal-phone ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.ed-reveal-phone li {
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+
+.ed-reveal-phone li span {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.ed-reveal-phone li[data-correct] {
+  outline: 2px solid var(--accent);
+}
+
+.ed-stage-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.ed-stage-column h2 {
+  margin: 0 0 0.8rem;
+  font-size: max(48px, 3vw);
+}
+
+.ed-stage-column ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.ed-stage-column li {
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--surface-foreground);
+  font-size: max(28px, 1.6vw);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 360px) {
+  .ed-card p {
+    font-size: 1.02rem;
+  }
+  .ed-card {
+    max-height: 38vh;
+    min-height: 8rem;
+  }
+  .ed-bucket {
+    min-height: 3.1rem;
+    font-size: 1.05rem;
+  }
+}
+
+@media (min-width: 430px) {
+  .ed-card p {
+    font-size: clamp(1.15rem, 3.2vw, 1.5rem);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 32rem) {
+  .design-phone.ed-or-humza {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(11rem, 0.8fr);
+    align-items: start;
+  }
+  .ed-stack {
+    grid-row: 3 / span 3;
+  }
+  .ed-actions,
+  .ed-toolbar {
+    grid-column: 2;
+  }
+  .ed-card {
+    max-height: 58vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ed-card {
+    will-change: auto;
+  }
+}

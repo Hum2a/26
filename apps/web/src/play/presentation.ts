@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
-import type { CustomPresentationId, PlaySnapshot, RoomPhaseName } from "@26/shared";
+import type {
+  CustomPresentationId,
+  MapPin,
+  PlaySnapshot,
+  RoomPhaseName,
+} from "@26/shared";
 import type { TierPlacement } from "./controls/TierAssign";
 import { designs } from "./designs/registry";
 
@@ -15,6 +20,8 @@ export type PhoneControls = {
   onSubmit: () => void;
   onRank: (placements: TierPlacement[]) => void;
   onText: (body: string) => void;
+  /** Map-guess designs send the pin through this; the room still accepts it. */
+  onMapPin?: (pin: MapPin) => void;
   wordleFeedback?: string;
   onWordleEdit?: () => void;
 };

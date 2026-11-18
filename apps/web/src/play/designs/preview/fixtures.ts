@@ -236,6 +236,53 @@ export const previewQuestions: Record<BenchId, PublicQuestion> = {
     maxLength: 60,
     prompt: "What was their real name? Tommy Robinson",
   },
+  "where-are-we": {
+    ...core,
+    id: "where-are-we-preview",
+    presentation: "where-are-we",
+    kind: "map-guess",
+    points: 100,
+    prompt: "Where are we?",
+    instructions: "Look for clues, then drop a pin and send it.",
+    image: {
+      src: "/assets/questions/colour/photo.jpg",
+      credit: "Stand-in preview — demo night sky, not the party clue",
+      alt: "Stand-in clue photo for the map-guess design bench",
+    },
+  },
+  "ed-or-humza": {
+    ...core,
+    id: "ed-or-humza-preview",
+    presentation: "ed-or-humza",
+    kind: "rank",
+    points: 80,
+    mode: "complete",
+    scoring: "placement",
+    input: "buckets",
+    ties: "shared",
+    prompt: "Who said it? Sort every quote into Ed or Humza.",
+    items: [
+      { id: "quote-01", label: "Stand-in: I only came for the crisps." },
+      { id: "quote-02", label: "Stand-in: Put the kettle on before the quiz starts." },
+      {
+        id: "quote-03",
+        label:
+          "Stand-in: A much longer invented line so the phone can show a truncated quote and an expand control without using anyone's real words from the party list.",
+      },
+      {
+        id: "quote-04",
+        label: "Stand-in: That is a fictional bus stop, not a confession.",
+      },
+      { id: "quote-05", label: "Stand-in: Nobody said this in real life." },
+      { id: "quote-06", label: "Stand-in: Preview quote six, short." },
+      { id: "quote-07", label: "Stand-in: Preview quote seven is also invented." },
+      { id: "quote-08", label: "Stand-in: Last fixture line for the design bench." },
+    ],
+    tiers: [
+      { id: "ed", label: "Ed" },
+      { id: "humza", label: "Humza" },
+    ],
+  },
   // Stand-ins from the existing starter pictures; the party question is a draft.
   "whos-that-pokemon": {
     ...core,
@@ -326,14 +373,35 @@ export function previewReveal(
     return { kind: "choice", correctOptionId: pick ?? ids[0] ?? null };
   }
   if (question.kind === "rank") {
+    const buckets = question.input === "buckets";
     return {
       kind: "rank",
       order: question.tiers.map((tier, index) => ({
         tierId: tier.id,
         label: tier.label,
-        itemIds: [question.items[index]?.id ?? ""].filter(Boolean),
+        itemIds: buckets
+          ? question.items
+              .filter((_, itemIndex) => itemIndex % question.tiers.length === index)
+              .map((item) => item.id)
+          : [question.items[index]?.id ?? ""].filter(Boolean),
       })),
       rankings: [],
+    };
+  }
+  if (question.kind === "map-guess") {
+    return {
+      kind: "map-guess",
+      target: { lat: 12.34, lng: 56.78 },
+      label: "Stand-in harbour (preview only, not a party location)",
+      pins: [
+        { lat: 11.9, lng: 55.2 },
+        { lat: 51.5, lng: -0.12 },
+        { lat: 35.7, lng: 139.7 },
+      ],
+      closest: [
+        { nickname: "Stand-in 1", distanceKm: 182 },
+        { nickname: "Stand-in 2", distanceKm: 1430 },
+      ],
     };
   }
   if (question.kind === "wordle")

@@ -6745,3 +6745,41 @@ Recorded on this cubic follow-up (extra listing stills moved off `/assets`; docs
 ### Exact next stage
 
 Slot `property-price-roulette` and `nextdoor-paranoia` in Running order if wanted. `where-are-we` still needs its clue photo and coordinates. `ed-or-humza` still needs speakers.
+
+## 18 November 2026 — Bespoke layouts for Where are we? and Ed or Humza?
+
+Status: layouts shipped; both rounds remain drafts. No deploy.
+
+PR #44 (missing pictures) was already on `origin/master`. This change only adds presentation chrome, design-bench fixtures, and map touch handling.
+
+### Design
+
+**Where are we?** Phone: compact clue photo (tap to enlarge), then a fill-height Leaflet map with `touch-action: none`, non-passive `touchmove` block so the page does not scroll/zoom while panning, transform-based pan, instant zoom (no CSS zoom hitch), large zoom buttons, centre-pin fallback, then Send pin. Projector: large clue on get-ready; map plus closest-distance list at reveal. Leaflet stays lazy-loaded (`GuessMap` chunk); no new map library.
+
+**Ed or Humza?** Eighteen quotes cannot sit as a scrolling fieldset list on ~360×640. Phone is a one-quote card stack: large Ed/Humza targets, pointer-driven swipe with `translate3d` (no layout thrash), undo, pile review with move-back, keyboard E/H and arrows, long quotes clamp then expand. Projector holds two speaker columns and staggers the true groups only at reveal. No drag library.
+
+Design bench fixtures are labelled stand-ins (demo night-sky photo, fictional harbour, invented quotes). Party quote text still only reaches phones from the server pack. Speakers and coordinates are not invented.
+
+### Files
+
+- `packages/shared` `customPresentationIds`: `where-are-we`, `ed-or-humza`
+- `apps/web/src/play/designs/where-are-we.tsx` / `.css` / tests
+- `apps/web/src/play/designs/ed-or-humza.tsx` / `.css` / `ed-or-humza-assign.ts` / tests
+- `apps/web/src/play/map-guess.tsx` pan/zoom/touch hardening; `GuessMap` exported
+- Question files set `presentation`; notes/TODOs for owner content
+- `docs/content/where-are-we.md`, updates to `ed-or-humza.md` and `question-authoring.md`
+
+### Commands and results
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 30 existing react-refresh warnings; structure check passed
+- `npx vitest run src/play/designs/ed-or-humza-assign.test.ts src/play/designs/ed-or-humza.test.tsx src/play/designs/where-are-we.test.tsx src/play/designs/designs.test.tsx src/play/map-guess.test.tsx` in `apps/web` — 36 passed
+- `npx vitest run --project auth test/ed-or-humza.spec.ts` in `apps/api` — 4 passed
+- `npm run content:check` — passed; incomplete drafts: `where-are-we` (photo + coordinates), `ed-or-humza` (18 speakers)
+- `npm run build` — passed (secrets scan, gzip budget, content preflight). Entry JS ~220 kB gzip; Leaflet remains on the lazy `map-guess` chunk (~45 kB gzip)
+
+Not verified on a physical phone or projector (no Playwright).
+
+### Exact next stage
+
+Owner supplies the `where-are-we` clue photo, place name and coordinates, and `ed-or-humza` speakers. Then make each ready and add to Running order only if wanted.
