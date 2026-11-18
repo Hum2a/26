@@ -5,6 +5,15 @@ export const candles = choiceQuestion({
   title: "Candles",
   status: "ready",
   prompt: "Illustrative demo: how many candles are on this cake?",
+  media: [
+    {
+      name: "question",
+      kind: "image",
+      required: true,
+      asset: "/assets/questions/candles/photo.jpg",
+      credit: "Original demo illustration · CC0",
+    },
+  ],
   options: [
     { id: "sixteen", label: "16" },
     { id: "twenty-one", label: "21" },

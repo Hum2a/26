@@ -6630,3 +6630,56 @@ Status: the freeze removal and the esports question merged as PR #39 and PR #40;
 ### Exact next stage
 
 Watch CI on PR #41: it is the first typecheck, lint and test run for the trends code (`npm run agents:sync` has run). Fix what fails, merge, deploy staging and rehearse trends with eight or more phones, then production. Choose the running-order slot for `esports-tag`.
+
+## 18 November 2026 — Missing question pictures
+
+Status: filled the pictures that could be filled without inventing a personal listing or Nextdoor post. No deploy.
+
+How pictures work: option art is a PNG under `/assets/questions/<id>/` (schema forbids remote URLs). A round photo is `media` with `name: "question"`, `asset`, `credit` (optional Creative Commons `creditUrl`). The phone and projector render that through `QuestionImage`. Who’s that Pokémon loads a separate silhouette by question id, not by darkening the answer PNG. `content:check` now fails if any of those files is missing, not only option PNGs.
+
+### Audit (every pack, retired files, demo, design bench, trolls, chess, kart)
+
+Flagged:
+
+| Round / file | Id | What was missing |
+| --- | --- | --- |
+| demo `candles.ts` | `candles` | Prompt asks how many candles are on **this cake**; no `media` and no file |
+| demo `colour.ts` | `colour` | Prompt asks the colour of **this drawing**; no `media` and no file |
+| design bench `preview/fixtures.ts` | `whos-that-pokemon-preview` | Renderer looks for `silhouette.png`; Piplup had no colour PNG |
+| birthday `property-price-roulette.ts` | `property-price-roulette` | Required `listing-photo` with no asset; prompt says look at the listing |
+| birthday `nextdoor-paranoia.ts` | `nextdoor-paranoia` | Requirements ask for a real post/screenshot; no media field |
+| retired `tribunal-reddit.ts` | `tribunal-reddit` | Needs a real thread, not a picture; not in the catalogue |
+| authoring fixture | `childhood-photo` | Docs/test only; not a catalogue question |
+
+Already supplied (checked files exist, non-empty): accommodation 01–03 JPEGs; favourite-Pokémon and Who’s-that-Pokémon PNGs plus Jigglypuff silhouette SVG; chess pieces/board/sounds; troll pack including Mum photo; Netanyahu webp. Kart GLBs are built into `public/kart-engine/` on web prebuild, not stored as question photos. Custom designs (number plates, ballot paper, album sleeves, pills, trolley lever) use CSS/Iconify, not missing bitmaps. Council-estate rounds are retired text names, replaced by the photo accommodation rounds.
+
+### Filled
+
+| Item | File | Source / licence |
+| --- | --- | --- |
+| Demo cake (26 candles) | `apps/web/public/assets/questions/candles/photo.jpg` | Original drawing, CC0 |
+| Demo night sky (blue) | `apps/web/public/assets/questions/colour/photo.jpg` | Original drawing, CC0 |
+| Design-bench silhouette | `…/whos-that-pokemon-preview/silhouette.png` | Blacked-out Mudkip; copyrighted, private use |
+| Design-bench Piplup | `…/whos-that-pokemon-preview/piplup.png` | PokeAPI official artwork 393; copyrighted, private use |
+
+Credits: `apps/web/public/assets/questions/CREDITS.md` (existing accommodation JSON kept). Demo version id stays `demo-2026-09-22` (pinned by `startDemo`); answers unchanged.
+
+### Left for the owner
+
+- **property-price-roulette** — need a dated listing, authorised photo, monthly rent and agent wording. A stock London bedsit would invent the evidence.
+- **nextdoor-paranoia** — need a real post or redacted screenshot and the confirmed explanation. Do not fabricate a neighbourhood.
+- **ed-or-humza** — speakers, not pictures.
+
+### Commands and results
+
+- `npm run typecheck` — passed
+- `npm run lint` — 0 errors, 30 existing react-refresh warnings; structure check passed
+- `npx vitest run --project auth test/birthday-assets-prices.spec.ts test/content-preflight.spec.ts test/question-authoring.spec.ts test/party-concepts.spec.ts` in `apps/api` — 49 passed
+- `npx vitest run src/play/designs/whos-that-pokemon.test.tsx src/play/question-option-image.test.tsx src/play/preload.test.ts` in `apps/web` — 10 passed
+- `npm run content:check` — passed; still reports the incomplete birthday drafts above
+
+Not verified in a browser (no Playwright). No `npm run build` (client graph unchanged except static public files).
+
+### Exact next stage
+
+Owner supplies a real Rightmove-style listing and/or Nextdoor source if those drafts should ship, then “make this question ready”.

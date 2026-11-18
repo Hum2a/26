@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
 import { publicQuestionSchema, questionOptionImageSchema } from "@26/shared";
@@ -6,6 +6,8 @@ import { favouritePokemon } from "../src/questions/packs/birthday/favourite-poke
 import { inflationFreddo } from "../src/questions/packs/birthday/inflation-freddo.ts";
 import { inflationPetrol } from "../src/questions/packs/birthday/inflation-petrol.ts";
 import { birthdayPack } from "../src/questions/packs/birthday/manifest.ts";
+import { demoPack } from "../src/questions/packs/demo/manifest.ts";
+import { packPublicAssets } from "../src/questions/pack-assets.ts";
 import { questionPreview } from "../src/room/question-preview.ts";
 import {
   assertSliderQuestion,
@@ -126,4 +128,53 @@ it("has three sourced photo rounds, a complete Pokémon rehearsal and no retired
     expect(q.id).not.toMatch(
       /^(who-said-it-|subculture-|council-|trolley-your-mum$|trolley-mamdani-africa$|trolley-freddo-multiverse$|ai-turing-test$|tribunal-reddit$)/,
     );
+});
+
+const pngMagic = [137, 80, 78, 71, 13, 10, 26, 10];
+
+function publicFile(asset: string) {
+  return fileURLToPath(new URL(`../../web/public${asset}`, import.meta.url).href);
+}
+
+it("ships every picture a catalogue names, including demo cake and sky drawings", () => {
+  for (const pack of [demoPack, birthdayPack]) {
+    const assets = packPublicAssets(pack);
+    expect(assets.length).toBeGreaterThan(0);
+    for (const asset of assets) {
+      const file = publicFile(asset);
+      expect(existsSync(file), asset).toBe(true);
+      expect(statSync(file).size, asset).toBeGreaterThan(100);
+      const head = [...readFileSync(file).subarray(0, 8)];
+      if (asset.endsWith(".png")) expect(head).toEqual(pngMagic);
+      if (asset.endsWith(".jpg")) expect(head.slice(0, 2)).toEqual([0xff, 0xd8]);
+    }
+  }
+  expect(packPublicAssets(birthdayPack)).toContain(
+    "/assets/questions/whos-that-pokemon/silhouette.svg",
+  );
+  expect(packPublicAssets(birthdayPack)).not.toContain(undefined);
+  const listing = birthdayPack.catalogue.find(
+    (q) => q.id === "property-price-roulette",
+  );
+  expect(listing?.media?.[0]?.required).toBe(true);
+  expect(listing?.media?.[0]?.asset).toBeUndefined();
+  expect(packPublicAssets(birthdayPack)).not.toContain(
+    "/assets/questions/property-price-roulette/photo.jpg",
+  );
+  for (const id of ["candles", "colour"] as const) {
+    const preview = questionPreview(
+      demoPack,
+      demoPack.catalogue.find((q) => q.id === id)!,
+    );
+    expect(preview.question?.image?.src).toBe(`/assets/questions/${id}/photo.jpg`);
+    expect(preview.question?.image?.credit).toMatch(/CC0/);
+  }
+  for (const asset of [
+    "/assets/questions/whos-that-pokemon-preview/silhouette.png",
+    "/assets/questions/whos-that-pokemon-preview/piplup.png",
+  ]) {
+    const file = publicFile(asset);
+    expect(existsSync(file), asset).toBe(true);
+    expect([...readFileSync(file).subarray(0, 8)]).toEqual(pngMagic);
+  }
 });
