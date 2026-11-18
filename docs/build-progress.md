@@ -6758,7 +6758,7 @@ PR #44 (missing pictures) was already on `origin/master`. This change only adds 
 
 **Ed or Humza?** Eighteen quotes cannot sit as a scrolling fieldset list on ~360×640. Phone is a one-quote card stack: large Ed/Humza targets, pointer-driven swipe with `translate3d` (no layout thrash), undo, pile review with move-back, keyboard E/H and arrows, long quotes clamp then expand. Projector holds two speaker columns and staggers the true groups only at reveal. No drag library.
 
-Design bench fixtures are labelled stand-ins (demo night-sky photo, fictional harbour, invented quotes). Party quote text still only reaches phones from the server pack. Speakers and coordinates are not invented.
+Design bench fixtures are labelled stand-ins (demo night-sky photo, fictional harbour, invented quotes). Party question text comes from the server pack and appears on the projector only at reveal; speakers and coordinates remain draft data until the owner supplies them.
 
 ### Files
 
