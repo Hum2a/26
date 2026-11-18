@@ -2,6 +2,8 @@ import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
 import { withClientApiQuery } from "./client-api-key.ts";
 import { mapGuessQuestion, toPlayable } from "../src/questions/authoring.ts";
+import { preparePlayShared } from "../src/questions/multiple-choice.ts";
+import { createSqlStore } from "../src/room/sql-store.ts";
 import { writeRoundState } from "../src/questions/round-state.ts";
 
 it("locks map pins once, replays receipts, restores a pin after eviction and reveals the location only after scoring", async () => {
@@ -37,6 +39,7 @@ it("locks map pins once, replays receipts, restores a pin after eviction and rev
     id: "map-fixture",
     title: "Map fixture",
     prompt: "Where are we?",
+    attribution: "live",
     target: { known: { ...pin, label: "Fixture location" } },
     media: [
       {
@@ -124,6 +127,24 @@ it("locks map pins once, replays receipts, restores a pin after eviction and rev
   expect(
     (await room.snapshotFor("control")).play?.hostResponses?.[0]?.summary,
   ).toContain("14.0000, 18.0000");
+  expect((await room.snapshotFor("stage")).play?.liveSample).toEqual(["Map guest"]);
+  const setVoterDisplay = (action: string) =>
+    room.hostAction({
+      ...control,
+      action,
+      requestId: crypto.randomUUID(),
+      nowMs: Date.now(),
+    });
+  expect((await setVoterDisplay("voters-hidden")).ok).toBe(true);
+  expect((await room.snapshotFor("stage")).play?.liveSample).toBeNull();
+  expect((await room.snapshotFor("guest", guest.playerId)).play?.liveSample).toBeNull();
+  await runInDurableObject(room, (_instance, state) => {
+    const sql = state.storage.sql;
+    expect(
+      preparePlayShared(sql, createSqlStore(sql).readRoom())?.special?.liveSample,
+    ).toBeNull();
+  });
+  expect((await setVoterDisplay("voters-question")).ok).toBe(true);
   socket.close();
   await evictDurableObject(room);
   expect((await room.snapshotFor("guest", guest.playerId)).play?.selfAnswer).toEqual({

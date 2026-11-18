@@ -760,7 +760,7 @@ export function preparePlayShared(
                 ? typedReveal(sql, question, scored, showNames && scored)
                 : rankReveal(sql, question, scored, showNames && scored),
       liveSample:
-        question.kind === "wordle"
+        question.kind === "wordle" || picksHidden
           ? null
           : responseNames(
               sql,
@@ -1226,6 +1226,9 @@ export function projectSpecial(
     question.kind === "map-guess" && audience === "guest" && selfPlayerId
       ? readMapPin(sql, selfPlayerId, question.id)
       : undefined;
+  const mapPicksHidden =
+    question.kind === "map-guess" &&
+    (shared?.picksHidden ?? readVoterDisplay(sql).mode === "hidden");
   const mapReveal =
     question.kind === "map-guess"
       ? audience !== "control" && specialShared?.reveal?.kind === "map-guess"
@@ -1234,11 +1237,7 @@ export function projectSpecial(
             sql,
             question,
             scored,
-            showNames &&
-              (audience === "control" ||
-                (shared
-                  ? !shared.picksHidden
-                  : readVoterDisplay(sql).mode !== "hidden")),
+            showNames && (audience === "control" || !mapPicksHidden),
           )
       : null;
   const view = {
@@ -1294,7 +1293,7 @@ export function projectSpecial(
     standings: showStanding ? lookupAudienceStandings(totals, audience, shared) : null,
     liveSample: specialShared
       ? specialShared.liveSample
-      : question.kind === "wordle"
+      : question.kind === "wordle" || mapPicksHidden
         ? null
         : responseNames(
             sql,
