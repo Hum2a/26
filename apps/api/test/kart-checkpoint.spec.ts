@@ -142,6 +142,7 @@ it("keeps steady ticks in memory and checkpoints the race at the start and every
     expect(saves.length).toBeLessThanOrEqual(4);
     for (const [index, step] of saves.slice(1).entries())
       expect(step - saves[index]!).toBe(kartCheckpointWrites);
+    // Readers see the live race, ahead of the checkpoint.
     const live = readKart(sql, q.id)!;
     expect(live.elapsedMs).toBe(3 * kartCheckpointWrites * 100);
     expect(live.checkpointRevision).toBeGreaterThanOrEqual(
@@ -264,11 +265,15 @@ it("restores the last checkpoint after a restart with a newer revision and the r
   await runInDurableObject(stub, (_instance, state) => {
     const sql = state.storage.sql;
     const q = kartQuestion(sql);
+    // The kart moved before the restart and is not reset to the grid.
     const before = readKart(sql, q.id)!;
     expect(before.elapsedMs).toBeGreaterThan(0);
     expect(before.drivers[0]!.sequence).toBe(1);
+    // The next tick replays from the checkpoint to the room clock.
     tick(sql, now + (kartCheckpointWrites + 5) * 100);
     expect(readKart(sql, q.id)!.elapsedMs).toBeGreaterThan(liveElapsed);
+    // The restored revision is saved by the next write, so a second restart
+    // cannot hand out the same revision again.
     expect(stored(sql).checkpointRevision).toBeGreaterThan(sent);
   });
 });
@@ -334,6 +339,7 @@ it("saves the live race before a host pause, keeps it through resume and a resta
   await runInDurableObject(stub, (_instance, state) => {
     const sql = state.storage.sql;
     const race = readKart(sql, kartQuestion(sql).id)!;
+    // A pause excludes time: the race resumes where it was paused.
     expect(race.elapsedMs).toBe(paused!.elapsedMs);
     expect(race.drivers[0]!.x).toBe(paused!.drivers[0]!.x);
     expect(race.drivers[0]!.sequence).toBe(1);
@@ -437,7 +443,7 @@ it("never checkpoints ticks from a transaction that rolled back", async () => {
   await runInDurableObject(stub, (_instance, state) => {
     const sql = state.storage.sql;
     const q = kartQuestion(sql);
-    tick(sql, now + 100);
+    tick(sql, now + 100); // The start, saved.
     const committed = stored(sql);
     expect(() =>
       state.storage.transactionSync(() => {
@@ -446,9 +452,11 @@ it("never checkpoints ticks from a transaction that rolled back", async () => {
         throw new Error("The tick transaction failed.");
       }),
     ).toThrow("tick transaction failed");
+    // What the room does when an alarm fails.
     discardUnsavedKart(sql);
     expect(checkpointKart(sql)).toBe(0);
     expect(stored(sql)).toEqual(committed);
+    // The race reloads from the committed checkpoint and replays from there.
     expect(readKart(sql, q.id)!.elapsedMs).toBe(committed.elapsedMs);
     tick(sql, now + 300);
     expect(readKart(sql, q.id)!.elapsedMs).toBe(300);
@@ -460,6 +468,7 @@ it("a pedal release reaches the room's race and survives the next checkpoint and
   await runInDurableObject(stub, async (instance, state) => {
     const sql = state.storage.sql;
     const q = kartQuestion(sql);
+    // The room's own ingress: the per-driver buffer, flushed once per tick.
     const arrivals = new KartInputBuffer();
     const control = (sequence: number, gas: boolean, at: number) => {
       arrivals.push(playerIds[0]!, { ...kartNeutral, raceId, sequence, gas }, at);
@@ -471,14 +480,17 @@ it("a pedal release reaches the room's race and survives the next checkpoint and
     tick(sql, now + 200);
     expect(readKart(sql, q.id)!.drivers[0]!.input.gas).toBe(true);
     expect(readKart(sql, q.id)!.drivers[0]!.speed).toBeGreaterThan(0);
+    // Release on the next beat: same race, next sequence.
     control(2, false, now + 250);
     tick(sql, now + 300);
     const released = readKart(sql, q.id)!.drivers[0]!;
     expect(released.sequence).toBe(2);
     expect(released.input.gas).toBe(false);
+    // The phone's own checkpoint carries the release too.
     const phone = (await instance.snapshotFor("guest", playerIds[0])).play!.kart!;
     expect(phone.inputCursor).toBe(2);
     expect(phone.rollback?.input.gas).toBe(false);
+    // A steady tick: not saved yet, but the next checkpoint saves it.
     expect(stored(sql).drivers[0]!.input.gas).toBe(true);
     expect(checkpointKart(sql)).toBe(1);
     expect(stored(sql).drivers[0]!.sequence).toBe(2);

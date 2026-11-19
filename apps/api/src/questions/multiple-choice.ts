@@ -6,7 +6,14 @@ import {
   pushPoints,
   readRaid,
 } from "./push-luck.ts";
-import { enterKart, tickKart, kartScores, projectKart } from "./kart/kart.ts";
+import {
+  enterKart,
+  tickKart,
+  kartScores,
+  projectKart,
+  prepareKartShared,
+  type KartShared,
+} from "./kart/kart.ts";
 import { enterRehearsalPhase, tickRehearsal } from "../developer/rehearsal.ts";
 import {
   createChessRound,
@@ -110,6 +117,7 @@ import {
   freezeGuess,
   freezeVote,
   nextBallotPhase,
+  stretchPhoneRound,
   scoreBallotQuestion,
 } from "./vote.ts";
 
@@ -264,6 +272,7 @@ export function createGameStore(sql: SqlStorage): GameStore {
         current.phase === "vote"
       ) {
         freezeVote(sql, question, now);
+        stretchPhoneRound(sql, gameStore, question, now);
       }
       if (
         current.questionCount > 0 &&
@@ -637,6 +646,7 @@ export type PlayBroadcastShared = {
   fullStandings: PublicStanding[];
   picksHidden: boolean;
   selfAwards: Map<string, number> | null;
+  kart?: KartShared;
   choice?: {
     submissionCount: number;
     answersByPlayer: Map<
@@ -708,7 +718,9 @@ export function preparePlayShared(
     picksHidden,
     selfAwards,
   };
-  if (question.kind === "choice") {
+  if (question.kind === "kart") {
+    base.kart = prepareKartShared(sql, question);
+  } else if (question.kind === "choice") {
     const answerRows = sql
       .exec<{
         player_id: string;
@@ -874,6 +886,7 @@ export function projectPlay(
       question,
       room,
       audience === "guest" ? selfPlayerId : undefined,
+      shared?.kart,
     );
     const totals = shared ? shared.totals : scored ? standings(sql) : [];
     const selfRow =

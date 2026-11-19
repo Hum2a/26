@@ -115,6 +115,13 @@ export function sameAnswerSet(
 export type PartyVoteFlow = {
   kind: "tournament" | "awards";
   step: number;
+  /**
+   * Set while a tournament's phone round is open: every phone judges its own
+   * pairs at once, and the best `finalists` entries go on to the knockout.
+   */
+  heat?: { pairs: number; finalists: number };
+  /** Steps used by a finished phone round; knockout matches count from here. */
+  offset?: number;
   queue: string[][];
   next: string[];
   labels: string[];
@@ -135,12 +142,30 @@ function pairRound(ids: string[]) {
   return { queue, next: ids.length % 2 ? ids.slice(-1) : [] };
 }
 
-/** ids are randomly seeded once by the server, persisted before voting. */
+/**
+ * ids are randomly seeded once by the server, persisted before voting. A
+ * tournament with a phone round starts with it only when there are more
+ * entries than finalists; a small room goes straight to the knockout.
+ */
 export function createPartyVoteFlow(
   kind: PartyVoteFlow["kind"],
   ids: string[],
   labels: string[] = [],
+  heat?: { pairs: number; finalists: number },
 ): PartyVoteFlow {
+  if (kind === "tournament" && heat && ids.length > heat.finalists)
+    return {
+      kind,
+      ids,
+      labels,
+      step: 0,
+      heat: { pairs: heat.pairs, finalists: heat.finalists },
+      queue: [],
+      next: [],
+      finished: false,
+      winners: [],
+      results: [],
+    };
   return {
     kind,
     ids,
@@ -154,7 +179,107 @@ export function createPartyVoteFlow(
 }
 
 export function flowCandidateIds(flow: PartyVoteFlow): string[] {
-  return flow.finished ? [] : flow.kind === "awards" ? flow.ids : (flow.queue[0] ?? []);
+  if (flow.finished) return [];
+  if (flow.heat) return flow.ids;
+  return flow.kind === "awards" ? flow.ids : (flow.queue[0] ?? []);
+}
+
+/** The knockout match number shown to people, counted after any phone round. */
+export function flowMatchNumber(flow: PartyVoteFlow): number {
+  return flow.step - (flow.offset ?? 0) + 1;
+}
+
+export type HeatPlan = Record<string, [string, string][]>;
+
+/**
+ * Gives every voter `pairs` head-to-heads for the phone round, never one
+ * holding their own entry. `rounds[r]` is a seeded shuffle of the entries for
+ * round r and `voters` a seeded shuffle of the voters; the server makes both
+ * once and stores the plan. Each round pairs the entries off and deals the
+ * pairs out in turn, so every entry is judged about as often as any other.
+ */
+export function planHeat(
+  rounds: readonly (readonly string[])[],
+  voters: readonly { playerId: string; own: readonly string[] }[],
+  pairs: number,
+): HeatPlan {
+  const plan: HeatPlan = {};
+  for (const voter of voters) plan[voter.playerId] = [];
+  rounds.slice(0, pairs).forEach((order, round) => {
+    const matches = pairRound([...order]).queue as [string, string][];
+    if (!matches.length) return;
+    voters.forEach((voter, index) => {
+      const mine = plan[voter.playerId]!;
+      for (let tries = 0; tries < matches.length; tries++) {
+        const match = matches[(index + round + tries) % matches.length]!;
+        const seen = mine.some(
+          ([a, b]) =>
+            (a === match[0] && b === match[1]) || (a === match[1] && b === match[0]),
+        );
+        if (seen || match.some((id) => voter.own.includes(id))) continue;
+        mine.push([match[0], match[1]]);
+        break;
+      }
+    });
+  });
+  return plan;
+}
+
+/**
+ * Closes the phone round. Each entry is ranked by the share of its pairs it
+ * won, then by wins, then by the frozen seed order. The best `finalists`
+ * eligible entries enter the knockout in seed order. With no votes at all the
+ * seed order alone picks them, so the show can still go on.
+ */
+export function settleHeat(
+  flow: PartyVoteFlow,
+  ballots: readonly { playerId: string; pair: number; candidateId: string }[],
+  plan: HeatPlan,
+  eligible: readonly string[],
+): PartyVoteFlow {
+  if (flow.finished || !flow.heat) return flow;
+  const wins = new Map<string, number>();
+  const shown = new Map<string, number>();
+  let votes = 0;
+  for (const ballot of ballots) {
+    const pair = plan[ballot.playerId]?.[ballot.pair];
+    if (!pair || !pair.includes(ballot.candidateId)) continue;
+    if (!pair.every((id) => eligible.includes(id))) continue;
+    votes += 1;
+    for (const id of pair) shown.set(id, (shown.get(id) ?? 0) + 1);
+    wins.set(ballot.candidateId, (wins.get(ballot.candidateId) ?? 0) + 1);
+  }
+  const live = flow.ids.filter((id) => eligible.includes(id));
+  const share = (id: string) => (wins.get(id) ?? 0) / Math.max(1, shown.get(id) ?? 0);
+  const ranked = [...live].sort(
+    (a, b) =>
+      share(b) - share(a) ||
+      (wins.get(b) ?? 0) - (wins.get(a) ?? 0) ||
+      flow.ids.indexOf(a) - flow.ids.indexOf(b),
+  );
+  const picked = new Set(ranked.slice(0, flow.heat.finalists));
+  const finalists = flow.ids.filter((id) => picked.has(id));
+  const offset = flow.heat.pairs;
+  const results = [
+    ...flow.results,
+    {
+      label: "Phone round",
+      winners: finalists,
+      votes,
+      counts: Object.fromEntries(live.map((id) => [id, wins.get(id) ?? 0])),
+    },
+  ];
+  const rest = { ...flow };
+  delete rest.heat;
+  return {
+    ...rest,
+    results,
+    offset,
+    step: offset,
+    ...pairRound(finalists),
+    finished: finalists.length < 2,
+    winners: finalists.length === 1 ? finalists : [],
+  };
 }
 
 /** Ties in a knockout use the frozen random seed order; ordinary award ties share the win. */
@@ -163,7 +288,7 @@ export function settlePartyVoteFlow(
   ballots: readonly string[],
   eligible: readonly string[],
 ): PartyVoteFlow {
-  if (flow.finished) return flow;
+  if (flow.finished || flow.heat) return flow;
   const live = flowCandidateIds(flow).filter((id) => eligible.includes(id));
   const votes = ballots.filter((id) => live.includes(id));
   const counts = live.map((id) => ({
@@ -177,7 +302,9 @@ export function settlePartyVoteFlow(
     ...flow.results,
     {
       label:
-        flow.kind === "awards" ? flow.labels[flow.step]! : `Match ${flow.step + 1}`,
+        flow.kind === "awards"
+          ? flow.labels[flow.step]!
+          : `Match ${flowMatchNumber(flow)}`,
       winners,
       votes: votes.length,
       counts: Object.fromEntries(counts.map((row) => [row.id, row.count])),

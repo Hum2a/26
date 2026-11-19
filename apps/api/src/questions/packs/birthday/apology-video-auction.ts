@@ -11,6 +11,11 @@ export const apologyVideoAuction = voteQuestion({
   voteMs: 15000,
   flow: {
     kind: "tournament",
+    pick: "Pick the more convincing apology.",
+    // 80 entries would be 79 one-at-a-time matches (about 25 minutes). Every
+    // phone judges 5 pairs of its own at once, then the best 8 play it out on
+    // the big screen: 7 matches, about 3½ minutes in all.
+    heat: { finalists: 8, pairs: 5, ms: 45_000 },
   },
   attribution: "after",
   explanation:

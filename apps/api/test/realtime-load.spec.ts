@@ -205,8 +205,10 @@ async function measure(size: number) {
       fullSnapshotsToGuests: guests.reduce((sum, peer) => sum + peer.snapshots, 0),
     },
     storage: {
+      // Durable Object SQLite rows written while the race ran (index rows included).
       rowsWritten,
       rowsWrittenPerSecond: Math.round(rowsWritten / raceSeconds),
+      // The same rate over a three-minute race, for comparing against billing.
       rowsPerThreeMinuteRace: Math.round((rowsWritten / raceSeconds) * 180),
       rowsPerTick: Number(
         (
@@ -400,6 +402,7 @@ async function countRowWrites(
         };
         const writes = sql.__loadWrites ?? [];
         sql.__loadWrites = undefined;
+        // The busiest statements, so a regression names its source.
         const byStatement = new Map<string, number>();
         let total = 0;
         for (const [query, rows] of writes) {

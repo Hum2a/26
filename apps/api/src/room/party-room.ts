@@ -217,6 +217,7 @@ import { TrendCache, type RoomTrends } from "../stats/trend-room.ts";
 import { readStatsSource } from "../stats/source.ts";
 import { funFactApplies } from "../stats/fun-facts.ts";
 import { readFunFactSelection } from "../stats/fun-source.ts";
+import { StatisticsCache } from "../stats/statistics-cache.ts";
 import { readRoomArchive } from "../archive/schedule.ts";
 import { readRoomDiagnostics } from "./diagnostics.ts";
 import { createWallPost, reactToWall, withdrawWallPost } from "../wall/store.ts";
@@ -492,6 +493,7 @@ export class PartyRoom extends DurableObject<Env> {
   private readonly meter = createRealtimeMeter();
   /** Answer trends for the question just revealed; memory only, rebuilt from SQL. */
   private readonly trendCache = new TrendCache();
+  private readonly statisticsCache = new StatisticsCache<SnapshotStatistics>();
   private database: Promise<AppDatabase> | undefined;
   private kartArrivals = new KartInputBuffer();
   private kartIngress = new KartIngressCache();
@@ -4304,6 +4306,29 @@ export class PartyRoom extends DurableObject<Env> {
    * The parts of a snapshot that are the same for every screen of one audience.
    * A broadcast builds these once and reuses them for each socket.
    */
+  /** Broadcasts and socket sends reuse a build up to 5 s old outside the end phases. */
+  private snapshotStatistics(
+    room: { questionIndex: number; phase: string },
+    nowMs: number,
+    fresh = false,
+  ): SnapshotStatistics {
+    const sql = this.ctx.storage.sql;
+    return this.statisticsCache.read(
+      { questionIndex: room.questionIndex, phase: room.phase },
+      nowMs,
+      () => {
+        this.meter.add("build:statistics", 0, nowMs);
+        const stats = readStatsSource(sql);
+        return {
+          stats,
+          facts: aggregateFacts(stats),
+          funFacts: readFunFactSelection(sql, stats),
+        };
+      },
+      fresh,
+    );
+  }
+
   private prepareRoomWideSnapshotData(): RoomWideSnapshotData {
     const room = this.readRoom();
     if (!room) {
@@ -4340,13 +4365,7 @@ export class PartyRoom extends DurableObject<Env> {
         reveal_nonce: number;
       }>(`SELECT opening, stage_hidden, reveal_nonce FROM room`)
       .toArray()[0];
-    this.meter.add("build:statistics", 0, nowMs);
-    const stats = readStatsSource(sql);
-    const statistics: SnapshotStatistics = {
-      stats,
-      facts: aggregateFacts(stats),
-      funFacts: readFunFactSelection(sql, stats),
-    };
+    const statistics = this.snapshotStatistics(stored, nowMs);
     const cloud = cloudRows(sql);
     const namesReveal =
       presentation?.opening === "showing" ? revealNames(sql, cloud) : null;
@@ -4428,15 +4447,8 @@ export class PartyRoom extends DurableObject<Env> {
         reveal_nonce: number;
       }>(`SELECT opening, stage_hidden, reveal_nonce FROM room`)
       .toArray()[0];
-    if (!statistics) {
-      this.meter.add("build:statistics", 0, Date.now());
-      const stats = readStatsSource(sql);
-      statistics = {
-        stats,
-        facts: aggregateFacts(stats),
-        funFacts: readFunFactSelection(sql, stats),
-      };
-    }
+    // A one-off read (an admin snapshot request) always sees every answer.
+    statistics ??= this.snapshotStatistics(store.readRoom(), Date.now(), true);
     const cloud = cloudRows(sql);
     return {
       room,
@@ -4961,7 +4973,12 @@ export class PartyRoom extends DurableObject<Env> {
     if (!parts) {
       parts = this.snapshotParts(
         audience,
-        shared?.roomWide.statistics,
+        // Eighty phones reconnecting at once must not rebuild statistics eighty times.
+        shared?.roomWide.statistics ??
+          this.snapshotStatistics(
+            createSqlStore(this.ctx.storage.sql).readRoom(),
+            Date.now(),
+          ),
         shared?.roomWide,
       );
       shared?.partsByAudience.set(audience, parts);

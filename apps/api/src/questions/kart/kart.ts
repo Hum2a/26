@@ -528,13 +528,13 @@ export function raceMilestone(before: KartRace, after: KartRace): boolean {
   if (before.elapsedMs === 0 && after.elapsedMs > 0) return true;
   for (let index = 0; index < after.drivers.length; index += 1) {
     const was = before.drivers[index],
-      nowDriver = after.drivers[index]!;
+      now = after.drivers[index]!;
     if (
       !was ||
-      was.playerId !== nowDriver.playerId ||
-      was.status !== nowDriver.status ||
-      (was.lapsDone ?? 0) !== (nowDriver.lapsDone ?? 0) ||
-      (was.lap?.recoveries ?? 0) !== (nowDriver.lap?.recoveries ?? 0)
+      was.playerId !== now.playerId ||
+      was.status !== now.status ||
+      (was.lapsDone ?? 0) !== (now.lapsDone ?? 0) ||
+      (was.lap?.recoveries ?? 0) !== (now.lap?.recoveries ?? 0)
     )
       return true;
   }
@@ -856,22 +856,51 @@ export function kartScores(
   }
 }
 
+/** The race read and projected once for every snapshot in one broadcast. */
+export type KartShared = {
+  race: KartRace;
+  full: KartRaceView;
+  index: KartFrameIndex;
+};
+
+/**
+ * Without this, each of 80 guest snapshots re-read and re-projected the whole
+ * grid. At the race start that took the room 4–8 seconds of CPU on staging
+ * (19 November 2026 rehearsal) and every phone dropped.
+ */
+export function prepareKartShared(
+  sql: SqlStorage,
+  q: KartQuestion,
+): KartShared | undefined {
+  // The live race, read once without a copy: every use below only projects it.
+  const race = liveKart(sql, q.id);
+  if (!race) return undefined;
+  const full = projectKartRace(race, null, q.points);
+  return { race, full, index: buildKartFrameIndex(race, full) };
+}
+
 export function projectKart(
   sql: SqlStorage,
   q: KartQuestion,
   room: RoomClock,
   selfPlayerId: string | undefined,
+  shared?: KartShared,
 ) {
-  const race = liveKart(sql, q.id);
+  // Read-only: the live race, shared by every snapshot in a broadcast.
+  const race = shared ? shared.race : liveKart(sql, q.id);
   const scored = ["reveal", "scores", "final", "podium"].includes(room.phase);
   const queue =
     race && selfPlayerId
       ? kartQueues(sql, q.id, race.raceId).get(selfPlayerId)
       : undefined;
-  const fullRace = race ? projectKartRace(race, null, q.points) : undefined;
+  const fullRace = shared
+    ? shared.full
+    : race
+      ? projectKartRace(race, null, q.points)
+      : undefined;
   const publicRace =
     fullRace && selfPlayerId
-      ? phoneRaceView(race!, fullRace, selfPlayerId, queue?.lastSequence)
+      ? phoneRaceView(race!, fullRace, selfPlayerId, queue?.lastSequence, shared?.index)
       : fullRace;
   const selfPoints =
     scored && selfPlayerId

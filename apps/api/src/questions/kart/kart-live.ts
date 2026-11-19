@@ -1,22 +1,24 @@
 import type { KartInput, KartRace } from "@26/shared";
 
 /**
- * Live kart races stay in the Durable Object's memory. SQLite holds a
- * checkpoint, not every pose or control. Before this, each 100 ms tick rewrote
- * the race row and one input row per driver: about 150,000 rows for a
- * three-minute race with 80 phones.
+ * The live kart race is kept in memory and saved as a checkpoint, not on every
+ * tick. Before this, a race tick rewrote the race row and one input row per
+ * driver: about 150,000 SQLite rows for a three-minute race with 80 phones.
  *
- * SQLite remains the source of truth after a restart or a rolled-back
- * transaction. Each cached race remembers the payload it was loaded from or
- * last saved as. A later read that sees a different stored row reloads.
+ * SQLite stays the source of truth. Each cached race remembers the exact
+ * payload it was loaded from or last saved as, and every read compares that
+ * with the stored row. A rolled-back transaction, a restart (a new storage
+ * object), a deleted round or a direct write therefore reloads from SQLite
+ * instead of trusting memory. Unsaved ticks are simulation only; anything a
+ * guest or the host is told was accepted is saved before that reply.
  * Unacknowledged controls never go to SQLite; each tick folds them into the
  * race, which is checkpointed.
  */
 
-/** At most this many 100 ms ticks stay unsaved: two seconds of racing. */
-export const kartCheckpointWrites = 20;
+/** At most this many race revisions stay unsaved: about one second of 100 ms ticks. */
+export const kartCheckpointWrites = 10;
 
-/** Controls waiting for the next race tick. Kart inputs are never acknowledged. */
+/** Controls waiting for the race tick. Transient: kart controls are never acknowledged. */
 export type InputQueue = {
   at: number;
   lastSequence: number;
@@ -25,7 +27,7 @@ export type InputQueue = {
 
 type LiveRace = {
   race: KartRace;
-  /** The payload SQLite currently holds for this race. */
+  /** The payload SQLite holds for this race. */
   saved: string;
   /** Revisions made since `saved`. */
   deferred: number;
@@ -37,6 +39,7 @@ type LiveRace = {
 
 type LiveRoom = {
   races: Map<string, LiveRace>;
+  /** Per question: the race these controls belong to, and each driver's queue. */
   queues: Map<string, { raceId: string; drivers: Map<string, InputQueue> }>;
 };
 
