@@ -56,7 +56,7 @@ Humza: this kart is a quiz time trial. Seeing other people is fun. What matters 
 
 Aden: the phone is the kart you drive. The room pose is what other people see. It should not tug the driven kart. Finish time stays the phone clock. Back to track still snaps to the room.
 
-That is implemented, locally, and not committed. After the opening placement the driven kart ignores ordinary device-v1 position packets. Recovery (Back to track) still adopts the room body and clears stored controls. The legacy predictor (races that are not `device-v1`) is unchanged, including its 0.75 m quiet band and 6 m snap. New races do not use that predictor.
+That is implemented and committed in `9a19614`, which is on `origin/master`. After the opening placement the driven kart ignores ordinary device-v1 position packets. Recovery (Back to track) still adopts the room body and clears stored controls. The legacy predictor (races that are not `device-v1`) is unchanged, including its 0.75 m quiet band and 6 m snap. New races do not use that predictor.
 
 ## Why the kart was crawling, and the fix
 
