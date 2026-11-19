@@ -7017,6 +7017,18 @@ Answer acknowledgement p95 on Cloudflare was 71–295 ms across runs; quiz round
 
 **Next:** Humza prints `docs/night-of.md`, confirms Workers Paid, and merges this PR. Do not start the next prompt automatically.
 
+## 19 November 2026 — CI and lint hygiene
+
+Push and pull request checks still run installation, typecheck, lint, formatting, release and unit tests, and build. `.github/workflows/check.yml` runs Chromium installation and the existing Playwright suite in a separate `workflow_dispatch` job that builds its own preview. `npm run github-actions:check` follows the automatic job, and its tests verify the manual gate and dry-run plan.
+
+Moved shared helpers and context out of component modules and kept existing consumer imports working through sibling re-exports. Resolved the chess engine README conflict markers using the newer text. Lint reports zero errors and 15 existing Fast Refresh warnings, all in the excluded wall, chess, kart, design kit and stage play files.
+
+**Checks before opening the PR:** `npm run typecheck`, `npm run lint`, `npm run check:structure`, `npm run format:check`, `npm run test:release` (75 tests), `npm run test:unit` (954 tests), `npm run content:check` and `npm run build` passed. The local workflow checker also reached the API suite through `npm test`. The build passed its artifact and bundle checks. Playwright was not run.
+
+**Cubic review:** The `GuestPlay` component and its lazy round imports are now in `apps/web/src/play/guest-play-view.tsx`. The existing `./guest-play` import resolves to `apps/web/src/play/guest-play.ts`. Older documentation still mentions the previous `.tsx` filename. The bot nickname heuristic and inherited-key autocorrection both predate this change. Fixing either would change behaviour and is outside this task.
+
+**Next:** Check the PR workflow and Cubic review, then leave the merge to Humza.
+
 ## 19 November 2026 — Projector pairing code (stretch)
 
 **Status:** stretch feature on `claude/projector-pairing`, PR "Pair the projector with a one-time code". Merge only after a staging rehearsal.
@@ -7025,7 +7037,7 @@ Answer acknowledgement p95 on Cloudflare was 71–295 ms across runs; quiz round
 
 **Rules.** Codes are single-use, last ten minutes, and pair one room's presentation role only. Only a SHA-256 hash is stored, in a room table `projector_pairing` created on first use (no schema version bump). A new code voids any open code. Redeem attempts are limited per room in memory (burst five, then one every twelve seconds); wrong guesses also count durably and void the open code after ten. Issuing needs the admin session and the room's control cookie, and is limited to a burst of five. The consumed code and the new credential are written in one transaction, with a receipt, before the cookie is set; a retry with the same request id replays it.
 
-**Files.** New: `apps/api/src/credentials/pairing.ts`, `apps/api/src/credentials/pairing-routes.ts` (registered from `apps/api/src/auth/routes.ts`), `apps/web/src/stage/ProjectorPairing.tsx`, `apps/api/test/projector-pairing.spec.ts`, `apps/web/src/stage/ProjectorPairing.test.tsx`. Changed: `apps/web/src/stage/stage-page.tsx`, `apps/web/src/stage/projector.css`, `apps/web/src/admin/live-console.tsx`, their tests, `docs/event-runbook.md`, `docs/data-inventory.md`, `apps/api/src/credentials/README.md`. Outside the listed files, because the credentials live in the room object: two methods on `PartyRoom` (`issueProjectorPairing`, `redeemProjectorPairing`) in `apps/api/src/room/party-room.ts`, two small response schemas in `packages/shared/src/index.ts`, and two fetch helpers in `apps/web/src/live/room-api.ts` (the one room HTTP client).
+**Files.** New: `apps/api/src/credentials/pairing.ts`, `apps/api/src/credentials/pairing-routes.ts` (registered from `apps/api/src/auth/routes.ts`), `apps/web/src/stage/ProjectorPairing.tsx`, `apps/web/src/stage/pairing-code.ts`, `apps/api/test/projector-pairing.spec.ts`, `apps/web/src/stage/ProjectorPairing.test.tsx`. Changed: `apps/web/src/stage/stage-page.tsx`, `apps/web/src/stage/projector.css`, `apps/web/src/admin/live-console.tsx`, their tests, `docs/event-runbook.md`, `docs/data-inventory.md`, `apps/api/src/credentials/README.md`. Outside the listed files, because the credentials live in the room object: two methods on `PartyRoom` (`issueProjectorPairing`, `redeemProjectorPairing`) in `apps/api/src/room/party-room.ts`, two small response schemas in `packages/shared/src/index.ts`, and two fetch helpers in `apps/web/src/live/room-api.ts` (the one room HTTP client).
 
 **Decisions.** Pairing is room-scoped: the projector types the room's join code and the pairing code, so no global code lookup is needed. Issuing is its own receipted HTTP request, not a `/api/rooms/play` command, because it returns a secret. The issue receipt keeps the plain code for ten-minute retries, like guest transfer codes. The rate-limit refusal uses status 429 with the shared `conflict` error code, because the shared error list has no rate-limit code. A paired projector replaces any other open stage socket, as a second `/host` tab already does.
 

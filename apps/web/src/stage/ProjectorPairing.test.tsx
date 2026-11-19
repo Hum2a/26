@@ -2,7 +2,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { beforeEach, expect, it, vi } from "vitest";
 vi.mock("../live/room-api", () => ({ pairProjector: vi.fn() }));
 import { pairProjector } from "../live/room-api";
-import { cleanPairingCode, ProjectorPairing } from "./ProjectorPairing";
+import { ProjectorPairing } from "./ProjectorPairing";
+import { cleanPairingCode } from "./pairing-code";
 
 beforeEach(() => vi.clearAllMocks());
 

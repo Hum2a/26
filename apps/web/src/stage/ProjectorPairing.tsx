@@ -2,13 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Button, TextField } from "../ui/primitives";
 import { pairProjector } from "../live/room-api";
-
-const codePattern = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/;
-
-/** Uppercases and drops the spaces and hyphen the admin screen shows. */
-export function cleanPairingCode(value: string): string {
-  return value.replace(/[\s-]/g, "").toUpperCase();
-}
+import { cleanPairingCode, pairingCodePattern } from "./pairing-code";
 
 /**
  * Pairs a projector laptop that has no admin login. Humza shows a one-time
@@ -40,7 +34,7 @@ export function ProjectorPairing({
       setMessage("Enter the room’s six-character join code above first.");
       return;
     }
-    if (!codePattern.test(pairing)) {
+    if (!pairingCodePattern.test(pairing)) {
       setMessage("Enter the eight-character pairing code from Live controls.");
       return;
     }
