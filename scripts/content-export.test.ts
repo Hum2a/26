@@ -38,4 +38,24 @@ test("birthday reveals explain exact sets, the room median and minigame scoring"
     runningOrder,
     /Fastest completed lap wins\. Finishers share place on equal finish times/,
   );
+  const where = questions.find((question) => question.id === "where-are-we");
+  assert.equal(where?.kind, "map-guess");
+  if (where?.kind === "map-guess") {
+    assert.match(blocks.get("where-are-we") ?? "", new RegExp(where.target.label));
+  }
+  const ed = questions.find((question) => question.id === "ed-or-humza");
+  assert.equal(ed?.kind, "rank");
+  if (ed?.kind === "rank") {
+    const edReveal = blocks.get("ed-or-humza") ?? "";
+    for (const item of ed.items) {
+      assert.match(edReveal, new RegExp(escapeRegExp(item.label)));
+    }
+    for (const tier of ed.tiers) {
+      assert.match(edReveal, new RegExp(`\\b${escapeRegExp(tier.label)}\\b`));
+    }
+  }
 });
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}

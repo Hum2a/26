@@ -7292,3 +7292,17 @@ Checks: typecheck passed; lint 0 errors / 15 existing warnings; format:check pas
 **Checks:** not run locally. This worktree's `npm install` had not finished after about 1.5 hours, so `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run test:unit`, `npm run test -w @26/api`, `npm run content:check` and `npm run build` were left to CI on the PR. Playwright was not run.
 
 **Next:** Humza reads the report, decides on knockout entry caps, and the race-start and per-answer cost fixes are scheduled before a repeat 80-bot run. Do not start the next prompt automatically.
+
+## 19 November 2026 — Presenter export after the 49-round merge, and the map test
+
+**Status:** on `codex/presenter-export-and-copy`. Merged `origin/master` (no rebase). Not deployed.
+
+**What now works.** Baseer’s running order and the offline answer key are generated from the merged 49-round birthday order. Reveal lines come from question data: room-median dials, exact-set labels, vote/poll/typed explanations, chess capture/mate/time scores from the shared scorer, kart fastest-finish copy from each kart question, Where are we? (Agadir seafront), and Ed or Humza placements. The three approved copy nits remain (Humza capital H, Christianity Title Case labels with unchanged ids, kart “One lap. Three minutes.” / equal finish times).
+
+**Map test.** Master CI failed `where-are-we.test.tsx` looking for “Place pin at map centre”. The control was still in `GuessMap`, but it waited for `world.geojson` (`ready`) after the Leaflet map already existed. The Where are we? path lazy-loads that map, so the button never appeared within the test timeout even though zoom controls had painted. Pinning uses the map view, not the landmass layer, so `ready` is now set when the Leaflet instance exists. The accessible centre control is unchanged. The test file was not rewritten.
+
+**Files:** `scripts/content-export.ts`, `scripts/content-export.test.ts`, generated `docs/content/birthday-*.md`, `apps/web/src/play/map-guess.tsx`, `apps/web/src/play/map-guess.css`, this section. Copy nits already on the branch in `how-italian-is-humza.ts`, `christianity-branches.ts`, `kart-sprint.ts`. Did not edit `manifest.ts`, `where-are-we.ts`, `ed-or-humza.ts`, or chess feature code.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run test:unit` 211 files / 976 tests passed (including `where-are-we.test.tsx` and `map-guess.test.tsx`). `npm run test -w @26/api` 144 files / 832 tests passed (`XDG_CONFIG_HOME` set so Wrangler can write config). `npm run content:check` passed for demo and birthday with no incomplete rounds. `npm run build` passed (1004 files scanned; gzip entry JS 222,746 / 260,000; entry CSS 28,208 / 34,000; total JS 1,493,519 / 1,650,000). Playwright was not run.
+
+**Next:** Open the PR into `master` for Humza to merge. Do not start the next prompt automatically.

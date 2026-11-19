@@ -148,12 +148,17 @@ function revealLine(question: Question): string {
     case "wordle":
       return `${question.answer} (six guesses, ${question.collectMs / 1000} seconds; ${question.points} points for solving)`;
     case "typed":
-      return question.scoring === "commonness"
-        ? (question.explanation ??
-            "Reveal the matching groups. The most common answer wins.")
-        : `${question.accepted.join(" / ")} (close spellings count)`;
+      if (question.scoring === "commonness") {
+        return (
+          question.explanation ??
+          "Reveal the matching groups. The most common answer wins."
+        );
+      }
+      return question.accepted.length > 0
+        ? `${question.accepted.join(" / ")} (close spellings count)`
+        : (question.explanation ?? "Reveal the accepted answers.");
     case "slider":
-      return question.scoring === "consensus"
+      return question.scoring === "consensus" || question.truth === null
         ? "Reveal the room's median. The closer a guess is to the median, the more it scores."
         : `${question.truth} ${question.unit}`;
     case "rank":

@@ -129,6 +129,9 @@ export function GuessMap({
     const resize = new ResizeObserver(() => board.invalidateSize({ pan: false }));
     resize.observe(element.current);
     let active = true;
+    // Pinning uses the Leaflet view, not the landmass layer. Wait only for the map
+    // instance so the centre control is available while world.geojson is still loading.
+    setReady(true);
     void loadWorld()
       .then((data) => {
         if (!active) return;
@@ -174,7 +177,6 @@ export function GuessMap({
         board.on("zoomend", labels);
         places.bringToBack();
         labels();
-        setReady(true);
       })
       .catch(() => {
         if (active) setFailed(true);
