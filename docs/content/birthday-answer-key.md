@@ -23,17 +23,17 @@ Uni accommodation or prison?
 
 Reveal: Uni accommodation
 
-## 4. apology-video-auction
-
-You were caught on 4K camera at a Selfridges changing room doing something unspeakable. Write the first sentence of your Notes App apology.
-
-Reveal: No fixed answer. The room's votes decide it.
-
-## 5. favourite-genre
+## 4. favourite-genre
 
 What is my favourite genre of music?
 
 Reveal: White girl bangers
+
+## 5. esports-tag
+
+What was Humza's longest running official tag when competing in esports?
+
+Reveal: ㅤ
 
 ## 6. leviticus-18-7
 
@@ -41,137 +41,137 @@ Which of these is Leviticus 18:7?
 
 Reveal: The nakedness of thy father, or the nakedness of thy mother…
 
-## 7. car-name
+## 7. guess-emotional-support
+
+Who would bring an emotional support air fryer to a funeral and ask where the sockets are?
+
+Reveal: The named person is set on the question.
+
+## 8. car-name
 
 What do I call my car?
 
 Reveal: Hagakure
 
-## 8. ignorance-triggers
+## 9. nextdoor-paranoia
+
+What was the suspicious vehicle actually doing?
+
+Reveal: Delivering newspapers
+
+## 10. ignorance-triggers
 
 Rank these conversational triggers by what type of ignorance pisses Humza off the fastest.
 
 Reveal: Fastest Apple; 2nd Palm Beach Pete; 3rd Politics; Slowest Conspiracy theories
 
-## 9. mock-election
-
-Mock British election: vote for a party.
-
-Reveal: No right answer. Read out the room's split.
-
-## 10. red-pill-blue-pill
-
-Everyone in the world has to take a blue pill or a red pill. If more than 50% pick blue, everyone lives. If not, red pills live and blue pills die.
-
-Reveal: If more than 50% pick Blue pill, everyone who answered scores. Otherwise Red pill scores.
-
-## 11. trolley-problem
-
-A train is heading for 5 people. You can derail it to kill only 1. Do you?
-
-Reveal: No right answer. Read out the room's split.
-
-## 12. real-name-count-binface
+## 11. real-name-count-binface
 
 What was their real name? Count Binface
 
 Reveal: Jon Harvey / Jonathan Harvey (close spellings count)
 
-## 13. real-name-zack-polanski
+## 12. mock-election
 
-What was their real name? Zack Polanski
+Mock British election: vote for a party.
 
-Reveal: David Paulden (close spellings count)
+Reveal: No right answer. Read out the room's split.
 
-## 14. real-name-tommy-robinson
-
-What was their real name? Tommy Robinson
-
-Reveal: Stephen Yaxley-Lennon / Stephen Lennon / Stephen Yaxley (close spellings count)
-
-## 15. real-name-vin-diesel
-
-What was their original name? Vin Diesel
-
-Reveal: Mark Sinclair / Mark Sinclair Vincent / Mark Vincent (close spellings count)
-
-## 16. real-name-jamie-foxx
-
-What was their original name? Jamie Foxx
-
-Reveal: Eric Marlon Bishop / Eric Bishop (close spellings count)
-
-## 17. favourite-pokemon
-
-Favourite Pokémon
-
-Reveal: Mudkip
-
-## 18. whos-that-pokemon
-
-Who’s that Pokémon?
-
-Reveal: Jigglypuff
-
-## 19. common-password
-
-Create the most common password
-
-Reveal: (close spellings count)
-
-## 20. complete-a-wordle
-
-Complete a wordle
-
-Reveal: VULGY (six guesses, 120 seconds; 100 points for solving)
-
-## 21. inflation-freddo
+## 13. inflation-freddo
 
 Freddo: guess the price in 2026
 
 Reveal: 35 p
 
-## 22. inflation-petrol
+## 14. red-pill-blue-pill
+
+Everyone in the world has to take a blue pill or a red pill. If more than 50% pick blue, everyone lives. If not, red pills live and blue pills die.
+
+Reveal: If more than 50% pick Blue pill, everyone who answered scores. Otherwise Red pill scores.
+
+## 15. guess-tab-oyster
+
+Adult peak PAYG single: Sutton → Oxford Circus via Zone 1. TfL default route, October 2026.
+
+Reveal: 8.8 £
+
+## 16. trolley-problem
+
+A train is heading for 5 people. You can derail it to kill only 1. Do you?
+
+Reveal: No right answer. Read out the room's split.
+
+## 17. real-name-zack-polanski
+
+What was their real name? Zack Polanski
+
+Reveal: David Paulden (close spellings count)
+
+## 18. where-are-we
+
+Where are we?
+
+Reveal: Agadir seafront, Morocco
+
+## 19. favourite-pokemon
+
+Favourite Pokémon
+
+Reveal: Mudkip
+
+## 20. inflation-petrol
 
 Petrol: guess the price in 2026
 
 Reveal: 175 p/litre
 
-## 23. inflation-meal-deal
+## 21. real-name-tommy-robinson
 
-The student tasting menu: a Tesco meal deal
+What was their real name? Tommy Robinson
 
-Reveal: 385 p
+Reveal: Stephen Yaxley-Lennon / Stephen Lennon / Stephen Yaxley (close spellings count)
 
-## 24. inflation-sausage-roll
+## 22. common-password
 
-The Greggs gold standard: one sausage roll
+Create the most common password
 
-Reveal: 135 p
+Reveal: (close spellings count)
 
-## 25. inflation-cheeseburger
+## 23. guess-council-coup
 
-The 99p nostalgia tax: a Maccies cheeseburger
+Who would stage a coup in the residents’ WhatsApp, declare martial law over the bins, then get removed by their mum?
 
-Reveal: 139 p
+Reveal: The named person is set on the question.
 
-## 26. how-italian-is-humza
+## 24. how-italian-is-humza
 
 Guess how Italian humza is
 
 Reveal: 0.5%
 
-## 27. christianity-branches
+## 25. rank-driving-sins
 
-Which of these ARE branches of Christianity?
+Rank these UK driving offenses from ‘mildly annoying’ to ‘immediate revocation of human rights’.
 
 Reveal:
 
-## 28. guess-tab-oyster
+## 26. inflation-meal-deal
 
-Adult peak PAYG single: Sutton → Oxford Circus via Zone 1. TfL default route, October 2026.
+The student tasting menu: a Tesco meal deal
 
-Reveal: 8.8 £
+Reveal: 385 p
+
+## 27. whos-that-pokemon
+
+Who’s that Pokémon?
+
+Reveal: Jigglypuff
+
+## 28. real-name-vin-diesel
+
+What was their original name? Vin Diesel
+
+Reveal: Mark Sinclair / Mark Sinclair Vincent / Mark Vincent (close spellings count)
 
 ## 29. guess-tab-car-insurance
 
@@ -179,73 +179,121 @@ Newly qualified and aged 25+: what was the median annual car insurance price pai
 
 Reveal: 1002 £
 
-## 30. guess-tab-soho-pint
-
-What does a standard pint of Camden Hells cost at The Roxy, Soho? Menu checked October 2026.
-
-Reveal: 7.3 £
-
-## 31. guess-tab-ev-charge
-
-Charge a 62 kWh battery from empty to full at the Jan–Mar 2026 GB average capped electricity rate. What is the energy cost?
-
-Reveal: 17.17 £
-
-## 32. heathrow-search-query
-
-Write the worst possible search query to find on someone’s phone right before going through UK border control.
-
-Reveal: No fixed answer. The room's votes decide it.
-
-## 33. rank-driving-sins
-
-Rank these UK driving offenses from ‘mildly annoying’ to ‘immediate revocation of human rights’.
-
-Reveal:
-
-## 34. dating-exit-excuse
+## 30. dating-exit-excuse
 
 You're 10 minutes into a first date in Central London and they say: ‘Honestly, I think astrology has more predictive validity than peer-reviewed economics.’ What is your exact exit excuse?
 
 Reveal: No fixed answer. The room's votes decide it.
 
-## 35. dial-pop-culture
+## 31. christianity-branches
+
+Which of these ARE branches of Christianity?
+
+Reveal:
+
+## 32. inflation-sausage-roll
+
+The Greggs gold standard: one sausage roll
+
+Reveal: 135 p
+
+## 33. trump-made-up-country
+
+Which of these countries has Trump made up?
+
+Reveal:
+
+## 34. complete-a-wordle
+
+Complete a wordle
+
+Reveal: VULGY (six guesses, 120 seconds; 100 points for solving)
+
+## 35. real-name-jamie-foxx
+
+What was their original name? Jamie Foxx
+
+Reveal: Eric Marlon Bishop / Eric Bishop (close spellings count)
+
+## 36. guess-airport-lounge
+
+Who would miss their flight because they were arguing that the airport lounge buffet counts as an all-inclusive holiday?
+
+Reveal: The named person is set on the question.
+
+## 37. property-price-roulette
+
+How much is this London “studio flat” per month? Winkworth listing, February 2026.
+
+Reveal: 750 £
+
+## 38. dial-pop-culture
 
 Predict the room’s middle ground: Pop Culture Snobbery.
 
 Reveal: null /100
 
-## 36. dial-london-geography
+## 39. guess-tab-soho-pint
+
+What does a standard pint of Camden Hells cost at The Roxy, Soho? Menu checked October 2026.
+
+Reveal: 7.3 £
+
+## 40. inflation-cheeseburger
+
+The 99p nostalgia tax: a Maccies cheeseburger
+
+Reveal: 139 p
+
+## 41. dial-london-geography
 
 Predict the room’s middle ground: London Geography.
 
 Reveal: null /100
 
-## 37. dial-british-politics
+## 42. guess-tab-ev-charge
+
+Charge a 62 kWh battery from empty to full at the Jan–Mar 2026 GB average capped electricity rate. What is the energy cost?
+
+Reveal: 17.17 £
+
+## 43. dial-british-politics
 
 Predict the room’s middle ground: British Politics.
 
 Reveal: null /100
 
-## 38. chess-battle
+## 44. chess-battle
 
 Play 1-minute blitz against the Humza bot!
 
 Reveal: Closer to undefined.
 
-## 39. group-chat-figurine
+## 45. group-chat-figurine
 
 I just dropped £400 on a Japanese imported figurine and told my mum it was an educational tax deduction.
 
 Reveal: The named person is set on the question.
 
-## 40. cursed-search-history
+## 46. cursed-search-history
 
 Hold your nerve as the search history gets worse. Hit BAIL to bank points before the Raid.
 
 Reveal:
 
-## 41. kart-sprint
+## 47. kart-park-grand-prix
+
+One lap of 26 Park. Three minutes. Who can actually drive?
+
+Reveal: Closer to undefined.
+
+## 48. ed-or-humza
+
+Who said it? Sort every quote into Ed or Humza.
+
+Reveal: Ed You're ass is in grabbing distance, Biblically accurate breasts on that one, Internally I feel external and externally I feel internal, A creampie. His cum in your vagina., No exchange of bodily fluids occurred, (In response to how was your Christmas) It was good. Busted one out in your memory, You know Belinda asked me if I wanted to get a fleshlight and I said only if it came inside a doll of the main character from zootopia, I’ve decided that I’m going to bust to the thought of you tonight, The classic - I’m going to touch you, you're tits are looking great today, You would've been worth the jail time, If they don't want a dick they can give the inches to me; Humza I'd baptise a baby with a water pressure jet just to make the local news, I sense Israel in your general direction, You're talking a lot of shit for a washing machine, Sometimes bad men have to do bad things to teach women a lesson, If jensan can bang all those baddies with a 1 incher imagine what I can do with a 9mm, Smaller but firm can outperform larger but drippy
+
+## 49. kart-sprint
 
 One lap. three minutes. Who can actually drive?
 
