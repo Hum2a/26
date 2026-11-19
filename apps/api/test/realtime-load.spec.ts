@@ -208,7 +208,16 @@ async function measure(size: number) {
       rowsWritten,
       rowsWrittenPerSecond: Math.round(rowsWritten / raceSeconds),
       rowsPerThreeMinuteRace: Math.round((rowsWritten / raceSeconds) * 180),
-      rowsPerTick: Number((rowsWritten / Math.max(1, stage.kartAt.length)).toFixed(1)),
+      rowsPerTick: Number(
+        (
+          rowsWritten /
+          Math.max(
+            1,
+            tickLateness(diagnostics.report.realtime)?.ticks ??
+              Math.round(raceSeconds / 0.1),
+          )
+        ).toFixed(1),
+      ),
       rowsByStatement,
     },
     server: diagnostics.report.realtime,
@@ -369,16 +378,16 @@ async function countRowWrites(
 ) {
   await runInDurableObject(stub, (_instance, state) => {
     const sql = state.storage.sql as SqlStorage & {
-      __loadCursors?: [string, SqlStorageCursor<Record<string, SqlStorageValue>>][];
+      __loadWrites?: [string, number][];
       __loadExec?: SqlStorage["exec"];
     };
-    sql.__loadCursors = [];
+    sql.__loadWrites = [];
     if (!sql.__loadExec) {
       const exec = sql.exec.bind(sql);
       sql.__loadExec = exec;
       sql.exec = ((query: string, ...bindings: unknown[]) => {
         const cursor = exec(query, ...bindings);
-        sql.__loadCursors?.push([query, cursor]);
+        sql.__loadWrites?.push([query, cursor.rowsWritten]);
         return cursor;
       }) as SqlStorage["exec"];
     }
@@ -387,17 +396,17 @@ async function countRowWrites(
     stop: () =>
       runInDurableObject(stub, (_instance, state) => {
         const sql = state.storage.sql as SqlStorage & {
-          __loadCursors?: [string, SqlStorageCursor<Record<string, SqlStorageValue>>][];
+          __loadWrites?: [string, number][];
         };
-        const cursors = sql.__loadCursors ?? [];
-        sql.__loadCursors = undefined;
+        const writes = sql.__loadWrites ?? [];
+        sql.__loadWrites = undefined;
         const byStatement = new Map<string, number>();
         let total = 0;
-        for (const [query, cursor] of cursors) {
-          if (cursor.rowsWritten === 0) continue;
-          total += cursor.rowsWritten;
+        for (const [query, rows] of writes) {
+          if (rows === 0) continue;
+          total += rows;
           const key = query.replace(/\s+/g, " ").trim().slice(0, 72);
-          byStatement.set(key, (byStatement.get(key) ?? 0) + cursor.rowsWritten);
+          byStatement.set(key, (byStatement.get(key) ?? 0) + rows);
         }
         return {
           total,

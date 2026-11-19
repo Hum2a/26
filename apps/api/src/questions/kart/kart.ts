@@ -47,6 +47,7 @@ import {
   copyLiveKart,
   discardUnsavedKarts,
   kartQueues,
+  kartRestored,
   liveKart,
   saveLiveKart,
 } from "./kart-live.ts";
@@ -61,6 +62,26 @@ const write = (sql: SqlStorage, id: string, race: KartRace) =>
 export const checkpointKart = (sql: SqlStorage) => checkpointLiveKarts(sql);
 /** After a failed transaction: reload the race from its last committed checkpoint. */
 export const discardUnsavedKart = (sql: SqlStorage) => discardUnsavedKarts(sql);
+
+/**
+ * Replay the live race to the room clock. After a restart the stored checkpoint
+ * can lag by up to the checkpoint interval; snapshots and kart frames call this
+ * with the Durable Object's clock so reconnects are not shown rewound.
+ * Never rewinds: `reduceKartTimeline` keeps `elapsedMs` if `now` is behind.
+ */
+export function syncKart(sql: SqlStorage, now: number): KartRace | undefined {
+  const store = createSqlStore(sql);
+  const room = store.readRoom();
+  const q = questionFor(room);
+  if (q?.kind !== "kart") return undefined;
+  const race = liveKart(sql, q.id);
+  if (!race) return undefined;
+  if (room.phase !== "collect" || room.paused || room.hold) return race;
+  // Only after a restart: a live room must not fold queued controls in on a
+  // snapshot, because ingress is applied on the tick, not on a read.
+  if (!kartRestored(sql, q.id)) return race;
+  return catchUp(sql, store, q, now);
+}
 
 type RoomKartSettings = { settings?: KartSettings; history?: KartSettingHistory };
 export const readRoomKartItems = (sql: SqlStorage) =>

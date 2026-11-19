@@ -15,6 +15,7 @@ import {
   discardUnsavedKart,
   KartInputBuffer,
   readKart,
+  syncKart,
 } from "../src/questions/kart/kart.ts";
 import { kartCheckpointWrites } from "../src/questions/kart/kart-live.ts";
 
@@ -272,6 +273,26 @@ it("restores the last checkpoint after a restart with a newer revision and the r
   });
 });
 
+it("replays a restored checkpoint to the room clock before serving a snapshot", async () => {
+  const { stub, now } = await setup();
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    for (let step = 1; step <= kartCheckpointWrites + 4; step += 1)
+      tick(sql, now + step * 100);
+    expect(stored(sql).elapsedMs).toBeLessThan(
+      readKart(sql, kartQuestion(sql).id)!.elapsedMs,
+    );
+  });
+  await evictDurableObject(stub);
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    const checkpoint = stored(sql).elapsedMs;
+    const live = syncKart(sql, now + (kartCheckpointWrites + 4) * 100)!;
+    expect(live.elapsedMs).toBeGreaterThan(checkpoint);
+    expect(live.elapsedMs).toBe((kartCheckpointWrites + 4) * 100);
+  });
+});
+
 it("saves the live race before a host pause, keeps it through resume and a restart", async () => {
   const { stub, playerIds, raceId, credential, now } = await setup();
   let paused: KartRace | undefined;
@@ -386,6 +407,28 @@ it("drops a rolled-back finish from memory and accepts the retry", async () => {
     ).toBe(true);
     expect(stored(sql).drivers[0]!.status).toBe("FINISHED");
     expect(stored(sql).drivers[0]!.lapTimeMs).toBe(12_345);
+  });
+});
+
+it("a refused host command does not rewind unsaved ticks", async () => {
+  const { stub, credential, now } = await setup();
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    for (let step = 1; step <= 4; step += 1) tick(sql, now + step * 100);
+    expect(readKart(sql, kartQuestion(sql).id)!.elapsedMs).toBe(400);
+    expect(stored(sql).elapsedMs).toBe(100);
+  });
+  const refused = await stub.hostAction({
+    ...credential,
+    action: "kart-setting",
+    kartSetting: { unknown: true },
+    requestId: crypto.randomUUID(),
+    nowMs: now + 450,
+  });
+  expect(refused.ok).toBe(false);
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    expect(readKart(sql, kartQuestion(sql).id)!.elapsedMs).toBe(400);
   });
 });
 
