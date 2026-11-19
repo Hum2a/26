@@ -49,6 +49,13 @@ export function createSqlStore(sql: SqlStorage): GameStore {
     casRoom: (expected, next) => writeRoom(sql, next, true, expected),
     jobs: () => readJobs(sql),
     saveJob: (job) => saveJob(sql, job),
+    jobDueAt: (jobId) =>
+      sql
+        .exec<{ due_at: number | null }>(
+          "SELECT due_at FROM schedule_job WHERE job_id = ? AND status = 'pending'",
+          jobId,
+        )
+        .toArray()[0]?.due_at,
     resources: () => readResources(sql),
     saveResource: (resource) => saveResource(sql, resource),
     hasAnswer: (playerId, phaseGeneration) => hasAnswer(sql, playerId, phaseGeneration),

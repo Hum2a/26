@@ -42,14 +42,25 @@ import type { KartQuestion } from "../definition.ts";
 import { publicQuestionCore } from "../project.ts";
 import { createSqlStore } from "../../room/sql-store.ts";
 import { questionFor } from "../registry.ts";
+import {
+  checkpointLiveKarts,
+  discardUnsavedKarts,
+  copyLiveKart,
+  kartQueues,
+  liveKart,
+  saveLiveKart,
+} from "./kart-live.ts";
 
-const key = "kart-race";
-export const readKart = (sql: SqlStorage, id: string) =>
-  readRoundState<KartRace>(sql, id, key);
-const write = (sql: SqlStorage, id: string, race: KartRace) => {
-  race.checkpointRevision = (race.checkpointRevision ?? 0) + 1;
-  writeRoundState(sql, id, key, race);
-};
+/** A private copy of the race, including ticks not yet checkpointed. */
+export const readKart = (sql: SqlStorage, id: string) => copyLiveKart(sql, id);
+/** Saved before the caller's reply: grids, host changes, guest actions and results. */
+const write = (sql: SqlStorage, id: string, race: KartRace) =>
+  saveLiveKart(sql, id, race, true);
+
+/** Saves unsaved race ticks now; see `kart-live.ts`. */
+export const checkpointKart = (sql: SqlStorage) => checkpointLiveKarts(sql);
+/** After a failed transaction: reload the race from its last committed checkpoint. */
+export const discardUnsavedKart = (sql: SqlStorage) => discardUnsavedKarts(sql);
 
 type RoomKartSettings = { settings?: KartSettings; history?: KartSettingHistory };
 export const readRoomKartItems = (sql: SqlStorage) =>
@@ -61,9 +72,10 @@ export function kartItemsDetails(
   sql: SqlStorage,
   questionId: string | undefined,
   phase: string,
+  live?: KartRace,
 ) {
   const saved = readRoomKartItems(sql),
-    race = questionId ? readKart(sql, questionId) : undefined;
+    race = live ?? (questionId ? liveKart(sql, questionId) : undefined);
   return {
     kartItems: {
       next: saved.rules,
@@ -151,7 +163,7 @@ export function kartHandlingDetails(
   phase: string,
 ) {
   const saved = readRoomKartHandling(sql),
-    race = questionId ? readKart(sql, questionId) : undefined;
+    race = questionId ? liveKart(sql, questionId) : undefined;
   return {
     kartHandling: {
       next: saved.preset,
@@ -378,8 +390,10 @@ export function enterKart(
   q: KartQuestion,
   now: number,
 ): void {
+  // Every phase change of a kart round saves the race as it stood.
+  checkpointKart(sql);
   const room = store.readRoom();
-  if (room.phase === "intro" && !readKart(sql, q.id)) {
+  if (room.phase === "intro" && !liveKart(sql, q.id)) {
     const players = sql
       .exec<{ player_id: string; nickname: string; points: number }>(
         `SELECT player_id, nickname,
@@ -423,7 +437,7 @@ export function enterKart(
       players: players.map((p) => p.player_id),
     });
   }
-  if (room.phase === "collect") scheduleTick(store, now, 0);
+  if (room.phase === "collect") scheduleTick(store, now);
 }
 
 type CollectDue = { due_at: number | null; remaining_ms: number | null } | undefined;
@@ -464,34 +478,47 @@ function elapsed(
   return elapsedAt(collectDue(sql, store), store.readRoom().paused, now, limit);
 }
 
+/**
+ * Brings the race up to the room clock. The new revision stays in memory
+ * unless it starts the race, completes a lap, finishes or retires a kart,
+ * ends the race, or `kartCheckpointWrites` revisions are already unsaved.
+ */
 function catchUp(
   sql: SqlStorage,
   store: GameStore,
   q: KartQuestion,
   now: number,
 ): KartRace | undefined {
-  const race = readKart(sql, q.id);
+  const race = liveKart(sql, q.id);
   if (!race) return undefined;
   const target = elapsed(sql, store, now, q.timeLimitMs);
-  const events = sql
-    .exec<{ payload: string }>(
-      "SELECT payload FROM round_state WHERE question_id = ? AND state_key LIKE 'kart-input:%'",
-      q.id,
-    )
-    .toArray()
-    .flatMap((row) => (JSON.parse(row.payload) as InputQueue).pending)
+  const events = [...kartQueues(sql, q.id, race.raceId).values()]
+    .flatMap((queue) => queue.pending)
     .filter((e) => e.elapsed <= target)
     .sort((a, b) => a.elapsed - b.elapsed || a.input.sequence - b.input.sequence);
   const next = reduceKartTimeline(race, events, target);
-  write(sql, q.id, next);
+  saveLiveKart(sql, q.id, next, raceMilestone(race, next));
   return next;
 }
 
-type InputQueue = {
-  at: number;
-  lastSequence: number;
-  pending: { playerId: string; elapsed: number; input: KartInput }[];
-};
+/** Changes a restart must never lose: the start, laps, finishes and the end. */
+export function raceMilestone(before: KartRace, after: KartRace): boolean {
+  if (before.ended !== after.ended) return true;
+  if (before.elapsedMs === 0 && after.elapsedMs > 0) return true;
+  for (let index = 0; index < after.drivers.length; index += 1) {
+    const was = before.drivers[index],
+      now = after.drivers[index]!;
+    if (
+      !was ||
+      was.playerId !== now.playerId ||
+      was.status !== now.status ||
+      (was.lapsDone ?? 0) !== (now.lapsDone ?? 0) ||
+      (was.lap?.recoveries ?? 0) !== (now.lap?.recoveries ?? 0)
+    )
+      return true;
+  }
+  return before.drivers.length !== after.drivers.length;
+}
 
 export function acceptKartInput(
   sql: SqlStorage,
@@ -550,7 +577,7 @@ export function useKartItem(
   now: number,
 ): { ok: true } | { ok: false; message: string } {
   const room = store.readRoom(),
-    saved = readKart(sql, q.id);
+    saved = liveKart(sql, q.id);
   if (
     room.phase !== "collect" ||
     room.paused ||
@@ -591,7 +618,7 @@ export function recoverKart(
       ok: false,
       message: "Recovery is available only while the race is running.",
     };
-  const saved = readKart(sql, q.id);
+  const saved = liveKart(sql, q.id);
   if (
     !saved ||
     saved.raceId !== raceId ||
@@ -610,13 +637,9 @@ export function recoverKart(
       message:
         "Wait two race seconds before recovering again, or watch the stage if you have finished.",
     };
-  const queue = readRoundState<InputQueue>(sql, q.id, `kart-input:${playerId}`);
-  if (queue)
-    writeRoundState(sql, q.id, `kart-input:${playerId}`, {
-      ...queue,
-      at: now,
-      pending: [],
-    });
+  const queues = kartQueues(sql, q.id, next.raceId);
+  const queue = queues.get(playerId);
+  if (queue) queues.set(playerId, { ...queue, at: now, pending: [] });
   write(sql, q.id, next);
   sql.exec("UPDATE room SET state_version = state_version + 1");
   return { ok: true };
@@ -634,21 +657,16 @@ export function releaseKartInputs(
   const race = catchUp(sql, store, q, now);
   if (!race) return;
   write(sql, q.id, reduceKart(race, { type: "release" }));
-  for (const row of sql
-    .exec<{ state_key: string; payload: string }>(
-      "SELECT state_key, payload FROM round_state WHERE question_id = ? AND state_key LIKE 'kart-input:%'",
-      q.id,
-    )
-    .toArray()) {
-    const queue = JSON.parse(row.payload) as InputQueue;
-    writeRoundState(sql, q.id, row.state_key, { ...queue, pending: [] });
-  }
+  const queues = kartQueues(sql, q.id, race.raceId);
+  for (const [playerId, queue] of queues)
+    queues.set(playerId, { ...queue, pending: [] });
 }
 
 /**
- * Validates and stores controls in arrival order, each stamped with its own
+ * Validates and queues controls in arrival order, each stamped with its own
  * arrival time. The room calls this once per tick for everything that arrived
- * since the last tick, so queues are durable before the tick reads them.
+ * since the last tick. Queues live in memory: controls are never acknowledged,
+ * and each tick folds them into the race, which is checkpointed.
  * Room, session and player reads happen once per batch, not once per control.
  */
 export function acceptKartInputs(
@@ -677,8 +695,7 @@ export function acceptKartInputs(
   );
   const drivers = new Set(session.players);
   const due = collectDue(sql, store);
-  const queues = new Map<string, InputQueue | undefined>();
-  const changed = new Set<string>();
+  const queues = kartQueues(sql, q.id, session.raceId);
   const results = arrivals.map(({ playerId, raw, at: now }) => {
     const parsed = kartInputSchema.safeParse(raw);
     if (
@@ -688,9 +705,6 @@ export function acceptKartInputs(
       !active.has(playerId)
     )
       return false;
-    const stateKey = `kart-input:${playerId}`;
-    if (!queues.has(playerId))
-      queues.set(playerId, readRoundState<InputQueue>(sql, q.id, stateKey));
     const previous = queues.get(playerId);
     if (
       previous &&
@@ -708,11 +722,8 @@ export function acceptKartInputs(
         { playerId, elapsed: at, input: parsed.data },
       ].slice(-4),
     });
-    changed.add(playerId);
     return true;
   });
-  for (const playerId of changed)
-    writeRoundState(sql, q.id, `kart-input:${playerId}`, queues.get(playerId));
   return results;
 }
 
@@ -733,13 +744,13 @@ export function nextTickDueAt(now: number, previousDueAt?: number | null): numbe
 function scheduleTick(
   store: GameStore,
   now: number,
-  step: number,
+  jobId?: string,
   previousDueAt?: number | null,
 ): void {
   const room = store.readRoom();
   if (room.phase !== "collect" || room.paused || room.hold) return;
   store.saveJob({
-    jobId: `kart:${room.scopeGeneration}:${room.phaseGeneration}:${step}`,
+    jobId: jobId ?? `kart:${room.scopeGeneration}:${room.phaseGeneration}:0`,
     jobType: "gameplay",
     dueAt: nextTickDueAt(now, previousDueAt),
     remainingMs: null,
@@ -760,12 +771,14 @@ export function tickKart(
   job: ScheduledJob,
   now: number,
 ): void {
-  // A finished tick has no further use. Keeping 225 rows a race would make every
-  // later alarm read them all.
-  sql.exec(
-    "DELETE FROM schedule_job WHERE job_id = ? AND payload = 'kart-tick'",
-    job.jobId,
-  );
+  // One job row serves the whole race: each tick moves its due time on, so a
+  // tick writes one row instead of closing, deleting and inserting one. The
+  // phone's kart frame carries the race; the room version is unchanged.
+  const remove = () =>
+    sql.exec(
+      "DELETE FROM schedule_job WHERE job_id = ? AND payload = 'kart-tick'",
+      job.jobId,
+    );
   const room = store.readRoom();
   if (
     room.phase !== "collect" ||
@@ -773,13 +786,17 @@ export function tickKart(
     room.hold ||
     job.phaseGeneration !== room.phaseGeneration ||
     job.scopeGeneration !== room.scopeGeneration
-  )
+  ) {
+    remove();
     return;
+  }
   const next = catchUp(sql, store, q, now);
-  if (!next) return;
-  sql.exec("UPDATE room SET state_version = state_version + 1");
-  if (next.ended) advance(store, now);
-  else scheduleTick(store, now, Number(job.jobId.split(":").at(-1)) + 1, job.dueAt);
+  if (!next || next.ended) {
+    remove();
+    if (next?.ended) advance(store, now);
+    return;
+  }
+  scheduleTick(store, now, job.jobId, job.dueAt);
 }
 
 export function kartScores(
@@ -788,7 +805,7 @@ export function kartScores(
   q: KartQuestion,
   now: number,
 ): void {
-  const race = readKart(sql, q.id);
+  const race = liveKart(sql, q.id);
   if (!race) return;
   const deadline = store
     .jobs()
@@ -834,7 +851,8 @@ export function prepareKartShared(
   sql: SqlStorage,
   q: KartQuestion,
 ): KartShared | undefined {
-  const race = readKart(sql, q.id);
+  // The live race, read once without a copy: every use below only projects it.
+  const race = liveKart(sql, q.id);
   if (!race) return undefined;
   const full = projectKartRace(race, null, q.points);
   return { race, full, index: buildKartFrameIndex(race, full) };
@@ -847,11 +865,13 @@ export function projectKart(
   selfPlayerId: string | undefined,
   shared?: KartShared,
 ) {
-  const race = shared ? shared.race : readKart(sql, q.id);
+  // Read-only: the live race, shared by every snapshot in a broadcast.
+  const race = shared ? shared.race : liveKart(sql, q.id);
   const scored = ["reveal", "scores", "final", "podium"].includes(room.phase);
-  const queue = selfPlayerId
-    ? readRoundState<InputQueue>(sql, q.id, `kart-input:${selfPlayerId}`)
-    : undefined;
+  const queue =
+    race && selfPlayerId
+      ? kartQueues(sql, q.id, race.raceId).get(selfPlayerId)
+      : undefined;
   const fullRace = shared
     ? shared.full
     : race
@@ -1014,22 +1034,11 @@ export function phoneRaceView(
  * instead of a full snapshot when a tick changes nothing but the race.
  */
 export function kartFrames(sql: SqlStorage, q: KartQuestion) {
-  const race = readKart(sql, q.id);
+  const race = liveKart(sql, q.id);
   if (!race) return undefined;
   const full = projectKartRace(race, null, q.points);
   const shared = buildKartFrameIndex(race, full);
-  const cursors = new Map<string, number>();
-  for (const row of sql
-    .exec<{ state_key: string; payload: string }>(
-      "SELECT state_key, payload FROM round_state WHERE question_id = ? AND state_key LIKE 'kart-input:%'",
-      q.id,
-    )
-    .toArray()) {
-    cursors.set(
-      row.state_key.slice("kart-input:".length),
-      (JSON.parse(row.payload) as InputQueue).lastSequence,
-    );
-  }
+  const queues = kartQueues(sql, q.id, race.raceId);
   let submissionCount = 0;
   for (const driver of race.drivers) {
     if (!driver.cpu && driver.status !== "RACING") {
@@ -1038,13 +1047,17 @@ export function kartFrames(sql: SqlStorage, q: KartQuestion) {
   }
   return {
     full,
-    itemsControl: kartItemsDetails(sql, q.id, createSqlStore(sql).readRoom().phase)
-      .kartItems,
+    itemsControl: kartItemsDetails(
+      sql,
+      q.id,
+      createSqlStore(sql).readRoom().phase,
+      race,
+    ).kartItems,
     contactHistory: race.contactHistory ?? [],
     recap: kartRaceRecap(race),
     submissionCount,
     forPhone: (playerId: string) =>
-      phoneRaceView(race, full, playerId, cursors.get(playerId), shared),
+      phoneRaceView(race, full, playerId, queues.get(playerId)?.lastSequence, shared),
   };
 }
 
@@ -1080,7 +1093,7 @@ export function acceptKartFinish(
   const due = collectDue(sql, store)?.due_at;
   if (due == null || now >= due)
     return { ok: false, message: "The finish window has closed." };
-  const race = readKart(sql, q.id);
+  const race = liveKart(sql, q.id);
   if (
     !race ||
     race.ended ||
