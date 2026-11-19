@@ -71,7 +71,7 @@
   gap: 1rem;
 }
 .stage-clock-compact .stage-timer {
-  font-size: clamp(64px, min(5.5vw, 9.5vh), 96px);
+  font-size: 120px;
 }
 .projector-lobby {
   display: grid;
@@ -202,9 +202,14 @@
 .stage-presentation .skin-panel {
   padding: clamp(0.85rem, min(1.8vw, 2.5vh), 1.65rem);
   min-width: 0;
+  font-size: clamp(30px, min(2.1vw, 3.6vh), 38px);
+  line-height: 1.2;
 }
 .stage-presentation .skin-panel > h2 {
   font-size: clamp(32px, min(2.3vw, 4vh), 44px);
+}
+.stage-presentation .skin-panel .stage-prompt {
+  font-size: clamp(38px, min(3.3vw, 5.5vh), 62px);
 }
 .stage-presentation .skin-panel > div {
   margin-top: clamp(0.45rem, 1.1vh, 0.75rem);

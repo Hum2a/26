@@ -11,8 +11,8 @@
   padding: max(1rem, 5vh) max(1rem, 5vw);
   background: var(--stage-background);
   color: var(--stage-body);
-  font-size: clamp(30px, min(2.1vw, 3.6vh), 38px);
-  line-height: 1.2;
+  font-size: 40px;
+  line-height: 1.25;
 }
 
 .stage-safe .text-sm,
@@ -22,13 +22,13 @@
 .stage-safe .text-2xl,
 .stage-safe .text-3xl,
 .stage-safe .text-4xl {
-  font-size: clamp(30px, min(2.1vw, 3.6vh), 38px);
-  line-height: 1.2;
+  font-size: 40px;
+  line-height: 1.25;
 }
 
 .stage-safe .stage-prompt,
 .stage-safe .stage-question {
-  font-size: clamp(38px, min(3.3vw, 5.5vh), 62px);
+  font-size: clamp(72px, 5.2vw, 96px);
   line-height: 1.06;
   color: var(--stage-question);
 }
@@ -52,7 +52,7 @@
 .stage-timer {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(72px, min(6.5vw, 11vh), 112px);
+  font-size: clamp(120px, 9vw, 180px);
   line-height: 0.95;
   color: var(--stage-question);
 }

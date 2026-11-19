@@ -259,3 +259,9 @@
   font-size: clamp(28px, min(1.6vw, 2.6vh), 30px);
   color: var(--muted);
 }
+
+@media (max-width: 800px) {
+  .ballot-results {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

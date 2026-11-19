@@ -234,7 +234,7 @@ button.order-line:disabled {
 }
 
 .order-line[data-size="stage"] {
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   min-height: clamp(3.25rem, 7vh, 4.5rem);
   padding: clamp(0.35rem, 0.8vh, 0.6rem) 0.9rem;
 }
@@ -244,14 +244,21 @@ button.order-line:disabled {
 }
 
 .order-line[data-size="stage"] .order-country {
+  grid-column: 2 / -1;
   font-size: clamp(28px, min(1.85vw, 3.1vh), 36px);
   overflow-wrap: normal;
   word-break: normal;
 }
 
+.order-line[data-size="stage"] .design-voters {
+  grid-column: 1 / 3;
+  grid-row: 2;
+}
+
 .order-line[data-size="stage"] .order-verdict {
   position: static;
-  grid-column: 1 / -1;
+  grid-column: 3;
+  grid-row: 2;
   justify-self: end;
   align-self: center;
   font-size: clamp(28px, min(1.5vw, 2.5vh), 30px);
