@@ -6943,3 +6943,34 @@ A phone sends a heartbeat every 100 ms (10 Hz) and, while the steering keeps cha
 **Load after the cap** (same harness, `LOAD_SIZES=80`, one sample each, logs `artifacts/load-2026-11-19-capped-{10,11}.log`): 10 Hz — answer ack p95 449 ms, 2.3 stage updates/s, stage gap p95 895 ms; 11 Hz (the most a capped phone can send) — 528 ms, 2.2/s, 1037 ms. Compared with 1.2/s and a 3224 ms gap at 18 Hz. Still well below the room's 10 updates/s tick, so 80 phones driving at once remains a known limit. Local workerd only.
 
 **Checks:** `npx vitest run src/kart` in `apps/web` — 45 files, 234 passed (the send-rate test now checks no more than 11 messages a second and a 90 ms minimum gap).
+
+## 19 November 2026 — Kart race smooth with 80 drivers (local)
+
+**Status:** branches `kart-load-measure` and `kart-cheap-fixes`, committed locally, not pushed or merged. Staging not yet measured.
+
+**What was wrong.** The earlier load test sent all 80 guests' controls in the same instant every 100 ms. The race tick then queued behind that burst (mean tick lateness 449 ms). Spreading the same 80 messages across the beat brought the room back to 7.4 updates/s, close to an idle room. Real phones were bursty too: every phone starts its heartbeat from the same race-start broadcast. Separately, each tick scheduled the next from its own start time, so a few milliseconds of lateness per tick capped even an idle room at about 8 updates/s.
+
+**Changes.**
+
+- `kart-load-measure`: `PartyRoom.runDueJobs` records race-tick lateness in the realtime meter (`tick:lateMs`, `tick:late>250`). The load harness gains `LOAD_STAGGER=1` and `LOAD_MODE=input|ping|wrong-race`, and prints tick lateness.
+- `kart-cheap-fixes`: `nextTickDueAt` in `apps/api/src/questions/kart/kart.ts` keeps ticks on a fixed 100 ms beat from the previous due time (a tick a whole beat behind waits 20 ms rather than firing back to back). `useKartSocket` starts each phone's heartbeat at a random point in the beat. The admin bot fleet spreads its kart inputs across the beat.
+
+**Local results, 80 guests, one sample each** (logs: ignored `artifacts/load-base-*.log`, `artifacts/load-cheap-*.log`):
+
+| Build       | Scenario                 | Stage updates/s | Stage gap p95 | Tick lateness mean | Ticks > 250 ms late |
+| ----------- | ------------------------ | --------------: | ------------: | -----------------: | ------------------: |
+| Before      | 10 Hz, one burst         |             2.0 |       1209 ms |             449 ms |             7 of 11 |
+| Before      | 10 Hz, spread            |             7.4 |        164 ms |              38 ms |                   0 |
+| Before      | 10 Hz pings only, spread |             8.0 |        127 ms |              25 ms |                   0 |
+| Before      | 10 Hz wrong race, spread |             8.6 |        130 ms |              18 ms |                   0 |
+| Before      | No inputs                |             8.0 |        131 ms |              26 ms |                   0 |
+| Cheap fixes | 10 Hz, spread            |             9.4 |        139 ms |              60 ms |                   0 |
+| Cheap fixes | 18 Hz, spread            |            10.3 |        114 ms |              43 ms |                   0 |
+| Cheap fixes | No inputs                |            10.1 |        116 ms |              27 ms |                   0 |
+| Cheap fixes | 10 Hz, one burst         |             3.3 |        453 ms |             273 ms |            11 of 20 |
+
+Answer acknowledgement p95 ranged 386–1373 ms across these single samples, with no pattern by scenario; it is measured before the race starts and needs repeat samples before drawing a conclusion.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 30 existing warnings. Formatting passed. `npx vitest run src/kart` and `src/developer` in `apps/web` — 52 files, 258 passed. `kart-room`, `kart-device-room`, `kart-score` and `kart-items-room` specs in `apps/api` — 57 passed.
+
+**Staging:** blocked. Wrangler on this PC is logged in to a different Cloudflare account from the one `apps/api/wrangler.jsonc` names, so no deploy was attempted.
