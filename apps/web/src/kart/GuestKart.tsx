@@ -320,39 +320,73 @@ export function GuestKart({
         {rehearsal ? "Controller rehearsal — no race is running." : instruction}
       </p>
       {self ? (
-        <div className="kart-phone-hud">
-          <div>
-            <strong>
-              {self.status === "FINISHED"
-                ? self.lapTimeMs === null
-                  ? "Time unavailable"
-                  : `${(self.lapTimeMs / 1000).toFixed(2)}s`
-                : `Sector ${Math.min(8, self.checkpoint + 1)} / 8`}
-            </strong>
-            <p>
-              {complete
-                ? self.status === "FINISHED"
-                  ? `Position ${place ?? "—"}`
-                  : `${Math.round(self.progress * 100)}% of the ${laps > 1 ? "race" : "lap"}`
-                : `${Math.max(0, (timeLimitMs - (race?.elapsedMs ?? 0)) / 1000).toFixed(1)}s left`}
-            </p>
-            <p>
-              {complete
-                ? "Your result is saved by the server."
-                : `Position ${place ?? "—"}${race?.participantCount === undefined ? "" : ` of ${race.participantCount}`}`}
-            </p>
+        <div className="kart-hud-stack">
+          {/* Just before the view: upright phones overlay its top-left corner. */}
+          {race && !complete && snapshot.phase === "collect" ? (
+            <KartRaceHud
+              race={race}
+              self={self}
+              place={place}
+              banner={feedback.banner}
+              reduced={reduced}
+            />
+          ) : null}
+          <div className="kart-phone-hud">
+            <div>
+              <strong>
+                {self.status === "FINISHED"
+                  ? self.lapTimeMs === null
+                    ? "Time unavailable"
+                    : `${(self.lapTimeMs / 1000).toFixed(2)}s`
+                  : `Sector ${Math.min(8, self.checkpoint + 1)} / 8`}
+              </strong>
+              <p>
+                {complete
+                  ? self.status === "FINISHED"
+                    ? `Position ${place ?? "—"}`
+                    : `${Math.round(self.progress * 100)}% of the ${laps > 1 ? "race" : "lap"}`
+                  : `${Math.max(0, (timeLimitMs - (race?.elapsedMs ?? 0)) / 1000).toFixed(1)}s left`}
+              </p>
+              <p>
+                {complete
+                  ? "Your result is saved by the server."
+                  : `Position ${place ?? "—"}${race?.participantCount === undefined ? "" : ` of ${race.participantCount}`}`}
+              </p>
+            </div>
           </div>
+          {!complete ? (
+            <div className="kart-telemetry" aria-label="Driving feedback">
+              <p className="kart-driving-state" role="status">
+                {!driveOpen
+                  ? "Controls released"
+                  : stunned
+                    ? "Barrier impact — controls resume in a moment"
+                    : self.wrongWay
+                      ? "Wrong way — turn around"
+                      : self.contact
+                        ? "Barrier contact — steer away"
+                        : self.boostRemainingMs > 0
+                          ? "BOOST! Keep accelerating"
+                          : (self.driftLevel ?? 0) >= 1
+                            ? "Drift ready — release R!"
+                            : self.drifting
+                              ? "Charging drift…"
+                              : "Accelerate · steer gently to the right"}
+              </p>
+              <DriftGauge
+                chargeMs={self.driftChargeMs ?? self.driftCharge * 700}
+                boostLevel={self.boostRemainingMs > 0 ? self.boostLevel || 1 : 0}
+              />
+              {(self.height ?? 0) > 0 ? (
+                <p>Gliding · {self.height!.toFixed(1)} m · A: glide · B: descend</p>
+              ) : null}
+              <div className="kart-telemetry-labels">
+                <span>R: hold to charge, release to boost</span>
+                <span>{Math.round(Math.abs(self.speed) * 3.6)} km/h</span>
+              </div>
+            </div>
+          ) : null}
         </div>
-      ) : null}
-      {/* Just before the view: upright phones overlay its top-left corner. */}
-      {race && self && !complete && snapshot.phase === "collect" ? (
-        <KartRaceHud
-          race={race}
-          self={self}
-          place={place}
-          banner={feedback.banner}
-          reduced={reduced}
-        />
       ) : null}
       {race && self && !complete ? (
         <KartDriverView
@@ -453,72 +487,44 @@ export function GuestKart({
           names={{ [self.playerId]: self.name }}
         />
       ) : null}
-      {self && !complete ? (
-        <div className="kart-telemetry" aria-label="Driving feedback">
-          <p className="kart-driving-state" role="status">
-            {!driveOpen
-              ? "Controls released"
-              : stunned
-                ? "Barrier impact — controls resume in a moment"
-                : self.wrongWay
-                  ? "Wrong way — turn around"
-                  : self.contact
-                    ? "Barrier contact — steer away"
-                    : self.boostRemainingMs > 0
-                      ? "BOOST! Keep accelerating"
-                      : (self.driftLevel ?? 0) >= 1
-                        ? "Drift ready — release R!"
-                        : self.drifting
-                          ? "Charging drift…"
-                          : "Accelerate · steer gently to the right"}
-          </p>
-          <DriftGauge
-            chargeMs={self.driftChargeMs ?? self.driftCharge * 700}
-            boostLevel={self.boostRemainingMs > 0 ? self.boostLevel || 1 : 0}
-          />
-          {(self.height ?? 0) > 0 ? (
-            <p>Gliding · {self.height!.toFixed(1)} m · A: glide · B: descend</p>
-          ) : null}
-          <div className="kart-telemetry-labels">
-            <span>R: hold to charge, release to boost</span>
-            <span>{Math.round(Math.abs(self.speed) * 3.6)} km/h</span>
-          </div>
-        </div>
-      ) : null}
-      {race?.powers && self && !complete && onUseItem ? (
-        <PowerUpControl
-          item={heldItem}
-          pending={itemPending}
-          disabled={!open || recoveryPending}
-          notice={itemNotice}
-          effect={
-            race.powers.effects.find((e) => e.playerId === self.playerId)?.shieldMs
-              ? "Shield active — blocks one item hit"
-              : race.powers.effects.find((e) => e.playerId === self.playerId)?.slowedMs
-                ? "Item hit — briefly slowed"
-                : race.powers.effects.find((e) => e.playerId === self.playerId)?.turboMs
-                  ? "Turbo active — keep accelerating"
-                  : ""
-          }
-          onUse={() => onUseItem(race.raceId)}
-        />
-      ) : null}
       {!complete ? (
-        <div className="kart-recovery">
-          {race && self && onRecover ? (
-            <Button
-              variant="secondary"
-              disabled={!open || recoveryPending || race.ended}
-              onClick={() => onRecover(race.raceId)}
-            >
-              {recoveryPending ? "Returning…" : "Back to track"}
-            </Button>
+        <div className="kart-action-rail">
+          {race?.powers && self && onUseItem ? (
+            <PowerUpControl
+              item={heldItem}
+              pending={itemPending}
+              disabled={!open || recoveryPending}
+              notice={itemNotice}
+              effect={
+                race.powers.effects.find((e) => e.playerId === self.playerId)?.shieldMs
+                  ? "Shield active — blocks one item hit"
+                  : race.powers.effects.find((e) => e.playerId === self.playerId)
+                        ?.slowedMs
+                    ? "Item hit — briefly slowed"
+                    : race.powers.effects.find((e) => e.playerId === self.playerId)
+                          ?.turboMs
+                      ? "Turbo active — keep accelerating"
+                      : ""
+              }
+              onUse={() => onUseItem(race.raceId)}
+            />
           ) : null}
-          <p role="status">
-            {recoveryPending
-              ? "Returning to the track — controls released"
-              : recoveryNotice}
-          </p>
+          <div className="kart-recovery">
+            {race && self && onRecover ? (
+              <Button
+                variant="secondary"
+                disabled={!open || recoveryPending || race.ended}
+                onClick={() => onRecover(race.raceId)}
+              >
+                {recoveryPending ? "Returning…" : "Back to track"}
+              </Button>
+            ) : null}
+            <p role="status">
+              {recoveryPending
+                ? "Returning to the track — controls released"
+                : recoveryNotice}
+            </p>
+          </div>
         </div>
       ) : null}
       {!complete ? (
