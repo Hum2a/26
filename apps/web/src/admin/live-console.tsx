@@ -2,7 +2,9 @@ import { ChessControls } from "./chess-controls";
 import { phaseLabel } from "../live/phase-label";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { RoomPhaseName } from "@26/shared";
+import { issueProjectorPairing } from "../live/room-api";
 import {
   Button,
   ConfirmDialog,
@@ -534,6 +536,7 @@ export function LiveConsole() {
               </a>
             </div>
           </div>
+          <ProjectorPairingCard key={snapshot.gameId} gameId={snapshot.gameId} />
           <div className="admin-card">
             <div className="admin-card-header">
               <p className="admin-card-title">Connections</p>
@@ -603,6 +606,96 @@ export function LiveConsole() {
           </p>
         ) : null}
       </ConfirmDialog>
+    </section>
+  );
+}
+
+/**
+ * Pairs the projector laptop without an admin login there. The code is shown
+ * here only, works once, and lasts ten minutes; a new code cancels the last.
+ */
+function ProjectorPairingCard({ gameId }: { gameId: string }) {
+  const [issued, setIssued] = useState<{ code: string; expiresAt: string } | null>(
+    null,
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const reduced = useReducedMotion();
+  useEffect(() => {
+    if (!issued) return;
+    const timer = window.setTimeout(
+      () => setIssued(null),
+      Math.max(0, Date.parse(issued.expiresAt) - Date.now()),
+    );
+    return () => window.clearTimeout(timer);
+  }, [issued]);
+  async function show() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await issueProjectorPairing({
+        gameId,
+        requestId: crypto.randomUUID(),
+      });
+      if ("error" in result) {
+        setError(result.error);
+        return;
+      }
+      setIssued(result);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="admin-card" aria-label="Projector pairing">
+      <div className="admin-card-header">
+        <span
+          className="admin-status-dot"
+          data-tone={issued ? "ok" : "muted"}
+          aria-hidden="true"
+        />
+        <p className="admin-card-title">Projector pairing</p>
+      </div>
+      <div className="admin-card-body">
+        <p className="admin-meta">
+          Lets the projector laptop show this room without signing in to admin.
+        </p>
+        <AnimatePresence initial={false}>
+          {issued ? (
+            <motion.div
+              key="pairing-code"
+              initial={{ opacity: 0, y: reduced ? 0 : 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: reduced ? 0.12 : 0.2, ease: "easeOut" }}
+            >
+              <p className="admin-side-code">
+                {issued.code.slice(0, 4)}-{issued.code.slice(4)}
+              </p>
+              <p className="admin-meta">
+                Works once, until{" "}
+                {new Date(issued.expiresAt).toLocaleTimeString("en-GB", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+                . On the projector laptop, open /host, type the join code and this code,
+                then choose Pair this screen.
+              </p>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+        {error ? (
+          <p role="alert" className="admin-inline-warning">
+            {error}
+          </p>
+        ) : null}
+      </div>
+      <div className="admin-card-footer">
+        <Button variant="secondary" disabled={busy} onClick={() => void show()}>
+          {busy ? "Showing…" : issued ? "Show a new code" : "Show pairing code"}
+        </Button>
+      </div>
     </section>
   );
 }

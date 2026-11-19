@@ -14,6 +14,7 @@ import { StageSound } from "./stage-sound";
 import { stageShow } from "./audio";
 import { StagePresentation } from "./stage-presentation";
 import { StageWall } from "./wall/stage-wall";
+import { ProjectorPairing } from "./ProjectorPairing";
 import { usePreloadQuestion } from "../play/preload";
 import "./projector.css";
 
@@ -259,42 +260,64 @@ export function StagePage() {
             </header>
             <EntryNotice message={notice} />
             <div className="projector-setup-grid">
-              <form
-                onSubmit={(event) => void connect(event)}
-                className="projector-connect"
-              >
-                <h2>1. Connect a room</h2>
-                <p>
-                  Use a projector tab in the browser that opened this room from admin.
-                </p>
-                <TextField
-                  label="Join code"
-                  hint="The six-character code on the admin screen."
-                  value={code}
-                  onChange={(event) => setCode(event.target.value)}
-                  maxLength={6}
-                  autoComplete="off"
-                  autoCapitalize="characters"
-                  autoCorrect="off"
-                  spellCheck={false}
-                />
-                <Button
-                  type="submit"
-                  variant={snapshot ? "secondary" : "primary"}
-                  disabled={busy}
+              <div className="projector-connect-column">
+                <form
+                  onSubmit={(event) => void connect(event)}
+                  className="projector-connect"
                 >
-                  {busy ? "Connecting…" : "Connect room"}
-                </Button>
-                {snapshot ? (
-                  <p role="status">
-                    {snapshot.joinCode} · {phaseLabel(snapshot.phase)} ·{" "}
-                    {snapshot.players.length} players ·{" "}
-                    {connected ? "Connected" : "Waiting for the room connection"}
+                  <h2>1. Connect a room</h2>
+                  <p>
+                    Use a projector tab in the browser that opened this room from admin,
+                    or pair this screen with a code below.
                   </p>
-                ) : (
-                  <p>Preview only. No round is running.</p>
-                )}
-              </form>
+                  <TextField
+                    label="Join code"
+                    hint="The six-character code on the admin screen."
+                    value={code}
+                    onChange={(event) => setCode(event.target.value)}
+                    maxLength={6}
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    autoCorrect="off"
+                    spellCheck={false}
+                  />
+                  <Button
+                    type="submit"
+                    variant={snapshot ? "secondary" : "primary"}
+                    disabled={busy}
+                  >
+                    {busy ? "Connecting…" : "Connect room"}
+                  </Button>
+                  {snapshot ? (
+                    <p role="status">
+                      {snapshot.joinCode} · {phaseLabel(snapshot.phase)} ·{" "}
+                      {snapshot.players.length} players ·{" "}
+                      {connected ? "Connected" : "Waiting for the room connection"}
+                    </p>
+                  ) : (
+                    <p>Preview only. No round is running.</p>
+                  )}
+                </form>
+                <AnimatePresence initial={false}>
+                  {snapshot ? null : (
+                    <motion.div
+                      key="projector-pairing"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                    >
+                      <ProjectorPairing
+                        joinCode={code}
+                        onPaired={(joinCode) => {
+                          setCode(joinCode);
+                          void connectTo(joinCode);
+                        }}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               <section className="projector-preflight">
                 <h2>2. Sound & display</h2>
                 <p>

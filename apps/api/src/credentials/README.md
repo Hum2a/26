@@ -18,3 +18,14 @@ The cookie is `HttpOnly` and `SameSite=Strict`. It is `Secure` in staging and pr
 `RoomCredentialDirectory` is `save`, `get`, and `revoke`. The live lobby keeps those rows in the room Durable Object and calls `verifyRoomCredential` there. Guest recovery uses `verifyGuestSecret` beside it. The SQL directory remains so the earlier issue and revoke routes can be tested. The HTTP command route is still a stub: it returns `{ accepted: true, effect: "none" }` and changes nothing.
 
 A presentation credential is rejected for the command stub. A control credential is rejected for `GET /api/stage/presentation`.
+
+The lifetimes in the table above are from an earlier stage. Current lifetimes are in `verify.ts`: control 12 hours, presentation 14 hours.
+
+## Projector pairing
+
+`pairing.ts` and `pairing-routes.ts` let a projector laptop with no admin session receive a room's presentation credential.
+
+- `POST /api/admin/rooms/:gameId/projector-pairing` needs the administrator session and that room's control cookie. The room stores the SHA-256 hash of a random eight-character code (no I, O, 0 or 1), voids any code still open, and returns the code and its expiry ten minutes later.
+- `POST /api/stage/pair` takes `{ joinCode, code, requestId }` from the same origin. The room consumes the code and inserts an ordinary presentation credential in the same transaction, then the route sets `26_room_presentation`. The credential is verified by `verifyRoomCredential` like any other and works for that room only.
+- Redeem attempts are limited per room in memory (burst five, then one every twelve seconds). Wrong guesses are also counted durably against the open code, which is voided after ten. Issuing is limited to a burst of five per room.
+- A retry with the same `requestId` replays the stored result, so a lost response does not burn the code.

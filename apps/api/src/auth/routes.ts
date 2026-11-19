@@ -31,6 +31,7 @@ import {
   serializeCredentialCookie,
 } from "../credentials/cookies.ts";
 import { credentialLifetimeMs, verifyRoomCredential } from "../credentials/verify.ts";
+import { registerProjectorPairingRoutes } from "../credentials/pairing-routes.ts";
 
 type ReadyAuth = {
   bindings: AuthBindings;
@@ -385,6 +386,9 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>): void {
       presentationStatusSchema.parse({ role: "presentation", roomId: roomId.data }),
     );
   });
+
+  // Projector pairing reuses the room's presentation credential; see pairing.ts.
+  registerProjectorPairingRoutes(app);
 }
 
 function rejectCrossSite(request: Request): Response | undefined {

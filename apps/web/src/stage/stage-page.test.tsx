@@ -3,12 +3,16 @@ import { MemoryRouter } from "react-router";
 import { beforeEach, expect, it, vi } from "vitest";
 import { StagePage } from "./stage-page";
 import { stageShow } from "./audio";
-import { lookupStage, playRoom } from "../live/room-api";
+import { lookupStage, pairProjector, playRoom } from "../live/room-api";
 import { openRoomSocket } from "../live/room-socket";
 import { requestStageFullscreen, exitStageFullscreen } from "../device/fullscreen";
 import { roomFixture } from "../admin/room-fixture.test-support";
 import { playingFixture } from "../admin/controls.test-support";
-vi.mock("../live/room-api", () => ({ lookupStage: vi.fn(), playRoom: vi.fn() }));
+vi.mock("../live/room-api", () => ({
+  lookupStage: vi.fn(),
+  pairProjector: vi.fn(),
+  playRoom: vi.fn(),
+}));
 vi.mock("../live/room-socket", () => ({ openRoomSocket: vi.fn() }));
 vi.mock("../device/fullscreen", () => ({
   requestStageFullscreen: vi.fn(),
@@ -255,4 +259,56 @@ it("tells the room when the wall photo on the projector fails to load", async ()
   expect(handle.reportWallImageFailed).toHaveBeenCalledTimes(1);
   expect(handle.reportWallImageFailed).toHaveBeenCalledWith(postId);
   expect(screen.getByText("This photo could not be shown.")).toBeTruthy();
+});
+
+it("pairs a projector with no admin login, then connects the room", async () => {
+  vi.mocked(pairProjector).mockResolvedValue({
+    gameId: roomFixture.gameId,
+    joinCode: roomFixture.joinCode,
+    expiresAt: "2026-11-21T23:00:00.000Z",
+  });
+  render(
+    <MemoryRouter initialEntries={["/screen"]}>
+      <StagePage />
+    </MemoryRouter>,
+  );
+  fireEvent.change(screen.getByLabelText("Join code"), {
+    target: { value: roomFixture.joinCode.toLowerCase() },
+  });
+  fireEvent.change(screen.getByLabelText("Pairing code"), {
+    target: { value: "wxyz-2345" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Pair this screen" }));
+  await waitFor(() => expect(openRoomSocket).toHaveBeenCalled());
+  expect(pairProjector).toHaveBeenCalledWith(
+    expect.objectContaining({ joinCode: roomFixture.joinCode, code: "WXYZ2345" }),
+  );
+  expect(lookupStage).toHaveBeenCalledWith(roomFixture.joinCode);
+  // The existing setup flow continues: present once the room socket opens.
+  act(() => socket().onConnection("open"));
+  fireEvent.click(screen.getByRole("button", { name: "Present on this screen" }));
+  await screen.findByRole("main", { name: "Projector presentation" });
+  expect(screen.queryByLabelText("Pairing code")).toBeNull();
+});
+
+it("keeps setup usable when pairing is refused", async () => {
+  vi.mocked(pairProjector).mockResolvedValue({
+    error: "That pairing code has already been used. Show a new code in Live controls.",
+  });
+  render(
+    <MemoryRouter initialEntries={["/screen?code=ABCDEF"]}>
+      <StagePage />
+    </MemoryRouter>,
+  );
+  fireEvent.change(screen.getByLabelText("Pairing code"), {
+    target: { value: "WXYZ2345" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Pair this screen" }));
+  expect(await screen.findByText(/already been used/)).toBeTruthy();
+  expect(lookupStage).not.toHaveBeenCalled();
+  expect(openRoomSocket).not.toHaveBeenCalled();
+  expect(
+    (screen.getByRole("button", { name: "Connect room" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(false);
 });

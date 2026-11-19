@@ -80,6 +80,18 @@ import {
   verifyGuestSecret,
   verifyRoomCredential,
 } from "../credentials/verify.ts";
+import {
+  claimPairingCode,
+  createPairingCode,
+  hashPairingCode,
+  pairingCodeTtlMs,
+  pairingInvalidMessage,
+  pairingIssueRateLimit,
+  pairingMessage,
+  pairingRateMessage,
+  pairingRedeemRateLimit,
+  storePairingCode,
+} from "../credentials/pairing.ts";
 import { randomToken } from "./codes.ts";
 import { payloadDigest } from "./digest.ts";
 import { createSqliteRoomCredentialDirectory, insertCredential } from "./directory.ts";
@@ -399,6 +411,33 @@ export type TransferRedeemResult =
   | {
       ok: false;
       error: "expired" | "invalid" | "digest_mismatch" | "not_found";
+      message: string;
+    };
+
+export type ProjectorPairingIssueResult =
+  | { ok: true; code: string; expiresAt: string }
+  | {
+      ok: false;
+      error:
+        | "invalid"
+        | "digest_mismatch"
+        | "not_found"
+        | "rate_limited"
+        | "unauthenticated"
+        | "forbidden";
+      message: string;
+    };
+
+export type ProjectorPairingRedeemResult =
+  | {
+      ok: true;
+      gameId: string;
+      joinCode: string;
+      presentation: CredentialSecrets;
+    }
+  | {
+      ok: false;
+      error: "expired" | "invalid" | "digest_mismatch" | "not_found" | "rate_limited";
       message: string;
     };
 
@@ -963,6 +1002,125 @@ export class PartyRoom extends DurableObject<Env> {
       role: "presentation",
     });
     return check.ok ? { ok: true } : { ok: false };
+  }
+
+  /**
+   * Live controls asks for a one-time projector pairing code. Control only.
+   * The code is stored as a hash; the receipt keeps it so a retried request
+   * shows the same code for its ten minutes.
+   */
+  async issueProjectorPairing(input: {
+    credentialId: string;
+    secret: string;
+    requestId: string;
+    nowMs: number;
+  }): Promise<ProjectorPairingIssueResult> {
+    if (!this.readRoom()) {
+      return { ok: false, error: "not_found", message: roomMissingMessage };
+    }
+    if (!validRequestId(input.requestId)) {
+      return { ok: false, error: "invalid", message: "That request was not accepted." };
+    }
+    const allowed = await this.requireControl(
+      input.credentialId,
+      input.secret,
+      input.nowMs,
+    );
+    if (!allowed.ok) return allowed;
+    const principal = "projector-pairing-issue";
+    const digest = await payloadDigest({ action: "projector-pairing" });
+    const prior = this.readReceipt(principal, input.requestId);
+    if (prior) return this.replay(prior, digest);
+    if (!this.allow("pairing-issue", pairingIssueRateLimit)) {
+      return { ok: false, error: "rate_limited", message: pairingRateMessage };
+    }
+    const code = createPairingCode();
+    const codeHash = await hashPairingCode(code);
+    const now = new Date(input.nowMs).toISOString();
+    const expiresAt = new Date(input.nowMs + pairingCodeTtlMs).toISOString();
+    let result: ProjectorPairingIssueResult = { ok: true, code, expiresAt };
+    this.ctx.storage.transactionSync(() => {
+      const replay = this.readReceipt(principal, input.requestId);
+      if (replay) {
+        result = this.replay(replay, digest);
+        return;
+      }
+      storePairingCode(this.ctx.storage.sql, { codeHash, now, expiresAt });
+      this.writeReceipt(principal, input.requestId, digest, result);
+      this.writeAudit("projector_pairing_issued", "control", now, { expiresAt });
+    });
+    return result;
+  }
+
+  /**
+   * The projector redeems a pairing code for a new presentation credential in
+   * this room. The credential is the same kind admin issues; it is persisted
+   * with the consumed code before the caller sets the cookie.
+   */
+  async redeemProjectorPairing(input: {
+    code: string;
+    requestId: string;
+    nowMs: number;
+  }): Promise<ProjectorPairingRedeemResult> {
+    const room = this.readRoom();
+    if (!room) {
+      return { ok: false, error: "not_found", message: roomMissingMessage };
+    }
+    if (!validRequestId(input.requestId)) {
+      return { ok: false, error: "invalid", message: pairingInvalidMessage };
+    }
+    const principal = "projector-pairing";
+    const digest = await payloadDigest({ code: input.code });
+    const prior = this.readReceipt(principal, input.requestId);
+    if (prior) return this.replay(prior, digest);
+    if (!this.allow("pairing-redeem", pairingRedeemRateLimit)) {
+      return { ok: false, error: "rate_limited", message: pairingRateMessage };
+    }
+    const codeHash = await hashPairingCode(input.code);
+    const now = new Date(input.nowMs);
+    const credential = await this.prepareCredential("presentation", now);
+    let result: ProjectorPairingRedeemResult = {
+      ok: false,
+      error: "invalid",
+      message: pairingInvalidMessage,
+    };
+    this.ctx.storage.transactionSync(() => {
+      const replay = this.readReceipt(principal, input.requestId);
+      if (replay) {
+        result = this.replay(replay, digest);
+        return;
+      }
+      const claim = claimPairingCode(this.ctx.storage.sql, {
+        codeHash,
+        now: now.toISOString(),
+      });
+      if (!claim.ok) {
+        result = {
+          ok: false,
+          error: claim.reason === "expired" ? "expired" : "invalid",
+          message: pairingMessage(claim.reason),
+        };
+        return;
+      }
+      insertCredential(this.ctx.storage.sql, {
+        id: credential.credentialId,
+        principal: "presentation",
+        playerId: null,
+        secretHash: credential.secretHash,
+        expiresAt: credential.expiresAt,
+      });
+      result = {
+        ok: true,
+        gameId: room.game_id,
+        joinCode: room.join_code,
+        presentation: publicSecret(credential),
+      };
+      this.writeReceipt(principal, input.requestId, digest, result);
+      this.writeAudit("projector_paired", "presentation", now.toISOString(), {
+        credentialId: credential.credentialId,
+      });
+    });
+    return result;
   }
 
   /** In-memory delivery counters; see `send`. */
