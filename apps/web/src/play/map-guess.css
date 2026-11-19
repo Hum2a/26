@@ -229,6 +229,7 @@
 
 .guess-map-centre {
   width: 100%;
+  flex-shrink: 0;
 }
 
 .guess-map-centre:focus-visible,

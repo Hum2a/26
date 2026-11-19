@@ -11,11 +11,11 @@ export const christianityBranches = choiceQuestion({
   notes:
     "User confirmed ARE and the answer set. Exact-set scoring: all three without any decoy = 100, otherwise 0. Historical labels cover dissenting movements rather than uniform present-day denominations. No speed bonus.",
   options: [
-    { id: "unorthodox", label: "unorthodox" },
-    { id: "jisraeli", label: "jisraeli" },
-    { id: "irish-terrorists", label: "Irish Catholic terrorists" },
-    { id: "muggletonians", label: "muggletonians" },
-    { id: "the-jumpers", label: "the jumpers" },
-    { id: "ranters", label: "ranters" },
+    { id: "unorthodox", label: "Unorthodox" },
+    { id: "jisraeli", label: "Jisraeli" },
+    { id: "irish-terrorists", label: "Irish Catholic Terrorists" },
+    { id: "muggletonians", label: "Muggletonians" },
+    { id: "the-jumpers", label: "The Jumpers" },
+    { id: "ranters", label: "Ranters" },
   ],
 });
