@@ -7349,3 +7349,36 @@ Status: built and rehearsed locally with 80 bots. Branch `vote-phone-round`. Not
 **Checks.** `npm run typecheck` passed. `npm run lint` 0 errors (15 existing warnings), structure passed. `npm run test -w @26/api` 145 files / 833 tests passed (new `vote-phone-round.spec.ts`, phone-round cases in `party-scoring.spec.ts`). Web: 976 passed, 1 failed — `where-are-we.test.tsx` "Place pin at map centre", which also fails on master after #54 and is outside this change.
 
 **Next.** Merge, deploy to staging and run one bracket question with real phones to check the pair-by-pair feel and timings on Cloudflare.
+
+## 19 November 2026 — Kart Durable Object writes cut with periodic checkpoints
+
+**Status:** complete on `claude/kart-do-write-reduction-81kzx6`; PR open for Humza.
+
+**What changed.** A race tick used to rewrite the whole race row, one `kart-input:<player>` row per driver, and close, delete and insert a schedule row, then bump `room.state_version`. The live race and the phones' control queues now stay in memory (`apps/api/src/questions/kart/kart-live.ts`), keyed by the room's storage handle, with the race row as a checkpoint:
+
+- Saved at once: the grid, the first moving tick (start), any lap, finish, DNF or race end, every host command (pause, resume, skip, end, settings), a phone connecting or leaving, a controller or projector presence change, every phase entry of a kart round, and every acknowledged guest action (`kart-finish`, Back to track, items). Otherwise at least every 10 race revisions (about one second).
+- Each read compares the cached race with the stored row, so a rolled-back transaction, a restart, `restart-kart` or a direct write reloads from SQLite. A restored running race raises its rollback revision by 10, past any unsaved revision a phone already saw, and saves on the next write.
+- Controls are never acknowledged, so their queues are memory only. A restart loses at most the controls since the last tick and the race since the last checkpoint (about one second), then replays to the room clock. The room still expires a held throttle after 500 ms of race time.
+- One `kart-tick` schedule row now serves a race: each tick moves its due time on, or deletes it at the end (`onAlarm` closes it only if the handler did neither). Ticks no longer bump `state_version`; kart frames carry the current version, which the phone only rejects when it goes backwards.
+- Driving, device timing, Back to track and Race again are unchanged. No web, rendering or CSS change.
+
+**Measured** with `LOAD_SIZES=80 LOAD_STAGGER=1 npm run load:realtime -w @26/api` (6 s of 10 Hz staggered controls, local workerd; the harness now wraps the room's `sql.exec` and sums each cursor's `rowsWritten`, index rows included):
+
+|                 | rows (6 s)      | rows per tick               | at 10 ticks/s for 3 minutes |
+| --------------- | --------------- | --------------------------- | --------------------------- |
+| Before (2 runs) | 2,904 and 2,437 | 69–74 (input rows about 67) | about 125,000–150,000       |
+| After (3 runs)  | 97, 72 and 80   | 2.1                         | about 3,800                 |
+
+Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine load, so no speed change is claimed.
+
+**Files:** `apps/api/src/questions/kart/kart-live.ts` (new), `apps/api/src/questions/kart/kart.ts`, `apps/api/src/room/lifecycle.ts`, `apps/api/src/room/sql-store.ts`, `apps/api/src/room/party-room.ts`, `apps/api/src/room/README.md`, `apps/api/test/kart-checkpoint.spec.ts` (new), `apps/api/test/kart-room.spec.ts`, `apps/api/test/realtime-load.spec.ts`, `apps/api/vitest.config.ts`.
+
+**Tests.** New `kart-checkpoint.spec.ts` (7 tests): checkpoint cadence, a steady 20-driver tick writes at most 4 rows, restart restores with a newer revision and catches up, pause and resume across a restart, reconnect and disconnect checkpoints, a rolled-back finish is dropped and its retry accepted, and a pedal release reaches the race, the phone checkpoint and a restart. One `kart-room.spec.ts` case asserted that queued, unticked controls survive eviction; it now ticks before evicting and checks the restored race, because unticked controls are deliberately memory only.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` passed (0 errors, the same 15 warnings as `master`; structure check passed). `npm run format:check` passed. `npm run test:unit` passed (211 files, 976 tests). `npm run test -w @26/api` passed (145 files, 836 tests). `npm run content:check` passed (`where-are-we` still incomplete). `npm run build` passed, including gzip budgets. Playwright was not run.
+
+**Not verified:** real Cloudflare row billing and a mid-race restart on deployed infrastructure; the counts above are local workerd measurements.
+
+**Next:** Humza reviews and merges the PR.
+
+**Cubic follow-up (same day):** A failed alarm or host command now drops unsaved race ticks (`discardUnsavedKart`), so a later checkpoint never saves work that rolled back. A new spec covers this. The README now says the race is checkpointed "for" every host command (it runs after the command applies). The suggestion to clear control queues whenever the stored race changes was not taken. After a reload, those queues hold the real controls since the checkpoint, and the reducer already skips anything older than the race or at or below a driver's applied sequence. A replaced race already starts with new queues.
