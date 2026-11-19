@@ -7016,3 +7016,13 @@ Answer acknowledgement p95 on Cloudflare was 71–295 ms across runs; quiz round
 **Unresolved:** Workers Paid on the party Cloudflare account is still unconfirmed from this environment. Physical-device and venue sign-off remain unticked. Chess remains in the default `order` even though it is also catalogue-ready.
 
 **Next:** Humza prints `docs/night-of.md`, confirms Workers Paid, and merges this PR. Do not start the next prompt automatically.
+
+## 19 November 2026 — CI and lint hygiene
+
+Push and pull request checks still run installation, typecheck, lint, formatting, release and unit tests, and build. `.github/workflows/check.yml` runs Chromium installation and the existing Playwright suite in a separate `workflow_dispatch` job that builds its own preview. `npm run github-actions:check` follows the automatic job, and its tests verify the manual gate and dry-run plan.
+
+Moved shared helpers and context out of component modules and kept existing consumer imports working through sibling re-exports. Resolved the chess engine README conflict markers using the newer text. Lint reports zero errors and 15 existing Fast Refresh warnings, all in the excluded wall, chess, kart, design kit and stage play files.
+
+**Checks before opening the PR:** `npm run typecheck`, `npm run lint`, `npm run check:structure`, `npm run format:check`, `npm run test:release` (75 tests), `npm run test:unit` (954 tests), `npm run content:check` and `npm run build` passed. The local workflow checker also reached the API suite through `npm test`. The build passed its artifact and bundle checks. Playwright was not run.
+
+**Next:** Check the PR workflow and Cubic review, then leave the merge to Humza.

@@ -1,5 +1,11 @@
 import { useEffect } from "react";
 import { buzz } from "../device/haptics";
+import {
+  autocorrect,
+  pigLatin,
+  setNativeValue,
+  type TextControl,
+} from "./sabotage-input";
 
 /**
  * Input sabotage. These work on the answer controls of any question design by
@@ -21,8 +27,6 @@ function optionButtons(): HTMLButtonElement[] {
   ].filter(inQuestion);
 }
 
-type TextControl = HTMLInputElement | HTMLTextAreaElement;
-
 function textControls(): TextControl[] {
   return [
     ...document.querySelectorAll<TextControl>(
@@ -38,16 +42,6 @@ function isTextControl(target: EventTarget | null): target is TextControl {
         (target.type === "text" || target.type === "search"))) &&
     inQuestion(target)
   );
-}
-
-/** Sets a controlled input's value so React sees it as typing. */
-export function setNativeValue(element: TextControl, value: string): void {
-  const prototype =
-    element instanceof HTMLTextAreaElement
-      ? HTMLTextAreaElement.prototype
-      : HTMLInputElement.prototype;
-  Object.getOwnPropertyDescriptor(prototype, "value")?.set?.call(element, value);
-  element.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 function SabotagePill({ label, text }: { label: string; text: string }) {
@@ -99,20 +93,6 @@ export function ReshuffledOptions({ label }: { label: string }) {
 }
 
 /** Pig Latin: "party" becomes "artypay", "apple" becomes "appleway". */
-export function pigLatin(text: string): string {
-  return text.replace(/[A-Za-z]+/g, (word) => {
-    const lower = word.toLowerCase();
-    const match = /^([^aeiou]*)(.*)$/.exec(lower);
-    const head = match?.[1] ?? "";
-    const rest = match?.[2] ?? "";
-    const latin =
-      head === "" ? `${lower}way` : rest === "" ? `${lower}ay` : `${rest}${head}ay`;
-    return word[0] === word[0]?.toUpperCase()
-      ? latin[0]!.toUpperCase() + latin.slice(1)
-      : latin;
-  });
-}
-
 /** Option text is translated into Pig Latin, and stays that way through re-renders. */
 export function TranslatedOptions({ label }: { label: string }) {
   useEffect(() => {
@@ -209,40 +189,6 @@ export function ReverseTyping({ label }: { label: string }) {
     return () => document.removeEventListener("beforeinput", onBeforeInput, true);
   }, []);
   return <SabotagePill label={label} text="⏪ sdrawkcab gnipyt er'uoY" />;
-}
-
-/** Words that autocorrect "helps" with when a word is finished. */
-export const autocorrections: Readonly<Record<string, string>> = {
-  the: "thee",
-  yes: "yass",
-  no: "nah mate",
-  good: "gucci",
-  great: "grate",
-  love: "tolerate",
-  party: "pity party",
-  cake: "cheesecake",
-  birthday: "bathday",
-  best: "beast",
-  friend: "fiend",
-  happy: "hippo",
-  you: "ewe",
-  and: "und",
-  because: "becoz",
-  drink: "drank",
-  food: "fud",
-  definitely: "defiantly",
-  humza: "Hamza",
-  answer: "anser",
-};
-
-/** Replaces the word just finished, if autocorrect has an opinion about it. */
-export function autocorrect(value: string): string {
-  const match = /([A-Za-z]+)([\s.,!?])$/.exec(value);
-  if (!match) return value;
-  const word = match[1]!;
-  const correction = autocorrections[word.toLowerCase()];
-  if (!correction) return value;
-  return value.slice(0, value.length - match[0].length) + correction + match[2];
 }
 
 export function Autocorrect({ label }: { label: string }) {
