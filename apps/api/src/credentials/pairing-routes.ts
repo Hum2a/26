@@ -9,6 +9,8 @@ import type { Hono } from "hono";
 import { authFailure, jsonData } from "../auth/http.ts";
 import { rejectUnlessRoomCreator } from "../room/access.ts";
 import { roomMissingMessage } from "../room/limits.ts";
+// The room routes' reader stops at a byte limit while streaming.
+import { readJson } from "../room/routes.ts";
 import {
   readCredentialCookie,
   sameOriginRejection,
@@ -26,7 +28,7 @@ export function registerProjectorPairingRoutes(app: Hono<{ Bindings: Env }>): vo
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
     if (rejected) return rejected;
     const gameId = gameIdSchema.safeParse(c.req.param("gameId"));
-    const requestId = readRequestId(await readSmallJson(c.req.raw));
+    const requestId = readRequestId(await readJson(c.req.raw));
     if (!gameId.success || !requestId) {
       return failure(400, "invalid", "That request was not accepted.");
     }
@@ -51,7 +53,7 @@ export function registerProjectorPairingRoutes(app: Hono<{ Bindings: Env }>): vo
 
   app.post("/api/stage/pair", async (c) => {
     if (sameOriginRejection(c.req.raw)) return authFailure("forbidden", 403);
-    const body = await readSmallJson(c.req.raw);
+    const body = await readJson(c.req.raw);
     const joinCode = joinCodeSchema.safeParse(
       typeof field(body, "joinCode") === "string"
         ? String(field(body, "joinCode")).trim().toUpperCase()
@@ -132,18 +134,4 @@ function readRequestId(body: unknown): string | undefined {
   return typeof value === "string" && /^[0-9a-f-]{8,80}$/i.test(value)
     ? value
     : undefined;
-}
-
-/** Pairing bodies are a few short strings. */
-const maxBodyBytes = 1024;
-
-async function readSmallJson(request: Request): Promise<unknown> {
-  const declared = Number(request.headers.get("content-length") ?? 0);
-  if (Number.isFinite(declared) && declared > maxBodyBytes) return undefined;
-  try {
-    const text = await request.text();
-    return text.length > maxBodyBytes ? undefined : (JSON.parse(text) as unknown);
-  } catch {
-    return undefined;
-  }
 }

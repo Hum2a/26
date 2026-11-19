@@ -162,14 +162,14 @@ export function StagePage() {
     document.addEventListener("fullscreenchange", changed);
     return () => document.removeEventListener("fullscreenchange", changed);
   }, [presenting]);
-  async function connectTo(joinCode: string) {
-    if (busy) return;
+  async function connectTo(joinCode: string): Promise<boolean> {
+    if (busy) return false;
     setBusy(true);
     try {
       const found = await lookupStage(joinCode.trim().toUpperCase());
       if ("error" in found) {
         setNotice(found.error);
-        return;
+        return false;
       }
       setConnection("connecting");
       setConnectionAttempt((current) => current + 1);
@@ -185,8 +185,10 @@ export function StagePage() {
         },
         { replace: true },
       );
+      return true;
     } catch {
       setNotice("The room could not be reached. Check the connection and try again.");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -299,7 +301,8 @@ export function StagePage() {
                   )}
                 </form>
                 <AnimatePresence initial={false}>
-                  {snapshot ? null : (
+                  {/* Also after this screen lost access, so it can pair again. */}
+                  {snapshot && !accessLost ? null : (
                     <motion.div
                       key="projector-pairing"
                       initial={{ opacity: 0 }}
@@ -311,7 +314,7 @@ export function StagePage() {
                         joinCode={code}
                         onPaired={(joinCode) => {
                           setCode(joinCode);
-                          void connectTo(joinCode);
+                          return connectTo(joinCode);
                         }}
                       />
                     </motion.div>

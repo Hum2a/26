@@ -1,6 +1,6 @@
 import { ChessControls } from "./chess-controls";
 import { phaseLabel } from "../live/phase-label";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { RoomPhaseName } from "@26/shared";
@@ -620,6 +620,9 @@ function ProjectorPairingCard({ gameId }: { gameId: string }) {
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Kept after a failed attempt: if the room stored the code but the answer
+  // was lost, the retry shows that same code instead of voiding it.
+  const pending = useRef<string | null>(null);
   const reduced = useReducedMotion();
   useEffect(() => {
     if (!issued) return;
@@ -633,15 +636,16 @@ function ProjectorPairingCard({ gameId }: { gameId: string }) {
     if (busy) return;
     setBusy(true);
     setError(null);
+    // Asking again voids the code on screen, so stop showing it now.
+    setIssued(null);
+    const requestId = (pending.current ??= crypto.randomUUID());
     try {
-      const result = await issueProjectorPairing({
-        gameId,
-        requestId: crypto.randomUUID(),
-      });
+      const result = await issueProjectorPairing({ gameId, requestId });
       if ("error" in result) {
         setError(result.error);
         return;
       }
+      pending.current = null;
       setIssued(result);
     } finally {
       setBusy(false);

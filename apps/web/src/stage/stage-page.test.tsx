@@ -312,3 +312,11 @@ it("keeps setup usable when pairing is refused", async () => {
       .disabled,
   ).toBe(false);
 });
+
+it("offers pairing again after this screen loses its room access", async () => {
+  await present();
+  expect(screen.queryByLabelText("Pairing code")).toBeNull();
+  act(() => socket().onReplaced?.("Replaced"));
+  fireEvent.click(screen.getByRole("button", { name: "Projector setup" }));
+  expect(await screen.findByLabelText("Pairing code")).toBeTruthy();
+});

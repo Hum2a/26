@@ -7,8 +7,9 @@ import { cleanPairingCode } from "./pairing-code";
 
 beforeEach(() => vi.clearAllMocks());
 
-function mount(joinCode = "ABCDEF") {
-  const onPaired = vi.fn();
+function mount(joinCode = "ABCDEF", connects = true) {
+  const onPaired = vi.fn<(joinCode: string) => Promise<boolean>>();
+  onPaired.mockResolvedValue(connects);
   render(<ProjectorPairing joinCode={joinCode} onPaired={onPaired} />);
   const field = screen.getByLabelText("Pairing code");
   const submit = () =>
@@ -55,7 +56,9 @@ it("pairs with the cleaned codes and hands the room to the setup page", async ()
     code: "WXYZ2345",
     requestId: expect.any(String),
   });
-  expect(await screen.findByText("Paired. Connecting the room…")).toBeTruthy();
+  expect(
+    await screen.findByText("Paired. Check sound and display, then present."),
+  ).toBeTruthy();
   expect((field as HTMLInputElement).value).toBe("");
 });
 
@@ -84,4 +87,21 @@ it("shows the room's refusal and retries the same code with the same request", a
     first?.[0].requestId,
   );
   expect(onPaired).not.toHaveBeenCalled();
+});
+
+it("says so when pairing worked but the room did not connect", async () => {
+  vi.mocked(pairProjector).mockResolvedValue({
+    gameId: "ABCDEFGH",
+    joinCode: "ABCDEF",
+    expiresAt: "2026-11-21T23:00:00.000Z",
+  });
+  const { onPaired, field, submit } = mount("ABCDEF", false);
+  fireEvent.change(field, { target: { value: "WXYZ2345" } });
+  submit();
+  expect(
+    await screen.findByText(
+      "Paired, but the room did not connect. Press Connect room to try again.",
+    ),
+  ).toBeTruthy();
+  expect(onPaired).toHaveBeenCalledWith("ABCDEF");
 });

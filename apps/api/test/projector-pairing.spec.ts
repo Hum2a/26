@@ -1,22 +1,22 @@
-import { env, evictDurableObject } from "cloudflare:test";
+import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { Hono } from "hono";
-import { beforeEach, expect, it, vi } from "vitest";
-vi.mock("../src/auth/routes.ts", () => ({ administratorForRequest: vi.fn() }));
-import { administratorForRequest } from "../src/auth/routes.ts";
+import { expect, it } from "vitest";
 import { registerProjectorPairingRoutes } from "../src/credentials/pairing-routes.ts";
 import {
   maxPairingFailures,
   normalisePairingCode,
   pairingCodeTtlMs,
+  pairingIssuePrincipal,
   pairingRedeemRateLimit,
+  pairingSpentMessage,
 } from "../src/credentials/pairing.ts";
 import { readCredentialCookie } from "../src/credentials/cookies.ts";
 import { presentationCredentialTtlMs } from "../src/credentials/verify.ts";
 import { payloadDigest } from "../src/room/digest.ts";
-
-beforeEach(() => {
-  vi.mocked(administratorForRequest).mockResolvedValue({ email: "admin@example.test" });
-});
+import {
+  localAdminProof,
+  localAdminProofHeader,
+} from "../src/room/local-auth-proof.ts";
 
 async function createRoom() {
   const created = await env.ROOM_CODE_REGISTRY.getByName("codes").createLobby({
@@ -92,7 +92,7 @@ it("redeems a code once for a presentation credential that lasts the night", asy
   expect(await redeem(issued.code)).toMatchObject({
     ok: false,
     error: "invalid",
-    message: expect.stringContaining("already been used"),
+    message: expect.stringContaining("no longer valid"),
   });
 });
 
@@ -157,7 +157,7 @@ it("rate-limits guesses and voids the open code after too many wrong ones", asyn
   await evictDurableObject(stub);
   expect(await redeem(issued.code)).toMatchObject({
     ok: false,
-    message: expect.stringContaining("already been used"),
+    message: expect.stringContaining("no longer valid"),
   });
 });
 
@@ -169,39 +169,103 @@ it("normalises typed codes", () => {
   expect(normalisePairingCode(12345678)).toBeUndefined();
 });
 
+it("replays a refused redeem instead of counting it as another guess", async () => {
+  const { stub, issue, redeem } = await createRoom();
+  const issued = await issue();
+  if (!issued.ok) throw new Error(issued.message);
+  const wrong = issued.code === "AAAAAAAA" ? "BBBBBBBB" : "AAAAAAAA";
+  const requestId = crypto.randomUUID();
+  const refused = await redeem(wrong, Date.now(), requestId);
+  expect(refused).toMatchObject({ ok: false, error: "invalid" });
+  for (let retry = 0; retry < 3; retry += 1) {
+    expect(await redeem(wrong, Date.now(), requestId)).toEqual(refused);
+  }
+  const failures = await runInDurableObject(stub, (_instance, state) =>
+    state.storage.sql
+      .exec<{ failures: number }>(`SELECT failures FROM projector_pairing`)
+      .toArray()
+      .map((row) => row.failures),
+  );
+  expect(failures).toEqual([1]);
+  expect((await redeem(issued.code)).ok).toBe(true);
+});
+
+it("keeps the plain code in its receipt only while the code is open", async () => {
+  const { stub, control, redeem } = await createRoom();
+  const requestId = crypto.randomUUID();
+  const issue = () =>
+    stub.issueProjectorPairing({ ...control, requestId, nowMs: Date.now() });
+  const issued = await issue();
+  if (!issued.ok) throw new Error(issued.message);
+  // A retried request shows the same open code instead of voiding it.
+  expect(await issue()).toEqual(issued);
+  expect((await redeem(issued.code)).ok).toBe(true);
+  expect(await issue()).toEqual({
+    ok: false,
+    error: "invalid",
+    message: pairingSpentMessage,
+  });
+  const receipts = await runInDurableObject(stub, (_instance, state) =>
+    state.storage.sql
+      .exec<{ result_json: string }>(
+        `SELECT result_json FROM receipt WHERE principal = ?`,
+        pairingIssuePrincipal,
+      )
+      .toArray()
+      .map((row) => row.result_json),
+  );
+  expect(receipts).toHaveLength(1);
+  expect(receipts[0]).not.toContain(issued.code);
+});
+
 it("serves issue to the signed-in admin and sets the presentation cookie on redeem", async () => {
   const app = new Hono<{ Bindings: Env }>();
   registerProjectorPairingRoutes(app);
-  const bindings = { ...env, APP_ENV: "staging" } as Env;
+  const proofKey = "p".repeat(64);
+  const bindings = { ...env, APP_ENV: "local", LOCAL_ADMIN_PROOF_KEY: proofKey } as Env;
   const origin = "https://example.com";
   const { created, control, stub } = await createRoom();
-  const post = (path: string, body: unknown, cookie?: string) =>
-    app.request(
-      `${origin}${path}`,
-      {
-        method: "POST",
-        headers: {
-          origin,
-          "content-type": "application/json",
-          ...(cookie ? { cookie } : {}),
-        },
-        body: JSON.stringify(body),
+  const post = (
+    path: string,
+    body: unknown,
+    options: { cookie?: string; admin?: boolean; origin?: string } = {},
+  ) => {
+    const request = new Request(`${origin}${path}`, {
+      method: "POST",
+      headers: {
+        origin: options.origin ?? origin,
+        "content-type": "application/json",
+        ...(options.cookie ? { cookie: options.cookie } : {}),
       },
-      bindings,
-    );
+      body: JSON.stringify(body),
+    });
+    if (options.admin)
+      request.headers.set(
+        localAdminProofHeader,
+        localAdminProof(proofKey, request, Date.now()),
+      );
+    return app.request(request, undefined, bindings);
+  };
   const issuePath = `/api/admin/rooms/${created.gameId}/projector-pairing`;
-  expect((await post(issuePath, { requestId: crypto.randomUUID() })).status).toBe(401);
-  vi.mocked(administratorForRequest).mockResolvedValueOnce(
-    Response.json({ error: "unauthenticated" }, { status: 401 }),
-  );
   const controlCookie = `26_room_control=${control.credentialId}.${control.secret}`;
+  // Not signed in to admin.
   expect(
-    (await post(issuePath, { requestId: crypto.randomUUID() }, controlCookie)).status,
+    (
+      await post(
+        issuePath,
+        { requestId: crypto.randomUUID() },
+        { cookie: controlCookie },
+      )
+    ).status,
+  ).toBe(401);
+  // Signed in, but without this room's control credential.
+  expect(
+    (await post(issuePath, { requestId: crypto.randomUUID() }, { admin: true })).status,
   ).toBe(401);
   const issuedResponse = await post(
     issuePath,
     { requestId: crypto.randomUUID() },
-    controlCookie,
+    { cookie: controlCookie, admin: true },
   );
   expect(issuedResponse.status).toBe(200);
   expect(issuedResponse.headers.get("cache-control")).toBe("no-store");
@@ -209,21 +273,10 @@ it("serves issue to the signed-in admin and sets the presentation cookie on rede
   const typed = `${issued.code.slice(0, 4).toLowerCase()}-${issued.code.slice(4)}`;
 
   const redeemPath = "/api/stage/pair";
-  const crossSite = await app.request(
-    `${origin}${redeemPath}`,
-    {
-      method: "POST",
-      headers: {
-        origin: "https://elsewhere.example",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        joinCode: created.joinCode,
-        code: typed,
-        requestId: crypto.randomUUID(),
-      }),
-    },
-    bindings,
+  const crossSite = await post(
+    redeemPath,
+    { joinCode: created.joinCode, code: typed, requestId: crypto.randomUUID() },
+    { origin: "https://elsewhere.example" },
   );
   expect(crossSite.status).toBe(403);
   const paired = await post(redeemPath, {

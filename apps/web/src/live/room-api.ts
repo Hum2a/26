@@ -439,7 +439,11 @@ export async function issueProjectorPairing(input: {
         signal: controller.signal,
       },
     );
-    return await read(response, projectorPairingIssuedSchema);
+    return await read(
+      response,
+      projectorPairingIssuedSchema,
+      "The pairing code could not be read. Try again.",
+    );
   } catch {
     return { error: "The pairing code could not be shown. Try again." };
   } finally {
@@ -463,7 +467,11 @@ export async function pairProjector(input: {
       body: JSON.stringify(input),
       signal: controller.signal,
     });
-    return await read(response, projectorPairedSchema);
+    return await read(
+      response,
+      projectorPairedSchema,
+      "The pairing answer could not be read. Try again.",
+    );
   } catch {
     return { error: "This screen could not reach the room. Check the connection." };
   } finally {
@@ -476,6 +484,7 @@ async function read<T>(
   schema: {
     safeParse: (value: unknown) => { success: true; data: T } | { success: false };
   },
+  unreadable = "That response was not a lobby.",
 ): Promise<T | { error: string }> {
   const body: unknown = await response.json().catch(() => undefined);
   if (!response.ok) {
@@ -483,7 +492,7 @@ async function read<T>(
   }
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return { error: "That response was not a lobby." };
+    return { error: unreadable };
   }
   return parsed.data;
 }

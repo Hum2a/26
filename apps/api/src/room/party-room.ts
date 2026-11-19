@@ -86,6 +86,7 @@ import {
   hashPairingCode,
   pairingCodeTtlMs,
   pairingInvalidMessage,
+  pairingIssuePrincipal,
   pairingIssueRateLimit,
   pairingMessage,
   pairingRateMessage,
@@ -1027,7 +1028,7 @@ export class PartyRoom extends DurableObject<Env> {
       input.nowMs,
     );
     if (!allowed.ok) return allowed;
-    const principal = "projector-pairing-issue";
+    const principal = pairingIssuePrincipal;
     const digest = await payloadDigest({ action: "projector-pairing" });
     const prior = this.readReceipt(principal, input.requestId);
     if (prior) return this.replay(prior, digest);
@@ -1045,7 +1046,12 @@ export class PartyRoom extends DurableObject<Env> {
         result = this.replay(replay, digest);
         return;
       }
-      storePairingCode(this.ctx.storage.sql, { codeHash, now, expiresAt });
+      storePairingCode(this.ctx.storage.sql, {
+        codeHash,
+        now,
+        expiresAt,
+        requestId: input.requestId,
+      });
       this.writeReceipt(principal, input.requestId, digest, result);
       this.writeAudit("projector_pairing_issued", "control", now, { expiresAt });
     });
@@ -1100,6 +1106,8 @@ export class PartyRoom extends DurableObject<Env> {
           error: claim.reason === "expired" ? "expired" : "invalid",
           message: pairingMessage(claim.reason),
         };
+        // A retry of this request replays the refusal; it is not a second guess.
+        this.writeReceipt(principal, input.requestId, digest, result);
         return;
       }
       insertCredential(this.ctx.storage.sql, {

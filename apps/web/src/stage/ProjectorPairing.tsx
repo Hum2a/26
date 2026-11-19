@@ -15,7 +15,8 @@ export function ProjectorPairing({
 }: {
   /** The join code typed in the connect form above. */
   joinCode: string;
-  onPaired: (joinCode: string) => void;
+  /** Connects the paired room; resolves false when it did not connect. */
+  onPaired: (joinCode: string) => Promise<boolean>;
 }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -53,7 +54,12 @@ export function ProjectorPairing({
       pending.current = null;
       setCode("");
       setMessage("Paired. Connecting the room…");
-      onPaired(result.joinCode);
+      const connected = await onPaired(result.joinCode);
+      setMessage(
+        connected
+          ? "Paired. Check sound and display, then present."
+          : "Paired, but the room did not connect. Press Connect room to try again.",
+      );
     } finally {
       setBusy(false);
     }

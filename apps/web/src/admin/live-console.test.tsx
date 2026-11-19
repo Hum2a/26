@@ -470,10 +470,14 @@ it("shows a one-time projector pairing code and replaces it on request", async (
   expect(playRoom).not.toHaveBeenCalled();
   fireEvent.click(within(card).getByRole("button", { name: "Show a new code" }));
   expect(await within(card).findByRole("alert")).toBeTruthy();
-  expect(within(card).getByText("WXYZ-2345")).toBeTruthy();
-  fireEvent.click(within(card).getByRole("button", { name: "Show a new code" }));
+  // Asking again voids the old code, so it is no longer shown as valid.
+  await waitFor(() => expect(within(card).queryByText("WXYZ-2345")).toBeNull());
+  expect(within(card).getByRole("button", { name: "Show pairing code" })).toBeTruthy();
+  fireEvent.click(within(card).getByRole("button", { name: "Show pairing code" }));
   expect(await within(card).findByText("ABCD-6789")).toBeTruthy();
   expect(within(card).queryByRole("alert")).toBeNull();
-  const [first, , third] = vi.mocked(issueProjectorPairing).mock.calls;
-  expect(third?.[0].requestId).not.toBe(first?.[0].requestId);
+  const [first, second, third] = vi.mocked(issueProjectorPairing).mock.calls;
+  expect(second?.[0].requestId).not.toBe(first?.[0].requestId);
+  // The retry after a failure replays the same request.
+  expect(third?.[0].requestId).toBe(second?.[0].requestId);
 });

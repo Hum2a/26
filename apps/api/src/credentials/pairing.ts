@@ -30,8 +30,14 @@ const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 export const pairingInvalidMessage =
   "That pairing code was not accepted. Check the code in Live controls.";
+/** Used, voided by a newer code, or voided after too many wrong guesses. */
 export const pairingUsedMessage =
-  "That pairing code has already been used. Show a new code in Live controls.";
+  "That pairing code is no longer valid. Show a new code in Live controls.";
+/** What a retried issue request gets once its code is no longer open. */
+export const pairingSpentMessage =
+  "That pairing code is no longer open. Show a new code.";
+/** Receipt principal for issued codes; spent codes are scrubbed from it. */
+export const pairingIssuePrincipal = "projector-pairing-issue";
 export const pairingExpiredMessage =
   "That pairing code has expired. Show a new code in Live controls.";
 export const pairingRateMessage = "Too many attempts. Wait a minute, then try again.";
@@ -68,26 +74,64 @@ function ensurePairingTable(sql: SqlStorage): void {
     issued_at TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     consumed_at TEXT,
-    failures INTEGER NOT NULL DEFAULT 0
+    failures INTEGER NOT NULL DEFAULT 0,
+    issue_request_id TEXT
   )`);
+}
+
+/**
+ * The issue receipt keeps the plain code only while that code is open, so a
+ * retried request can show it again. Once the code is used, voided or
+ * expired, its receipt is replaced with a refusal and only the hash remains.
+ */
+function scrubSpentReceipts(sql: SqlStorage, now: string): void {
+  const spent = sql
+    .exec<{ issue_request_id: string }>(
+      `SELECT issue_request_id FROM projector_pairing
+       WHERE issue_request_id IS NOT NULL AND (consumed_at IS NOT NULL OR expires_at <= ?)`,
+      now,
+    )
+    .toArray();
+  if (spent.length === 0) return;
+  const refusal = JSON.stringify({
+    ok: false,
+    error: "invalid",
+    message: pairingSpentMessage,
+  });
+  for (const row of spent) {
+    sql.exec(
+      `UPDATE receipt SET result_json = ? WHERE principal = ? AND request_id = ?`,
+      refusal,
+      pairingIssuePrincipal,
+      row.issue_request_id,
+    );
+  }
+  sql.exec(
+    `UPDATE projector_pairing SET issue_request_id = NULL
+     WHERE issue_request_id IS NOT NULL AND (consumed_at IS NOT NULL OR expires_at <= ?)`,
+    now,
+  );
 }
 
 /** Runs inside the caller's transaction. Voids any open code first. */
 export function storePairingCode(
   sql: SqlStorage,
-  input: { codeHash: string; now: string; expiresAt: string },
+  input: { codeHash: string; now: string; expiresAt: string; requestId: string },
 ): void {
   ensurePairingTable(sql);
   sql.exec(
     `UPDATE projector_pairing SET consumed_at = ? WHERE consumed_at IS NULL`,
     input.now,
   );
+  scrubSpentReceipts(sql, input.now);
   sql.exec(
-    `INSERT INTO projector_pairing (code_hash, issued_at, expires_at, consumed_at, failures)
-     VALUES (?, ?, ?, NULL, 0)`,
+    `INSERT INTO projector_pairing
+       (code_hash, issued_at, expires_at, consumed_at, failures, issue_request_id)
+     VALUES (?, ?, ?, NULL, 0, ?)`,
     input.codeHash,
     input.now,
     input.expiresAt,
+    input.requestId,
   );
 }
 
@@ -103,6 +147,15 @@ export function claimPairingCode(
   input: { codeHash: string; now: string },
 ): PairingClaim {
   ensurePairingTable(sql);
+  const claim = consumeOrCount(sql, input);
+  scrubSpentReceipts(sql, input.now);
+  return claim;
+}
+
+function consumeOrCount(
+  sql: SqlStorage,
+  input: { codeHash: string; now: string },
+): PairingClaim {
   const row = sql
     .exec<{ expires_at: string; consumed_at: string | null }>(
       `SELECT expires_at, consumed_at FROM projector_pairing WHERE code_hash = ?`,
