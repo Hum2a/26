@@ -173,40 +173,49 @@ export function createBotFleet(
     });
   }
   const ramp = setInterval(connectNext, 30);
+  // Real phones start their 100 ms heartbeats at random points in the beat, so
+  // spread the bots across it too. Sending all eighty at once is a burst no
+  // venue produces, and it measures the burst rather than the room.
+  const spread = (ordinal: number) =>
+    Math.floor((ordinal * 100) / Math.max(1, peers.length));
   const tick = setInterval(() => {
     if (stopped || !settings.auto || !settings.kart) return;
     sequence++;
-    for (const [ordinal, peer] of peers.entries()) {
-      const snapshot = peer.snapshot;
-      const race = snapshot?.play?.kart;
-      if (
-        !peer.open ||
-        !race ||
-        snapshot?.phase !== "collect" ||
-        snapshot.paused ||
-        snapshot.held ||
-        race.ended ||
-        ordinal >= Math.ceil((peers.length * settings.participation) / 100)
-      )
-        continue;
-      if (
-        !race.participants.some(
-          (driver) =>
-            driver.playerId === sessions[ordinal]!.playerId &&
-            driver.status === "RACING",
-        )
-      )
-        continue;
-      peer.socket?.submitKartInput({
-        raceId: race.raceId,
-        sequence,
-        steer: ordinal % 3 === 0 ? 0.24 : -0.1,
-        gas: true,
-        brake: false,
-        drift: false,
-      });
-    }
+    const beat = sequence;
+    for (const [ordinal, peer] of peers.entries())
+      setTimeout(() => {
+        if (!stopped) drive(ordinal, peer, beat);
+      }, spread(ordinal));
   }, 100);
+  function drive(ordinal: number, peer: Peer, beat: number) {
+    const snapshot = peer.snapshot;
+    const race = snapshot?.play?.kart;
+    if (
+      !peer.open ||
+      !race ||
+      snapshot?.phase !== "collect" ||
+      snapshot.paused ||
+      snapshot.held ||
+      race.ended ||
+      ordinal >= Math.ceil((peers.length * settings.participation) / 100)
+    )
+      return;
+    if (
+      !race.participants.some(
+        (driver) =>
+          driver.playerId === sessions[ordinal]!.playerId && driver.status === "RACING",
+      )
+    )
+      return;
+    peer.socket?.submitKartInput({
+      raceId: race.raceId,
+      sequence: beat,
+      steer: ordinal % 3 === 0 ? 0.24 : -0.1,
+      gas: true,
+      brake: false,
+      drift: false,
+    });
+  }
   const repaint = setInterval(publish, 500);
   publish();
   return {

@@ -60,9 +60,19 @@ export function useKartSocket(
     };
     publisher.current = publish;
     publish();
-    const interval = window.setInterval(() => {
-      if (performance.now() - lastSent.current >= minGapMs) publish();
-    }, heartbeatMs);
+    // Every phone learns the race has started from the same broadcast. Without
+    // a random phase their heartbeats line up, and eighty messages landing in
+    // the same instant stall the room's race tick (local load test, 19 Nov 2026:
+    // 2 updates/s in one burst, 7.4/s when spread across the beat).
+    let interval: number | undefined;
+    const phase = window.setTimeout(
+      () => {
+        interval = window.setInterval(() => {
+          if (performance.now() - lastSent.current >= minGapMs) publish();
+        }, heartbeatMs);
+      },
+      Math.floor(Math.random() * heartbeatMs),
+    );
     const reset = () => {
       controls.current = { ...kartNeutral };
       publish();
@@ -73,6 +83,7 @@ export function useKartSocket(
     window.addEventListener("blur", reset);
     document.addEventListener("visibilitychange", visibility);
     return () => {
+      window.clearTimeout(phase);
       window.clearInterval(interval);
       window.removeEventListener("blur", reset);
       document.removeEventListener("visibilitychange", visibility);

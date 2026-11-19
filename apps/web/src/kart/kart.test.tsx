@@ -129,6 +129,8 @@ it("emits normalised steering and releases all held controls on blur or disablin
 });
 it("uses one input heartbeat on the existing transport and never submits a lap time", () => {
   vi.useFakeTimers();
+  // Pin the heartbeat's random start phase so the count below is exact.
+  const random = vi.spyOn(Math, "random").mockReturnValue(0);
   const send = vi.fn();
   const race = projectKartRace(
     createKartRace("fixture-race", [{ playerId: "guest", name: "Stand-in driver" }]),
@@ -155,6 +157,7 @@ it("uses one input heartbeat on the existing transport and never submits a lap t
   const count = send.mock.calls.length;
   act(() => vi.advanceTimersByTime(500));
   expect(send).toHaveBeenCalledTimes(count);
+  random.mockRestore();
 });
 
 it("keeps two held pointers independent and releases each cancelled or lost capture", () => {
@@ -829,9 +832,37 @@ it("sends at most one control message per heartbeat, merging rapid changes", () 
   }
   for (let i = 1; i < times.length; i++)
     expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(90);
-  // 60 frames is about a second: no more than eleven messages.
-  expect(times.length).toBeLessThanOrEqual(11);
+  // 60 frames is 1,020 ms: at a 90 ms minimum gap, at most twelve messages.
+  expect(times.length).toBeLessThanOrEqual(12);
   view.unmount();
+});
+
+it("starts each phone's heartbeat at a random point in the beat", () => {
+  vi.useFakeTimers();
+  const race = projectKartRace(
+    createKartRace("phase", [{ playerId: "guest", name: "Stand-in driver" }]),
+    "guest",
+    100,
+  );
+  const firstHeartbeat = (random: number) => {
+    const spy = vi.spyOn(Math, "random").mockReturnValue(random);
+    const send = vi.fn();
+    const view = renderHook(() => useKartSocket(race, true, send));
+    spy.mockRestore();
+    expect(send).toHaveBeenCalledTimes(1);
+    let waited = 0;
+    while (send.mock.calls.length === 1 && waited < 300) {
+      act(() => vi.advanceTimersByTime(5));
+      waited += 5;
+    }
+    view.unmount();
+    return waited;
+  };
+  const early = firstHeartbeat(0);
+  const late = firstHeartbeat(0.6);
+  expect(early).toBeGreaterThanOrEqual(90);
+  expect(early).toBeLessThanOrEqual(105);
+  expect(late - early).toBeGreaterThanOrEqual(55);
 });
 
 it("follows the host's prediction switch and steering default", async () => {

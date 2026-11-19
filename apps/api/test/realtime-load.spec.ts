@@ -33,7 +33,8 @@ const stagger = settings.LOAD_STAGGER === "1";
 // What each guest sends: "input" (kart controls), "ping" (the cheapest message the
 // room handles, to isolate per-message delivery cost), "wrong-race" (controls the
 // room rejects before buffering), or "pose" (phone-reported position, where supported).
-const mode = (settings.LOAD_MODE ?? "input") as "input" | "ping" | "wrong-race" | "pose";
+const mode = (settings.LOAD_MODE ?? "input") as
+  "input" | "ping" | "wrong-race" | "pose";
 
 describe("realtime fan-out", () => {
   it("measures each room size on the selected track and optional quiz burst", async ({
@@ -422,7 +423,8 @@ function guestCookie(joined: { gameId: string; playerId: string; secret: string 
 
 /** Mean race-tick lateness over the whole run, and how many ticks started over 250 ms late. */
 function tickLateness(
-  realtime: { series: { name: string; total: number; totalBytes: number }[] } | undefined,
+  realtime:
+    { series: { name: string; total: number; totalBytes: number }[] } | undefined,
 ) {
   const late = realtime?.series.find((entry) => entry.name === "tick:lateMs");
   const over = realtime?.series.find((entry) => entry.name === "tick:late>250");

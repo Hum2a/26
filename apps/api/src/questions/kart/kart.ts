@@ -716,13 +716,30 @@ export function acceptKartInputs(
   return results;
 }
 
-function scheduleTick(store: GameStore, now: number, step: number): void {
+/**
+ * Next race tick. Ticks keep a fixed 100 ms beat from the previous due time, so
+ * a few milliseconds of alarm lateness no longer stretch every period (an idle
+ * room used to manage about 8 a second). A tick that is already a whole beat
+ * behind waits a short breather rather than firing back to back.
+ */
+export function nextTickDueAt(now: number, previousDueAt?: number | null): number {
+  const minimumGapMs = 20;
+  if (previousDueAt == null) return now + kartTickMs;
+  return Math.max(now + minimumGapMs, previousDueAt + kartTickMs);
+}
+
+function scheduleTick(
+  store: GameStore,
+  now: number,
+  step: number,
+  previousDueAt?: number | null,
+): void {
   const room = store.readRoom();
   if (room.phase !== "collect" || room.paused || room.hold) return;
   store.saveJob({
     jobId: `kart:${room.scopeGeneration}:${room.phaseGeneration}:${step}`,
     jobType: "gameplay",
-    dueAt: now + kartTickMs,
+    dueAt: nextTickDueAt(now, previousDueAt),
     remainingMs: null,
     scopeGeneration: room.scopeGeneration,
     phaseGeneration: room.phaseGeneration,
@@ -760,7 +777,7 @@ export function tickKart(
   if (!next) return;
   sql.exec("UPDATE room SET state_version = state_version + 1");
   if (next.ended) advance(store, now);
-  else scheduleTick(store, now, Number(job.jobId.split(":").at(-1)) + 1);
+  else scheduleTick(store, now, Number(job.jobId.split(":").at(-1)) + 1, job.dueAt);
 }
 
 export function kartScores(
