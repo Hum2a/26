@@ -7199,6 +7199,51 @@ The four focused web test files passed (16 tests), along with `npm run lint` (0 
 
 **Next:** Open PR into `master` for Humza to review and merge. Do not start the next prompt automatically.
 
+## 19 November 2026 — Where are we? (Agadir) and birthday running order
+
+**Status:** complete on `cursor/final-content-drop`. No deployment.
+
+**What now works.** `where-are-we` is a ready map-guess round: Agadir seafront, Morocco, with a credited Wikimedia Commons promenade photo and OSM Corniche Tawada coordinates. The birthday default `order` is 49 rounds: every ready catalogue entry except the two knockout brackets (`apology-video-auction`, `heathrow-search-query`), which stay in the catalogue. `kart-sprint` remains last; `chess-battle` stays after the dials.
+
+### Files / interfaces
+
+- `apps/api/src/questions/packs/birthday/where-are-we.ts` — `target.known`, required `question` media, reveal line, source notes. No TODO owner gaps.
+- `apps/web/public/assets/questions/where-are-we/photo.webp` — 1200 × 900 WebP, EXIF/GPS stripped.
+- `apps/api/src/questions/packs/birthday/manifest.ts` — `order` only.
+- `docs/content/question-image-credits.md` — Commons row for Elmschrat / CC BY-SA 3.0.
+- `docs/content/where-are-we.md`, `birthday-answer-key.md`, `birthday-running-order.md` — presenter export.
+- Tests: `map-guess-score.spec.ts` (public projection omits Agadir / coordinates), order assertions in `ed-or-humza.spec.ts`, `new-party-concepts.spec.ts`, `party-concepts.spec.ts`.
+
+### Decisions / defaults
+
+- Photo: [File:01-beach-agadir-morocco.JPG](https://commons.wikimedia.org/wiki/File:01-beach-agadir-morocco.JPG), Elmschrat, CC BY-SA 3.0. Credit on screen: “Elmschrat · CC BY-SA 3.0 · via Wikimedia Commons”. Alt does not name the place.
+- Target: OSM relation 5393745 Corniche Tawada centroid **30.4083° N, 9.60199° W**, label “Agadir seafront, Morocco”. Reveal cites the post-1960 rebuild and ~10 km beach (Wikipedia Agadir).
+- Knockout brackets left out of `order` because ~80 guests would run ~25 minutes each. Ready extras added and similar series (real-name, inflation, guess-tab, dial, guess-the-guest) spread. Second kart (`kart-park-grand-prix`) sits in the late show with `ed-or-humza` between it and the closer.
+- Admin show-length estimator (`estimateRoundMs` + `formatShowLength`): **about 56 min** of scripted beats for 49 rounds. That is not wall-clock with host talk, one-at-a-time options, or 80-phone karts.
+
+### Commands and results
+
+- `npm run content:check` — passed; **no incomplete birthday rounds**.
+- `npm run typecheck` — passed.
+- `npm run lint` — 0 errors, 15 existing Fast Refresh warnings; structure check passed.
+- `npm run format:check` — passed.
+- `npm run test:unit` — 211 files / 975 tests passed.
+- `npm run test -w @26/api` — 144 files / 829 tests passed (existing workerd teardown noise on alarm cancel).
+- `npm run build` — passed; 1004 files scanned; gzip budgets: entry JS 222,742 / 260,000; entry CSS 28,208 / 34,000; total JS 1,493,575 / 1,650,000.
+- Playwright was not run.
+
+### Manual verification
+
+Clue photo inspected after resize (promenade + beach, no readable “Agadir” text). Coordinates taken from Nominatim/OSM, not guessed. Live phone/projector pin drop was not exercised in a browser. Public projection tests confirm the target stays off guest/stage question JSON until reveal.
+
+### Unresolved
+
+`apology-video-auction` and `heathrow-search-query` remain ready in the catalogue. Humza can still reorder in Admin. Presenter export still prints `null /100` and `Closer to undefined` for some mechanics (separate Codex fix). Physical projector and 80-guest timing unverified.
+
+### Next stage
+
+Open the PR into `master` for Humza to review and merge. Do not start the next prompt automatically.
+
 ## 19 November 2026 — Photo wall load timeout and host notice
 
 The four-second projector timeout and the host's “Couldn't display” notice were already on `origin/master` in `e1e5afa`. Updated `docs/photo-wall-plan.md` to mark both built. The projector sends the existing error report, and the room advances through the normal rotation. The host can see the flag under Admin → Photo wall, including in the shown history.
@@ -7210,6 +7255,14 @@ Checks: `npm run typecheck`, `npm run lint` (15 existing warnings), `npm run for
 `npm run test:unit` reported a failure in the `where-are-we` map-pin test, which also failed in [CI on the branch base](https://github.com/Hum2a/26/actions/runs/44616795788). A kart test failed on the first full run and passed on its focused rerun (28 tests passed).
 
 Next: Humza reviews the PR.
+
+## 19 November 2026 — Merge master and Cubic on PR #57
+
+Merged `origin/master` into `cursor/final-content-drop` (no rebase). The only conflict was `docs/build-progress.md`; both the Agadir/order section and the photo-wall section were kept. Master did not change the birthday `order`. Re-ran `npm run content:export`.
+
+Cubic: recoded the clue to 3:2 (1200×800) so the phone frame does not crop the promenade; documented `photo.png` in credits; updated `docs/content/ed-or-humza.md`. Left exporter `revealLine` bugs and the `ed-or-humza` order inclusion as Humza requested.
+
+Checks: typecheck passed; lint 0 errors / 15 existing warnings; format:check passed; content:check passed with no incomplete rounds; test:unit 211 files / 976 tests; API suite 143/144 files then the timed-out `room.spec.ts` HTTP 401 case passed on rerun (17/17); build passed (gzip entry JS 222,740). Playwright not run. No deploy.
 
 ## 19 November 2026 — Staging dress rehearsal with 80 bots
 

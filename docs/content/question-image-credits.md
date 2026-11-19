@@ -2,8 +2,8 @@
 
 Files under `apps/web/public/assets/questions/` are served to phones and the
 projector as `/assets/questions/…`. Guest option pictures use PNG paths; the
-shared question photo uses JPEG (or PNG/WebP) named `photo.jpg` so the filename
-does not leak the answer.
+shared question photo uses JPEG, PNG or WebP named `photo.jpg`, `photo.png` or
+`photo.webp` so the filename does not leak the answer.
 
 This file is **not** served from `/assets`. Do not copy answer-bearing notes
 into a public CREDITS file.
@@ -21,9 +21,13 @@ Accommodation provenance is also listed in
 | `candles/photo.jpg`           | Illustrative demo: cake        | Drawn for this demo (exactly 26 candles)                                                                                                                                            | 26.humza.website               | CC0 1.0                                      |
 | `colour/photo.jpg`            | Illustrative demo: night sky   | Drawn for this demo (blue sky)                                                                                                                                                      | 26.humza.website               | CC0 1.0                                      |
 | `nextdoor-paranoia/photo.png` | Nextdoor paranoia              | Typeset reconstruction of a post quoted by Marshall News Messenger (2024)                                                                                                           | 26.humza.website               | Original typeset card; quoted phrase sourced |
+| `where-are-we/photo.webp`     | Where are we?                  | [01-beach-agadir-morocco.JPG](https://commons.wikimedia.org/wiki/File:01-beach-agadir-morocco.JPG)                                                                                  | Elmschrat                      | CC BY-SA 3.0                                 |
 
 Changes on the accommodation photos: resized to fit 1200 × 900 and JPEG
 recompressed; no crop or retouch. Demo drawings were exported at 1000 × 667 JPEG.
+The Where are we? clue was centre-cropped from 4:3 to 3:2 so the phone frame
+does not hide the promenade, then resized to 1200 × 800 WebP with embedded
+GPS/EXIF stripped. The on-screen credit does not name the place.
 
 ## Copyrighted, private use
 
