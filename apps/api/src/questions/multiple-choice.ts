@@ -117,6 +117,7 @@ import {
   freezeGuess,
   freezeVote,
   nextBallotPhase,
+  stretchPhoneRound,
   scoreBallotQuestion,
 } from "./vote.ts";
 
@@ -271,6 +272,7 @@ export function createGameStore(sql: SqlStorage): GameStore {
         current.phase === "vote"
       ) {
         freezeVote(sql, question, now);
+        stretchPhoneRound(sql, gameStore, question, now);
       }
       if (
         current.questionCount > 0 &&

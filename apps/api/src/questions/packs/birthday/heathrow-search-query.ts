@@ -10,7 +10,14 @@ export const heathrowSearchQuery = voteQuestion({
   collectMs: 30_000,
   voteMs: 15_000,
   attribution: "after",
-  flow: { kind: "tournament" },
+  flow: {
+    kind: "tournament",
+    pick: "Pick the worse search.",
+    // 80 entries would be 79 one-at-a-time matches (about 25 minutes). Every
+    // phone judges 5 pairs of its own at once, then the best 8 play it out on
+    // the big screen: 7 matches, about 3½ minutes in all.
+    heat: { finalists: 8, pairs: 5, ms: 45_000 },
+  },
   explanation:
     "The worst search wins the bracket and 60 points. No self-votes. Odd entries get a bye; tied matches use the random draw fixed before voting. No votes in the entire bracket means no prize.",
   notes:
