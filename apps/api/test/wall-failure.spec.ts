@@ -176,6 +176,35 @@ it("moves a broken photo on through the normal rotation, once, after a short car
   stage.socket.close();
 });
 
+it("moves on immediately and marks the host history after a four-second load timeout", async () => {
+  const room = await setup();
+  await wallSettings(room.stub, { moderation: "direct" });
+  const amina = await room.join("Amina");
+  const bilal = await room.join("Bilal");
+  const aminaPost = await post(room.stub, room.gameId, amina);
+  const bilalPost = await post(room.stub, room.gameId, bilal);
+  const stage = await screen(room, "stage");
+
+  await runInDurableObject(room.stub, (_instance, state) => {
+    state.storage.sql.exec(
+      `UPDATE wall_post SET shown_at = ? WHERE post_id = ?`,
+      Date.now() - 4_000,
+      aminaPost,
+    );
+  });
+  expect(await stage.report(aminaPost)).toEqual({ accepted: true });
+  stage.socket.close();
+
+  const next = await showing(room.stub);
+  expect(next?.post_id).toBe(bilalPost);
+  expect(await advanceDue(room.stub)).toBe(next?.until_at);
+  const hostWall = (await room.stub.snapshotFor("control")).wall;
+  expect(hostWall?.now?.displayFailed).toBeUndefined();
+  expect(hostWall?.recent).toContainEqual(
+    expect.objectContaining({ postId: aminaPost, displayFailed: true }),
+  );
+});
+
 it("refuses reports from guests, the host screen and for posts that are not showing", async () => {
   const room = await setup();
   await wallSettings(room.stub, { moderation: "direct" });

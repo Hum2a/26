@@ -7244,3 +7244,14 @@ Clue photo inspected after resize (promenade + beach, no readable “Agadir” t
 
 Open the PR into `master` for Humza to review and merge. Do not start the next prompt automatically.
 
+## 19 November 2026 — Photo wall load timeout and host notice
+
+The four-second projector timeout and the host's “Couldn't display” notice were already on `origin/master` in `e1e5afa`. Updated `docs/photo-wall-plan.md` to mark both built. The projector sends the existing error report, and the room advances through the normal rotation. The host can see the flag under Admin → Photo wall, including in the shown history.
+
+`stage-wall.test.tsx` now checks the exact four-second boundary and one report per post in both spotlight and corner placement. `wall-failure.spec.ts` checks that a report after four seconds advances straight to the next photo and records the failed post in the host history. The existing admin test covers the note.
+
+Checks: `npm run typecheck`, `npm run lint` (15 existing warnings), `npm run format:check`, `npm run content:check` and `npm run build` passed. The projector and admin wall tests passed (23 tests). `npm run test -w @26/api` passed (829 tests), including all 10 room wall-failure tests. No Playwright run or physical projector check. The existing `where-are-we` draft remains incomplete.
+
+`npm run test:unit` reported a failure in the `where-are-we` map-pin test, which also failed in [CI on the branch base](https://github.com/Hum2a/26/actions/runs/44616795788). A kart test failed on the first full run and passed on its focused rerun (28 tests passed).
+
+Next: Humza reviews the PR.
