@@ -43,6 +43,8 @@ export default defineConfig({
                 LOAD_INPUT_HZ: process.env.LOAD_INPUT_HZ ?? "10",
                 LOAD_TRACK: process.env.LOAD_TRACK ?? "party-ring-v1",
                 LOAD_NEUTRAL: process.env.LOAD_NEUTRAL ?? "0",
+                LOAD_STAGGER: process.env.LOAD_STAGGER ?? "0",
+                LOAD_MODE: process.env.LOAD_MODE ?? "input",
               },
             },
           }),

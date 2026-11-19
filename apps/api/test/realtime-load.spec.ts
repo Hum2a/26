@@ -27,6 +27,13 @@ const importedCircuit = settings.LOAD_TRACK === "mario-circuit-v1";
 const kartMs = positive(settings.LOAD_KART_MS, 6_000);
 // Phone control rate during the race. 0 sends no controls, which isolates the tick cost.
 const inputHz = Math.max(0, Math.min(20, Number(settings.LOAD_INPUT_HZ ?? "10") || 0));
+// LOAD_STAGGER=1 spreads each guest's message across the interval, as real phones do,
+// instead of sending all of them in one burst.
+const stagger = settings.LOAD_STAGGER === "1";
+// What each guest sends: "input" (kart controls), "ping" (the cheapest message the
+// room handles, to isolate per-message delivery cost), "wrong-race" (controls the
+// room rejects before buffering), or "pose" (phone-reported position, where supported).
+const mode = (settings.LOAD_MODE ?? "input") as "input" | "ping" | "wrong-race" | "pose";
 
 describe("realtime fan-out", () => {
   it("measures each room size on the selected track and optional quiz burst", async ({
@@ -114,20 +121,27 @@ async function measure(size: number) {
     () => {
       if (inputHz === 0) return;
       sequence += 1;
+      const tick = sequence;
+      const intervalMs = 1000 / inputHz;
       for (const [index, peer] of guests.entries()) {
-        peer.raw({
-          kind: "command",
-          name: "kart-input",
-          requestId: crypto.randomUUID(),
-          input: {
-            raceId,
-            sequence,
-            steer: neutralControls ? 0 : index % 3 === 0 ? 0.24 : -0.1,
-            gas: !neutralControls,
-            brake: false,
-            drift: false,
-          },
-        });
+        const fire = () => {
+          if (mode === "ping") return peer.text("ping");
+          peer.raw({
+            kind: "command",
+            name: "kart-input",
+            requestId: crypto.randomUUID(),
+            input: {
+              raceId: mode === "wrong-race" ? "not-this-race" : raceId,
+              sequence: tick,
+              steer: neutralControls ? 0 : index % 3 === 0 ? 0.24 : -0.1,
+              gas: !neutralControls,
+              brake: false,
+              drift: false,
+            },
+          });
+        };
+        if (stagger) setTimeout(fire, (index * intervalMs) / guests.length);
+        else fire();
       }
     },
     inputHz === 0 ? 1000 : Math.round(1000 / inputHz),
@@ -152,6 +166,9 @@ async function measure(size: number) {
     trackId: race?.trackId,
     inputHz,
     controls: neutralControls ? "neutral" : "driving",
+    mode,
+    stagger,
+    tickLateMs: tickLateness(diagnostics.report.realtime),
     answerAckMs:
       answerSamples.length === 0
         ? null
@@ -215,6 +232,7 @@ type Peer = {
   movingRacers: Set<string>;
   reset(): void;
   raw(body: Record<string, unknown>): void;
+  text(body: string): void;
   command(body: Record<string, unknown>): Promise<{ ms: number; accepted: boolean }>;
   close(): void;
 };
@@ -259,6 +277,9 @@ async function connect(
     },
     raw(body) {
       socket.send(JSON.stringify(body));
+    },
+    text(body) {
+      socket.send(body);
     },
     command(body) {
       const requestId = crypto.randomUUID();
@@ -397,4 +418,18 @@ function credentialCookie(
 
 function guestCookie(joined: { gameId: string; playerId: string; secret: string }) {
   return `26_guest=${joined.gameId}.${joined.playerId}.${joined.secret}`;
+}
+
+/** Mean race-tick lateness over the whole run, and how many ticks started over 250 ms late. */
+function tickLateness(
+  realtime: { series: { name: string; total: number; totalBytes: number }[] } | undefined,
+) {
+  const late = realtime?.series.find((entry) => entry.name === "tick:lateMs");
+  const over = realtime?.series.find((entry) => entry.name === "tick:late>250");
+  if (!late || late.total === 0) return null;
+  return {
+    ticks: late.total,
+    meanMs: Math.round(late.totalBytes / late.total),
+    over250: over?.total ?? 0,
+  };
 }

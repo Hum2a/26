@@ -1007,12 +1007,20 @@ export class PartyRoom extends DurableObject<Env> {
       const store = createGameStore(sql);
       const before = store.readRoom();
       const due = sql
-        .exec<{ payload: string }>(
-          `SELECT payload FROM schedule_job
+        .exec<{ payload: string; due_at: number }>(
+          `SELECT payload, due_at FROM schedule_job
            WHERE status = 'pending' AND due_at IS NOT NULL AND due_at <= ?`,
           now,
         )
         .toArray();
+      // How late each race tick started. Recorded as the series' byte total so
+      // the mean is totalBytes / total; diagnostics only, never persisted.
+      for (const job of due)
+        if (job.payload === "kart-tick") {
+          const late = Math.max(0, now - job.due_at);
+          this.meter.add("tick:lateMs", late, now);
+          if (late > 250) this.meter.add("tick:late>250", 0, now);
+        }
       onAlarm(store, now);
       const after = store.readRoom();
       // A tick that only moved the race goes out as a kart frame, not a full snapshot.
