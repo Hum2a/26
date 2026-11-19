@@ -49,6 +49,25 @@ describe("question preloading", () => {
     expect(questionImages({ ...roomFixture, play: null })).toEqual([]);
   });
 
+  it("preloads Ed and Humza avatars for that presentation, and portraits on the projector", () => {
+    const snapshot = {
+      ...roomFixture,
+      play: {
+        question: { id: "ed-or-humza", kind: "rank", presentation: "ed-or-humza" },
+      },
+    } as unknown as LobbySnapshot;
+    expect(questionImages(snapshot, "phone")).toEqual([
+      "/assets/questions/ed-or-humza/ed.webp",
+      "/assets/questions/ed-or-humza/humza.webp",
+    ]);
+    expect(questionImages(snapshot, "stage")).toEqual([
+      "/assets/questions/ed-or-humza/ed.webp",
+      "/assets/questions/ed-or-humza/humza.webp",
+      "/assets/questions/ed-or-humza/ed-portrait.webp",
+      "/assets/questions/ed-or-humza/humza-portrait.webp",
+    ]);
+  });
+
   it("requests each picture once", () => {
     const created: string[] = [];
     class FakeImage {

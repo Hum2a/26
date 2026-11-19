@@ -50,6 +50,14 @@ it("sorts fixture quotes one at a time and sends the whole list once", () => {
   render(<GuestPlay snapshot={snapshot()} pending={false} {...callbacks} />);
   expect(screen.getByText(question.prompt)).toBeTruthy();
   expect(screen.getByText(/Stand-in: I only came for the crisps/)).toBeTruthy();
+  expect(
+    document.querySelectorAll('img[src="/assets/questions/ed-or-humza/ed.webp"]')
+      .length,
+  ).toBeGreaterThan(0);
+  expect(
+    document.querySelectorAll('img[src="/assets/questions/ed-or-humza/humza.webp"]')
+      .length,
+  ).toBeGreaterThan(0);
   fireEvent.click(screen.getByRole("button", { name: "Ed" }));
   fireEvent.click(screen.getByRole("button", { name: "Humza" }));
   expect(screen.getByText(/2 of 8 sorted/)).toBeTruthy();
@@ -213,6 +221,12 @@ it("lets a guest expand long quotes in a review pile, move between piles, or mov
   fireEvent.click(screen.getByRole("button", { name: "Ed" }));
 
   fireEvent.click(screen.getByRole("button", { name: "Ed 3" }));
+  expect(screen.getByText("Ed", { selector: ".ed-assigned-head span" })).toBeTruthy();
+  expect(
+    document.querySelector(
+      '.ed-assigned-head img[src="/assets/questions/ed-or-humza/ed.webp"]',
+    ),
+  ).toBeTruthy();
   const expandLong = screen.getByRole("button", {
     name: /A much longer invented line/,
   });
@@ -248,6 +262,14 @@ it("expands a long stand-in quote without using a real attribution", () => {
 it("shows the stand-in speaker groups on the projector only after reveal", () => {
   const view = render(<StagePlay snapshot={snapshot()} />);
   expect(screen.queryByText(/Stand-in: I only came for the crisps/)).toBeNull();
+  expect(
+    [...view.container.querySelectorAll("img")].map((image) =>
+      image.getAttribute("src"),
+    ),
+  ).toEqual([
+    "/assets/questions/ed-or-humza/ed-portrait.webp",
+    "/assets/questions/ed-or-humza/humza-portrait.webp",
+  ]);
   view.rerender(
     <StagePlay
       snapshot={snapshot("reveal", { reveal: previewReveal(question, undefined, 1) })}
@@ -256,4 +278,10 @@ it("shows the stand-in speaker groups on the projector only after reveal", () =>
   expect(screen.getByText(/Stand-in: I only came for the crisps/)).toBeTruthy();
   expect(screen.getByRole("heading", { name: "Ed" })).toBeTruthy();
   expect(screen.getByRole("heading", { name: "Humza" })).toBeTruthy();
+  expect(screen.getByRole("img", { name: "Ed" }).getAttribute("src")).toBe(
+    "/assets/questions/ed-or-humza/ed-portrait.webp",
+  );
+  expect(screen.getByRole("img", { name: "Humza" }).getAttribute("src")).toBe(
+    "/assets/questions/ed-or-humza/humza-portrait.webp",
+  );
 });
