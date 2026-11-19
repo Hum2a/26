@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { LobbySnapshot } from "@26/shared";
+import { edOrHumzaPreloadPaths } from "./designs/ed-or-humza-photos";
 
 const requested = new Set<string>();
 
@@ -24,8 +25,14 @@ export function preloadImages(paths: readonly string[]): void {
 }
 
 /** Option pictures for the question already on screen. Nothing from later questions. */
-export function questionImages(snapshot: LobbySnapshot | undefined): string[] {
+export function questionImages(
+  snapshot: LobbySnapshot | undefined,
+  surface: "phone" | "stage" = "phone",
+): string[] {
   const question = snapshot?.play?.question;
+  if (question?.presentation === "ed-or-humza") {
+    return edOrHumzaPreloadPaths(surface);
+  }
   if (question?.kind === "map-guess") return question.image ? [question.image.src] : [];
   if (!question || !("options" in question) || !Array.isArray(question.options)) {
     return [];
@@ -61,7 +68,7 @@ export function usePreloadQuestion(
 ): void {
   const questionId = snapshot?.play?.question.id;
   const kind = snapshot?.play?.question.kind;
-  const images = questionImages(snapshot).join("|");
+  const images = questionImages(snapshot, surface).join("|");
   useEffect(() => {
     if (images) {
       preloadImages(images.split("|"));

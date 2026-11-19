@@ -1721,6 +1721,28 @@ export const transferIssuedSchema = z
 
 export type TransferIssued = z.infer<typeof transferIssuedSchema>;
 
+/** One-time code that pairs a projector with a room's presentation role. */
+export const projectorPairingCodeSchema = transferCodeSchema;
+
+export const projectorPairingIssuedSchema = z
+  .object({
+    code: projectorPairingCodeSchema,
+    expiresAt: z.string().min(1),
+  })
+  .strict();
+
+export type ProjectorPairingIssued = z.infer<typeof projectorPairingIssuedSchema>;
+
+export const projectorPairedSchema = z
+  .object({
+    gameId: gameIdSchema,
+    joinCode: joinCodeSchema,
+    expiresAt: z.string().min(1),
+  })
+  .strict();
+
+export type ProjectorPaired = z.infer<typeof projectorPairedSchema>;
+
 export const roomClientErrorSchema = z.object({
   error: z.enum([
     "unauthenticated",

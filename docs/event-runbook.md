@@ -34,6 +34,7 @@ Baseer presents. Humza operates the administrator screen. Guests play on their o
 3. Create the lobby. Leave that admin tab open. It holds the control connection and stays authorised for twelve hours.
 4. **Live controls → Driving feel** (kart round): defaults are prediction on, other karts glide, sideways steering strip, auto frame rate, 3-2-1-GO countdown. If karts rubber-band on the venue Wi-Fi, choose _Conservative_ or _Off_; changes reach phones at once.
 5. Open `/host` on the projector browser and connect it to the same room. The stage cookie is separate from the admin cookie and lasts fourteen hours. Press **Present on this screen**, then F for full screen.
+   - **Projector laptop not signed in to admin?** Pair it instead (stretch feature; use it only after a staging rehearsal has passed). In **Live controls**, the **Projector pairing** card shows a one-time code such as `WXYZ-2345`. On the projector, open `/host`, type the room's join code, type the pairing code under _No admin login on this laptop?_ and press **Pair this screen**. The room gives that browser the same fourteen-hour stage cookie, for this room only, then connects; press **Present on this screen** as usual. A code works once and lasts ten minutes. **Show a new code** cancels the previous one. After five quick tries the room accepts only one more about every twelve seconds, and ten wrong tries cancel the open code. Read the code aloud or type it yourself: never put it on the projector or in the group chat. A paired projector replaces any other open stage tab, exactly as a second `/host` tab does. Live controls cannot revoke a paired projector: its stage cookie lasts fourteen hours, and closing the tab does not end that access. Pair only a laptop you trust for the night, and use **Hide stage content** if the screen must go blank.
 6. On the stage, press Start show once for sound. M mutes the stage. F requests full screen. Escape returns to projector setup. If full screen drops by accident the show stays up with a short hint; press F. A reload of the projector tab reconnects and keeps presenting. The stage deliberately has no operator readout: diagnostics stay on the admin screen.
 7. Press Refresh room health. Expect phase `lobby`, a control connection, and no failed scheduler jobs.
 8. When everyone is in, press **Start birthday game** and confirm. The confirmation says how many players are in; the running order freezes at that moment. The illustrative demo start is labelled as a rehearsal alternative and also asks first. Developer bots are refused in a room running the birthday game.
@@ -110,7 +111,8 @@ Ask a guest to reload only if Try again now does not bring them back. Humza relo
 1. Look at Room health. If Stage shows 0, the projector browser is offline.
 2. Press `P` to pause if a question is collecting. The room does not pause by itself when the stage drops, so a flicker does not stop the game.
 3. Check the projector laptop's network. The stage reconnects without a reload once the network is back.
-4. Resume with `P`.
+4. If the projector browser lost its stage cookie (a private window, cleared site data or a different browser), pair it again from **Live controls → Projector pairing**. The scores and the room are unaffected.
+5. Resume with `P`.
 
 ### One phone sending too much
 

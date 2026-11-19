@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { LobbySnapshot } from "@26/shared";
 import { StageWall } from "./stage-wall";
-import { FramedPhoto, wallImageTimeoutMs } from "../../wall/framed-photo";
+import { FramedPhoto } from "../../wall/framed-photo";
 
 type Wall = NonNullable<LobbySnapshot["wall"]>;
 const id = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
@@ -114,26 +114,33 @@ describe("a photo that never loads or errors on the projector", () => {
   });
   const at = (postId: string, mediaId: string) => ({ ...now, postId, mediaId });
 
-  it("is reported once after four seconds, with the moving-on card", () => {
-    vi.useFakeTimers();
-    const onImageFailed = vi.fn();
-    render(
-      <StageWall
-        wall={wall({ now })}
-        gameId="ROOM"
-        phase="scores"
-        onImageFailed={onImageFailed}
-      />,
-    );
-    act(() => vi.advanceTimersByTime(wallImageTimeoutMs - 1));
-    expect(onImageFailed).not.toHaveBeenCalled();
-    act(() => vi.advanceTimersByTime(1));
-    expect(onImageFailed).toHaveBeenCalledTimes(1);
-    expect(onImageFailed).toHaveBeenCalledWith(id(1));
-    expect(screen.getByText("Moving on in a moment.")).toBeTruthy();
-    act(() => vi.advanceTimersByTime(20_000));
-    expect(onImageFailed).toHaveBeenCalledTimes(1);
-  });
+  it.each([
+    { placement: "breaks", phase: "scores" },
+    { placement: "corner", phase: "collect" },
+  ] as const)(
+    "reports a stuck photo after four seconds in $placement",
+    ({ placement, phase }) => {
+      vi.useFakeTimers();
+      const onImageFailed = vi.fn();
+      render(
+        <StageWall
+          wall={wall({ now, placement })}
+          gameId="ROOM"
+          phase={phase}
+          onImageFailed={onImageFailed}
+        />,
+      );
+      act(() => vi.advanceTimersByTime(3_999));
+      expect(onImageFailed).not.toHaveBeenCalled();
+      expect(screen.getByRole("img", { name: /a photo from Amina/ })).toBeTruthy();
+      act(() => vi.advanceTimersByTime(1));
+      expect(onImageFailed).toHaveBeenCalledTimes(1);
+      expect(onImageFailed).toHaveBeenCalledWith(id(1));
+      expect(screen.getByText("Moving on in a moment.")).toBeTruthy();
+      act(() => vi.advanceTimersByTime(20_000));
+      expect(onImageFailed).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it("is not reported once it loads, however slowly", () => {
     vi.useFakeTimers();

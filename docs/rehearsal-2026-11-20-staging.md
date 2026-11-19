@@ -138,6 +138,13 @@ Compare 8–15 s late in the first room's game.
    main thread was idle (no long tasks, timer lag p95 7 ms). Suggested direction:
    build statistics only in the end phases, or cache them and refresh at most every
    few seconds, and skip the extra room-wide rebuild per command.
+   **Update after merging master:** PR #55 (`0dfc4be`), merged after this run,
+   batches each phone's own view after votes, estimates, ranks and text into the
+   shared 30 ms flush. It reports reply p95 falling from about 11 s to about 2 s
+   locally. That covers the per-command private snapshot. As far as I can tell, the
+   staging build tested here did not include it, so the numbers above are from
+   before. The full-table `readStatsSource` on every room-wide build remains, so
+   rerun this rehearsal on staging after deploying.
 3. **Knockout rounds are very long with 80 entries (needs Humza's decision).**
    Each knockout runs n − 1 matches: 79 here. At the real 15 s `voteMs` that is
    about 20 minutes for each of `apology-video-auction` and
@@ -179,7 +186,8 @@ Compare 8–15 s late in the first room's game.
 
 ## Suggested next steps before Saturday
 
-- Fix issues 1 and 2, then repeat this run. Use a fresh rehearsal with 80 bots,
+- Fix issue 1 and the rest of issue 2, deploy master with PR #55 to staging, then
+  repeat this run. Use a fresh rehearsal with 80 bots,
   and a kart-only lobby with 80 bots now that issue 5 is fixed.
 - Decide on issue 3 (cap or shortlist knockout entries) for the real order.
 - On the night, avoid back-to-back heavy rounds. If the room stalls, keep the same

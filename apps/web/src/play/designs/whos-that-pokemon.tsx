@@ -213,19 +213,21 @@ function PokeStage({
       <div className="poke-stage-body">
         <Mystery view={view} size="stage" />
         <div className="poke-stage-side">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={answer ? "answer" : "question"}
-              initial={{ opacity: 0, y: motionSet.move(20) }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={motionSet.soft}
-            >
-              <Title
-                text={answer ? `It’s ${answer.label}!` : play.question.prompt}
-                size="stage"
-              />
-            </motion.div>
+          <Title text={play.question.prompt} size="stage" />
+          <AnimatePresence initial={false}>
+            {answer ? (
+              <motion.p
+                key="answer"
+                className="poke-title poke-stage-answer"
+                data-size="stage"
+                initial={{ opacity: 0, y: motionSet.move(20) }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={motionSet.soft}
+              >
+                {`It’s ${answer.label}!`}
+              </motion.p>
+            ) : null}
           </AnimatePresence>
           <ul className="poke-menu" data-size="stage" aria-label="Names">
             {view.question.options.map((option, index) => {

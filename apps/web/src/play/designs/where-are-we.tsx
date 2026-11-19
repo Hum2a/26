@@ -1,4 +1,5 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { pinDistanceKm, type MapPin, type PlaySnapshot } from "@26/shared";
 import { SubmitButton } from "../controls/SubmitButton";
@@ -60,6 +61,8 @@ function WherePhone({
   const motionSet = useDesignMotion();
   const [draft, setDraft] = useState<MapPin>();
   const [photoOpen, setPhotoOpen] = useState(false);
+  const clueTriggerRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const accepted =
     play.selfAnswer?.kind === "map-guess" ? play.selfAnswer.pin : undefined;
   const pin = reveal ? accepted : (accepted ?? draft);
@@ -68,44 +71,95 @@ function WherePhone({
   const editable = controls.open && !locked && answering;
   const photo = question.image;
 
+  const closePhoto = useCallback(() => {
+    setPhotoOpen(false);
+    clueTriggerRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!photoOpen) return;
+    closeButtonRef.current?.focus();
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closePhoto();
+      } else if (event.key === "Tab") {
+        // Keep keyboard focus inside the modal dialog (Close is its only focusable control).
+        event.preventDefault();
+        closeButtonRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [closePhoto, photoOpen]);
+
+  const lightbox =
+    typeof document !== "undefined"
+      ? createPortal(
+          <AnimatePresence>
+            {photoOpen && photo ? (
+              <motion.div
+                role="dialog"
+                aria-modal="true"
+                aria-label="Clue photo"
+                className="where-clue-lightbox"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={motionSet.reduce ? { duration: 0.14 } : motionSet.soft}
+                onClick={closePhoto}
+              >
+                <button
+                  ref={closeButtonRef}
+                  type="button"
+                  className="where-clue-close motion-press"
+                  aria-label="Close clue photo"
+                  autoFocus
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    closePhoto();
+                  }}
+                >
+                  Close
+                </button>
+                <motion.figure
+                  className="where-clue-lightbox-figure"
+                  initial={{ scale: motionSet.reduce ? 1 : 0.96, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: motionSet.reduce ? 1 : 0.96, opacity: 0 }}
+                  transition={motionSet.reduce ? { duration: 0.14 } : motionSet.spring}
+                >
+                  <img
+                    src={photo.src}
+                    alt={photo.alt ?? "Clue photo for the mystery location"}
+                    width={1000}
+                    height={667}
+                    decoding="async"
+                  />
+                  <figcaption className="where-clue-lightbox-credit">
+                    Photo: {photo.credit} · tap anywhere to close
+                  </figcaption>
+                </motion.figure>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>,
+          document.body,
+        )
+      : null;
+
   return (
     <section className="design-phone where-are-we" aria-label="Where are we?">
-      <QuestionTag play={play}>Map guess</QuestionTag>
-      <h1 className="phone-prompt">{question.prompt}</h1>
-      {photo ? (
-        <button
-          type="button"
-          className="where-clue"
-          onClick={() => setPhotoOpen(true)}
-          aria-label="Open clue photo"
-        >
-          <img
-            src={photo.src}
-            alt={photo.alt ?? "Clue photo for the mystery location"}
-            width={1000}
-            height={667}
-            decoding="async"
-          />
-          <span className="where-clue-credit">
-            Photo: {photo.credit} · tap to enlarge
-          </span>
-        </button>
-      ) : (
-        <p className="where-missing">
-          Clue photo still to come. The map below is for rehearsal only.
-        </p>
-      )}
-      <AnimatePresence>
-        {photoOpen && photo ? (
-          <motion.button
+      <div className="where-header">
+        <QuestionTag play={play}>Map guess</QuestionTag>
+        <h1 className="phone-prompt">{question.prompt}</h1>
+        {photo ? (
+          <button
+            ref={clueTriggerRef}
             type="button"
-            className="where-clue-lightbox"
-            aria-label="Close clue photo"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={motionSet.soft}
-            onClick={() => setPhotoOpen(false)}
+            className="where-clue"
+            onClick={() => setPhotoOpen(true)}
+            aria-label="Open clue photo"
+            aria-haspopup="dialog"
           >
             <img
               src={photo.src}
@@ -114,28 +168,41 @@ function WherePhone({
               height={667}
               decoding="async"
             />
-          </motion.button>
-        ) : null}
-      </AnimatePresence>
-      {reveal ? (
-        <p className="where-result">
-          {reveal.label}
-          {accepted
-            ? ` · Your pin was ${km(pinDistanceKm(accepted, reveal.target))} away.`
-            : ""}
-        </p>
-      ) : answering ? (
-        <p className="where-help">
-          {editable
-            ? "Pan and zoom, then tap to drop your pin. Send it from the dock."
-            : "Watch the map. Pins lock in when the room accepts them."}
-        </p>
-      ) : (
-        <p className="where-help">Study the clue. The map opens when answers do.</p>
-      )}
+            <span className="where-clue-credit">
+              Photo: {photo.credit} · tap to enlarge
+            </span>
+          </button>
+        ) : (
+          <p className="where-missing">
+            Clue photo still to come. The map below is for rehearsal only.
+          </p>
+        )}
+        {reveal ? (
+          <p className="where-result">
+            {reveal.label}
+            {accepted
+              ? ` · Your pin was ${km(pinDistanceKm(accepted, reveal.target))} away.`
+              : ""}
+          </p>
+        ) : answering ? (
+          <p className="where-help">
+            {editable
+              ? "Pan and zoom, then tap to drop your pin. Send it from the dock."
+              : "Watch the map. Pins lock in when the room accepts them."}
+          </p>
+        ) : (
+          <p className="where-help">Study the clue. The map opens when answers do.</p>
+        )}
+      </div>
       {answering || reveal ? (
         <div className="where-map-slot">
-          <Suspense fallback={<p role="status">Loading the map…</p>}>
+          <Suspense
+            fallback={
+              <p role="status" className="where-map-loading">
+                Loading the map…
+              </p>
+            }
+          >
             <GuessMap
               className="where-map"
               pin={pin}
@@ -147,22 +214,31 @@ function WherePhone({
           </Suspense>
         </div>
       ) : null}
-      {pin && !reveal ? (
-        <p aria-live="polite" className="where-coords">
-          Pin at {pin.lat.toFixed(2)}°, {pin.lng.toFixed(2)}°
-        </p>
+      {(answering || controls.open || controls.pending || locked) && !reveal ? (
+        <div className="where-footer">
+          {answering ? (
+            <p aria-live="polite" className="where-coords">
+              {pin
+                ? `Pin at ${pin.lat.toFixed(2)}°, ${pin.lng.toFixed(2)}°`
+                : "No pin placed yet"}
+            </p>
+          ) : null}
+          {controls.open || controls.pending || locked ? (
+            <div className="where-submit-wrap">
+              <SubmitButton
+                className={controls.dodge ? "troll-dodge" : ""}
+                label="Send pin"
+                state={roundSubmitState(locked, controls.pending)}
+                disabled={!locked && !pin}
+                onClick={() => {
+                  if (editable && pin) controls.onMapPin?.(pin);
+                }}
+              />
+            </div>
+          ) : null}
+        </div>
       ) : null}
-      {(controls.open || controls.pending || locked) && !reveal ? (
-        <SubmitButton
-          className={controls.dodge ? "troll-dodge" : ""}
-          label="Send pin"
-          state={roundSubmitState(locked, controls.pending)}
-          disabled={!locked && !pin}
-          onClick={() => {
-            if (editable && pin) controls.onMapPin?.(pin);
-          }}
-        />
-      ) : null}
+      {lightbox}
     </section>
   );
 }
@@ -207,7 +283,13 @@ function WhereStage({
         )}
         {answering || reveal ? (
           <div className="where-stage-map">
-            <Suspense fallback={<p role="status">Loading the map…</p>}>
+            <Suspense
+              fallback={
+                <p role="status" className="where-map-loading">
+                  Loading the map…
+                </p>
+              }
+            >
               <GuessMap
                 className="where-map"
                 target={reveal?.target}

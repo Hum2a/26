@@ -120,9 +120,9 @@
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: clamp(0.75rem, 2vh, 1.5rem);
+  gap: clamp(0.6rem, 1.4vh, 1.1rem);
   text-align: center;
-  min-height: 60svh;
+  min-height: 0;
 }
 .glyph-stage-word {
   display: flex;
@@ -132,17 +132,17 @@
 .glyph-stage-word span {
   display: grid;
   place-items: center;
-  width: clamp(3rem, 10vw, 10rem);
+  width: clamp(3.75rem, min(7.5vw, 12.5vh), 7.25rem);
   aspect-ratio: 1;
   border: 3px solid var(--accent);
   border-radius: var(--radius-panel);
   background: var(--surface);
-  font-size: clamp(2rem, 7vw, 7rem);
+  font-size: clamp(2.25rem, min(5.2vw, 8.8vh), 5rem);
   line-height: 1;
   font-weight: 900;
 }
 .glyph-stage-instruction {
-  font-size: clamp(1.25rem, 2.8vw, 3rem);
+  font-size: clamp(30px, min(2.1vw, 3.6vh), 40px);
 }
 @media (max-height: 720px) {
   .glyph-board {

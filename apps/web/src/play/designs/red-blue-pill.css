@@ -122,9 +122,9 @@
 .pill-stage {
   position: relative;
   overflow: hidden;
-  border-radius: 2.5rem;
+  border-radius: 2rem;
   background: var(--matrix-ink);
-  padding: 2rem 3rem;
+  padding: clamp(0.9rem, 2vh, 1.65rem) clamp(1.25rem, 2.5vw, 2.25rem);
   color: color-mix(in srgb, var(--matrix-code) 25%, var(--pill-shine));
 }
 
@@ -149,7 +149,7 @@
   top: -60%;
   writing-mode: vertical-rl;
   font-family: ui-monospace, "Cascadia Mono", monospace;
-  font-size: 40px;
+  font-size: 32px;
   letter-spacing: 0.2em;
   color: var(--matrix-code);
   text-shadow: 0 0 0.6rem var(--matrix-code);
@@ -176,29 +176,29 @@
 .pill-stage-body {
   position: relative;
   display: grid;
-  gap: 1.5rem;
+  gap: clamp(0.55rem, 1.3vh, 1rem);
 }
 
 .pill-stage-hands {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4rem;
+  gap: clamp(1.5rem, 3vw, 3rem);
 }
 
 .pill-stage-hand {
   position: relative;
   display: grid;
   justify-items: center;
-  gap: 1rem;
+  gap: clamp(0.35rem, 0.9vh, 0.65rem);
 }
 
 .pill-stage-hand .pill-palm {
-  width: 9rem;
-  height: 9rem;
+  width: clamp(4rem, 9vh, 6rem);
+  height: clamp(4rem, 9vh, 6rem);
 }
 
 .pill-stage-hand .pill-label {
-  font-size: max(48px, 3vw);
+  font-size: clamp(32px, min(2.2vw, 3.8vh), 42px);
 }
 
 .pill-stage-hand[data-lost] {
@@ -206,17 +206,17 @@
 }
 
 .pill-capsule[data-size="stage"] {
-  width: 10rem;
-  height: 4.2rem;
+  width: clamp(5.5rem, 12vh, 7.5rem);
+  height: clamp(2.25rem, 5vh, 3.2rem);
   transform: rotate(-24deg);
 }
 
 .pill-flatline {
   position: absolute;
-  top: 30%;
-  left: calc(50% + 6rem);
-  width: 7rem;
-  height: 7rem;
+  top: 25%;
+  left: calc(50% + 4.5rem);
+  width: clamp(4rem, 8.5vh, 5.5rem);
+  height: clamp(4rem, 8.5vh, 5.5rem);
   color: var(--pill-red-glow);
 }
 
@@ -224,9 +224,9 @@
   position: relative;
   display: flex;
   overflow: hidden;
-  height: 5rem;
-  border-radius: 1.5rem;
-  font-size: max(48px, 3vw);
+  height: clamp(3rem, 6.2vh, 4rem);
+  border-radius: 1.25rem;
+  font-size: clamp(32px, min(2.2vw, 3.8vh), 42px);
   font-weight: 700;
 }
 
@@ -253,17 +253,17 @@
   top: 0;
   bottom: 0;
   left: 50%;
-  border-left: 6px dashed var(--pill-shine);
-  padding-left: 0.5rem;
-  font-size: 32px;
-  line-height: 1.6;
+  border-left: 4px dashed var(--pill-shine);
+  padding-left: 0.45rem;
+  font-size: clamp(28px, 1.7vw, 30px);
+  line-height: 1.3;
   color: var(--pill-shine);
 }
 
 .pill-stage-verdict {
   margin: 0;
   font-family: var(--font-display);
-  font-size: max(72px, 4.8vw);
+  font-size: clamp(36px, min(2.8vw, 4.8vh), 52px);
   line-height: 1.05;
   color: var(--matrix-code);
   text-shadow: 0 0 2rem color-mix(in srgb, var(--matrix-code) 60%, transparent);
