@@ -179,7 +179,10 @@ export function GuessMap({
         labels();
       })
       .catch(() => {
-        if (active) setFailed(true);
+        if (active) {
+          setReady(false);
+          setFailed(true);
+        }
       });
     return () => {
       active = false;

@@ -131,7 +131,7 @@ function revealLine(question: Question): string {
         case "multiple":
           return `Correct answers are ${outcome.optionIds.map(label).join(", ")}. Only that exact set earns points.`;
         case "push":
-          return `Players who bailed before the Raid keep their banked points. Players caught by the Raid score zero. If there was no Raid, players still in bank ${outcome.banks.at(-1) ?? 0} points.`;
+          return `Players who bailed before the Raid keep their banked points. Players caught by the Raid score zero. If there was no Raid, players still in bank keep ${outcome.banks.at(-1) ?? 0} points.`;
         case "correct":
           if (question.correctOptionId === null) {
             throw new Error(`Missing correct option for ${question.id}`);

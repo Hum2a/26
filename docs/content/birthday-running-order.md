@@ -325,7 +325,7 @@ Say at the reveal: Reveal who got the most votes. Guests who picked them score. 
 Hold your nerve as the search history gets worse. Hit BAIL to bank points before the Raid.
 
 30s to answer. Attribution: live.
-Say at the reveal: Players who bailed before the Raid keep their banked points. Players caught by the Raid score zero. If there was no Raid, players still in bank 700 points.
+Say at the reveal: Players who bailed before the Raid keep their banked points. Players caught by the Raid score zero. If there was no Raid, players still in bank keep 700 points.
 
 ## 47. kart · kart-park-grand-prix
 

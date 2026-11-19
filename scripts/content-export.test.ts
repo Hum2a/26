@@ -38,6 +38,10 @@ test("birthday reveals explain exact sets, the room median and minigame scoring"
     runningOrder,
     /Fastest completed lap wins\. Finishers share place on equal finish times/,
   );
+  assert.match(
+    runningOrder,
+    /If there was no Raid, players still in bank keep \d+ points\./,
+  );
   const where = questions.find((question) => question.id === "where-are-we");
   assert.equal(where?.kind, "map-guess");
   if (where?.kind === "map-guess") {
