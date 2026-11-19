@@ -1,0 +1,21 @@
+{
+  // Throwaway load-test Worker on Aden's own Cloudflare account. Separate name,
+  // no custom domain, no secrets beyond LOADTEST_TOKEN. Not staging or production.
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  "name": "kart-loadtest-26",
+  "main": "./worker.ts",
+  "compatibility_date": "2026-09-22",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "vars": { "APP_ENV": "local" },
+  "durable_objects": {
+    "bindings": [
+      { "name": "PARTY_ROOM", "class_name": "PartyRoom" },
+      { "name": "ROOM_CODE_REGISTRY", "class_name": "RoomCodeRegistry" },
+    ],
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["PartyRoom", "RoomCodeRegistry"] },
+  ],
+  "observability": { "enabled": true },
+}
