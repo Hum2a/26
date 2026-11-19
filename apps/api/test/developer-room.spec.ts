@@ -230,3 +230,25 @@ it("refuses to add bots to the live birthday game but still removes them, and al
     expect(() => setBotCount(sql, 3, now + 3)).not.toThrow();
   });
 });
+
+it("lets a waiting kart-only lobby take bots, and refuses more once its race starts", async () => {
+  const { stub } = await setup();
+  await runInDurableObject(stub, async (_instance, state) => {
+    const { setBotCount, liveBirthdayGame } = await import("../src/developer/bots.ts");
+    const { writeRoundState } = await import("../src/questions/round-state.ts");
+    const sql = state.storage.sql;
+    const now = Date.now();
+    // A kart lobby freezes its one-race script at creation (kart-lobby.ts).
+    writeRoundState(sql, "__pack", "birthday-script", { order: [] });
+    writeRoundState(sql, "__room", "kart-lobby", {});
+    expect(sql.exec<{ phase: string }>(`SELECT phase FROM room`).one().phase).toBe(
+      "lobby",
+    );
+    expect(liveBirthdayGame(sql)).toBe(false);
+    expect(() => setBotCount(sql, 80, now)).not.toThrow();
+    sql.exec(`UPDATE room SET phase = 'collect'`);
+    expect(liveBirthdayGame(sql)).toBe(true);
+    expect(() => setBotCount(sql, 81, now + 1)).toThrow("live birthday game");
+    expect(() => setBotCount(sql, 0, now + 2)).not.toThrow();
+  });
+});

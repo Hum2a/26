@@ -7016,3 +7016,20 @@ Answer acknowledgement p95 on Cloudflare was 71–295 ms across runs; quiz round
 **Unresolved:** Workers Paid on the party Cloudflare account is still unconfirmed from this environment. Physical-device and venue sign-off remain unticked. Chess remains in the default `order` even though it is also catalogue-ready.
 
 **Next:** Humza prints `docs/night-of.md`, confirms Workers Paid, and merges this PR. Do not start the next prompt automatically.
+
+## 19 November 2026 — Staging dress rehearsal with 80 bots
+
+**Status:** rehearsal run on staging, report written, two small fixes. Branch `claude/staging-rehearsal-report`. No deploy, no production access.
+
+**What happened.** Full report in `docs/rehearsal-2026-11-20-staging.md`. A fresh rehearsal room ran the saved 42-round birthday order with 80 Developer tools bots to the podium in about 46 minutes. Ordinary rounds passed at 80/80. Both knockout rounds (`apology-video-auction`, `heathrow-search-query`) ran 79 matches each. The second overloaded the room: "Durable Object is overloaded", two storage-timeout resets, mass disconnects, refused late ballots, and Live controls locked for about two minutes. Answer acks rose from 87 ms in a fresh room to 8–15 s and then over 20 s as stored answers grew. A second room with 80 bot drivers took 4.4–7.8 s of CPU on the race-start alarm, dropped every socket, and both races ended within 20–40 s with no finishers. Mid-race stage updates were 9.3 a second. Archive and `/r/{gameId}` passed in a kart-only lobby with one test guest. No result email was sent (no recipient named). Trolls, chess and answer trends were not exercised by bots. Tail: no rows-written or CPU-limit errors.
+
+**Fixes in this branch.**
+
+- `apps/api/src/questions/vote.ts`: the knockout ballot instruction no longer says "Pick the worse search" on every knockout. Test: `apps/api/test/party-polish-room.spec.ts` now also runs `apology-video-auction` and asserts the shared instruction.
+- `apps/api/src/developer/bots.ts`: `liveBirthdayGame` lets a kart-only lobby take bots while it is in the lobby phase, and still refuses once the race runs. Test: `apps/api/test/developer-room.spec.ts`.
+
+**Unresolved (ranked in the report):** race-start CPU spike and full disconnect with 80 drivers; per-command room-wide rebuild including full-table `readStatsSource`; knockout length with 80 entries (needs a decision); heartbeat drops and host lock-out under load; misleading archive copy on rehearsal Results; Better Auth shared rate-limit bucket.
+
+**Checks:** not run locally. This worktree's `npm install` had not finished after about 1.5 hours, so `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run test:unit`, `npm run test -w @26/api`, `npm run content:check` and `npm run build` were left to CI on the PR. Playwright was not run.
+
+**Next:** Humza reads the report, decides on knockout entry caps, and the race-start and per-answer cost fixes are scheduled before a repeat 80-bot run. Do not start the next prompt automatically.
