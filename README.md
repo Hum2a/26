@@ -4,13 +4,13 @@
 >
 > A hosted party quiz for Humza’s 26th — Baseer presents, Humza runs the show, and guests play individually on their phones.
 
-[Get started](#local-app) · [Browse the docs](docs/README.md) · [Run the event](docs/event-runbook.md) · [Build progress](docs/build-progress.md)
+[Get started](#local-app) · [Browse the docs](docs/README.md) · [Night of](docs/night-of.md) · [Event runbook](docs/event-runbook.md) · [Build progress](docs/build-progress.md)
 
 | Play                        | Present                        | Control                                      |
 | :-------------------------- | :----------------------------- | :------------------------------------------- |
 | Guests join on their phones | The projector follows the room | The host manages and rehearses from `/admin` |
 
-Humza's birthday party game. One Cloudflare Worker serves the React app and the API. Locally, an administrator can open a lobby, guests can play the illustrative pack, and the stage can follow the room. After deploy, staging is https://26-staging.humza.website and production is https://26.humza.website. Deployment and the event runbook are in [docs/deployment.md](docs/deployment.md) and [docs/event-runbook.md](docs/event-runbook.md).
+Humza's birthday party game. One Cloudflare Worker serves the React app and the API. Locally, an administrator can open a lobby, guests can play the illustrative pack, and the stage can follow the room. After deploy, staging is https://26-staging.humza.website and production is https://26.humza.website. Print [docs/night-of.md](docs/night-of.md) for the night. Deployment and rehearsal detail are in [docs/deployment.md](docs/deployment.md) and [docs/event-runbook.md](docs/event-runbook.md).
 
 The product requirements are in [docs/party-game-plan.md](docs/party-game-plan.md). The build sequence is in [docs/build-prompts.md](docs/build-prompts.md). Progress is in [docs/build-progress.md](docs/build-progress.md).
 
@@ -95,7 +95,7 @@ One Worker serves the React app and the API. `npm run deploy:staging` and `npm r
 
 `wrangler.jsonc` pins Humza's personal Cloudflare `account_id`. It binds two SQLite Durable Object classes, `PartyRoom` and `RoomCodeRegistry`. Staging and production repeat those bindings, bind the remote R2 buckets, require the secret list in [docs/deployment.md](docs/deployment.md), and declare an `IMAGES` binding. The `humza.website` zone must be on that account before a deploy can attach the custom domains. Do not deploy the local build to staging.
 
-Passing `--env` only on `wrangler deploy` does not retarget a Vite build. The deploy scripts set `CLOUDFLARE_ENV`, confirm the generated worker name, then deploy that file. Commands, rollback, migrations, and the missing account setup are in [docs/deployment.md](docs/deployment.md). The presenter and operator steps are in [docs/event-runbook.md](docs/event-runbook.md).
+Passing `--env` only on `wrangler deploy` does not retarget a Vite build. The deploy scripts set `CLOUDFLARE_ENV`, confirm the generated worker name, then deploy that file. Commands, rollback, migrations, and the missing account setup are in [docs/deployment.md](docs/deployment.md). The night-of sheet is [docs/night-of.md](docs/night-of.md). Rehearsal and recovery detail are in [docs/event-runbook.md](docs/event-runbook.md).
 
 ## Release commands
 

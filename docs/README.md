@@ -4,7 +4,7 @@
 >
 > Start here to build the game, prepare the questions or run the night.
 
-[Home](../README.md) · [Local setup](../README.md#local-app) · [Build progress](build-progress.md)
+[Home](../README.md) · [Local setup](../README.md#local-app) · [Night of](night-of.md) · [Build progress](build-progress.md)
 
 ## Choose your starting point
 
@@ -14,7 +14,7 @@
 | Give an agent its own admin login   | [Agent access](agent-access.md)                                                       |
 | Decide what Humza must choose or do | [Decisions for Humza](decisions-for-humza.md)                                         |
 | Rehearse the whole night on staging | [Rehearsal kit](rehearsal-kit.md)                                                     |
-| Present or operate the party        | [Event runbook](event-runbook.md)                                                     |
+| Present or operate the party        | **[Night of](night-of.md)** (print this) · [Event runbook](event-runbook.md)          |
 | Add or refine a question            | [Question authoring](question-authoring.md)                                           |
 | Prepare content and media           | [Content guide](content-guide.md)                                                     |
 | Release or recover a deployment     | [Deployment guide](deployment.md)                                                     |
