@@ -6,6 +6,7 @@ import {
   makeEdOrHumza,
 } from "../src/questions/packs/birthday/ed-or-humza.ts";
 import { birthdayPack } from "../src/questions/packs/birthday/manifest.ts";
+import { packPublicAssets } from "../src/questions/pack-assets.ts";
 import { toPlayable } from "../src/questions/authoring.ts";
 import type { RankQuestion } from "../src/questions/definition.ts";
 import { validatePack } from "../src/questions/validate.ts";
@@ -39,17 +40,66 @@ function validateFixture(question: RankQuestion) {
   });
 }
 
+const humzaIds = [
+  "quote-01",
+  "quote-02",
+  "quote-04",
+  "quote-05",
+  "quote-06",
+  "quote-18",
+];
+const edIds = [
+  "quote-03",
+  "quote-07",
+  "quote-08",
+  "quote-09",
+  "quote-10",
+  "quote-11",
+  "quote-12",
+  "quote-13",
+  "quote-14",
+  "quote-15",
+  "quote-16",
+  "quote-17",
+];
+
 describe("Ed or Humza whole-list sorting", () => {
-  it("preserves all 18 supplied quotes unassigned and keeps the draft out of the running order", () => {
+  it("keeps all 18 supplied quotes, confirmed speakers, and the ready round out of the running order", () => {
     expect(edOrHumzaQuotes).toHaveLength(18);
-    expect(edOrHumzaQuotes.every((entry) => entry.speaker === null)).toBe(true);
+    expect(edOrHumzaQuotes.map((entry) => entry.speaker)).toEqual(
+      edOrHumzaQuotes.map((entry) =>
+        humzaIds.includes(entry.id) ? "humza" : edIds.includes(entry.id) ? "ed" : null,
+      ),
+    );
+    expect(
+      edOrHumzaQuotes.every(
+        (entry) => entry.speaker === "ed" || entry.speaker === "humza",
+      ),
+    ).toBe(true);
     expect(edOrHumza.items.map((entry) => entry.label)).toEqual(
       edOrHumzaQuotes.map((entry) => entry.quote),
     );
-    expect(edOrHumza.status).toBe("draft");
-    expect(toPlayable(edOrHumza, false)).toBeUndefined();
+    expect(edOrHumza.status).toBe("ready");
+    expect(toPlayable(edOrHumza, false)?.kind).toBe("rank");
     expect(birthdayPack.catalogue).toContain(edOrHumza);
     expect(birthdayPack.order).not.toContain(edOrHumza.id);
+    expect(edOrHumza.media?.map((item) => item.asset)).toEqual([
+      "/assets/questions/ed-or-humza/ed.webp",
+      "/assets/questions/ed-or-humza/humza.webp",
+      "/assets/questions/ed-or-humza/ed-portrait.webp",
+      "/assets/questions/ed-or-humza/humza-portrait.webp",
+    ]);
+    expect(
+      edOrHumza.media?.every((item) => item.alt === "Ed" || item.alt === "Humza"),
+    ).toBe(true);
+    expect(
+      edOrHumza.media?.every(
+        (item) => item.credit === "Photo supplied by Humza (private use)",
+      ),
+    ).toBe(true);
+    expect(packPublicAssets(birthdayPack)).toEqual(
+      expect.arrayContaining(edOrHumza.media!.map((item) => item.asset!)),
+    );
     expect(
       validatePack({ ...birthdayPack, catalogue: [edOrHumza], order: [] }).filter(
         (issue) => issue.level === "error",
@@ -73,13 +123,56 @@ describe("Ed or Humza whole-list sorting", () => {
     expect(preview.question?.kind === "rank" && preview.question.items).toHaveLength(
       18,
     );
-    expect(preview.limitation).toContain("incomplete");
+    expect(preview.limitation).toBeNull();
     expect(JSON.stringify(preview)).not.toContain('"truth"');
     expect(JSON.stringify(preview)).not.toContain('"speaker"');
-    const privateQuestion = fixture();
+    const privateQuestion = toPlayable(edOrHumza, false);
+    if (!privateQuestion || privateQuestion.kind !== "rank") {
+      throw new Error("Expected a ready sorting question");
+    }
     const publicQuestion = publicRankQuestion(privateQuestion, 1, 1);
     expect(publicQuestionSchema.safeParse(publicQuestion).success).toBe(true);
     expect(JSON.stringify(publicQuestion)).not.toContain('"truth"');
+    expect(JSON.stringify(publicQuestion)).not.toContain('"speaker"');
+    expect(publicQuestion.items.map((item) => item.id)).toEqual(
+      edOrHumzaQuotes.map((entry) => entry.id),
+    );
+  });
+
+  it("scores the confirmed speakers and keeps the key off the public question", () => {
+    const question = toPlayable(edOrHumza, false);
+    if (!question || question.kind !== "rank") {
+      throw new Error("Expected a ready sorting question");
+    }
+    assertRankQuestion(question);
+    expect(question.truth).toEqual([
+      { tierId: "ed", itemIds: edIds },
+      { tierId: "humza", itemIds: humzaIds },
+    ]);
+    const correct = edOrHumzaQuotes.map((entry) => ({
+      itemId: entry.id,
+      tierId: entry.speaker as "ed" | "humza",
+    }));
+    expect(checkRanking(question, correct).ok).toBe(true);
+    expect(pointsForRanking(question, correct)).toEqual({
+      points: 80,
+      detail: "placed-18/18",
+    });
+    expect(
+      pointsForRanking(
+        question,
+        question.items.map((item) => ({ itemId: item.id, tierId: "ed" })),
+      ),
+    ).toEqual({ points: 53, detail: "placed-12/18" });
+    expect(
+      pointsForRanking(
+        question,
+        question.items.map((item) => ({ itemId: item.id, tierId: "humza" })),
+      ),
+    ).toEqual({ points: 26, detail: "placed-6/18" });
+    const publicQuestion = publicRankQuestion(question, 1, 1);
+    expect(publicQuestion).not.toHaveProperty("truth");
+    expect(JSON.stringify(publicQuestion)).not.toContain('"speaker"');
   });
 
   it("scores independent correct assignments rather than the order of people or quotes", () => {

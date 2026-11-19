@@ -44,6 +44,10 @@ They are **not** licensed for public redistribution.
 | `whos-that-pokemon-preview/silhouette.png` | Design-bench stand-in   | Blacked-out Mudkip from `favourite-pokemon/mudkip.png`                         | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
 | `whos-that-pokemon-preview/piplup.png`     | Design-bench stand-in   | [PokeAPI official artwork 393](https://github.com/PokeAPI/sprites)             | Nintendo / Creatures / GAME FREAK | Copyrighted, private use |
 | `property-price-roulette/photo.jpg`        | Property price roulette | listing-2.jpg, Winkworth / OnTheMarket 13835770 (Evening Standard 11 Feb 2026) | © Winkworth / OnTheMarket         | Copyrighted, private use |
+| `ed-or-humza/ed.webp`                      | Ed or Humza?            | Photograph supplied by Humza                                                   | Humza                             | Copyrighted, private use |
+| `ed-or-humza/humza.webp`                   | Ed or Humza?            | Photograph supplied by Humza                                                   | Humza                             | Copyrighted, private use |
+| `ed-or-humza/ed-portrait.webp`             | Ed or Humza?            | Photograph supplied by Humza (projector crop)                                  | Humza                             | Copyrighted, private use |
+| `ed-or-humza/humza-portrait.webp`          | Ed or Humza?            | Photograph supplied by Humza (projector crop)                                  | Humza                             | Copyrighted, private use |
 
 The matching floorplan and unused extra stills (listing-0/1/3/4: exterior and
 further interiors) live under

@@ -7103,3 +7103,57 @@ All 5 Cubic findings were addressed in commit `4b68cc4` (confirmed resolved by C
 
 - Live browser visual verification and 320 px / 390 px before/after screenshots could not be captured in this environment because Chrome DevTools remote debugging was not active (`DevToolsActivePort` ENOENT), and Playwright/E2E runners are prohibited for this task.
 - Real party content for `where-are-we` (clue photo, place name, exact coordinates) and `ed-or-humza` (confirmed speaker for 18 quotes) remains intentionally untouched in `apps/api/src/questions/packs/birthday/`.
+
+## 19 November 2026 — Ed or Humza real photos
+
+Status: added the supplied photographs of Ed and Humza to the existing `ed-or-humza` round. Speakers stay unassigned; the question remains a draft and is still out of the running order. No deployment.
+
+### Files / interfaces
+
+- `apps/web/public/assets/questions/ed-or-humza/{ed,humza}.webp` — 512×512 face crops for phone buttons and pile headers.
+- `apps/web/public/assets/questions/ed-or-humza/{ed,humza}-portrait.webp` — 675×900 portraits for the projector columns.
+- Authored `media` on `packs/birthday/ed-or-humza.ts` (`ed`, `humza`, `ed-portrait`, `humza-portrait`) with credit “Photo supplied by Humza (private use)” and alt “Ed” / “Humza”.
+- Phone and stage layouts in `apps/web/src/play/designs/ed-or-humza.tsx` / `.css`.
+- `packPublicAssets` / `edOrHumzaAssets` so `content:check` fails if those files are missing, including while the round is a draft.
+- Design-bench fixture still uses labelled stand-in quotes; it renders the real photos.
+- Credits: `docs/content/question-image-credits.md`.
+
+### Decisions / defaults
+
+- EXIF/GPS stripped; WebP, not the camera JPEGs. Ed is the hillside selfie; Humza is the sunset portrait. Not swapped.
+- Avatars are decorative beside the visible names (empty `alt` on buttons) so the control name stays “Ed” / “Humza”. Projector portraits use alt “Ed” / “Humza”.
+- Phone preloads the two avatars; the projector also preloads the portraits. Images use `decoding="async"`, width/height and `aspect-ratio` so swipe/drag does not reflow.
+
+### Commands and results
+
+- `npm run typecheck` — passed.
+- `npm run lint` — 0 errors, 30 existing warnings; structure check passed.
+- `npm run format:check` — passed.
+- `npm run test:unit` — 210 files / 956 tests passed.
+- `npx vitest run --project auth test/ed-or-humza.spec.ts test/birthday-assets-prices.spec.ts` in `apps/api` — 9 passed.
+- `npm run content:check` — passed; incomplete drafts: `where-are-we` (photo + coordinates), `ed-or-humza` (18 speakers).
+- `npm run build` — passed, including gzip budgets (entry JS 222,610 / 260,000; entry CSS 28,208 / 34,000; total JS 1,490,434 / 1,650,000). Photos are public static files, not JS.
+
+### Manual verification
+
+Headless screenshots of `/design?q=ed-or-humza` (dev only): phone collect with circular avatars on the Ed/Humza buttons and pile chips; projector collect and reveal with a portrait heading each column. 320–430 CSS pixel layout was not measured in a physical device; the 390-wide bench screenshot is the phone evidence. Authenticated room play was not exercised.
+
+### Unresolved
+
+Speakers still need Humza’s assignments before the round can leave draft. `where-are-we` is still missing its clue photo and coordinates.
+
+### Next stage
+
+Set `speaker` on each quote when Humza confirms them, then add the round to Running order if wanted.
+
+### 19 November 2026 — Speakers confirmed
+
+Humza assigned every quote. `speaker` is now `humza` for quote-01, 02, 04, 05, 06, 18 and `ed` for quote-03, 07–17. Quote wording is unchanged. `makeEdOrHumza` derives the private truth, so the round is `ready` and no longer flagged by `content:check`. It stays out of `manifest.ts` `order`. Public previews and collect snapshots still omit `truth` / `speaker`; the projector only groups quotes after reveal. Scoring on the confirmed key: 18/18 → 80, all-Ed → 53 (12/18), all-Humza → 26 (6/18).
+
+Checks for this speaker pass: `typecheck` passed; `lint` 0 errors, 30 existing warnings; `format:check` passed; `test:unit` 210 files / 956 tests; API `ed-or-humza.spec.ts` and `party-concepts.spec.ts` passed; `content:check` passed with only `where-are-we` incomplete; `build` passed including gzip budgets. Next: add the round to Running order only if Humza wants it there.
+
+### 19 November 2026 — PR #49 conflict resolution
+
+Merged `origin/master` into the PR branch. Kept the photo assets, decorative avatars, stage portraits and confirmed speakers alongside the newer drag and flick handling, undo and expandable review piles. Combined the review-pile tests and kept both sets of progress entries.
+
+The four focused web test files passed (16 tests), along with `npm run lint` (0 errors, 15 existing warnings), `npm run format:check`, `npm run content:check` and `npm run build`. Content preflight still lists `where-are-we` as incomplete. The complete local web and Worker suites were started. Playwright was not run. Next is the PR check and Humza's merge decision.

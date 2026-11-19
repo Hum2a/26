@@ -32,7 +32,7 @@ it("persists and replays a 40-quote submission, restores it after eviction and s
       })
     ).ok,
   ).toBe(true);
-  // Explicit isolated test fixture; no answer key is invented for the real draft.
+  // Explicit isolated 40-quote fixture; not the party list.
   const authored = makeEdOrHumza(
     Array.from({ length: 40 }, (_, i) => ({
       id: `quote-${i}`,

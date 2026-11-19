@@ -227,8 +227,6 @@ it("rehearses a catalogue beyond the eighty-question live order limit", () => {
             "group-chat-figurine",
             "cursed-search-history",
             "where-are-we",
-            // Intentional draft until every quote's speaker is assigned.
-            "ed-or-humza",
           ].includes(q.id),
       )
       .every((q) => q.status === "ready" && missingRequirements(q).length === 0),

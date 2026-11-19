@@ -15,6 +15,7 @@ import { SubmitButton } from "../controls/SubmitButton";
 import { roundSubmitState } from "../controls/submit-state";
 import type { TierPlacement } from "../controls/TierAssign";
 import type { PhoneControls, PresentationProps } from "../presentation";
+import { preloadImages } from "../preload";
 import { LiveCount, QuestionTag, StagePrompt, useDesignMotion } from "./kit";
 import {
   assignQuote,
@@ -28,6 +29,11 @@ import {
   undoPlacements,
   type SwipeAxis,
 } from "./ed-or-humza-assign";
+import {
+  edOrHumzaPhotos,
+  edOrHumzaPreloadPaths,
+  isEdOrHumzaPerson,
+} from "./ed-or-humza-photos";
 import "./ed-or-humza.css";
 
 type RankQuestion = Extract<PlaySnapshot["question"], { kind: "rank" }>;
@@ -83,6 +89,10 @@ function SortPhone({
   const rightId = right?.id;
   const currentId = current?.id;
   const canUndo = history.length > 1;
+
+  useEffect(() => {
+    preloadImages(edOrHumzaPreloadPaths("phone"));
+  }, []);
 
   const place = useCallback(
     (tierId: string, itemId = currentId) => {
@@ -175,6 +185,7 @@ function SortPhone({
                   data-side={index === 0 ? "left" : "right"}
                   onClick={() => place(tier.id)}
                 >
+                  <PersonPhoto person={tier.id} size="avatar" decorative />
                   {tier.label}
                 </button>
               ))}
@@ -205,6 +216,7 @@ function SortPhone({
                   setReview((open) => (open === tier.id ? undefined : tier.id))
                 }
               >
+                <PersonPhoto person={tier.id} size="avatar" decorative />
                 <span>{tier.label}</span>{" "}
                 <span className="ed-pile-count">
                   {countForTier(placements, tier.id)}
@@ -575,6 +587,10 @@ function AssignedList({
 
   return (
     <ul className="ed-assigned" aria-label={`${tier?.label ?? "Assigned"} quotes`}>
+      <li className="ed-assigned-head">
+        <PersonPhoto person={tierId} size="avatar" decorative />
+        <span>{tier?.label ?? "Assigned"}</span>
+      </li>
       {rows.length === 0 ? <li className="ed-assigned-empty">None yet.</li> : null}
       {rows.map((entry) => {
         const item = question.items.find((quote) => quote.id === entry.itemId);
@@ -643,7 +659,10 @@ function RevealList({
           reveal.order.find((group) => group.tierId === tier.id)?.itemIds ?? [];
         return (
           <section key={tier.id} aria-label={`${tier.label} said`}>
-            <h2>{tier.label}</h2>
+            <h2>
+              <PersonPhoto person={tier.id} size="avatar" decorative />
+              {tier.label}
+            </h2>
             <ul>
               {question.items
                 .filter((item) => truth.includes(item.id))
@@ -685,6 +704,9 @@ function SortStage({
   reveal: RankReveal | undefined;
 }) {
   const motionSet = useDesignMotion();
+  useEffect(() => {
+    preloadImages(edOrHumzaPreloadPaths("stage"));
+  }, []);
   return (
     <section className="design-stage ed-or-humza-stage" aria-label="Ed or Humza?">
       <QuestionTag play={play}>Quote sort</QuestionTag>
@@ -706,6 +728,7 @@ function SortStage({
           const quotes = question.items.filter((item) => ids.includes(item.id));
           return (
             <div key={tier.id} className="ed-stage-column" data-tier={tier.id}>
+              <PersonPhoto person={tier.id} size="portrait" />
               <h2>{tier.label}</h2>
               {reveal ? (
                 <ul>
@@ -731,5 +754,31 @@ function SortStage({
         })}
       </div>
     </section>
+  );
+}
+
+function PersonPhoto({
+  person,
+  size,
+  decorative = false,
+}: {
+  person: string;
+  size: "avatar" | "portrait";
+  decorative?: boolean;
+}) {
+  if (!isEdOrHumzaPerson(person)) {
+    return null;
+  }
+  const asset = edOrHumzaPhotos[person][size];
+  return (
+    <img
+      className={size === "portrait" ? "ed-stage-photo" : "ed-face"}
+      src={asset.src}
+      alt={decorative ? "" : asset.alt}
+      width={asset.width}
+      height={asset.height}
+      decoding="async"
+      draggable={false}
+    />
   );
 }
