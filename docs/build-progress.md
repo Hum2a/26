@@ -7042,3 +7042,9 @@ Speakers still need Humza’s assignments before the round can leave draft. `whe
 ### Next stage
 
 Set `speaker` on each quote when Humza confirms them, then add the round to Running order if wanted.
+
+### 19 November 2026 — Speakers confirmed
+
+Humza assigned every quote. `speaker` is now `humza` for quote-01, 02, 04, 05, 06, 18 and `ed` for quote-03, 07–17. Quote wording is unchanged. `makeEdOrHumza` derives the private truth, so the round is `ready` and no longer flagged by `content:check`. It stays out of `manifest.ts` `order`. Public previews and collect snapshots still omit `truth` / `speaker`; the projector only groups quotes after reveal. Scoring on the confirmed key: 18/18 → 80, all-Ed → 53 (12/18), all-Humza → 26 (6/18).
+
+Checks for this speaker pass: `typecheck` passed; `lint` 0 errors, 30 existing warnings; `format:check` passed; `test:unit` 210 files / 956 tests; API `ed-or-humza.spec.ts` and `party-concepts.spec.ts` passed; `content:check` passed with only `where-are-we` incomplete; `build` passed including gzip budgets. Next: add the round to Running order only if Humza wants it there.

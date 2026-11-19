@@ -7,68 +7,72 @@ export type EdOrHumzaQuote = {
   speaker: QuoteSpeaker | null;
 };
 
-/** Set speaker to "ed" or "humza" when confirmed. Append quotes with new stable ids. */
+/** Speakers confirmed by Humza, 19 November 2026. Append quotes with new stable ids. */
 export const edOrHumzaQuotes: readonly EdOrHumzaQuote[] = [
   {
     id: "quote-01",
     quote: "I'd baptise a baby with a water pressure jet just to make the local news",
-    speaker: null,
+    speaker: "humza",
   },
-  { id: "quote-02", quote: "I sense Israel in your general direction", speaker: null },
-  { id: "quote-03", quote: "You're ass is in grabbing distance", speaker: null },
+  {
+    id: "quote-02",
+    quote: "I sense Israel in your general direction",
+    speaker: "humza",
+  },
+  { id: "quote-03", quote: "You're ass is in grabbing distance", speaker: "ed" },
   {
     id: "quote-04",
     quote: "You're talking a lot of shit for a washing machine",
-    speaker: null,
+    speaker: "humza",
   },
   {
     id: "quote-05",
     quote: "Sometimes bad men have to do bad things to teach women a lesson",
-    speaker: null,
+    speaker: "humza",
   },
   {
     id: "quote-06",
     quote:
       "If jensan can bang all those baddies with a 1 incher imagine what I can do with a 9mm",
-    speaker: null,
+    speaker: "humza",
   },
-  { id: "quote-07", quote: "Biblically accurate breasts on that one", speaker: null },
+  { id: "quote-07", quote: "Biblically accurate breasts on that one", speaker: "ed" },
   {
     id: "quote-08",
     quote: "Internally I feel external and externally I feel internal",
-    speaker: null,
+    speaker: "ed",
   },
-  { id: "quote-09", quote: "A creampie. His cum in your vagina.", speaker: null },
-  { id: "quote-10", quote: "No exchange of bodily fluids occurred", speaker: null },
+  { id: "quote-09", quote: "A creampie. His cum in your vagina.", speaker: "ed" },
+  { id: "quote-10", quote: "No exchange of bodily fluids occurred", speaker: "ed" },
   {
     id: "quote-11",
     quote:
       "(In response to how was your Christmas) It was good. Busted one out in your memory",
-    speaker: null,
+    speaker: "ed",
   },
   {
     id: "quote-12",
     quote:
       "You know Belinda asked me if I wanted to get a fleshlight and I said only if it came inside a doll of the main character from zootopia",
-    speaker: null,
+    speaker: "ed",
   },
   {
     id: "quote-13",
     quote: "I’ve decided that I’m going to bust to the thought of you tonight",
-    speaker: null,
+    speaker: "ed",
   },
-  { id: "quote-14", quote: "The classic - I’m going to touch you", speaker: null },
-  { id: "quote-15", quote: "you're tits are looking great today", speaker: null },
-  { id: "quote-16", quote: "You would've been worth the jail time", speaker: null },
+  { id: "quote-14", quote: "The classic - I’m going to touch you", speaker: "ed" },
+  { id: "quote-15", quote: "you're tits are looking great today", speaker: "ed" },
+  { id: "quote-16", quote: "You would've been worth the jail time", speaker: "ed" },
   {
     id: "quote-17",
     quote: "If they don't want a dick they can give the inches to me",
-    speaker: null,
+    speaker: "ed",
   },
   {
     id: "quote-18",
     quote: "Smaller but firm can outperform larger but drippy",
-    speaker: null,
+    speaker: "humza",
   },
 ];
 
@@ -146,7 +150,7 @@ export function makeEdOrHumza(quotes: readonly EdOrHumzaQuote[] = edOrHumzaQuote
             .filter((group) => group.itemIds.length > 0),
         },
     notes:
-      "Personal quotes supplied by Humza, 17 November 2026; wording preserved, speakers unconfirmed. TODO owner: set each speaker to ed or humza; null keeps this a draft. Photos of Ed and Humza supplied by Humza for private party use (avatars plus projector portraits). Card-stack presentation ed-or-humza. One whole-list submission; 80 points proportional to correct placements, rounded down; two minutes, no speed bonus. Speaker keys stay server-side.",
+      "Personal quotes supplied by Humza, 17 November 2026; wording preserved. Speakers confirmed by Humza, 19 November 2026. Photos of Ed and Humza supplied by Humza for private party use (avatars plus projector portraits). Card-stack presentation ed-or-humza. One whole-list submission; 80 points proportional to correct placements, rounded down; two minutes, no speed bonus. Speaker keys stay server-side. Ready in the catalogue; adding it to the running order is a separate host action.",
   });
 }
 
