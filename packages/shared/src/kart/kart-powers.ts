@@ -95,7 +95,7 @@ export function nearSegment(
       Math.min(
         1,
         ((target.x - from.x) * dx + (target.z - from.z) * dz) /
-        (dx * dx + dz * dz || 1),
+          (dx * dx + dz * dz || 1),
       ),
     );
   return Math.hypot(from.x + t * dx - target.x, from.z + t * dz - target.z) <= radius;
@@ -225,15 +225,15 @@ export function useKartPower(
     powers,
     ...(prior.item === "oil"
       ? {
-        oil: {
-          id: owner + ":" + prior.collections + ":" + now,
-          owner,
-          x: pose.x - Math.cos(pose.heading) * 3,
-          z: pose.z - Math.sin(pose.heading) * 3,
-          createdAt: now,
-          expiresAt: now + 8000,
-        },
-      }
+          oil: {
+            id: owner + ":" + prior.collections + ":" + now,
+            owner,
+            x: pose.x - Math.cos(pose.heading) * 3,
+            z: pose.z - Math.sin(pose.heading) * 3,
+            createdAt: now,
+            expiresAt: now + 8000,
+          },
+        }
       : {}),
   };
 }
@@ -244,9 +244,9 @@ export function powerDrivingBody(
 ): DrivingBody {
   return powers.turboUntil > now && powers.slowedUntil <= now
     ? {
-      ...body,
-      boostMs: Math.max(body.boostMs, Math.min(1200, powers.turboUntil - now)),
-    }
+        ...body,
+        boostMs: Math.max(body.boostMs, Math.min(1200, powers.turboUntil - now)),
+      }
     : body;
 }
 export const kartPowerViewSchema = z
