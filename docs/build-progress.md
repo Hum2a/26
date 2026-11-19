@@ -7309,6 +7309,22 @@ Checks: typecheck passed; lint 0 errors / 15 existing warnings; format:check pas
 
 **Next:** Open the PR into `master` for Humza to merge. Do not start the next prompt automatically.
 
+## 19 November 2026 — Kart live race in memory, periodic DO checkpoints
+
+**Status:** implemented on `cursor/kart-cut-do-writes`. Not deployed.
+
+**What now works.** A running kart race keeps poses, velocities, power-ups and unacknowledged controls in Durable Object memory. SQLite holds a checkpoint, not every tick. The first moving tick, every lap/finish/retirement/end, every twenty ticks (two seconds), host pause/resume/skip, phone connect/leave, and acknowledged guest actions (finish, Back to track, item) still write the race. One `kart-tick` job row is reused instead of delete+insert each beat. Pedal releases still reach the room through the existing input buffer; they are folded into the live race on the next tick. A mid-race restart reloads the last checkpoint, raises `checkpointRevision` so phones do not ignore it, and replays to the room clock. A failed alarm drops unsaved ticks so they cannot be checkpointed later. A refused host command does not rewind live ticks.
+
+**Writes.** Baseline was about 150,000 Durable Object rows for a three-minute 80-driver race (one race row plus one input row per driver per 100 ms tick). After: a simulated 80-driver three-minute race projects under 8,000 rows (budget test). Local `load:realtime` with 10 guests, stagger, 3 s: 62 rows written, 2 per tick, about 3,710 if scaled to three minutes (schedule job updates plus two race checkpoints). `LOAD_SIZES=80` was not run (only 10 guests locally).
+
+**Files:** `apps/api/src/questions/kart/kart-live.ts`, `apps/api/src/questions/kart/kart.ts`, `apps/api/src/room/lifecycle.ts`, `apps/api/src/room/sql-store.ts`, `apps/api/src/room/party-room.ts`, `apps/api/src/room/README.md`, `apps/api/test/kart-checkpoint.spec.ts`, `apps/api/test/kart-room.spec.ts`, `apps/api/test/realtime-load.spec.ts`, `apps/api/vitest.config.ts`, this section. Did not change kart rendering, CSS, kart-solo, question packs, chess, or driving feel / device timing.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run test:unit` 211 files / 976 tests passed. `npm run test -w @26/api` 145 files / 841 tests passed (`XDG_CONFIG_HOME` set). `npm run content:check` passed for demo and birthday. `npm run build` passed (1008 files scanned; gzip entry JS 222,747 / 260,000; entry CSS 28,208 / 34,000; total JS 1,493,567 / 1,650,000). Playwright was not run. `LOAD_SIZES=10 LOAD_STAGGER=1 LOAD_KART_MS=3000 npm run load:realtime -w @26/api` passed (see writes above). Kart checkpoint/device/room specs re-ran after the Cubic follow-up (45 passed). Full API suite, typecheck, lint and build were not re-run for that follow-up.
+
+**Cubic (one follow-up).** Load probe stores `rowsWritten` immediately instead of retaining SQL cursors; `rowsPerTick` uses the server tick-late series. A refused host command no longer discards unsaved ticks. After a restart, snapshots catch the restored race up to the room clock once, without folding live queued controls in on an ordinary read.
+
+**Next:** Open the PR into `master` for Humza to merge. Do not start the next prompt automatically.
+
 ## 19 November 2026 — P0 fixes from the 80-player rehearsal
 
 **Status:** two P0 fixes on `claude/rehearsal-fixes`, not deployed. The issue table with severities is in the PR body. The rehearsal itself is in `docs/rehearsal-2026-11-20-staging.md`.
@@ -7382,3 +7398,11 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Next:** Humza reviews and merges the PR.
 
 **Cubic follow-up (same day):** A failed alarm or host command now drops unsaved race ticks (`discardUnsavedKart`), so a later checkpoint never saves work that rolled back. A new spec covers this. The README now says the race is checkpointed "for" every host command (it runs after the command applies). The suggestion to clear control queues whenever the stored race changes was not taken. After a reload, those queues hold the real controls since the checkpoint, and the reducer already skips anything older than the race or at or below a driver's applied sequence. A replaced race already starts with new queues.
+
+## 19 November 2026 — Merge origin/master into kart checkpoint PR
+
+**Status:** `cursor/kart-cut-do-writes` merged `origin/master` (no rebase) after PR #59, #61, #63 and #64 landed. Not deployed.
+
+**What this kept.** Master's 10-tick checkpoint cadence, shared kart projection, statistics cache, phone-round votes, and admin modal close. This branch's restore catch-up (`kartRestored` / `syncKart` only after a restart), write-budget spec, refused-host-command must not rewind live ticks, and load-probe `rowsWritten` capture.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run test:unit` 213 files / 980 tests passed. `npm run test -w @26/api` 146 files / 848 tests passed (`XDG_CONFIG_HOME` set). `npm run content:check` passed for demo and birthday. `npm run build` passed (1016 files scanned; gzip entry JS 222,784 / 260,000; entry CSS 28,208 / 34,000; total JS 1,493,966 / 1,650,000). Playwright was not run. No `docs/content/*.md` conflict, so `content:export` was not run.

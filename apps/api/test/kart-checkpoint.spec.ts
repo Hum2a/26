@@ -15,12 +15,13 @@ import {
   discardUnsavedKart,
   KartInputBuffer,
   readKart,
+  syncKart,
 } from "../src/questions/kart/kart.ts";
 import { kartCheckpointWrites } from "../src/questions/kart/kart-live.ts";
 
 /**
  * Live kart races stay in memory between checkpoints (see `kart-live.ts`).
- * These specs pin what a restart may and may not lose.
+ * These specs pin what a restart may and may not lose, and the write budget.
  */
 
 async function setup(names = ["Amina", "Bilal"]) {
@@ -191,6 +192,45 @@ it("writes a handful of rows for a steady tick, not one per driver", async () =>
   });
 });
 
+it("keeps an 80-driver three-minute race in the thousands of writes, not ~150,000", async () => {
+  const names = Array.from({ length: 80 }, (_, i) => `Driver ${i + 1}`);
+  const { stub, playerIds, raceId, now } = await setup(names);
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    const store = createSqlStore(sql);
+    const q = kartQuestion(sql);
+    const ticks = 3 * kartCheckpointWrites;
+    let sequence = 0;
+    const rows = rowsWritten(sql, () => {
+      for (let step = 1; step <= ticks; step += 1) {
+        sequence += 1;
+        for (const [index, playerId] of playerIds.entries())
+          acceptKartInput(
+            sql,
+            store,
+            playerId,
+            {
+              ...kartNeutral,
+              raceId,
+              sequence,
+              gas: true,
+              steer: index % 2 ? 0.2 : -0.2,
+            },
+            q,
+            now + step * 100 - 50,
+          );
+        tick(sql, now + step * 100);
+      }
+    });
+    const threeMinuteTicks = 180_000 / 100;
+    const projected = Math.round((rows / ticks) * threeMinuteTicks);
+    // Baseline was ~80 input rows + 1 race row per tick ≈ 150,000.
+    expect(projected).toBeGreaterThan(1_000);
+    expect(projected).toBeLessThan(8_000);
+    expect(readKart(sql, q.id)!.drivers).toHaveLength(80);
+  });
+});
+
 it("restores the last checkpoint after a restart with a newer revision and the room clock", async () => {
   const { stub, playerIds, raceId, now } = await setup();
   let sent = 0;
@@ -235,6 +275,26 @@ it("restores the last checkpoint after a restart with a newer revision and the r
     // The restored revision is saved by the next write, so a second restart
     // cannot hand out the same revision again.
     expect(stored(sql).checkpointRevision).toBeGreaterThan(sent);
+  });
+});
+
+it("replays a restored checkpoint to the room clock before serving a snapshot", async () => {
+  const { stub, now } = await setup();
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    for (let step = 1; step <= kartCheckpointWrites + 4; step += 1)
+      tick(sql, now + step * 100);
+    expect(stored(sql).elapsedMs).toBeLessThan(
+      readKart(sql, kartQuestion(sql).id)!.elapsedMs,
+    );
+  });
+  await evictDurableObject(stub);
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    const checkpoint = stored(sql).elapsedMs;
+    const live = syncKart(sql, now + (kartCheckpointWrites + 4) * 100)!;
+    expect(live.elapsedMs).toBeGreaterThan(checkpoint);
+    expect(live.elapsedMs).toBe((kartCheckpointWrites + 4) * 100);
   });
 });
 
@@ -356,6 +416,28 @@ it("drops a rolled-back finish from memory and accepts the retry", async () => {
   });
 });
 
+it("a refused host command does not rewind unsaved ticks", async () => {
+  const { stub, credential, now } = await setup();
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    for (let step = 1; step <= 4; step += 1) tick(sql, now + step * 100);
+    expect(readKart(sql, kartQuestion(sql).id)!.elapsedMs).toBe(400);
+    expect(stored(sql).elapsedMs).toBe(100);
+  });
+  const refused = await stub.hostAction({
+    ...credential,
+    action: "kart-setting",
+    kartSetting: { unknown: true },
+    requestId: crypto.randomUUID(),
+    nowMs: now + 450,
+  });
+  expect(refused.ok).toBe(false);
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    expect(readKart(sql, kartQuestion(sql).id)!.elapsedMs).toBe(400);
+  });
+});
+
 it("never checkpoints ticks from a transaction that rolled back", async () => {
   const { stub, now } = await setup();
   await runInDurableObject(stub, (_instance, state) => {
@@ -370,7 +452,7 @@ it("never checkpoints ticks from a transaction that rolled back", async () => {
         throw new Error("The tick transaction failed.");
       }),
     ).toThrow("tick transaction failed");
-    // What the room does when an alarm or host command fails.
+    // What the room does when an alarm fails.
     discardUnsavedKart(sql);
     expect(checkpointKart(sql)).toBe(0);
     expect(stored(sql)).toEqual(committed);
