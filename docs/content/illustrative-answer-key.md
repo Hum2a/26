@@ -39,19 +39,19 @@ Reveal: 1st Friends; 2nd Cake; 3rd Song; 4th Candles
 
 Illustrative demo: write a short toast.
 
-Reveal: No fixed answer. The room's votes decide it.
+Reveal: Reveal the outcome of the room's vote.
 
 ## 7. picks
 
 Illustrative demo: write a spare line.
 
-Reveal: No fixed answer. The room's votes decide it.
+Reveal: Reveal the outcome of the room's vote.
 
 ## 8. who
 
 Illustrative demo: who is holding the playlist?
 
-Reveal: Fixture name Bilal. Replace this when the party question exists.
+Reveal: Bilal
 
 ## 9. clash
 

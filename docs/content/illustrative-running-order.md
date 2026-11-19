@@ -47,21 +47,21 @@ Say at the reveal: 1st Friends; 2nd Cake; 3rd Song; 4th Candles
 Illustrative demo: write a short toast.
 
 20s to answer, then 20s to vote. Attribution: after.
-Say at the reveal: No fixed answer. The room's votes decide it.
+Say at the reveal: Reveal the outcome of the room's vote.
 
 ## 7. vote · picks
 
 Illustrative demo: write a spare line.
 
 20s to answer, then 20s to vote. Attribution: never.
-Say at the reveal: No fixed answer. The room's votes decide it.
+Say at the reveal: Reveal the outcome of the room's vote.
 
 ## 8. guess · who
 
 Illustrative demo: who is holding the playlist?
 
 20s to answer. Attribution: after.
-Say at the reveal: Fixture name Bilal. Replace this when the party question exists.
+Say at the reveal: Bilal
 
 ## 9. duel · clash
 

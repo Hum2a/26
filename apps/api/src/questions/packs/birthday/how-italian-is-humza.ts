@@ -3,7 +3,7 @@ import { choiceQuestion } from "../../authoring.ts";
 export const howItalianIsHumza = choiceQuestion({
   id: "how-italian-is-humza",
   title: "How Italian is Humza?",
-  prompt: "Guess how Italian humza is",
+  prompt: "Guess how Italian Humza is",
   options: [
     { id: "one-percent", label: "1%" },
     { id: "pineapple", label: "pineapple belongs on pizza" },
