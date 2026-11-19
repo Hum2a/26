@@ -274,7 +274,11 @@ function createLegacyPrediction() {
           error = { x: dx, z: dz, heading: headingGap };
           body =
             heightGap < 0.5
-              ? { ...replayed, height: shown.height, verticalSpeed: shown.verticalSpeed }
+              ? {
+                  ...replayed,
+                  height: shown.height,
+                  verticalSpeed: shown.verticalSpeed,
+                }
               : replayed;
         }
       } else body = replayed;

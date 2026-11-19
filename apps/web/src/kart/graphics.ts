@@ -48,7 +48,8 @@ export function displayPixelRatioLimit(
   height: number,
   devicePixelRatio: number,
 ) {
-  const screen = Number.isFinite(devicePixelRatio) && devicePixelRatio > 0 ? devicePixelRatio : 1;
+  const screen =
+    Number.isFinite(devicePixelRatio) && devicePixelRatio > 0 ? devicePixelRatio : 1;
   if (!mobile) return screen;
   const area = Math.max(1, width) * Math.max(1, height);
   const budget = Math.min(1, Math.sqrt(200_000 / area));

@@ -107,7 +107,11 @@ export function extrapolateKartPose(
  * the pose that just arrived. Height moves with the kart, so a ramp lifts the
  * wing across the gap. Drawing only: the room decides every position.
  */
-export function blendKartPose(from: KartPose, to: KartPose, progress: number): KartPose {
+export function blendKartPose(
+  from: KartPose,
+  to: KartPose,
+  progress: number,
+): KartPose {
   const t = Number.isFinite(progress) ? Math.max(0, Math.min(1, progress)) : 1;
   const angle = Math.atan2(
     Math.sin(to.heading - from.heading),

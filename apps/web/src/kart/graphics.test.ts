@@ -1,5 +1,10 @@
 import { expect, it } from "vitest";
-import { createFrameProbe, displayPixelRatioLimit, graphicsTier, safeGraphicsProfile } from "./graphics";
+import {
+  createFrameProbe,
+  displayPixelRatioLimit,
+  graphicsTier,
+  safeGraphicsProfile,
+} from "./graphics";
 
 it("caps graphics by actual capabilities and refuses unusable WebGL without changing manual preference", () => {
   expect(

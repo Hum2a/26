@@ -694,7 +694,8 @@ export function acceptKartInputs(
     const previous = queues.get(playerId);
     if (
       previous &&
-      (now - previous.at < kartInputGapMs || parsed.data.sequence <= previous.lastSequence)
+      (now - previous.at < kartInputGapMs ||
+        parsed.data.sequence <= previous.lastSequence)
     )
       return false;
     const at = elapsedAt(due, room.paused, now, q.timeLimitMs);
