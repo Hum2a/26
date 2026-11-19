@@ -4,7 +4,7 @@ Point Claude at this folder and nothing else:
 
 `c:\Users\aden\Documents\Humza Bday Game\26`
 
-That is the whole project. The kart code, the handoff, and the progress note all live inside it. There is no second folder for the uncommitted work. After this commit they are in the git history of this same folder, on local `master`, not pushed.
+That is the whole project. The kart code, the handoff, and the progress note all live inside it. There is no second folder. The edits were never stored somewhere else on this PC. They are files in that folder, and they are in its git history.
 
 Aden drove a new race after the acceleration fix and said it is working very well. Read this file, then `AGENTS.md` and `docs/build-progress.md` (section “18 November 2026 — Phone-owned kart”).
 
@@ -24,20 +24,22 @@ No process restart is required for the current fix. Refresh the phone page and s
 
 ## Git
 
-Local branch is `master`. `origin/master` was `9223693` (`Merge pull request #47 from Hum2a/kart-server-poses`, https://github.com/Hum2a/26/pull/47) before this commit. This commit is local only. It has not been pushed.
+The kart commit is `9a196140b9bee5ffcbf58cb1c5c0280297bcbe78` on `master`. Author and committer are both Aden Butt `<adenreh@gmail.com>` only. Aden asked for it to be pushed to `origin/master` (`https://github.com/Hum2a/26.git`). `origin/master` before that push was `9223693` (`Merge pull request #47 from Hum2a/kart-server-poses`, https://github.com/Hum2a/26/pull/47).
 
-These files, all under `c:\Users\aden\Documents\Humza Bday Game\26`:
+Message: “Drive the kart on the phone, and keep full throttle when the room clock is ahead.”
 
-- `apps\web\src\kart\self-prediction.ts`
-- `apps\web\src\kart\self-prediction.test.ts`
-- `apps\web\src\kart\TouchController.tsx`
-- `apps\web\src\kart\kart.css`
-- `apps\web\src\kart\kart.test.tsx`
-- `apps\web\src\kart\controller-input.test.tsx`
-- `docs\build-progress.md`
-- `docs\kart-handoff-2026-11-19.md`
+These are the files in that commit. Each path is on this PC under the project folder:
 
-Stashes from the earlier experiment were dropped after PR #47. Do not try to recover them. The merged pose work is in `9223693`. Phone-owned driving, the control-button move, and the acceleration fix are this commit.
+- `c:\Users\aden\Documents\Humza Bday Game\26\apps\web\src\kart\self-prediction.ts`
+- `c:\Users\aden\Documents\Humza Bday Game\26\apps\web\src\kart\self-prediction.test.ts`
+- `c:\Users\aden\Documents\Humza Bday Game\26\apps\web\src\kart\TouchController.tsx`
+- `c:\Users\aden\Documents\Humza Bday Game\26\apps\web\src\kart\kart.css`
+- `c:\Users\aden\Documents\Humza Bday Game\26\apps\web\src\kart\kart.test.tsx`
+- `c:\Users\aden\Documents\Humza Bday Game\26\apps\web\src\kart\controller-input.test.tsx`
+- `c:\Users\aden\Documents\Humza Bday Game\26\docs\build-progress.md`
+- `c:\Users\aden\Documents\Humza Bday Game\26\docs\kart-handoff-2026-11-19.md`
+
+Stashes from the earlier experiment were dropped after PR #47. Do not try to recover them. The merged pose work is in `9223693`. Phone-owned driving, the control-button move, and the acceleration fix are `9a19614`.
 
 ## What this race is
 
@@ -126,4 +128,4 @@ If it is still slow, check the phone really loaded the new module (hard refresh)
 
 ## After this commit
 
-It is a local commit on `master`, authored only as Aden Butt (`adenreh@gmail.com`). It is not pushed. Do not push it, and do not open a PR, unless Aden asks. The next session starts in `c:\Users\aden\Documents\Humza Bday Game\26`.
+`9a19614` is on `origin/master`, authored only as Aden Butt (`adenreh@gmail.com`), author and committer. Do not push further commits, and do not open a PR, unless Aden asks. The next session starts in `c:\Users\aden\Documents\Humza Bday Game\26`.
