@@ -246,7 +246,7 @@ it("awards only the highest underbid and freezes consensus across later revocati
   }
 });
 
-it.each(["dating-exit-excuse", "heathrow-search-query"])(
+it.each(["dating-exit-excuse", "heathrow-search-query", "apology-video-auction"])(
   "%s persists successive ballots and rejects stale epochs after recovery",
   async (id) => {
     const { stub, players } = await setup();
@@ -286,6 +286,10 @@ it.each(["dating-exit-excuse", "heathrow-search-query"])(
       expect(view.ballot.epoch).toBe(0);
       if (q.flow?.kind === "tournament") {
         expect(view.ballot.cards).toHaveLength(2);
+        // Every knockout shares this copy, so it must not name one round's criterion.
+        expect(view.ballot.instruction).toBe(
+          "Pick the winner of this match. No self-votes. Ties use the frozen random draw.",
+        );
         expect(
           ballotPlayFields(
             sql,

@@ -7199,6 +7199,51 @@ The four focused web test files passed (16 tests), along with `npm run lint` (0 
 
 **Next:** Open PR into `master` for Humza to review and merge. Do not start the next prompt automatically.
 
+## 19 November 2026 — Where are we? (Agadir) and birthday running order
+
+**Status:** complete on `cursor/final-content-drop`. No deployment.
+
+**What now works.** `where-are-we` is a ready map-guess round: Agadir seafront, Morocco, with a credited Wikimedia Commons promenade photo and OSM Corniche Tawada coordinates. The birthday default `order` is 49 rounds: every ready catalogue entry except the two knockout brackets (`apology-video-auction`, `heathrow-search-query`), which stay in the catalogue. `kart-sprint` remains last; `chess-battle` stays after the dials.
+
+### Files / interfaces
+
+- `apps/api/src/questions/packs/birthday/where-are-we.ts` — `target.known`, required `question` media, reveal line, source notes. No TODO owner gaps.
+- `apps/web/public/assets/questions/where-are-we/photo.webp` — 1200 × 900 WebP, EXIF/GPS stripped.
+- `apps/api/src/questions/packs/birthday/manifest.ts` — `order` only.
+- `docs/content/question-image-credits.md` — Commons row for Elmschrat / CC BY-SA 3.0.
+- `docs/content/where-are-we.md`, `birthday-answer-key.md`, `birthday-running-order.md` — presenter export.
+- Tests: `map-guess-score.spec.ts` (public projection omits Agadir / coordinates), order assertions in `ed-or-humza.spec.ts`, `new-party-concepts.spec.ts`, `party-concepts.spec.ts`.
+
+### Decisions / defaults
+
+- Photo: [File:01-beach-agadir-morocco.JPG](https://commons.wikimedia.org/wiki/File:01-beach-agadir-morocco.JPG), Elmschrat, CC BY-SA 3.0. Credit on screen: “Elmschrat · CC BY-SA 3.0 · via Wikimedia Commons”. Alt does not name the place.
+- Target: OSM relation 5393745 Corniche Tawada centroid **30.4083° N, 9.60199° W**, label “Agadir seafront, Morocco”. Reveal cites the post-1960 rebuild and ~10 km beach (Wikipedia Agadir).
+- Knockout brackets left out of `order` because ~80 guests would run ~25 minutes each. Ready extras added and similar series (real-name, inflation, guess-tab, dial, guess-the-guest) spread. Second kart (`kart-park-grand-prix`) sits in the late show with `ed-or-humza` between it and the closer.
+- Admin show-length estimator (`estimateRoundMs` + `formatShowLength`): **about 56 min** of scripted beats for 49 rounds. That is not wall-clock with host talk, one-at-a-time options, or 80-phone karts.
+
+### Commands and results
+
+- `npm run content:check` — passed; **no incomplete birthday rounds**.
+- `npm run typecheck` — passed.
+- `npm run lint` — 0 errors, 15 existing Fast Refresh warnings; structure check passed.
+- `npm run format:check` — passed.
+- `npm run test:unit` — 211 files / 975 tests passed.
+- `npm run test -w @26/api` — 144 files / 829 tests passed (existing workerd teardown noise on alarm cancel).
+- `npm run build` — passed; 1004 files scanned; gzip budgets: entry JS 222,742 / 260,000; entry CSS 28,208 / 34,000; total JS 1,493,575 / 1,650,000.
+- Playwright was not run.
+
+### Manual verification
+
+Clue photo inspected after resize (promenade + beach, no readable “Agadir” text). Coordinates taken from Nominatim/OSM, not guessed. Live phone/projector pin drop was not exercised in a browser. Public projection tests confirm the target stays off guest/stage question JSON until reveal.
+
+### Unresolved
+
+`apology-video-auction` and `heathrow-search-query` remain ready in the catalogue. Humza can still reorder in Admin. Presenter export still prints `null /100` and `Closer to undefined` for some mechanics (separate Codex fix). Physical projector and 80-guest timing unverified.
+
+### Next stage
+
+Open the PR into `master` for Humza to review and merge. Do not start the next prompt automatically.
+
 ## 19 November 2026 — Photo wall load timeout and host notice
 
 The four-second projector timeout and the host's “Couldn't display” notice were already on `origin/master` in `e1e5afa`. Updated `docs/photo-wall-plan.md` to mark both built. The projector sends the existing error report, and the room advances through the normal rotation. The host can see the flag under Admin → Photo wall, including in the shown history.
@@ -7210,6 +7255,31 @@ Checks: `npm run typecheck`, `npm run lint` (15 existing warnings), `npm run for
 `npm run test:unit` reported a failure in the `where-are-we` map-pin test, which also failed in [CI on the branch base](https://github.com/Hum2a/26/actions/runs/44616795788). A kart test failed on the first full run and passed on its focused rerun (28 tests passed).
 
 Next: Humza reviews the PR.
+
+## 19 November 2026 — Merge master and Cubic on PR #57
+
+Merged `origin/master` into `cursor/final-content-drop` (no rebase). The only conflict was `docs/build-progress.md`; both the Agadir/order section and the photo-wall section were kept. Master did not change the birthday `order`. Re-ran `npm run content:export`.
+
+Cubic: recoded the clue to 3:2 (1200×800) so the phone frame does not crop the promenade; documented `photo.png` in credits; updated `docs/content/ed-or-humza.md`. Left exporter `revealLine` bugs and the `ed-or-humza` order inclusion as Humza requested.
+
+Checks: typecheck passed; lint 0 errors / 15 existing warnings; format:check passed; content:check passed with no incomplete rounds; test:unit 211 files / 976 tests; API suite 143/144 files then the timed-out `room.spec.ts` HTTP 401 case passed on rerun (17/17); build passed (gzip entry JS 222,740). Playwright not run. No deploy.
+
+## 19 November 2026 — Staging dress rehearsal with 80 bots
+
+**Status:** rehearsal run on staging, report written, two small fixes. Branch `claude/staging-rehearsal-report`. No deploy, no production access.
+
+**What happened.** Full report in `docs/rehearsal-2026-11-20-staging.md`. A fresh rehearsal room ran the saved 42-round birthday order with 80 Developer tools bots to the podium in about 46 minutes. Ordinary rounds passed at 80/80. Both knockout rounds (`apology-video-auction`, `heathrow-search-query`) ran 79 matches each. The second overloaded the room: "Durable Object is overloaded", two storage-timeout resets, mass disconnects, refused late ballots, and Live controls locked for about two minutes. Answer acks rose from 87 ms in a fresh room to 8–15 s and then over 20 s as stored answers grew. A second room with 80 bot drivers took 4.4–7.8 s of CPU on the race-start alarm, dropped every socket, and both races ended within 20–40 s with no finishers. Mid-race stage updates were 9.3 a second. Archive and `/r/{gameId}` passed in a kart-only lobby with one test guest. No result email was sent (no recipient named). Trolls, chess and answer trends were not exercised by bots. Tail: no rows-written or CPU-limit errors.
+
+**Fixes in this branch.**
+
+- `apps/api/src/questions/vote.ts`: the knockout ballot instruction no longer says "Pick the worse search" on every knockout. Test: `apps/api/test/party-polish-room.spec.ts` now also runs `apology-video-auction` and asserts the shared instruction.
+- `apps/api/src/developer/bots.ts`: `liveBirthdayGame` lets a kart-only lobby take bots while it is in the lobby phase, and still refuses once the race runs. Test: `apps/api/test/developer-room.spec.ts`.
+
+**Unresolved (ranked in the report):** race-start CPU spike and full disconnect with 80 drivers; per-command room-wide rebuild including full-table `readStatsSource`; knockout length with 80 entries (needs a decision); heartbeat drops and host lock-out under load; misleading archive copy on rehearsal Results; Better Auth shared rate-limit bucket.
+
+**Checks:** not run locally. This worktree's `npm install` had not finished after about 1.5 hours, so `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run test:unit`, `npm run test -w @26/api`, `npm run content:check` and `npm run build` were left to CI on the PR. Playwright was not run.
+
+**Next:** Humza reads the report, decides on knockout entry caps, and the race-start and per-answer cost fixes are scheduled before a repeat 80-bot run. Do not start the next prompt automatically.
 
 ## 19 November 2026 — Kart Durable Object writes cut with periodic checkpoints
 

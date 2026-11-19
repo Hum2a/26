@@ -14,7 +14,7 @@ it("saves all eight concepts without inventing a Reddit ending, local post, list
     expect(toPlayable(q)).toBeUndefined();
   }
   const nextdoor = birthdayPack.catalogue.find((q) => q.id === "nextdoor-paranoia")!;
-  expect(birthdayPack.order).not.toContain(nextdoor.id);
+  expect(birthdayPack.order).toContain(nextdoor.id);
   expect(nextdoor.status).toBe("ready");
   expect(toPlayable(nextdoor)).toMatchObject({
     kind: "choice",
@@ -31,7 +31,7 @@ it("saves all eight concepts without inventing a Reddit ending, local post, list
   const listing = birthdayPack.catalogue.find(
     (q) => q.id === "property-price-roulette",
   )!;
-  expect(birthdayPack.order).not.toContain(listing.id);
+  expect(birthdayPack.order).toContain(listing.id);
   expect(listing.status).toBe("ready");
   expect(toPlayable(listing)).toMatchObject({
     kind: "slider",
