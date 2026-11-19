@@ -3884,6 +3884,7 @@ export class PartyRoom extends DurableObject<Env> {
       return;
     }
     if (prior) {
+      this.queuePrivateSnapshot(ws);
       const stored = JSON.parse(prior.resultJson) as {
         accepted?: boolean;
         error?: string;
@@ -3959,7 +3960,7 @@ export class PartyRoom extends DurableObject<Env> {
         now,
       });
     });
-    this.sendSnapshot(ws);
+    this.queuePrivateSnapshot(ws);
     if (accepted) {
       if (
         command.name === "troll" ||
@@ -4181,7 +4182,7 @@ export class PartyRoom extends DurableObject<Env> {
       reply(false, digestMismatchMessage);
       return;
     }
-    this.sendSnapshot(ws);
+    this.queuePrivateSnapshot(ws);
     if (accepted) {
       this.broadcast();
     }
@@ -4274,7 +4275,7 @@ export class PartyRoom extends DurableObject<Env> {
         name: "react",
       });
     });
-    this.sendSnapshot(ws);
+    this.queuePrivateSnapshot(ws);
     if (accepted) {
       this.broadcast();
     }
