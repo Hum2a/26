@@ -1042,7 +1042,10 @@ it("persists legacy server-timed lap winners once and continues to scores and th
   expect((await stub.snapshotFor("stage")).phase).toBe("podium");
 });
 
-it("persists full-room control queues before a tick and replays them after eviction without cross-driver leakage", async () => {
+// Controls are never acknowledged, so their queues live in memory until the next
+// tick folds them into the race. The race the tick produced is what a restart
+// recovers (the first moving tick is always checkpointed).
+it("applies full-room control queues on the tick and restores that race after eviction without cross-driver leakage", async () => {
   const { stub, players, now } = await setup(
     Array.from({ length: 100 }, (_, i) => `Driver ${i + 1}`),
   );
@@ -1072,6 +1075,7 @@ it("persists full-room control queues before a tick and replays them after evict
         ).toBe(true);
       }
     expect(readKart(sql, q.id)!.elapsedMs).toBe(0); // Inputs are queued, not optimistically simulated.
+    onAlarm(createGameStore(sql), now + 200);
   });
   await evictDurableObject(stub);
   await runInDurableObject(stub, (_instance, state) => {
@@ -1079,7 +1083,6 @@ it("persists full-room control queues before a tick and replays them after evict
       store = createSqlStore(sql),
       q = questionFor(store.readRoom());
     if (q?.kind !== "kart") throw new Error("Kart required");
-    onAlarm(createGameStore(sql), now + 200);
     const saved = readKart(sql, q.id)!;
     expect(saved.drivers).toHaveLength(100);
     expect(saved.elapsedMs).toBe(200);
