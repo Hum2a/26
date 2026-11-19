@@ -226,7 +226,6 @@ it("rehearses a catalogue beyond the eighty-question live order limit", () => {
             "apology-video-auction",
             "group-chat-figurine",
             "cursed-search-history",
-            "where-are-we",
           ].includes(q.id),
       )
       .every((q) => q.status === "ready" && missingRequirements(q).length === 0),

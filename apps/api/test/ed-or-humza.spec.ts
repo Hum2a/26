@@ -82,7 +82,7 @@ describe("Ed or Humza whole-list sorting", () => {
     expect(edOrHumza.status).toBe("ready");
     expect(toPlayable(edOrHumza, false)?.kind).toBe("rank");
     expect(birthdayPack.catalogue).toContain(edOrHumza);
-    expect(birthdayPack.order).not.toContain(edOrHumza.id);
+    expect(birthdayPack.order).toContain(edOrHumza.id);
     expect(edOrHumza.media?.map((item) => item.asset)).toEqual([
       "/assets/questions/ed-or-humza/ed.webp",
       "/assets/questions/ed-or-humza/humza.webp",
