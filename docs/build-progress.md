@@ -6974,3 +6974,29 @@ Answer acknowledgement p95 ranged 386–1373 ms across these single samples, wit
 **Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 30 existing warnings. Formatting passed. `npx vitest run src/kart` and `src/developer` in `apps/web` — 52 files, 258 passed. `kart-room`, `kart-device-room`, `kart-score` and `kart-items-room` specs in `apps/api` — 57 passed.
 
 **Staging:** blocked. Wrangler on this PC is logged in to a different Cloudflare account from the one `apps/api/wrangler.jsonc` names, so no deploy was attempted.
+
+### Real Cloudflare results (19 November 2026)
+
+**How:** branch `kart-cloud-loadtest` adds `apps/api/loadtest/` — a throwaway Worker (`kart-loadtest-26`, Aden's own Cloudflare account, workers.dev only, no custom domain, no secrets except a random `LOADTEST_TOKEN` kept in ignored `artifacts/`) that serves the real `PartyRoom`, and `drive.mjs`, which drives the same scenario as the local harness from the home PC over the internet with the `ws` package. Staging and production were not touched. `kart-cloud-loadtest-after` is the same Worker on top of `kart-cheap-fixes`. Logs: ignored `artifacts/cloud-*.log`. One 10-second race window per run.
+
+| Build                        | Phones | Sends / phone / s | Pattern        |    Stage updates/s |         Stage gap p95 | Answer ack p95 |
+| ---------------------------- | -----: | ----------------: | -------------- | -----------------: | --------------------: | -------------: |
+| Before (master + meter)      |     80 |                10 | burst          |               10.1 |                119 ms |          89 ms |
+| Before                       |     80 |                10 | spread         |                9.7 |                135 ms |         103 ms |
+| Before                       |     80 |                18 | spread         |                9.9 |                121 ms |          71 ms |
+| Before                       |     80 |                 0 | —              |               10.1 |                104 ms |          72 ms |
+| Before                       |    100 |                10 | spread         |                9.5 |                129 ms |         198 ms |
+| Before                       |    100 |                10 | burst          |                9.8 |                131 ms |         182 ms |
+| Before                       |    100 |                18 | spread         |                9.1 |                169 ms |         140 ms |
+| Cheap fixes (20 ms catch-up) |     80 |                10 | spread         | 6.6, 9.9, 9.6, 9.8 | 210, 125, 136, 140 ms |      88–197 ms |
+| Cheap fixes (20 ms catch-up) |    100 |                18 | burst / spread |          4.5 / 3.4 |          313 / 409 ms |   187 / 295 ms |
+| Cheap fixes (20 ms catch-up) |    100 |                10 | spread         |           9.8, 9.8 |           137, 162 ms |    126, 249 ms |
+| Cheap fixes with back-off    |    100 |                18 | spread         |                9.6 |                171 ms |          93 ms |
+
+**Findings.**
+
+- On real Cloudflare the room keeps up with 80 and 100 drivers at about 10 updates/s, even without the fixes. The large local slowdowns came from the local workerd test server on this PC, where the harness shares the room's thread. Local numbers are not a guide to Cloudflare.
+- The first version of the tick-beat fix fired a late tick 20 ms after the previous one. Under heavy load (100 phones at 18 Hz) that starved incoming controls and fell to 3–4.5 updates/s. It now keeps the 100 ms beat only when on time, and otherwise waits a full beat from now (`nextTickDueAt`). The rerun held 9.6/s. Local with the back-off: 9.8/s spread, 10.0/s idle.
+- **Database rows written.** The test Worker hit "Exceeded allowed rows written in Durable Objects free tier" after about 20 runs. Each race tick writes roughly 85 rows with 80 drivers (one input queue row per driver, the race, the job, the room version and the alarm), so about 850 rows a second. One 3-minute 80-driver race is roughly 150,000 rows. The Workers Free plan allows 100,000 rows written a day, so on a Free plan one full race would hit the limit mid-race. The Paid plan includes 50 million a month. Whether the party's account (`account_id` in `apps/api/wrangler.jsonc`) is on Workers Paid is not known here and must be checked before the party.
+
+Answer acknowledgement p95 on Cloudflare was 71–295 ms across runs; quiz rounds are not a concern.
