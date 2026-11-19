@@ -330,7 +330,7 @@ it("reports wrong-way movement from resolved velocity while the chassis is slidi
   expect(projectKartRace(race, "a", 100).participants[0]!.wrongWay).toBe(true);
 });
 
-it("keeps race ticks on a fixed 100 ms beat instead of drifting by alarm lateness", async () => {
+it("keeps on-time race ticks on a fixed 100 ms beat, and backs off when behind", async () => {
   const { nextTickDueAt } = await import("../src/questions/kart/kart.ts");
   // First tick of a race: one beat from now.
   expect(nextTickDueAt(1_000)).toBe(1_100);
@@ -340,6 +340,7 @@ it("keeps race ticks on a fixed 100 ms beat instead of drifting by alarm latenes
   let due = 1_100;
   for (let tick = 0; tick < 10; tick += 1) due = nextTickDueAt(due + 8, due);
   expect(due).toBe(2_100);
-  // A tick a whole beat behind gets a short breather, not a back-to-back burst.
-  expect(nextTickDueAt(1_400, 1_100)).toBe(1_420);
+  // A tick running behind waits a full beat from now, never a compressed gap.
+  expect(nextTickDueAt(1_160, 1_100)).toBe(1_260);
+  expect(nextTickDueAt(1_400, 1_100)).toBe(1_500);
 });

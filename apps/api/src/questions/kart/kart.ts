@@ -717,15 +717,17 @@ export function acceptKartInputs(
 }
 
 /**
- * Next race tick. Ticks keep a fixed 100 ms beat from the previous due time, so
- * a few milliseconds of alarm lateness no longer stretch every period (an idle
- * room used to manage about 8 a second). A tick that is already a whole beat
- * behind waits a short breather rather than firing back to back.
+ * Next race tick. An on-time tick keeps a fixed 100 ms beat from the previous
+ * due time, so a few milliseconds of alarm lateness no longer stretch every
+ * period (an idle local room used to manage about 8 a second). A tick that is
+ * running behind waits a full beat from now instead: compressing the gap under
+ * load starved incoming controls and halved the rate on real Cloudflare with
+ * 100 phones at 18 Hz (19 November 2026).
  */
 export function nextTickDueAt(now: number, previousDueAt?: number | null): number {
-  const minimumGapMs = 20;
   if (previousDueAt == null) return now + kartTickMs;
-  return Math.max(now + minimumGapMs, previousDueAt + kartTickMs);
+  const onBeat = previousDueAt + kartTickMs;
+  return onBeat - now >= kartTickMs / 2 ? onBeat : now + kartTickMs;
 }
 
 function scheduleTick(
