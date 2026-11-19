@@ -2,8 +2,8 @@
 
 Files under `apps/web/public/assets/questions/` are served to phones and the
 projector as `/assets/questions/…`. Guest option pictures use PNG paths; the
-shared question photo uses JPEG, PNG or WebP named `photo.jpg` or `photo.webp` so
-the filename does not leak the answer.
+shared question photo uses JPEG, PNG or WebP named `photo.jpg`, `photo.png` or
+`photo.webp` so the filename does not leak the answer.
 
 This file is **not** served from `/assets`. Do not copy answer-bearing notes
 into a public CREDITS file.
@@ -25,8 +25,9 @@ Accommodation provenance is also listed in
 
 Changes on the accommodation photos: resized to fit 1200 × 900 and JPEG
 recompressed; no crop or retouch. Demo drawings were exported at 1000 × 667 JPEG.
-The Where are we? clue was resized to 1200 × 900 WebP with embedded GPS/EXIF
-stripped; no crop or retouch. The on-screen credit does not name the place.
+The Where are we? clue was centre-cropped from 4:3 to 3:2 so the phone frame
+does not hide the promenade, then resized to 1200 × 800 WebP with embedded
+GPS/EXIF stripped. The on-screen credit does not name the place.
 
 ## Copyrighted, private use
 

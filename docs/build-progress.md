@@ -7255,3 +7255,12 @@ Checks: `npm run typecheck`, `npm run lint` (15 existing warnings), `npm run for
 `npm run test:unit` reported a failure in the `where-are-we` map-pin test, which also failed in [CI on the branch base](https://github.com/Hum2a/26/actions/runs/44616795788). A kart test failed on the first full run and passed on its focused rerun (28 tests passed).
 
 Next: Humza reviews the PR.
+
+## 19 November 2026 — Merge master and Cubic on PR #57
+
+Merged `origin/master` into `cursor/final-content-drop` (no rebase). The only conflict was `docs/build-progress.md`; both the Agadir/order section and the photo-wall section were kept. Master did not change the birthday `order`. Re-ran `npm run content:export`.
+
+Cubic: recoded the clue to 3:2 (1200×800) so the phone frame does not crop the promenade; documented `photo.png` in credits; updated `docs/content/ed-or-humza.md`. Left exporter `revealLine` bugs and the `ed-or-humza` order inclusion as Humza requested.
+
+Checks: typecheck passed; lint 0 errors / 15 existing warnings; format:check passed; content:check passed with no incomplete rounds; test:unit 211 files / 976 tests; API suite 143/144 files then the timed-out `room.spec.ts` HTTP 401 case passed on rerun (17/17); build passed (gzip entry JS 222,740). Playwright not run. No deploy.
+

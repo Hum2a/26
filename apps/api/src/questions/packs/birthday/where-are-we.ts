@@ -28,5 +28,5 @@ export const whereAreWe = mapGuessQuestion({
   explanation:
     "Agadir’s Atlantic promenade. The city was rebuilt after the 1960 earthquake; the beach and corniche run for about 10 km.",
   notes:
-    "Target: OSM relation 5393745 Corniche Tawada (pedestrian seafront), centroid 30.4082969° N, 9.6019883° W. Beach: OSM way 386830407 Plage d'Agadir. Photo: https://commons.wikimedia.org/wiki/File:01-beach-agadir-morocco.JPG (Elmschrat, CC BY-SA 3.0); resized to 1200 × 900 WebP, EXIF stripped. Credit and alt do not name the place.",
+    "Target: OSM relation 5393745 Corniche Tawada (pedestrian seafront), centroid 30.4082969° N, 9.6019883° W. Beach: OSM way 386830407 Plage d'Agadir. Photo: https://commons.wikimedia.org/wiki/File:01-beach-agadir-morocco.JPG (Elmschrat, CC BY-SA 3.0); centre-cropped from 4:3 to 3:2 to match the phone clue frame, then 1200 × 800 WebP, EXIF stripped. Credit and alt do not name the place.",
 });
