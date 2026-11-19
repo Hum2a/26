@@ -210,6 +210,7 @@ export default defineConfig({
             "test/chess-security.spec.ts",
             "test/kart-race-laps.spec.ts",
             "test/kart-cpu.spec.ts",
+            "test/kart-practice-bots.spec.ts",
             "test/kart-launch.spec.ts",
             "test/kart-item-luck.spec.ts",
             "test/new-party-concepts.spec.ts",

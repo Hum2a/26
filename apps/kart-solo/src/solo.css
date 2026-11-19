@@ -67,17 +67,25 @@ a:focus-visible {
   width: 100%;
   touch-action: manipulation;
 }
-.solo-trial-panel {
+.solo-hud-left {
   position: absolute;
-  top: calc(7rem + env(safe-area-inset-top));
+  top: calc(3.8rem + env(safe-area-inset-top));
   left: max(0.6rem, env(safe-area-inset-left));
   width: min(25rem, calc(100% - 7rem));
   z-index: 5;
   pointer-events: none;
+  display: grid;
+  gap: 0.45rem;
+}
+.solo-trial-panel {
   font-size: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
 }
 .solo-trial-panel[data-finished="true"] {
+  position: fixed;
   top: 5rem;
+  left: 0.6rem;
   right: 0.6rem;
   bottom: max(0.6rem, env(safe-area-inset-bottom));
   width: auto;
@@ -88,9 +96,101 @@ a:focus-visible {
 .solo-trial-panel[data-finished="true"] .kart-trial-results {
   max-height: none;
 }
+.solo-practice-panel {
+  width: fit-content;
+  max-width: 100%;
+}
+.kart-practice-hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.65rem;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+}
+.kart-practice-hud output {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.kart-practice-hud strong {
+  font-size: 1.25rem;
+  color: var(--accent);
+}
+.kart-practice-hud small {
+  color: var(--muted);
+  margin-left: 0.1rem;
+}
+.kart-practice-lap,
+.kart-practice-slip {
+  border-radius: var(--radius-control);
+  padding: 0.1rem 0.5rem;
+  font-weight: 700;
+  background: var(--background);
+  border: 1px solid var(--line);
+}
+.kart-practice-slip[data-phase="active"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.kart-practice-rivals {
+  display: flex;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.kart-practice-results {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 0.65rem;
+}
+.kart-practice-results h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+}
+.kart-practice-results ol {
+  display: grid;
+  gap: 0.3rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+.kart-practice-results li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: var(--radius-control);
+}
+.kart-practice-results li[data-self="true"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+}
+.solo-intro-setup {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+}
+.solo-intro-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.solo-intro-row button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+  font-weight: 700;
+}
 @media (max-height: 500px) {
-  .solo-trial-panel {
-    top: 5rem;
+  .solo-hud-left {
+    top: 3.4rem;
     width: min(24rem, calc(100% - 8rem));
   }
 }
@@ -407,7 +507,7 @@ a:focus-visible {
 
 .solo-power {
   position: absolute;
-  top: 5rem;
+  bottom: 11rem;
   left: 0.6rem;
   max-width: min(22rem, calc(100% - 1.2rem));
   padding: 0.6rem;
@@ -510,7 +610,8 @@ a:focus-visible {
 }
 @media (max-height: 500px) {
   .solo-power {
-    top: 4rem;
+    top: auto;
+    bottom: 8.5rem;
     max-width: min(12rem, 25vw);
   }
   .solo-power p {

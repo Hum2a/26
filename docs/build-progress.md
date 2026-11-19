@@ -7280,3 +7280,49 @@ Checks: typecheck passed; lint 0 errors / 15 existing warnings; format:check pas
 **Checks:** not run locally. This worktree's `npm install` had not finished after about 1.5 hours, so `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run test:unit`, `npm run test -w @26/api`, `npm run content:check` and `npm run build` were left to CI on the PR. Playwright was not run.
 
 **Next:** Humza reads the report, decides on knockout entry caps, and the race-start and per-answer cost fixes are scheduled before a repeat 80-bot run. Do not start the next prompt automatically.
+
+## 19 November 2026 — Kart practice with CPU bots
+
+**Status:** complete locally on branch `kart_practice_bots`. Not deployed.
+
+**What now works.** Standalone kart practice (`/kart`, Admin → Kart → Drive / Time trials, and the driver rehearsal frame) now supports practising with 0–7 CPU bots (`kartPracticeBotMax = 7`) in Free drive, 1-lap race, and 3-lap race modes:
+
+- **Setup & defaults:** Practice starts at `0` bots (`Solo`) by default so existing solo and time-trial behaviour stays unchanged. Both the opening grid screen (quick opponent pills `Solo` / `3 bots` / `5 bots` / `7 bots` and format pills `Free drive` / `1-lap race` / `3-lap race`) and `Course set-up` (`CPU bots` 0–7 selector) configure bots; changing bots, mode, course features, or handling pauses and resets the grid cleanly.
+- **Physics, slipstream & oil hits:** Bots use the shared `kartCpuInput`, `stepDriving`, `advanceKartLap`, `nearbyImportedWalls`, and `importedSurfaceAt` simulation (`createPracticeBots`, `stepPracticeBots`) on clean verified-road grid slots around the player (`freeGridSlots` / `trialGridSlots`), recover when stuck, loop continuously in Free drive, finish at lap targets in 1-/3-lap races, and react to player-dropped oil slicks (`slowedUntil` and speed reduction). The player also drafts behind racing bots (`stepSlipstream` / `slipstreamPhase`).
+- **3D rendering & HUD:** `SoloBots` renders instanced `kart.glb` chassis/wheels (`createNativeVehicleRig`), instanced driver styles (`createNativeDriverRig`), gliders, and floating number/name tags (`kartTagName`) from a mutable per-frame buffer (`soloBotFrame`) with zero React re-renders per frame. `KartPracticeStandings` shows live race place, lap, slipstream indicator, and adjacent rivals while driving with bots, plus final race standings on completion. Solo `KartTrialRecords` are only saved when driving without bots so slipstream-assisted runs stay separate from solo records.
+
+### Files / interfaces
+
+- `packages/shared/src/kart/kart-practice-bots.ts` (exported from `packages/shared/src/index.ts`) — `kartPracticeBotMax`, `kartPracticeBotCountSchema`, `createPracticeBots`, `stepPracticeBots`, `practiceBotSlipstreamActors`, `practiceStandings`, `createPracticePlayerLap`, `stepPracticePlayerLap`, `practiceTrialPlayerSummary`.
+- `packages/shared/src/kart/kart-powers.ts` — exported `nearSegment` for shared oil-slick segment checks.
+- `apps/web/src/kart/vehicle-model-core.ts` & `apps/web/src/kart/vehicle-model.ts` — extracted Three-version-agnostic `createNativeVehicleRig` so both `@26/web` (Three 0.186) and `@26/kart-solo` (Three 0.176) share the instanced vehicle rig.
+- `apps/web/src/kart/KartPracticeStandings.tsx` & `apps/web/src/kart/KartPracticeStandings.test.tsx` — live position HUD and race standings component + unit tests.
+- `apps/kart-solo/src/bots-state.ts`, `apps/kart-solo/src/SoloBots.tsx`, `apps/kart-solo/src/upstream/store.js`, `apps/kart-solo/src/session.ts`, `apps/kart-solo/src/upstream/PlayerController.jsx`, `apps/kart-solo/src/main.tsx`, `apps/kart-solo/src/solo.css` — bot simulation, instanced 3D rendering, intro/settings controls, and HUD integration.
+- `apps/web/src/home/home-page.tsx`, `apps/web/src/admin/kart-page.tsx` — updated practice copy to note CPU bot support.
+- `apps/api/test/kart-practice-bots.spec.ts` (registered in `apps/api/vitest.config.ts`).
+
+### Decisions / defaults
+
+- Default `soloBots = 0` preserves solo practice and all existing solo/rehearsal contracts; bots are skipped when rehearsing a single opening-straight course feature (`soloPractice`).
+- Local solo time-trial records (`26-kart-trials-v1`) are not written when `soloBots > 0` because drafting behind bots alters top speed; race standings still display total finish times and progress.
+- `.solo-power` moved to bottom-left (`bottom: 11rem` desktop, `8.5rem` landscape, existing `bottom: calc(240px + env(safe-area-inset-bottom))` portrait) so the top-left `.solo-hud-left` stack (`KartPracticeStandings` + `KartTimeTrial`) never overlaps item controls.
+
+### Commands and results
+
+- `npm run typecheck` — passed (`tsc -b --pretty false && npm run typecheck -w @26/kart-solo`).
+- `npm run check:structure` — passed.
+- `npx eslint packages/shared/src apps/web/src/kart apps/web/src/home apps/web/src/admin/kart-page.tsx apps/kart-solo/src apps/api/test/kart-practice-bots.spec.ts` — passed (0 errors, 2 pre-existing `react-refresh/only-export-components` warnings in `KartRaceHud.tsx` and `PowerUpControl.tsx`). Repo-wide `npm run lint` (`eslint .`) hit a Windows Node OOM / stack buffer exit (`-1073740791`) on this machine.
+- `npm run format:check` — passed.
+- `npm run build` — passed (rebuilt `@26/kart-solo` into `apps/web/public/kart-engine/`, built `@26/web`, scanned 1,006 files for secrets, passed `budget:web` with entry JS 222,738 B / 260,000 B and entry CSS 28,208 B / 34,000 B, and passed `content:check`).
+- `npm run test:unit -w @26/web -- src/kart src/admin/kart-page.test.tsx src/home/home-page.test.tsx src/admin/features.test.ts` — 49 files, 259 tests passed.
+- `npm run test -w @26/api -- --project auth test/kart-practice-bots.spec.ts test/kart-cpu.spec.ts test/kart-time-trial.spec.ts test/kart-slipstream.spec.ts` — 4 files, 20 tests passed.
+- Playwright browser tests and full `npm run test:unit` / `npm run test -w @26/api` were not run.
+
+### Manual verification & unresolved issues
+
+- Live 3D rendering of the bots in Chrome WebGL was not manually inspected in this session; verified via TypeScript, production bundle build (`@26/kart-solo` + `@26/web`), pure simulation tests (`kart-practice-bots.spec.ts`), and component tests (`KartPracticeStandings.test.tsx`).
+- Repo-wide `eslint .` crashed on Windows (`-1073740791`), so full-repo lint outside the targeted directories remains to be confirmed in CI.
+
+### Next stage
+
+Open `/kart` in a browser (`npm run dev`), pick `3 bots` or `7 bots` on the start screen or in `Course set-up`, and test Free drive and 1-/3-lap bot races on desktop and phone.
