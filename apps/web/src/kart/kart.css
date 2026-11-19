@@ -319,11 +319,32 @@ body:has(.kart-phone) {
 .kart-finish-card > strong {
   font-size: 1.5rem;
 }
-.kart-control-options {
+.kart-control-options,
+.kart-drive-choices {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   margin-bottom: 0.6rem;
+}
+.kart-drive-choices button {
+  min-height: 44px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font-size: 0.7rem;
+  background: var(--surface);
+  color: var(--foreground);
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+.kart-drive-choices button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.kart-drive-choices button:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
 }
 .kart-input-settings {
   display: grid;
@@ -1087,22 +1108,33 @@ body:has(.kart-phone) {
     margin: 0;
   }
   .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-control-options {
-    top: auto;
-    right: auto;
-    bottom: max(0.6rem, env(safe-area-inset-bottom));
-    left: 50%;
+    top: max(0.5rem, env(safe-area-inset-top));
+    right: calc(var(--race-edge) + 6.5rem);
+    bottom: auto;
+    left: auto;
     z-index: 7;
-    translate: -50% 0;
-    flex-direction: column;
-    align-items: stretch;
-    width: min(9.5rem, 24vw);
+    translate: none;
+    flex-direction: row;
+    width: auto;
+    margin: 0;
   }
   .kart-phone:is([data-layout="race"], [data-layout="grid"])
     .kart-control-options
     button {
-    width: 100%;
-    min-height: 2.25rem;
+    width: auto;
+    min-height: 2rem;
+    padding: 0.15rem 0.5rem;
     background: color-mix(in oklab, var(--surface) 80%, transparent);
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-input-settings {
+    position: absolute;
+    z-index: 8;
+    top: calc(max(0.5rem, env(safe-area-inset-top)) + 2.6rem);
+    right: var(--race-edge);
+    left: auto;
+    width: min(16rem, 70vw);
+    max-height: min(70dvh, 100%);
+    overflow: auto;
   }
   .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-recovery {
     top: calc(max(0.5rem, env(safe-area-inset-top)) + 7.4rem);

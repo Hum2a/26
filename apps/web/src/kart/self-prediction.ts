@@ -304,7 +304,7 @@ function createLegacyPrediction() {
   };
 }
 
-/** A bounded replay of this kart only. Rendering offsets never feed back into physics. */
+/** This phone's race. The room copy is for everyone else to watch. */
 function createRollbackPrediction() {
   type Sample = { at: number; input: DrivingInput; sequence?: number };
   let race: KartRaceView | undefined;
@@ -316,8 +316,7 @@ function createRollbackPrediction() {
     simulatedAt = 0;
   let clock = { at: 0, elapsed: 0 },
     active = false,
-    initialised = false,
-    needsAnchor = true;
+    initialised = false;
   let samples: Sample[] = [];
   let control: DrivingInput = neutral;
   let finished: KartFinish | undefined;
@@ -356,9 +355,10 @@ function createRollbackPrediction() {
         env.walls(body.x, body.z, env.profile.radius + speed * 0.02),
         env.offRoad(body.x, body.z) ||
           (race.powers?.effects.some(
-            (e) =>
-              e.playerId === race!.selfPlayerId &&
-              race!.elapsedMs + e.slowedMs > simulatedAt,
+            (effect) =>
+              effect.playerId === race!.selfPlayerId &&
+              effect.slowedMs > 0 &&
+              simulatedAt < race!.elapsedMs + effect.slowedMs,
           ) ??
             false),
         true,
@@ -416,7 +416,6 @@ function createRollbackPrediction() {
         clock = { elapsed: elapsed(now), at: now };
       }
       active = value;
-      if (value) needsAnchor = true;
     },
     input(value: DrivingInput, now: number, sequence?: number) {
       const at = initialised ? elapsed(now) : 0;
@@ -432,6 +431,19 @@ function createRollbackPrediction() {
       }
       if (next.rollback.revision <= revision) return;
       const seed = next.rollback;
+      const recovered = recovery !== -1 && recovery !== seed.recovery;
+      // Course changes still apply. The room's pose does not steer this kart.
+      race = next;
+      env = environment(next);
+      revision = seed.revision;
+      const place = (at: number) => {
+        body = { ...seed.body, featureCooldowns: { ...seed.body.featureCooldowns } };
+        lap = { ...seed.lap, splits: [...seed.lap.splits] };
+        control = seed.input;
+        simulatedAt = at;
+        error = { x: 0, z: 0, heading: 0 };
+        lastDraw = now;
+      };
       if (!initialised) {
         clock = {
           elapsed:
@@ -439,52 +451,43 @@ function createRollbackPrediction() {
           at: now,
         };
         initialised = true;
+        recovery = seed.recovery;
+        place(next.elapsedMs);
+        return;
       }
-      if (!active) clock = { elapsed: next.elapsedMs, at: now };
-      else if (needsAnchor || next.elapsedMs > elapsed(now)) {
-        clock = { elapsed: Math.max(elapsed(now), next.elapsedMs), at: now };
-        needsAnchor = false;
-      }
-      const to = elapsed(now);
-      const recovered = recovery !== -1 && recovery !== seed.recovery;
-      if (!recovered) advance(to);
-      const shown = body
-        ? {
-            x: body.x + error.x,
-            z: body.z + error.z,
-            heading: body.heading + error.heading,
-          }
-        : undefined;
-      race = next;
-      env = environment(next);
-      revision = seed.revision;
       if (finished) return;
-      if (recovered) samples = [];
+      // Back to track is the room placing the kart. A position ping is not.
+      if (recovered) {
+        samples = [];
+        recovery = seed.recovery;
+        place(elapsed(now));
+        return;
+      }
       recovery = seed.recovery;
-      // A very delayed checkpoint cannot erase driving outside retained history.
-      if (body && to - next.elapsedMs > historyMs && !recovered) return;
-      samples = samples.filter((s) =>
-        s.sequence !== undefined
-          ? s.sequence > seed.appliedSequence
-          : s.at > next.elapsedMs,
-      );
-      body = { ...seed.body, featureCooldowns: { ...seed.body.featureCooldowns } };
-      lap = { ...seed.lap, splits: [...seed.lap.splits] };
-      control = seed.input;
-      simulatedAt = next.elapsedMs;
-      advance(to);
-      if (
-        shown &&
-        !recovered &&
-        Math.hypot(shown.x - body.x, shown.z - body.z) <= snapDistance
-      )
-        error = {
-          x: shown.x - body.x,
-          z: shown.z - body.z,
-          heading: wrap(shown.heading - body.heading),
+      // The opening snapshot can be the grid at zero, before the collect clock
+      // starts. Catch the phone clock up while the kart is still parked, without
+      // stepping the gap or moving it. Once it is moving, the phone clock stays
+      // its own.
+      const parked =
+        body !== undefined &&
+        lap !== undefined &&
+        Math.hypot(body.vx, body.vz) < 0.5 &&
+        lap.done === 0 &&
+        lap.checkpoint === 0 &&
+        Math.abs(lap.distance) < 1;
+      if (parked && active && next.elapsedMs > elapsed(now)) {
+        clock = { elapsed: next.elapsedMs, at: now };
+        simulatedAt = next.elapsedMs;
+      }
+      // Start boost and item boosts live on the room body. Take a stronger one
+      // without adopting the room's position.
+      if (body && seed.body.boostMs > body.boostMs) {
+        body = {
+          ...body,
+          boostMs: seed.body.boostMs,
+          boostLevel: Math.max(body.boostLevel ?? 0, seed.body.boostLevel ?? 0),
         };
-      else error = { x: 0, z: 0, heading: 0 };
-      lastDraw = now;
+      }
     },
     finish: () => finished,
     pose(now: number): PredictedPose | undefined {

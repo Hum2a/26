@@ -294,9 +294,9 @@ it("keeps mouse steering opt-in, owned by one pointer and released after cancell
   expect(screen.queryByRole("group", { name: "Mouse steering area" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Controls" }));
   fireEvent.click(screen.getByLabelText("Enable mouse steering area"));
+  fireEvent.click(screen.getByRole("button", { name: "Use thumb pad" }));
   fireEvent.click(screen.getByRole("button", { name: "Back to driving" }));
   const area = screen.getByRole("group", { name: "Mouse steering area" });
-  fireEvent.click(screen.getByRole("button", { name: "Use thumb pad" }));
   const thumb = screen.getByLabelText("Steering").closest(".kart-thumb-pad")!;
   vi.spyOn(area, "getBoundingClientRect").mockReturnValue({
     left: 0,

@@ -154,27 +154,6 @@ export function TouchController({
       <div className="kart-control-options">
         <button
           type="button"
-          aria-pressed={pad}
-          onClick={() => {
-            input.reset();
-            chosen.current = true;
-            setPad(!pad);
-          }}
-        >
-          {pad ? "Use steering slider" : "Use thumb pad"}
-        </button>
-        <button
-          type="button"
-          aria-pressed={swapped}
-          onClick={() => {
-            input.reset();
-            setSwapped(!swapped);
-          }}
-        >
-          Swap sides
-        </button>
-        <button
-          type="button"
           aria-expanded={settings}
           aria-controls={`${id}-settings`}
           onClick={() => setSettings((value) => !value)}
@@ -185,6 +164,29 @@ export function TouchController({
       <AnimatePresence initial={false}>
         {settings ? (
           <ControlSettings id={`${id}-settings`} reduced={reduced}>
+            <div className="kart-drive-choices">
+              <button
+                type="button"
+                aria-pressed={pad}
+                onClick={() => {
+                  input.reset();
+                  chosen.current = true;
+                  setPad(!pad);
+                }}
+              >
+                {pad ? "Use steering slider" : "Use thumb pad"}
+              </button>
+              <button
+                type="button"
+                aria-pressed={swapped}
+                onClick={() => {
+                  input.reset();
+                  setSwapped(!swapped);
+                }}
+              >
+                Swap sides
+              </button>
+            </div>
             <p>
               Controls released while this panel is open. The race clock keeps running.
             </p>

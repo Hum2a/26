@@ -249,7 +249,9 @@ it("steers the thumb pad from where the thumb lands, clamps travel, ignores a se
   });
   const change = vi.fn();
   const view = render(<TouchController onChange={change} />);
+  fireEvent.click(screen.getByRole("button", { name: "Controls" }));
   fireEvent.click(screen.getByRole("button", { name: "Use thumb pad" }));
+  fireEvent.click(screen.getByRole("button", { name: "Back to driving" }));
   const pad = screen.getByLabelText("Steering").parentElement!;
   vi.spyOn(pad, "getBoundingClientRect").mockReturnValue({
     left: 0,
@@ -275,6 +277,7 @@ it("steers the thumb pad from where the thumb lands, clamps travel, ignores a se
   fireEvent.pointerDown(pad, { pointerId: 4, clientX: 0 });
   fireEvent.pointerMove(pad, { pointerId: 4, clientX: -100 });
   expect(change.mock.lastCall![0].steer).toBe(-1);
+  fireEvent.click(screen.getByRole("button", { name: "Controls" }));
   fireEvent.click(screen.getByRole("button", { name: "Swap sides" }));
   expect(change).toHaveBeenLastCalledWith(kartNeutral);
   expect(
@@ -311,7 +314,9 @@ it("steers from the zone without changing speed, while the other thumb works the
   });
   const change = vi.fn();
   render(<TouchController onChange={change} />);
+  fireEvent.click(screen.getByRole("button", { name: "Controls" }));
   fireEvent.click(screen.getByRole("button", { name: "Use thumb pad" }));
+  fireEvent.click(screen.getByRole("button", { name: "Back to driving" }));
   const accelerate = screen.getByRole("button", { name: "Accelerate" });
   const drift = screen.getByRole("button", { name: "Drift / boost" });
   expect(screen.getByRole("button", { name: "Brake / reverse" })).toBeTruthy();
@@ -377,7 +382,9 @@ it("releases a held steer when the controls lock, without the zone setting speed
   const view = render(
     <TouchController onChange={change} steeringDefault="pad-absolute" />,
   );
+  fireEvent.click(screen.getByRole("button", { name: "Controls" }));
   fireEvent.click(screen.getByRole("button", { name: "Use thumb pad" }));
+  fireEvent.click(screen.getByRole("button", { name: "Back to driving" }));
   const pad = screen
     .getByLabelText("Steering")
     .closest<HTMLElement>(".kart-thumb-pad")!;
@@ -862,6 +869,7 @@ it("starts sideways phones on the slider when the host chooses it, unless the gu
     })),
   );
   const view = render(<TouchController onChange={vi.fn()} steeringDefault="slider" />);
+  fireEvent.click(screen.getByRole("button", { name: "Controls" }));
   expect(screen.getByRole("button", { name: "Use thumb pad" })).toBeTruthy();
   view.rerender(<TouchController onChange={vi.fn()} steeringDefault="pad-strip" />);
   expect(screen.getByRole("button", { name: "Use steering slider" })).toBeTruthy();

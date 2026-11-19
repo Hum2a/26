@@ -387,6 +387,46 @@ it("measures a finish in active monotonic time across a long host pause", () => 
   expect(p.finish()!.elapsedMs).toBe(1020);
 });
 
+it("leaves the driven kart and its clock where they are when the room pose moves", () => {
+  const p = createSelfPrediction();
+  const frame = deviceFrame();
+  p.running(true, 0);
+  p.server(frame, 0, 0);
+  p.input(gas, 0);
+  const driven = p.pose(400)!;
+  const ping = deviceFrame(9_000, 2);
+  ping.rollback!.body.x = driven.x + 8;
+  ping.rollback!.body.z = driven.z + 8;
+  p.server(ping, 400, 0);
+  const after = p.pose(400)!;
+  expect(after.x).toBeCloseTo(driven.x, 5);
+  expect(after.z).toBeCloseTo(driven.z, 5);
+  const later = p.pose(600)!;
+  expect(Math.hypot(later.x - driven.x, later.z - driven.z)).toBeLessThan(8);
+});
+
+it("reports the phone clock when the room clock is far ahead", () => {
+  const p = createSelfPrediction();
+  const frame = deviceFrame();
+  frame.rollback!.body = { ...createDrivingBody(43, -0.04, Math.PI / 2), vz: 10 };
+  frame.rollback!.lap = {
+    angle: -0.001,
+    distance: Math.PI * 2 - 0.001,
+    checkpoint: 7,
+    done: 0,
+    splits: [],
+  };
+  p.running(true, 0);
+  p.server(frame, 0, 0);
+  const ahead = deviceFrame(50_000, 2);
+  ahead.rollback!.body = { ...frame.rollback!.body };
+  ahead.rollback!.lap = { ...frame.rollback!.lap };
+  p.server(ahead, 10, 0);
+  expect(p.finish()).toBeUndefined();
+  p.pose(20);
+  expect(p.finish()!.elapsedMs).toBe(1020);
+});
+
 it("applies a recovery checkpoint before replay can invent a finish from the old position", () => {
   const p = createSelfPrediction(),
     frame = deviceFrame();
@@ -406,4 +446,51 @@ it("applies a recovery checkpoint before replay can invent a finish from the old
   p.server(recovery, 20, 0);
   expect(p.finish()).toBeUndefined();
   expect(p.pose(20)!.x).toBe(100);
+});
+
+it("keeps full acceleration when a parked start is followed by a clock that is already ahead", () => {
+  const p = createSelfPrediction();
+  const grid = deviceFrame(0, 1);
+  p.running(false, 0);
+  p.server(grid, 0, 0);
+  p.running(true, 1_000);
+  p.input(gas, 1_000);
+  const plain = createSelfPrediction();
+  plain.running(true, 1_000);
+  plain.server(deviceFrame(1_000, 1), 1_000, 0);
+  plain.input(gas, 1_000);
+  for (let t = 0; t <= 1_000; t += 100) {
+    const ping = deviceFrame(5_000 + t, 2 + t / 100);
+    ping.rollback!.body = { ...grid.rollback!.body };
+    p.server(ping, 1_000 + t, 0);
+    p.pose(1_000 + t);
+    plain.pose(1_000 + t);
+  }
+  const driven = p.pose(2_000)!;
+  const reference = plain.pose(2_000)!;
+  expect(driven.speed).toBeGreaterThan(3);
+  expect(Math.abs(driven.speed - reference.speed)).toBeLessThan(1);
+});
+
+it("takes a stronger start boost from the room without moving to the room pose", () => {
+  const p = createSelfPrediction();
+  const frame = deviceFrame();
+  p.running(true, 0);
+  p.server(frame, 0, 0);
+  p.input(gas, 0);
+  const before = p.pose(80)!;
+  const boosted = deviceFrame(1_200, 2);
+  boosted.rollback!.body = {
+    ...frame.rollback!.body,
+    x: before.x + 40,
+    z: before.z + 40,
+    boostMs: 1_000,
+    boostLevel: 2,
+  };
+  p.server(boosted, 80, 0);
+  const placed = p.pose(80)!;
+  expect(placed.x).toBeCloseTo(before.x, 4);
+  expect(placed.z).toBeCloseTo(before.z, 4);
+  const later = p.pose(400)!;
+  expect(later.speed).toBeGreaterThan(before.speed + 2);
 });

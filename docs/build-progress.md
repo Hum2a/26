@@ -6888,3 +6888,23 @@ Read CI on the PR and fix any failures or cubic review threads. Then preview the
 - Prettier on master's `where-are-we.tsx`, which was failing `format:check`.
 - Not caused by this branch: master's Playwright run already fails 35 specs, including the `/join` and `/host` cold-script budgets. Two more failed on this branch's earlier run with timing errors outside the theme code: `admin-sections` (a confirm dialog left open) and `kart-cpu-race` (start-boost timing).
 - `npx vitest run src/theme` in `apps/web`: 22 passed. `npx prettier --check .` passed.
+
+## 18 November 2026 — Phone-owned kart, controls off the road
+
+**Status:** local commit on `master`, authored as Aden Butt. Not pushed. Not deployed.
+
+A new race still sends your controls to the room so other phones and the projector can draw you. After the opening placement, those position packets no longer move the kart you are driving or the lap clock. Back to track still places you where the room says. The finish time stays the phone's own driving clock.
+
+During a race, Controls is a small button at the top, beside the view switch. Use steering slider and Swap sides are inside that panel.
+
+**Files:** `apps/web/src/kart/self-prediction.ts`, `self-prediction.test.ts`, `TouchController.tsx`, `kart.css`, `kart.test.tsx`, `controller-input.test.tsx`.
+
+**Checks:** `npm run typecheck` passed after `npm install` restored a missing `leaflet` package already named in the lockfile. `npm run lint` 0 errors, 30 existing warnings, structure check passed. `npx vitest run src/kart` in `apps/web` — 45 files, 231 passed. Full `npm run test:unit` and `npm run build` were not run.
+
+**Manual:** the admin phone preview at 390px shows one Controls button. Use thumb pad and Swap sides are inside that panel. A live landscape race was not driven, so the top-corner placement during a race and the last-corner feel are not confirmed on a phone.
+
+### Slow acceleration after that change
+
+The phone treated every room clock that sat ahead of its own clock as an oil slow, including a normal effect with `slowedMs: 0`. The grid snapshot is often elapsed 0, then the collect clock is already ahead, and that gap never closed, so the kart stayed on the off-road throttle for the whole race. A zero slow no longer does that. While the kart is still parked on the grid, the phone clock catches the room clock without stepping the gap or moving the kart. A stronger start boost on the room body is copied onto the phone without taking the room position.
+
+**Checks for this fix:** `npm run typecheck` passed. `npm run lint` 0 errors, 30 existing warnings, structure check passed. `npx vitest run src/kart` in `apps/web` — 45 files, 233 passed. Full `npm run test:unit` and `npm run build` were not run. Aden drove a new race after the fix and said it is working very well.
