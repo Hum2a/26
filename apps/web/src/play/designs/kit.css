@@ -14,7 +14,7 @@
 }
 
 .stage-safe .design-tag {
-  font-size: 40px;
+  font-size: clamp(28px, min(1.8vw, 3vh), 34px);
   letter-spacing: 0.08em;
 }
 
@@ -26,30 +26,31 @@
 
 .design-stage {
   display: grid;
-  gap: 1.75rem;
+  gap: clamp(0.65rem, 1.5vh, 1.15rem);
   min-width: 0;
 }
 
 .design-stage-prompt {
   margin: 0;
   font-family: var(--font-display);
-  font-size: max(72px, 5.2vw);
+  font-size: clamp(42px, min(3.6vw, 6vh), 64px);
   line-height: 1.04;
   color: var(--highlight);
 }
 
 .design-stage-prompt[data-size="medium"] {
-  font-size: max(60px, 4vw);
+  font-size: clamp(36px, min(3vw, 5vh), 54px);
+  line-height: 1.07;
 }
 
 .design-stage-prompt[data-size="long"] {
-  font-size: max(48px, 3vw);
-  line-height: 1.12;
+  font-size: clamp(32px, min(2.5vw, 4.2vh), 44px);
+  line-height: 1.11;
 }
 
 .design-stage-line {
   margin: 0;
-  font-size: max(40px, 2.6vw);
+  font-size: clamp(28px, min(2.1vw, 3.5vh), 38px);
   font-weight: 700;
   line-height: 1.15;
 }

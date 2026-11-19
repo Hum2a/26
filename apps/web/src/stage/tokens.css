@@ -23,18 +23,19 @@
 .stage-safe .text-3xl,
 .stage-safe .text-4xl {
   font-size: 40px;
-}
-
-.stage-safe .stage-prompt,
-.stage-safe .stage-question,
-.stage-safe .stage-answer {
-  font-size: max(72px, 5.2vw);
-  line-height: 1.05;
+  line-height: 1.25;
 }
 
 .stage-safe .stage-prompt,
 .stage-safe .stage-question {
+  font-size: clamp(72px, 5.2vw, 96px);
+  line-height: 1.06;
   color: var(--stage-question);
+}
+
+.stage-safe .stage-answer {
+  font-size: clamp(34px, min(2.6vw, 4.4vh), 48px);
+  line-height: 1.1;
 }
 
 .stage-safe .stage-answer,
@@ -44,13 +45,14 @@
 
 .stage-safe .stage-option,
 .stage-safe .stage-score {
-  font-size: max(40px, 3.4vw);
+  font-size: clamp(28px, min(2vw, 3.4vh), 38px);
+  line-height: 1.16;
 }
 
 .stage-timer {
   margin: 0;
   font-family: var(--font-display);
-  font-size: max(120px, 10vw);
+  font-size: clamp(120px, 9vw, 180px);
   line-height: 0.95;
   color: var(--stage-question);
 }
