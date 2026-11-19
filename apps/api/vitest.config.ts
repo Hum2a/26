@@ -75,6 +75,7 @@ export default defineConfig({
             "test/rehearsal-room.spec.ts",
             "test/wordle-room.spec.ts",
             "test/party-polish-room.spec.ts",
+            "test/vote-phone-round.spec.ts",
             "test/chess-alarm.spec.ts",
             "test/chess-scheduler.spec.ts",
             "test/kart-room.spec.ts",

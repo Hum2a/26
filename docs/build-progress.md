@@ -7322,3 +7322,30 @@ Checks: typecheck passed; lint 0 errors / 15 existing warnings; format:check pas
 **Checks:** `npx tsc -b` passed (the root typecheck without the `kart-solo` step, which is untouched). ESLint on the changed files passed. `scripts/check-structure.mjs` passed. Prettier was run on the changed files. The `@26/api` worker tests and the remaining scripted checks (`test:unit`, `content:check`, `build`, full `lint` and `format:check`) were not run locally, because this worktree's dependency install is incomplete and the workers test runtime crashes. They are left to CI. Playwright was not run.
 
 **Next:** Humza decides R3. Deploy to staging, then repeat the 80-bot rehearsal in a fresh rehearsal and in a kart-only lobby with 80 bots, to measure R1 and R2.
+
+## 19 November 2026 — Bracket phone round for 80 guests
+
+Status: built and rehearsed locally with 80 bots. Branch `vote-phone-round`. Nothing deployed.
+
+**Problem.** `apology-video-auction` and `heathrow-search-query` put every entry into a knockout that plays one match at a time. With 80 guests that is 79 matches of about 15 seconds plus beats, roughly 25 minutes per question. The owner (Humza, via Aden) chose a phone round followed by a stage final.
+
+**What it does.** A tournament question can set `flow.heat: { finalists, pairs, ms }` and `flow.pick` (the head-to-head instruction).
+
+- When answers close and there are more entries than `finalists`, the vote opens as a phone round for `ms` (the phase timer is stretched by `stretchPhoneRound`; knockout matches keep `voteMs`).
+- Each phone is dealt `pairs` head-to-heads of its own (`planHeat`, stored in `round_state` `vote-heat`), never containing its own entry. Each round re-shuffles the entries and deals the pairs out in turn, so with 80 guests every entry is judged about 10 times. A phone sees one pair at a time ("Phone round · pair 2 of 5"), with a new ballot epoch per pair so the existing ballot screen and the bots reset between pairs; it is locked in after the last pair. Ballots use the existing `vote_ballot` table under `<question>:heat:<pair>`.
+- The projector shows a progress bar of phone-round votes (`StagePhoneRound`), never a pair or an entry.
+- `settleHeat` ranks entries by the share of their pairs won, then wins, then the frozen draw, and seeds the best `finalists` into the existing knockout. Matches are numbered from 1 after the phone round ("The final 8 · match 1 of 7"). No phone-round votes means the frozen draw picks the finalists. With `finalists` entries or fewer the phone round is skipped and the room plays the ordinary knockout, so small rooms and existing tests are unchanged.
+- The two birthday brackets use `{ finalists: 8, pairs: 5, ms: 45_000 }`. Scoring is unchanged: the knockout winner's author gets the question's points.
+- Each broadcast reads the phone-round plan and ballots once per room state version and shares them across the ~80 phone views (`sharedHeat`), instead of once per phone.
+- Admin question details show the phone-round settings.
+
+**Rehearsal (local dev server, 80 bots, birthday running order, 45 s answering window).**
+
+- Apology: phone round then 7 final matches, reveal reached; all 80 bots answered all 5 pairs (400 phone-round votes), 0 refused.
+- Heathrow, twice: answers 20 s, phone round 45 s (all 400 votes in after 32 s), 7 final matches at 15 s, reveal. About 2 minutes 50 seconds for the question instead of about 25 minutes. 0 refused.
+- Reply p95 in the bot tab was 6.5–7.4 s during these runs. All 80 bots fire their next vote the instant their next pair arrives, from one browser tab through the local Vite proxy (see the earlier entries on local proxy limits). Not measured on Cloudflare yet.
+- A hot reload of the Worker code during a running rehearsal left that room stalled in the vote phase with no errors; a clean server restart ran normally. Local dev only.
+
+**Checks.** `npm run typecheck` passed. `npm run lint` 0 errors (15 existing warnings), structure passed. `npm run test -w @26/api` 145 files / 833 tests passed (new `vote-phone-round.spec.ts`, phone-round cases in `party-scoring.spec.ts`). Web: 976 passed, 1 failed — `where-are-we.test.tsx` "Place pin at map centre", which also fails on master after #54 and is outside this change.
+
+**Next.** Merge, deploy to staging and run one bracket question with real phones to check the pair-by-pair feel and timings on Cloudflare.
