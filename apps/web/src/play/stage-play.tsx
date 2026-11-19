@@ -7,6 +7,7 @@ const KartGameWrapper = lazy(() => import("../kart/KartGameWrapper"));
 import { motion } from "motion/react";
 import type { LobbySnapshot, PlaySnapshot, RoomPhaseName } from "@26/shared";
 import { VoteBoard } from "./vote-board";
+import { StagePhoneRound } from "./stage-phone-round";
 import { RosterProvider } from "../ui/roster";
 import { ChessStage } from "../chess/chess-stage";
 import { Panel } from "../ui/primitives";
@@ -517,6 +518,7 @@ function BallotView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolea
         {omitBoard ? null : <Standings play={play} />}
       </div>
     );
+  if (play.ballot?.heat && !reveal) return <StagePhoneRound play={play} />;
   const total = play.ballot?.total ?? 0;
   const listingVotes =
     play.question.kind === "guess" ||

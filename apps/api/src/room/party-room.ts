@@ -7,6 +7,8 @@ import {
 import {
   acceptKartInputs,
   acceptKartFinish,
+  checkpointKart,
+  discardUnsavedKart,
   kartFrames,
   KartInputBuffer,
   releaseKartInputs,
@@ -214,6 +216,7 @@ import { TrendCache, type RoomTrends } from "../stats/trend-room.ts";
 import { readStatsSource } from "../stats/source.ts";
 import { funFactApplies } from "../stats/fun-facts.ts";
 import { readFunFactSelection } from "../stats/fun-source.ts";
+import { StatisticsCache } from "../stats/statistics-cache.ts";
 import { readRoomArchive } from "../archive/schedule.ts";
 import { readRoomDiagnostics } from "./diagnostics.ts";
 import { createWallPost, reactToWall, withdrawWallPost } from "../wall/store.ts";
@@ -489,6 +492,7 @@ export class PartyRoom extends DurableObject<Env> {
   private readonly meter = createRealtimeMeter();
   /** Answer trends for the question just revealed; memory only, rebuilt from SQL. */
   private readonly trendCache = new TrendCache();
+  private readonly statisticsCache = new StatisticsCache<SnapshotStatistics>();
   private database: Promise<AppDatabase> | undefined;
   private kartArrivals = new KartInputBuffer();
   private kartIngress = new KartIngressCache();
@@ -1143,6 +1147,8 @@ export class PartyRoom extends DurableObject<Env> {
       // A failed transaction rolls back its own next alarm. Re-arm so a
       // transient fault never leaves the room stuck between phases.
       logError("alarm", error, { retryInMs: alarmRetryMs });
+      // The race ticks it made were never committed; replay them from SQLite.
+      discardUnsavedKart(this.ctx.storage.sql);
       await rearmAfterFailure(this.ctx.storage, Date.now() + alarmRetryMs);
       return;
     }
@@ -2674,6 +2680,8 @@ export class PartyRoom extends DurableObject<Env> {
     }
     if (identity.attachment.role === "guest") {
       this.ctx.storage.transactionSync(() => {
+        // A phone reconnecting is a recovery point for the live race.
+        checkpointKart(this.ctx.storage.sql);
         noteGuestSocket(this.ctx.storage.sql, identity.attachment.principalId);
         recordRehearsalConnection(
           this.ctx.storage.sql,
@@ -3031,14 +3039,16 @@ export class PartyRoom extends DurableObject<Env> {
             other.readyState === WebSocket.OPEN &&
             this.attachment(other)?.principalId === attachment.principalId,
         );
-      this.ctx.storage.transactionSync(() =>
+      this.ctx.storage.transactionSync(() => {
+        // A phone dropping out is a recovery point for the live race.
+        checkpointKart(this.ctx.storage.sql);
         recordRehearsalConnection(
           this.ctx.storage.sql,
           attachment.principalId,
           stillConnected,
           Date.now(),
-        ),
-      );
+        );
+      });
     }
     await this.refreshPresence(ws);
   }
@@ -3151,6 +3161,8 @@ export class PartyRoom extends DurableObject<Env> {
           );
         this.flushKartInputs(sql);
         apply(sql);
+        // Host commands (pause, resume, skip, end, settings) save the live race.
+        checkpointKart(sql);
         const clock = publicClock(createSqlStore(sql));
         result = {
           ok: true,
@@ -3169,6 +3181,7 @@ export class PartyRoom extends DurableObject<Env> {
         });
       });
     } catch (error) {
+      discardUnsavedKart(this.ctx.storage.sql);
       const message = error instanceof Error ? error.message : roundStartMessage;
       await commitAndArm(this.ctx.storage, (sql) =>
         recordRehearsalEvent(sql, {
@@ -3488,6 +3501,7 @@ export class PartyRoom extends DurableObject<Env> {
       changed = true;
       // Discard controls observed under a hold before presence can release it.
       this.flushKartInputs(sql);
+      checkpointKart(sql);
       notePresence(store, { controller, stage }, Date.now());
     });
     // A phone coming or going changes only the host's connection counts.
@@ -4292,6 +4306,29 @@ export class PartyRoom extends DurableObject<Env> {
    * The parts of a snapshot that are the same for every screen of one audience.
    * A broadcast builds these once and reuses them for each socket.
    */
+  /** Broadcasts and socket sends reuse a build up to 5 s old outside the end phases. */
+  private snapshotStatistics(
+    room: { questionIndex: number; phase: string },
+    nowMs: number,
+    fresh = false,
+  ): SnapshotStatistics {
+    const sql = this.ctx.storage.sql;
+    return this.statisticsCache.read(
+      { questionIndex: room.questionIndex, phase: room.phase },
+      nowMs,
+      () => {
+        this.meter.add("build:statistics", 0, nowMs);
+        const stats = readStatsSource(sql);
+        return {
+          stats,
+          facts: aggregateFacts(stats),
+          funFacts: readFunFactSelection(sql, stats),
+        };
+      },
+      fresh,
+    );
+  }
+
   private prepareRoomWideSnapshotData(): RoomWideSnapshotData {
     const room = this.readRoom();
     if (!room) {
@@ -4327,13 +4364,7 @@ export class PartyRoom extends DurableObject<Env> {
         reveal_nonce: number;
       }>(`SELECT opening, stage_hidden, reveal_nonce FROM room`)
       .toArray()[0];
-    this.meter.add("build:statistics", 0, nowMs);
-    const stats = readStatsSource(sql);
-    const statistics: SnapshotStatistics = {
-      stats,
-      facts: aggregateFacts(stats),
-      funFacts: readFunFactSelection(sql, stats),
-    };
+    const statistics = this.snapshotStatistics(stored, nowMs);
     const cloud = cloudRows(sql);
     const namesReveal =
       presentation?.opening === "showing" ? revealNames(sql, cloud) : null;
@@ -4414,15 +4445,8 @@ export class PartyRoom extends DurableObject<Env> {
         reveal_nonce: number;
       }>(`SELECT opening, stage_hidden, reveal_nonce FROM room`)
       .toArray()[0];
-    if (!statistics) {
-      this.meter.add("build:statistics", 0, Date.now());
-      const stats = readStatsSource(sql);
-      statistics = {
-        stats,
-        facts: aggregateFacts(stats),
-        funFacts: readFunFactSelection(sql, stats),
-      };
-    }
+    // A one-off read (an admin snapshot request) always sees every answer.
+    statistics ??= this.snapshotStatistics(store.readRoom(), Date.now(), true);
     const cloud = cloudRows(sql);
     return {
       room,
@@ -4946,7 +4970,12 @@ export class PartyRoom extends DurableObject<Env> {
     if (!parts) {
       parts = this.snapshotParts(
         audience,
-        shared?.roomWide.statistics,
+        // Eighty phones reconnecting at once must not rebuild statistics eighty times.
+        shared?.roomWide.statistics ??
+          this.snapshotStatistics(
+            createSqlStore(this.ctx.storage.sql).readRoom(),
+            Date.now(),
+          ),
         shared?.roomWide,
       );
       shared?.partsByAudience.set(audience, parts);

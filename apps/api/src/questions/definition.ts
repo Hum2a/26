@@ -130,9 +130,20 @@ export type RankBody = {
   tiers: { id: string; label: string }[];
 };
 
+/**
+ * A tournament's optional phone round: each phone judges `pairs` head-to-heads
+ * of its own for `ms`, then the best `finalists` go into the stage knockout.
+ * `pick` is the one-line instruction for each head-to-head.
+ */
+export type TournamentFlow = {
+  kind: "tournament";
+  pick?: string;
+  heat?: { finalists: number; pairs: number; ms: number };
+};
+
 export type VoteBody = {
   kind: "vote";
-  flow?: { kind: "tournament" } | { kind: "awards"; labels: readonly string[] };
+  flow?: TournamentFlow | { kind: "awards"; labels: readonly string[] };
   voteMs: number;
   candidateMode: "all" | "shortlist";
   selfVote: "forbidden" | "allowed";

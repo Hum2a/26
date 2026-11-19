@@ -557,12 +557,12 @@ describe("October birthday question additions", () => {
     );
     expect(christianityBranches.instructions).toBe("Select all that apply.");
     expect(christianityBranches.options.map((option) => option.label)).toEqual([
-      "unorthodox",
-      "jisraeli",
-      "Irish Catholic terrorists",
-      "muggletonians",
-      "the jumpers",
-      "ranters",
+      "Unorthodox",
+      "Jisraeli",
+      "Irish Catholic Terrorists",
+      "Muggletonians",
+      "The Jumpers",
+      "Ranters",
     ]);
     expect(completeAWordle.kind).toBe("wordle");
     expect(completeAWordle.answer).toEqual({ known: "VULGY" });

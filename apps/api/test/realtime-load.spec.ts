@@ -1,4 +1,4 @@
-import { env } from "cloudflare:test";
+import { env, runInDurableObject } from "cloudflare:test";
 import type { KartRaceView } from "@26/shared";
 import { describe, expect, it } from "vitest";
 import { withClientApiQuery } from "./client-api-key.ts";
@@ -115,6 +115,7 @@ async function measure(size: number) {
   expect(race?.participantCount).toBe(size);
   expect(raceId).toEqual(expect.any(String));
   for (const peer of [...guests, stage, control]) peer.reset();
+  const writes = await countRowWrites(stub);
 
   const began = Date.now();
   let sequence = 1;
@@ -150,6 +151,7 @@ async function measure(size: number) {
   await new Promise((resolve) => setTimeout(resolve, kartMs));
   clearInterval(drive);
   const raceSeconds = (Date.now() - began) / 1000;
+  const { total: rowsWritten, top: rowsByStatement } = await writes.stop();
 
   const diagnostics = await stub.diagnostics({
     ...credential(created),
@@ -201,6 +203,15 @@ async function measure(size: number) {
         ).toFixed(2),
       ),
       fullSnapshotsToGuests: guests.reduce((sum, peer) => sum + peer.snapshots, 0),
+    },
+    storage: {
+      // Durable Object SQLite rows written while the race ran (index rows included).
+      rowsWritten,
+      rowsWrittenPerSecond: Math.round(rowsWritten / raceSeconds),
+      // The same rate over a three-minute race, for comparing against billing.
+      rowsPerThreeMinuteRace: Math.round((rowsWritten / raceSeconds) * 180),
+      rowsPerTick: Number((rowsWritten / Math.max(1, stage.kartAt.length)).toFixed(1)),
+      rowsByStatement,
     },
     server: diagnostics.report.realtime,
   };
@@ -348,6 +359,58 @@ async function reach(
     if (!moved.ok) throw new Error(moved.message);
   }
   throw new Error("The room did not reach the expected phase.");
+}
+
+/**
+ * Counts SQLite rows written by the room from now until `stop()`. It wraps the
+ * object's own `sql.exec` and reads each cursor's `rowsWritten` (which includes
+ * index rows), so it measures storage writes without changing the room.
+ */
+async function countRowWrites(
+  stub: DurableObjectStub<import("../src/room/party-room.ts").PartyRoom>,
+) {
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql as SqlStorage & {
+      __loadCursors?: [string, SqlStorageCursor<Record<string, SqlStorageValue>>][];
+      __loadExec?: SqlStorage["exec"];
+    };
+    sql.__loadCursors = [];
+    if (!sql.__loadExec) {
+      const exec = sql.exec.bind(sql);
+      sql.__loadExec = exec;
+      sql.exec = ((query: string, ...bindings: unknown[]) => {
+        const cursor = exec(query, ...bindings);
+        sql.__loadCursors?.push([query, cursor]);
+        return cursor;
+      }) as SqlStorage["exec"];
+    }
+  });
+  return {
+    stop: () =>
+      runInDurableObject(stub, (_instance, state) => {
+        const sql = state.storage.sql as SqlStorage & {
+          __loadCursors?: [string, SqlStorageCursor<Record<string, SqlStorageValue>>][];
+        };
+        const cursors = sql.__loadCursors ?? [];
+        sql.__loadCursors = undefined;
+        // The busiest statements, so a regression names its source.
+        const byStatement = new Map<string, number>();
+        let total = 0;
+        for (const [query, cursor] of cursors) {
+          if (cursor.rowsWritten === 0) continue;
+          total += cursor.rowsWritten;
+          const key = query.replace(/\s+/g, " ").trim().slice(0, 72);
+          byStatement.set(key, (byStatement.get(key) ?? 0) + cursor.rowsWritten);
+        }
+        return {
+          total,
+          top: [...byStatement]
+            .sort((left, right) => right[1] - left[1])
+            .slice(0, 6)
+            .map(([statement, rows]) => ({ statement, rows })),
+        };
+      }),
+  };
 }
 
 function gaps(times: number[]): number[] {

@@ -81,6 +81,16 @@ export function adminQuestion(
     add("Tiers", question.tiers.map((tier) => tier.label).join(", ") || "Not set");
   } else if (question.kind === "vote") {
     add("Voting window", `${question.voteMs / 1000} seconds`);
+    if (question.flow?.kind === "tournament") {
+      const heat = question.flow.heat;
+      add(
+        "Phone round",
+        heat
+          ? `${heat.pairs} pairs per phone for ${heat.ms / 1000} seconds, then the top ${heat.finalists} play a knockout on stage. Skipped when there are ${heat.finalists} entries or fewer.`
+          : "None: every entry enters the knockout",
+      );
+      if (question.flow.pick) add("Each head-to-head", question.flow.pick);
+    }
     add("Candidates", question.candidateMode);
     add("Self vote", question.selfVote);
     add("Award", question.award);

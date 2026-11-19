@@ -242,6 +242,107 @@ it("resets the visible selection when a new award ballot arrives", () => {
   expect(screen.getByRole("heading", { name: "Stand-in award two" })).toBeTruthy();
 });
 
+const tournament = {
+  kind: "vote",
+  flow: "tournament",
+  candidateMode: "all",
+  selfVote: "forbidden",
+  votes: 1,
+  tie: "shared",
+  award: "authors",
+  lateJoin: "ineligible",
+};
+
+it("steps a phone through its own phone-round pairs, then locks in", () => {
+  const onSubmit = vi.fn();
+  const pair = (epoch: number, ids: [string, string]) =>
+    play(tournament, {
+      ballot: {
+        total: 80,
+        epoch,
+        label: `Phone round · pair ${epoch + 1} of 5`,
+        instruction: "Pick the worse search. Everyone gets different pairs.",
+        heat: { done: epoch, total: 5, finalists: 8 },
+        reason: "open",
+        cards: ids.map((id) => ({
+          id,
+          label: `Search ${id}`,
+          own: false,
+          selectable: true,
+          author: null,
+        })),
+      },
+    });
+  const { rerender } = render(
+    <GuestBallot
+      play={pair(0, ["a", "b"])}
+      blocked={false}
+      pending={false}
+      search={false}
+      onSubmit={onSubmit}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Search b" }));
+  fireEvent.click(screen.getByRole("button", { name: "Send vote" }));
+  expect(onSubmit).toHaveBeenCalledWith("b");
+  rerender(
+    <GuestBallot
+      play={pair(1, ["c", "d"])}
+      blocked={false}
+      pending={false}
+      search={false}
+      onSubmit={onSubmit}
+    />,
+  );
+  expect(
+    screen.getByRole("heading", { name: "Phone round · pair 2 of 5" }),
+  ).toBeTruthy();
+  expect(
+    (screen.getByRole("button", { name: "Send vote" }) as HTMLButtonElement).disabled,
+  ).toBe(true);
+  const done = pair(4, ["i", "j"]);
+  rerender(
+    <GuestBallot
+      play={{
+        ...done,
+        selfBallot: { candidateId: "j" },
+        ballot: { ...done.ballot!, label: "Phone round · all 5 done" },
+      }}
+      blocked={false}
+      pending={false}
+      search={false}
+      onSubmit={onSubmit}
+    />,
+  );
+  expect(screen.getByRole("button", { name: "Locked in ✓" })).toBeTruthy();
+});
+
+it("shows the room's phone-round progress on the projector, not a pair", () => {
+  const snapshot = play(tournament, {
+    submissionCount: 120,
+    ballot: {
+      total: 80,
+      epoch: 0,
+      label: "Phone round",
+      heat: { done: 120, total: 400, finalists: 8 },
+      reason: "open",
+      cards: [],
+    },
+  });
+  render(
+    <StagePlay
+      snapshot={{ phase: "vote", play: snapshot } as unknown as LobbySnapshot}
+    />,
+  );
+  expect(
+    screen.getByRole("heading", { name: "Phone round: check your phone" }),
+  ).toBeTruthy();
+  expect(screen.getByText("120 of 400 votes in")).toBeTruthy();
+  expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("120");
+  expect(screen.getByText(/The top 8 come up here/)).toBeTruthy();
+  expect(screen.queryByText(/The phones have the full list/)).toBeNull();
+});
+
 it("reveals the three independent stage awards without showing a misleading empty ballot", () => {
   const snapshot = play(
     {

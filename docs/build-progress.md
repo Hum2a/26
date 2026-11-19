@@ -7001,6 +7001,18 @@ Answer acknowledgement p95 ranged 386–1373 ms across these single samples, wit
 
 Answer acknowledgement p95 on Cloudflare was 71–295 ms across runs; quiz rounds are not a concern.
 
+## 19 November 2026 — Presenter export and prompt copy
+
+Regenerated Baseer’s running order and the offline answer key from the birthday order. The reveal text now covers the room-median dials, exact-set choices, live voting and matching results, and chess and kart scoring. The two exact-set rounds list their authored answer labels. Applied the approved Humza, Christianity option label, and kart copy corrections. Option IDs and the pack order are unchanged.
+
+Both formatter regression tests passed. A second export reproduced all four generated files byte for byte. The generated birthday exports have no accidental blank reveals or literal placeholders; the intentional empty `esports-tag` answer is rendered with U+3164.
+
+Typecheck, lint (30 warnings), formatting, content preflight, the production build, and all 73 release tests passed.
+
+The full web unit suite finished twice with 952 passes and two failures each time. The failing cases changed between runs. The first run failed the kart tennis-slot assertion and timed out in the guest troll test. The second failed the guest Wordle transfer and Pokémon silhouette fallback assertions. The focused question-authoring suite passed all 22 tests.
+
+The full API run passed 813 tests and skipped four. Its routing suite stopped before collecting tests because Wrangler could not create its default config directory. Rerunning only that suite with a writable `XDG_CONFIG_HOME` passed all four routing tests. Playwright and end-to-end checks were outside this run.
+
 ## 19 November 2026 — Night-of sheet and stale event docs
 
 **Status:** documentation only, on `cursor/night-of-docs`.
@@ -7280,6 +7292,96 @@ Checks: typecheck passed; lint 0 errors / 15 existing warnings; format:check pas
 **Checks:** not run locally. This worktree's `npm install` had not finished after about 1.5 hours, so `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run test:unit`, `npm run test -w @26/api`, `npm run content:check` and `npm run build` were left to CI on the PR. Playwright was not run.
 
 **Next:** Humza reads the report, decides on knockout entry caps, and the race-start and per-answer cost fixes are scheduled before a repeat 80-bot run. Do not start the next prompt automatically.
+
+## 19 November 2026 — Presenter export after the 49-round merge, and the map test
+
+**Status:** on `codex/presenter-export-and-copy`. Merged `origin/master` (no rebase). Not deployed.
+
+**What now works.** Baseer’s running order and the offline answer key are generated from the merged 49-round birthday order. Reveal lines come from question data: room-median dials, exact-set labels, vote/poll/typed explanations, chess capture/mate/time scores from the shared scorer, kart fastest-finish copy from each kart question, Where are we? (Agadir seafront), and Ed or Humza placements. The three approved copy nits are already applied and still in the pack files (Humza capital H, Christianity Title Case labels with unchanged ids, kart “One lap. Three minutes.” / equal finish times).
+
+**Map test.** Master CI failed `where-are-we.test.tsx` looking for “Place pin at map centre”. The control was still in `GuessMap`, but it waited for `world.geojson` (`ready`) after the Leaflet map already existed. The Where are we? path lazy-loads that map, so the button never appeared within the test timeout even though zoom controls had painted. Pinning uses the map view, not the landmass layer, so `ready` is now set when the Leaflet instance exists. The accessible centre control is unchanged. The test file was not rewritten.
+
+**Files:** `scripts/content-export.ts`, `scripts/content-export.test.ts`, generated `docs/content/birthday-*.md`, `apps/web/src/play/map-guess.tsx`, `apps/web/src/play/map-guess.css`, this section. Copy nits already on the branch in `how-italian-is-humza.ts`, `christianity-branches.ts`, `kart-sprint.ts`. Did not edit `manifest.ts`, `where-are-we.ts`, `ed-or-humza.ts`, or chess feature code.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run test:unit` 211 files / 976 tests passed (including `where-are-we.test.tsx` and `map-guess.test.tsx`). `npm run test -w @26/api` 144 files / 832 tests passed (`XDG_CONFIG_HOME` set so Wrangler can write config). `npm run content:check` passed for demo and birthday with no incomplete rounds. `npm run build` passed (1004 files scanned; gzip entry JS 222,746 / 260,000; entry CSS 28,208 / 34,000; total JS 1,493,519 / 1,650,000). Playwright was not run.
+
+**Cubic (one follow-up).** Added `scripts/content-export.test.ts` to `test:release` so `npm test` runs it. Raid reveal now says “players still in bank keep N points”. A failed world.geojson fetch hides pin controls again (`setReady(false)`). Qualified the earlier “no blank reveals” line for the intentional empty `esports-tag` (U+3164). Clarified that the three copy nits are already applied, not outstanding.
+
+**Next:** Open the PR into `master` for Humza to merge. Do not start the next prompt automatically.
+
+## 19 November 2026 — P0 fixes from the 80-player rehearsal
+
+**Status:** two P0 fixes on `claude/rehearsal-fixes`, not deployed. The issue table with severities is in the PR body. The rehearsal itself is in `docs/rehearsal-2026-11-20-staging.md`.
+
+**R1, kart race start.** On staging, the alarm that starts a race with 80 drivers used 4.4–7.8 s of CPU and every phone dropped. Each guest snapshot re-read and re-projected the whole race (`projectKart`). `preparePlayShared` now reads and projects the race once per broadcast (`prepareKartShared`), and each guest gets its own view of that projection, as the tick path already did. Test: `apps/api/test/kart-shared-projection.spec.ts`.
+
+**R2, statistics on every broadcast.** Every room-wide build ran `readStatsSource`, a full scan of answers, ballots and scores. Answer acks grew from 87 ms to over 20 s as the game built up. PR #55 had already batched the per-command private snapshot. Broadcasts and socket sends (including reconnects) now reuse a statistics build for up to 5 s within the same question and phase (`apps/api/src/stats/statistics-cache.ts`). Lobby, final, facts and podium always rebuild, and admin snapshot reads force a fresh build. Test: `apps/api/test/statistics-cache.spec.ts`.
+
+**Not fixed:** R3, the knockout bracket length with 80 entries, needs Humza's decision. P1 and P2 items are listed in the PR.
+
+**Checks:** `npx tsc -b` passed (the root typecheck without the `kart-solo` step, which is untouched). ESLint on the changed files passed. `scripts/check-structure.mjs` passed. Prettier was run on the changed files. The `@26/api` worker tests and the remaining scripted checks (`test:unit`, `content:check`, `build`, full `lint` and `format:check`) were not run locally, because this worktree's dependency install is incomplete and the workers test runtime crashes. They are left to CI. Playwright was not run.
+
+**Next:** Humza decides R3. Deploy to staging, then repeat the 80-bot rehearsal in a fresh rehearsal and in a kart-only lobby with 80 bots, to measure R1 and R2.
+
+## 19 November 2026 — Bracket phone round for 80 guests
+
+Status: built and rehearsed locally with 80 bots. Branch `vote-phone-round`. Nothing deployed.
+
+**Problem.** `apology-video-auction` and `heathrow-search-query` put every entry into a knockout that plays one match at a time. With 80 guests that is 79 matches of about 15 seconds plus beats, roughly 25 minutes per question. The owner (Humza, via Aden) chose a phone round followed by a stage final.
+
+**What it does.** A tournament question can set `flow.heat: { finalists, pairs, ms }` and `flow.pick` (the head-to-head instruction).
+
+- When answers close and there are more entries than `finalists`, the vote opens as a phone round for `ms` (the phase timer is stretched by `stretchPhoneRound`; knockout matches keep `voteMs`).
+- Each phone is dealt `pairs` head-to-heads of its own (`planHeat`, stored in `round_state` `vote-heat`), never containing its own entry. Each round re-shuffles the entries and deals the pairs out in turn, so with 80 guests every entry is judged about 10 times. A phone sees one pair at a time ("Phone round · pair 2 of 5"), with a new ballot epoch per pair so the existing ballot screen and the bots reset between pairs; it is locked in after the last pair. Ballots use the existing `vote_ballot` table under `<question>:heat:<pair>`.
+- The projector shows a progress bar of phone-round votes (`StagePhoneRound`), never a pair or an entry.
+- `settleHeat` ranks entries by the share of their pairs won, then wins, then the frozen draw, and seeds the best `finalists` into the existing knockout. Matches are numbered from 1 after the phone round ("The final 8 · match 1 of 7"). No phone-round votes means the frozen draw picks the finalists. With `finalists` entries or fewer the phone round is skipped and the room plays the ordinary knockout, so small rooms and existing tests are unchanged.
+- The two birthday brackets use `{ finalists: 8, pairs: 5, ms: 45_000 }`. Scoring is unchanged: the knockout winner's author gets the question's points.
+- Each broadcast reads the phone-round plan and ballots once per room state version and shares them across the ~80 phone views (`sharedHeat`), instead of once per phone.
+- Admin question details show the phone-round settings.
+
+**Rehearsal (local dev server, 80 bots, birthday running order, 45 s answering window).**
+
+- Apology: phone round then 7 final matches, reveal reached; all 80 bots answered all 5 pairs (400 phone-round votes), 0 refused.
+- Heathrow, twice: answers 20 s, phone round 45 s (all 400 votes in after 32 s), 7 final matches at 15 s, reveal. About 2 minutes 50 seconds for the question instead of about 25 minutes. 0 refused.
+- Reply p95 in the bot tab was 6.5–7.4 s during these runs. All 80 bots fire their next vote the instant their next pair arrives, from one browser tab through the local Vite proxy (see the earlier entries on local proxy limits). Not measured on Cloudflare yet.
+- A hot reload of the Worker code during a running rehearsal left that room stalled in the vote phase with no errors; a clean server restart ran normally. Local dev only.
+
+**Checks.** `npm run typecheck` passed. `npm run lint` 0 errors (15 existing warnings), structure passed. `npm run test -w @26/api` 145 files / 833 tests passed (new `vote-phone-round.spec.ts`, phone-round cases in `party-scoring.spec.ts`). Web: 976 passed, 1 failed — `where-are-we.test.tsx` "Place pin at map centre", which also fails on master after #54 and is outside this change.
+
+**Next.** Merge, deploy to staging and run one bracket question with real phones to check the pair-by-pair feel and timings on Cloudflare.
+
+## 19 November 2026 — Kart Durable Object writes cut with periodic checkpoints
+
+**Status:** complete on `claude/kart-do-write-reduction-81kzx6`; PR open for Humza.
+
+**What changed.** A race tick used to rewrite the whole race row, one `kart-input:<player>` row per driver, and close, delete and insert a schedule row, then bump `room.state_version`. The live race and the phones' control queues now stay in memory (`apps/api/src/questions/kart/kart-live.ts`), keyed by the room's storage handle, with the race row as a checkpoint:
+
+- Saved at once: the grid, the first moving tick (start), any lap, finish, DNF or race end, every host command (pause, resume, skip, end, settings), a phone connecting or leaving, a controller or projector presence change, every phase entry of a kart round, and every acknowledged guest action (`kart-finish`, Back to track, items). Otherwise at least every 10 race revisions (about one second).
+- Each read compares the cached race with the stored row, so a rolled-back transaction, a restart, `restart-kart` or a direct write reloads from SQLite. A restored running race raises its rollback revision by 10, past any unsaved revision a phone already saw, and saves on the next write.
+- Controls are never acknowledged, so their queues are memory only. A restart loses at most the controls since the last tick and the race since the last checkpoint (about one second), then replays to the room clock. The room still expires a held throttle after 500 ms of race time.
+- One `kart-tick` schedule row now serves a race: each tick moves its due time on, or deletes it at the end (`onAlarm` closes it only if the handler did neither). Ticks no longer bump `state_version`; kart frames carry the current version, which the phone only rejects when it goes backwards.
+- Driving, device timing, Back to track and Race again are unchanged. No web, rendering or CSS change.
+
+**Measured** with `LOAD_SIZES=80 LOAD_STAGGER=1 npm run load:realtime -w @26/api` (6 s of 10 Hz staggered controls, local workerd; the harness now wraps the room's `sql.exec` and sums each cursor's `rowsWritten`, index rows included):
+
+|                 | rows (6 s)      | rows per tick               | at 10 ticks/s for 3 minutes |
+| --------------- | --------------- | --------------------------- | --------------------------- |
+| Before (2 runs) | 2,904 and 2,437 | 69–74 (input rows about 67) | about 125,000–150,000       |
+| After (3 runs)  | 97, 72 and 80   | 2.1                         | about 3,800                 |
+
+Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine load, so no speed change is claimed.
+
+**Files:** `apps/api/src/questions/kart/kart-live.ts` (new), `apps/api/src/questions/kart/kart.ts`, `apps/api/src/room/lifecycle.ts`, `apps/api/src/room/sql-store.ts`, `apps/api/src/room/party-room.ts`, `apps/api/src/room/README.md`, `apps/api/test/kart-checkpoint.spec.ts` (new), `apps/api/test/kart-room.spec.ts`, `apps/api/test/realtime-load.spec.ts`, `apps/api/vitest.config.ts`.
+
+**Tests.** New `kart-checkpoint.spec.ts` (7 tests): checkpoint cadence, a steady 20-driver tick writes at most 4 rows, restart restores with a newer revision and catches up, pause and resume across a restart, reconnect and disconnect checkpoints, a rolled-back finish is dropped and its retry accepted, and a pedal release reaches the race, the phone checkpoint and a restart. One `kart-room.spec.ts` case asserted that queued, unticked controls survive eviction; it now ticks before evicting and checks the restored race, because unticked controls are deliberately memory only.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` passed (0 errors, the same 15 warnings as `master`; structure check passed). `npm run format:check` passed. `npm run test:unit` passed (211 files, 976 tests). `npm run test -w @26/api` passed (145 files, 836 tests). `npm run content:check` passed (`where-are-we` still incomplete). `npm run build` passed, including gzip budgets. Playwright was not run.
+
+**Not verified:** real Cloudflare row billing and a mid-race restart on deployed infrastructure; the counts above are local workerd measurements.
+
+**Next:** Humza reviews and merges the PR.
+
+**Cubic follow-up (same day):** A failed alarm or host command now drops unsaved race ticks (`discardUnsavedKart`), so a later checkpoint never saves work that rolled back. A new spec covers this. The README now says the race is checkpointed "for" every host command (it runs after the command applies). The suggestion to clear control queues whenever the stored race changes was not taken. After a reload, those queues hold the real controls since the checkpoint, and the reducer already skips anything older than the race or at or below a driver's applied sequence. A replaced race already starts with new queues.
 
 ## 19 November 2026 — Kart practice with CPU bots
 

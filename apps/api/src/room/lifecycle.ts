@@ -107,6 +107,8 @@ export type GameStore = {
   funFactCount?(): number;
   nextQuestionIndex?(room: RoomClock): number | "final";
   onScheduledJob?(job: ScheduledJob, now: number): void;
+  /** A pending job's due time, or undefined when it is not pending. */
+  jobDueAt?(jobId: string): number | null | undefined;
   onBackgroundJob?(job: ScheduledJob, now: number): void;
 };
 
@@ -473,6 +475,14 @@ export function onAlarm(store: GameStore, now: number): void {
         room.hold)
     ) {
       store.saveJob({ ...job, status: "cancelled", dueAt: null, remainingMs: null });
+      continue;
+    }
+    if (job.payload === "kart-tick" && store.onScheduledJob && store.jobDueAt) {
+      // A race tick moves this same row on to its next beat, or deletes it,
+      // so a tick writes one row. Close it only if the handler did neither.
+      store.onScheduledJob(job, now);
+      if (store.jobDueAt(job.jobId) === job.dueAt)
+        store.saveJob({ ...job, status: "done", dueAt: null, remainingMs: null });
       continue;
     }
     store.saveJob({ ...job, status: "done", dueAt: null, remainingMs: null });

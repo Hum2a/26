@@ -969,6 +969,18 @@ export const playSnapshotSchema = z
         epoch: z.number().int().nonnegative().optional(),
         label: z.string().max(120).optional(),
         instruction: z.string().max(200).optional(),
+        /**
+         * Phone round progress. A phone counts its own pairs; the stage and
+         * host count every phone-round vote in the room.
+         */
+        heat: z
+          .object({
+            done: z.number().int().nonnegative().max(2000),
+            total: z.number().int().nonnegative().max(2000),
+            finalists: z.number().int().min(2).max(16),
+          })
+          .strict()
+          .optional(),
         reason: z.enum(["open", "late", "empty", "closed"]),
         cards: z.array(ballotCardSchema).max(100),
       })
