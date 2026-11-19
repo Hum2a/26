@@ -26,6 +26,7 @@ import {
   ReverseTyping,
   TranslatedOptions,
 } from "./sabotage-trolls";
+import type { ScreenTrollKind } from "./screen-troll-kind";
 import { trollAssets } from "./troll-assets";
 import { useTrollClip, useTrollLayer } from "./troll-sound";
 
@@ -33,47 +34,6 @@ import { useTrollClip, useTrollLayer } from "./troll-sound";
  * Phone-only gags. The server owns when they start and stop; these components
  * only draw them. `onEscape` is absent while a command is pending.
  */
-const screenKinds = [
-  "netanyahu",
-  "australia",
-  "mirror",
-  "jelly",
-  "comic-sans",
-  "lights-out",
-  "bubble-wrap",
-  "fake-crash",
-  "forced-update",
-  "captcha",
-  "notification-storm",
-  "confetti",
-  "dvd",
-  "invasion",
-  "call",
-  "crack",
-  "sponsor",
-  "screen-recording",
-  "low-battery",
-  "airdrop",
-  "overheating",
-  "answer-viewers",
-  "typing-dots",
-  "reshuffle",
-  "translate",
-  "slider-drift",
-  "reverse-typing",
-  "autocorrect",
-  "char-limit",
-  "haptic-storm",
-  "fake-last",
-  "fake-exit",
-] as const;
-
-export type ScreenTrollKind = (typeof screenKinds)[number];
-
-export function isScreenTroll(kind: string): kind is ScreenTrollKind {
-  return screenKinds.some((item) => item === kind);
-}
-
 type Props = {
   kind: ScreenTrollKind;
   label: string;

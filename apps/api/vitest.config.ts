@@ -70,6 +70,7 @@ export default defineConfig({
             "test/end-destroy.spec.ts",
             "test/push-luck-room.spec.ts",
             "test/player-control.spec.ts",
+            "test/projector-pairing.spec.ts",
             "test/developer-room.spec.ts",
             "test/rehearsal-room.spec.ts",
             "test/wordle-room.spec.ts",

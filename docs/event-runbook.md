@@ -1,8 +1,11 @@
 # Event runbook
 
-[Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
+> **Superseded for the night:** print [Night of](night-of.md). This runbook keeps
+> rehearsal drills, shortcuts, and recovery detail.
 
-Baseer presents. Humza operates the administrator screen. Guests play on their own phones. This runbook matches the controls in the current build (updated 5 November 2026). The party plays the birthday running order: **Start birthday game** freezes the saved order into the room. The illustrative demo is for rehearsals only. The venue rehearsal, a physical phone, and a projector have not been checked from this environment; see [Physical-device and venue sign-off](#physical-device-and-venue-sign-off).
+[Home](../README.md) · [Documentation](README.md) · [Night of](night-of.md) · [Event runbook](event-runbook.md)
+
+Baseer presents. Humza operates the administrator screen. Guests play on their own phones. This runbook matches the controls in the current build (updated 19 November 2026). The party plays the birthday running order in `apps/api/src/questions/packs/birthday/manifest.ts` (**42 rounds**; **Start birthday game** freezes the saved order into the room). The illustrative demo is for rehearsals only. The venue rehearsal, a physical phone, and a projector have not been checked from this environment; see [Physical-device and venue sign-off](#physical-device-and-venue-sign-off).
 
 <details>
 <summary>On this page</summary>
@@ -24,13 +27,14 @@ Baseer presents. Humza operates the administrator screen. Guests play on their o
 
 ## Before the room opens
 
-**The day before (20 November):** production is frozen — `npm run release` refuses production deploys from 20 November until midday 22 November. In the Neon console, switch off autosuspend (scale to zero) on the production branch for the night so host commands never wait for a cold database. Print [docs/content/birthday-answer-key.md](content/birthday-answer-key.md) and [docs/content/birthday-running-order.md](content/birthday-running-order.md); refresh them first with `npm run content:export` if the order changed.
+**The morning of:** follow [Night of](night-of.md) first. Confirm Workers Paid, switch off Neon autosuspend on the production branch for the night, sign both laptops into production `/admin`, keep a hotspot ready, and do not deploy while a game is running (the weekend date freeze was removed on 18 November; a deploy still drops every phone). Print [night-of.md](night-of.md). Keep the private [answer key](content/birthday-answer-key.md) off the projector; refresh generated content with `npm run content:export` if the order changed.
 
 1. Open https://26.humza.website/admin on the control laptop and sign in with the magic link or email code sent to a configured administrator address (Humza or Aden). Confirm with the Sign in button. Opening the link page does not sign in.
 2. **Question packs → Running order:** check the order and the estimated show length. _Suggest a mixed order_ spreads out same-series rounds; review, then save or discard. A started game never changes.
 3. Create the lobby. Leave that admin tab open. It holds the control connection and stays authorised for twelve hours.
 4. **Live controls → Driving feel** (kart round): defaults are prediction on, other karts glide, sideways steering strip, auto frame rate, 3-2-1-GO countdown. If karts rubber-band on the venue Wi-Fi, choose _Conservative_ or _Off_; changes reach phones at once.
 5. Open `/host` on the projector browser and connect it to the same room. The stage cookie is separate from the admin cookie and lasts fourteen hours. Press **Present on this screen**, then F for full screen.
+   - **Projector laptop not signed in to admin?** Pair it instead (stretch feature; use it only after a staging rehearsal has passed). In **Live controls**, the **Projector pairing** card shows a one-time code such as `WXYZ-2345`. On the projector, open `/host`, type the room's join code, type the pairing code under _No admin login on this laptop?_ and press **Pair this screen**. The room gives that browser the same fourteen-hour stage cookie, for this room only, then connects; press **Present on this screen** as usual. A code works once and lasts ten minutes. **Show a new code** cancels the previous one. After five quick tries the room accepts only one more about every twelve seconds, and ten wrong tries cancel the open code. Read the code aloud or type it yourself: never put it on the projector or in the group chat. A paired projector replaces any other open stage tab, exactly as a second `/host` tab does. Live controls cannot revoke a paired projector: its stage cookie lasts fourteen hours, and closing the tab does not end that access. Pair only a laptop you trust for the night, and use **Hide stage content** if the screen must go blank.
 6. On the stage, press Start show once for sound. M mutes the stage. F requests full screen. Escape returns to projector setup. If full screen drops by accident the show stays up with a short hint; press F. A reload of the projector tab reconnects and keeps presenting. The stage deliberately has no operator readout: diagnostics stay on the admin screen.
 7. Press Refresh room health. Expect phase `lobby`, a control connection, and no failed scheduler jobs.
 8. When everyone is in, press **Start birthday game** and confirm. The confirmation says how many players are in; the running order freezes at that moment. The illustrative demo start is labelled as a rehearsal alternative and also asks first. Developer bots are refused in a room running the birthday game.
@@ -107,7 +111,8 @@ Ask a guest to reload only if Try again now does not bring them back. Humza relo
 1. Look at Room health. If Stage shows 0, the projector browser is offline.
 2. Press `P` to pause if a question is collecting. The room does not pause by itself when the stage drops, so a flicker does not stop the game.
 3. Check the projector laptop's network. The stage reconnects without a reload once the network is back.
-4. Resume with `P`.
+4. If the projector browser lost its stage cookie (a private window, cleared site data or a different browser), pair it again from **Live controls → Projector pairing**. The scores and the room are unaffected.
+5. Resume with `P`.
 
 ### One phone sending too much
 
@@ -158,23 +163,24 @@ Run this against a local or staging room before guests arrive. Use one nickname 
 
 ## Readiness and remaining content
 
-The birthday catalogue has a 56-round default running order, frozen separately for
-each room when **Start birthday game** is used. The illustrative demo remains a
-separate rehearsal. Review the saved running order in **Admin → Question packs**;
-do not assume a change there alters a game that has already started.
+The birthday catalogue has a **42-round** default running order (`order` in
+`apps/api/src/questions/packs/birthday/manifest.ts`), frozen separately for
+each room when **Start birthday game** is used. Print [Night of](night-of.md)
+for the numbered table. The illustrative demo remains a separate rehearsal.
+Review the saved running order in **Admin → Question packs**; do not assume a
+change there alters a game that has already started.
 
-Four rounds remain drafts:
+Two rounds remain drafts (catalogue only):
 
-| Round           | Material needed                                               |
-| --------------- | ------------------------------------------------------------- |
-| Reddit tribunal | Original thread, exact title, outcome, top comment and answer |
-| Ferrier estate  | Verified estate name and confirmed category                   |
-| Where are we?   | Credited clue photo, place name and coordinates               |
-| Ed or Humza?    | Speaker (`ed` or `humza`) for each of the 18 quotes           |
+| Round         | Material needed                                     |
+| ------------- | --------------------------------------------------- |
+| Where are we? | Credited clue photo, place name and coordinates     |
+| Ed or Humza?  | Speaker (`ed` or `humza`) for each of the 18 quotes |
 
-Figurine, Cursed Search History, Property price roulette and Nextdoor paranoia
-are ready in the catalogue and can be rehearsed from their question pages. Add
-them explicitly to the saved order when wanted.
+`tribunal-reddit` and `council-ferrier-sector` were retired on 16 November.
+Figurine and Cursed Search History are **in** the default order. Property price
+roulette, Nextdoor paranoia, the extra guess rounds, `esports-tag` and
+`kart-park-grand-prix` stay catalogue-only until added to the saved order.
 The spoken debate round has been dropped. Steal, Robin Hood and Shared score are
 permitted on scored birthday choice questions; polls and other mechanics retain
 their existing restrictions. Each guest gets one troll, from question two.
@@ -209,25 +215,22 @@ separate instructions.
 
 ## Releasing the event build
 
-Deployed on 8 November 2026: `cbd1e6c` on both sites (staging `6317ea2b…`,
-production `09181ecb…`). Host moderation, the troll pack, wall recovery and the
-`event-readiness` branch are **not** deployed. `/api/health` reports only the app
-version, not a commit, so a healthy endpoint does not prove which code is live.
+Staging and production were last redeployed on **19 November 2026 at 18:36 GMT**.
+That build includes merged answer trends (PR #41), PR #45, and the kart Controls
+panel. An earlier 8 November deploy (`cbd1e6c`) is no longer the live event
+build. `/api/health` reports only the app version, not a commit, so a healthy
+endpoint does not prove which code is live.
 
-Each step needs the owner's go-ahead; nothing here has been run.
+Do not deploy during the party. If a later authorised release is needed after
+the night:
 
-1. Review and merge the `event-readiness` pull request into `master`.
-2. From a clean checkout of `master`: `npm install`, then `npm run setup`.
-3. Staging: `npm run deploy:staging`. It builds and deploys. (Use
-   `npm run deploy:staging:full` to run the full test suite and migrations first). No Neon migration is needed: the new columns
-   are room (Durable Object) columns, added when a room starts.
-4. Run the rehearsal below on staging.
-5. Production (there is no date freeze since 18 November; avoid deploying while a
-   game is running, because a deploy drops every phone):
-   `bash release.sh --deploy=production` (or `npm run deploy:prod`). It requires
-   clean `master`, bumps the app version so `/api/health` shows a new number,
-   runs the checks and deploys.
-6. Record the commit, both Cloudflare version ids and the health version in
+1. From a clean checkout of `master`: `npm install`, then `npm run setup`.
+2. Staging: `npm run deploy:staging`. (Use `npm run deploy:staging:full` to run
+   the full test suite and migrations first.)
+3. Rehearse on staging.
+4. Production (there is no date freeze since 18 November; a deploy still drops
+   every phone): `bash release.sh --deploy=production` or `npm run deploy:prod`.
+5. Record the commit, both Cloudflare version ids and the health version in
    `docs/build-progress.md`. Roll back with the previous version id (see
    `docs/deployment.md`, Rollback) if anything is wrong.
 

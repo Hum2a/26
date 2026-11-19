@@ -1,23 +1,8 @@
 import { useState } from "react";
 import { Button } from "../../ui/primitives";
 import { OptionText } from "./OptionText";
+import { assignTier, type TierPlacement } from "./tier-placement";
 import "./option-text.css";
-
-export type TierPlacement = { itemId: string; tierId: string };
-
-export function assignTier(
-  current: TierPlacement[],
-  itemId: string,
-  tierId: string,
-  ties: "forbidden" | "shared",
-): TierPlacement[] {
-  const withoutItem = current.filter((placement) => placement.itemId !== itemId);
-  const withoutTier =
-    ties === "forbidden"
-      ? withoutItem.filter((placement) => placement.tierId !== tierId)
-      : withoutItem;
-  return [...withoutTier, { itemId, tierId }];
-}
 
 export function TierAssign({
   items,

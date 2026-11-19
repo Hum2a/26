@@ -264,7 +264,7 @@ function AdminNavLink({
  * The room the sidebar's room pages point at: the one in the address, or the
  * room this browser last selected. Checked once when outside a room.
  */
-export function useSelectedRoom(
+function useSelectedRoom(
   roomPath: string | undefined,
 ): { gameId: string; label: string } | null {
   const [selected, setSelected] = useState<{ gameId: string; label: string } | null>(
