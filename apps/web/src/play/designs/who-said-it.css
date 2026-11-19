@@ -60,26 +60,26 @@
 }
 .who-said-it-stage .who-said-it-title {
   margin: 0;
-  font-size: max(48px, 3vw);
+  font-size: clamp(34px, min(2.4vw, 4vh), 44px);
   color: var(--muted);
 }
 .who-said-it-stage .who-said-it-quote {
-  font-size: max(48px, 3vw);
+  font-size: clamp(34px, min(2.5vw, 4.2vh), 46px);
   line-height: 1.12;
 }
 .who-said-it-stage .who-said-it-options {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 1rem;
+  margin-top: 0.65rem;
 }
 .who-said-it-stage .who-said-it-option {
-  grid-template-columns: 3.5rem minmax(0, 1fr);
-  font-size: max(40px, 2.4vw);
-  padding: 1rem;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  font-size: clamp(30px, min(2vw, 3.4vh), 38px);
+  padding: 0.75rem 0.9rem;
 }
 .who-said-it-stage .who-said-it-letter {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 3.25rem;
+  height: 3.25rem;
 }
 .who-said-it-stage .who-said-it-verdict {
-  font-size: max(40px, 2.4vw);
+  font-size: clamp(30px, min(2vw, 3.4vh), 38px);
 }

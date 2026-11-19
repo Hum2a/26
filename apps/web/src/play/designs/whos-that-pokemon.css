@@ -38,7 +38,10 @@
   text-align: center;
 }
 .poke-title[data-size="stage"] {
-  font-size: max(72px, 5.4vw);
+  font-size: clamp(44px, min(4vw, 6.5vh), 68px);
+}
+.poke-stage-answer[data-size="stage"] {
+  font-size: clamp(38px, min(3.2vw, 5.2vh), 54px);
 }
 
 /* The mystery picture in its burst. */
@@ -52,7 +55,7 @@
   border-radius: 50%;
 }
 .poke-mystery[data-size="stage"] {
-  width: min(100%, 44vh, 34rem);
+  width: min(100%, 34vh, 24rem);
 }
 .poke-rays,
 .poke-glow,
@@ -182,28 +185,29 @@ button.poke-move:disabled {
 
 /* Stage: the burst on the left, title and names on the right. */
 .poke-stage {
-  padding: clamp(1rem, 2.5vw, 2.5rem);
+  padding: clamp(0.85rem, min(2vw, 2.2vh), 1.85rem);
 }
 .poke-stage-body {
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
   align-items: center;
-  gap: clamp(1.5rem, 4vw, 4rem);
+  gap: clamp(1.25rem, 3vw, 3rem);
 }
 .poke-stage-side {
   display: grid;
-  gap: clamp(1rem, 2.5vh, 2rem);
+  gap: clamp(0.65rem, 1.5vh, 1.25rem);
   min-width: 0;
 }
 .poke-menu[data-size="stage"] {
-  gap: 0.75rem;
-  padding: 1rem;
+  gap: 0.5rem;
+  padding: 0.75rem;
   border-width: 6px;
   outline-offset: -13px;
 }
 .poke-menu[data-size="stage"] .poke-move {
-  font-size: max(40px, 2.6vw);
-  padding: 0.5em 0.6em;
+  font-size: clamp(32px, min(2.2vw, 3.6vh), 40px);
+  padding: 0.35em 0.5em;
+  min-height: 2.75rem;
 }
 .poke-menu[data-size="stage"] .design-voters {
   grid-column: 1 / -1;

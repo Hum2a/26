@@ -198,54 +198,79 @@ button.order-line:disabled {
 /* Stage */
 
 .order-paper[data-size="stage"] {
-  width: min(100%, 72rem);
+  --order-gold: var(--highlight);
+  --order-ink: var(--surface-foreground, var(--foreground));
+  width: min(100%, 78rem);
   margin: 0 auto;
-  padding: 2rem 2.5rem;
+  padding: clamp(0.65rem, 1.4vh, 1.15rem) clamp(1rem, 1.8vw, 1.75rem);
+  gap: clamp(0.4rem, 0.9vh, 0.65rem);
+}
+
+.order-head[data-size="stage"] {
+  padding-bottom: 0.35rem;
 }
 
 .order-head[data-size="stage"] .order-seal {
-  width: 5.5rem;
-  height: 5.5rem;
-  font-size: 2.6rem;
+  width: clamp(3rem, 6vh, 4.25rem);
+  height: clamp(3rem, 6vh, 4.25rem);
+  font-size: clamp(28px, 3.6vh, 38px);
 }
 
 .order-head[data-size="stage"] .order-office {
-  font-size: 22px;
+  font-size: clamp(28px, min(1.55vw, 2.6vh), 30px);
 }
 
 .order-head[data-size="stage"] .order-title {
-  font-size: 48px;
+  font-size: clamp(32px, min(2.3vw, 3.9vh), 44px);
 }
 
 .order-head[data-size="stage"] .order-sub {
-  font-size: 26px;
+  font-size: clamp(28px, min(1.6vw, 2.7vh), 30px);
+}
+
+.order-paper[data-size="stage"] .order-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.45rem, 1vh, 0.75rem) clamp(0.75rem, 1.6vw, 1.25rem);
 }
 
 .order-line[data-size="stage"] {
-  grid-template-columns: auto 1fr auto;
-  min-height: 5.5rem;
-  padding: 0.8rem 1.4rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: clamp(3.25rem, 7vh, 4.5rem);
+  padding: clamp(0.35rem, 0.8vh, 0.6rem) 0.9rem;
 }
 
 .order-line[data-size="stage"] .order-section {
-  font-size: 40px;
+  font-size: clamp(28px, min(1.85vw, 3.1vh), 36px);
 }
 
 .order-line[data-size="stage"] .order-country {
-  font-size: 48px;
+  font-size: clamp(28px, min(1.85vw, 3.1vh), 36px);
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .order-line[data-size="stage"] .order-verdict {
-  top: -1.1rem;
-  right: 1.2rem;
-  font-size: 26px;
-  border-width: 4px;
+  position: static;
+  grid-column: 1 / -1;
+  justify-self: end;
+  align-self: center;
+  font-size: clamp(28px, min(1.5vw, 2.5vh), 30px);
+  border-width: 3px;
+  padding: 0.08rem 0.5rem;
+  white-space: nowrap;
+  color: var(--foreground);
+  border-color: var(--foreground);
+}
+
+.order-line[data-size="stage"] .order-verdict[data-made] {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .executive-order-stage .order-scrawl {
-  height: 5rem;
+  height: clamp(1.6rem, 3.6vh, 2.6rem);
 }
 
 .executive-order-stage .order-sign-line {
-  font-size: 24px;
+  font-size: clamp(28px, min(1.55vw, 2.6vh), 30px);
 }
