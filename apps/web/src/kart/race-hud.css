@@ -91,30 +91,89 @@
   color: var(--highlight-foreground);
 }
 
-/* Landscape racing: the numbers sit bottom-centre between the pad and Drift,
-   clear of the driving feedback at the top; the banner rises above them. */
+/* Compact top-left race numbers in fullscreen race/grid layouts. */
+.kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-hud {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  translate: none;
+  margin: 0;
+  height: auto;
+  width: fit-content;
+  max-width: 100%;
+  gap: 0.15rem 0.45rem;
+  padding: 0.14rem 0.45rem;
+  border-radius: var(--radius-control);
+  background: color-mix(in oklab, var(--background) 62%, transparent);
+}
+.kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-place strong {
+  font-size: 1.2rem;
+}
+.kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-place span {
+  font-size: 0.72rem;
+}
+.kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-lap,
+.kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-slip {
+  font-size: 0.68rem;
+  padding: 0.06rem 0.38rem;
+  line-height: 1.25;
+}
+.kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-rivals {
+  font-size: 0.66rem;
+  gap: 0.35rem;
+}
+.kart-phone:is([data-layout="race"], [data-layout="grid"])
+  .kart-race-rivals
+  span[data-side] {
+  max-width: 5.5rem;
+}
+.kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-banner {
+  top: calc(100% + 0.25rem);
+  bottom: auto;
+  left: 0;
+  translate: none;
+  font-size: clamp(0.85rem, 3.6vw, 1.2rem);
+  padding: 0.2rem 0.6rem;
+}
+
+/* Landscape racing: keep the HUD anchored inside the top-left stack, never
+   stretching across the middle of the driving view. */
 @media (orientation: landscape) and (max-height: 32rem) {
   .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-hud {
-    position: absolute;
-    z-index: 6;
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    translate: none;
     margin: 0;
     height: auto;
-    bottom: max(0.6rem, env(safe-area-inset-bottom));
-    left: 50%;
-    translate: -50% 0;
     flex-wrap: nowrap;
-    border-radius: var(--radius-panel);
-    padding: 0.2rem 0.8rem;
-    background: color-mix(in oklab, var(--background) 62%, transparent);
+    padding: 0.1rem 0.4rem;
   }
   .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-place strong {
-    font-size: clamp(1.4rem, 8dvh, 2.1rem);
+    font-size: 1.05rem;
   }
   .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-banner {
-    top: auto;
-    bottom: calc(100% + 0.4rem);
-    left: 50%;
-    translate: -50% 0;
+    top: calc(100% + 0.2rem);
+    bottom: auto;
+    left: 0;
+    translate: none;
+    font-size: 0.85rem;
+    padding: 0.16rem 0.55rem;
+  }
+}
+
+@media (max-width: 48rem) {
+  .kart-phone:is([data-layout="race"], [data-layout="grid"]) .kart-race-place strong {
+    font-size: 1.1rem;
+  }
+  .kart-phone:is([data-layout="race"], [data-layout="grid"])
+    .kart-race-rivals
+    span[data-side] {
+    max-width: 4.5rem;
   }
 }
 
