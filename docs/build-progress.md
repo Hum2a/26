@@ -7025,4 +7025,6 @@ Moved shared helpers and context out of component modules and kept existing cons
 
 **Checks before opening the PR:** `npm run typecheck`, `npm run lint`, `npm run check:structure`, `npm run format:check`, `npm run test:release` (75 tests), `npm run test:unit` (954 tests), `npm run content:check` and `npm run build` passed. The local workflow checker also reached the API suite through `npm test`. The build passed its artifact and bundle checks. Playwright was not run.
 
+**Cubic review:** The `GuestPlay` component and its lazy round imports are now in `apps/web/src/play/guest-play-view.tsx`. The existing `./guest-play` import resolves to `apps/web/src/play/guest-play.ts`. Older documentation still mentions the previous `.tsx` filename. The bot nickname heuristic and inherited-key autocorrection both predate this change. Fixing either would change behaviour and is outside this task.
+
 **Next:** Check the PR workflow and Cubic review, then leave the merge to Humza.
