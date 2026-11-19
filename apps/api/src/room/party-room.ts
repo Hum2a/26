@@ -7,6 +7,7 @@ import {
 import {
   acceptKartInputs,
   acceptKartFinish,
+  checkpointKart,
   kartFrames,
   KartInputBuffer,
   releaseKartInputs,
@@ -2674,6 +2675,8 @@ export class PartyRoom extends DurableObject<Env> {
     }
     if (identity.attachment.role === "guest") {
       this.ctx.storage.transactionSync(() => {
+        // A phone reconnecting is a recovery point for the live race.
+        checkpointKart(this.ctx.storage.sql);
         noteGuestSocket(this.ctx.storage.sql, identity.attachment.principalId);
         recordRehearsalConnection(
           this.ctx.storage.sql,
@@ -3031,14 +3034,16 @@ export class PartyRoom extends DurableObject<Env> {
             other.readyState === WebSocket.OPEN &&
             this.attachment(other)?.principalId === attachment.principalId,
         );
-      this.ctx.storage.transactionSync(() =>
+      this.ctx.storage.transactionSync(() => {
+        // A phone dropping out is a recovery point for the live race.
+        checkpointKart(this.ctx.storage.sql);
         recordRehearsalConnection(
           this.ctx.storage.sql,
           attachment.principalId,
           stillConnected,
           Date.now(),
-        ),
-      );
+        );
+      });
     }
     await this.refreshPresence(ws);
   }
@@ -3151,6 +3156,8 @@ export class PartyRoom extends DurableObject<Env> {
           );
         this.flushKartInputs(sql);
         apply(sql);
+        // Host commands (pause, resume, skip, end, settings) save the live race.
+        checkpointKart(sql);
         const clock = publicClock(createSqlStore(sql));
         result = {
           ok: true,
@@ -3488,6 +3495,7 @@ export class PartyRoom extends DurableObject<Env> {
       changed = true;
       // Discard controls observed under a hold before presence can release it.
       this.flushKartInputs(sql);
+      checkpointKart(sql);
       notePresence(store, { controller, stage }, Date.now());
     });
     // A phone coming or going changes only the host's connection counts.

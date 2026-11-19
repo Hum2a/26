@@ -80,6 +80,7 @@ export default defineConfig({
             "test/kart-room.spec.ts",
             "test/kart-device-room.spec.ts",
             "test/kart-items-room.spec.ts",
+            "test/kart-checkpoint.spec.ts",
             "test/kart-lobby.spec.ts",
             "test/kart-track-selection.spec.ts",
             "test/birthday-room.spec.ts",
