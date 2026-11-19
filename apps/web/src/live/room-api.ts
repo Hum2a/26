@@ -9,6 +9,10 @@ import {
   playCommandSchema,
   roomClientErrorSchema,
   transferIssuedSchema,
+  projectorPairedSchema,
+  projectorPairingIssuedSchema,
+  type ProjectorPaired,
+  type ProjectorPairingIssued,
   type GuestSession,
   type LobbyCreated,
   type LobbySnapshot,
@@ -417,11 +421,70 @@ export async function redeemTransfer(input: {
   }
 }
 
+/** Live controls: a one-time code that pairs the projector laptop with this room. */
+export async function issueProjectorPairing(input: {
+  gameId: string;
+  requestId: string;
+}): Promise<ProjectorPairingIssued | { error: string }> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 12_000);
+  try {
+    const response = await fetch(
+      `/api/admin/rooms/${encodeURIComponent(input.gameId)}/projector-pairing`,
+      {
+        method: "POST",
+        credentials: "same-origin",
+        headers: clientApiHeaders({ "content-type": "application/json" }),
+        body: JSON.stringify({ requestId: input.requestId }),
+        signal: controller.signal,
+      },
+    );
+    return await read(
+      response,
+      projectorPairingIssuedSchema,
+      "The pairing code could not be read. Try again.",
+    );
+  } catch {
+    return { error: "The pairing code could not be shown. Try again." };
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+/** Projector: redeems a pairing code; the room sets the presentation cookie. */
+export async function pairProjector(input: {
+  joinCode: string;
+  code: string;
+  requestId: string;
+}): Promise<ProjectorPaired | { error: string }> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 12_000);
+  try {
+    const response = await fetch("/api/stage/pair", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: clientApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify(input),
+      signal: controller.signal,
+    });
+    return await read(
+      response,
+      projectorPairedSchema,
+      "The pairing answer could not be read. Try again.",
+    );
+  } catch {
+    return { error: "This screen could not reach the room. Check the connection." };
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
 async function read<T>(
   response: Response,
   schema: {
     safeParse: (value: unknown) => { success: true; data: T } | { success: false };
   },
+  unreadable = "That response was not a lobby.",
 ): Promise<T | { error: string }> {
   const body: unknown = await response.json().catch(() => undefined);
   if (!response.ok) {
@@ -429,7 +492,7 @@ async function read<T>(
   }
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return { error: "That response was not a lobby." };
+    return { error: unreadable };
   }
   return parsed.data;
 }

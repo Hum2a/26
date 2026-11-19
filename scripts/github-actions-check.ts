@@ -18,13 +18,15 @@ if (files.length === 0) {
 
 console.log(
   dryRun
-    ? "Listing GitHub workflow shell steps."
-    : "Running GitHub workflow shell steps. Checkout and setup actions stay on this machine.",
+    ? "Listing GitHub workflow shell steps for push and pull requests."
+    : "Running GitHub workflow shell steps for push and pull requests. Checkout and setup actions stay on this machine.",
 );
 
 for (const file of files) {
   const relative = path.posix.join(".github", "workflows", file);
-  const runs = parseWorkflowRuns(readFileSync(path.join(workflowDir, file), "utf8"));
+  const runs = parseWorkflowRuns(
+    readFileSync(path.join(workflowDir, file), "utf8"),
+  ).filter((step) => file !== "check.yml" || step.job === "check");
   if (runs.length === 0) {
     console.error(`${relative} has no run steps.`);
     process.exit(1);

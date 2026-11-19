@@ -961,3 +961,25 @@ it("keeps the input heartbeat running when the device wall clock changes", () =>
   expect(send.mock.calls.length).toBeGreaterThan(first);
   view.unmount();
 });
+
+it("always delivers a pedal release made straight after a send, and releases on unmount", () => {
+  vi.useFakeTimers();
+  const send = vi.fn();
+  const race = projectKartRace(
+    createKartRace("release", [{ playerId: "guest", name: "Stand-in driver" }]),
+    "guest",
+    100,
+  );
+  const view = renderHook(() => useKartSocket(race, true, send));
+  act(() => vi.advanceTimersByTime(200));
+  act(() => view.result.current({ ...kartNeutral, gas: true }));
+  act(() => view.result.current({ ...kartNeutral }));
+  act(() => vi.advanceTimersByTime(100));
+  expect(send.mock.lastCall![0]).toMatchObject({ gas: false, brake: false });
+  act(() => view.result.current({ ...kartNeutral, brake: true }));
+  const sequences = send.mock.calls.map((call) => call[0].sequence as number);
+  view.unmount();
+  expect(send.mock.lastCall![0]).toMatchObject({ gas: false, brake: false });
+  const all = [...sequences, send.mock.lastCall![0].sequence as number];
+  for (let i = 1; i < all.length; i++) expect(all[i]!).toBeGreaterThan(all[i - 1]!);
+});

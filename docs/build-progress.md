@@ -7012,3 +7012,283 @@ Typecheck, lint (30 warnings), formatting, content preflight, the production bui
 The full web unit suite finished twice with 952 passes and two failures each time. The failing cases changed between runs. The first run failed the kart tennis-slot assertion and timed out in the guest troll test. The second failed the guest Wordle transfer and Pokémon silhouette fallback assertions. The focused question-authoring suite passed all 22 tests.
 
 The full API run passed 813 tests and skipped four. Its routing suite stopped before collecting tests because Wrangler could not create its default config directory. Rerunning only that suite with a writable `XDG_CONFIG_HOME` passed all four routing tests. Playwright and end-to-end checks were outside this run.
+
+## 19 November 2026 — Night-of sheet and stale event docs
+
+**Status:** documentation only, on `cursor/night-of-docs`.
+
+**Correction to earlier 18–19 November kart entries.** Those notes said the phone-owned kart, Graphics High, input cap, and 80-driver load work were “local commit, not pushed” or “not committed”. They are on `origin/master` (`9a19614` … `efd691c`). Older entries above are left as written.
+
+**What changed.** One printable operator sheet, `docs/night-of.md`, for Humza (Live controls) and Baseer (presenter): morning-of checklist (Workers Paid, Neon autosuspend, production `/admin` on both laptops, hotspot, no deploys), the 42-round `order` from `apps/api/src/questions/packs/birthday/manifest.ts` (ids, titles, mechanics, planner durations, presenter actions, Advance notes), if-it-breaks rows drawn from the runbook, and end-of-night archive / `/r/{gameId}` / result emails. Stale claims removed from `docs/event-runbook.md` (no longer 56 rounds or four drafts including retired Reddit tribunal / Ferrier), `docs/decisions-for-humza.md` (drafts, projector pairing still unbuilt, CI now runs and is red at Playwright), and `docs/readiness-plan-2026-11-18.md` (answer trends merged as PR #41; production is not the 8 November `cbd1e6c` build — last recorded redeploy 19 November 2026 18:36 GMT, including PR #45 and the kart Controls panel). Linked from `docs/README.md` and the root `README.md`. Did not edit `docs/content/*`.
+
+**Files:** `docs/night-of.md` (new), `docs/event-runbook.md`, `docs/decisions-for-humza.md`, `docs/readiness-plan-2026-11-18.md`, `docs/README.md`, `README.md`, this section.
+
+**Checks:** `npm run format:check` passed. `npm run lint` passed (0 errors, 30 existing `react-refresh/only-export-components` warnings; structure check passed). `npm run content:check` passed: demo `demo-2026-09-22`; birthday `birthday-draft` with incomplete drafts `where-are-we` and `ed-or-humza` only. Typecheck, unit tests, and `npm run build` were not run (docs-only). Playwright was not run.
+
+**Unresolved:** Workers Paid on the party Cloudflare account is still unconfirmed from this environment. Physical-device and venue sign-off remain unticked. Chess remains in the default `order` even though it is also catalogue-ready.
+
+**Next:** Humza prints `docs/night-of.md`, confirms Workers Paid, and merges this PR. Do not start the next prompt automatically.
+
+## 19 November 2026 — Review of the direct-to-master kart commits
+
+Reviewed `9223693..efd691c` (phone-owned driving, input cap, tick lateness metering, fixed-beat ticks, back-off).
+
+- **Fixed (low):** `createRollbackPrediction` copied the room's remaining boost whenever it was larger than the phone's. With the room behind the phone, every checkpoint topped the boost back up, so a boost lasted longer by the room's lag. The room's boost is now aged to the phone clock before comparing. Test: `self-prediction.test.ts` "does not top up a spent boost…".
+- **Added test:** `kart.test.tsx` — a pedal release made straight after a send is delivered, unmount sends neutral, sequences stay increasing.
+- **Checked, fine:** `nextTickDueAt` never schedules in the past or under 50 ms ahead, one job per step id (no double fire), pause/hold/skip cancel via generation checks, race end advances instead of scheduling; tick-lateness metering is in-memory only (no extra DO writes); socket random phase/90 ms gap/merge-latest and cleanup; Back to track still snaps; finish time stays device `simulatedAt`; "Race again" resets on a new `raceId`.
+- **Not done:** DO rows-per-tick reduction and `load:realtime` measurement (skipped as risky two days before the party).
+- **Checks:** local Vitest could not start workers in this worktree ("Failed to start threads worker"); typecheck, lint, unit and API tests are left to CI on the PR. None were run locally.
+
+## 19 November 2026 — CI and lint hygiene
+
+Push and pull request checks still run installation, typecheck, lint, formatting, release and unit tests, and build. `.github/workflows/check.yml` runs Chromium installation and the existing Playwright suite in a separate `workflow_dispatch` job that builds its own preview. `npm run github-actions:check` follows the automatic job, and its tests verify the manual gate and dry-run plan.
+
+Moved shared helpers and context out of component modules and kept existing consumer imports working through sibling re-exports. Resolved the chess engine README conflict markers using the newer text. Lint reports zero errors and 15 existing Fast Refresh warnings, all in the excluded wall, chess, kart, design kit and stage play files.
+
+**Checks before opening the PR:** `npm run typecheck`, `npm run lint`, `npm run check:structure`, `npm run format:check`, `npm run test:release` (75 tests), `npm run test:unit` (954 tests), `npm run content:check` and `npm run build` passed. The local workflow checker also reached the API suite through `npm test`. The build passed its artifact and bundle checks. Playwright was not run.
+
+**Cubic review:** The `GuestPlay` component and its lazy round imports are now in `apps/web/src/play/guest-play-view.tsx`. The existing `./guest-play` import resolves to `apps/web/src/play/guest-play.ts`. Older documentation still mentions the previous `.tsx` filename. The bot nickname heuristic and inherited-key autocorrection both predate this change. Fixing either would change behaviour and is outside this task.
+
+**Next:** Check the PR workflow and Cubic review, then leave the merge to Humza.
+
+## 19 November 2026 — Projector pairing code (stretch)
+
+**Status:** stretch feature on `claude/projector-pairing`, PR "Pair the projector with a one-time code". Merge only after a staging rehearsal.
+
+**What now works.** Live controls has a **Projector pairing** card. **Show pairing code** asks the room for a one-time eight-character code (shown as `WXYZ-2345`). On the projector laptop, `/host` setup has a new _No admin login on this laptop?_ form: type the join code in the existing field, the pairing code below, and press **Pair this screen**. The room returns the ordinary presentation credential (fourteen hours, `apps/api/src/credentials/verify.ts`) as the `26_room_presentation` cookie, and setup connects the room as before. The admin-signed-in flow is unchanged.
+
+**Rules.** Codes are single-use, last ten minutes, and pair one room's presentation role only. Only a SHA-256 hash is stored, in a room table `projector_pairing` created on first use (no schema version bump). A new code voids any open code. Redeem attempts are limited per room in memory (burst five, then one every twelve seconds); wrong guesses also count durably and void the open code after ten. Issuing needs the admin session and the room's control cookie, and is limited to a burst of five. The consumed code and the new credential are written in one transaction, with a receipt, before the cookie is set; a retry with the same request id replays it.
+
+**Files.** New: `apps/api/src/credentials/pairing.ts`, `apps/api/src/credentials/pairing-routes.ts` (registered from `apps/api/src/auth/routes.ts`), `apps/web/src/stage/ProjectorPairing.tsx`, `apps/web/src/stage/pairing-code.ts`, `apps/api/test/projector-pairing.spec.ts`, `apps/web/src/stage/ProjectorPairing.test.tsx`. Changed: `apps/web/src/stage/stage-page.tsx`, `apps/web/src/stage/projector.css`, `apps/web/src/admin/live-console.tsx`, their tests, `docs/event-runbook.md`, `docs/data-inventory.md`, `apps/api/src/credentials/README.md`. Outside the listed files, because the credentials live in the room object: two methods on `PartyRoom` (`issueProjectorPairing`, `redeemProjectorPairing`) in `apps/api/src/room/party-room.ts`, two small response schemas in `packages/shared/src/index.ts`, and two fetch helpers in `apps/web/src/live/room-api.ts` (the one room HTTP client).
+
+**Decisions.** Pairing is room-scoped: the projector types the room's join code and the pairing code, so no global code lookup is needed. Issuing is its own receipted HTTP request, not a `/api/rooms/play` command, because it returns a secret. The issue receipt keeps the plain code only while the code is open, so a retried request can show it again; when the code is used, voided or expired, the receipt is replaced with a refusal (an expired code's receipt is scrubbed at the room's next pairing issue or redeem). The rate-limit refusal uses status 429 with the shared `conflict` error code, because the shared error list has no rate-limit code. A paired projector replaces any other open stage socket, as a second `/host` tab already does.
+
+**Checks.** `npx prettier@3.9.8 --write` on the changed files (the repo's pinned version). Dependencies are not installed in this worktree, so `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run test:unit`, `npm run test -w @26/api`, `npm run content:check` and `npm run build` were not run locally; CI (`Check`) runs build, format, lint, typecheck and tests on the PR. Playwright was not run.
+
+**Unverified.** No staging rehearsal yet: pair a real projector browser on staging, present, reload, and confirm the admin laptop keeps its own control and stage access. The host snapshot does not list pairing history; the room audit log records `projector_pairing_issued` and `projector_paired`.
+
+**Next:** CI results on the PR, then a staging rehearsal before Humza merges. Do not start the next prompt automatically.
+
+**Cubic review, first pass (same day).** All 13 findings were valid and are fixed in one follow-up commit:
+
+- The API spec now runs in the `room` Vitest project. It uses the local admin proof instead of a module mock.
+- `vite dev` sends `/api/stage/pair` to the Worker, because the Node auth loader has no room bindings.
+- A refused redeem writes a receipt, so retrying the same request does not count as a second guess.
+- Spent codes are scrubbed from issue receipts.
+- The routes reuse the stream-limited `readJson`.
+- A used or voided code gets one "no longer valid" message.
+- The Live controls card stops showing the old code while it asks for a new one. It also keeps the request id after a failed attempt.
+- The projector pairing form reports whether the room then connected, and it reappears after the screen loses access.
+- Pairing calls have their own fallback message for an unreadable response.
+- The credentials README table now shows 12 and 14 hours.
+- The runbook says a paired projector cannot be revoked.
+
+Files outside the original list: `apps/api/vitest.config.ts` and `apps/web/vite.config.ts`. Checks: the pinned Prettier on the changed files. Typecheck, lint and tests are again left to CI.
+
+## 19 November 2026 — Phone polish for Where are we? and Ed or Humza?
+
+**Status:** complete on branch `antigravity/bespoke-rounds-phone-polish` (PR #53 into `master`, merged with latest `origin/master`).
+
+### Files and interfaces
+
+- `apps/web/src/play/designs/ed-or-humza-assign.ts` — added `lockSwipeAxis`, `swipeThresholdPx`, `swipeMaxSlope`, velocity-aware `swipeDecision` (fast flicks and slow drags across 320–430 px cards), `swipeProgress`, `undoPlacements`, and `isLongQuote`, with finite-coordinate guards.
+- `apps/web/src/play/designs/ed-or-humza.tsx` & `apps/web/src/play/designs/ed-or-humza.css` — axis-locked horizontal swipe (`touch-action: pan-y`, pointer capture only after horizontal lock, `pointercancel` never commits), `requestAnimationFrame` transform/opacity-only drag tracking with single `offsetWidth` read on `pointerdown`, GPU-composited directional swipe stamps, guarded `undoLast` restoring the previous card/action without emptying history, expandable long quotes in the review pile (`aria-expanded`), >= 48 px (`3rem`) buttons across every control, safe-area bottom padding with sticky inline submit fallback, explicit two-column landscape layout (`.ed-main` / `.ed-controls`), and guarded single-send submit.
+- `apps/web/src/play/map-guess.tsx` & `apps/web/src/play/map-guess.css` — added `clampMapPin` for both tap-to-drop and "Place pin at map centre" after panning/zooming, refined touch/gesture isolation (`touch-action: none`, `overscroll-behavior: none`, `gesturestart`/`gesturechange`, `ctrlKey` wheel zoom lock, and 6 px tap-jitter allowance so iOS Safari synthetic clicks survive micro-movement), `pointer-events: none` / `interactive: false` on zoomed country/city labels, subtle centre crosshair reticle, styled >= 48 px zoom and "Place pin at map centre" controls, explicit `.guess-map-frame` height (`clamp(...)`) so standalone maps never collapse, and `light-dark()` / theme-variable ocean, landmass, label, and Leaflet chrome colours so the map never flashes white on dark themes.
+- `apps/web/src/play/designs/where-are-we.tsx` & `apps/web/src/play/designs/where-are-we.css` — portalled the clue photo lightbox to `document.body` (`z-index: 120`, `role="dialog"`, `aria-modal="true"`, explicit >= 48 px Close button, backdrop tap, `Escape` key, `Tab` focus trap, focus restoration, safe-area insets), reserved coordinate readout height (`min-height: 1.35em`) to prevent CLS on first pin drop, and replaced the overlapping landscape grid with `.where-header` / `.where-footer` + `.where-map-slot` so the Send button stays visible in portrait and landscape.
+- Extended Vitest + Testing Library coverage in `ed-or-humza-assign.test.ts`, `ed-or-humza.test.tsx`, `where-are-we.test.tsx`, and `map-guess.test.tsx`.
+
+### Cubic review follow-up
+
+All 5 Cubic findings were addressed in commit `4b68cc4` (confirmed resolved by Cubic): moved default `clamp(...)` height to `.guess-map-frame`, unified `lockSwipeAxis` and `swipeDecision` on `swipeMaxSlope = 0.85`, added `Tab` focus trapping inside the modal clue lightbox, added `min-height: 1.35em` on `.where-coords`, and strengthened the post-zoom longitude wrapping test.
+
+### Commands and results
+
+- `npm run typecheck` — passed.
+- `npm run lint` — passed (0 errors, structure check passed).
+- `npm run format:check` — passed.
+- `npm run test:unit` — passed (209 files, 962 tests before merge; affected suite re-verified after Cubic follow-up and merge).
+- `npm run content:check` — passed for `demo (demo-2026-09-22)` and `birthday (birthday-draft)`.
+- `npm run build` — passed (secrets scan, bundle budget, and `content:check`).
+- `npm run test -w @26/api` — not run (`apps/api` and `packages/shared` were not modified by this branch).
+
+### Manual verification & remaining limitations
+
+- Live browser visual verification and 320 px / 390 px before/after screenshots could not be captured in this environment because Chrome DevTools remote debugging was not active (`DevToolsActivePort` ENOENT), and Playwright/E2E runners are prohibited for this task.
+- Real party content for `where-are-we` (clue photo, place name, exact coordinates) and `ed-or-humza` (confirmed speaker for 18 quotes) remains intentionally untouched in `apps/api/src/questions/packs/birthday/`.
+
+## 19 November 2026 — 80-bot birthday rehearsal, and faster votes
+
+Status: a full local rehearsal of the saved birthday running order with 80 bots, plus one fix. Branch `batch-guest-value-snapshots`, not merged. Nothing deployed.
+
+**How it ran.** Local dev server, agent admin sign-in, Admin → Home → Fresh rehearsal: birthday running order, 80 bots, automatic answers, kart traffic, 8-second answering window. All 42 questions ran to the podium. Questions 4 and 33 were skipped by hand (see below).
+
+**Fix: votes, estimates, ranks, text, reactions and settings now share the 30 ms flush.** Choice answers already queued the answering phone into the shared broadcast flush (`ff9c8d8`). `acceptGuestValue`, `acceptReaction` and `acceptPlayerChoice` still built a full private snapshot, statistics included, before every acknowledgement. On the apology vote with 80 bots, replies took about 11 seconds at the 95th percentile and bots were refused as late. With the change, Room health showed the room handling 16 messages a second instead of 8, statistics builds falling from 8.8 to 1.2 a second, and reply p95 at about 2 seconds on the local dev server. Test: `rounds.spec.ts` "acknowledges an estimate before batching the phone’s own accepted view, also on retry".
+
+**Found, not fixed: the two knockout brackets are too long for 80 guests.** `apology-video-auction` and `heathrow-search-query` use `flow: { kind: "tournament" }` with the default `candidateMode: "all"`. Every entry enters the bracket and matches run one at a time (`packages/shared/src/party-scoring.ts`), so 80 entries make 79 matches of about 20 seconds, roughly 25 minutes per question. Needs an owner decision (cap the bracket, or shortlist).
+
+**Not a game fault:**
+
+- Wordle bots kept guessing into the reveal and were refused. Bot behaviour.
+- The rehearsal runner advances every collect phase after the answering window, so the kart race ended after 8 seconds. Rehearsal setting.
+- An 80-bot kart race from one browser tab through the Vite dev server froze the dev server. Every bot message is proxied by the local Vite process, which does not exist on Cloudflare. Kart load at 80–100 drivers is measured on real Cloudflare in the entry above.
+
+Checks: targeted room specs 7 files / 34 tests passed; `npm run typecheck` passed; `npm run lint` 0 errors (30 existing warnings), structure passed; Prettier clean on the changed files.
+
+Next: decide the bracket size, merge the branch, deploy to staging, and rerun this rehearsal there.
+
+## 19 November 2026 — Ed or Humza real photos
+
+Status: added the supplied photographs of Ed and Humza to the existing `ed-or-humza` round. Speakers stay unassigned; the question remains a draft and is still out of the running order. No deployment.
+
+### Files / interfaces
+
+- `apps/web/public/assets/questions/ed-or-humza/{ed,humza}.webp` — 512×512 face crops for phone buttons and pile headers.
+- `apps/web/public/assets/questions/ed-or-humza/{ed,humza}-portrait.webp` — 675×900 portraits for the projector columns.
+- Authored `media` on `packs/birthday/ed-or-humza.ts` (`ed`, `humza`, `ed-portrait`, `humza-portrait`) with credit “Photo supplied by Humza (private use)” and alt “Ed” / “Humza”.
+- Phone and stage layouts in `apps/web/src/play/designs/ed-or-humza.tsx` / `.css`.
+- `packPublicAssets` / `edOrHumzaAssets` so `content:check` fails if those files are missing, including while the round is a draft.
+- Design-bench fixture still uses labelled stand-in quotes; it renders the real photos.
+- Credits: `docs/content/question-image-credits.md`.
+
+### Decisions / defaults
+
+- EXIF/GPS stripped; WebP, not the camera JPEGs. Ed is the hillside selfie; Humza is the sunset portrait. Not swapped.
+- Avatars are decorative beside the visible names (empty `alt` on buttons) so the control name stays “Ed” / “Humza”. Projector portraits use alt “Ed” / “Humza”.
+- Phone preloads the two avatars; the projector also preloads the portraits. Images use `decoding="async"`, width/height and `aspect-ratio` so swipe/drag does not reflow.
+
+### Commands and results
+
+- `npm run typecheck` — passed.
+- `npm run lint` — 0 errors, 30 existing warnings; structure check passed.
+- `npm run format:check` — passed.
+- `npm run test:unit` — 210 files / 956 tests passed.
+- `npx vitest run --project auth test/ed-or-humza.spec.ts test/birthday-assets-prices.spec.ts` in `apps/api` — 9 passed.
+- `npm run content:check` — passed; incomplete drafts: `where-are-we` (photo + coordinates), `ed-or-humza` (18 speakers).
+- `npm run build` — passed, including gzip budgets (entry JS 222,610 / 260,000; entry CSS 28,208 / 34,000; total JS 1,490,434 / 1,650,000). Photos are public static files, not JS.
+
+### Manual verification
+
+Headless screenshots of `/design?q=ed-or-humza` (dev only): phone collect with circular avatars on the Ed/Humza buttons and pile chips; projector collect and reveal with a portrait heading each column. 320–430 CSS pixel layout was not measured in a physical device; the 390-wide bench screenshot is the phone evidence. Authenticated room play was not exercised.
+
+### Unresolved
+
+Speakers still need Humza’s assignments before the round can leave draft. `where-are-we` is still missing its clue photo and coordinates.
+
+### Next stage
+
+Set `speaker` on each quote when Humza confirms them, then add the round to Running order if wanted.
+
+### 19 November 2026 — Speakers confirmed
+
+Humza assigned every quote. `speaker` is now `humza` for quote-01, 02, 04, 05, 06, 18 and `ed` for quote-03, 07–17. Quote wording is unchanged. `makeEdOrHumza` derives the private truth, so the round is `ready` and no longer flagged by `content:check`. It stays out of `manifest.ts` `order`. Public previews and collect snapshots still omit `truth` / `speaker`; the projector only groups quotes after reveal. Scoring on the confirmed key: 18/18 → 80, all-Ed → 53 (12/18), all-Humza → 26 (6/18).
+
+Checks for this speaker pass: `typecheck` passed; `lint` 0 errors, 30 existing warnings; `format:check` passed; `test:unit` 210 files / 956 tests; API `ed-or-humza.spec.ts` and `party-concepts.spec.ts` passed; `content:check` passed with only `where-are-we` incomplete; `build` passed including gzip budgets. Next: add the round to Running order only if Humza wants it there.
+
+### 19 November 2026 — PR #49 conflict resolution
+
+Merged `origin/master` into the PR branch. Kept the photo assets, decorative avatars, stage portraits and confirmed speakers alongside the newer drag and flick handling, undo and expandable review piles. Combined the review-pile tests and kept both sets of progress entries.
+
+The four focused web test files passed (16 tests), along with `npm run lint` (0 errors, 15 existing warnings), `npm run format:check`, `npm run content:check` and `npm run build`. Content preflight still lists `where-are-we` as incomplete. The complete local web and Worker suites were started. Playwright was not run. Next is the PR check and Humza's merge decision.
+
+## 19 November 2026 — Projector readability pass over the birthday running order
+
+**Status:** complete on `antigravity/stage-readability`.
+
+**What changed.** Audited all 42 rounds in `apps/api/src/questions/packs/birthday/manifest.ts` `order` (at `surface=stage`, `phase=collect` and `phase=reveal`) plus the between-rounds scores screen, answer-trends side panel and final podium at both `1920×1080` and `1280×720`. Applied stage-only layout and typography fixes so prompts, options, reveals, headers, badges, scores and trend cards stay at or above 28 px at 1080p and fit inside the 1080p and 720p projector viewports without clipping or hiding the prompt:
+
+- **Stage tokens and shared chrome (`apps/web/src/stage/tokens.css`, `projector.css`, `apps/web/src/play/designs/kit.css`):** preserved the stage baseline (`40px` body, `clamp(72px, 5.2vw, 96px)` prompt, `120px` timer) while scaling `.skin-panel`, `.stage-answer`, `.stage-option`/`.stage-score` (`>= 28 px`), `.design-tag` (`>= 28 px`) and `.design-stage-prompt` with both `vw` and `vh` bounds so standard and bespoke rounds fit 1080p and 720p. Styled standard question explanations (`p.stage-answer` inside `.skin-panel`) as readable sans-serif copy rather than display-sized headings.
+- **Standard choice, rank, image and push-your-luck rounds (`apps/web/src/stage/projector.css`):** laid out 4-option `VoteBoard` rows (`favourite-pokemon`, `how-italian-is-humza`) and standard rank option lists (`rank-driving-sins`) in 2×2 grids with `overflow-wrap: normal; word-break: normal` and reserved inline-end space for option artwork so labels never break mid-word or collide with images. Placed `QuestionImage` questions (`accommodation-01`, `accommodation-02`, `accommodation-03`) in a side-by-side 2-column stage grid with a framed `3 / 2` cover photo on the left and prompt + 2×2 options on the right, eliminating letterboxing and vertical overflow. Raised `GuestPush` (`cursed-search-history`) stage address bar, bank badge and raid banner above 28 px.
+- **Prompts preserved on reveal (`apps/web/src/play/designs/ballot-paper.tsx|.css`, `whos-that-pokemon.tsx|.css`):** kept `StagePrompt` visible during `reveal` in `BallotStage` (`mock-election`), laid out `.ballot-results` in a 2-column grid (collapsing to 1 column below `800px`) and removed `text-overflow: ellipsis` from `.ballot-result-name` so `"Official Monster Raving Loony Party"` is never truncated. Kept the `"Who’s that Pokémon?"` prompt visible during `reveal` in `PokeStage` (`whos-that-pokemon`) with `"It’s Jigglypuff!"` displayed below it.
+- **Bespoke stage designs (`executive-order.css`, `now-playing.css`, `scripture.css`, `number-plate.css`, `rage-meter.css`, `red-blue-pill.css`, `trolley-lever.css`, `bin-unmasked.css`, `deed-poll.css`, `redacted-file.css`, `glyph.css`, `who-said-it.css`):** raised sub-28 px stage captions, headers, stamps, signature lines, plate stars and SVG track labels (`62px` viewBox units) to `>= 28 px`; switched stage `executive-order` colours to theme tokens (`--highlight`, `--surface-foreground`) and laid out `.order-list` in a 2×2 grid with full-width country names (`overflow-wrap: normal`) and a shared second row for voter bubbles and the verdict stamp; compacted vertical gaps and stage artwork heights so every round fits 1080p and 720p cleanly.
+- **Between-rounds scores, final podium and answer-trends panel (`apps/web/src/stage/projector.css`):** raised all scoreboard, podium and `.projector-trends` labels, column headers (`5.75rem` place column so `PLACE` and `PLAYER` have clean separation), step names, points and trend bars to `>= 28 px` while fitting top-10 standings and the 3-step podium at 1080p and 720p.
+- Left `where-are-we*`, `ed-or-humza*`, kart files, chess features and all question content untouched.
+
+**Files:** `apps/web/src/stage/tokens.css`, `apps/web/src/stage/projector.css`, `apps/web/src/play/designs/kit.css`, `apps/web/src/play/designs/ballot-paper.tsx`, `apps/web/src/play/designs/ballot-paper.css`, `apps/web/src/play/designs/whos-that-pokemon.tsx`, `apps/web/src/play/designs/whos-that-pokemon.css`, `apps/web/src/play/designs/executive-order.css`, `apps/web/src/play/designs/now-playing.css`, `apps/web/src/play/designs/scripture.css`, `apps/web/src/play/designs/number-plate.css`, `apps/web/src/play/designs/rage-meter.css`, `apps/web/src/play/designs/red-blue-pill.css`, `apps/web/src/play/designs/trolley-lever.css`, `apps/web/src/play/designs/bin-unmasked.css`, `apps/web/src/play/designs/deed-poll.css`, `apps/web/src/play/designs/redacted-file.css`, `apps/web/src/play/designs/glyph.css`, `apps/web/src/play/designs/who-said-it.css`, `docs/build-progress.md`.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` passed (0 errors, 15 existing Fast Refresh warnings, structure check passed). `npm run format:check` passed. `npm run test:unit` passed (209 files, 954 tests; stage unit suite 11 files, 38 tests re-verified after Cubic follow-up). `npm run content:check` passed. `npm run build` passed (993 build files checked for secrets; web bundle within gzip budgets: 222,595 B entry JS, 28,208 B entry CSS). Playwright was not run.
+
+**Manual verification:** inspected before and after screenshots across all 42 rounds in `manifest.ts` `order` (`collect` and `reveal`) plus between-rounds scores, final podium and answer-trends side panel at `1920×1080` and `1280×720`. Physical projector hardware at the venue remains to be checked on the night.
+
+**Next:** Open PR into `master` for Humza to review and merge. Do not start the next prompt automatically.
+
+## 19 November 2026 — Where are we? (Agadir) and birthday running order
+
+**Status:** complete on `cursor/final-content-drop`. No deployment.
+
+**What now works.** `where-are-we` is a ready map-guess round: Agadir seafront, Morocco, with a credited Wikimedia Commons promenade photo and OSM Corniche Tawada coordinates. The birthday default `order` is 49 rounds: every ready catalogue entry except the two knockout brackets (`apology-video-auction`, `heathrow-search-query`), which stay in the catalogue. `kart-sprint` remains last; `chess-battle` stays after the dials.
+
+### Files / interfaces
+
+- `apps/api/src/questions/packs/birthday/where-are-we.ts` — `target.known`, required `question` media, reveal line, source notes. No TODO owner gaps.
+- `apps/web/public/assets/questions/where-are-we/photo.webp` — 1200 × 900 WebP, EXIF/GPS stripped.
+- `apps/api/src/questions/packs/birthday/manifest.ts` — `order` only.
+- `docs/content/question-image-credits.md` — Commons row for Elmschrat / CC BY-SA 3.0.
+- `docs/content/where-are-we.md`, `birthday-answer-key.md`, `birthday-running-order.md` — presenter export.
+- Tests: `map-guess-score.spec.ts` (public projection omits Agadir / coordinates), order assertions in `ed-or-humza.spec.ts`, `new-party-concepts.spec.ts`, `party-concepts.spec.ts`.
+
+### Decisions / defaults
+
+- Photo: [File:01-beach-agadir-morocco.JPG](https://commons.wikimedia.org/wiki/File:01-beach-agadir-morocco.JPG), Elmschrat, CC BY-SA 3.0. Credit on screen: “Elmschrat · CC BY-SA 3.0 · via Wikimedia Commons”. Alt does not name the place.
+- Target: OSM relation 5393745 Corniche Tawada centroid **30.4083° N, 9.60199° W**, label “Agadir seafront, Morocco”. Reveal cites the post-1960 rebuild and ~10 km beach (Wikipedia Agadir).
+- Knockout brackets left out of `order` because ~80 guests would run ~25 minutes each. Ready extras added and similar series (real-name, inflation, guess-tab, dial, guess-the-guest) spread. Second kart (`kart-park-grand-prix`) sits in the late show with `ed-or-humza` between it and the closer.
+- Admin show-length estimator (`estimateRoundMs` + `formatShowLength`): **about 56 min** of scripted beats for 49 rounds. That is not wall-clock with host talk, one-at-a-time options, or 80-phone karts.
+
+### Commands and results
+
+- `npm run content:check` — passed; **no incomplete birthday rounds**.
+- `npm run typecheck` — passed.
+- `npm run lint` — 0 errors, 15 existing Fast Refresh warnings; structure check passed.
+- `npm run format:check` — passed.
+- `npm run test:unit` — 211 files / 975 tests passed.
+- `npm run test -w @26/api` — 144 files / 829 tests passed (existing workerd teardown noise on alarm cancel).
+- `npm run build` — passed; 1004 files scanned; gzip budgets: entry JS 222,742 / 260,000; entry CSS 28,208 / 34,000; total JS 1,493,575 / 1,650,000.
+- Playwright was not run.
+
+### Manual verification
+
+Clue photo inspected after resize (promenade + beach, no readable “Agadir” text). Coordinates taken from Nominatim/OSM, not guessed. Live phone/projector pin drop was not exercised in a browser. Public projection tests confirm the target stays off guest/stage question JSON until reveal.
+
+### Unresolved
+
+`apology-video-auction` and `heathrow-search-query` remain ready in the catalogue. Humza can still reorder in Admin. Presenter export still prints `null /100` and `Closer to undefined` for some mechanics (separate Codex fix). Physical projector and 80-guest timing unverified.
+
+### Next stage
+
+Open the PR into `master` for Humza to review and merge. Do not start the next prompt automatically.
+
+## 19 November 2026 — Photo wall load timeout and host notice
+
+The four-second projector timeout and the host's “Couldn't display” notice were already on `origin/master` in `e1e5afa`. Updated `docs/photo-wall-plan.md` to mark both built. The projector sends the existing error report, and the room advances through the normal rotation. The host can see the flag under Admin → Photo wall, including in the shown history.
+
+`stage-wall.test.tsx` now checks the exact four-second boundary and one report per post in both spotlight and corner placement. `wall-failure.spec.ts` checks that a report after four seconds advances straight to the next photo and records the failed post in the host history. The existing admin test covers the note.
+
+Checks: `npm run typecheck`, `npm run lint` (15 existing warnings), `npm run format:check`, `npm run content:check` and `npm run build` passed. The projector and admin wall tests passed (23 tests). `npm run test -w @26/api` passed (829 tests), including all 10 room wall-failure tests. No Playwright run or physical projector check. The existing `where-are-we` draft remains incomplete.
+
+`npm run test:unit` reported a failure in the `where-are-we` map-pin test, which also failed in [CI on the branch base](https://github.com/Hum2a/26/actions/runs/44616795788). A kart test failed on the first full run and passed on its focused rerun (28 tests passed).
+
+Next: Humza reviews the PR.
+
+## 19 November 2026 — Merge master and Cubic on PR #57
+
+Merged `origin/master` into `cursor/final-content-drop` (no rebase). The only conflict was `docs/build-progress.md`; both the Agadir/order section and the photo-wall section were kept. Master did not change the birthday `order`. Re-ran `npm run content:export`.
+
+Cubic: recoded the clue to 3:2 (1200×800) so the phone frame does not crop the promenade; documented `photo.png` in credits; updated `docs/content/ed-or-humza.md`. Left exporter `revealLine` bugs and the `ed-or-humza` order inclusion as Humza requested.
+
+Checks: typecheck passed; lint 0 errors / 15 existing warnings; format:check passed; content:check passed with no incomplete rounds; test:unit 211 files / 976 tests; API suite 143/144 files then the timed-out `room.spec.ts` HTTP 401 case passed on rerun (17/17); build passed (gzip entry JS 222,740). Playwright not run. No deploy.
+
+## 19 November 2026 — Staging dress rehearsal with 80 bots
+
+**Status:** rehearsal run on staging, report written, two small fixes. Branch `claude/staging-rehearsal-report`. No deploy, no production access.
+
+**What happened.** Full report in `docs/rehearsal-2026-11-20-staging.md`. A fresh rehearsal room ran the saved 42-round birthday order with 80 Developer tools bots to the podium in about 46 minutes. Ordinary rounds passed at 80/80. Both knockout rounds (`apology-video-auction`, `heathrow-search-query`) ran 79 matches each. The second overloaded the room: "Durable Object is overloaded", two storage-timeout resets, mass disconnects, refused late ballots, and Live controls locked for about two minutes. Answer acks rose from 87 ms in a fresh room to 8–15 s and then over 20 s as stored answers grew. A second room with 80 bot drivers took 4.4–7.8 s of CPU on the race-start alarm, dropped every socket, and both races ended within 20–40 s with no finishers. Mid-race stage updates were 9.3 a second. Archive and `/r/{gameId}` passed in a kart-only lobby with one test guest. No result email was sent (no recipient named). Trolls, chess and answer trends were not exercised by bots. Tail: no rows-written or CPU-limit errors.
+
+**Fixes in this branch.**
+
+- `apps/api/src/questions/vote.ts`: the knockout ballot instruction no longer says "Pick the worse search" on every knockout. Test: `apps/api/test/party-polish-room.spec.ts` now also runs `apology-video-auction` and asserts the shared instruction.
+- `apps/api/src/developer/bots.ts`: `liveBirthdayGame` lets a kart-only lobby take bots while it is in the lobby phase, and still refuses once the race runs. Test: `apps/api/test/developer-room.spec.ts`.
+
+**Unresolved (ranked in the report):** race-start CPU spike and full disconnect with 80 drivers; per-command room-wide rebuild including full-table `readStatsSource`; knockout length with 80 entries (needs a decision); heartbeat drops and host lock-out under load; misleading archive copy on rehearsal Results; Better Auth shared rate-limit bucket.
+
+**Checks:** not run locally. This worktree's `npm install` had not finished after about 1.5 hours, so `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run test:unit`, `npm run test -w @26/api`, `npm run content:check` and `npm run build` were left to CI on the PR. Playwright was not run.
+
+**Next:** Humza reads the report, decides on knockout entry caps, and the race-start and per-answer cost fixes are scheduled before a repeat 80-bot run. Do not start the next prompt automatically.

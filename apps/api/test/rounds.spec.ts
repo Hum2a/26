@@ -189,6 +189,58 @@ describe("slider and ranking rounds", () => {
     expect((await stub.scoreRecord()).total).toBe(finalScore.total);
   });
 
+  it("acknowledges an estimate before batching the phone’s own accepted view, also on retry", async () => {
+    const created = await createRoom();
+    const stub = room(created.gameId);
+    await stub.startDemo({
+      ...control(created),
+      requestId: crypto.randomUUID(),
+      nowMs: Date.now(),
+    });
+    const joined = await stub.joinPlayer({
+      nickname: "Amina",
+      requestId: crypto.randomUUID(),
+      now: new Date().toISOString(),
+    });
+    if (!joined.ok) {
+      throw new Error(joined.message);
+    }
+    await reach(stub, created, "letters", "collect");
+    const socket = await connect(stub, created.gameId, guestCookie(joined));
+    await nextMatching(socket, (message) => message.kind === "snapshot");
+    try {
+      const requestId = crypto.randomUUID();
+      const command = JSON.stringify({
+        kind: "command",
+        name: "estimate",
+        requestId,
+        value: 8,
+      });
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        let acknowledged = false;
+        const view = nextMatching(socket, (message) => {
+          if (message.kind === "ack" && message.requestId === requestId) {
+            expect(message.accepted).toBe(true);
+            acknowledged = true;
+          }
+          const snapshot = message.snapshot as
+            | { play?: { selfAnswer?: { kind?: string; value?: number } | null } }
+            | undefined;
+          return (
+            message.kind === "snapshot" &&
+            snapshot?.play?.selfAnswer?.kind === "slider" &&
+            snapshot.play.selfAnswer.value === 8
+          );
+        });
+        socket.send(command);
+        await view;
+        expect(acknowledged).toBe(true);
+      }
+    } finally {
+      socket.close();
+    }
+  });
+
   it("writes no ledger row when a slider is skipped before the reveal", async () => {
     const created = await createRoom();
     const stub = room(created.gameId);

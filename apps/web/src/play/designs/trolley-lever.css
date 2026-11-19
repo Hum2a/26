@@ -109,14 +109,18 @@
 }
 
 .trolley-stage .trolley-scene {
-  max-height: 26vh;
+  max-height: 22vh;
   margin: 0 auto;
   width: auto;
   max-width: 100%;
 }
 
+.trolley-stage .trolley-label {
+  font-size: 62px;
+}
+
 .trolley-stage {
-  gap: 1.25rem;
+  gap: clamp(0.6rem, 1.4vh, 1rem);
 }
 
 .trolley-stage-options {

@@ -1,16 +1,7 @@
-import { Navigate, useSearchParams, type RouteObject } from "react-router";
-import { HomePage } from "./home/home-page";
+import type { RouteObject } from "react-router";
+import { HomeEntry } from "./home/home-entry";
 import { NotFoundPage } from "./not-found-page";
 import { RouteError } from "./ui/route-error";
-
-function HomeEntry() {
-  const [params] = useSearchParams();
-  return params.has("room") ? (
-    <Navigate replace to={`/join?${params.toString()}`} />
-  ) : (
-    <HomePage />
-  );
-}
 
 const routes: RouteObject[] = [
   { path: "/", element: <HomeEntry /> },

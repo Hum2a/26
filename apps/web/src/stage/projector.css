@@ -32,6 +32,15 @@
   border-top: 1px solid var(--line);
   padding-top: 1.5rem;
 }
+.projector-connect-column {
+  display: grid;
+  gap: 2rem;
+  min-width: 0;
+}
+.projector-pairing h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
 .projector-preflight {
   border-inline-start: 1px solid var(--line);
   padding-inline-start: 2rem;
@@ -47,11 +56,11 @@
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 1.2rem;
-  min-height: 90dvh;
+  gap: clamp(0.65rem, 1.5vh, 1.1rem);
+  min-height: 88dvh;
   align-content: start;
   min-width: 0;
-  padding-bottom: 3rem;
+  padding-bottom: 1rem;
 }
 .projector-top {
   display: flex;
@@ -62,7 +71,7 @@
   min-width: 0;
 }
 .projector-top > p {
-  font-size: 40px;
+  font-size: clamp(30px, min(2.1vw, 3.6vh), 38px);
 }
 .stage-clock-compact {
   display: flex;
@@ -200,8 +209,324 @@
   overflow-wrap: anywhere;
 }
 .stage-presentation .skin-panel {
-  padding: clamp(1rem, 2vw, 2rem);
+  padding: clamp(0.85rem, min(1.8vw, 2.5vh), 1.65rem);
   min-width: 0;
+  font-size: clamp(30px, min(2.1vw, 3.6vh), 38px);
+  line-height: 1.2;
+}
+.stage-presentation .skin-panel > h2 {
+  font-size: clamp(32px, min(2.3vw, 4vh), 44px);
+}
+.stage-presentation .skin-panel .stage-prompt {
+  font-size: clamp(38px, min(3.3vw, 5.5vh), 62px);
+}
+.stage-presentation .skin-panel > div {
+  margin-top: clamp(0.45rem, 1.1vh, 0.75rem);
+}
+.stage-presentation .skin-panel > div > .grid {
+  gap: clamp(0.45rem, 1.1vh, 0.85rem);
+}
+.stage-presentation .skin-panel > div > p.stage-answer {
+  margin-top: 0.45rem;
+  font-family: var(--font-sans);
+  font-size: clamp(28px, min(1.8vw, 3.1vh), 34px);
+  line-height: 1.22;
+  color: var(--stage-body);
+}
+/* Side-by-side layout when a standard question includes a QuestionImage (e.g. accommodation-01..03). */
+.stage-presentation .skin-panel > div:has(> figure) {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(0.85rem, 2vw, 1.75rem);
+  align-items: start;
+}
+.stage-presentation .skin-panel > div:has(> figure) > figure {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.55rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-panel, 1rem);
+  background: color-mix(in srgb, var(--background) 60%, var(--surface));
+}
+.stage-presentation .skin-panel > div:has(> figure) > figure img {
+  width: 100% !important;
+  max-height: clamp(14rem, 42vh, 26rem) !important;
+  aspect-ratio: 3 / 2;
+  object-fit: cover !important;
+  border-radius: calc(var(--radius-panel, 1rem) - 0.35rem);
+}
+.stage-presentation .skin-panel > div:has(> figure) > figure figcaption {
+  font-size: clamp(28px, 1.5vw, 30px) !important;
+  line-height: 1.18;
+  color: var(--muted);
+}
+.stage-presentation .skin-panel > div:has(> figure) > p.stage-answer {
+  grid-column: 1 / -1;
+}
+.stage-presentation .skin-panel > div:has(> figure) .vote-board-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.stage-presentation .skin-panel > div:has(> figure) .vote-option-label {
+  font-size: clamp(28px, min(1.8vw, 3.1vh), 34px);
+}
+/* Standard rank/option lists on the projector use a 2-column grid to avoid tall stacks. */
+.stage-presentation ul.grid:has(> li.stage-option) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.35rem, 0.8vh, 0.6rem) 1rem;
+}
+.stage-presentation li.stage-option,
+.stage-presentation p.stage-option {
+  padding: clamp(0.25rem, 0.6vh, 0.5rem) 0.85rem;
+  font-size: clamp(28px, min(1.8vw, 3vh), 34px);
+  line-height: 1.15;
+}
+.stage-presentation .skin-panel > div > .grid:has(> ul.grid + p + p.stage-answer) {
+  gap: clamp(0.25rem, 0.6vh, 0.5rem);
+}
+.stage-presentation
+  .skin-panel
+  > div
+  > .grid:has(> ul.grid + p + p.stage-answer)
+  > p.stage-answer {
+  font-size: clamp(28px, min(1.85vw, 3vh), 36px);
+  line-height: 1.14;
+}
+.stage-presentation
+  .skin-panel
+  > div
+  > .grid:has(> ul.grid + p + p.stage-answer)
+  > ul.grid:last-of-type {
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 0.35rem 0.85rem;
+  font-size: clamp(28px, min(1.6vw, 2.5vh), 30px);
+  line-height: 1.14;
+}
+/* Stage VoteBoard: 4-option rows become a 2x2 grid so labels and artwork never crush. */
+.stage-presentation .vote-board {
+  gap: clamp(0.35rem, 0.9vh, 0.65rem);
+}
+.stage-presentation .vote-board-rows {
+  gap: clamp(0.45rem, 1vh, 0.75rem);
+}
+.stage-presentation .vote-board-row {
+  gap: clamp(0.45rem, 1.1vw, 0.9rem);
+}
+.stage-presentation .vote-board-row:has(> :nth-child(4)) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.stage-presentation .vote-option {
+  min-width: 0;
+  min-height: clamp(4.6rem, 12vh, 9.25rem);
+  padding: clamp(0.45rem, min(1.1vw, 1.5vh), 0.9rem) clamp(0.65rem, 1.3vw, 1.1rem);
+  gap: clamp(0.2rem, 0.55vh, 0.45rem);
+}
+.stage-presentation .vote-board[data-revealed] .vote-option {
+  min-height: clamp(4.2rem, 10.5vh, 8.25rem);
+}
+.stage-presentation .vote-option-label {
+  font-size: clamp(28px, min(2vw, 3.4vh), 40px);
+  line-height: 1.12;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+.stage-presentation .vote-option-total {
+  font-size: clamp(32px, min(2.2vw, 3.8vh), 42px);
+}
+.stage-presentation .vote-option-letter {
+  font-size: clamp(28px, min(1.7vw, 2.9vh), 32px);
+  min-width: 1.4em;
+  height: 1.4em;
+}
+.stage-presentation .vote-option:has(.question-option-image) {
+  padding-inline-end: clamp(5rem, min(9.5vw, 14vh), 8rem);
+}
+.stage-presentation .vote-option:has(.question-option-image) .vote-option-head {
+  padding-inline-end: 0;
+}
+.stage-presentation .vote-option .question-option-image {
+  inset-block: 0.4rem;
+  inset-inline-end: 0.55rem;
+  width: clamp(4rem, min(8vw, 12vh), 6.75rem);
+  height: calc(100% - 0.8rem);
+}
+/* Voter avatar initials on the projector stay at or above 28px. */
+.stage-safe .player-avatar,
+.stage-safe .player-avatar[data-size="sm"],
+.stage-safe .player-avatar[data-size="lg"] {
+  --avatar-size: clamp(2.5rem, 4.5vh, 3.15rem);
+  font-size: 28px;
+}
+.stage-safe .vote-bubble-more {
+  font-size: 28px;
+  min-width: 2.75rem;
+  height: 2.75rem;
+}
+/* Push-your-luck (cursed-search-history) on the stage. */
+.stage-safe .stage-presentation .push {
+  gap: clamp(0.45rem, 1.1vh, 0.75rem);
+  font-size: clamp(28px, min(1.9vw, 3.2vh), 36px);
+}
+.stage-safe .stage-presentation .push-browser {
+  gap: clamp(0.35rem, 0.9vh, 0.55rem);
+  padding: clamp(0.5rem, 1.2vh, 0.8rem) 0.9rem;
+}
+.stage-safe .stage-presentation .push-bar,
+.stage-safe .stage-presentation .push-bar p {
+  font-size: clamp(28px, min(1.7vw, 2.8vh), 32px);
+}
+.stage-safe .stage-presentation .push-lines {
+  gap: clamp(0.35rem, 0.9vh, 0.55rem);
+}
+.stage-safe .stage-presentation .push-line {
+  min-height: clamp(2.6rem, 5.8vh, 3.6rem);
+  padding: 0.35rem 0.85rem;
+  font-size: clamp(28px, min(1.9vw, 3.2vh), 36px);
+}
+.stage-safe .stage-presentation .push-line-bank {
+  font-size: clamp(28px, min(1.9vw, 3.2vh), 36px);
+  font-weight: 800;
+  color: var(--highlight);
+}
+.stage-safe .stage-presentation .push-raid {
+  padding: 0.4rem 0.85rem;
+  font-size: clamp(32px, min(2.2vw, 3.8vh), 42px);
+  font-weight: 800;
+}
+.stage-safe .stage-presentation .push-stage-count {
+  font-size: clamp(30px, min(2.1vw, 3.6vh), 38px);
+}
+/* Answer-trends side panel on the projector. */
+@media (min-width: 1100px) {
+  .stage-safe .projector-with-trends:has(> .projector-trends-slot) {
+    grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 0.8fr);
+  }
+  .stage-safe
+    .projector-with-trends:has(.scoreboard-podium):has(> .projector-trends-slot) {
+    grid-template-columns: minmax(0, 1.75fr) minmax(19rem, 0.72fr);
+  }
+}
+.stage-safe .projector-trends {
+  gap: clamp(0.35rem, 0.9vh, 0.7rem);
+  padding: clamp(0.65rem, min(1.2vw, 1.7vh), 1.2rem);
+}
+.stage-safe .projector-trends .trends-eyebrow,
+.stage-safe .projector-trends .trends-count,
+.stage-safe .projector-trends .trend-detail,
+.stage-safe .projector-trends .trend-figure span,
+.stage-safe .projector-trends .trend-bar-label,
+.stage-safe .projector-trends .trend-bar-value {
+  font-size: clamp(28px, min(1.55vw, 2.5vh), 32px);
+  line-height: 1.16;
+}
+.stage-safe .projector-trends .trend-headline {
+  font-size: clamp(30px, min(2vw, 3.4vh), 40px);
+  line-height: 1.1;
+}
+.stage-safe .projector-trends .trend-figure strong {
+  font-size: clamp(40px, min(3.2vw, 5.4vh), 60px);
+}
+.stage-safe .projector-trends .trend-icon {
+  width: clamp(3rem, 5.4vh, 4rem);
+  height: clamp(3rem, 5.4vh, 4rem);
+}
+/* Between-rounds scores and final podium on the projector. */
+.stage-safe .stage-presentation .scoreboard {
+  padding: clamp(0.65rem, min(1.3vw, 1.8vh), 1.25rem);
+  font-size: clamp(28px, min(1.75vw, 2.9vh), 34px);
+  line-height: 1.12;
+  column-gap: clamp(0.75rem, 1.8vw, 1.75rem);
+}
+.stage-safe .stage-presentation .scoreboard-heading h2 {
+  font-size: clamp(34px, min(2.6vw, 4.4vh), 50px);
+}
+.stage-safe .stage-presentation .scoreboard-population {
+  font-size: clamp(30px, min(2.1vw, 3.6vh), 40px);
+}
+.stage-safe .stage-presentation .scoreboard-eyebrow,
+.stage-safe .stage-presentation .scoreboard-columns,
+.stage-safe .stage-presentation .scoreboard-columns span,
+.stage-safe .stage-presentation .scoreboard-navigation p,
+.stage-safe .stage-presentation .scoreboard-navigation button,
+.stage-safe .stage-presentation .scoreboard-navigation button span,
+.stage-safe .stage-presentation .scoreboard-population small,
+.stage-safe .stage-presentation .scoreboard-caption,
+.stage-safe .stage-presentation .scoreboard-place,
+.stage-safe .stage-presentation .scoreboard-player strong,
+.stage-safe .stage-presentation .scoreboard-player small,
+.stage-safe .stage-presentation .scoreboard-result strong,
+.stage-safe .stage-presentation .scoreboard-result small,
+.stage-safe .stage-presentation .scoreboard-result > span,
+.stage-safe .stage-presentation .scoreboard-move {
+  font-size: clamp(28px, min(1.65vw, 2.7vh), 32px);
+}
+.stage-safe .stage-presentation .scoreboard-columns {
+  grid-template-columns: 5.75rem minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  letter-spacing: 0.04em;
+  margin-top: clamp(0.35rem, 0.9vh, 0.65rem);
+  padding-bottom: 0.2rem;
+}
+.stage-safe .stage-presentation .scoreboard-rows {
+  gap: clamp(0.15rem, 0.4vh, 0.25rem);
+}
+.stage-safe .stage-presentation .scoreboard-row {
+  grid-template-columns: 5.75rem minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  min-height: clamp(2rem, 4vh, 2.75rem);
+  padding: 0.15rem 0.5rem;
+}
+.stage-safe .stage-presentation .scoreboard-player {
+  gap: 0.4rem;
+}
+.stage-safe .stage-presentation .scoreboard-navigation {
+  margin-top: clamp(0.3rem, 0.8vh, 0.55rem);
+  padding-top: clamp(0.3rem, 0.8vh, 0.55rem);
+}
+.stage-safe .stage-presentation .scoreboard-podium {
+  margin-top: 0.4rem;
+  gap: clamp(0.35rem, 1vw, 1rem);
+  font-size: clamp(28px, min(1.7vw, 2.8vh), 32px);
+}
+.stage-safe .stage-presentation .scoreboard-podium-step {
+  padding: 0.35em 0.25em 0;
+  gap: 0.18em;
+}
+.stage-safe .stage-presentation .scoreboard-podium-step strong {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.05;
+}
+.stage-safe .stage-presentation .scoreboard-podium-step strong,
+.stage-safe .stage-presentation .scoreboard-podium-points,
+.stage-safe .stage-presentation .scoreboard-podium-points small {
+  font-size: clamp(28px, min(1.65vw, 2.7vh), 32px);
+}
+.stage-safe .stage-presentation .scoreboard-podium-step .player-avatar {
+  --avatar-size: clamp(2.75rem, 5.5vh, 3.75rem);
+}
+.stage-safe .stage-presentation .scoreboard-podium-step[data-place="1"] .player-avatar {
+  --avatar-size: clamp(3.25rem, 6.8vh, 4.5rem);
+}
+.stage-safe .stage-presentation .scoreboard-podium-block {
+  font-size: clamp(32px, min(2.2vw, 3.8vh), 44px);
+  min-height: clamp(1.6em, 6vh, 2.1em);
+  margin-top: 0.2em;
+}
+.stage-safe
+  .stage-presentation
+  .scoreboard-podium-step[data-place="1"]
+  .scoreboard-podium-block {
+  min-height: clamp(2.3em, 9vh, 3.1em);
+}
+.stage-safe
+  .stage-presentation
+  .scoreboard-podium-step[data-place="3"]
+  .scoreboard-podium-block {
+  min-height: clamp(1.25em, 4.5vh, 1.6em);
 }
 .stage-presentation p,
 .stage-presentation li {

@@ -195,6 +195,7 @@ function BallotStage({
   return (
     <div className="design-stage ballot-stage">
       <QuestionTag play={play}>Election night</QuestionTag>
+      <StagePrompt text={play.question.prompt} />
       <motion.p
         className="ballot-banner"
         initial={{ opacity: 0, scale: motionSet.reduce ? 1 : 0.9 }}

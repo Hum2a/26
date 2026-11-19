@@ -33,7 +33,18 @@ export function liveBirthdayGame(sql: SqlStorage): boolean {
   const rehearsal = sql
     .exec(`SELECT 1 FROM developer_rehearsal WHERE id = 1`)
     .toArray().length;
-  return script > 0 && rehearsal === 0;
+  // A kart-only lobby freezes its one-race script when it is created. Until the
+  // race starts it is still a lobby, like a birthday room before its start, so
+  // Developer tools can fill the grid. A running race still refuses new bots.
+  const waitingKartLobby =
+    sql
+      .exec(
+        `SELECT 1 FROM round_state WHERE question_id = '__room' AND state_key = 'kart-lobby'`,
+      )
+      .toArray().length > 0 &&
+    sql.exec<{ phase: string }>(`SELECT phase FROM room`).toArray()[0]?.phase ===
+      "lobby";
+  return script > 0 && rehearsal === 0 && !waitingKartLobby;
 }
 
 export function setBotCount(sql: SqlStorage, value: unknown, now: number) {
