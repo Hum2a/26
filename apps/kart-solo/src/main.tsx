@@ -278,6 +278,7 @@ function SoloGame() {
   const trialFinished = useGameStore((state) => state.soloTrial?.finished ?? false);
   const ready = useGameStore((state) => state.soloStarted);
   const bots = useGameStore((state) => state.soloBots);
+  const practice = useGameStore((state) => state.soloPractice);
   const mode = useGameStore((state) => state.soloMode);
   const recoveryPending = useGameStore(
     (state) => state.soloRecover !== state.soloRecovered,
@@ -440,7 +441,7 @@ function SoloGame() {
             ← 26
           </a>
           <span>
-            {bots > 0
+            {bots > 0 && !practice
               ? `Practice · ${bots} ${bots === 1 ? "bot" : "bots"}`
               : "Solo practice"}
           </span>

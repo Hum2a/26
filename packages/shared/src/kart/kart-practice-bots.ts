@@ -432,6 +432,19 @@ export function createPracticePlayerLap(x: number, z: number): PracticePlayerLap
   };
 }
 
+/** Rewind free-drive lap cursor and lap count to a safe track anchor. */
+export function recoverPracticePlayerLap(
+  cursor: KartLapCursor,
+  lapsDone: number,
+): PracticePlayerLap {
+  const safeLaps = Math.max(0, Math.floor(lapsDone));
+  return {
+    cursor: { ...cursor },
+    lapsDone: safeLaps,
+    progress: safeLaps + Math.max(0, cursor.distance / importedLapLength),
+  };
+}
+
 export function stepPracticePlayerLap(
   state: PracticePlayerLap,
   sample: { x: number; z: number; speed: number; stepMs: number },

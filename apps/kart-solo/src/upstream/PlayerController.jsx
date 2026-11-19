@@ -33,6 +33,7 @@ import {
   practiceBotSlipstreamActors,
   practiceStandings,
   createPracticePlayerLap,
+  recoverPracticePlayerLap,
   stepPracticePlayerLap,
   practiceTrialPlayerSummary,
   stepSlipstream,
@@ -89,7 +90,7 @@ export const PlayerController = () => {
   const safe = useRef({
     ...start,
     heading: -Math.PI / 2,
-    cursor: trial.current?.cursor,
+    cursor: trial.current?.cursor ?? freeLap.current.cursor,
     lap: 0,
   });
   const elapsed = useRef(0),
@@ -237,10 +238,7 @@ export const PlayerController = () => {
         if (trial.current)
           trial.current = recoverKartTrial(trial.current, anchor.cursor);
         else if (anchor.cursor)
-          freeLap.current = {
-            ...freeLap.current,
-            cursor: { ...anchor.cursor },
-          };
+          freeLap.current = recoverPracticePlayerLap(anchor.cursor, anchor.lap ?? 0);
         previous.current = body.current;
         accumulator.current = 0;
         lastRecovery.current = elapsed.current;

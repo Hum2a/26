@@ -7395,7 +7395,7 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 
 ### Files / interfaces
 
-- `packages/shared/src/kart/kart-practice-bots.ts` (exported from `packages/shared/src/index.ts`) — `kartPracticeBotMax`, `kartPracticeBotCountSchema`, `createPracticeBots`, `stepPracticeBots`, `practiceBotSlipstreamActors`, `practiceStandings`, `createPracticePlayerLap`, `stepPracticePlayerLap`, `practiceTrialPlayerSummary`.
+- `packages/shared/src/kart/kart-practice-bots.ts` (exported from `packages/shared/src/index.ts`) — `kartPracticeBotMax`, `kartPracticeBotCountSchema`, `createPracticeBots`, `stepPracticeBots`, `practiceBotSlipstreamActors`, `practiceStandings`, `createPracticePlayerLap`, `recoverPracticePlayerLap`, `stepPracticePlayerLap`, `practiceTrialPlayerSummary`.
 - `packages/shared/src/kart/kart-powers.ts` — exported `nearSegment` for shared oil-slick segment checks.
 - `apps/web/src/kart/vehicle-model-core.ts` & `apps/web/src/kart/vehicle-model.ts` — extracted Three-version-agnostic `createNativeVehicleRig` so both `@26/web` (Three 0.186) and `@26/kart-solo` (Three 0.176) share the instanced vehicle rig.
 - `apps/web/src/kart/KartPracticeStandings.tsx` & `apps/web/src/kart/KartPracticeStandings.test.tsx` — live position HUD and race standings component + unit tests.
@@ -7417,7 +7417,7 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 - `npm run format:check` — passed.
 - `npm run build` — passed (rebuilt `@26/kart-solo` into `apps/web/public/kart-engine/`, built `@26/web`, scanned 1,006 files for secrets, passed `budget:web` with entry JS 222,738 B / 260,000 B and entry CSS 28,208 B / 34,000 B, and passed `content:check`).
 - `npm run test:unit -w @26/web -- src/kart src/admin/kart-page.test.tsx src/home/home-page.test.tsx src/admin/features.test.ts` — 49 files, 259 tests passed.
-- `npm run test -w @26/api -- --project auth test/kart-practice-bots.spec.ts test/kart-cpu.spec.ts test/kart-time-trial.spec.ts test/kart-slipstream.spec.ts` — 4 files, 20 tests passed.
+- `npm run test -w @26/api -- --project auth test/kart-practice-bots.spec.ts test/kart-cpu.spec.ts test/kart-time-trial.spec.ts test/kart-slipstream.spec.ts` — 4 files, 21 tests passed.
 - Playwright browser tests and full `npm run test:unit` / `npm run test -w @26/api` were not run.
 
 ### Manual verification & unresolved issues
@@ -7425,6 +7425,9 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 - Live 3D rendering of the bots in Chrome WebGL was not manually inspected in this session; verified via TypeScript, production bundle build (`@26/kart-solo` + `@26/web`), pure simulation tests (`kart-practice-bots.spec.ts`), and component tests (`KartPracticeStandings.test.tsx`).
 - Repo-wide `eslint .` crashed on Windows (`-1073740791`), so full-repo lint outside the targeted directories remains to be confirmed in CI.
 
-### Next stage
+**Next stage:** Open `/kart` in a browser (`npm run dev`), pick `3 bots` or `7 bots` on the start screen or in `Course set-up`, and test Free drive and 1-/3-lap bot races on desktop and phone.
 
-Open `/kart` in a browser (`npm run dev`), pick `3 bots` or `7 bots` on the start screen or in `Course set-up`, and test Free drive and 1-/3-lap bot races on desktop and phone.
+**Cubic follow-up (PR #66):**
+
+- `apps/kart-solo/src/main.tsx`: toolbar badge now requires `bots > 0 && !practice` (`soloPractice`) before showing `Practice · N bots`, keeping `"Solo practice"` during feature rehearsals where no bots spawn.
+- `packages/shared/src/kart/kart-practice-bots.ts` & `apps/kart-solo/src/upstream/PlayerController.jsx`: added `recoverPracticePlayerLap` and restored `lapsDone` + `progress` to the safe anchor's lap count when recovering in Free drive (and seeded initial `safe.current.cursor` in Free drive), preventing double-counting a lap completed after the last safe anchor; covered by a new test in `apps/api/test/kart-practice-bots.spec.ts` (5 tests).

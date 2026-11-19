@@ -1,10 +1,13 @@
 import { expect, it } from "vitest";
 import {
   createPracticeBots,
+  createPracticePlayerLap,
   defaultCourseSettings,
   practiceBotSlipstreamActors,
   practiceStandings,
+  recoverPracticePlayerLap,
   stepPracticeBots,
+  stepPracticePlayerLap,
   stepSlipstream,
 } from "@26/shared";
 import { importedSurfaceAt } from "../../../packages/shared/src/kart/kart-track.ts";
@@ -144,4 +147,29 @@ it("ranks finished karts by finish time and racing karts by progress", () => {
     [bots[0]!.name, 2],
     [bots[1]!.name, 3],
   ]);
+});
+
+it("rewinds free-drive lap count to the anchor lap on recovery without double-counting", () => {
+  const preFinishAnchor = {
+    cursor: { angle: 5, distance: 390, checkpoint: 2 },
+    lap: 0,
+  };
+  const initial = createPracticePlayerLap(0, 0);
+  expect(initial.lapsDone).toBe(0);
+  const recovered = recoverPracticePlayerLap(
+    preFinishAnchor.cursor,
+    preFinishAnchor.lap,
+  );
+  expect(recovered.lapsDone).toBe(0);
+  expect(recovered.cursor).toEqual(preFinishAnchor.cursor);
+  expect(recovered.progress).toBeGreaterThan(0);
+  expect(recovered.progress).toBeLessThan(1);
+
+  const afterLine = stepPracticePlayerLap(recovered, {
+    x: 0,
+    z: 8,
+    speed: 30,
+    stepMs: 20,
+  });
+  expect(afterLine.lapsDone).toBeLessThanOrEqual(1);
 });
