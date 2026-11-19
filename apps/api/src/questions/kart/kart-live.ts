@@ -167,6 +167,18 @@ export function checkpointLiveKarts(sql: SqlStorage): number {
   return saved;
 }
 
+/**
+ * Forgets race revisions that were never saved, so the next read reloads the
+ * last committed checkpoint. Called when a room transaction fails: a later
+ * checkpoint must not persist state from work that rolled back.
+ */
+export function discardUnsavedKarts(sql: SqlStorage): void {
+  const room = rooms.get(sql);
+  if (!room) return;
+  for (const [questionId, entry] of room.races)
+    if (entry.deferred > 0) room.races.delete(questionId);
+}
+
 /** This race's control queues. A new race id starts empty ones. */
 export function kartQueues(
   sql: SqlStorage,

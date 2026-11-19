@@ -12,6 +12,7 @@ import {
   acceptKartInput,
   acceptKartInputs,
   checkpointKart,
+  discardUnsavedKart,
   KartInputBuffer,
   readKart,
 } from "../src/questions/kart/kart.ts";
@@ -352,6 +353,31 @@ it("drops a rolled-back finish from memory and accepts the retry", async () => {
     ).toBe(true);
     expect(stored(sql).drivers[0]!.status).toBe("FINISHED");
     expect(stored(sql).drivers[0]!.lapTimeMs).toBe(12_345);
+  });
+});
+
+it("never checkpoints ticks from a transaction that rolled back", async () => {
+  const { stub, now } = await setup();
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    const q = kartQuestion(sql);
+    tick(sql, now + 100); // The start, saved.
+    const committed = stored(sql);
+    expect(() =>
+      state.storage.transactionSync(() => {
+        tick(sql, now + 200);
+        tick(sql, now + 300);
+        throw new Error("The tick transaction failed.");
+      }),
+    ).toThrow("tick transaction failed");
+    // What the room does when an alarm or host command fails.
+    discardUnsavedKart(sql);
+    expect(checkpointKart(sql)).toBe(0);
+    expect(stored(sql)).toEqual(committed);
+    // The race reloads from the committed checkpoint and replays from there.
+    expect(readKart(sql, q.id)!.elapsedMs).toBe(committed.elapsedMs);
+    tick(sql, now + 300);
+    expect(readKart(sql, q.id)!.elapsedMs).toBe(300);
   });
 });
 

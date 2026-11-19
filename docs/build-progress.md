@@ -7311,3 +7311,5 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Not verified:** real Cloudflare row billing and a mid-race restart on deployed infrastructure; the counts above are local workerd measurements.
 
 **Next:** Humza reviews and merges the PR.
+
+**Cubic follow-up (same day):** A failed alarm or host command now drops unsaved race ticks (`discardUnsavedKart`), so a later checkpoint never saves work that rolled back. A new spec covers this. The README now says the race is checkpointed "for" every host command (it runs after the command applies). The suggestion to clear control queues whenever the stored race changes was not taken. After a reload, those queues hold the real controls since the checkpoint, and the reducer already skips anything older than the race or at or below a driver's applied sequence. A replaced race already starts with new queues.

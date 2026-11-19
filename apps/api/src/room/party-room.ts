@@ -8,6 +8,7 @@ import {
   acceptKartInputs,
   acceptKartFinish,
   checkpointKart,
+  discardUnsavedKart,
   kartFrames,
   KartInputBuffer,
   releaseKartInputs,
@@ -1144,6 +1145,8 @@ export class PartyRoom extends DurableObject<Env> {
       // A failed transaction rolls back its own next alarm. Re-arm so a
       // transient fault never leaves the room stuck between phases.
       logError("alarm", error, { retryInMs: alarmRetryMs });
+      // The race ticks it made were never committed; replay them from SQLite.
+      discardUnsavedKart(this.ctx.storage.sql);
       await rearmAfterFailure(this.ctx.storage, Date.now() + alarmRetryMs);
       return;
     }
@@ -3176,6 +3179,7 @@ export class PartyRoom extends DurableObject<Env> {
         });
       });
     } catch (error) {
+      discardUnsavedKart(this.ctx.storage.sql);
       const message = error instanceof Error ? error.message : roundStartMessage;
       await commitAndArm(this.ctx.storage, (sql) =>
         recordRehearsalEvent(sql, {

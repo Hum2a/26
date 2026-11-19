@@ -44,6 +44,7 @@ import { createSqlStore } from "../../room/sql-store.ts";
 import { questionFor } from "../registry.ts";
 import {
   checkpointLiveKarts,
+  discardUnsavedKarts,
   copyLiveKart,
   kartQueues,
   liveKart,
@@ -58,6 +59,8 @@ const write = (sql: SqlStorage, id: string, race: KartRace) =>
 
 /** Saves unsaved race ticks now; see `kart-live.ts`. */
 export const checkpointKart = (sql: SqlStorage) => checkpointLiveKarts(sql);
+/** After a failed transaction: reload the race from its last committed checkpoint. */
+export const discardUnsavedKart = (sql: SqlStorage) => discardUnsavedKarts(sql);
 
 type RoomKartSettings = { settings?: KartSettings; history?: KartSettingHistory };
 export const readRoomKartItems = (sql: SqlStorage) =>
