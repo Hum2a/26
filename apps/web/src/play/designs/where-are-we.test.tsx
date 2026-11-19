@@ -87,13 +87,18 @@ it("opens the clue photo lightbox in a dialog and closes cleanly via button, bac
   render(<GuestPlay snapshot={snapshot()} pending={false} {...handlers()} />);
   const trigger = screen.getByRole("button", { name: "Open clue photo" });
 
-  // Close via explicit Close button.
+  // Close via explicit Close button; Tab stays trapped inside the modal and close restores focus.
   fireEvent.click(trigger);
   expect(screen.getByRole("dialog", { name: "Clue photo" })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Close clue photo" }));
+  const closeButton = screen.getByRole("button", { name: "Close clue photo" });
+  expect(document.activeElement).toBe(closeButton);
+  fireEvent.keyDown(window, { key: "Tab" });
+  expect(document.activeElement).toBe(closeButton);
+  fireEvent.click(closeButton);
   await waitFor(() => {
     expect(screen.queryByRole("dialog", { name: "Clue photo" })).toBeNull();
   });
+  expect(document.activeElement).toBe(trigger);
 
   // Close via Escape key.
   fireEvent.click(trigger);

@@ -65,6 +65,7 @@
 }
 
 .where-coords {
+  min-height: 1.35em;
   font-variant-numeric: tabular-nums;
 }
 

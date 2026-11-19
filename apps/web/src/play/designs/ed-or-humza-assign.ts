@@ -36,6 +36,7 @@ export const swipeFlickMinPx = 32;
 export const swipeFlickVelocity = 0.45; // px/ms (450 px/s)
 export const swipeFlickMaxMs = 280;
 export const gestureAxisDeadzonePx = 8;
+export const swipeMaxSlope = 0.85;
 
 export type SwipeAxis = "horizontal" | "vertical" | null;
 
@@ -45,7 +46,7 @@ export function lockSwipeAxis(dx: number, dy: number): SwipeAxis {
   const absX = Math.abs(dx);
   const absY = Math.abs(dy);
   if (absX < gestureAxisDeadzonePx && absY < gestureAxisDeadzonePx) return null;
-  if (absY > absX * 1.15) return "vertical";
+  if (absY > absX * swipeMaxSlope) return "vertical";
   return "horizontal";
 }
 
@@ -64,7 +65,7 @@ export function swipeDecision(
   if (!Number.isFinite(dx) || !Number.isFinite(dy)) return null;
   const absX = Math.abs(dx);
   const absY = Math.abs(dy);
-  if (absX === 0 || absY > absX * 0.85) return null;
+  if (absX === 0 || absY > absX * swipeMaxSlope) return null;
 
   // Fast flick: shorter travel still commits when velocity is clear and matches drag direction.
   const speed =

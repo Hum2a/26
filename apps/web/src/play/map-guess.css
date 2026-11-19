@@ -9,7 +9,11 @@
 
 .guess-map-frame {
   position: relative;
+  display: flex;
+  flex-direction: column;
   flex: 1;
+  width: 100%;
+  height: clamp(11.5rem, 40dvh, 25rem);
   min-width: 0;
   min-height: 11rem;
   border: 1px solid var(--line, #5c5144);
@@ -30,8 +34,10 @@
 }
 
 .guess-map {
+  flex: 1;
   width: 100%;
-  height: clamp(11.5rem, 40dvh, 25rem);
+  height: 100%;
+  min-height: 0;
   background-color: color-mix(
     in srgb,
     var(--background, #14110e) 76%,
@@ -272,7 +278,7 @@
   display: block;
 }
 
-.stage-map-guess .guess-map {
+.stage-map-guess .guess-map-frame {
   height: clamp(14rem, 42dvh, 36rem);
 }
 

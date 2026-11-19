@@ -62,6 +62,7 @@ function WherePhone({
   const [draft, setDraft] = useState<MapPin>();
   const [photoOpen, setPhotoOpen] = useState(false);
   const clueTriggerRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const accepted =
     play.selfAnswer?.kind === "map-guess" ? play.selfAnswer.pin : undefined;
   const pin = reveal ? accepted : (accepted ?? draft);
@@ -77,10 +78,15 @@ function WherePhone({
 
   useEffect(() => {
     if (!photoOpen) return;
+    closeButtonRef.current?.focus();
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
         closePhoto();
+      } else if (event.key === "Tab") {
+        // Keep keyboard focus inside the modal dialog (Close is its only focusable control).
+        event.preventDefault();
+        closeButtonRef.current?.focus();
       }
     }
     window.addEventListener("keydown", onKey);
@@ -104,6 +110,7 @@ function WherePhone({
                 onClick={closePhoto}
               >
                 <button
+                  ref={closeButtonRef}
                   type="button"
                   className="where-clue-close motion-press"
                   aria-label="Close clue photo"

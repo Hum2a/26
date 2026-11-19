@@ -35,14 +35,16 @@ it("clamps latitude and wraps longitude safely after panning or zooming", async 
   try {
     await screen.findByRole("button", { name: "Place pin at map centre" });
     const mapNode = container.querySelector(".guess-map") as HTMLElement;
-    // Far off-edge click produces out-of-range projected coordinates that must clamp cleanly.
-    fireEvent.click(mapNode, { clientX: -5000, clientY: -5000 });
+    // Zoom in first, then click far past the east antimeridian (world width at zoom 1 is 512px).
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    fireEvent.click(mapNode, { clientX: 700, clientY: -5000 });
     expect(onPin).toHaveBeenCalledOnce();
     const pin = onPin.mock.calls[0]![0] as { lat: number; lng: number };
-    expect(pin.lat).toBeGreaterThanOrEqual(-85);
-    expect(pin.lat).toBeLessThanOrEqual(85);
-    expect(pin.lng).toBeGreaterThanOrEqual(-180);
-    expect(pin.lng).toBeLessThanOrEqual(180);
+    // Latitude clamps to the Mercator pole limit; longitude wraps into the interior rather than pinning at +/-180.
+    expect(pin.lat).toBe(85);
+    expect(pin.lng).toBeGreaterThan(-180);
+    expect(pin.lng).toBeLessThan(180);
+    expect(Math.abs(pin.lng)).toBeLessThan(179);
   } finally {
     unmount();
     restore();

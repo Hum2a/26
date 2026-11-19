@@ -57,6 +57,8 @@ describe("Ed or Humza assignment helpers", () => {
     expect(lockSwipeAxis(4, 5)).toBeNull();
     expect(lockSwipeAxis(14, 4)).toBe("horizontal");
     expect(lockSwipeAxis(-12, 8)).toBe("horizontal");
+    // Diagonal drag above the shared 0.85 slope yields to vertical scroll rather than snapping back.
+    expect(lockSwipeAxis(100, 95)).toBe("vertical");
     expect(lockSwipeAxis(5, 20)).toBe("vertical");
     expect(lockSwipeAxis(-8, -16)).toBe("vertical");
     expect(lockSwipeAxis(Number.NaN, 0)).toBeNull();
