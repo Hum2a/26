@@ -10,6 +10,7 @@ import {
   checkpointKart,
   discardUnsavedKart,
   kartFrames,
+  syncKart,
   KartInputBuffer,
   releaseKartInputs,
   recoverKart,
@@ -3181,7 +3182,6 @@ export class PartyRoom extends DurableObject<Env> {
         });
       });
     } catch (error) {
-      discardUnsavedKart(this.ctx.storage.sql);
       const message = error instanceof Error ? error.message : roundStartMessage;
       await commitAndArm(this.ctx.storage, (sql) =>
         recordRehearsalEvent(sql, {
@@ -4336,6 +4336,7 @@ export class PartyRoom extends DurableObject<Env> {
     }
     const sql = this.ctx.storage.sql;
     const nowMs = Date.now();
+    syncKart(sql, nowMs);
     const drivers = readDrivers(sql);
     const avatars = readAvatars(sql);
     const rawPlayers = sql
@@ -4419,6 +4420,7 @@ export class PartyRoom extends DurableObject<Env> {
     if (!room) {
       throw new Error(roomMissingMessage);
     }
+    syncKart(sql, Date.now());
     const drivers = readDrivers(sql);
     const avatars = readAvatars(sql);
     const rawPlayers = sql
@@ -4801,6 +4803,7 @@ export class PartyRoom extends DurableObject<Env> {
     if (question?.kind !== "kart" || hidden) {
       return false;
     }
+    syncKart(sql, Date.now());
     const frames = kartFrames(sql, question);
     if (!frames) {
       return false;

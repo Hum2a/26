@@ -39,3 +39,12 @@
     transform: none;
   }
 }
+@media (max-width: 48rem), (max-height: 32rem) {
+  .solo-kart-back {
+    top: max(0.3rem, env(safe-area-inset-top));
+    left: max(0.45rem, env(safe-area-inset-left));
+    min-height: 1.85rem;
+    padding: 0 0.55rem;
+    font-size: 0.72rem;
+  }
+}
