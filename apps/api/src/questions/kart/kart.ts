@@ -818,21 +818,48 @@ export function kartScores(
   }
 }
 
+/** The race read and projected once for every snapshot in one broadcast. */
+export type KartShared = {
+  race: KartRace;
+  full: KartRaceView;
+  index: KartFrameIndex;
+};
+
+/**
+ * Without this, each of 80 guest snapshots re-read and re-projected the whole
+ * grid. At the race start that took the room 4–8 seconds of CPU on staging
+ * (19 November 2026 rehearsal) and every phone dropped.
+ */
+export function prepareKartShared(
+  sql: SqlStorage,
+  q: KartQuestion,
+): KartShared | undefined {
+  const race = readKart(sql, q.id);
+  if (!race) return undefined;
+  const full = projectKartRace(race, null, q.points);
+  return { race, full, index: buildKartFrameIndex(race, full) };
+}
+
 export function projectKart(
   sql: SqlStorage,
   q: KartQuestion,
   room: RoomClock,
   selfPlayerId: string | undefined,
+  shared?: KartShared,
 ) {
-  const race = readKart(sql, q.id);
+  const race = shared ? shared.race : readKart(sql, q.id);
   const scored = ["reveal", "scores", "final", "podium"].includes(room.phase);
   const queue = selfPlayerId
     ? readRoundState<InputQueue>(sql, q.id, `kart-input:${selfPlayerId}`)
     : undefined;
-  const fullRace = race ? projectKartRace(race, null, q.points) : undefined;
+  const fullRace = shared
+    ? shared.full
+    : race
+      ? projectKartRace(race, null, q.points)
+      : undefined;
   const publicRace =
     fullRace && selfPlayerId
-      ? phoneRaceView(race!, fullRace, selfPlayerId, queue?.lastSequence)
+      ? phoneRaceView(race!, fullRace, selfPlayerId, queue?.lastSequence, shared?.index)
       : fullRace;
   const selfPoints =
     scored && selfPlayerId

@@ -7280,3 +7280,17 @@ Checks: typecheck passed; lint 0 errors / 15 existing warnings; format:check pas
 **Checks:** not run locally. This worktree's `npm install` had not finished after about 1.5 hours, so `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run test:unit`, `npm run test -w @26/api`, `npm run content:check` and `npm run build` were left to CI on the PR. Playwright was not run.
 
 **Next:** Humza reads the report, decides on knockout entry caps, and the race-start and per-answer cost fixes are scheduled before a repeat 80-bot run. Do not start the next prompt automatically.
+
+## 19 November 2026 — P0 fixes from the 80-player rehearsal
+
+**Status:** two P0 fixes on `claude/rehearsal-fixes`, not deployed. The issue table with severities is in the PR body. The rehearsal itself is in `docs/rehearsal-2026-11-20-staging.md`.
+
+**R1, kart race start.** On staging, the alarm that starts a race with 80 drivers used 4.4–7.8 s of CPU and every phone dropped. Each guest snapshot re-read and re-projected the whole race (`projectKart`). `preparePlayShared` now reads and projects the race once per broadcast (`prepareKartShared`), and each guest gets its own view of that projection, as the tick path already did. Test: `apps/api/test/kart-shared-projection.spec.ts`.
+
+**R2, statistics on every broadcast.** Every room-wide build ran `readStatsSource`, a full scan of answers, ballots and scores. Answer acks grew from 87 ms to over 20 s as the game built up. PR #55 had already batched the per-command private snapshot. Broadcasts and socket sends (including reconnects) now reuse a statistics build for up to 5 s within the same question and phase (`apps/api/src/stats/statistics-cache.ts`). Lobby, final, facts and podium always rebuild, and admin snapshot reads force a fresh build. Test: `apps/api/test/statistics-cache.spec.ts`.
+
+**Not fixed:** R3, the knockout bracket length with 80 entries, needs Humza's decision. P1 and P2 items are listed in the PR.
+
+**Checks:** `npx tsc -b` passed (the root typecheck without the `kart-solo` step, which is untouched). ESLint on the changed files passed. `scripts/check-structure.mjs` passed. Prettier was run on the changed files. The `@26/api` worker tests and the remaining scripted checks (`test:unit`, `content:check`, `build`, full `lint` and `format:check`) were not run locally, because this worktree's dependency install is incomplete and the workers test runtime crashes. They are left to CI. Playwright was not run.
+
+**Next:** Humza decides R3. Deploy to staging, then repeat the 80-bot rehearsal in a fresh rehearsal and in a kart-only lobby with 80 bots, to measure R1 and R2.
