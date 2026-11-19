@@ -953,7 +953,8 @@ export function ballotPlayFields(
             instruction:
               flow.kind === "awards"
                 ? "Vote for this award. No self-votes. Ties share the category win."
-                : "Pick the worse search. No self-votes. Ties use the frozen random draw.",
+                : // Shared by every knockout round, so the prompt carries the criterion.
+                  "Pick the winner of this match. No self-votes. Ties use the frozen random draw.",
           }
         : {}),
       total: included.length,
