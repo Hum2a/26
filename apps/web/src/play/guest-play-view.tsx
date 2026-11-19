@@ -17,13 +17,14 @@ import type {
   ChessMoveParams,
   ChessResignParams,
 } from "@26/shared";
-import type { LobbySnapshot, MapPin, PlaySnapshot } from "@26/shared";
+import type { LobbySnapshot, MapPin } from "@26/shared";
 import { QuestionOptionImage } from "./question-option-image";
 import { OptionText } from "./controls/OptionText";
 import { SubmitButton } from "./controls/SubmitButton";
 import { roundSubmitState } from "./controls/submit-state";
 import { Button } from "../ui/primitives";
 import { AnswerNames } from "./attributions";
+import { choiceNote } from "./choice-note";
 import { GuestBallot } from "./guest-ballot";
 import { GuestDuel } from "./guest-duel";
 import { GuestMultiple } from "./guest-multiple";
@@ -401,23 +402,4 @@ export function GuestPlay({
       </section>
     </QuestionExperience>
   );
-}
-
-/** Phone label suffix at the reveal: the right answer, or the room's count and who scored. */
-export function choiceNote(
-  reveal: Extract<NonNullable<PlaySnapshot["reveal"]>, { kind: "choice" }> | undefined,
-  optionId: string,
-): string {
-  if (!reveal) {
-    return "";
-  }
-  if (reveal.correctOptionId === optionId) {
-    return " — the answer";
-  }
-  const count = reveal.tally?.find((row) => row.optionId === optionId)?.count;
-  const tally =
-    count === undefined ? "" : ` — ${count} ${count === 1 ? "vote" : "votes"}`;
-  const scored =
-    reveal.everyone || reveal.winners?.includes(optionId) ? ", scored" : "";
-  return `${tally}${scored}`;
 }
