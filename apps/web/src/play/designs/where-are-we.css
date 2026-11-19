@@ -2,17 +2,33 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.6rem;
+  min-width: 0;
   min-height: 0;
+  padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+}
+
+.where-header,
+.where-footer {
+  display: contents;
+}
+
+.design-phone.where-are-we .phone-prompt {
+  margin: 0;
+  font-size: clamp(1.25rem, 5.2vw, 1.7rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 .where-clue {
   display: grid;
   gap: 0.25rem;
   width: 100%;
+  min-height: 3rem;
   margin: 0;
   padding: 0;
   border: 0;
+  border-radius: var(--radius-panel);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -21,10 +37,15 @@
   touch-action: manipulation;
 }
 
+.where-clue:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+
 .where-clue img {
   display: block;
   width: 100%;
-  max-height: 22vh;
+  max-height: clamp(6.5rem, 20dvh, 11.5rem);
   aspect-ratio: 3 / 2;
   object-fit: cover;
   border-radius: var(--radius-panel);
@@ -38,39 +59,145 @@
 .where-result {
   margin: 0;
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.where-coords {
+  font-variant-numeric: tabular-nums;
 }
 
 .where-clue-lightbox {
   position: fixed;
   inset: 0;
-  z-index: 8;
+  z-index: 120;
   display: grid;
   place-items: center;
-  padding: 1rem;
-  border: 0;
-  background: color-mix(in srgb, var(--background) 88%, black);
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  background: color-mix(in srgb, var(--background) 90%, black);
+  overscroll-behavior: none;
+  touch-action: manipulation;
   cursor: zoom-out;
 }
 
-.where-clue-lightbox img {
+.where-clue-close {
+  position: fixed;
+  top: max(0.75rem, env(safe-area-inset-top));
+  right: max(0.75rem, env(safe-area-inset-right));
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3rem;
+  min-height: 3rem;
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--surface-foreground);
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.where-clue-close:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+
+.where-clue-lightbox-figure {
+  display: grid;
+  justify-items: center;
+  gap: 0.65rem;
+  margin: 0;
   max-width: min(100%, 52rem);
-  max-height: 90dvh;
+}
+
+.where-clue-lightbox img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(
+    100dvh - 7.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+  );
   width: auto;
   height: auto;
   object-fit: contain;
   border-radius: var(--radius-panel);
+  background: var(--surface);
+}
+
+.where-clue-lightbox-credit {
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: center;
 }
 
 .where-map-slot {
+  display: flex;
+  flex-direction: column;
   flex: 1;
+  min-width: 0;
+  min-height: 14.5rem;
+  overscroll-behavior: none;
+}
+
+.where-map-loading {
+  margin: 0;
+  display: grid;
+  place-items: center;
   min-height: 12rem;
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--surface-foreground);
+  font-weight: 700;
+}
+
+.where-are-we .where-map,
+.where-are-we-stage .where-map {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+}
+
+.where-are-we .where-map .guess-map-frame,
+.where-are-we-stage .where-map .guess-map-frame {
+  flex: 1;
+  min-height: 11rem;
 }
 
 .where-are-we .where-map .guess-map,
 .where-are-we-stage .where-map .guess-map {
   height: 100%;
-  min-height: 12rem;
+  min-height: 11rem;
+}
+
+/* Inline submit fallback (design bench / rehearsal without PhoneDock portal). */
+.where-submit-wrap:empty {
+  display: none;
+}
+
+.where-submit-wrap:not(:empty) {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  padding-top: 0.35rem;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--background) 0%, transparent),
+    var(--background) 30%
+  );
+}
+
+.where-submit-wrap:not(:empty) > button {
+  width: 100%;
+  min-height: 3.25rem;
 }
 
 .where-stage-grid {
@@ -104,11 +231,17 @@
 }
 
 .where-stage-map {
+  display: flex;
+  flex-direction: column;
   min-height: 28vh;
 }
 
-.where-are-we-stage .where-stage-map .guess-map {
+.where-are-we-stage .where-stage-map .guess-map-frame {
   height: clamp(18rem, 48vh, 36rem);
+}
+
+.where-are-we-stage .where-stage-map .guess-map {
+  height: 100%;
 }
 
 .where-closest {
@@ -122,34 +255,76 @@
 }
 
 @media (max-width: 380px) {
+  .design-phone.where-are-we {
+    gap: 0.45rem;
+  }
   .where-clue img {
-    max-height: 18vh;
+    max-height: clamp(5.5rem, 15dvh, 8.5rem);
+  }
+  .where-map-slot {
+    min-height: 13.5rem;
+  }
+}
+
+@media (max-height: 40rem) and (orientation: portrait) {
+  .design-phone.where-are-we {
+    gap: 0.4rem;
+  }
+  .where-clue img {
+    max-height: 14dvh;
+  }
+  .where-map-slot {
+    min-height: 12.5rem;
+  }
+  .where-are-we .where-map .guess-map-frame,
+  .where-are-we .where-map .guess-map {
+    min-height: 9.5rem;
   }
 }
 
 @media (orientation: landscape) and (max-height: 32rem) {
   .design-phone.where-are-we {
     display: grid;
-    grid-template-columns: minmax(9rem, 0.8fr) minmax(0, 1.4fr);
-    grid-template-rows: auto 1fr auto;
+    grid-template-columns: minmax(10.5rem, 0.85fr) minmax(0, 1.35fr);
+    grid-template-rows: auto auto;
+    column-gap: 0.85rem;
+    row-gap: 0.4rem;
     align-items: start;
   }
-  .design-phone.where-are-we .design-tag,
-  .design-phone.where-are-we .phone-prompt,
-  .design-phone.where-are-we .where-clue,
-  .design-phone.where-are-we .where-missing {
+  .where-header {
     grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
   }
-  .where-help,
-  .where-map-slot,
-  .where-coords {
-    grid-column: 2;
+  .where-footer {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
   }
   .where-map-slot {
-    grid-row: 1 / span 4;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: stretch;
+    min-height: 12rem;
+  }
+  .where-are-we .where-map .guess-map-frame,
+  .where-are-we .where-map .guess-map {
+    min-height: 9rem;
   }
   .where-clue img {
-    max-height: 28vh;
+    max-height: 22dvh;
+  }
+  .where-submit-wrap:not(:empty) {
+    position: static;
+    padding-top: 0.15rem;
+    padding-bottom: 0;
+    background: none;
   }
 }
 

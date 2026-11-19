@@ -15,6 +15,18 @@ import "./map-guess.css";
 import { loadWorld } from "./map-guess-world";
 
 const noPins: MapPin[] = [];
+const tapJitterPx = 6;
+
+/** Keep map coordinates inside valid Mercator bounds after panning or zooming. */
+function clampMapPin(lat: number, lng: number): MapPin {
+  const clampedLat = Math.max(-85, Math.min(85, lat));
+  let wrappedLng = lng;
+  if (wrappedLng > 180 || wrappedLng < -180) {
+    wrappedLng = ((((wrappedLng + 180) % 360) + 360) % 360) - 180;
+  }
+  const clampedLng = Math.max(-180, Math.min(180, wrappedLng));
+  return { lat: clampedLat, lng: clampedLng };
+}
 
 export function GuessMap({
   editable = false,
@@ -63,11 +75,55 @@ export function GuessMap({
     instance.current = board;
     const container = board.getContainer();
     container.style.touchAction = "none";
-    function blockPageScroll(event: Event) {
+    container.style.overscrollBehavior = "none";
+
+    let touchOrigin: { x: number; y: number } | null = null;
+    function onTouchStart(event: TouchEvent) {
+      if (event.touches.length === 1) {
+        const touch = event.touches[0];
+        touchOrigin = touch ? { x: touch.clientX, y: touch.clientY } : null;
+      } else {
+        touchOrigin = null;
+      }
+    }
+    function onTouchMove(event: TouchEvent) {
+      if (!event.cancelable) return;
+      // Always lock multi-touch pinch so iOS Safari never zooms or rubber-bands the page.
+      if (event.touches.length > 1) {
+        event.preventDefault();
+        return;
+      }
+      // Keep tiny single-finger jitter from suppressing iOS Safari's synthetic tap click.
+      const touch = event.touches[0];
+      if (!touchOrigin || !touch) {
+        event.preventDefault();
+        return;
+      }
+      if (
+        Math.hypot(touch.clientX - touchOrigin.x, touch.clientY - touchOrigin.y) >
+        tapJitterPx
+      ) {
+        event.preventDefault();
+      }
+    }
+    function clearTouchOrigin() {
+      touchOrigin = null;
+    }
+    function blockGesture(event: Event) {
       if (event.cancelable) event.preventDefault();
     }
-    container.addEventListener("touchmove", blockPageScroll, { passive: false });
-    container.addEventListener("gesturestart", blockPageScroll, { passive: false });
+    function blockCtrlWheel(event: WheelEvent) {
+      if (event.ctrlKey && event.cancelable) event.preventDefault();
+    }
+
+    container.addEventListener("touchstart", onTouchStart, { passive: true });
+    container.addEventListener("touchmove", onTouchMove, { passive: false });
+    container.addEventListener("touchend", clearTouchOrigin, { passive: true });
+    container.addEventListener("touchcancel", clearTouchOrigin, { passive: true });
+    container.addEventListener("gesturestart", blockGesture, { passive: false });
+    container.addEventListener("gesturechange", blockGesture, { passive: false });
+    container.addEventListener("wheel", blockCtrlWheel, { passive: false });
+
     board.attributionControl.setPrefix(false).addAttribution("Natural Earth");
     markers.current = layerGroup().addTo(board);
     const resize = new ResizeObserver(() => board.invalidateSize({ pan: false }));
@@ -77,10 +133,17 @@ export function GuessMap({
       .then((data) => {
         if (!active) return;
         const places = geoJSON(data, {
-          style: { color: "#507485", fillColor: "#c5d9c2", fillOpacity: 1, weight: 1 },
+          style: {
+            className: "guess-map-land",
+            color: "#507485",
+            fillColor: "#c5d9c2",
+            fillOpacity: 1,
+            weight: 1,
+          },
           interactive: false,
           pointToLayer: (feature, position) =>
             circleMarker(position, {
+              className: "guess-map-city-dot",
               radius: feature.properties?.country ? 0 : 2,
               stroke: false,
               fillColor: "#213e48",
@@ -95,6 +158,7 @@ export function GuessMap({
             const country = feature.properties?.country === true;
             layer.bindTooltip(label, {
               permanent: true,
+              interactive: false,
               direction: country ? "center" : "right",
               className: country
                 ? "guess-map-label guess-map-country"
@@ -117,8 +181,13 @@ export function GuessMap({
       });
     return () => {
       active = false;
-      container.removeEventListener("touchmove", blockPageScroll);
-      container.removeEventListener("gesturestart", blockPageScroll);
+      container.removeEventListener("touchstart", onTouchStart);
+      container.removeEventListener("touchmove", onTouchMove);
+      container.removeEventListener("touchend", clearTouchOrigin);
+      container.removeEventListener("touchcancel", clearTouchOrigin);
+      container.removeEventListener("gesturestart", blockGesture);
+      container.removeEventListener("gesturechange", blockGesture);
+      container.removeEventListener("wheel", blockCtrlWheel);
       resize.disconnect();
       board.remove();
       instance.current = null;
@@ -129,10 +198,7 @@ export function GuessMap({
     const board = instance.current;
     if (!board || !editable || !onPin || !ready) return;
     function select(event: { latlng: { lat: number; lng: number } }) {
-      onPin?.({
-        lat: Math.max(-85, Math.min(85, event.latlng.lat)),
-        lng: Math.max(-180, Math.min(180, event.latlng.lng)),
-      });
+      onPin?.(clampMapPin(event.latlng.lat, event.latlng.lng));
     }
     board.on("click", select);
     return () => {
@@ -147,7 +213,9 @@ export function GuessMap({
       circleMarker(guess, {
         radius: 4,
         color: "#294c7e",
-        fillOpacity: 0.7,
+        fillColor: "#6db3ff",
+        fillOpacity: 0.78,
+        weight: 1.5,
         interactive: false,
       }).addTo(group);
     }
@@ -155,14 +223,18 @@ export function GuessMap({
       circleMarker(pin, {
         radius: 8,
         color: "#12459b",
-        fillOpacity: 1,
+        fillColor: "#4f9cff",
+        fillOpacity: 0.95,
+        weight: 3,
         interactive: false,
       }).addTo(group);
     if (target)
       circleMarker(target, {
         radius: 11,
         color: "#9c2343",
-        fillOpacity: 1,
+        fillColor: "#ff4f7b",
+        fillOpacity: 0.95,
+        weight: 3,
         interactive: false,
       }).addTo(group);
   }, [attempt, guesses, pin, target]);
@@ -174,18 +246,24 @@ export function GuessMap({
     board.fitBounds(bounds, { padding: [26, 26], maxZoom: 5, animate: false });
   }, [guesses, pin, ready, target]);
   return (
-    <div className={className}>
-      <div
-        ref={element}
-        className="guess-map"
-        role="region"
-        aria-label={target ? "Location reveal map" : "Guessing map"}
-      />
+    <div className={className ? `guess-map-shell ${className}` : "guess-map-shell"}>
+      <div className="guess-map-frame">
+        <div
+          ref={element}
+          className="guess-map"
+          role="region"
+          aria-label={target ? "Location reveal map" : "Guessing map"}
+        />
+        {editable && ready ? (
+          <span className="guess-map-reticle" aria-hidden="true" />
+        ) : null}
+      </div>
       {failed ? (
-        <p role="alert">
+        <p role="alert" className="guess-map-error">
           The map did not load.{" "}
           <button
             type="button"
+            className="guess-map-retry"
             onClick={() => {
               setFailed(false);
               setReady(false);
@@ -199,9 +277,10 @@ export function GuessMap({
       {editable && ready ? (
         <button
           type="button"
+          className="guess-map-centre motion-press"
           onClick={() => {
             const centre = instance.current?.getCenter();
-            if (centre) onPin?.({ lat: centre.lat, lng: centre.lng });
+            if (centre) onPin?.(clampMapPin(centre.lat, centre.lng));
           }}
         >
           Place pin at map centre

@@ -7000,3 +7000,30 @@ Answer acknowledgement p95 ranged 386–1373 ms across these single samples, wit
 - **Database rows written.** The test Worker hit "Exceeded allowed rows written in Durable Objects free tier" after about 20 runs. Each race tick writes roughly 85 rows with 80 drivers (one input queue row per driver, the race, the job, the room version and the alarm), so about 850 rows a second. One 3-minute 80-driver race is roughly 150,000 rows. The Workers Free plan allows 100,000 rows written a day, so on a Free plan one full race would hit the limit mid-race. The Paid plan includes 50 million a month. Whether the party's account (`account_id` in `apps/api/wrangler.jsonc`) is on Workers Paid is not known here and must be checked before the party.
 
 Answer acknowledgement p95 on Cloudflare was 71–295 ms across runs; quiz rounds are not a concern.
+
+## 19 November 2026 — Phone polish for Where are we? and Ed or Humza?
+
+**Status:** complete on branch `antigravity/bespoke-rounds-phone-polish`. Ready for PR into `master`.
+
+### Files and interfaces
+
+- `apps/web/src/play/designs/ed-or-humza-assign.ts` — added `lockSwipeAxis`, `swipeThresholdPx`, velocity-aware `swipeDecision` (fast flicks and slow drags across 320–430 px cards), `swipeProgress`, `undoPlacements`, and `isLongQuote`, with finite-coordinate guards.
+- `apps/web/src/play/designs/ed-or-humza.tsx` & `apps/web/src/play/designs/ed-or-humza.css` — axis-locked horizontal swipe (`touch-action: pan-y`, pointer capture only after horizontal lock, `pointercancel` never commits), `requestAnimationFrame` transform/opacity-only drag tracking with single `offsetWidth` read on `pointerdown`, GPU-composited directional swipe stamps, guarded `undoLast` restoring the previous card/action without emptying history, expandable long quotes in the review pile (`aria-expanded`), >= 48 px (`3rem`) buttons across every control, safe-area bottom padding with sticky inline submit fallback, explicit two-column landscape layout (`.ed-main` / `.ed-controls`), and guarded single-send submit.
+- `apps/web/src/play/map-guess.tsx` & `apps/web/src/play/map-guess.css` — added `clampMapPin` for both tap-to-drop and "Place pin at map centre" after panning/zooming, refined touch/gesture isolation (`touch-action: none`, `overscroll-behavior: none`, `gesturestart`/`gesturechange`, `ctrlKey` wheel zoom lock, and 6 px tap-jitter allowance so iOS Safari synthetic clicks survive micro-movement), `pointer-events: none` / `interactive: false` on zoomed country/city labels, subtle centre crosshair reticle, styled >= 48 px zoom and "Place pin at map centre" controls, and `light-dark()` / theme-variable ocean, landmass, label, and Leaflet chrome colours so the map never flashes white on dark themes.
+- `apps/web/src/play/designs/where-are-we.tsx` & `apps/web/src/play/designs/where-are-we.css` — portalled the clue photo lightbox to `document.body` (`z-index: 120`, `role="dialog"`, `aria-modal="true"`, explicit >= 48 px Close button, backdrop tap, `Escape` key, focus restoration, safe-area insets), reserved coordinate readout height to prevent CLS on first pin drop, and replaced the overlapping landscape grid with `.where-header` / `.where-footer` + `.where-map-slot` so the Send button stays visible in portrait and landscape.
+- Extended Vitest + Testing Library coverage in `ed-or-humza-assign.test.ts`, `ed-or-humza.test.tsx`, `where-are-we.test.tsx`, and `map-guess.test.tsx`.
+
+### Commands and results
+
+- `npm run typecheck` — passed.
+- `npm run lint` — passed (0 errors, 30 existing warnings, structure check passed).
+- `npm run format:check` — passed after Prettier formatting.
+- `npm run test:unit` — passed (209 test files, 962 tests).
+- `npm run content:check` — passed for `demo (demo-2026-09-22)` and `birthday (birthday-draft)` (still flags the expected incomplete birthday draft fields for `where-are-we` and `ed-or-humza`; API question pack files were not modified).
+- `npm run build` — passed (secrets scan checked 993 build files; bundle budget passed: entry JS 222,610 / 260,000 B gzip, entry CSS 28,208 / 34,000 B gzip, total JS 1,492,464 / 1,650,000 B gzip, largest JS 496,697 / 600,000 B gzip).
+- `npm run test -w @26/api` — not run (`apps/api` and `packages/shared` were not changed).
+
+### Manual verification & remaining limitations
+
+- Live browser visual verification and 320 px / 390 px before/after screenshots could not be captured in this environment because Chrome DevTools remote debugging was not active (`DevToolsActivePort` ENOENT), and Playwright/E2E runners are prohibited for this task.
+- Real party content for `where-are-we` (clue photo, place name, exact coordinates) and `ed-or-humza` (confirmed speaker for 18 quotes) remains intentionally untouched in `apps/api/src/questions/packs/birthday/`.

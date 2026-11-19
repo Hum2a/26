@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { Browser } from "leaflet";
 import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
@@ -66,18 +66,50 @@ function stubMap() {
   );
 }
 
-it("shows the stand-in clue and sends a pin through onMapPin", async () => {
+it("shows the stand-in clue, reserves the pin readout, and sends a pin through onMapPin", async () => {
   stubMap();
   const callbacks = handlers();
   render(<GuestPlay snapshot={snapshot()} pending={false} {...callbacks} />);
   expect(screen.getByText("Where are we?")).toBeTruthy();
   expect(screen.getByAltText(/Stand-in clue photo/)).toBeTruthy();
   expect(screen.getByText(/not the party clue/)).toBeTruthy();
+  expect(screen.getByText("No pin placed yet")).toBeTruthy();
   fireEvent.click(
     await screen.findByRole("button", { name: "Place pin at map centre" }),
   );
+  expect(screen.getByText(/Pin at 18\.00°, 0\.00°/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Send pin" }));
   expect(callbacks.onMapPin).toHaveBeenCalledWith({ lat: 18, lng: 0 });
+});
+
+it("opens the clue photo lightbox in a dialog and closes cleanly via button, backdrop, and Escape", async () => {
+  stubMap();
+  render(<GuestPlay snapshot={snapshot()} pending={false} {...handlers()} />);
+  const trigger = screen.getByRole("button", { name: "Open clue photo" });
+
+  // Close via explicit Close button.
+  fireEvent.click(trigger);
+  expect(screen.getByRole("dialog", { name: "Clue photo" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Close clue photo" }));
+  await waitFor(() => {
+    expect(screen.queryByRole("dialog", { name: "Clue photo" })).toBeNull();
+  });
+
+  // Close via Escape key.
+  fireEvent.click(trigger);
+  expect(screen.getByRole("dialog", { name: "Clue photo" })).toBeTruthy();
+  fireEvent.keyDown(window, { key: "Escape" });
+  await waitFor(() => {
+    expect(screen.queryByRole("dialog", { name: "Clue photo" })).toBeNull();
+  });
+
+  // Close via backdrop tap.
+  fireEvent.click(trigger);
+  const dialog = screen.getByRole("dialog", { name: "Clue photo" });
+  fireEvent.click(dialog);
+  await waitFor(() => {
+    expect(screen.queryByRole("dialog", { name: "Clue photo" })).toBeNull();
+  });
 });
 
 it("keeps the map closed until answering, then locks after an accepted pin", () => {

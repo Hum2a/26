@@ -1,57 +1,290 @@
-.guess-map {
+.guess-map-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   width: 100%;
-  height: clamp(12rem, 42dvh, 25rem);
-  background: #b3d8e7;
-  border-radius: 0.65rem;
+  min-width: 0;
+  min-height: 0;
+}
+
+.guess-map-frame {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 11rem;
+  border: 1px solid var(--line, #5c5144);
+  border-radius: var(--radius-panel, 0.65rem);
+  overflow: hidden;
+  background-color: color-mix(
+    in srgb,
+    var(--background, #14110e) 76%,
+    var(--surface, #2c241c)
+  );
+  background-color: light-dark(
+    color-mix(in srgb, var(--background, #fff) 24%, #b3d8e7),
+    color-mix(in srgb, var(--background, #14110e) 60%, #163246)
+  );
   isolation: isolate;
   touch-action: none;
   overscroll-behavior: none;
+}
+
+.guess-map {
+  width: 100%;
+  height: clamp(11.5rem, 40dvh, 25rem);
+  background-color: color-mix(
+    in srgb,
+    var(--background, #14110e) 76%,
+    var(--surface, #2c241c)
+  );
+  background-color: light-dark(
+    color-mix(in srgb, var(--background, #fff) 24%, #b3d8e7),
+    color-mix(in srgb, var(--background, #14110e) 60%, #163246)
+  );
+  border-radius: inherit;
+  isolation: isolate;
+  touch-action: none;
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
 }
+
 .guess-map.leaflet-container {
   height: 100%;
-  background: #b3d8e7;
+  background-color: color-mix(
+    in srgb,
+    var(--background, #14110e) 76%,
+    var(--surface, #2c241c)
+  );
+  background-color: light-dark(
+    color-mix(in srgb, var(--background, #fff) 24%, #b3d8e7),
+    color-mix(in srgb, var(--background, #14110e) 60%, #163246)
+  );
+  color: var(--foreground, #fff6e8);
   touch-action: none;
+  overscroll-behavior: none;
   font: inherit;
 }
+
+.guess-map .guess-map-land {
+  fill: color-mix(in srgb, var(--surface, #2c241c) 72%, var(--muted, #e4d5c0));
+  fill: light-dark(
+    color-mix(in srgb, var(--surface, #f4f4f4) 22%, #c5d9c2),
+    color-mix(in srgb, var(--surface, #2c241c) 62%, #3a544a)
+  );
+  stroke: color-mix(in srgb, var(--line, #5c5144) 85%, var(--foreground, #fff6e8));
+  stroke: light-dark(
+    color-mix(in srgb, var(--line, #777) 40%, #507485),
+    color-mix(in srgb, var(--line, #5c5144) 60%, #7ea0ad)
+  );
+  fill-opacity: 1;
+}
+
+.guess-map .guess-map-city-dot {
+  fill: light-dark(
+    #213e48,
+    color-mix(in srgb, var(--foreground, #fff6e8) 82%, transparent)
+  );
+}
+
 .guess-map .leaflet-pane,
 .guess-map .leaflet-map-pane,
 .guess-map .leaflet-proxy {
   will-change: transform;
 }
+
+.guess-map .leaflet-tile-pane,
+.guess-map .leaflet-tile {
+  background: transparent;
+}
+
+.guess-map .leaflet-bar {
+  border: 1px solid var(--line, #5c5144);
+  border-radius: var(--radius-control, 0.5rem);
+  overflow: hidden;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--background, #000) 40%, transparent);
+}
+
 .guess-map .leaflet-control-zoom a {
-  width: 2.75rem;
-  height: 2.75rem;
-  line-height: 2.75rem;
-  font-size: 1.35rem;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  min-width: 48px;
+  min-height: 48px;
+  line-height: 1;
+  font-size: 1.4rem;
+  font-weight: 700;
+  background: var(--surface, #2c241c);
+  color: var(--surface-foreground, #fff6e8);
+  border-bottom-color: var(--line, #5c5144);
+  touch-action: manipulation;
+  transition:
+    background-color 0.16s var(--ease-party, ease),
+    color 0.16s var(--ease-party, ease);
 }
+
+.guess-map .leaflet-control-zoom a:hover,
+.guess-map .leaflet-control-zoom a:focus-visible {
+  background: color-mix(in srgb, var(--accent, #ff4d3a) 22%, var(--surface, #2c241c));
+  color: var(--foreground, #fff6e8);
+}
+
+.guess-map .leaflet-control-zoom a.leaflet-disabled {
+  background: color-mix(
+    in srgb,
+    var(--surface, #2c241c) 75%,
+    var(--background, #14110e)
+  );
+  color: var(--muted, #a89f91);
+  opacity: 0.6;
+}
+
+.guess-map .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--surface, #2c241c) 82%, transparent);
+  color: var(--muted, #e4d5c0);
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-top-left-radius: 0.35rem;
+}
+
+.guess-map .leaflet-control-attribution a {
+  color: inherit;
+}
+
 .guess-map:focus-visible {
-  outline: 3px solid currentColor;
+  outline: 3px solid var(--highlight, currentColor);
+  outline-offset: -3px;
 }
+
+.guess-map-reticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 450;
+  width: 1.5rem;
+  height: 1.5rem;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.guess-map-reticle::before,
+.guess-map-reticle::after {
+  content: "";
+  position: absolute;
+  background: light-dark(
+    color-mix(in srgb, #14110e 70%, transparent),
+    color-mix(in srgb, var(--foreground, #fff6e8) 80%, transparent)
+  );
+  border-radius: 999px;
+}
+
+.guess-map-reticle::before {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  transform: translateY(-50%);
+}
+
+.guess-map-reticle::after {
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+.guess-map-centre,
+.guess-map-retry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3rem;
+  min-height: 3rem;
+  padding: 0.5rem 0.9rem;
+  border: 2px solid var(--line, #5c5144);
+  border-radius: var(--radius-control, 0.65rem);
+  background: var(--surface, #2c241c);
+  color: var(--surface-foreground, #fff6e8);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  touch-action: manipulation;
+  cursor: pointer;
+  transition:
+    background-color 0.16s var(--ease-party, ease),
+    border-color 0.16s var(--ease-party, ease),
+    transform 0.14s var(--ease-party, ease);
+}
+
+.guess-map-centre {
+  width: 100%;
+}
+
+.guess-map-centre:focus-visible,
+.guess-map-retry:focus-visible {
+  outline: 3px solid var(--highlight, currentColor);
+  outline-offset: 2px;
+}
+
+.guess-map-error {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.92rem;
+}
+
 .guess-map-label {
   display: none;
   background: transparent;
   border: 0;
   box-shadow: none;
   padding: 0 0.2rem;
-  color: #1b3946;
-  text-shadow:
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+  color: light-dark(#1b3946, var(--foreground, #fff6e8));
+  text-shadow: light-dark(
     0 0 2px white,
-    0 0 3px white;
+    0 1px 3px color-mix(in srgb, var(--background, #000) 92%, black)
+  );
 }
+
 .guess-map-label::before {
   display: none;
 }
+
 .guess-map-country {
   font-size: 0.68rem;
-  font-weight: 600;
-  color: #193936;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: light-dark(#193936, var(--foreground, #fff6e8));
 }
+
 .guess-map-show-countries .guess-map-country,
 .guess-map-show-cities .guess-map-city {
   display: block;
 }
+
 .stage-map-guess .guess-map {
   height: clamp(14rem, 42dvh, 36rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guess-map .leaflet-pane,
+  .guess-map .leaflet-map-pane,
+  .guess-map .leaflet-proxy {
+    will-change: auto;
+  }
+  .guess-map-centre,
+  .guess-map-retry,
+  .guess-map .leaflet-control-zoom a {
+    transition: opacity 0.15s ease;
+  }
 }
