@@ -7000,3 +7000,15 @@ Answer acknowledgement p95 ranged 386–1373 ms across these single samples, wit
 - **Database rows written.** The test Worker hit "Exceeded allowed rows written in Durable Objects free tier" after about 20 runs. Each race tick writes roughly 85 rows with 80 drivers (one input queue row per driver, the race, the job, the room version and the alarm), so about 850 rows a second. One 3-minute 80-driver race is roughly 150,000 rows. The Workers Free plan allows 100,000 rows written a day, so on a Free plan one full race would hit the limit mid-race. The Paid plan includes 50 million a month. Whether the party's account (`account_id` in `apps/api/wrangler.jsonc`) is on Workers Paid is not known here and must be checked before the party.
 
 Answer acknowledgement p95 on Cloudflare was 71–295 ms across runs; quiz rounds are not a concern.
+
+## 19 November 2026 — Presenter export and prompt copy
+
+Regenerated Baseer’s running order and the offline answer key from the birthday order. The reveal text now covers the room-median dials, exact-set choices, live voting and matching results, and chess and kart scoring. The two exact-set rounds list their authored answer labels. Applied the approved Humza, Christianity option label, and kart copy corrections. Option IDs and the pack order are unchanged.
+
+Both formatter regression tests passed. A second export reproduced all four generated files byte for byte. The generated birthday exports have no blank reveals or literal placeholders.
+
+Typecheck, lint (30 warnings), formatting, content preflight, the production build, and all 73 release tests passed.
+
+The full web unit suite finished twice with 952 passes and two failures each time. The failing cases changed between runs. The first run failed the kart tennis-slot assertion and timed out in the guest troll test. The second failed the guest Wordle transfer and Pokémon silhouette fallback assertions. The focused question-authoring suite passed all 22 tests.
+
+The full API run passed 813 tests and skipped four. Its routing suite stopped before collecting tests because Wrangler could not create its default config directory. Rerunning only that suite with a writable `XDG_CONFIG_HOME` passed all four routing tests. Playwright and end-to-end checks were outside this run.

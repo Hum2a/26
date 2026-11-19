@@ -27,7 +27,7 @@ Reveal: Uni accommodation
 
 You were caught on 4K camera at a Selfridges changing room doing something unspeakable. Write the first sentence of your Notes App apology.
 
-Reveal: No fixed answer. The room's votes decide it.
+Reveal: The most convincing apology wins the bracket and 60 points. No self-votes. Tied matches use the frozen random draw; odd entries get a bye. No votes means no prize.
 
 ## 5. favourite-genre
 
@@ -117,7 +117,7 @@ Reveal: Jigglypuff
 
 Create the most common password
 
-Reveal: (close spellings count)
+Reveal: Case and outer spaces do not matter; repeated spaces count as one. Unique answers score zero. The biggest matching group gets 100; smaller matching groups score proportionally. Ties share the same score.
 
 ## 20. complete-a-wordle
 
@@ -157,7 +157,7 @@ Reveal: 139 p
 
 ## 26. how-italian-is-humza
 
-Guess how Italian humza is
+Guess how Italian Humza is
 
 Reveal: 0.5%
 
@@ -165,88 +165,94 @@ Reveal: 0.5%
 
 Which of these ARE branches of Christianity?
 
-Reveal:
+Reveal: Correct answers are Muggletonians, The Jumpers, Ranters. Only that exact set earns points.
 
-## 28. guess-tab-oyster
+## 28. trump-made-up-country
+
+Which of these countries has Trump made up?
+
+Reveal: Correct answers are The United States of Israel, The Islamic Republic of Japan. Only that exact set earns points.
+
+## 29. guess-tab-oyster
 
 Adult peak PAYG single: Sutton → Oxford Circus via Zone 1. TfL default route, October 2026.
 
 Reveal: 8.8 £
 
-## 29. guess-tab-car-insurance
+## 30. guess-tab-car-insurance
 
 Newly qualified and aged 25+: what was the median annual car insurance price paid through Go.Compare in June 2026?
 
 Reveal: 1002 £
 
-## 30. guess-tab-soho-pint
+## 31. guess-tab-soho-pint
 
 What does a standard pint of Camden Hells cost at The Roxy, Soho? Menu checked October 2026.
 
 Reveal: 7.3 £
 
-## 31. guess-tab-ev-charge
+## 32. guess-tab-ev-charge
 
 Charge a 62 kWh battery from empty to full at the Jan–Mar 2026 GB average capped electricity rate. What is the energy cost?
 
 Reveal: 17.17 £
 
-## 32. heathrow-search-query
+## 33. heathrow-search-query
 
 Write the worst possible search query to find on someone’s phone right before going through UK border control.
 
-Reveal: No fixed answer. The room's votes decide it.
+Reveal: The worst search wins the bracket and 60 points. No self-votes. Odd entries get a bye; tied matches use the random draw fixed before voting. No votes in the entire bracket means no prize.
 
-## 33. rank-driving-sins
+## 34. rank-driving-sins
 
 Rank these UK driving offenses from ‘mildly annoying’ to ‘immediate revocation of human rights’.
 
-Reveal:
+Reveal: The room’s order comes from each item’s mean position. Tied mean positions stay tied. Score up to 80 for agreeing with the room’s ordered pairs.
 
-## 34. dating-exit-excuse
+## 35. dating-exit-excuse
 
 You're 10 minutes into a first date in Central London and they say: ‘Honestly, I think astrology has more predictive validity than peer-reviewed economics.’ What is your exact exit excuse?
 
-Reveal: No fixed answer. The room's votes decide it.
+Reveal: One line, three awards. Each category is worth 60 points to its winning author or tied authors. The same line can win more than one award; no self-votes.
 
-## 35. dial-pop-culture
+## 36. dial-pop-culture
 
 Predict the room’s middle ground: Pop Culture Snobbery.
 
-Reveal: null /100
+Reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
-## 36. dial-london-geography
+## 37. dial-london-geography
 
 Predict the room’s middle ground: London Geography.
 
-Reveal: null /100
+Reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
-## 37. dial-british-politics
+## 38. dial-british-politics
 
 Predict the room’s middle ground: British Politics.
 
-Reveal: null /100
+Reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
-## 38. chess-battle
+## 39. chess-battle
 
 Play 1-minute blitz against the Humza bot!
 
-Reveal: Closer to undefined.
+Reveal: Capturing Black pieces scores 10 for a queen, 5 for a rook, 3 for a bishop, 3 for a knight and 1 for a pawn. Checkmating the bot earns at least 40 points. Winning on time adds 15 points to captures. Other results score captures only.
 
-## 39. group-chat-figurine
+## 40. group-chat-figurine
 
 I just dropped £400 on a Japanese imported figurine and told my mum it was an educational tax deduction.
 
-Reveal: The named person is set on the question.
+Reveal: Reveal who got the most votes. Guests who picked them score. A winning self-vote scores double.
 
-## 40. cursed-search-history
+## 41. cursed-search-history
 
 Hold your nerve as the search history gets worse. Hit BAIL to bank points before the Raid.
 
-Reveal:
+Reveal: Players who bailed before the Raid keep their banked points. Players caught by the Raid score zero. If there was no Raid, players still in bank 700 points.
 
-## 41. kart-sprint
+## 42. kart-sprint
 
-One lap. three minutes. Who can actually drive?
+One lap. Three minutes. Who can actually drive?
 
-Reveal: Closer to undefined.
+Reveal: Fastest completed lap wins. Finishers share place on equal finish times; DNF scores zero. Ghost karts mean nobody can blame traffic.
