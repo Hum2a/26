@@ -25,6 +25,9 @@ import {
 } from "./steering";
 import type { LobbySnapshot, KartLookPreset } from "@26/shared";
 import KartGameWrapper from "./KartGameWrapper";
+import kartCss from "./kart.css?raw";
+import raceHudCss from "./race-hud.css?raw";
+import soloCss from "../../../kart-solo/src/solo.css?raw";
 import { useEffect } from "react";
 vi.mock("./KartCanvas", () => ({
   default: function ReadyKartCanvas({
@@ -982,4 +985,63 @@ it("always delivers a pedal release made straight after a send, and releases on 
   expect(send.mock.lastCall![0]).toMatchObject({ gas: false, brake: false });
   const all = [...sequences, send.mock.lastCall![0].sequence as number];
   for (let i = 1; i < all.length; i++) expect(all[i]!).toBeGreaterThan(all[i - 1]!);
+});
+
+it("groups live race HUD and side actions into corner stacks while keeping finish clean", () => {
+  const saved = createKartRace("corner-stacks", [{ playerId: "mine", name: "Amina" }]);
+  const race = projectKartRace(saved, "mine", 100);
+  const snapshot = {
+    phase: "collect",
+    paused: false,
+    held: false,
+    play: { kart: race, selfAward: null },
+  } as unknown as LobbySnapshot;
+  const view = render(
+    <GuestKart
+      snapshot={snapshot}
+      onInput={vi.fn()}
+      onUseItem={vi.fn()}
+      onRecover={vi.fn()}
+    />,
+  );
+  const phone = screen.getByRole("region", { name: "Sprint controller" });
+  expect(phone.getAttribute("data-layout")).toBe("race");
+  const hudStack = phone.querySelector(".kart-hud-stack");
+  const actionRail = phone.querySelector(".kart-action-rail");
+  expect(hudStack?.querySelector(".kart-race-hud")).toBeTruthy();
+  expect(hudStack?.querySelector(".kart-phone-hud")).toBeTruthy();
+  expect(hudStack?.querySelector(".kart-telemetry")).toBeTruthy();
+  expect(actionRail?.querySelector(".kart-power-control")).toBeTruthy();
+  expect(actionRail?.querySelector(".kart-recovery")).toBeTruthy();
+  expect(phone.querySelector(".kart-race-status")?.parentElement).toBe(phone);
+
+  race.participants[0]!.status = "FINISHED";
+  race.participants[0]!.lapTimeMs = 28_000;
+  view.rerender(
+    <GuestKart
+      snapshot={{ ...snapshot }}
+      onInput={vi.fn()}
+      onUseItem={vi.fn()}
+      onRecover={vi.fn()}
+    />,
+  );
+  expect(phone.getAttribute("data-layout")).toBe("finish");
+  expect(phone.querySelector(".kart-action-rail")).toBeNull();
+  expect(phone.querySelector(".kart-phone-hud")).toBeTruthy();
+});
+
+it("keeps kart mobile HUD, status notices, and solo overlays out of the centre viewport", () => {
+  const landscapeSection = raceHudCss.slice(
+    raceHudCss.indexOf("@media (orientation: landscape)"),
+  );
+  expect(landscapeSection).not.toMatch(/\.kart-race-hud\s*\{[^}]*left:\s*50%/);
+  expect(landscapeSection).not.toMatch(/\.kart-race-hud\s*\{[^}]*bottom:\s*max/);
+
+  expect(kartCss).not.toMatch(/\.kart-driver-map\s*\{[^}]*50%/);
+  expect(kartCss).not.toMatch(/\.kart-race-status\s*\{[^}]*top:\s*50%/);
+  expect(kartCss).toMatch(/\.kart-hud-stack\s*\{[^}]*left:\s*var\(--race-edge\)/);
+  expect(kartCss).toMatch(/\.kart-action-rail\s*\{[^}]*left:\s*var\(--race-edge\)/);
+
+  expect(soloCss).not.toContain("left: calc(50% - 7rem)");
+  expect(soloCss).not.toContain("bottom: calc(230px");
 });
