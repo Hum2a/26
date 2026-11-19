@@ -141,6 +141,11 @@
   line-height: 1;
   font-weight: 900;
 }
+.glyph-stage-word[data-revealed] span {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--highlight);
+}
 .glyph-stage-instruction {
   font-size: clamp(30px, min(2.1vw, 3.6vh), 40px);
 }

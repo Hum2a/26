@@ -245,12 +245,12 @@ function RageStage({
         <motion.div
           className="rage-mercury"
           aria-hidden="true"
-          initial={{ scaleX: 0 }}
+          initial={{ scaleX: reveal && !motionSet.reduce ? 0.12 : 0 }}
           animate={{ scaleX: reveal ? 1 : 0.12 }}
           transition={{
-            duration: motionSet.reduce ? 0.2 : 3.2,
+            duration: motionSet.reduce ? 0.2 : 2,
             ease: [0.4, 0, 0.2, 1],
-            delay: motionSet.delay(0.3),
+            delay: motionSet.delay(0.2),
           }}
         />
         {coolestFirst.map((tier, step) => {
@@ -285,8 +285,8 @@ function RageStage({
                       data-hottest={hottest || undefined}
                       initial={{
                         opacity: 0,
-                        y: motionSet.move(-160),
-                        scale: motionSet.reduce ? 1 : 0.6,
+                        y: motionSet.move(-80),
+                        scale: motionSet.reduce ? 1 : 0.8,
                       }}
                       animate={{
                         opacity: 1,
@@ -296,10 +296,10 @@ function RageStage({
                       }}
                       transition={{
                         ...motionSet.spring,
-                        delay: motionSet.delay(0.6 + step * 0.8),
+                        delay: motionSet.delay(0.35 + step * 0.45),
                         rotate: {
-                          duration: 0.6,
-                          delay: motionSet.delay(0.9 + step * 0.8),
+                          duration: 0.55,
+                          delay: motionSet.delay(0.55 + step * 0.45),
                         },
                       }}
                     >

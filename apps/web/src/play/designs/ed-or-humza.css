@@ -435,46 +435,61 @@
 
 .ed-stage-columns {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.85rem, 1.8vw, 1.5rem);
   min-width: 0;
+  align-items: start;
 }
 
 .ed-stage-column {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem 0.9rem;
   min-width: 0;
 }
 
 .ed-stage-photo {
   display: block;
-  width: min(100%, 22vw, calc(32vh * 3 / 4));
+  width: clamp(3.5rem, 6.5vh, 5.25rem);
   height: auto;
   aspect-ratio: 3 / 4;
-  margin: 0 0 0.7rem;
+  margin: 0;
   border-radius: var(--radius-panel);
   object-fit: cover;
   background: var(--muted);
 }
 
 .ed-stage-column h2 {
-  margin: 0 0 0.8rem;
-  font-size: max(48px, 3vw);
+  margin: 0;
+  font-size: clamp(34px, min(2.4vw, 4vh), 46px);
+  line-height: 1.05;
+}
+
+.ed-stage-column > p {
+  grid-column: 1 / -1;
+  margin: 0;
 }
 
 .ed-stage-column ul {
+  grid-column: 1 / -1;
   margin: 0;
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  max-height: clamp(18rem, 56vh, 36rem);
+  overflow-y: auto;
 }
 
 .ed-stage-column li {
-  padding: 0.7rem 0.9rem;
+  padding: 0.4rem 0.65rem;
   border-radius: var(--radius-panel);
   background: var(--surface);
   color: var(--surface-foreground);
-  font-size: max(28px, 1.6vw);
-  line-height: 1.2;
+  font-size: clamp(28px, min(1.45vw, 2.35vh), 30px);
+  line-height: 1.14;
   overflow-wrap: anywhere;
 }
 

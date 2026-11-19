@@ -85,7 +85,7 @@ function Scrawl({ signed }: { signed: boolean }) {
           strokeWidth="5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          initial={false}
+          initial={signed && !motionSet.reduce ? { pathLength: 0, opacity: 0 } : false}
           animate={{ pathLength: signed ? 1 : 0, opacity: signed ? 1 : 0 }}
           transition={{ duration: motionSet.reduce ? 0.2 : 0.9, ease: [0.2, 0, 0, 1] }}
         />
@@ -237,11 +237,13 @@ function OrderStage({
                 key={option.id}
                 className="order-line"
                 data-size="stage"
-                initial={{ opacity: 0, y: motionSet.move(24) }}
+                initial={
+                  reveal ? { opacity: 1, y: 0 } : { opacity: 0, y: motionSet.move(24) }
+                }
                 animate={{ opacity: reveal && !made ? 0.55 : 1, y: 0 }}
                 transition={{
                   ...motionSet.spring,
-                  delay: motionSet.delay(index * 0.12),
+                  delay: motionSet.delay(reveal ? 0.1 : index * 0.12),
                 }}
               >
                 <span className="order-section" aria-hidden="true">
@@ -249,7 +251,7 @@ function OrderStage({
                 </span>
                 <span className="order-country">{option.label}</span>
                 <StageVoters play={play} optionId={option.id} />
-                {reveal ? <Verdict made={made} delay={0.4 + index * 0.35} /> : null}
+                {reveal ? <Verdict made={made} delay={0.25 + index * 0.22} /> : null}
               </motion.li>
             );
           })}

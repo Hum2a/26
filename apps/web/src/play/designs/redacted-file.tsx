@@ -121,11 +121,15 @@ function FileStage({ play }: Extract<PresentationProps, { surface: "stage" }>) {
       <StagePrompt text={play.question.prompt} />
       <motion.div
         className="dossier-folder dossier-folder-stage"
-        initial={{
-          opacity: 0,
-          y: motionSet.move(40),
-          rotate: motionSet.reduce ? 0 : 1.5,
-        }}
+        initial={
+          reveal
+            ? false
+            : {
+                opacity: 0,
+                y: motionSet.move(40),
+                rotate: motionSet.reduce ? 0 : 1.5,
+              }
+        }
         animate={{ opacity: 1, y: 0, rotate: motionSet.reduce ? 0 : 0.5 }}
         transition={motionSet.slow}
       >
@@ -154,12 +158,12 @@ function FileStage({ play }: Extract<PresentationProps, { surface: "stage" }>) {
               <motion.span
                 className="dossier-bar"
                 aria-hidden="true"
-                initial={false}
+                initial={reveal ? { scaleX: motionSet.reduce ? 0 : 1 } : false}
                 animate={{ scaleX: reveal ? 0 : 1 }}
                 transition={{
-                  duration: motionSet.reduce ? 0.2 : 1.4,
+                  duration: motionSet.reduce ? 0.2 : 1.1,
                   ease: [0.7, 0, 0.2, 1],
-                  delay: motionSet.delay(0.6),
+                  delay: motionSet.delay(0.35),
                 }}
               />
             </dd>
@@ -171,7 +175,7 @@ function FileStage({ play }: Extract<PresentationProps, { surface: "stage" }>) {
           <motion.span
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ ...motionSet.soft, delay: motionSet.delay(2) }}
+            transition={{ ...motionSet.soft, delay: motionSet.delay(1.35) }}
           >
             {typedTally(reveal)}
             {reveal.correctNames && reveal.correctNames.length > 0

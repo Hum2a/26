@@ -162,8 +162,8 @@
 
 .np-stage-track {
   display: grid;
-  grid-template-columns: auto 3.25rem 1fr auto;
-  gap: 0.9rem;
+  grid-template-columns: auto 3.25rem minmax(0, 1fr) auto;
+  gap: 0.45rem 0.9rem;
   align-items: center;
   border: 2px solid var(--line);
   border-radius: 1.25rem;
@@ -171,6 +171,7 @@
   padding: clamp(0.35rem, 0.85vh, 0.55rem) 1.15rem;
   font-size: clamp(30px, min(2vw, 3.4vh), 38px);
   font-weight: 700;
+  transform-origin: center;
 }
 
 .np-stage-track[data-winner] {
@@ -183,6 +184,8 @@
 }
 
 .np-stage-track .np-meter {
+  grid-column: 4;
+  grid-row: 1;
   height: 2rem;
   gap: 5px;
 }

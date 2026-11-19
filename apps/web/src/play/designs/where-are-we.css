@@ -203,42 +203,48 @@
 
 .where-stage-grid {
   display: grid;
-  gap: 1.25rem;
+  gap: clamp(0.75rem, 1.8vw, 1.5rem);
   min-width: 0;
 }
 
-.where-stage-grid[data-revealed] {
+.where-stage-grid[data-revealed],
+.where-stage-grid:has(> .where-stage-map) {
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr);
   align-items: stretch;
 }
 
 .where-stage-photo {
   margin: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
 }
 
 .where-stage-photo img {
   display: block;
   width: 100%;
-  max-height: 58vh;
-  object-fit: contain;
+  max-height: clamp(12rem, 38vh, 23rem);
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
   border-radius: var(--radius-panel);
   background: var(--surface);
 }
 
 .where-stage-photo figcaption {
-  margin-top: 0.4rem;
+  margin: 0;
   color: var(--muted);
-  font-size: max(22px, 1.2vw);
+  font-size: clamp(28px, min(1.5vw, 2.4vh), 30px);
+  line-height: 1.18;
 }
 
 .where-stage-map {
   display: flex;
   flex-direction: column;
-  min-height: 28vh;
+  min-height: 22vh;
 }
 
 .where-are-we-stage .where-stage-map .guess-map-frame {
-  height: clamp(18rem, 48vh, 36rem);
+  height: clamp(13rem, 38vh, 24rem);
 }
 
 .where-are-we-stage .where-stage-map .guess-map {
@@ -250,8 +256,10 @@
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 0.6rem;
-  font-size: max(36px, 2.2vw);
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 0.4rem 1rem;
+  font-size: clamp(28px, min(1.8vw, 3vh), 34px);
+  line-height: 1.16;
   font-weight: 700;
 }
 

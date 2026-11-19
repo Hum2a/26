@@ -230,4 +230,54 @@ describe("custom question designs", () => {
       screen.getByRole("button", { name: "Baghdaddystan, not one of his" }),
     ).toBeTruthy();
   });
+
+  it("uses transform-backed split fills on the red/blue pill stage reveal and keeps answers hidden in collect", () => {
+    const pillQ = previewQuestions["red-blue-pill"];
+    const collectStage = render(<StagePlay snapshot={lobby("collect", play(pillQ))} />);
+    expect(collectStage.container.querySelector(".pill-split")).toBeNull();
+    expect(collectStage.container.querySelector(".pill-flatline")).toBeNull();
+    collectStage.unmount();
+
+    const reveal = {
+      kind: "choice" as const,
+      correctOptionId: null,
+      outcome: "threshold" as const,
+      tally: [
+        { optionId: "red", count: 44 },
+        { optionId: "blue", count: 36 },
+      ],
+      winners: ["red"],
+      everyone: false,
+      met: false,
+    };
+    const revealStage = render(
+      <StagePlay snapshot={lobby("reveal", play(pillQ, { reveal }))} />,
+    );
+    expect(revealStage.container.querySelectorAll(".pill-split-fill")).toHaveLength(2);
+    expect(revealStage.container.querySelector(".pill-flatline")).not.toBeNull();
+    expect(revealStage.container.textContent).toContain("55%");
+    expect(revealStage.container.textContent).toContain("45%");
+  });
+
+  it("keeps live voters after the equalizer meter on the now-playing stage and pauses losing meters on reveal", () => {
+    const npQ = previewQuestions["now-playing"];
+    const voters = [
+      { optionId: "white-girl", playerIds: ["p1"] },
+      { optionId: "persona", playerIds: ["p2"] },
+      { optionId: "flute", playerIds: [] },
+      { optionId: "goat", playerIds: [] },
+    ];
+    const reveal = { kind: "choice" as const, correctOptionId: "white-girl" };
+    const view = render(
+      <StagePlay snapshot={lobby("reveal", play(npQ, { reveal, voters }))} />,
+    );
+    const tracks = [...view.container.querySelectorAll(".np-stage-track")];
+    expect(tracks).toHaveLength(4);
+    expect(tracks[0]?.querySelector(".np-meter-live")).not.toBeNull();
+    expect(tracks[1]?.querySelector(".np-meter-live")).toBeNull();
+    const children = [...(tracks[0]?.children ?? [])].map((el) => el.className);
+    expect(children.indexOf("np-meter np-meter-live")).toBeLessThan(
+      children.findIndex((c) => c.includes("design-voters")),
+    );
+  });
 });

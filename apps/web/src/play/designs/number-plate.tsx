@@ -151,7 +151,16 @@ function PlateStage({
             />
             <div className="car-holder">
               {answer ? (
-                <motion.div layoutId={`plate-${answer.id}`} transition={motionSet.slow}>
+                <motion.div
+                  layoutId={`plate-${answer.id}`}
+                  initial={{
+                    opacity: 0,
+                    y: motionSet.move(24),
+                    scale: motionSet.reduce ? 1 : 0.92,
+                  }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={motionSet.spring}
+                >
                   <Plate label={answer.label} size="stage" />
                 </motion.div>
               ) : (
@@ -193,11 +202,13 @@ function PlateStage({
               <motion.li
                 key={option.id}
                 layoutId={`plate-${option.id}`}
-                initial={{ opacity: 0, y: motionSet.move(30) }}
+                initial={
+                  answer ? { opacity: 1, y: 0 } : { opacity: 0, y: motionSet.move(30) }
+                }
                 animate={{ opacity: answer ? 0.3 : 1, y: 0 }}
                 transition={{
                   ...motionSet.spring,
-                  delay: motionSet.delay(index * 0.1),
+                  delay: motionSet.delay(answer ? 0.08 : index * 0.1),
                 }}
               >
                 <Plate label={option.label} size="stage" />

@@ -73,7 +73,7 @@ function Mystery({ view, size }: { view: View; size: "phone" | "stage" }) {
     >
       <span className="poke-rays" aria-hidden="true" />
       <span className="poke-glow" aria-hidden="true" />
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence mode="wait" initial={Boolean(answer) && size === "stage"}>
         {colour ? (
           <motion.img
             key="colour"
@@ -214,13 +214,13 @@ function PokeStage({
         <Mystery view={view} size="stage" />
         <div className="poke-stage-side">
           <Title text={play.question.prompt} size="stage" />
-          <AnimatePresence initial={false}>
+          <AnimatePresence>
             {answer ? (
               <motion.p
                 key="answer"
                 className="poke-title poke-stage-answer"
                 data-size="stage"
-                initial={{ opacity: 0, y: motionSet.move(20) }}
+                initial={{ opacity: 0, y: motionSet.move(16) }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={motionSet.soft}
@@ -237,11 +237,15 @@ function PokeStage({
                   key={option.id}
                   className="poke-move"
                   data-answer={right || undefined}
-                  initial={{ opacity: 0, x: motionSet.move(40) }}
+                  initial={
+                    view.reveal
+                      ? { opacity: 1, x: 0 }
+                      : { opacity: 0, x: motionSet.move(40) }
+                  }
                   animate={{ opacity: view.reveal && !right ? 0.45 : 1, x: 0 }}
                   transition={{
                     ...motionSet.spring,
-                    delay: motionSet.delay(0.15 + index * 0.08),
+                    delay: motionSet.delay(view.reveal ? 0.08 : 0.15 + index * 0.08),
                   }}
                 >
                   <span className="poke-cursor" aria-hidden="true">

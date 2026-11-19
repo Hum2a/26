@@ -219,11 +219,15 @@ function PillStage({
                 className="pill-stage-hand"
                 data-tone={tone}
                 data-lost={lost || undefined}
-                initial={{ opacity: 0, x: motionSet.move(index === 0 ? -80 : 80) }}
+                initial={
+                  view.reveal
+                    ? { opacity: 1, x: 0 }
+                    : { opacity: 0, x: motionSet.move(index === 0 ? -80 : 80) }
+                }
                 animate={{ opacity: lost ? 0.35 : 1, x: 0 }}
                 transition={{
                   ...motionSet.slow,
-                  delay: motionSet.delay(lost ? 2.4 : 0.2),
+                  delay: motionSet.delay(lost ? 2 : view.reveal ? 0 : 0.2),
                 }}
               >
                 <motion.span
@@ -253,7 +257,17 @@ function PillStage({
                   ) : null}
                 </span>
                 <StageVoters play={play} optionId={option.id} />
-                {lost ? <Icon icon={heartPulse} className="pill-flatline" /> : null}
+                {lost ? (
+                  <motion.span
+                    className="pill-flatline"
+                    aria-hidden="true"
+                    initial={{ opacity: 0, scale: motionSet.reduce ? 1 : 0.6 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ ...motionSet.spring, delay: motionSet.delay(2) }}
+                  >
+                    <Icon icon={heartPulse} />
+                  </motion.span>
+                ) : null}
               </motion.div>
             );
           })}
@@ -264,29 +278,47 @@ function PillStage({
             aria-label={`${Math.round(blueShare * 100)}% took blue`}
           >
             <motion.span
-              className="pill-split-red"
-              initial={{ flexGrow: 1 }}
-              animate={{ flexGrow: Math.max(0.0001, 1 - blueShare) }}
+              className="pill-split-fill pill-split-red"
+              aria-hidden="true"
+              initial={{ scaleX: motionSet.reduce ? 1 - blueShare : 0.5 }}
+              animate={{ scaleX: 1 - blueShare }}
               transition={{
-                duration: motionSet.reduce ? 0.2 : 1.8,
+                duration: motionSet.reduce ? 0.2 : 1.6,
                 ease: [0.2, 0, 0, 1],
-                delay: motionSet.delay(0.4),
+                delay: motionSet.delay(0.35),
               }}
-            >
-              {redVotes > 0 ? `${Math.round((1 - blueShare) * 100)}%` : ""}
-            </motion.span>
+            />
             <motion.span
-              className="pill-split-blue"
-              initial={{ flexGrow: 1 }}
-              animate={{ flexGrow: Math.max(0.0001, blueShare) }}
+              className="pill-split-fill pill-split-blue"
+              aria-hidden="true"
+              initial={{ scaleX: motionSet.reduce ? blueShare : 0.5 }}
+              animate={{ scaleX: blueShare }}
               transition={{
-                duration: motionSet.reduce ? 0.2 : 1.8,
+                duration: motionSet.reduce ? 0.2 : 1.6,
                 ease: [0.2, 0, 0, 1],
-                delay: motionSet.delay(0.4),
+                delay: motionSet.delay(0.35),
               }}
-            >
-              {blueVotes > 0 ? `${Math.round(blueShare * 100)}%` : ""}
-            </motion.span>
+            />
+            <div className="pill-split-labels">
+              <motion.span
+                className="pill-split-label"
+                style={{ flexGrow: Math.max(0.0001, 1 - blueShare) }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ ...motionSet.soft, delay: motionSet.delay(0.75) }}
+              >
+                {redVotes > 0 ? `${Math.round((1 - blueShare) * 100)}%` : ""}
+              </motion.span>
+              <motion.span
+                className="pill-split-label"
+                style={{ flexGrow: Math.max(0.0001, blueShare) }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ ...motionSet.soft, delay: motionSet.delay(0.75) }}
+              >
+                {blueVotes > 0 ? `${Math.round(blueShare * 100)}%` : ""}
+              </motion.span>
+            </div>
             <span className="pill-split-mark" aria-hidden="true">
               50%
             </span>
@@ -299,7 +331,7 @@ function PillStage({
               className="pill-stage-verdict"
               initial={{ opacity: 0, y: motionSet.move(20) }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ ...motionSet.soft, delay: motionSet.delay(2.2) }}
+              transition={{ ...motionSet.soft, delay: motionSet.delay(2) }}
             >
               {verdict(view)}
             </motion.p>
