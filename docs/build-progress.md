@@ -7016,3 +7016,13 @@ Answer acknowledgement p95 on Cloudflare was 71–295 ms across runs; quiz round
 **Unresolved:** Workers Paid on the party Cloudflare account is still unconfirmed from this environment. Physical-device and venue sign-off remain unticked. Chess remains in the default `order` even though it is also catalogue-ready.
 
 **Next:** Humza prints `docs/night-of.md`, confirms Workers Paid, and merges this PR. Do not start the next prompt automatically.
+
+## 19 November 2026 — Review of the direct-to-master kart commits
+
+Reviewed `9223693..efd691c` (phone-owned driving, input cap, tick lateness metering, fixed-beat ticks, back-off).
+
+- **Fixed (low):** `createRollbackPrediction` copied the room's remaining boost whenever it was larger than the phone's. With the room behind the phone, every checkpoint topped the boost back up, so a boost lasted longer by the room's lag. The room's boost is now aged to the phone clock before comparing. Test: `self-prediction.test.ts` "does not top up a spent boost…".
+- **Added test:** `kart.test.tsx` — a pedal release made straight after a send is delivered, unmount sends neutral, sequences stay increasing.
+- **Checked, fine:** `nextTickDueAt` never schedules in the past or under 50 ms ahead, one job per step id (no double fire), pause/hold/skip cancel via generation checks, race end advances instead of scheduling; tick-lateness metering is in-memory only (no extra DO writes); socket random phase/90 ms gap/merge-latest and cleanup; Back to track still snaps; finish time stays device `simulatedAt`; "Race again" resets on a new `raceId`.
+- **Not done:** DO rows-per-tick reduction and `load:realtime` measurement (skipped as risky two days before the party).
+- **Checks:** local Vitest could not start workers in this worktree ("Failed to start threads worker"); typecheck, lint, unit and API tests are left to CI on the PR. None were run locally.

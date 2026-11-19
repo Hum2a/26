@@ -484,11 +484,14 @@ function createRollbackPrediction() {
         simulatedAt = next.elapsedMs;
       }
       // Start boost and item boosts live on the room body. Take a stronger one
-      // without adopting the room's position.
-      if (body && seed.body.boostMs > body.boostMs) {
+      // without adopting the room's position. The room's copy is aged to the
+      // phone's clock first, so a room running behind cannot keep topping up a
+      // boost the phone has already spent.
+      const roomBoostMs = seed.body.boostMs - Math.max(0, simulatedAt - next.elapsedMs);
+      if (body && roomBoostMs > body.boostMs) {
         body = {
           ...body,
-          boostMs: seed.body.boostMs,
+          boostMs: roomBoostMs,
           boostLevel: Math.max(body.boostLevel ?? 0, seed.body.boostLevel ?? 0),
         };
       }

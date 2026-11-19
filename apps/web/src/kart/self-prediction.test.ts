@@ -494,3 +494,22 @@ it("takes a stronger start boost from the room without moving to the room pose",
   const later = p.pose(400)!;
   expect(later.speed).toBeGreaterThan(before.speed + 2);
 });
+
+it("does not top up a spent boost from a room that is running behind", () => {
+  const p = createSelfPrediction();
+  const frame = deviceFrame();
+  p.running(true, 0);
+  p.server(frame, 0, 0);
+  p.input(gas, 0);
+  p.pose(2_000);
+  // The room is 1.5 s behind and still has 1 s of the same boost left.
+  const stale = deviceFrame(500, 2);
+  stale.rollback!.body = { ...frame.rollback!.body, boostMs: 1_000, boostLevel: 1 };
+  p.server(stale, 2_000, 0);
+  const coasting = createSelfPrediction();
+  coasting.running(true, 0);
+  coasting.server(frame, 0, 0);
+  coasting.input(gas, 0);
+  coasting.pose(2_000);
+  expect(p.pose(2_300)!.speed).toBeCloseTo(coasting.pose(2_300)!.speed, 3);
+});
