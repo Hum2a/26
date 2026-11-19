@@ -1,13 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-  type Dispatch,
-  type SetStateAction,
-} from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useOutlet, useParams } from "react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { gameIdSchema, type LobbySnapshot } from "@26/shared";
@@ -15,27 +6,15 @@ import { openRoomSocket } from "../live/room-socket";
 import { Button, LinkButton } from "../ui/primitives";
 import { EntryNotice } from "../ui/entry-frame";
 import { readAdminRoom, type RoomFailure } from "./rooms-api";
-import { playRoom, issueTransfer, type PlayIntent } from "../live/room-api";
+import { playRoom, issueTransfer } from "../live/room-api";
 import { playNotice } from "./command-notices";
+import {
+  RoomContext,
+  type AdminCommand,
+  type CommandScope,
+  type RoomContextValue,
+} from "./admin-room-context";
 
-export type AdminCommand =
-  Omit<PlayIntent, "gameId" | "requestId"> | { action: "transfer"; playerId: string };
-export type CommandScope =
-  | "live"
-  | "players"
-  | "room"
-  | "media"
-  | "voters"
-  | "analytics"
-  | "results"
-  | "health"
-  | "trolls"
-  | "wall"
-  | "kart"
-  | "kart-handling"
-  | "kart-items"
-  | "kart-track"
-  | "developer";
 type CommandRequest = {
   command: AdminCommand;
   requestId: string;
@@ -43,41 +22,6 @@ type CommandRequest = {
   scope: CommandScope;
 };
 
-type RoomContextValue = {
-  snapshot: LobbySnapshot;
-  connection: "connecting" | "open" | "closed";
-  blocked: boolean;
-  notice: string;
-  setNotice: Dispatch<SetStateAction<string>>;
-  busy: boolean;
-  setBusy: Dispatch<SetStateAction<boolean>>;
-  observedAt: number;
-  command: {
-    status: "idle" | "pending" | "success" | "error";
-    message: string;
-    scope: CommandScope;
-    retryable: boolean;
-  };
-  execute: (
-    command: AdminCommand,
-    label: string,
-    scope?: CommandScope,
-  ) => Promise<void>;
-  retry: () => Promise<void>;
-  transfer: {
-    code: string;
-    playerId: string;
-    kind: "transfer" | "recovery";
-    expiresAt?: string;
-  } | null;
-  clearTransfer: () => void;
-};
-const RoomContext = createContext<RoomContextValue | null>(null);
-export function useAdminRoom() {
-  const room = useContext(RoomContext);
-  if (!room) throw new Error("Room controls require the shared room provider.");
-  return room;
-}
 export function AdminRoomRoute() {
   const { gameId = "" } = useParams();
   const { pathname } = useLocation();

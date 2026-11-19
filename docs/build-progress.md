@@ -7026,3 +7026,15 @@ Reviewed `9223693..efd691c` (phone-owned driving, input cap, tick lateness meter
 - **Checked, fine:** `nextTickDueAt` never schedules in the past or under 50 ms ahead, one job per step id (no double fire), pause/hold/skip cancel via generation checks, race end advances instead of scheduling; tick-lateness metering is in-memory only (no extra DO writes); socket random phase/90 ms gap/merge-latest and cleanup; Back to track still snaps; finish time stays device `simulatedAt`; "Race again" resets on a new `raceId`.
 - **Not done:** DO rows-per-tick reduction and `load:realtime` measurement (skipped as risky two days before the party).
 - **Checks:** local Vitest could not start workers in this worktree ("Failed to start threads worker"); typecheck, lint, unit and API tests are left to CI on the PR. None were run locally.
+
+## 19 November 2026 — CI and lint hygiene
+
+Push and pull request checks still run installation, typecheck, lint, formatting, release and unit tests, and build. `.github/workflows/check.yml` runs Chromium installation and the existing Playwright suite in a separate `workflow_dispatch` job that builds its own preview. `npm run github-actions:check` follows the automatic job, and its tests verify the manual gate and dry-run plan.
+
+Moved shared helpers and context out of component modules and kept existing consumer imports working through sibling re-exports. Resolved the chess engine README conflict markers using the newer text. Lint reports zero errors and 15 existing Fast Refresh warnings, all in the excluded wall, chess, kart, design kit and stage play files.
+
+**Checks before opening the PR:** `npm run typecheck`, `npm run lint`, `npm run check:structure`, `npm run format:check`, `npm run test:release` (75 tests), `npm run test:unit` (954 tests), `npm run content:check` and `npm run build` passed. The local workflow checker also reached the API suite through `npm test`. The build passed its artifact and bundle checks. Playwright was not run.
+
+**Cubic review:** The `GuestPlay` component and its lazy round imports are now in `apps/web/src/play/guest-play-view.tsx`. The existing `./guest-play` import resolves to `apps/web/src/play/guest-play.ts`. Older documentation still mentions the previous `.tsx` filename. The bot nickname heuristic and inherited-key autocorrection both predate this change. Fixing either would change behaviour and is outside this task.
+
+**Next:** Check the PR workflow and Cubic review, then leave the merge to Humza.

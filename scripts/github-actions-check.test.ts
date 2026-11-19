@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
@@ -11,23 +12,52 @@ const checkWorkflow = readFileSync(
 );
 
 test("the check workflow's shell steps run in order", () => {
-  const runs = parseWorkflowRuns(checkWorkflow);
+  const runs = parseWorkflowRuns(checkWorkflow).filter((step) => step.job === "check");
   assert.deepEqual(
     runs.map((step) => step.command),
     [
       "npm ci",
-      "npx playwright install --with-deps chromium",
       "npm run typecheck",
       "npm run lint",
       "npm run format:check",
       "npm test",
       "npm run build",
+    ],
+  );
+  assert.ok(runs.every((step) => step.workingDirectory === null));
+});
+
+test("Playwright runs in a manual job after building the app", () => {
+  assert.match(checkWorkflow, /^on:\r?\n(?: {2}\w+:\r?\n)* {2}workflow_dispatch:\r?$/m);
+  assert.match(
+    checkWorkflow,
+    /^ {2}e2e:\r?\n {4}if: github\.event_name == 'workflow_dispatch'\r?$/m,
+  );
+  const runs = parseWorkflowRuns(checkWorkflow).filter((step) => step.job !== "check");
+  assert.deepEqual(
+    runs.map((step) => step.job),
+    ["e2e", "e2e", "e2e", "e2e"],
+  );
+  assert.deepEqual(
+    runs.map((step) => step.command),
+    [
+      "npm ci",
+      "npx playwright install --with-deps chromium",
+      "npm run build",
       "npx playwright test --workers=1",
     ],
   );
-  assert.equal(new Set(runs.map((step) => step.job)).size, 1);
-  assert.equal(runs[0]?.job, "check");
-  assert.ok(runs.every((step) => step.workingDirectory === null));
+});
+
+test("the local workflow checker plans only the automatic checks", () => {
+  const result = spawnSync(
+    process.execPath,
+    ["--experimental-strip-types", "scripts/github-actions-check.ts", "--dry-run"],
+    { cwd: projectRoot(), encoding: "utf8" },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /\$ npm run build/);
+  assert.doesNotMatch(result.stdout, /playwright|\be2e\b/);
 });
 
 test("action steps are skipped and multiline scripts keep their directory", () => {
