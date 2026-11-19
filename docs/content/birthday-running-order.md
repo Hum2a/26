@@ -52,7 +52,7 @@ Say at the reveal: The nakedness of thy father, or the nakedness of thy mother�
 Who would bring an emotional support air fryer to a funeral and ask where the sockets are?
 
 20s to answer. Attribution: after.
-Say at the reveal: The named person is set on the question.
+Say at the reveal: Reveal who got the most votes. Guests who picked them score.
 
 ## 8. choice · car-name
 
@@ -157,18 +157,18 @@ Say at the reveal: Stephen Yaxley-Lennon / Stephen Lennon / Stephen Yaxley (clos
 Create the most common password
 
 20s to answer. Attribution: after.
-Say at the reveal: (close spellings count)
+Say at the reveal: Case and outer spaces do not matter; repeated spaces count as one. Unique answers score zero. The biggest matching group gets 100; smaller matching groups score proportionally. Ties share the same score.
 
 ## 23. guess · guess-council-coup
 
 Who would stage a coup in the residents’ WhatsApp, declare martial law over the bins, then get removed by their mum?
 
 20s to answer. Attribution: after.
-Say at the reveal: The named person is set on the question.
+Say at the reveal: Reveal who got the most votes. Guests who picked them score.
 
 ## 24. choice · how-italian-is-humza
 
-Guess how Italian humza is
+Guess how Italian Humza is
 
 20s to answer. Attribution: live.
 Say at the reveal: 0.5%
@@ -178,7 +178,7 @@ Say at the reveal: 0.5%
 Rank these UK driving offenses from ‘mildly annoying’ to ‘immediate revocation of human rights’.
 
 20s to answer. Attribution: after.
-Say at the reveal:
+Say at the reveal: The room’s order comes from each item’s mean position. Tied mean positions stay tied. Score up to 80 for agreeing with the room’s ordered pairs.
 
 ## 26. slider · inflation-meal-deal
 
@@ -213,14 +213,14 @@ Say at the reveal: 1002 £
 You're 10 minutes into a first date in Central London and they say: ‘Honestly, I think astrology has more predictive validity than peer-reviewed economics.’ What is your exact exit excuse?
 
 30s to answer, then 20s to vote. Attribution: after.
-Say at the reveal: No fixed answer. The room's votes decide it.
+Say at the reveal: One line, three awards. Each category is worth 60 points to its winning author or tied authors. The same line can win more than one award; no self-votes.
 
 ## 31. choice · christianity-branches
 
 Which of these ARE branches of Christianity?
 
 20s to answer. Attribution: live.
-Say at the reveal:
+Say at the reveal: Correct answers are Muggletonians, The Jumpers, Ranters. Only that exact set earns points.
 
 ## 32. slider · inflation-sausage-roll
 
@@ -234,7 +234,7 @@ Say at the reveal: 135 p
 Which of these countries has Trump made up?
 
 20s to answer. Attribution: live.
-Say at the reveal:
+Say at the reveal: Correct answers are The United States of Israel, The Islamic Republic of Japan. Only that exact set earns points.
 
 ## 34. wordle · complete-a-wordle
 
@@ -255,7 +255,7 @@ Say at the reveal: Eric Marlon Bishop / Eric Bishop (close spellings count)
 Who would miss their flight because they were arguing that the airport lounge buffet counts as an all-inclusive holiday?
 
 20s to answer. Attribution: after.
-Say at the reveal: The named person is set on the question.
+Say at the reveal: Reveal who got the most votes. Guests who picked them score.
 
 ## 37. slider · property-price-roulette
 
@@ -269,7 +269,7 @@ Say at the reveal: 750 £
 Predict the room’s middle ground: Pop Culture Snobbery.
 
 20s to answer. Attribution: after.
-Say at the reveal: null /100
+Say at the reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
 ## 39. slider · guess-tab-soho-pint
 
@@ -290,7 +290,7 @@ Say at the reveal: 139 p
 Predict the room’s middle ground: London Geography.
 
 20s to answer. Attribution: after.
-Say at the reveal: null /100
+Say at the reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
 ## 42. slider · guess-tab-ev-charge
 
@@ -304,35 +304,35 @@ Say at the reveal: 17.17 £
 Predict the room’s middle ground: British Politics.
 
 20s to answer. Attribution: after.
-Say at the reveal: null /100
+Say at the reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
 ## 44. chess · chess-battle
 
 Play 1-minute blitz against the Humza bot!
 
 120s to answer. Attribution: never.
-Say at the reveal: Closer to undefined.
+Say at the reveal: Capturing Black pieces scores 10 for a queen, 5 for a rook, 3 for a bishop, 3 for a knight and 1 for a pawn. Checkmating the bot earns at least 40 points. Winning on time adds 15 points to captures. Other results score captures only.
 
 ## 45. guess · group-chat-figurine
 
 I just dropped £400 on a Japanese imported figurine and told my mum it was an educational tax deduction.
 
 20s to answer. Attribution: after.
-Say at the reveal: The named person is set on the question.
+Say at the reveal: Reveal who got the most votes. Guests who picked them score. A winning self-vote scores double.
 
 ## 46. choice · cursed-search-history
 
 Hold your nerve as the search history gets worse. Hit BAIL to bank points before the Raid.
 
 30s to answer. Attribution: live.
-Say at the reveal:
+Say at the reveal: Players who bailed before the Raid keep their banked points. Players caught by the Raid score zero. If there was no Raid, players still in bank keep 700 points.
 
 ## 47. kart · kart-park-grand-prix
 
 One lap of 26 Park. Three minutes. Who can actually drive?
 
 180s to answer. Attribution: live.
-Say at the reveal: Closer to undefined.
+Say at the reveal: Fastest completed lap wins. Finishers share place on equal server times; DNF scores zero. Ghost karts mean nobody can blame traffic.
 
 ## 48. rank · ed-or-humza
 
@@ -343,7 +343,7 @@ Say at the reveal: Ed You're ass is in grabbing distance, Biblically accurate br
 
 ## 49. kart · kart-sprint
 
-One lap. three minutes. Who can actually drive?
+One lap. Three minutes. Who can actually drive?
 
 180s to answer. Attribution: live.
-Say at the reveal: Closer to undefined.
+Say at the reveal: Fastest completed lap wins. Finishers share place on equal finish times; DNF scores zero. Ghost karts mean nobody can blame traffic.

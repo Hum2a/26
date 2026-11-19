@@ -45,7 +45,7 @@ Reveal: The nakedness of thy father, or the nakedness of thy mother…
 
 Who would bring an emotional support air fryer to a funeral and ask where the sockets are?
 
-Reveal: The named person is set on the question.
+Reveal: Reveal who got the most votes. Guests who picked them score.
 
 ## 8. car-name
 
@@ -135,17 +135,17 @@ Reveal: Stephen Yaxley-Lennon / Stephen Lennon / Stephen Yaxley (close spellings
 
 Create the most common password
 
-Reveal: (close spellings count)
+Reveal: Case and outer spaces do not matter; repeated spaces count as one. Unique answers score zero. The biggest matching group gets 100; smaller matching groups score proportionally. Ties share the same score.
 
 ## 23. guess-council-coup
 
 Who would stage a coup in the residents’ WhatsApp, declare martial law over the bins, then get removed by their mum?
 
-Reveal: The named person is set on the question.
+Reveal: Reveal who got the most votes. Guests who picked them score.
 
 ## 24. how-italian-is-humza
 
-Guess how Italian humza is
+Guess how Italian Humza is
 
 Reveal: 0.5%
 
@@ -153,7 +153,7 @@ Reveal: 0.5%
 
 Rank these UK driving offenses from ‘mildly annoying’ to ‘immediate revocation of human rights’.
 
-Reveal:
+Reveal: The room’s order comes from each item’s mean position. Tied mean positions stay tied. Score up to 80 for agreeing with the room’s ordered pairs.
 
 ## 26. inflation-meal-deal
 
@@ -183,13 +183,13 @@ Reveal: 1002 £
 
 You're 10 minutes into a first date in Central London and they say: ‘Honestly, I think astrology has more predictive validity than peer-reviewed economics.’ What is your exact exit excuse?
 
-Reveal: No fixed answer. The room's votes decide it.
+Reveal: One line, three awards. Each category is worth 60 points to its winning author or tied authors. The same line can win more than one award; no self-votes.
 
 ## 31. christianity-branches
 
 Which of these ARE branches of Christianity?
 
-Reveal:
+Reveal: Correct answers are Muggletonians, The Jumpers, Ranters. Only that exact set earns points.
 
 ## 32. inflation-sausage-roll
 
@@ -201,7 +201,7 @@ Reveal: 135 p
 
 Which of these countries has Trump made up?
 
-Reveal:
+Reveal: Correct answers are The United States of Israel, The Islamic Republic of Japan. Only that exact set earns points.
 
 ## 34. complete-a-wordle
 
@@ -219,7 +219,7 @@ Reveal: Eric Marlon Bishop / Eric Bishop (close spellings count)
 
 Who would miss their flight because they were arguing that the airport lounge buffet counts as an all-inclusive holiday?
 
-Reveal: The named person is set on the question.
+Reveal: Reveal who got the most votes. Guests who picked them score.
 
 ## 37. property-price-roulette
 
@@ -231,7 +231,7 @@ Reveal: 750 £
 
 Predict the room’s middle ground: Pop Culture Snobbery.
 
-Reveal: null /100
+Reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
 ## 39. guess-tab-soho-pint
 
@@ -249,7 +249,7 @@ Reveal: 139 p
 
 Predict the room’s middle ground: London Geography.
 
-Reveal: null /100
+Reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
 ## 42. guess-tab-ev-charge
 
@@ -261,31 +261,31 @@ Reveal: 17.17 £
 
 Predict the room’s middle ground: British Politics.
 
-Reveal: null /100
+Reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
 ## 44. chess-battle
 
 Play 1-minute blitz against the Humza bot!
 
-Reveal: Closer to undefined.
+Reveal: Capturing Black pieces scores 10 for a queen, 5 for a rook, 3 for a bishop, 3 for a knight and 1 for a pawn. Checkmating the bot earns at least 40 points. Winning on time adds 15 points to captures. Other results score captures only.
 
 ## 45. group-chat-figurine
 
 I just dropped £400 on a Japanese imported figurine and told my mum it was an educational tax deduction.
 
-Reveal: The named person is set on the question.
+Reveal: Reveal who got the most votes. Guests who picked them score. A winning self-vote scores double.
 
 ## 46. cursed-search-history
 
 Hold your nerve as the search history gets worse. Hit BAIL to bank points before the Raid.
 
-Reveal:
+Reveal: Players who bailed before the Raid keep their banked points. Players caught by the Raid score zero. If there was no Raid, players still in bank keep 700 points.
 
 ## 47. kart-park-grand-prix
 
 One lap of 26 Park. Three minutes. Who can actually drive?
 
-Reveal: Closer to undefined.
+Reveal: Fastest completed lap wins. Finishers share place on equal server times; DNF scores zero. Ghost karts mean nobody can blame traffic.
 
 ## 48. ed-or-humza
 
@@ -295,6 +295,6 @@ Reveal: Ed You're ass is in grabbing distance, Biblically accurate breasts on th
 
 ## 49. kart-sprint
 
-One lap. three minutes. Who can actually drive?
+One lap. Three minutes. Who can actually drive?
 
-Reveal: Closer to undefined.
+Reveal: Fastest completed lap wins. Finishers share place on equal finish times; DNF scores zero. Ghost karts mean nobody can blame traffic.
