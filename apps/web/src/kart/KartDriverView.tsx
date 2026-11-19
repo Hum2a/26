@@ -85,6 +85,7 @@ export function KartDriverView({
               lookPreset={liveKartLookPreset(race.look)}
               followPlayerId={race.selfPlayerId}
               graphicsTier={graphics.tier}
+              sharp={graphics.mode === "high"}
               onFrameHealth={graphics.onHealth}
               prediction={prediction}
               onRenderState={report}

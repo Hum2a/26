@@ -38,7 +38,9 @@ export const graphicsProfiles = {
 
 /**
  * How sharp this screen may draw. A phone keeps a pixel budget so a full-screen
- * view does not fill the GPU. High uses that budget; Low is visibly softer.
+ * view does not fill the GPU. Auto's High uses that budget; Low is visibly
+ * softer. A guest who picks High themselves (`sharp`) gets at least one drawn
+ * pixel per screen point, so High is visibly crisper than Auto and Low.
  * A computer uses its own screen ratio.
  */
 export function displayPixelRatioLimit(
@@ -47,11 +49,14 @@ export function displayPixelRatioLimit(
   width: number,
   height: number,
   devicePixelRatio: number,
+  sharp = false,
 ) {
   const screen =
     Number.isFinite(devicePixelRatio) && devicePixelRatio > 0 ? devicePixelRatio : 1;
   if (!mobile) return screen;
   const area = Math.max(1, width) * Math.max(1, height);
+  if (tier === "high" && sharp)
+    return Math.min(screen, Math.max(1, Math.sqrt(900_000 / area)));
   const budget = Math.min(1, Math.sqrt(200_000 / area));
   if (tier === "low") return Math.max(0.35, budget * 0.55);
   if (tier === "balanced") return Math.max(0.45, budget * 0.75);

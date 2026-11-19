@@ -6908,3 +6908,38 @@ During a race, Controls is a small button at the top, beside the view switch. Us
 The phone treated every room clock that sat ahead of its own clock as an oil slow, including a normal effect with `slowedMs: 0`. The grid snapshot is often elapsed 0, then the collect clock is already ahead, and that gap never closed, so the kart stayed on the off-road throttle for the whole race. A zero slow no longer does that. While the kart is still parked on the grid, the phone clock catches the room clock without stepping the gap or moving the kart. A stronger start boost on the room body is copied onto the phone without taking the room position.
 
 **Checks for this fix:** `npm run typecheck` passed. `npm run lint` 0 errors, 30 existing warnings, structure check passed. `npx vitest run src/kart` in `apps/web` — 45 files, 233 passed. Full `npm run test:unit` and `npm run build` were not run. Aden drove a new race after the fix and said it is working very well.
+
+## 19 November 2026 — Kart Graphics High is sharp on phones
+
+**Status:** done locally, not committed.
+
+**Problem:** on a phone, choosing High in the kart Graphics menu looked no different from Auto and barely different from Low. A phone kept a fixed pixel budget (about 200,000 drawn pixels for the whole view), so High drew at about 0.78 of a screen point on a 390 × 844 phone and Low at about 0.43. Both looked soft.
+
+**Change:** when the guest picks High themselves, `displayPixelRatioLimit` (`apps/web/src/kart/graphics.ts`) allows at least one drawn pixel per screen point, up to a 900,000-pixel budget, never above the screen's own ratio, and still capped at the High profile's 1.5. `KartCanvas` takes a `sharp` prop (`KartDriverView` passes `graphics.mode === "high"`) and re-sizes the renderer when it changes. Auto and Low keep the old budgets, so a phone that never touches the menu costs the same as before. The projector is unchanged.
+
+**Checks:** `npx vitest run src/kart` in `apps/web` — 45 files, 234 passed (one new test in `graphics.test.ts`). `npx tsc -b apps/web` passed. Not yet tried on a phone.
+
+**Custom lobby codes:** already on `master` from PR #28 (Humza, 17 November 2026). Admin → Rooms → “Custom lobby code (optional)”: six letters or numbers, refused if already in use.
+
+### Load test after phone-owned driving (19 November 2026)
+
+Ran the existing harness, one isolated sample each, nothing else running except the Vite dev server: `LOAD_SIZES=80` with `LOAD_INPUT_HZ` 10, 18 and 0, `npm run load:realtime -w @26/api`. Local workerd, ring track, six-second race window. All three passed their functional assertions, with no full guest snapshots during the race. Logs: ignored `artifacts/load-2026-11-19-{drive10,drive18,idle}.log`.
+
+| 80 guests                     | Answer ack p95 | Stage updates/s | Stage gap p95 | Phone traffic |
+| ----------------------------- | -------------: | --------------: | ------------: | ------------: |
+| 10 Hz driving (17 Nov sample) |         379 ms |             1.2 |       1737 ms |    8.43 KiB/s |
+| 10 Hz driving (now)           |         486 ms |             2.5 |        632 ms |   18.22 KiB/s |
+| 18 Hz driving (now)           |         498 ms |             1.2 |       3224 ms |    8.38 KiB/s |
+| No inputs (now)               |         521 ms |             8.1 |        155 ms |   55.76 KiB/s |
+
+A phone sends a heartbeat every 100 ms (10 Hz) and, while the steering keeps changing, up to every 55 ms (about 18 Hz). So a real race sits between the 10 Hz and 18 Hz rows. The 10 Hz case roughly doubled its update rate and cut the worst gap by almost two-thirds. At 18 Hz the room still falls behind. This is local, not Cloudflare production or real phones, and is not a venue-readiness pass.
+
+### Phone kart inputs capped near 10 a second (19 November 2026)
+
+**Status:** done locally, not committed.
+
+`useKartSocket` (`apps/web/src/kart/useKartSocket.ts`) now sends at most one control message per 100 ms heartbeat (a 90 ms minimum gap, so timer jitter cannot skip a beat). Before, a change was sent as soon as 55 ms had passed, so a guest steering continuously sent about 18 a second. A change is still merged and sent at the next slot with the latest controls. In device-v1 races the phone drives its own kart, so this only changes how quickly other guests see a turn (up to about 45 ms later than before).
+
+**Load after the cap** (same harness, `LOAD_SIZES=80`, one sample each, logs `artifacts/load-2026-11-19-capped-{10,11}.log`): 10 Hz — answer ack p95 449 ms, 2.3 stage updates/s, stage gap p95 895 ms; 11 Hz (the most a capped phone can send) — 528 ms, 2.2/s, 1037 ms. Compared with 1.2/s and a 3224 ms gap at 18 Hz. Still well below the room's 10 updates/s tick, so 80 phones driving at once remains a known limit. Local workerd only.
+
+**Checks:** `npx vitest run src/kart` in `apps/web` — 45 files, 234 passed (the send-rate test now checks no more than 11 messages a second and a 90 ms minimum gap).

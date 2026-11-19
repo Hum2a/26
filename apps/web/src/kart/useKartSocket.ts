@@ -7,18 +7,24 @@ import {
   type KartRaceView,
 } from "@26/shared";
 
-/** The room drops controls that arrive under kartInputGapMs; leave a little jitter room. */
-const minGapMs = kartInputGapMs + 5;
 /** Re-send held controls so the room keeps them fresh. */
 const heartbeatMs = 100;
+/**
+ * At most one control message per heartbeat. The phone drives its own kart in
+ * device-v1 races, so a faster stream only changes how quickly other guests
+ * see a turn, and eighty phones steering at ~18 Hz backed up the room (local
+ * load test, 19 November 2026). The 10 ms slack stops timer jitter skipping a
+ * heartbeat; it stays well above the room's kartInputGapMs rule.
+ */
+const minGapMs = Math.max(kartInputGapMs + 5, heartbeatMs - 10);
 
 const same = (a: KartControls, b: KartControls) =>
   a.steer === b.steer && a.gas === b.gas && a.brake === b.brake && a.drift === b.drift;
 
 /**
  * Adapter over openRoomSocket: no second connection, queued controls or
- * second race state. A change is sent straight away (or as soon as the
- * room's minimum gap allows) rather than waiting for the next heartbeat.
+ * second race state. A change is sent straight away when a heartbeat's worth
+ * of time has passed, otherwise once at the next slot with the latest controls.
  */
 export function useKartSocket(
   race: KartRaceView | undefined,

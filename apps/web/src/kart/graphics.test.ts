@@ -74,3 +74,22 @@ it("draws a phone sharper on High than on Low for the same screen", () => {
   expect(low).toBeGreaterThanOrEqual(0.35);
   expect(displayPixelRatioLimit("high", false, 900, 700, 2)).toBe(2);
 });
+
+it("draws a phone sharply when the guest picks High themselves", () => {
+  const auto = displayPixelRatioLimit("high", true, 390, 844, 3);
+  const chosen = displayPixelRatioLimit("high", true, 390, 844, 3, true);
+  const low = displayPixelRatioLimit("low", true, 390, 844, 3, true);
+  expect(auto).toBeLessThan(1);
+  expect(chosen).toBeGreaterThanOrEqual(1);
+  expect(chosen).toBeGreaterThan(auto * 1.5);
+  expect(low).toBeLessThan(auto);
+  // Never above the screen's own ratio, and capped by the High profile.
+  expect(displayPixelRatioLimit("high", true, 390, 844, 1, true)).toBe(1);
+  expect(
+    safeGraphicsProfile("high", {
+      webgl: true,
+      maxTextureSize: 4096,
+      pixelRatioLimit: chosen,
+    })?.pixelRatio,
+  ).toBe(1.5);
+});

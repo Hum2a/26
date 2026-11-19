@@ -793,7 +793,7 @@ it("lays out each kart state for landscape and keeps race notices visible over t
   expect(phone().getAttribute("data-layout")).toBeNull();
 });
 
-it("sends a control change at once when the room's gap allows, merging rapid changes", () => {
+it("sends at most one control message per heartbeat, merging rapid changes", () => {
   vi.useFakeTimers();
   const send = vi.fn();
   const race = projectKartRace(
@@ -803,31 +803,34 @@ it("sends a control change at once when the room's gap allows, merging rapid cha
   );
   const view = renderHook(() => useKartSocket(race, true, send));
   expect(send).toHaveBeenCalledTimes(1);
-  // Within the 55 ms gap: held back, then sent once with the latest controls.
+  // Within the gap: held back, then sent once with the latest controls.
   act(() => view.result.current({ ...kartNeutral, gas: true }));
   act(() => view.result.current({ ...kartNeutral, gas: true, steer: -1 }));
-  expect(send).toHaveBeenCalledTimes(1);
   act(() => vi.advanceTimersByTime(55));
+  expect(send).toHaveBeenCalledTimes(1);
+  act(() => vi.advanceTimersByTime(35));
   expect(send).toHaveBeenCalledTimes(2);
   expect(send.mock.lastCall![0]).toMatchObject({ gas: true, steer: -1 });
-  // After the gap: straight away, without waiting for the heartbeat.
-  act(() => vi.advanceTimersByTime(95));
-  const before = send.mock.calls.length;
+  // A later change goes out within one gap, without waiting a full heartbeat.
+  act(() => vi.advanceTimersByTime(140));
   act(() => view.result.current({ ...kartNeutral, brake: true }));
-  expect(send).toHaveBeenCalledTimes(before + 1);
+  act(() => vi.advanceTimersByTime(90));
   expect(send.mock.lastCall![0]).toMatchObject({ brake: true, gas: false });
   // Unchanged controls are not re-sent outside the heartbeat.
+  const after = send.mock.calls.length;
   act(() => view.result.current({ ...kartNeutral, brake: true }));
-  expect(send).toHaveBeenCalledTimes(before + 1);
-  // Consecutive sends never arrive closer than the room's 50 ms rule.
+  expect(send).toHaveBeenCalledTimes(after);
+  // Steering that changes every frame still sends no faster than ~10 a second.
   const times: number[] = [];
   send.mockImplementation(() => times.push(Date.now()));
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 60; i++) {
     act(() => view.result.current({ ...kartNeutral, steer: i % 2 ? 1 : -1 }));
     act(() => vi.advanceTimersByTime(17));
   }
   for (let i = 1; i < times.length; i++)
-    expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(55);
+    expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(90);
+  // 60 frames is about a second: no more than eleven messages.
+  expect(times.length).toBeLessThanOrEqual(11);
   view.unmount();
 });
 

@@ -35,6 +35,7 @@ export default function KartCanvas({
   reducedMotion,
   followPlayerId,
   graphicsTier = "balanced",
+  sharp = false,
   onFrameHealth,
   spectator = false,
   vfxPreset,
@@ -51,6 +52,8 @@ export default function KartCanvas({
   reducedMotion: boolean;
   followPlayerId?: string;
   graphicsTier?: GraphicsTier;
+  /** The guest picked High themselves: a phone draws at full sharpness. */
+  sharp?: boolean;
   onFrameHealth?: (health: FrameHealth) => void;
   spectator?: boolean;
   vfxPreset?: KartVfxPreset;
@@ -92,14 +95,16 @@ export default function KartCanvas({
   const [assetState, setAssetState] = useState<"loading" | "ready" | "failed">(
     "loading",
   );
-  const quality = useRef(graphicsTier);
+  const quality = useRef({ tier: graphicsTier, sharp });
   const report = useRef(onFrameHealth);
   const vfxReport = useRef(onVfxStats);
   useEffect(() => {
-    quality.current = graphicsTier;
+    quality.current = { tier: graphicsTier, sharp };
+  }, [graphicsTier, sharp]);
+  useEffect(() => {
     report.current = onFrameHealth;
     vfxReport.current = onVfxStats;
-  }, [graphicsTier, onFrameHealth, onVfxStats]);
+  }, [onFrameHealth, onVfxStats]);
   useEffect(() => {
     following.current = followPlayerId;
     effects.current = { preset: vfxPreset, paused, rehearsal: vfxRehearsal };
@@ -144,15 +149,16 @@ export default function KartCanvas({
       const height = Math.max(1, root.clientHeight);
       // Keep a phone or tablet near the old driving-strip cost. A full-screen
       // tablet otherwise fills the GPU and the picture starts skipping.
-      return safeGraphicsProfile(quality.current, {
+      return safeGraphicsProfile(quality.current.tier, {
         webgl: true,
         maxTextureSize: renderer.capabilities.maxTextureSize,
         pixelRatioLimit: displayPixelRatioLimit(
-          quality.current,
+          quality.current.tier,
           mobile,
           width,
           height,
           window.devicePixelRatio,
+          quality.current.sharp,
         ),
       });
     };
