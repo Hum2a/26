@@ -7103,3 +7103,23 @@ All 5 Cubic findings were addressed in commit `4b68cc4` (confirmed resolved by C
 
 - Live browser visual verification and 320 px / 390 px before/after screenshots could not be captured in this environment because Chrome DevTools remote debugging was not active (`DevToolsActivePort` ENOENT), and Playwright/E2E runners are prohibited for this task.
 - Real party content for `where-are-we` (clue photo, place name, exact coordinates) and `ed-or-humza` (confirmed speaker for 18 quotes) remains intentionally untouched in `apps/api/src/questions/packs/birthday/`.
+
+## 19 November 2026 — 80-bot birthday rehearsal, and faster votes
+
+Status: a full local rehearsal of the saved birthday running order with 80 bots, plus one fix. Branch `batch-guest-value-snapshots`, not merged. Nothing deployed.
+
+**How it ran.** Local dev server, agent admin sign-in, Admin → Home → Fresh rehearsal: birthday running order, 80 bots, automatic answers, kart traffic, 8-second answering window. All 42 questions ran to the podium. Questions 4 and 33 were skipped by hand (see below).
+
+**Fix: votes, estimates, ranks, text, reactions and settings now share the 30 ms flush.** Choice answers already queued the answering phone into the shared broadcast flush (`ff9c8d8`). `acceptGuestValue`, `acceptReaction` and `acceptPlayerChoice` still built a full private snapshot, statistics included, before every acknowledgement. On the apology vote with 80 bots, replies took about 11 seconds at the 95th percentile and bots were refused as late. With the change, Room health showed the room handling 16 messages a second instead of 8, statistics builds falling from 8.8 to 1.2 a second, and reply p95 at about 2 seconds on the local dev server. Test: `rounds.spec.ts` "acknowledges an estimate before batching the phone’s own accepted view, also on retry".
+
+**Found, not fixed: the two knockout brackets are too long for 80 guests.** `apology-video-auction` and `heathrow-search-query` use `flow: { kind: "tournament" }` with the default `candidateMode: "all"`. Every entry enters the bracket and matches run one at a time (`packages/shared/src/party-scoring.ts`), so 80 entries make 79 matches of about 20 seconds, roughly 25 minutes per question. Needs an owner decision (cap the bracket, or shortlist).
+
+**Not a game fault:**
+
+- Wordle bots kept guessing into the reveal and were refused. Bot behaviour.
+- The rehearsal runner advances every collect phase after the answering window, so the kart race ended after 8 seconds. Rehearsal setting.
+- An 80-bot kart race from one browser tab through the Vite dev server froze the dev server. Every bot message is proxied by the local Vite process, which does not exist on Cloudflare. Kart load at 80–100 drivers is measured on real Cloudflare in the entry above.
+
+Checks: targeted room specs 7 files / 34 tests passed; `npm run typecheck` passed; `npm run lint` 0 errors (30 existing warnings), structure passed; Prettier clean on the changed files.
+
+Next: decide the bracket size, merge the branch, deploy to staging, and rerun this rehearsal there.
