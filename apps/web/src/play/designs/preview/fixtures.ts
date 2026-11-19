@@ -253,6 +253,7 @@ export const previewQuestions: Record<BenchId, PublicQuestion> = {
   "ed-or-humza": {
     ...core,
     id: "ed-or-humza-preview",
+    // Real Ed/Humza photos from /assets/questions/ed-or-humza/; quotes stay labelled stand-ins.
     presentation: "ed-or-humza",
     kind: "rank",
     points: 80,

@@ -1,9 +1,10 @@
 import type { AuthoredQuestion, QuestionPack } from "./definition.ts";
 
 /**
- * Public files a pack names. Option pictures, supplied media, and the
- * Who’s-that-Pokémon silhouette convention. Drafts with no `asset` yet are
- * omitted: those stay incomplete, they are not missing files.
+ * Public files a pack names. Option pictures, supplied media, the
+ * Who’s-that-Pokémon silhouette convention, and the Ed/Humza portraits.
+ * Drafts with no `asset` yet are omitted: those stay incomplete, they are
+ * not missing files.
  */
 export function packPublicAssets(pack: QuestionPack): string[] {
   const seen = new Set<string>();
@@ -25,6 +26,9 @@ export function packPublicAssets(pack: QuestionPack): string[] {
       }
     }
     add(silhouetteAsset(question));
+    for (const asset of edOrHumzaAssets(question)) {
+      add(asset);
+    }
   }
   return assets;
 }
@@ -39,4 +43,17 @@ export function silhouetteAsset(question: AuthoredQuestion): string | undefined 
   }
   const ext = question.id === "whos-that-pokemon" ? "svg" : "png";
   return `/assets/questions/${question.id}/silhouette.${ext}`;
+}
+
+/** Avatars and projector portraits the Ed-or-Humza design always loads. */
+export function edOrHumzaAssets(question: AuthoredQuestion): readonly string[] {
+  if (question.presentation !== "ed-or-humza") {
+    return [];
+  }
+  return [
+    "/assets/questions/ed-or-humza/ed.webp",
+    "/assets/questions/ed-or-humza/humza.webp",
+    "/assets/questions/ed-or-humza/ed-portrait.webp",
+    "/assets/questions/ed-or-humza/humza-portrait.webp",
+  ];
 }

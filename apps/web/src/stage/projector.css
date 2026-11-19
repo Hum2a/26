@@ -32,6 +32,15 @@
   border-top: 1px solid var(--line);
   padding-top: 1.5rem;
 }
+.projector-connect-column {
+  display: grid;
+  gap: 2rem;
+  min-width: 0;
+}
+.projector-pairing h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
 .projector-preflight {
   border-inline-start: 1px solid var(--line);
   padding-inline-start: 2rem;
