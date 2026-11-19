@@ -186,8 +186,15 @@ export function Dialog({
           {title}
         </h2>
         <div className="mt-4 text-lg leading-relaxed">{children}</div>
-        <form method="dialog" className="mt-6">
-          <Button variant="secondary" autoFocus>
+        <form
+          method="dialog"
+          className="mt-6"
+          onSubmit={(event) => {
+            event.preventDefault();
+            dialogRef.current?.close();
+          }}
+        >
+          <Button type="submit" variant="secondary" autoFocus>
             Close
           </Button>
         </form>
