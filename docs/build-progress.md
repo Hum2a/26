@@ -7038,3 +7038,37 @@ Moved shared helpers and context out of component modules and kept existing cons
 **Cubic review:** The `GuestPlay` component and its lazy round imports are now in `apps/web/src/play/guest-play-view.tsx`. The existing `./guest-play` import resolves to `apps/web/src/play/guest-play.ts`. Older documentation still mentions the previous `.tsx` filename. The bot nickname heuristic and inherited-key autocorrection both predate this change. Fixing either would change behaviour and is outside this task.
 
 **Next:** Check the PR workflow and Cubic review, then leave the merge to Humza.
+
+## 19 November 2026 — Projector pairing code (stretch)
+
+**Status:** stretch feature on `claude/projector-pairing`, PR "Pair the projector with a one-time code". Merge only after a staging rehearsal.
+
+**What now works.** Live controls has a **Projector pairing** card. **Show pairing code** asks the room for a one-time eight-character code (shown as `WXYZ-2345`). On the projector laptop, `/host` setup has a new _No admin login on this laptop?_ form: type the join code in the existing field, the pairing code below, and press **Pair this screen**. The room returns the ordinary presentation credential (fourteen hours, `apps/api/src/credentials/verify.ts`) as the `26_room_presentation` cookie, and setup connects the room as before. The admin-signed-in flow is unchanged.
+
+**Rules.** Codes are single-use, last ten minutes, and pair one room's presentation role only. Only a SHA-256 hash is stored, in a room table `projector_pairing` created on first use (no schema version bump). A new code voids any open code. Redeem attempts are limited per room in memory (burst five, then one every twelve seconds); wrong guesses also count durably and void the open code after ten. Issuing needs the admin session and the room's control cookie, and is limited to a burst of five. The consumed code and the new credential are written in one transaction, with a receipt, before the cookie is set; a retry with the same request id replays it.
+
+**Files.** New: `apps/api/src/credentials/pairing.ts`, `apps/api/src/credentials/pairing-routes.ts` (registered from `apps/api/src/auth/routes.ts`), `apps/web/src/stage/ProjectorPairing.tsx`, `apps/web/src/stage/pairing-code.ts`, `apps/api/test/projector-pairing.spec.ts`, `apps/web/src/stage/ProjectorPairing.test.tsx`. Changed: `apps/web/src/stage/stage-page.tsx`, `apps/web/src/stage/projector.css`, `apps/web/src/admin/live-console.tsx`, their tests, `docs/event-runbook.md`, `docs/data-inventory.md`, `apps/api/src/credentials/README.md`. Outside the listed files, because the credentials live in the room object: two methods on `PartyRoom` (`issueProjectorPairing`, `redeemProjectorPairing`) in `apps/api/src/room/party-room.ts`, two small response schemas in `packages/shared/src/index.ts`, and two fetch helpers in `apps/web/src/live/room-api.ts` (the one room HTTP client).
+
+**Decisions.** Pairing is room-scoped: the projector types the room's join code and the pairing code, so no global code lookup is needed. Issuing is its own receipted HTTP request, not a `/api/rooms/play` command, because it returns a secret. The issue receipt keeps the plain code only while the code is open, so a retried request can show it again; when the code is used, voided or expired, the receipt is replaced with a refusal (an expired code's receipt is scrubbed at the room's next pairing issue or redeem). The rate-limit refusal uses status 429 with the shared `conflict` error code, because the shared error list has no rate-limit code. A paired projector replaces any other open stage socket, as a second `/host` tab already does.
+
+**Checks.** `npx prettier@3.9.8 --write` on the changed files (the repo's pinned version). Dependencies are not installed in this worktree, so `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run test:unit`, `npm run test -w @26/api`, `npm run content:check` and `npm run build` were not run locally; CI (`Check`) runs build, format, lint, typecheck and tests on the PR. Playwright was not run.
+
+**Unverified.** No staging rehearsal yet: pair a real projector browser on staging, present, reload, and confirm the admin laptop keeps its own control and stage access. The host snapshot does not list pairing history; the room audit log records `projector_pairing_issued` and `projector_paired`.
+
+**Next:** CI results on the PR, then a staging rehearsal before Humza merges. Do not start the next prompt automatically.
+
+**Cubic review, first pass (same day).** All 13 findings were valid and are fixed in one follow-up commit:
+
+- The API spec now runs in the `room` Vitest project. It uses the local admin proof instead of a module mock.
+- `vite dev` sends `/api/stage/pair` to the Worker, because the Node auth loader has no room bindings.
+- A refused redeem writes a receipt, so retrying the same request does not count as a second guess.
+- Spent codes are scrubbed from issue receipts.
+- The routes reuse the stream-limited `readJson`.
+- A used or voided code gets one "no longer valid" message.
+- The Live controls card stops showing the old code while it asks for a new one. It also keeps the request id after a failed attempt.
+- The projector pairing form reports whether the room then connected, and it reappears after the screen loses access.
+- Pairing calls have their own fallback message for an unreadable response.
+- The credentials README table now shows 12 and 14 hours.
+- The runbook says a paired projector cannot be revoked.
+
+Files outside the original list: `apps/api/vitest.config.ts` and `apps/web/vite.config.ts`. Checks: the pinned Prettier on the changed files. Typecheck, lint and tests are again left to CI.
