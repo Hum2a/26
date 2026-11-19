@@ -7000,3 +7000,19 @@ Answer acknowledgement p95 ranged 386–1373 ms across these single samples, wit
 - **Database rows written.** The test Worker hit "Exceeded allowed rows written in Durable Objects free tier" after about 20 runs. Each race tick writes roughly 85 rows with 80 drivers (one input queue row per driver, the race, the job, the room version and the alarm), so about 850 rows a second. One 3-minute 80-driver race is roughly 150,000 rows. The Workers Free plan allows 100,000 rows written a day, so on a Free plan one full race would hit the limit mid-race. The Paid plan includes 50 million a month. Whether the party's account (`account_id` in `apps/api/wrangler.jsonc`) is on Workers Paid is not known here and must be checked before the party.
 
 Answer acknowledgement p95 on Cloudflare was 71–295 ms across runs; quiz rounds are not a concern.
+
+## 19 November 2026 — Night-of sheet and stale event docs
+
+**Status:** documentation only, on `cursor/night-of-docs`.
+
+**Correction to earlier 18–19 November kart entries.** Those notes said the phone-owned kart, Graphics High, input cap, and 80-driver load work were “local commit, not pushed” or “not committed”. They are on `origin/master` (`9a19614` … `efd691c`). Older entries above are left as written.
+
+**What changed.** One printable operator sheet, `docs/night-of.md`, for Humza (Live controls) and Baseer (presenter): morning-of checklist (Workers Paid, Neon autosuspend, production `/admin` on both laptops, hotspot, no deploys), the 42-round `order` from `apps/api/src/questions/packs/birthday/manifest.ts` (ids, titles, mechanics, planner durations, presenter actions, Advance notes), if-it-breaks rows drawn from the runbook, and end-of-night archive / `/r/{gameId}` / result emails. Stale claims removed from `docs/event-runbook.md` (no longer 56 rounds or four drafts including retired Reddit tribunal / Ferrier), `docs/decisions-for-humza.md` (drafts, projector pairing still unbuilt, CI now runs and is red at Playwright), and `docs/readiness-plan-2026-11-18.md` (answer trends merged as PR #41; production is not the 8 November `cbd1e6c` build — last recorded redeploy 19 November 2026 18:36 GMT, including PR #45 and the kart Controls panel). Linked from `docs/README.md` and the root `README.md`. Did not edit `docs/content/*`.
+
+**Files:** `docs/night-of.md` (new), `docs/event-runbook.md`, `docs/decisions-for-humza.md`, `docs/readiness-plan-2026-11-18.md`, `docs/README.md`, `README.md`, this section.
+
+**Checks:** `npm run format:check` passed. `npm run lint` passed (0 errors, 30 existing `react-refresh/only-export-components` warnings; structure check passed). `npm run content:check` passed: demo `demo-2026-09-22`; birthday `birthday-draft` with incomplete drafts `where-are-we` and `ed-or-humza` only. Typecheck, unit tests, and `npm run build` were not run (docs-only). Playwright was not run.
+
+**Unresolved:** Workers Paid on the party Cloudflare account is still unconfirmed from this environment. Physical-device and venue sign-off remain unticked. Chess remains in the default `order` even though it is also catalogue-ready.
+
+**Next:** Humza prints `docs/night-of.md`, confirms Workers Paid, and merges this PR. Do not start the next prompt automatically.
