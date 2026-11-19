@@ -45,7 +45,7 @@ const handlers = () => ({
   onDuel: vi.fn(),
 });
 
-it("sorts fixture quotes one at a time and sends the whole list", () => {
+it("sorts fixture quotes one at a time and sends the whole list once", () => {
   const callbacks = handlers();
   render(<GuestPlay snapshot={snapshot()} pending={false} {...callbacks} />);
   expect(screen.getByText(question.prompt)).toBeTruthy();
@@ -70,6 +70,7 @@ it("sorts fixture quotes one at a time and sends the whole list", () => {
     fireEvent.click(screen.getByRole("button", { name: i % 2 ? "Humza" : "Ed" }));
   }
   fireEvent.click(send);
+  fireEvent.click(send);
   expect(callbacks.onRank).toHaveBeenCalledOnce();
   const placements = callbacks.onRank.mock.calls[0]![0] as {
     itemId: string;
@@ -79,19 +80,173 @@ it("sorts fixture quotes one at a time and sends the whole list", () => {
   expect(new Set(placements.map((entry) => entry.itemId)).size).toBe(8);
 });
 
-it("lets a guest move a quote back from a pile", () => {
+function dispatchPointer(
+  target: Element,
+  type: "pointerdown" | "pointermove" | "pointerup" | "pointercancel",
+  {
+    pointerId,
+    clientX,
+    clientY,
+    timeStamp,
+  }: { pointerId: number; clientX: number; clientY: number; timeStamp?: number },
+) {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX,
+    clientY,
+    button: 0,
+  });
+  Object.defineProperty(event, "pointerId", { value: pointerId });
+  if (timeStamp !== undefined) {
+    Object.defineProperty(event, "timeStamp", { value: timeStamp });
+  }
+  fireEvent(target, event);
+}
+
+it("assigns on horizontal drag and fast flick, ignores vertical scroll and pointercancel", () => {
+  const callbacks = handlers();
+  const { container } = render(
+    <GuestPlay snapshot={snapshot()} pending={false} {...callbacks} />,
+  );
+  const firstCard = container.querySelector(".ed-card") as HTMLElement;
+
+  // Vertical pan does not assign the quote.
+  dispatchPointer(firstCard, "pointerdown", {
+    pointerId: 1,
+    clientX: 160,
+    clientY: 200,
+    timeStamp: 100,
+  });
+  dispatchPointer(firstCard, "pointermove", {
+    pointerId: 1,
+    clientX: 164,
+    clientY: 120,
+    timeStamp: 140,
+  });
+  dispatchPointer(firstCard, "pointerup", {
+    pointerId: 1,
+    clientX: 164,
+    clientY: 120,
+    timeStamp: 160,
+  });
+  expect(screen.getByText(/0 of 8 sorted/)).toBeTruthy();
+
+  // Cancelled pointer does not assign even after horizontal movement.
+  dispatchPointer(firstCard, "pointerdown", {
+    pointerId: 2,
+    clientX: 200,
+    clientY: 200,
+    timeStamp: 200,
+  });
+  dispatchPointer(firstCard, "pointermove", {
+    pointerId: 2,
+    clientX: 80,
+    clientY: 200,
+    timeStamp: 250,
+  });
+  dispatchPointer(firstCard, "pointercancel", {
+    pointerId: 2,
+    clientX: 80,
+    clientY: 200,
+    timeStamp: 260,
+  });
+  expect(screen.getByText(/0 of 8 sorted/)).toBeTruthy();
+
+  // Slow horizontal drag left assigns quote 1 to Ed.
+  dispatchPointer(firstCard, "pointerdown", {
+    pointerId: 3,
+    clientX: 220,
+    clientY: 200,
+    timeStamp: 300,
+  });
+  dispatchPointer(firstCard, "pointermove", {
+    pointerId: 3,
+    clientX: 120,
+    clientY: 202,
+    timeStamp: 700,
+  });
+  dispatchPointer(firstCard, "pointerup", {
+    pointerId: 3,
+    clientX: 120,
+    clientY: 202,
+    timeStamp: 760,
+  });
+  expect(screen.getByText(/1 of 8 sorted/)).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Ed 1" })).toBeTruthy();
+
+  // Fast flick right assigns quote 2 to Humza even over a short distance (45px in 60ms).
+  const secondCard = container.querySelector(".ed-card") as HTMLElement;
+  dispatchPointer(secondCard, "pointerdown", {
+    pointerId: 4,
+    clientX: 140,
+    clientY: 200,
+    timeStamp: 900,
+  });
+  dispatchPointer(secondCard, "pointermove", {
+    pointerId: 4,
+    clientX: 185,
+    clientY: 201,
+    timeStamp: 950,
+  });
+  dispatchPointer(secondCard, "pointerup", {
+    pointerId: 4,
+    clientX: 185,
+    clientY: 201,
+    timeStamp: 960,
+  });
+  expect(screen.getByText(/2 of 8 sorted/)).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Humza 1" })).toBeTruthy();
+});
+
+it("restores the last card on undo, including after all quotes are sorted", () => {
+  render(<GuestPlay snapshot={snapshot()} pending={false} {...handlers()} />);
+  for (let i = 0; i < 8; i += 1) {
+    fireEvent.click(screen.getByRole("button", { name: i % 2 ? "Humza" : "Ed" }));
+  }
+  expect(screen.getByText(/8 of 8 sorted/)).toBeTruthy();
+  expect(screen.getByText(/All quotes assigned/)).toBeTruthy();
+
+  fireEvent.click(screen.getByRole("button", { name: /Undo/ }));
+  expect(screen.getByText(/7 of 8 sorted/)).toBeTruthy();
+  expect(screen.getByText(/Last fixture line for the design bench/)).toBeTruthy();
+});
+
+it("lets a guest expand long quotes in a review pile, move between piles, or move back", () => {
   const callbacks = handlers();
   render(<GuestPlay snapshot={snapshot()} pending={false} {...callbacks} />);
+  // Sort first three quotes into Ed (quote 3 is the long stand-in quote).
   fireEvent.click(screen.getByRole("button", { name: "Ed" }));
-  fireEvent.click(screen.getByRole("button", { name: "Ed 1" }));
+  fireEvent.click(screen.getByRole("button", { name: "Ed" }));
+  fireEvent.click(screen.getByRole("button", { name: "Ed" }));
+
+  fireEvent.click(screen.getByRole("button", { name: "Ed 3" }));
   expect(screen.getByText("Ed", { selector: ".ed-assigned-head span" })).toBeTruthy();
   expect(
     document.querySelector(
       '.ed-assigned-head img[src="/assets/questions/ed-or-humza/ed.webp"]',
     ),
   ).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: /Move back/ }));
-  expect(screen.getByText(/0 of 8 sorted/)).toBeTruthy();
+  const expandLong = screen.getByRole("button", {
+    name: /A much longer invented line/,
+  });
+  expect(expandLong.getAttribute("aria-expanded")).toBe("false");
+  fireEvent.click(expandLong);
+  expect(expandLong.getAttribute("aria-expanded")).toBe("true");
+
+  // Move quote 1 to Humza, then undo restores it to Ed.
+  const moveToHumza = screen.getAllByRole("button", { name: "Move to Humza" })[0]!;
+  fireEvent.click(moveToHumza);
+  expect(screen.getByRole("button", { name: "Ed 2" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Humza 1" })).toBeTruthy();
+
+  fireEvent.click(screen.getByRole("button", { name: /Undo/ }));
+  expect(screen.getByRole("button", { name: "Ed 3" })).toBeTruthy();
+
+  // Move quote 1 back to the deck.
+  const moveBack = screen.getAllByRole("button", { name: /Move back/ })[0]!;
+  fireEvent.click(moveBack);
+  expect(screen.getByText(/2 of 8 sorted/)).toBeTruthy();
   expect(screen.getByText(/Stand-in: I only came for the crisps/)).toBeTruthy();
 });
 

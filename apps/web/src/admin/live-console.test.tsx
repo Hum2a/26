@@ -5,10 +5,11 @@ vi.mock("../live/room-socket", () => ({ openRoomSocket: vi.fn() }));
 vi.mock("../live/room-api", () => ({
   playRoom: vi.fn(),
   issueTransfer: vi.fn(),
+  issueProjectorPairing: vi.fn(),
   readDiagnostics: vi.fn(),
   downloadScoreSummary: vi.fn(),
 }));
-import { playRoom } from "../live/room-api";
+import { issueProjectorPairing, playRoom } from "../live/room-api";
 import { LiveConsole } from "./live-console";
 import { roomFixture } from "./room-fixture.test-support";
 import {
@@ -442,4 +443,41 @@ it("hides a typed answer from a commonness reveal", async () => {
       expect.objectContaining({ action: "exclude", playerId }),
     ),
   );
+});
+
+it("shows a one-time projector pairing code and replaces it on request", async () => {
+  vi.mocked(issueProjectorPairing)
+    .mockResolvedValueOnce({
+      code: "WXYZ2345",
+      expiresAt: new Date(Date.now() + 600_000).toISOString(),
+    })
+    .mockResolvedValueOnce({
+      error: "Too many attempts. Wait a minute, then try again.",
+    })
+    .mockResolvedValueOnce({
+      code: "ABCD6789",
+      expiresAt: new Date(Date.now() + 600_000).toISOString(),
+    });
+  await mountControls(<LiveConsole />);
+  const card = screen.getByLabelText("Projector pairing");
+  fireEvent.click(within(card).getByRole("button", { name: "Show pairing code" }));
+  expect(await within(card).findByText("WXYZ-2345")).toBeTruthy();
+  expect(issueProjectorPairing).toHaveBeenCalledWith({
+    gameId: roomFixture.gameId,
+    requestId: expect.any(String),
+  });
+  // Pairing is its own request, never a room command.
+  expect(playRoom).not.toHaveBeenCalled();
+  fireEvent.click(within(card).getByRole("button", { name: "Show a new code" }));
+  expect(await within(card).findByRole("alert")).toBeTruthy();
+  // Asking again voids the old code, so it is no longer shown as valid.
+  await waitFor(() => expect(within(card).queryByText("WXYZ-2345")).toBeNull());
+  expect(within(card).getByRole("button", { name: "Show pairing code" })).toBeTruthy();
+  fireEvent.click(within(card).getByRole("button", { name: "Show pairing code" }));
+  expect(await within(card).findByText("ABCD-6789")).toBeTruthy();
+  expect(within(card).queryByRole("alert")).toBeNull();
+  const [first, second, third] = vi.mocked(issueProjectorPairing).mock.calls;
+  expect(second?.[0].requestId).not.toBe(first?.[0].requestId);
+  // The retry after a failure replays the same request.
+  expect(third?.[0].requestId).toBe(second?.[0].requestId);
 });

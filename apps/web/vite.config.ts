@@ -235,6 +235,8 @@ function attachLocalAuth(server: ViteDevServer | PreviewServer, apiEntry: string
     const path = (req.url ?? "").split("?")[0] ?? "";
     const handled =
       !path.startsWith("/api/admin/rooms") &&
+      // Projector pairing needs the room bindings, so the Worker answers it.
+      path !== "/api/stage/pair" &&
       path !== "/api/admin/content" &&
       !path.startsWith("/api/admin/content/") &&
       localAuthPrefixes.some(

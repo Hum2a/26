@@ -15,7 +15,7 @@ import "./phone-shell.css";
 
 export type PhoneTab = "play" | "ranks" | "troll" | "snap";
 
-export const phoneTabs: readonly {
+const phoneTabs: readonly {
   id: PhoneTab;
   label: string;
   icon: IconifyIcon;

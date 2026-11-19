@@ -1,20 +1,25 @@
 # Decisions for Humza
 
-[Home](../README.md) · [Documentation](README.md) · [Event runbook](event-runbook.md)
+> **Superseded for the night:** print [Night of](night-of.md). This page is the
+> older options list, corrected 19 November 2026 so it no longer contradicts
+> the code.
 
-Written 5 November 2026 for the 21 November party. Everything below was built on branch `kart-mobile-multiplayer` while you could not be asked. Where a choice was yours to make, it is a **switch with a safe default** rather than a guess baked into code. Nothing has been deployed, no secrets or dashboards were changed, and no question content was invented.
+[Home](../README.md) · [Documentation](README.md) · [Night of](night-of.md) · [Event runbook](event-runbook.md)
+
+Written 5 November 2026 for the 21 November party, with stale rows corrected on
+19 November. Where a choice was yours to make, it is a **switch with a safe
+default** rather than a guess baked into code. Do not invent question content.
 
 ## 1. Things only you can do
 
-| When             | What                                                                                                                                                                                                            | Why                                                                                                                             |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Before merging   | Read this page and the Stage A/B entries in [build-progress.md](build-progress.md). Merge `kart-mobile-multiplayer` into `master` when happy.                                                                   | All work is on the branch.                                                                                                      |
-| Before the party | Deploy to staging (`npm run release` — staging is now the default), rehearse with real phones and the projector, then deploy production with `npm run release -- --deploy=production` or `npm run deploy:prod`. | No deploy has been made. The release script now runs unit, lint and script checks first; add `--full-checks` for the API suite. |
-| During the party | Do not deploy while a game is running. The date freeze was removed on 18 Nov at your request; `--override-freeze` is now ignored.                                                                               | A deploy restarts every room and drops every phone.                                                                             |
-| Party day        | Neon console: switch off autosuspend on the production branch for the night.                                                                                                                                    | Host commands mostly use a two-minute session cookie cache now, but sign-in and archiving still need the database.              |
-| Any time         | Supply or drop the four draft questions (table below).                                                                                                                                                          | Facts cannot be invented.                                                                                                       |
-| Any time         | Fix GitHub Actions billing, or keep running `npm run github-actions:check` locally before a deploy.                                                                                                             | CI has not run since `43cbce4`.                                                                                                 |
-| Optional         | Confirm the R2 access key is scoped to the one media bucket and the production bucket CORS allows the site origin.                                                                                              | Dashboard settings, not code.                                                                                                   |
+| When             | What                                                                                                                                                                   | Why                                                                                                                          |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Before the party | Confirm **Workers Paid**, Neon autosuspend off, both laptops on production `/admin`, hotspot ready. See [Night of](night-of.md).                                       | One 80-driver kart race writes about 150,000 Durable Object rows; Free allows 100,000 a day.                                 |
+| During the party | Do not deploy while a game is running. The date freeze was removed on 18 Nov at your request; `--override-freeze` is now ignored.                                      | A deploy restarts every room and drops every phone. Staging and production were last redeployed on 19 Nov 2026 at 18:36 GMT. |
+| Party day        | Neon console: switch off autosuspend on the production branch for the night.                                                                                           | Host commands mostly use a two-minute session cookie cache now, but sign-in and archiving still need the database.           |
+| Any time         | Supply or drop the two remaining draft questions (table below).                                                                                                        | Facts cannot be invented. `tribunal-reddit` and `council-ferrier-sector` were retired on 16 November.                        |
+| Any time         | GitHub Check still runs on every push. Latest `master` is red at the Playwright step; that is known. Optional: `npm run github-actions:check` locally before a deploy. | CI is no longer stuck at `43cbce4`. Do not add or run Playwright for the party.                                              |
+| Optional         | Confirm the R2 access key is scoped to the one media bucket and the production bucket CORS allows the site origin.                                                     | Dashboard settings, not code.                                                                                                |
 
 ## 2. Switches in Admin → Live controls → Driving feel (kart)
 
@@ -48,18 +53,16 @@ A countdown that _holds_ the grid inside the race (changing race timing) was not
 
 Each is a file in `apps/api/src/questions/packs/birthday/`. Fill its `requirements`, run `npm run content:check`, then add it in Running order.
 
-| Round           | File                        | Needs                                                              |
-| --------------- | --------------------------- | ------------------------------------------------------------------ |
-| Reddit tribunal | `tribunal-reddit.ts`        | Original thread, exact title, outcome, top comment, correct choice |
-| Ferrier estate  | `council-ferrier-sector.ts` | Verified estate name and confirmed category                        |
-| Where are we?   | `where-are-we.ts`           | Credited clue photo, place name and coordinates                    |
-| Ed or Humza?    | `ed-or-humza.ts`            | Speaker (`ed` or `humza`) for each of the 18 quotes                |
+| Round         | File              | Needs                                               |
+| ------------- | ----------------- | --------------------------------------------------- |
+| Where are we? | `where-are-we.ts` | Credited clue photo, place name and coordinates     |
+| Ed or Humza?  | `ed-or-humza.ts`  | Speaker (`ed` or `humza`) for each of the 18 quotes |
 
-Ready but not in the order: **Figurine** (`group-chat-figurine`), **Cursed Search History** (`cursed-search-history`), **Property price roulette** (`property-price-roulette`, £750 pcm Winkworth listing) and **Nextdoor paranoia** (`nextdoor-paranoia`, Marshall News Messenger 5 Feb 2024). Add them in Running order if wanted.
+Ready but not in the default 42-round order: **Property price roulette** (`property-price-roulette`, £750 pcm Winkworth listing), **Nextdoor paranoia** (`nextdoor-paranoia`, Marshall News Messenger 5 Feb 2024), **esports-tag**, the extra guess rounds, and **kart-park-grand-prix**. Figurine and Cursed Search History **are** in the default order. Add catalogue-only rounds in Running order if wanted.
 
 ## 5. Known gaps (not fixed yet)
 
-- Physical phones, the projector and the venue Wi-Fi have never been tested. The [rehearsal steps](event-runbook.md#physical-device-and-venue-sign-off) are the way to find out.
-- The projector pairing code (so the projector laptop need not sign in to admin) is not built.
-- 27 lint warnings (`react-refresh/only-export-components`) remain; they affect development hot reload only.
-- Typed-answer moderation, round-media pre-moderation and the vote "exclude in all mode" option from the plan are not built yet.
+- Physical phones, the projector and the venue Wi-Fi have never been fully signed off. The [rehearsal steps](event-runbook.md#physical-device-and-venue-sign-off) are the way to find out.
+- The projector pairing code (so the projector laptop need not sign in to admin) is still not built. `/api/rooms/lookup` still requires a presentation cookie minted from admin. Workaround: sign the projector laptop in to production `/admin` and open `/host` from that room.
+- About 30 lint warnings (`react-refresh/only-export-components`) remain; they affect development hot reload only.
+- Typed-answer Hide/Restore is built. Round-media pre-moderation and the vote "exclude in all mode" option from the plan are not.
