@@ -7000,3 +7000,45 @@ Answer acknowledgement p95 ranged 386–1373 ms across these single samples, wit
 - **Database rows written.** The test Worker hit "Exceeded allowed rows written in Durable Objects free tier" after about 20 runs. Each race tick writes roughly 85 rows with 80 drivers (one input queue row per driver, the race, the job, the room version and the alarm), so about 850 rows a second. One 3-minute 80-driver race is roughly 150,000 rows. The Workers Free plan allows 100,000 rows written a day, so on a Free plan one full race would hit the limit mid-race. The Paid plan includes 50 million a month. Whether the party's account (`account_id` in `apps/api/wrangler.jsonc`) is on Workers Paid is not known here and must be checked before the party.
 
 Answer acknowledgement p95 on Cloudflare was 71–295 ms across runs; quiz rounds are not a concern.
+
+## 19 November 2026 — Ed or Humza real photos
+
+Status: added the supplied photographs of Ed and Humza to the existing `ed-or-humza` round. Speakers stay unassigned; the question remains a draft and is still out of the running order. No deployment.
+
+### Files / interfaces
+
+- `apps/web/public/assets/questions/ed-or-humza/{ed,humza}.webp` — 512×512 face crops for phone buttons and pile headers.
+- `apps/web/public/assets/questions/ed-or-humza/{ed,humza}-portrait.webp` — 675×900 portraits for the projector columns.
+- Authored `media` on `packs/birthday/ed-or-humza.ts` (`ed`, `humza`, `ed-portrait`, `humza-portrait`) with credit “Photo supplied by Humza (private use)” and alt “Ed” / “Humza”.
+- Phone and stage layouts in `apps/web/src/play/designs/ed-or-humza.tsx` / `.css`.
+- `packPublicAssets` / `edOrHumzaAssets` so `content:check` fails if those files are missing, including while the round is a draft.
+- Design-bench fixture still uses labelled stand-in quotes; it renders the real photos.
+- Credits: `docs/content/question-image-credits.md`.
+
+### Decisions / defaults
+
+- EXIF/GPS stripped; WebP, not the camera JPEGs. Ed is the hillside selfie; Humza is the sunset portrait. Not swapped.
+- Avatars are decorative beside the visible names (empty `alt` on buttons) so the control name stays “Ed” / “Humza”. Projector portraits use alt “Ed” / “Humza”.
+- Phone preloads the two avatars; the projector also preloads the portraits. Images use `decoding="async"`, width/height and `aspect-ratio` so swipe/drag does not reflow.
+
+### Commands and results
+
+- `npm run typecheck` — passed.
+- `npm run lint` — 0 errors, 30 existing warnings; structure check passed.
+- `npm run format:check` — passed.
+- `npm run test:unit` — 210 files / 956 tests passed.
+- `npx vitest run --project auth test/ed-or-humza.spec.ts test/birthday-assets-prices.spec.ts` in `apps/api` — 9 passed.
+- `npm run content:check` — passed; incomplete drafts: `where-are-we` (photo + coordinates), `ed-or-humza` (18 speakers).
+- `npm run build` — passed, including gzip budgets (entry JS 222,610 / 260,000; entry CSS 28,208 / 34,000; total JS 1,490,434 / 1,650,000). Photos are public static files, not JS.
+
+### Manual verification
+
+Headless screenshots of `/design?q=ed-or-humza` (dev only): phone collect with circular avatars on the Ed/Humza buttons and pile chips; projector collect and reveal with a portrait heading each column. 320–430 CSS pixel layout was not measured in a physical device; the 390-wide bench screenshot is the phone evidence. Authenticated room play was not exercised.
+
+### Unresolved
+
+Speakers still need Humza’s assignments before the round can leave draft. `where-are-we` is still missing its clue photo and coordinates.
+
+### Next stage
+
+Set `speaker` on each quote when Humza confirms them, then add the round to Running order if wanted.

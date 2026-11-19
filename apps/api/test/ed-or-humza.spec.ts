@@ -6,6 +6,7 @@ import {
   makeEdOrHumza,
 } from "../src/questions/packs/birthday/ed-or-humza.ts";
 import { birthdayPack } from "../src/questions/packs/birthday/manifest.ts";
+import { packPublicAssets } from "../src/questions/pack-assets.ts";
 import { toPlayable } from "../src/questions/authoring.ts";
 import type { RankQuestion } from "../src/questions/definition.ts";
 import { validatePack } from "../src/questions/validate.ts";
@@ -50,6 +51,23 @@ describe("Ed or Humza whole-list sorting", () => {
     expect(toPlayable(edOrHumza, false)).toBeUndefined();
     expect(birthdayPack.catalogue).toContain(edOrHumza);
     expect(birthdayPack.order).not.toContain(edOrHumza.id);
+    expect(edOrHumza.media?.map((item) => item.asset)).toEqual([
+      "/assets/questions/ed-or-humza/ed.webp",
+      "/assets/questions/ed-or-humza/humza.webp",
+      "/assets/questions/ed-or-humza/ed-portrait.webp",
+      "/assets/questions/ed-or-humza/humza-portrait.webp",
+    ]);
+    expect(
+      edOrHumza.media?.every((item) => item.alt === "Ed" || item.alt === "Humza"),
+    ).toBe(true);
+    expect(
+      edOrHumza.media?.every(
+        (item) => item.credit === "Photo supplied by Humza (private use)",
+      ),
+    ).toBe(true);
+    expect(packPublicAssets(birthdayPack)).toEqual(
+      expect.arrayContaining(edOrHumza.media!.map((item) => item.asset!)),
+    );
     expect(
       validatePack({ ...birthdayPack, catalogue: [edOrHumza], order: [] }).filter(
         (issue) => issue.level === "error",

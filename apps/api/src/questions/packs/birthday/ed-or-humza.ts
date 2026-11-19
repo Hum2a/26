@@ -93,6 +93,40 @@ export function makeEdOrHumza(quotes: readonly EdOrHumzaQuote[] = edOrHumzaQuote
     collectMs: 120_000,
     items: quotes.map((entry) => ({ id: entry.id, label: entry.quote })),
     tiers,
+    media: [
+      {
+        name: "ed",
+        kind: "image",
+        required: true,
+        asset: "/assets/questions/ed-or-humza/ed.webp",
+        credit: "Photo supplied by Humza (private use)",
+        alt: "Ed",
+      },
+      {
+        name: "humza",
+        kind: "image",
+        required: true,
+        asset: "/assets/questions/ed-or-humza/humza.webp",
+        credit: "Photo supplied by Humza (private use)",
+        alt: "Humza",
+      },
+      {
+        name: "ed-portrait",
+        kind: "image",
+        required: true,
+        asset: "/assets/questions/ed-or-humza/ed-portrait.webp",
+        credit: "Photo supplied by Humza (private use)",
+        alt: "Ed",
+      },
+      {
+        name: "humza-portrait",
+        kind: "image",
+        required: true,
+        asset: "/assets/questions/ed-or-humza/humza-portrait.webp",
+        credit: "Photo supplied by Humza (private use)",
+        alt: "Humza",
+      },
+    ],
     truth: unassigned.length
       ? {
           missing: {
@@ -112,7 +146,7 @@ export function makeEdOrHumza(quotes: readonly EdOrHumzaQuote[] = edOrHumzaQuote
             .filter((group) => group.itemIds.length > 0),
         },
     notes:
-      "Personal quotes supplied by Humza, 17 November 2026; wording preserved, speakers unconfirmed. TODO owner: set each speaker to ed or humza; null keeps this a draft. Card-stack presentation ed-or-humza. One whole-list submission; 80 points proportional to correct placements, rounded down; two minutes, no speed bonus. Speaker keys stay server-side.",
+      "Personal quotes supplied by Humza, 17 November 2026; wording preserved, speakers unconfirmed. TODO owner: set each speaker to ed or humza; null keeps this a draft. Photos of Ed and Humza supplied by Humza for private party use (avatars plus projector portraits). Card-stack presentation ed-or-humza. One whole-list submission; 80 points proportional to correct placements, rounded down; two minutes, no speed bonus. Speaker keys stay server-side.",
   });
 }
 

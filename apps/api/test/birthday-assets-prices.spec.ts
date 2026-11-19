@@ -148,6 +148,12 @@ it("ships every picture a catalogue names, including demo cake and sky drawings"
       const head = [...readFileSync(file).subarray(0, 8)];
       if (asset.endsWith(".png")) expect(head).toEqual(pngMagic);
       if (asset.endsWith(".jpg")) expect(head.slice(0, 2)).toEqual([0xff, 0xd8]);
+      if (asset.endsWith(".webp")) {
+        expect(head.slice(0, 4)).toEqual([0x52, 0x49, 0x46, 0x46]);
+        expect([...readFileSync(file).subarray(8, 12)]).toEqual([
+          0x57, 0x45, 0x42, 0x50,
+        ]);
+      }
     }
   }
   expect(packPublicAssets(birthdayPack)).toContain(

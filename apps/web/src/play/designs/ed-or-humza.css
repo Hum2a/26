@@ -89,6 +89,38 @@
   touch-action: manipulation;
 }
 
+.ed-bucket,
+.ed-pile,
+.ed-assigned-head,
+.ed-reveal-phone h2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.ed-pile,
+.ed-assigned-head,
+.ed-reveal-phone h2 {
+  justify-content: flex-start;
+}
+
+.ed-face {
+  display: block;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--muted);
+}
+
+.ed-pile .ed-face {
+  width: 1.85rem;
+  height: 1.85rem;
+}
+
 .ed-bucket[data-tier="ed"],
 .ed-pile[data-tier="ed"] {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
@@ -132,6 +164,11 @@
   border-radius: var(--radius-panel);
   overflow-wrap: anywhere;
   font-size: 0.95rem;
+}
+
+.ed-assigned-head {
+  font-weight: 800;
+  background: color-mix(in srgb, var(--surface) 80%, var(--background));
 }
 
 .ed-assigned-actions {
@@ -194,6 +231,21 @@
   min-width: 0;
 }
 
+.ed-stage-column {
+  min-width: 0;
+}
+
+.ed-stage-photo {
+  display: block;
+  width: min(100%, 22vw, calc(32vh * 3 / 4));
+  height: auto;
+  aspect-ratio: 3 / 4;
+  margin: 0 0 0.7rem;
+  border-radius: var(--radius-panel);
+  object-fit: cover;
+  background: var(--muted);
+}
+
 .ed-stage-column h2 {
   margin: 0 0 0.8rem;
   font-size: max(48px, 3vw);
@@ -228,6 +280,10 @@
   .ed-bucket {
     min-height: 3.1rem;
     font-size: 1.05rem;
+  }
+  .ed-face {
+    width: 2.15rem;
+    height: 2.15rem;
   }
 }
 
