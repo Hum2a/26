@@ -7465,3 +7465,13 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Conflicts:** `docs/build-progress.md` (both sections kept) and `apps/kart-solo/src/solo.css` (master's phone media query plus this PR's `.solo-hud-left`).
 
 **Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run test:unit` 214 files / 985 tests passed. `npm run test -w @26/api` 147 files / 853 tests passed (`XDG_CONFIG_HOME` set). `npm run content:check` passed for demo and birthday. `npm run build` passed (1018 files scanned; gzip entry JS 222,787 / 260,000; entry CSS 28,208 / 34,000; total JS 1,493,986 / 1,650,000). Playwright was not run. Note: origin already had a parallel merge of master (`31818c1`); this kept that CSS (compact `.solo-hud-left` on phones) and these check results.
+
+## 20 November 2026 — Bracket rounds back in the running order
+
+**Status.** `apology-video-auction` (after `mock-election`) and `heathrow-search-query` (after `guess-airport-lounge`) are back in the default birthday order (#68), now that the phone round (#63) takes about 3 minutes per question instead of about 25.
+
+**Saved orders.** `readBirthdayOrder` (`apps/api/src/questions/birthday-order.ts`) adds both rounds to a running order saved in Admin before 20 November 2026 02:28 UTC, after the round each follows in the default order, when that round is in the saved order (a short custom order without those rounds is left alone). The stored revision is unchanged. An order the host saves after that time is taken as their choice and left alone, so removing them again in Admin still works.
+
+**Checks.** `npm run typecheck` passed. `party-rounds.spec.ts` covers an old saved order gaining both rounds in place and a newer one staying as saved.
+
+**Next.** Try one bracket round on staging with a few real phones.
