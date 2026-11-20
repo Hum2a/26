@@ -89,259 +89,273 @@ Mock British election: vote for a party.
 20s to answer. Attribution: live.
 Say at the reveal: No right answer. Read out the room's split.
 
-## 13. slider · inflation-freddo
+## 13. vote · apology-video-auction
+
+You were caught on 4K camera at a Selfridges changing room doing something unspeakable. Write the first sentence of your Notes App apology.
+
+30s to answer, then 15s to vote. Attribution: after.
+Say at the reveal: The most convincing apology wins the bracket and 60 points. No self-votes. Tied matches use the frozen random draw; odd entries get a bye. No votes means no prize.
+
+## 14. slider · inflation-freddo
 
 Freddo: guess the price in 2026
 
 20s to answer. Attribution: after.
 Say at the reveal: 35 p
 
-## 14. choice · red-pill-blue-pill
+## 15. choice · red-pill-blue-pill
 
 Everyone in the world has to take a blue pill or a red pill. If more than 50% pick blue, everyone lives. If not, red pills live and blue pills die.
 
 20s to answer. Attribution: live.
 Say at the reveal: If more than 50% pick Blue pill, everyone who answered scores. Otherwise Red pill scores.
 
-## 15. slider · guess-tab-oyster
+## 16. slider · guess-tab-oyster
 
 Adult peak PAYG single: Sutton → Oxford Circus via Zone 1. TfL default route, October 2026.
 
 20s to answer. Attribution: after.
 Say at the reveal: 8.8 £
 
-## 16. choice · trolley-problem
+## 17. choice · trolley-problem
 
 A train is heading for 5 people. You can derail it to kill only 1. Do you?
 
 20s to answer. Attribution: live.
 Say at the reveal: No right answer. Read out the room's split.
 
-## 17. typed · real-name-zack-polanski
+## 18. typed · real-name-zack-polanski
 
 What was their real name? Zack Polanski
 
 20s to answer. Attribution: after.
 Say at the reveal: David Paulden (close spellings count)
 
-## 18. map-guess · where-are-we
+## 19. map-guess · where-are-we
 
 Where are we?
 
 40s to answer. Attribution: after.
 Say at the reveal: Agadir seafront, Morocco
 
-## 19. choice · favourite-pokemon
+## 20. choice · favourite-pokemon
 
 Favourite Pokémon
 
 20s to answer. Attribution: live.
 Say at the reveal: Mudkip
 
-## 20. slider · inflation-petrol
+## 21. slider · inflation-petrol
 
 Petrol: guess the price in 2026
 
 20s to answer. Attribution: after.
 Say at the reveal: 175 p/litre
 
-## 21. typed · real-name-tommy-robinson
+## 22. typed · real-name-tommy-robinson
 
 What was their real name? Tommy Robinson
 
 20s to answer. Attribution: after.
 Say at the reveal: Stephen Yaxley-Lennon / Stephen Lennon / Stephen Yaxley (close spellings count)
 
-## 22. typed · common-password
+## 23. typed · common-password
 
 Create the most common password
 
 20s to answer. Attribution: after.
 Say at the reveal: Case and outer spaces do not matter; repeated spaces count as one. Unique answers score zero. The biggest matching group gets 100; smaller matching groups score proportionally. Ties share the same score.
 
-## 23. guess · guess-council-coup
+## 24. guess · guess-council-coup
 
 Who would stage a coup in the residents’ WhatsApp, declare martial law over the bins, then get removed by their mum?
 
 20s to answer. Attribution: after.
 Say at the reveal: Reveal who got the most votes. Guests who picked them score.
 
-## 24. choice · how-italian-is-humza
+## 25. choice · how-italian-is-humza
 
 Guess how Italian Humza is
 
 20s to answer. Attribution: live.
 Say at the reveal: 0.5%
 
-## 25. rank · rank-driving-sins
+## 26. rank · rank-driving-sins
 
 Rank these UK driving offenses from ‘mildly annoying’ to ‘immediate revocation of human rights’.
 
 20s to answer. Attribution: after.
 Say at the reveal: The room’s order comes from each item’s mean position. Tied mean positions stay tied. Score up to 80 for agreeing with the room’s ordered pairs.
 
-## 26. slider · inflation-meal-deal
+## 27. slider · inflation-meal-deal
 
 The student tasting menu: a Tesco meal deal
 
 20s to answer. Attribution: after.
 Say at the reveal: 385 p
 
-## 27. choice · whos-that-pokemon
+## 28. choice · whos-that-pokemon
 
 Who’s that Pokémon?
 
 20s to answer. Attribution: after.
 Say at the reveal: Jigglypuff
 
-## 28. typed · real-name-vin-diesel
+## 29. typed · real-name-vin-diesel
 
 What was their original name? Vin Diesel
 
 20s to answer. Attribution: after.
 Say at the reveal: Mark Sinclair / Mark Sinclair Vincent / Mark Vincent (close spellings count)
 
-## 29. slider · guess-tab-car-insurance
+## 30. slider · guess-tab-car-insurance
 
 Newly qualified and aged 25+: what was the median annual car insurance price paid through Go.Compare in June 2026?
 
 20s to answer. Attribution: after.
 Say at the reveal: 1002 £
 
-## 30. vote · dating-exit-excuse
+## 31. vote · dating-exit-excuse
 
 You're 10 minutes into a first date in Central London and they say: ‘Honestly, I think astrology has more predictive validity than peer-reviewed economics.’ What is your exact exit excuse?
 
 30s to answer, then 20s to vote. Attribution: after.
 Say at the reveal: One line, three awards. Each category is worth 60 points to its winning author or tied authors. The same line can win more than one award; no self-votes.
 
-## 31. choice · christianity-branches
+## 32. choice · christianity-branches
 
 Which of these ARE branches of Christianity?
 
 20s to answer. Attribution: live.
 Say at the reveal: Correct answers are Muggletonians, The Jumpers, Ranters. Only that exact set earns points.
 
-## 32. slider · inflation-sausage-roll
+## 33. slider · inflation-sausage-roll
 
 The Greggs gold standard: one sausage roll
 
 20s to answer. Attribution: after.
 Say at the reveal: 135 p
 
-## 33. choice · trump-made-up-country
+## 34. choice · trump-made-up-country
 
 Which of these countries has Trump made up?
 
 20s to answer. Attribution: live.
 Say at the reveal: Correct answers are The United States of Israel, The Islamic Republic of Japan. Only that exact set earns points.
 
-## 34. wordle · complete-a-wordle
+## 35. wordle · complete-a-wordle
 
 Complete a wordle
 
 120s to answer. Attribution: after.
 Say at the reveal: VULGY (six guesses, 120 seconds; 100 points for solving)
 
-## 35. typed · real-name-jamie-foxx
+## 36. typed · real-name-jamie-foxx
 
 What was their original name? Jamie Foxx
 
 20s to answer. Attribution: after.
 Say at the reveal: Eric Marlon Bishop / Eric Bishop (close spellings count)
 
-## 36. guess · guess-airport-lounge
+## 37. guess · guess-airport-lounge
 
 Who would miss their flight because they were arguing that the airport lounge buffet counts as an all-inclusive holiday?
 
 20s to answer. Attribution: after.
 Say at the reveal: Reveal who got the most votes. Guests who picked them score.
 
-## 37. slider · property-price-roulette
+## 38. vote · heathrow-search-query
+
+Write the worst possible search query to find on someone’s phone right before going through UK border control.
+
+30s to answer, then 15s to vote. Attribution: after.
+Say at the reveal: The worst search wins the bracket and 60 points. No self-votes. Odd entries get a bye; tied matches use the random draw fixed before voting. No votes in the entire bracket means no prize.
+
+## 39. slider · property-price-roulette
 
 How much is this London “studio flat” per month? Winkworth listing, February 2026.
 
 20s to answer. Attribution: after.
 Say at the reveal: 750 £
 
-## 38. slider · dial-pop-culture
+## 40. slider · dial-pop-culture
 
 Predict the room’s middle ground: Pop Culture Snobbery.
 
 20s to answer. Attribution: after.
 Say at the reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
-## 39. slider · guess-tab-soho-pint
+## 41. slider · guess-tab-soho-pint
 
 What does a standard pint of Camden Hells cost at The Roxy, Soho? Menu checked October 2026.
 
 20s to answer. Attribution: after.
 Say at the reveal: 7.3 £
 
-## 40. slider · inflation-cheeseburger
+## 42. slider · inflation-cheeseburger
 
 The 99p nostalgia tax: a Maccies cheeseburger
 
 20s to answer. Attribution: after.
 Say at the reveal: 139 p
 
-## 41. slider · dial-london-geography
+## 43. slider · dial-london-geography
 
 Predict the room’s middle ground: London Geography.
 
 20s to answer. Attribution: after.
 Say at the reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
-## 42. slider · guess-tab-ev-charge
+## 44. slider · guess-tab-ev-charge
 
 Charge a 62 kWh battery from empty to full at the Jan–Mar 2026 GB average capped electricity rate. What is the energy cost?
 
 20s to answer. Attribution: after.
 Say at the reveal: 17.17 £
 
-## 43. slider · dial-british-politics
+## 45. slider · dial-british-politics
 
 Predict the room’s middle ground: British Politics.
 
 20s to answer. Attribution: after.
 Say at the reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
-## 44. chess · chess-battle
+## 46. chess · chess-battle
 
 Play 1-minute blitz against the Humza bot!
 
 120s to answer. Attribution: never.
 Say at the reveal: Capturing Black pieces scores 10 for a queen, 5 for a rook, 3 for a bishop, 3 for a knight and 1 for a pawn. Checkmating the bot earns at least 40 points. Winning on time adds 15 points to captures. Other results score captures only.
 
-## 45. guess · group-chat-figurine
+## 47. guess · group-chat-figurine
 
 I just dropped £400 on a Japanese imported figurine and told my mum it was an educational tax deduction.
 
 20s to answer. Attribution: after.
 Say at the reveal: Reveal who got the most votes. Guests who picked them score. A winning self-vote scores double.
 
-## 46. choice · cursed-search-history
+## 48. choice · cursed-search-history
 
 Hold your nerve as the search history gets worse. Hit BAIL to bank points before the Raid.
 
 30s to answer. Attribution: live.
 Say at the reveal: Players who bailed before the Raid keep their banked points. Players caught by the Raid score zero. If there was no Raid, players still in bank keep 700 points.
 
-## 47. kart · kart-park-grand-prix
+## 49. kart · kart-park-grand-prix
 
 One lap of 26 Park. Three minutes. Who can actually drive?
 
 180s to answer. Attribution: live.
 Say at the reveal: Fastest completed lap wins. Finishers share place on equal server times; DNF scores zero. Ghost karts mean nobody can blame traffic.
 
-## 48. rank · ed-or-humza
+## 50. rank · ed-or-humza
 
 Who said it? Sort every quote into Ed or Humza.
 
 120s to answer. Attribution: after.
 Say at the reveal: Ed You're ass is in grabbing distance, Biblically accurate breasts on that one, Internally I feel external and externally I feel internal, A creampie. His cum in your vagina., No exchange of bodily fluids occurred, (In response to how was your Christmas) It was good. Busted one out in your memory, You know Belinda asked me if I wanted to get a fleshlight and I said only if it came inside a doll of the main character from zootopia, I’ve decided that I’m going to bust to the thought of you tonight, The classic - I’m going to touch you, you're tits are looking great today, You would've been worth the jail time, If they don't want a dick they can give the inches to me; Humza I'd baptise a baby with a water pressure jet just to make the local news, I sense Israel in your general direction, You're talking a lot of shit for a washing machine, Sometimes bad men have to do bad things to teach women a lesson, If jensan can bang all those baddies with a 1 incher imagine what I can do with a 9mm, Smaller but firm can outperform larger but drippy
 
-## 49. kart · kart-sprint
+## 51. kart · kart-sprint
 
 One lap. Three minutes. Who can actually drive?
 

@@ -122,3 +122,49 @@ it("removes retired rounds from old saved orders without changing already-frozen
     ids: ["car-name", "kart-sprint"],
   });
 });
+
+it("adds the bracket rounds back to orders saved before the phone round, but not to later ones", async () => {
+  const registry = env.ROOM_CODE_REGISTRY.getByName("codes");
+  const save = (ids: string[], updatedAt: number) =>
+    runInDurableObject(registry, (_instance, state) =>
+      state.storage.sql.exec(
+        "INSERT INTO pack_order (id, payload) VALUES ('birthday', ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload",
+        JSON.stringify({ revision: 4, ids, updatedAt, history: [] }),
+      ),
+    );
+  const old = [
+    "car-name",
+    "mock-election",
+    "trolley-problem",
+    "guess-airport-lounge",
+    "property-price-roulette",
+    "kart-sprint",
+  ];
+  await save(old, Date.UTC(2026, 10, 19, 21, 0));
+  const restored = await registry.birthdayOrder();
+  expect(restored.ids).toEqual([
+    "car-name",
+    "mock-election",
+    "apology-video-auction",
+    "trolley-problem",
+    "guess-airport-lounge",
+    "heathrow-search-query",
+    "property-price-roulette",
+    "kart-sprint",
+  ]);
+  expect(restored.revision).toBe(4);
+
+  await save(old, Date.UTC(2026, 10, 20, 12, 0));
+  expect((await registry.birthdayOrder()).ids).toEqual(old);
+
+  const nearlyFull = [...old, ...Array.from({ length: 73 }, () => "car-name")];
+  await save(nearlyFull, Date.UTC(2026, 10, 19, 21, 0));
+  const capped = (await registry.birthdayOrder()).ids;
+  expect(capped).toHaveLength(80);
+  expect(capped.slice(0, 3)).toEqual([
+    "car-name",
+    "mock-election",
+    "apology-video-auction",
+  ]);
+  expect(capped).not.toContain("heathrow-search-query");
+});

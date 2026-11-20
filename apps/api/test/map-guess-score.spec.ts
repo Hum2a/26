@@ -81,7 +81,7 @@ describe("map guessing", () => {
     expect(publicQuestion.image?.alt).not.toMatch(/agadir/i);
     expect(publicQuestion.image?.src).toBe("/assets/questions/where-are-we/photo.webp");
     expect(birthdayPack.order).toContain("where-are-we");
-    expect(birthdayPack.order).not.toContain("apology-video-auction");
-    expect(birthdayPack.order).not.toContain("heathrow-search-query");
+    expect(birthdayPack.order).toContain("apology-video-auction");
+    expect(birthdayPack.order).toContain("heathrow-search-query");
   });
 });

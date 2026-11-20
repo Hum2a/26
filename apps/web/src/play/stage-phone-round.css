@@ -1,0 +1,18 @@
+.stage-phone-round__meter {
+  height: 1.5rem;
+  border-radius: var(--radius-control, 999px);
+  background: color-mix(in srgb, var(--line) 45%, transparent);
+  overflow: hidden;
+}
+
+.stage-phone-round__fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+}
+
+.stage-phone-round__count {
+  font-size: clamp(1.25rem, 2.5vw, 2rem);
+  font-variant-numeric: tabular-nums;
+}

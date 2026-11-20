@@ -41,7 +41,11 @@ import { playableQuestions, questionFor, questionPacks } from "./registry.ts";
 import {
   createPartyVoteFlow,
   flowCandidateIds,
+  flowMatchNumber,
+  planHeat,
+  settleHeat,
   settlePartyVoteFlow,
+  type HeatPlan,
   type PartyVoteFlow,
 } from "../../../../packages/shared/src/party-scoring.ts";
 import { hiddenAuthors, setAnswerHidden } from "./hidden-answers.ts";
@@ -117,6 +121,28 @@ export function assertVoteQuestion(question: VoteQuestion): void {
       question.flow.labels.some((label) => !label.trim() || label.length > 80))
   )
     throw new Error("Award voting needs three distinct named categories.");
+  const heat = question.flow?.kind === "tournament" ? question.flow.heat : undefined;
+  if (
+    heat &&
+    (!Number.isInteger(heat.finalists) ||
+      heat.finalists < 2 ||
+      heat.finalists > 16 ||
+      !Number.isInteger(heat.pairs) ||
+      heat.pairs < 1 ||
+      heat.pairs > 8 ||
+      !Number.isInteger(heat.ms) ||
+      heat.ms < 15_000 ||
+      heat.ms > 180_000)
+  )
+    throw new Error(
+      "A phone round needs 2–16 finalists, 1–8 pairs each and 15–180 seconds.",
+    );
+  if (
+    question.flow?.kind === "tournament" &&
+    question.flow.pick !== undefined &&
+    (!question.flow.pick.trim() || question.flow.pick.length > 120)
+  )
+    throw new Error("A head-to-head instruction is one short line.");
   if (question.votes !== 1) {
     throw new Error("This question accepts one vote.");
   }
@@ -393,12 +419,23 @@ export function acceptBallot(
     question.kind === "vote" && question.flow
       ? readRoundState<PartyVoteFlow>(sql, question.id, "vote-flow")
       : undefined;
-  if (flow && (epoch !== flow.step || !flowCandidateIds(flow).includes(value)))
-    return {
-      ok: false,
-      message: "That ballot has closed. Vote on the current match or award.",
-    };
-  const ballotKey = flow ? flowBallotKey(question.id, flow.step) : question.id;
+  const stale = {
+    ok: false as const,
+    message: "That ballot has closed. Vote on the current match or award.",
+  };
+  let ballotKey = question.id;
+  if (flow?.heat) {
+    // Phone round: each phone answers its own pairs in order, one at a time.
+    const pairs = readHeatPlan(sql, question.id)?.[playerId];
+    if (!pairs?.length) return { ok: false, message: ballotLateJoinMessage };
+    const round = currentHeatPair(sql, question.id, playerId, pairs.length);
+    if (round === undefined) return { ok: false, message: answerDuplicateMessage };
+    if (epoch !== round || !pairs[round]!.includes(value)) return stale;
+    ballotKey = heatBallotKey(question.id, round);
+  } else if (flow) {
+    if (epoch !== flow.step || !flowCandidateIds(flow).includes(value)) return stale;
+    ballotKey = flowBallotKey(question.id, flow.step);
+  }
   const existing = sql
     .exec(
       `SELECT candidate_id FROM vote_ballot WHERE player_id = ? AND question_id = ?`,
@@ -628,23 +665,38 @@ export function freezeVote(sql: SqlStorage, question: VoteQuestion, now: number)
   });
   freezeElectors(sql, question.id, seed, null, now);
   if (question.flow) {
+    const live = readCandidates(sql, question.id).filter(
+      (c) => c.eligible === 1 && c.included === 1,
+    );
     const ids = shuffleIds(
-      readCandidates(sql, question.id)
-        .filter((c) => c.eligible === 1 && c.included === 1)
-        .map((c) => c.candidate_id),
+      live.map((c) => c.candidate_id),
       seed,
       "bracket",
     );
-    writeRoundState(
-      sql,
-      question.id,
-      "vote-flow",
-      createPartyVoteFlow(
-        question.flow.kind,
-        ids,
-        question.flow.kind === "awards" ? [...question.flow.labels] : [],
-      ),
+    const heat = question.flow.kind === "tournament" ? question.flow.heat : undefined;
+    const flow = createPartyVoteFlow(
+      question.flow.kind,
+      ids,
+      question.flow.kind === "awards" ? [...question.flow.labels] : [],
+      heat,
     );
+    writeRoundState(sql, question.id, "vote-flow", flow);
+    if (flow.heat) {
+      const players = activePlayers(sql).map((player) => player.player_id);
+      const voters = shuffleIds(players, seed, "heat-voters").map((playerId) => ({
+        playerId,
+        own: live.filter((c) => c.owner_id === playerId).map((c) => c.candidate_id),
+      }));
+      const rounds = Array.from({ length: flow.heat.pairs }, (_, round) =>
+        shuffleIds(ids, seed, `heat-${round}`),
+      );
+      writeRoundState(
+        sql,
+        question.id,
+        "vote-heat",
+        planHeat(rounds, voters, flow.heat.pairs),
+      );
+    }
     writeRoundState(
       sql,
       question.id,
@@ -653,6 +705,41 @@ export function freezeVote(sql: SqlStorage, question: VoteQuestion, now: number)
         .exec<{ phase_generation: number }>("SELECT phase_generation FROM room")
         .toArray()[0]!.phase_generation,
     );
+  }
+}
+
+/**
+ * The phone round runs longer than one knockout match. Called as the vote
+ * phase opens, straight after `freezeVote`: when that phase is a phone round,
+ * the timer the phase just scheduled is stretched to the round's length. Only
+ * a timer created at this same moment is touched, so a re-entered or resumed
+ * phase keeps its clock.
+ */
+export function stretchPhoneRound(
+  sql: SqlStorage,
+  store: GameStore,
+  question: VoteQuestion,
+  now: number,
+): void {
+  if (question.flow?.kind !== "tournament" || !question.flow.heat) return;
+  if (!readRoundState<PartyVoteFlow>(sql, question.id, "vote-flow")?.heat) return;
+  const room = store.readRoom();
+  const ms = question.flow.heat.ms;
+  for (const job of store.jobs()) {
+    if (
+      job.jobType !== "gameplay" ||
+      job.status !== "pending" ||
+      job.phase !== room.phase ||
+      job.payload !== room.phase ||
+      job.phaseGeneration !== room.phaseGeneration ||
+      job.createdAt !== now
+    )
+      continue;
+    store.saveJob({
+      ...job,
+      dueAt: job.dueAt === null ? null : now + ms,
+      remainingMs: job.dueAt === null ? ms : null,
+    });
   }
 }
 
@@ -791,15 +878,21 @@ export function ballotPlayFields(
     question.kind === "vote" && question.flow
       ? readRoundState<PartyVoteFlow>(sql, question.id, "vote-flow")
       : undefined;
-  const ids = flow ? flowCandidateIds(flow) : undefined;
+  const heat = flow?.heat ? heatView(sql, question.id, selfPlayerId) : undefined;
+  const ids = heat
+    ? audience === "guest"
+      ? (heat.pairs[heat.round] ?? heat.pairs.at(-1) ?? [])
+      : []
+    : flow
+      ? flowCandidateIds(flow)
+      : undefined;
   const included = candidates.filter(
     (candidate) =>
       candidate.included === 1 && (!ids || ids.includes(candidate.candidate_id)),
   );
-  const ballots = readBallots(
-    sql,
-    flow ? flowBallotKey(question.id, flow.step) : question.id,
-  );
+  const ballots = heat
+    ? heat.all.map((b) => ({ player_id: b.playerId, candidate_id: b.candidateId }))
+    : readBallots(sql, flow ? flowBallotKey(question.id, flow.step) : question.id);
   const counts = new Map<string, number>();
   for (const ballot of ballots) {
     const target = candidates.find((item) => item.candidate_id === ballot.candidate_id);
@@ -831,11 +924,15 @@ export function ballotPlayFields(
     question.kind === "vote" ? room.phase === "vote" : room.phase === "collect";
   const reason = !votingPhase
     ? "closed"
-    : audience === "guest" && !elector && included.length > 0
-      ? "late"
-      : included.length === 0
-        ? "empty"
-        : "open";
+    : heat
+      ? audience === "guest" && heat.pairs.length === 0
+        ? "late"
+        : "open"
+      : audience === "guest" && !elector && included.length > 0
+        ? "late"
+        : included.length === 0
+          ? "empty"
+          : "open";
   const cards = cardsForAudience(audience, order).map((candidate) => ({
     id: candidate.candidate_id,
     label: candidate.label,
@@ -861,9 +958,14 @@ export function ballotPlayFields(
           )
           .toArray()[0]
       : undefined;
-  const ownBallot = selfPlayerId
-    ? ballots.find((ballot) => ballot.player_id === selfPlayerId)
-    : undefined;
+  // In the phone round a phone is only locked in once every pair is answered.
+  const ownBallot = heat
+    ? heat.round === -1 && heat.mine.length
+      ? { player_id: selfPlayerId!, candidate_id: heat.mine.at(-1)!.candidateId }
+      : undefined
+    : selfPlayerId
+      ? ballots.find((ballot) => ballot.player_id === selfPlayerId)
+      : undefined;
   const featured = featuredIds(sql, question.id);
   const revealIds = scored
     ? revealSelection(
@@ -933,6 +1035,27 @@ export function ballotPlayFields(
           lateJoin: "ineligible" as const,
           search: true as const,
         };
+  const flowFields: {
+    epoch?: number;
+    label?: string;
+    instruction?: string;
+    heat?: { done: number; total: number; finalists: number };
+  } =
+    flow && heat && flow.heat
+      ? heatBallotFields(question, flow.heat, heat, audience)
+      : flow
+        ? {
+            epoch: flow.step,
+            label:
+              flow.kind === "awards"
+                ? (flow.labels[flow.step] ?? "Results")
+                : bracketLabel(flow),
+            instruction:
+              flow.kind === "awards"
+                ? "Vote for this award. No self-votes. Ties share the category win."
+                : `${matchPick(question)} No self-votes. Ties use the frozen random draw.`,
+          }
+        : {};
   const submissionCount =
     question.kind === "vote" && room.phase === "collect"
       ? textCount(sql, question.id)
@@ -943,21 +1066,8 @@ export function ballotPlayFields(
     selfAnswer: text ? { kind: "text" as const, body: text.body } : null,
     selfBallot: ownBallot ? { candidateId: ownBallot.candidate_id } : null,
     ballot: {
-      ...(flow
-        ? {
-            epoch: flow.step,
-            label:
-              flow.kind === "awards"
-                ? (flow.labels[flow.step] ?? "Results")
-                : `Head-to-head · match ${flow.step + 1}`,
-            instruction:
-              flow.kind === "awards"
-                ? "Vote for this award. No self-votes. Ties share the category win."
-                : // Shared by every knockout round, so the prompt carries the criterion.
-                  "Pick the winner of this match. No self-votes. Ties use the frozen random draw.",
-          }
-        : {}),
-      total: included.length,
+      ...flowFields,
+      total: heat ? (flow?.ids.length ?? 0) : included.length,
       reason,
       cards,
     },
@@ -1449,6 +1559,164 @@ function flowBallotKey(id: string, step: number): string {
   return `${id}:ballot:${step}`;
 }
 
+type HeatView = {
+  /** This phone's pairs; empty for the stage, the host and late joiners. */
+  pairs: [string, string][];
+  /** Index of the pair to answer now, or -1 once every pair is answered. */
+  round: number;
+  mine: { pair: number; candidateId: string }[];
+  all: { playerId: string; pair: number; candidateId: string }[];
+  /** Ballots the whole room can cast in the phone round. */
+  expected: number;
+};
+
+/**
+ * One broadcast builds a view for every phone (about 80). The phone-round
+ * plan and its ballots only change when the room's state version does, so
+ * they are read once per version and shared, not once per phone. Keyed by the
+ * room's own SQL handle, so rooms never share an entry. Memory is a cache:
+ * a miss or a restart just reads SQL again.
+ */
+const heatCache = new WeakMap<
+  SqlStorage,
+  { key: string; plan: HeatPlan; all: HeatView["all"]; expected: number }
+>();
+
+function sharedHeat(sql: SqlStorage, questionId: string) {
+  const room = sql
+    .exec<{
+      state_version: number;
+      phase_generation: number;
+    }>("SELECT state_version, phase_generation FROM room")
+    .toArray()[0];
+  // A rehearsal reset opens a new phase generation, so it never reuses an entry.
+  const key = `${questionId}:${room?.state_version ?? 0}:${room?.phase_generation ?? 0}`;
+  const cached = heatCache.get(sql);
+  if (cached?.key === key) return cached;
+  const plan = readHeatPlan(sql, questionId) ?? {};
+  const fresh = {
+    key,
+    plan,
+    all: readHeatBallots(sql, questionId),
+    expected: Object.values(plan).reduce((sum, list) => sum + list.length, 0),
+  };
+  heatCache.set(sql, fresh);
+  return fresh;
+}
+
+function heatView(
+  sql: SqlStorage,
+  questionId: string,
+  selfPlayerId: string | undefined,
+): HeatView {
+  const { plan, all, expected } = sharedHeat(sql, questionId);
+  const pairs = selfPlayerId ? (plan[selfPlayerId] ?? []) : [];
+  const mine = all.filter((b) => b.playerId === selfPlayerId);
+  const done = new Set(mine.map((b) => b.pair));
+  return {
+    pairs,
+    round: pairs.findIndex((_, index) => !done.has(index)),
+    mine,
+    all,
+    expected,
+  };
+}
+
+function matchPick(question: VoteQuestion | GuessQuestion): string {
+  return question.kind === "vote" &&
+    question.flow?.kind === "tournament" &&
+    question.flow.pick
+    ? question.flow.pick
+    : // Without a question's own line, stay neutral: the prompt carries the criterion.
+      "Pick the winner of this match.";
+}
+
+function bracketLabel(flow: PartyVoteFlow): string {
+  const match = flowMatchNumber(flow);
+  const finalists = flow.offset ? (flow.results[0]?.winners.length ?? 0) : 0;
+  return finalists > 1
+    ? `The final ${finalists} · match ${match} of ${finalists - 1}`
+    : `Head-to-head · match ${match}`;
+}
+
+function heatBallotFields(
+  question: VoteQuestion | GuessQuestion,
+  settings: { pairs: number; finalists: number },
+  heat: HeatView,
+  audience: "guest" | "stage" | "control",
+) {
+  const top = `The top ${settings.finalists} go to the big screen.`;
+  if (audience !== "guest")
+    return {
+      epoch: 0,
+      label: "Phone round",
+      instruction: `Everyone is judging their own head-to-heads on their phone. ${top}`,
+      heat: {
+        done: heat.all.length,
+        total: heat.expected,
+        finalists: settings.finalists,
+      },
+    };
+  const total = heat.pairs.length;
+  const finished = total > 0 && heat.round === -1;
+  return {
+    epoch: finished ? total - 1 : Math.max(0, heat.round),
+    label: !total
+      ? "Phone round"
+      : finished
+        ? `Phone round · all ${total} done`
+        : `Phone round · pair ${heat.round + 1} of ${total}`,
+    instruction: finished
+      ? `Locked in. ${top}`
+      : `${matchPick(question)} Everyone gets different pairs. ${top}`,
+    heat: {
+      done: heat.mine.length,
+      total,
+      finalists: settings.finalists,
+    },
+  };
+}
+
+function heatBallotKey(id: string, pair: number): string {
+  return `${id}:heat:${pair}`;
+}
+
+function readHeatPlan(sql: SqlStorage, questionId: string): HeatPlan | undefined {
+  return readRoundState<HeatPlan>(sql, questionId, "vote-heat");
+}
+
+/** Every phone-round ballot for the question, with the pair it answered. */
+function readHeatBallots(sql: SqlStorage, questionId: string, playerId?: string) {
+  const prefix = `${questionId}:heat:`;
+  return sql
+    .exec<{ player_id: string; candidate_id: string; question_id: string }>(
+      `SELECT player_id, candidate_id, question_id FROM vote_ballot
+       WHERE substr(question_id, 1, ?) = ?${playerId ? " AND player_id = ?" : ""}
+       ORDER BY received_at ASC`,
+      prefix.length,
+      prefix,
+      ...(playerId ? [playerId] : []),
+    )
+    .toArray()
+    .map((row) => ({
+      playerId: row.player_id,
+      candidateId: row.candidate_id,
+      pair: Number(row.question_id.slice(prefix.length)),
+    }));
+}
+
+/** The first of this phone's pairs it has not answered, or undefined when done. */
+function currentHeatPair(
+  sql: SqlStorage,
+  questionId: string,
+  playerId: string,
+  total: number,
+): number | undefined {
+  const done = new Set(readHeatBallots(sql, questionId, playerId).map((b) => b.pair));
+  for (let pair = 0; pair < total; pair++) if (!done.has(pair)) return pair;
+  return undefined;
+}
+
 function settleCurrentFlow(
   sql: SqlStorage,
   question: VoteQuestion,
@@ -1457,6 +1725,13 @@ function settleCurrentFlow(
   const eligible = readCandidates(sql, question.id)
     .filter((c) => c.eligible === 1 && c.included === 1 && !isRevoked(sql, c.owner_id))
     .map((c) => c.candidate_id);
+  if (flow.heat)
+    return settleHeat(
+      flow,
+      readHeatBallots(sql, question.id),
+      readHeatPlan(sql, question.id) ?? {},
+      eligible,
+    );
   return settlePartyVoteFlow(
     flow,
     readBallots(sql, flowBallotKey(question.id, flow.step)).map((b) => b.candidate_id),

@@ -31,6 +31,7 @@ import {
   type RankQuestion,
   type SliderBand,
   type SliderQuestion,
+  type TournamentFlow,
   type TypedQuestion,
   type VoteQuestion,
 } from "./definition.ts";
@@ -294,7 +295,7 @@ export function rankQuestion(
 export function voteQuestion(
   input: SharedInput & {
     voteMs?: number;
-    flow?: { kind: "tournament" } | { kind: "awards"; labels: readonly string[] };
+    flow?: TournamentFlow | { kind: "awards"; labels: readonly string[] };
     candidateMode?: "all" | "shortlist";
     selfVote?: "forbidden" | "allowed";
     award?: "authors" | "voters";

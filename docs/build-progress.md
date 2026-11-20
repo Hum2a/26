@@ -7309,6 +7309,22 @@ Checks: typecheck passed; lint 0 errors / 15 existing warnings; format:check pas
 
 **Next:** Open the PR into `master` for Humza to merge. Do not start the next prompt automatically.
 
+## 19 November 2026 — Kart live race in memory, periodic DO checkpoints
+
+**Status:** implemented on `cursor/kart-cut-do-writes`. Not deployed.
+
+**What now works.** A running kart race keeps poses, velocities, power-ups and unacknowledged controls in Durable Object memory. SQLite holds a checkpoint, not every tick. The first moving tick, every lap/finish/retirement/end, every twenty ticks (two seconds), host pause/resume/skip, phone connect/leave, and acknowledged guest actions (finish, Back to track, item) still write the race. One `kart-tick` job row is reused instead of delete+insert each beat. Pedal releases still reach the room through the existing input buffer; they are folded into the live race on the next tick. A mid-race restart reloads the last checkpoint, raises `checkpointRevision` so phones do not ignore it, and replays to the room clock. A failed alarm drops unsaved ticks so they cannot be checkpointed later. A refused host command does not rewind live ticks.
+
+**Writes.** Baseline was about 150,000 Durable Object rows for a three-minute 80-driver race (one race row plus one input row per driver per 100 ms tick). After: a simulated 80-driver three-minute race projects under 8,000 rows (budget test). Local `load:realtime` with 10 guests, stagger, 3 s: 62 rows written, 2 per tick, about 3,710 if scaled to three minutes (schedule job updates plus two race checkpoints). `LOAD_SIZES=80` was not run (only 10 guests locally).
+
+**Files:** `apps/api/src/questions/kart/kart-live.ts`, `apps/api/src/questions/kart/kart.ts`, `apps/api/src/room/lifecycle.ts`, `apps/api/src/room/sql-store.ts`, `apps/api/src/room/party-room.ts`, `apps/api/src/room/README.md`, `apps/api/test/kart-checkpoint.spec.ts`, `apps/api/test/kart-room.spec.ts`, `apps/api/test/realtime-load.spec.ts`, `apps/api/vitest.config.ts`, this section. Did not change kart rendering, CSS, kart-solo, question packs, chess, or driving feel / device timing.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run test:unit` 211 files / 976 tests passed. `npm run test -w @26/api` 145 files / 841 tests passed (`XDG_CONFIG_HOME` set). `npm run content:check` passed for demo and birthday. `npm run build` passed (1008 files scanned; gzip entry JS 222,747 / 260,000; entry CSS 28,208 / 34,000; total JS 1,493,567 / 1,650,000). Playwright was not run. `LOAD_SIZES=10 LOAD_STAGGER=1 LOAD_KART_MS=3000 npm run load:realtime -w @26/api` passed (see writes above). Kart checkpoint/device/room specs re-ran after the Cubic follow-up (45 passed). Full API suite, typecheck, lint and build were not re-run for that follow-up.
+
+**Cubic (one follow-up).** Load probe stores `rowsWritten` immediately instead of retaining SQL cursors; `rowsPerTick` uses the server tick-late series. A refused host command no longer discards unsaved ticks. After a restart, snapshots catch the restored race up to the room clock once, without folding live queued controls in on an ordinary read.
+
+**Next:** Open the PR into `master` for Humza to merge. Do not start the next prompt automatically.
+
 ## 19 November 2026 — P0 fixes from the 80-player rehearsal
 
 **Status:** two P0 fixes on `claude/rehearsal-fixes`, not deployed. The issue table with severities is in the PR body. The rehearsal itself is in `docs/rehearsal-2026-11-20-staging.md`.
@@ -7322,6 +7338,33 @@ Checks: typecheck passed; lint 0 errors / 15 existing warnings; format:check pas
 **Checks:** `npx tsc -b` passed (the root typecheck without the `kart-solo` step, which is untouched). ESLint on the changed files passed. `scripts/check-structure.mjs` passed. Prettier was run on the changed files. The `@26/api` worker tests and the remaining scripted checks (`test:unit`, `content:check`, `build`, full `lint` and `format:check`) were not run locally, because this worktree's dependency install is incomplete and the workers test runtime crashes. They are left to CI. Playwright was not run.
 
 **Next:** Humza decides R3. Deploy to staging, then repeat the 80-bot rehearsal in a fresh rehearsal and in a kart-only lobby with 80 bots, to measure R1 and R2.
+
+## 19 November 2026 — Bracket phone round for 80 guests
+
+Status: built and rehearsed locally with 80 bots. Branch `vote-phone-round`. Nothing deployed.
+
+**Problem.** `apology-video-auction` and `heathrow-search-query` put every entry into a knockout that plays one match at a time. With 80 guests that is 79 matches of about 15 seconds plus beats, roughly 25 minutes per question. The owner (Humza, via Aden) chose a phone round followed by a stage final.
+
+**What it does.** A tournament question can set `flow.heat: { finalists, pairs, ms }` and `flow.pick` (the head-to-head instruction).
+
+- When answers close and there are more entries than `finalists`, the vote opens as a phone round for `ms` (the phase timer is stretched by `stretchPhoneRound`; knockout matches keep `voteMs`).
+- Each phone is dealt `pairs` head-to-heads of its own (`planHeat`, stored in `round_state` `vote-heat`), never containing its own entry. Each round re-shuffles the entries and deals the pairs out in turn, so with 80 guests every entry is judged about 10 times. A phone sees one pair at a time ("Phone round · pair 2 of 5"), with a new ballot epoch per pair so the existing ballot screen and the bots reset between pairs; it is locked in after the last pair. Ballots use the existing `vote_ballot` table under `<question>:heat:<pair>`.
+- The projector shows a progress bar of phone-round votes (`StagePhoneRound`), never a pair or an entry.
+- `settleHeat` ranks entries by the share of their pairs won, then wins, then the frozen draw, and seeds the best `finalists` into the existing knockout. Matches are numbered from 1 after the phone round ("The final 8 · match 1 of 7"). No phone-round votes means the frozen draw picks the finalists. With `finalists` entries or fewer the phone round is skipped and the room plays the ordinary knockout, so small rooms and existing tests are unchanged.
+- The two birthday brackets use `{ finalists: 8, pairs: 5, ms: 45_000 }`. Scoring is unchanged: the knockout winner's author gets the question's points.
+- Each broadcast reads the phone-round plan and ballots once per room state version and shares them across the ~80 phone views (`sharedHeat`), instead of once per phone.
+- Admin question details show the phone-round settings.
+
+**Rehearsal (local dev server, 80 bots, birthday running order, 45 s answering window).**
+
+- Apology: phone round then 7 final matches, reveal reached; all 80 bots answered all 5 pairs (400 phone-round votes), 0 refused.
+- Heathrow, twice: answers 20 s, phone round 45 s (all 400 votes in after 32 s), 7 final matches at 15 s, reveal. About 2 minutes 50 seconds for the question instead of about 25 minutes. 0 refused.
+- Reply p95 in the bot tab was 6.5–7.4 s during these runs. All 80 bots fire their next vote the instant their next pair arrives, from one browser tab through the local Vite proxy (see the earlier entries on local proxy limits). Not measured on Cloudflare yet.
+- A hot reload of the Worker code during a running rehearsal left that room stalled in the vote phase with no errors; a clean server restart ran normally. Local dev only.
+
+**Checks.** `npm run typecheck` passed. `npm run lint` 0 errors (15 existing warnings), structure passed. `npm run test -w @26/api` 145 files / 833 tests passed (new `vote-phone-round.spec.ts`, phone-round cases in `party-scoring.spec.ts`). Web: 976 passed, 1 failed — `where-are-we.test.tsx` "Place pin at map centre", which also fails on master after #54 and is outside this change.
+
+**Next.** Merge, deploy to staging and run one bracket question with real phones to check the pair-by-pair feel and timings on Cloudflare.
 
 ## 19 November 2026 — Kart Durable Object writes cut with periodic checkpoints
 
@@ -7378,3 +7421,88 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Unresolved / manual verification:** automated headless CDP screenshot sweep timed out before completing an after-capture pass, so live visual verification on physical 1080p/720p projector hardware remains to be checked during dress rehearsal.
 
 **Next:** Open PR into `master` ("Smooth and contain every projector reveal") for Humza to review and merge. Do not start the next prompt automatically.
+
+## 19 November 2026 — Merge origin/master into kart checkpoint PR
+
+**Status:** `cursor/kart-cut-do-writes` merged `origin/master` (no rebase) after PR #59, #61, #63 and #64 landed. Not deployed.
+
+**What this kept.** Master's 10-tick checkpoint cadence, shared kart projection, statistics cache, phone-round votes, and admin modal close. This branch's restore catch-up (`kartRestored` / `syncKart` only after a restart), write-budget spec, refused-host-command must not rewind live ticks, and load-probe `rowsWritten` capture.
+
+**Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run test:unit` 213 files / 980 tests passed. `npm run test -w @26/api` 146 files / 848 tests passed (`XDG_CONFIG_HOME` set). `npm run content:check` passed for demo and birthday. `npm run build` passed (1016 files scanned; gzip entry JS 222,784 / 260,000; entry CSS 28,208 / 34,000; total JS 1,493,966 / 1,650,000). Playwright was not run. No `docs/content/*.md` conflict, so `content:export` was not run.
+
+## 19 November 2026 — Kart practice with CPU bots
+
+**Status:** complete locally on branch `kart_practice_bots`. Not deployed.
+
+**What now works.** Standalone kart practice (`/kart`, Admin → Kart → Drive / Time trials, and the driver rehearsal frame) now supports practising with 0–7 CPU bots (`kartPracticeBotMax = 7`) in Free drive, 1-lap race, and 3-lap race modes:
+
+- **Setup & defaults:** Practice starts at `0` bots (`Solo`) by default so existing solo and time-trial behaviour stays unchanged. Both the opening grid screen (quick opponent pills `Solo` / `3 bots` / `5 bots` / `7 bots` and format pills `Free drive` / `1-lap race` / `3-lap race`) and `Course set-up` (`CPU bots` 0–7 selector) configure bots; changing bots, mode, course features, or handling pauses and resets the grid cleanly.
+- **Physics, slipstream & oil hits:** Bots use the shared `kartCpuInput`, `stepDriving`, `advanceKartLap`, `nearbyImportedWalls`, and `importedSurfaceAt` simulation (`createPracticeBots`, `stepPracticeBots`) on clean verified-road grid slots around the player (`freeGridSlots` / `trialGridSlots`), recover when stuck, loop continuously in Free drive, finish at lap targets in 1-/3-lap races, and react to player-dropped oil slicks (`slowedUntil` and speed reduction). The player also drafts behind racing bots (`stepSlipstream` / `slipstreamPhase`).
+- **3D rendering & HUD:** `SoloBots` renders instanced `kart.glb` chassis/wheels (`createNativeVehicleRig`), instanced driver styles (`createNativeDriverRig`), gliders, and floating number/name tags (`kartTagName`) from a mutable per-frame buffer (`soloBotFrame`) with zero React re-renders per frame. `KartPracticeStandings` shows live race place, lap, slipstream indicator, and adjacent rivals while driving with bots, plus final race standings on completion. Solo `KartTrialRecords` are only saved when driving without bots so slipstream-assisted runs stay separate from solo records.
+
+### Files / interfaces
+
+- `packages/shared/src/kart/kart-practice-bots.ts` (exported from `packages/shared/src/index.ts`) — `kartPracticeBotMax`, `kartPracticeBotCountSchema`, `createPracticeBots`, `stepPracticeBots`, `practiceBotSlipstreamActors`, `practiceStandings`, `createPracticePlayerLap`, `recoverPracticePlayerLap`, `stepPracticePlayerLap`, `practiceTrialPlayerSummary`.
+- `packages/shared/src/kart/kart-powers.ts` — exported `nearSegment` for shared oil-slick segment checks.
+- `apps/web/src/kart/vehicle-model-core.ts` & `apps/web/src/kart/vehicle-model.ts` — extracted Three-version-agnostic `createNativeVehicleRig` so both `@26/web` (Three 0.186) and `@26/kart-solo` (Three 0.176) share the instanced vehicle rig.
+- `apps/web/src/kart/KartPracticeStandings.tsx` & `apps/web/src/kart/KartPracticeStandings.test.tsx` — live position HUD and race standings component + unit tests.
+- `apps/kart-solo/src/bots-state.ts`, `apps/kart-solo/src/SoloBots.tsx`, `apps/kart-solo/src/upstream/store.js`, `apps/kart-solo/src/session.ts`, `apps/kart-solo/src/upstream/PlayerController.jsx`, `apps/kart-solo/src/main.tsx`, `apps/kart-solo/src/solo.css` — bot simulation, instanced 3D rendering, intro/settings controls, and HUD integration.
+- `apps/web/src/home/home-page.tsx`, `apps/web/src/admin/kart-page.tsx` — updated practice copy to note CPU bot support.
+- `apps/api/test/kart-practice-bots.spec.ts` (registered in `apps/api/vitest.config.ts`).
+
+### Decisions / defaults
+
+- Default `soloBots = 0` preserves solo practice and all existing solo/rehearsal contracts; bots are skipped when rehearsing a single opening-straight course feature (`soloPractice`).
+- Local solo time-trial records (`26-kart-trials-v1`) are not written when `soloBots > 0` because drafting behind bots alters top speed; race standings still display total finish times and progress.
+- `.solo-power` moved to bottom-left (`bottom: 11rem` desktop, `8.5rem` landscape, existing `bottom: calc(240px + env(safe-area-inset-bottom))` portrait) so the top-left `.solo-hud-left` stack (`KartPracticeStandings` + `KartTimeTrial`) never overlaps item controls.
+
+### Commands and results
+
+- `npm run typecheck` — passed (`tsc -b --pretty false && npm run typecheck -w @26/kart-solo`).
+- `npm run check:structure` — passed.
+- `npx eslint packages/shared/src apps/web/src/kart apps/web/src/home apps/web/src/admin/kart-page.tsx apps/kart-solo/src apps/api/test/kart-practice-bots.spec.ts` — passed (0 errors, 2 pre-existing `react-refresh/only-export-components` warnings in `KartRaceHud.tsx` and `PowerUpControl.tsx`). Repo-wide `npm run lint` (`eslint .`) hit a Windows Node OOM / stack buffer exit (`-1073740791`) on this machine.
+- `npm run format:check` — passed.
+- `npm run build` — passed (rebuilt `@26/kart-solo` into `apps/web/public/kart-engine/`, built `@26/web`, scanned 1,006 files for secrets, passed `budget:web` with entry JS 222,738 B / 260,000 B and entry CSS 28,208 B / 34,000 B, and passed `content:check`).
+- `npm run test:unit -w @26/web -- src/kart src/admin/kart-page.test.tsx src/home/home-page.test.tsx src/admin/features.test.ts` — 49 files, 259 tests passed.
+- `npm run test -w @26/api -- --project auth test/kart-practice-bots.spec.ts test/kart-cpu.spec.ts test/kart-time-trial.spec.ts test/kart-slipstream.spec.ts` — 4 files, 21 tests passed.
+- Playwright browser tests and full `npm run test:unit` / `npm run test -w @26/api` were not run.
+
+### Manual verification & unresolved issues
+
+- Live 3D rendering of the bots in Chrome WebGL was not manually inspected in this session; verified via TypeScript, production bundle build (`@26/kart-solo` + `@26/web`), pure simulation tests (`kart-practice-bots.spec.ts`), and component tests (`KartPracticeStandings.test.tsx`).
+- Repo-wide `eslint .` crashed on Windows (`-1073740791`), so full-repo lint outside the targeted directories remains to be confirmed in CI.
+
+**Next stage:** Open `/kart` in a browser (`npm run dev`), pick `3 bots` or `7 bots` on the start screen or in `Course set-up`, and test Free drive and 1-/3-lap bot races on desktop and phone.
+
+**Cubic follow-up (PR #66):**
+
+- `apps/kart-solo/src/main.tsx`: toolbar badge now requires `bots > 0 && !practice` (`soloPractice`) before showing `Practice · N bots`, keeping `"Solo practice"` during feature rehearsals where no bots spawn.
+- `packages/shared/src/kart/kart-practice-bots.ts` & `apps/kart-solo/src/upstream/PlayerController.jsx`: added `recoverPracticePlayerLap` and restored `lapsDone` + `progress` to the safe anchor's lap count when recovering in Free drive (and seeded initial `safe.current.cursor` in Free drive), preventing double-counting a lap completed after the last safe anchor; covered by a new test in `apps/api/test/kart-practice-bots.spec.ts` (5 tests).
+
+## 19 November 2026 — Merge origin/master into kart practice bots PR
+
+**Status:** `kart_practice_bots` merged `origin/master` (no rebase) after PR #62 (in-memory kart race / checkpoints) and PR #60 (presenter export) landed. Not deployed.
+
+**What this kept.** Master's live kart race in memory, periodic Durable Object checkpoints, write-budget tests, and compact mobile kart-practice chrome. This branch's 0–7 CPU practice bots, standings HUD, and `.solo-power` bottom-left desktop placement so the bot HUD does not cover item controls. No `docs/content/*.md` conflict, so `content:export` was not run.
+
+**Conflicts:** `docs/build-progress.md` (both sections kept) and `apps/kart-solo/src/solo.css` (master's phone media query plus this PR's `.solo-hud-left`).
+
+**Checks:** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run test:unit` 214 files / 985 tests passed. `npm run test -w @26/api` 147 files / 853 tests passed (`XDG_CONFIG_HOME` set). `npm run content:check` passed for demo and birthday. `npm run build` passed (1018 files scanned; gzip entry JS 222,787 / 260,000; entry CSS 28,208 / 34,000; total JS 1,493,986 / 1,650,000). Playwright was not run. Note: origin already had a parallel merge of master (`31818c1`); this kept that CSS (compact `.solo-hud-left` on phones) and these check results.
+
+## 20 November 2026 — Bracket rounds back in the running order
+
+**Status.** `apology-video-auction` (after `mock-election`) and `heathrow-search-query` (after `guess-airport-lounge`) are back in the default birthday order (#68), now that the phone round (#63) takes about 3 minutes per question instead of about 25.
+
+**Saved orders.** `readBirthdayOrder` (`apps/api/src/questions/birthday-order.ts`) adds both rounds to a running order saved in Admin before 20 November 2026 02:28 UTC, after the round each follows in the default order, when that round is in the saved order (a short custom order without those rounds is left alone). The stored revision is unchanged. An order the host saves after that time is taken as their choice and left alone, so removing them again in Admin still works.
+
+**Checks.** `npm run typecheck` passed. `party-rounds.spec.ts` covers an old saved order gaining both rounds in place and a newer one staying as saved.
+
+**Next.** Try one bracket round on staging with a few real phones.
+
+## 20 November 2026 — Merge origin/master into projector reveal PR
+
+**Status.** `antigravity/stage-reveal-pass` merged `origin/master` (no rebase) after PR #57–#66, #68 and #69 landed (`04a13cb`). Not deployed.
+
+**What this kept.** Master's bracket-round running order (`apology-video-auction`, `heathrow-search-query`), saved-order restoration, phone-round projector progress (`StagePhoneRound`), kart checkpoints, and kart practice bots. This branch's projector reveal smoothing and containment (shared stage layouts, custom designs, overflow, reduced-motion). The only conflict was `docs/build-progress.md`; both histories were kept.
+
+**Checks.** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run test:unit` 214 files / 987 tests passed (`where-are-we.test.tsx` "Place pin at map centre" passed locally). `npm run test -w @26/api` 147 files / 854 tests passed (`XDG_CONFIG_HOME` set). `npm run content:check` passed for demo and birthday. `npm run build` passed (1018 files scanned; gzip entry JS 222,782 / 260,000; entry CSS 28,208 / 34,000; total JS 1,494,215 / 1,650,000). Playwright was not run. Cubic review comments on PR #67 were not addressed in this merge. `bin-unmasked.tsx` had a pre-existing syntax error from the last branch commit (missing `animate={`); the `animate` prop was restored so typecheck could pass.

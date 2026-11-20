@@ -23,9 +23,11 @@ import {
 import { TrackItems } from "./TrackItems";
 import { Course } from "./Course";
 import { PracticePresentation } from "./PracticePresentation";
+import { SoloBots } from "./SoloBots";
 import { DriftGauge } from "../../web/src/kart/DriftGauge";
 import { KartTimeTrial } from "../../web/src/kart/KartTimeTrial";
 import { KartTrialRecords } from "../../web/src/kart/KartTrialRecords";
+import { KartPracticeStandings } from "../../web/src/kart/KartPracticeStandings";
 import {
   browserKartRecordStorage,
   writeKartRecords,
@@ -37,6 +39,8 @@ import {
   type CourseSettings,
   kartHandlingSchema,
   kartHandlingNames,
+  kartPracticeBotCountSchema,
+  kartPracticeBotMax,
 } from "@26/shared";
 import { PowerUpControl } from "../../web/src/kart/PowerUpControl";
 import { PlayerController } from "./upstream/PlayerController.jsx";
@@ -68,6 +72,8 @@ function Ready() {
 
 function Circuit() {
   const revision = useGameStore((state) => state.soloReset);
+  const bots = useGameStore((state) => state.soloBots);
+  const practiceFeature = useGameStore((state) => state.soloPractice);
   return (
     <>
       <ambientLight intensity={1.4} />
@@ -76,6 +82,7 @@ function Circuit() {
         <Track name="solo-track" />
       </Bvh>
       <PlayerController key={revision} />
+      {bots > 0 && !practiceFeature ? <SoloBots key={revision} count={bots} /> : null}
       <TrackItems />
       <Course />
       <Ready key={`camera-${revision}`} />
@@ -270,6 +277,9 @@ function SoloGame() {
   const paused = useGameStore((state) => state.soloPaused);
   const trialFinished = useGameStore((state) => state.soloTrial?.finished ?? false);
   const ready = useGameStore((state) => state.soloStarted);
+  const bots = useGameStore((state) => state.soloBots);
+  const practice = useGameStore((state) => state.soloPractice);
+  const mode = useGameStore((state) => state.soloMode);
   const recoveryPending = useGameStore(
     (state) => state.soloRecover !== state.soloRecovered,
   );
@@ -354,11 +364,59 @@ function SoloGame() {
             </GameBoundary>
           ) : (
             <section className="solo-message solo-intro">
-              <p className="solo-eyebrow">Mario Kart 3.js · solo practice</p>
+              <p className="solo-eyebrow">Mario Kart 3.js · practice</p>
               <h1>Your own starting grid.</h1>
               <p>
-                Explore the upstream circuit in 3D. No room, time limit or party points.
+                Explore the upstream circuit in 3D, solo or against up to{" "}
+                {kartPracticeBotMax} CPU bots. No room, time limit or party points.
               </p>
+              <div className="solo-intro-setup" role="group" aria-label="Grid setup">
+                <div className="solo-intro-row" role="group" aria-label="Opponents">
+                  {[
+                    [0, "Solo"],
+                    [3, "3 bots"],
+                    [5, "5 bots"],
+                    [7, "7 bots"],
+                  ].map(([count, label]) => (
+                    <button
+                      key={count}
+                      type="button"
+                      aria-pressed={bots === count}
+                      onClick={() => {
+                        useGameStore.setState({ soloBots: count });
+                        reset();
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div
+                  className="solo-intro-row"
+                  role="group"
+                  aria-label="Session format"
+                >
+                  {(
+                    [
+                      ["free", "Free drive"],
+                      ["trial-1", "1-lap race"],
+                      ["trial-3", "3-lap race"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={mode === value}
+                      onClick={() => {
+                        useGameStore.setState({ soloMode: value, soloPractice: null });
+                        reset();
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button className="solo-start" onClick={start}>
                 Start driving
               </button>
@@ -382,7 +440,11 @@ function SoloGame() {
           <a href="/" target="_top" aria-label="Back to 26">
             ← 26
           </a>
-          <span>Solo practice</span>
+          <span>
+            {bots > 0 && !practice
+              ? `Practice · ${bots} ${bots === 1 ? "bot" : "bots"}`
+              : "Solo practice"}
+          </span>
           {ready && !lost ? (
             <nav aria-label="Practice actions">
               <button
@@ -440,7 +502,10 @@ function SoloGame() {
         {ready && !lost ? (
           <>
             <Telemetry />
-            <SoloTrialStatus />
+            <div className="solo-hud-left">
+              <SoloPracticeRaceHud />
+              <SoloTrialStatus />
+            </div>
             <SoloPowerInventory />
             {paused && !trialFinished ? (
               <div className="solo-message solo-paused" role="status">
@@ -475,6 +540,7 @@ function SoloCourseSettings({ graphics }: { graphics: ReactNode }) {
   const settings = useGameStore((state) => state.soloCourseSettings);
   const handling = useGameStore((state) => state.soloHandling);
   const mode = useGameStore((state) => state.soloMode);
+  const bots = useGameStore((state) => state.soloBots);
   const itemsEnabled = useGameStore((state) => state.soloItemsEnabled);
   const update = (value: CourseSettings) => {
     pause();
@@ -508,6 +574,29 @@ function SoloCourseSettings({ graphics }: { graphics: ReactNode }) {
             </select>
           </label>
           <label>
+            CPU bots
+            <select
+              aria-label="CPU bots"
+              value={bots}
+              onChange={(event) => {
+                const parsed = kartPracticeBotCountSchema.safeParse(
+                  Number(event.target.value),
+                );
+                if (!parsed.success) return;
+                pause();
+                useGameStore.setState({ soloBots: parsed.data });
+                reset();
+              }}
+            >
+              <option value={0}>None (solo)</option>
+              {Array.from({ length: kartPracticeBotMax }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  {n} {n === 1 ? "bot" : "bots"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
             <input
               type="checkbox"
               checked={itemsEnabled}
@@ -523,7 +612,8 @@ function SoloCourseSettings({ graphics }: { graphics: ReactNode }) {
           <p>
             Time trials start at the coloured line ahead of the kart, require all eight
             sectors and stop the clock while paused. Recovery is recorded as assisted.
-            Mode and item changes also reset and pause practice.
+            Solo time-trial records are saved when driving without bots. Mode, bot and
+            item changes also reset and pause practice.
           </p>
           <p>Course and handling changes reset the kart and pause practice.</p>
           <label>
@@ -603,9 +693,30 @@ function SoloCourseSettings({ graphics }: { graphics: ReactNode }) {
   );
 }
 
+function SoloPracticeRaceHud() {
+  const bots = useGameStore((state) => state.soloBots);
+  const practice = useGameStore((state) => state.soloPractice);
+  const trialFinished = useGameStore((state) => state.soloTrial?.finished ?? false);
+  const standings = useGameStore((state) => state.soloStandings);
+  const mode = useGameStore((state) => state.soloMode);
+  const slipstream = useGameStore((state) => state.soloSlipstream);
+  if (!bots || practice || trialFinished || standings.length <= 1) return null;
+  return (
+    <div className="solo-practice-panel">
+      <KartPracticeStandings
+        standings={standings}
+        mode={mode}
+        slipstream={slipstream}
+      />
+    </div>
+  );
+}
+
 function SoloTrialStatus() {
   const trial = useGameStore((state) => state.soloTrial);
   const paused = useGameStore((state) => state.soloPaused);
+  const standings = useGameStore((state) => state.soloStandings);
+  const mode = useGameStore((state) => state.soloMode);
   if (!trial) return null;
   return (
     <div className="solo-trial-panel" data-finished={trial.finished}>
@@ -617,6 +728,9 @@ function SoloTrialStatus() {
           reset();
         }}
       />
+      {trial.finished && standings.length > 1 ? (
+        <KartPracticeStandings standings={standings} mode={mode} finished />
+      ) : null}
     </div>
   );
 }

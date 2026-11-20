@@ -11,6 +11,8 @@ import type { KartInput, KartRace } from "@26/shared";
  * object), a deleted round or a direct write therefore reloads from SQLite
  * instead of trusting memory. Unsaved ticks are simulation only; anything a
  * guest or the host is told was accepted is saved before that reply.
+ * Unacknowledged controls never go to SQLite; each tick folds them into the
+ * race, which is checkpointed.
  */
 
 /** At most this many race revisions stay unsaved: about one second of 100 ms ticks. */
@@ -29,6 +31,8 @@ type LiveRace = {
   saved: string;
   /** Revisions made since `saved`. */
   deferred: number;
+  /** Loaded from SQLite this generation; catch up to the room clock once. */
+  restored: boolean;
   /** `race` as JSON, computed once per revision for readers that need a copy. */
   json?: string;
 };
@@ -95,6 +99,7 @@ export function liveKart(sql: SqlStorage, questionId: string): KartRace | undefi
     race,
     saved: payload,
     deferred: running ? kartCheckpointWrites : 0,
+    restored: running,
   });
   return race;
 }
@@ -128,13 +133,20 @@ export function saveLiveKart(
   if (durable || !cached || cached.deferred + 1 >= kartCheckpointWrites) {
     const payload = JSON.stringify(race);
     persist(sql, questionId, payload);
-    room.races.set(questionId, { race, saved: payload, deferred: 0, json: payload });
+    room.races.set(questionId, {
+      race,
+      saved: payload,
+      deferred: 0,
+      restored: false,
+      json: payload,
+    });
     return;
   }
   room.races.set(questionId, {
     race,
     saved: cached.saved,
     deferred: cached.deferred + 1,
+    restored: false,
   });
 }
 
@@ -160,6 +172,7 @@ export function checkpointLiveKarts(sql: SqlStorage): number {
       ...entry,
       saved: payload,
       deferred: 0,
+      restored: false,
       json: payload,
     });
     saved += 1;
@@ -177,6 +190,11 @@ export function discardUnsavedKarts(sql: SqlStorage): void {
   if (!room) return;
   for (const [questionId, entry] of room.races)
     if (entry.deferred > 0) room.races.delete(questionId);
+}
+
+/** True when this object has just reloaded the race from a checkpoint. */
+export function kartRestored(sql: SqlStorage, questionId: string): boolean {
+  return rooms.get(sql)?.races.get(questionId)?.restored === true;
 }
 
 /** This race's control queues. A new race id starts empty ones. */

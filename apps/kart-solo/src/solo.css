@@ -67,17 +67,25 @@ a:focus-visible {
   width: 100%;
   touch-action: manipulation;
 }
-.solo-trial-panel {
+.solo-hud-left {
   position: absolute;
-  top: calc(7rem + env(safe-area-inset-top));
+  top: calc(3.8rem + env(safe-area-inset-top));
   left: max(0.6rem, env(safe-area-inset-left));
   width: min(25rem, calc(100% - 7rem));
   z-index: 5;
   pointer-events: none;
+  display: grid;
+  gap: 0.45rem;
+}
+.solo-trial-panel {
   font-size: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
 }
 .solo-trial-panel[data-finished="true"] {
+  position: fixed;
   top: 5rem;
+  left: 0.6rem;
   right: 0.6rem;
   bottom: max(0.6rem, env(safe-area-inset-bottom));
   width: auto;
@@ -88,11 +96,97 @@ a:focus-visible {
 .solo-trial-panel[data-finished="true"] .kart-trial-results {
   max-height: none;
 }
-@media (max-height: 500px) {
-  .solo-trial-panel {
-    top: 5rem;
-    width: min(24rem, calc(100% - 8rem));
-  }
+.solo-practice-panel {
+  width: fit-content;
+  max-width: 100%;
+}
+.kart-practice-hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.65rem;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+}
+.kart-practice-hud output {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.kart-practice-hud strong {
+  font-size: 1.25rem;
+  color: var(--accent);
+}
+.kart-practice-hud small {
+  color: var(--muted);
+  margin-left: 0.1rem;
+}
+.kart-practice-lap,
+.kart-practice-slip {
+  border-radius: var(--radius-control);
+  padding: 0.1rem 0.5rem;
+  font-weight: 700;
+  background: var(--background);
+  border: 1px solid var(--line);
+}
+.kart-practice-slip[data-phase="active"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.kart-practice-rivals {
+  display: flex;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.kart-practice-results {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 0.65rem;
+}
+.kart-practice-results h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+}
+.kart-practice-results ol {
+  display: grid;
+  gap: 0.3rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+.kart-practice-results li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: var(--radius-control);
+}
+.kart-practice-results li[data-self="true"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+}
+.solo-intro-setup {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+}
+.solo-intro-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.solo-intro-row button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+  font-weight: 700;
 }
 .solo-world {
   position: absolute;
@@ -284,73 +378,6 @@ a:focus-visible {
     opacity: 1;
   }
 }
-@media (max-width: 450px) {
-  .solo-toolbar > span {
-    display: none;
-  }
-  .solo-controls .kart-controller {
-    gap: 1rem;
-  }
-  .solo-controls .kart-steering label {
-    font-size: 0.7rem;
-  }
-}
-@media (max-height: 500px) and (orientation: landscape) {
-  .solo-controls .kart-controller-shell {
-    max-width: none;
-  }
-  .solo-controls .kart-controller {
-    grid-template-columns: 160px 240px;
-    justify-content: space-between;
-    min-height: 100px;
-  }
-  .solo-controls .kart-controller[data-swapped="true"] {
-    grid-template-columns: 240px 160px;
-  }
-  .solo-controls .kart-control-options {
-    justify-content: center;
-    position: absolute;
-    left: 180px;
-    right: 260px;
-    bottom: 1.5rem;
-  }
-  .solo-controls .kart-steering {
-    gap: 0;
-  }
-  .solo-controls .kart-thumb-pad {
-    width: 100px;
-    min-height: 90px;
-    justify-self: center;
-  }
-  /* The pad also works the pedals, so it gets room to push up and down. */
-  .solo-controls .kart-thumb-pad[data-pedals="true"] {
-    width: 140px;
-  }
-  .solo-controls .kart-pedal {
-    min-height: 44px;
-  }
-  .solo-controls .kart-pedal-gas,
-  .solo-controls .kart-pedals[data-pad="true"] .kart-pedal-drift {
-    min-height: 56px;
-  }
-  .solo-controls .kart-steering > span,
-  .solo-controls > p {
-    display: none;
-  }
-  .solo-message {
-    gap: 0.6rem;
-    padding-top: 4rem;
-  }
-  .solo-message h1 {
-    font-size: 2.6rem;
-  }
-  .solo-message p {
-    font-size: 0.85rem;
-  }
-  .solo-telemetry {
-    top: 4rem;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   button:active {
     transform: none;
@@ -377,37 +404,10 @@ a:focus-visible {
     grid-template-columns: 280px minmax(160px, 220px);
   }
 }
-@media (max-width: 700px) and (min-height: 501px) {
-  .solo-game[data-ready="true"] .solo-world {
-    bottom: calc(230px + env(safe-area-inset-bottom));
-  }
-  .solo-controls {
-    background: var(--background);
-  }
-}
-
-@media (max-width: 430px) {
-  .solo-toolbar {
-    gap: 0.35rem;
-  }
-  .solo-toolbar a {
-    flex-shrink: 0;
-    padding-inline: 0.6rem;
-  }
-  .solo-toolbar nav {
-    gap: 0.25rem;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-  .solo-toolbar nav button {
-    font-size: 0.7rem;
-    padding-inline: 0.5rem;
-  }
-}
 
 .solo-power {
   position: absolute;
-  top: 5rem;
+  bottom: 11rem;
   left: 0.6rem;
   max-width: min(22rem, calc(100% - 1.2rem));
   padding: 0.6rem;
@@ -477,43 +477,328 @@ a:focus-visible {
   border-radius: var(--radius-control);
   padding: 0.3rem 0.5rem;
 }
-@media (max-width: 700px) and (min-height: 501px) {
-  .solo-power {
-    top: auto;
-    bottom: calc(240px + env(safe-area-inset-bottom));
-  }
-}
-@media (max-height: 500px) {
-  .solo-telemetry {
-    top: 4rem;
-    left: calc(50% - 7rem);
-    right: auto;
-    width: 14rem;
-    justify-items: center;
-    gap: 0.15rem;
-  }
-  .solo-telemetry .kart-tier-gauge {
-    width: 14rem;
-  }
-  .solo-telemetry output {
-    font-size: 1.4rem;
-  }
-  .solo-telemetry .solo-distance,
-  .solo-telemetry output[aria-label="Track feedback"],
-  .solo-telemetry output[aria-label="Drift charge level"],
-  .solo-telemetry > span {
-    font-size: 0.65rem;
-  }
-}
 .solo-power .kart-power-control {
   gap: 0.4rem;
 }
-@media (max-height: 500px) {
-  .solo-power {
-    top: 4rem;
-    max-width: min(12rem, 25vw);
+
+@media (max-width: 768px), (max-height: 520px), (pointer: coarse) {
+  .solo-world {
+    inset: 0;
   }
-  .solo-power p {
+  .solo-toolbar {
+    padding: max(0.3rem, env(safe-area-inset-top))
+      max(0.45rem, env(safe-area-inset-right)) 0.3rem
+      max(0.45rem, env(safe-area-inset-left));
+    gap: 0.35rem;
+  }
+  .solo-toolbar a,
+  .solo-toolbar button {
+    min-height: 1.85rem;
+    padding: 0.16rem 0.48rem;
+    font-size: 0.7rem;
+    line-height: 1.1;
+    background: color-mix(in oklab, var(--surface) 78%, transparent);
+  }
+  .solo-toolbar a {
+    flex-shrink: 0;
+  }
+  .solo-toolbar nav {
+    gap: 0.25rem;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+  .solo-telemetry {
+    top: calc(2.55rem + env(safe-area-inset-top));
+    left: max(0.45rem, env(safe-area-inset-left));
+    right: auto;
+    width: min(11.5rem, 45vw);
+    justify-items: start;
+    gap: 0.16rem;
+    text-align: left;
+  }
+  .solo-telemetry output {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+  .solo-telemetry small {
+    font-size: 0.62rem;
+    margin-left: 0.2rem;
+  }
+  .solo-telemetry .solo-distance,
+  .solo-telemetry > span,
+  .solo-telemetry output[aria-label="Drift charge level"],
+  .solo-telemetry output[aria-label="Track feedback"] {
+    font-size: 0.62rem;
+    max-width: 100%;
+    text-align: left;
+  }
+  .solo-telemetry > span,
+  .solo-telemetry output[aria-label="Track feedback"] {
+    padding: 0.14rem 0.42rem;
+    background: color-mix(in oklab, var(--surface) 72%, transparent);
+    border-radius: var(--radius-control);
+  }
+  .solo-telemetry .kart-tier-gauge {
+    width: 100%;
+    gap: 0.12rem;
+  }
+  .solo-telemetry .kart-tier-segments {
+    gap: 0.18rem;
+  }
+  .solo-telemetry .kart-tier-segment {
+    min-height: 0.3rem;
+    padding: 0;
+  }
+  .solo-telemetry .kart-tier-segment small {
+    display: none;
+  }
+  .solo-telemetry .kart-tier-gauge[data-level="0"] output {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .solo-course-settings {
+    top: calc(2.55rem + env(safe-area-inset-top));
+    right: max(0.45rem, env(safe-area-inset-right));
+    padding: 0.4rem;
+    width: min(16rem, calc(100vw - 0.9rem));
+    font-size: 0.72rem;
+  }
+  .solo-course-settings[data-open="false"] {
+    width: auto;
+    background: transparent;
+    border: 0;
+    padding: 0;
+  }
+  .solo-course-settings > button {
+    min-height: 1.85rem;
+    padding: 0.16rem 0.48rem;
+    font-size: 0.68rem;
+    line-height: 1.1;
+    white-space: nowrap;
+    background: color-mix(in oklab, var(--surface) 78%, transparent);
+  }
+  .solo-hud-left {
+    top: calc(4.75rem + env(safe-area-inset-top));
+    right: max(0.45rem, env(safe-area-inset-right));
+    left: auto;
+    width: min(12rem, 46vw);
+    justify-items: end;
+    gap: 0.25rem;
+  }
+  .solo-practice-panel .kart-practice-hud {
+    padding: 0.24rem 0.45rem;
+    gap: 0.22rem 0.45rem;
     font-size: 0.65rem;
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+  }
+  .solo-practice-panel .kart-practice-hud strong {
+    font-size: 0.95rem;
+  }
+  .solo-practice-panel .kart-practice-rivals {
+    display: none;
+  }
+  .solo-trial-panel:not([data-finished="true"]) {
+    width: 100%;
+    font-size: 0.65rem;
+  }
+  .solo-trial-panel:not([data-finished="true"]) .kart-time-trial {
+    padding: 0.3rem 0.45rem;
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+  }
+  .solo-trial-panel:not([data-finished="true"]) .kart-trial-metrics {
+    gap: 0.2rem 0.5rem;
+  }
+  .solo-trial-panel:not([data-finished="true"]) .kart-trial-metrics output {
+    font-size: 1rem;
+  }
+  .solo-power {
+    top: auto;
+    left: max(0.45rem, env(safe-area-inset-left));
+    bottom: calc(7.1rem + env(safe-area-inset-bottom));
+    max-width: min(11.5rem, 46vw);
+    padding: 0.2rem 0.35rem;
+    background: transparent;
+  }
+  .solo-power .kart-power-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    pointer-events: none;
+  }
+  .solo-power .kart-item-roulette {
+    width: 1.85rem;
+    height: 1.85rem;
+    font-size: 1.05rem;
+    border-width: 1.5px;
+    flex: 0 0 auto;
+  }
+  .solo-power .kart-power-control button {
+    pointer-events: auto;
+    min-height: 1.85rem;
+    padding: 0.16rem 0.48rem;
+    font-size: 0.68rem;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .solo-power .kart-power-control p {
+    margin: 0;
+    flex: 1 0 100%;
+    font-size: 0.62rem;
+    line-height: 1.15;
+  }
+  .solo-power .kart-power-control p[data-hint],
+  .solo-power .kart-power-control p:empty {
+    display: none;
+  }
+  .solo-controls {
+    background: none;
+    pointer-events: none;
+    padding: 0 max(0.45rem, env(safe-area-inset-right))
+      max(0.45rem, env(safe-area-inset-bottom)) max(0.45rem, env(safe-area-inset-left));
+  }
+  .solo-controls .kart-controller-shell {
+    max-width: none;
+    margin: 0;
+  }
+  .solo-controls .kart-controller > *,
+  .solo-controls .kart-control-options button,
+  .solo-controls .kart-input-settings {
+    pointer-events: auto;
+  }
+  .solo-controls .kart-control-options {
+    position: fixed;
+    top: calc(2.55rem + env(safe-area-inset-top));
+    right: calc(max(0.45rem, env(safe-area-inset-right)) + 6.4rem);
+    left: auto;
+    bottom: auto;
+    z-index: 6;
+    margin: 0;
+  }
+  .solo-controls .kart-control-options button {
+    min-height: 1.85rem;
+    padding: 0.16rem 0.48rem;
+    font-size: 0.68rem;
+    line-height: 1.1;
+    white-space: nowrap;
+    background: color-mix(in oklab, var(--surface) 78%, transparent);
+  }
+  .solo-controls .kart-input-settings {
+    top: calc(2.55rem + env(safe-area-inset-top));
+    right: max(0.45rem, env(safe-area-inset-right));
+    width: min(22rem, calc(100vw - 0.9rem));
+    max-height: calc(100dvh - 3.2rem);
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+  .solo-controls > p,
+  .solo-controls .kart-steering > span,
+  .solo-controls .kart-keyboard-hint {
+    display: none;
+  }
+  .solo-controls .kart-steering label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .solo-controls .kart-controller {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 0;
+  }
+  .solo-controls .kart-controller[data-swapped="true"] {
+    flex-direction: row-reverse;
+  }
+  .solo-controls .kart-steering {
+    width: min(9.5rem, 36vw);
+    flex: 0 0 auto;
+    gap: 0;
+    border-radius: var(--radius-panel);
+    padding: 0.25rem;
+    background: color-mix(in oklab, var(--background) 38%, transparent);
+  }
+  .solo-controls .kart-thumb-pad {
+    width: 100%;
+    height: clamp(4.75rem, 16dvh, 6.25rem);
+    min-height: 4.75rem;
+    max-height: none;
+    aspect-ratio: auto;
+    border-width: 1.5px;
+    border-radius: var(--radius-panel);
+    background: color-mix(in oklab, var(--surface) 52%, transparent);
+  }
+  .solo-controls .kart-thumb-knob {
+    width: 2.4rem;
+    height: 2.4rem;
+  }
+  .solo-controls .kart-pedals {
+    display: grid;
+    flex: 0 0 auto;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
+    gap: 0.35rem;
+  }
+  .solo-controls .kart-pedal {
+    min-width: 3rem;
+    min-height: 2.65rem;
+    padding: 0.16rem 0.28rem;
+    gap: 0.08rem;
+    border-width: 1.5px;
+    background: color-mix(in oklab, var(--surface) 68%, transparent);
+  }
+  .solo-controls .kart-pedal strong {
+    font-size: 1rem;
+    line-height: 1;
+  }
+  .solo-controls .kart-pedal span {
+    font-size: 0.54rem;
+    line-height: 1.05;
+    max-width: 3.9rem;
+  }
+  .solo-controls .kart-pedal-gas {
+    grid-row: 1 / 3;
+    grid-column: 2;
+    min-width: 3.95rem;
+    min-height: 5.65rem;
+    background: color-mix(in oklab, var(--accent) 82%, transparent);
+  }
+  .solo-controls .kart-controller[data-swapped="true"] .kart-pedal-gas {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .solo-toolbar > span {
+    display: none;
+  }
+  .solo-toolbar nav button {
+    font-size: 0.66rem;
+    padding: 0.15rem 0.42rem;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .solo-message {
+    gap: 0.6rem;
+    padding-top: 4rem;
+  }
+  .solo-message h1 {
+    font-size: 2.6rem;
+  }
+  .solo-message p {
+    font-size: 0.85rem;
+  }
+  .solo-controls .kart-thumb-pad {
+    height: clamp(4.75rem, 23dvh, 6.25rem);
+  }
+  .solo-power {
+    bottom: calc(6.5rem + env(safe-area-inset-bottom));
   }
 }

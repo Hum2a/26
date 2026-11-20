@@ -5,6 +5,7 @@ import {
   kartNeutral,
   type KartControls,
 } from "@26/shared";
+import { soloBotFrame } from "./bots-state";
 import { useGameStore } from "./upstream/store.js";
 
 // This is upstream's ephemeral solo store. No room connection or score submission exists.
@@ -32,6 +33,7 @@ export function useItem() {
 }
 export function reset() {
   const current = useGameStore.getState();
+  soloBotFrame.poses = [];
   const trial =
     current.soloMode === "free"
       ? null
@@ -50,6 +52,8 @@ export function reset() {
     soloPowers: createKartPowers(),
     soloOils: [],
     soloElapsed: 0,
+    soloStandings: [],
+    soloSlipstream: undefined,
     soloTrial: trial,
     soloHeight: 0,
     soloVerticalSpeed: 0,
