@@ -7,10 +7,12 @@ runs **Live controls** at https://26.humza.website/admin. Baseer presents on
 `/host`. Guests play on their own phones. Detail and rehearsal checklists stay
 in the [event runbook](event-runbook.md).
 
-This sheet matches the birthday `order` in
-`apps/api/src/questions/packs/birthday/manifest.ts` as of 20 November 2026
-(**43 rounds**). Drafts `where-are-we` and `ed-or-humza` stay out of the order.
-`tribunal-reddit` and `council-ferrier-sector` were retired on 16 November.
+This sheet lists the 43-round operator script with `best-dressed` added as the
+final round. The full default `order` in
+`apps/api/src/questions/packs/birthday/manifest.ts` currently holds **52
+rounds** (see [birthday-running-order.md](content/birthday-running-order.md)
+for the generated full sequence). `tribunal-reddit` and
+`council-ferrier-sector` were retired on 16 November.
 
 Do not put this sheet’s operator notes, transfer codes, or the private
 [answer key](content/birthday-answer-key.md) on the projector.
