@@ -204,7 +204,7 @@
   padding: 0.35rem 1.25rem;
   font-size: clamp(34px, min(2.5vw, 4.2vh), 46px);
   max-width: 100%;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .plate-row {
