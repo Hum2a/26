@@ -188,12 +188,6 @@ a:focus-visible {
   border-color: var(--accent);
   font-weight: 700;
 }
-@media (max-height: 500px) {
-  .solo-hud-left {
-    top: 3.4rem;
-    width: min(24rem, calc(100% - 8rem));
-  }
-}
 .solo-world {
   position: absolute;
   inset: 0;
@@ -491,13 +485,6 @@ a:focus-visible {
   .solo-world {
     inset: 0;
   }
-  .solo-hud-left {
-    top: calc(4.75rem + env(safe-area-inset-top));
-    left: auto;
-    right: max(0.45rem, env(safe-area-inset-right));
-    width: min(12rem, 46vw);
-    gap: 0.3rem;
-  }
   .solo-toolbar {
     padding: max(0.3rem, env(safe-area-inset-top))
       max(0.45rem, env(safe-area-inset-right)) 0.3rem
@@ -593,11 +580,28 @@ a:focus-visible {
     white-space: nowrap;
     background: color-mix(in oklab, var(--surface) 78%, transparent);
   }
-  .solo-trial-panel:not([data-finished="true"]) {
+  .solo-hud-left {
     top: calc(4.75rem + env(safe-area-inset-top));
     right: max(0.45rem, env(safe-area-inset-right));
     left: auto;
     width: min(12rem, 46vw);
+    justify-items: end;
+    gap: 0.25rem;
+  }
+  .solo-practice-panel .kart-practice-hud {
+    padding: 0.24rem 0.45rem;
+    gap: 0.22rem 0.45rem;
+    font-size: 0.65rem;
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+  }
+  .solo-practice-panel .kart-practice-hud strong {
+    font-size: 0.95rem;
+  }
+  .solo-practice-panel .kart-practice-rivals {
+    display: none;
+  }
+  .solo-trial-panel:not([data-finished="true"]) {
+    width: 100%;
     font-size: 0.65rem;
   }
   .solo-trial-panel:not([data-finished="true"]) .kart-time-trial {
