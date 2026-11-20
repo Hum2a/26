@@ -180,6 +180,9 @@ function revealLine(question: Question): string {
       return question.explanation ?? "Reveal the outcome of the room's vote.";
     case "guess":
       if (question.scoring === "majority") {
+        if (question.award === "nominees") {
+          return "Reveal who got the most votes. The most-voted player wins (ties share the points).";
+        }
         const bonus =
           question.selfVoteBonus === "double"
             ? " A winning self-vote scores double."

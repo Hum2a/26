@@ -74,7 +74,7 @@ it.each([realNameVinDiesel, realNameJamieFoxx])(
 
 it("keeps both additions ready in the unreleased birthday catalogue", () => {
   expect(birthdayPack.release).toBe("draft");
-  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
+  expect(birthdayPack.order.at(-1)).toBe("best-dressed");
   expect(validatePack(birthdayPack).filter((issue) => issue.level === "error")).toEqual(
     [],
   );

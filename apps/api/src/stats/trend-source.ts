@@ -428,12 +428,18 @@ function readResponses(
       )
       .toArray();
     const window = question.kind === "vote" ? question.voteMs : question.collectMs;
-    const scored = question.kind === "guess" && question.scoring !== "none";
+    const scored =
+      question.kind === "guess" &&
+      question.scoring !== "none" &&
+      question.award !== "nominees";
     return {
       question: {
         ...base,
         options: candidates.map((row) => ({ id: row.candidate_id, label: row.label })),
-        pickVerb: question.kind === "vote" ? "voted for" : "pointed at",
+        pickVerb:
+          question.kind === "vote" || question.award === "nominees"
+            ? "voted for"
+            : "pointed at",
         numeric: null,
         scored,
         success: "backed the room's pick",

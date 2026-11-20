@@ -310,3 +310,9 @@ Reveal: Ed You're ass is in grabbing distance, Biblically accurate breasts on th
 One lap. Three minutes. Who can actually drive?
 
 Reveal: Fastest completed lap wins. Finishers share place on equal finish times; DNF scores zero. Ghost karts mean nobody can blame traffic.
+
+## 52. best-dressed
+
+Who is best dressed tonight?
+
+Reveal: Reveal who got the most votes. The most-voted player wins (ties share the points).

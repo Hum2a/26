@@ -526,8 +526,14 @@ function BallotView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolea
     play.ballot?.reason === "open" ||
     play.ballot?.reason === "late" ||
     play.ballot?.reason === "empty";
+  const isNomineeVote =
+    play.question.kind === "guess" && play.question.award === "nominees";
   const noun =
-    play.question.kind === "guess" ? "guess" : listingVotes ? "vote" : "answer";
+    play.question.kind === "guess" && !isNomineeVote
+      ? "guess"
+      : listingVotes
+        ? "vote"
+        : "answer";
   const countLabel =
     play.submissionCount === 1
       ? `1 ${noun} in.`
@@ -578,8 +584,12 @@ function BallotView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: boolea
       {reveal && reveal.winnerCount > 0 ? (
         <p>
           {reveal.winnerCount === 1
-            ? "1 answer won"
-            : `${reveal.winnerCount} answers won`}{" "}
+            ? isNomineeVote
+              ? "1 player won"
+              : "1 answer won"
+            : isNomineeVote
+              ? `${reveal.winnerCount} players won`
+              : `${reveal.winnerCount} answers won`}{" "}
           on the full tally
           {reveal.winners.length > 0
             ? `: ${reveal.winners.map((winner) => winner.label).join(", ")}`

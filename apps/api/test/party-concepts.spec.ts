@@ -230,6 +230,6 @@ it("rehearses a catalogue beyond the eighty-question live order limit", () => {
       )
       .every((q) => q.status === "ready" && missingRequirements(q).length === 0),
   ).toBe(true);
-  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
+  expect(birthdayPack.order.at(-1)).toBe("best-dressed");
   expect(birthdayPack.release).toBe("draft");
 });

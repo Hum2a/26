@@ -7506,3 +7506,19 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **What this kept.** Master's bracket-round running order (`apology-video-auction`, `heathrow-search-query`), saved-order restoration, phone-round projector progress (`StagePhoneRound`), kart checkpoints, and kart practice bots. This branch's projector reveal smoothing and containment (shared stage layouts, custom designs, overflow, reduced-motion). The only conflict was `docs/build-progress.md`; both histories were kept.
 
 **Checks.** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run test:unit` 214 files / 987 tests passed (`where-are-we.test.tsx` "Place pin at map centre" passed locally). `npm run test -w @26/api` 147 files / 854 tests passed (`XDG_CONFIG_HOME` set). `npm run content:check` passed for demo and birthday. `npm run build` passed (1018 files scanned; gzip entry JS 222,782 / 260,000; entry CSS 28,208 / 34,000; total JS 1,494,215 / 1,650,000). Playwright was not run. Cubic review comments on PR #67 were not addressed in this merge. `bin-unmasked.tsx` had a pre-existing syntax error from the last branch commit (missing `animate={`); the `animate` prop was restored so typecheck could pass.
+
+## 20 November 2026 — Best dressed finale round
+
+**Status.** Added the `best-dressed` round at the end of the default birthday running order (after `kart-sprint`). Not deployed.
+
+**What was added.**
+
+- `apps/api/src/questions/packs/birthday/best-dressed.ts` & `manifest.ts`: `guessQuestion` with `id: "best-dressed"`, `roster: "room"`, `scoring: "majority"`, `award: "nominees"`, `selfVote: "allowed"`, `points: 100`, `collectMs: 30_000`, placed last in `birthdayPack.order`.
+- `packages/shared/src/index.ts`, `apps/api/src/questions/definition.ts`, `authoring.ts`, `validate.ts`, `vote.ts`, `apps/api/src/room/admin-question.ts`, `question-preview.ts`, `apps/api/src/stats/trend-source.ts`: added optional `award?: "voters" | "nominees"` on `guess` rounds. `nominees` requires majority scoring over the room roster without a voter self-vote bonus, settles points onto the most-voted candidate(s) (shared on ties), suppresses `"wrote it"` author labels on `guess` reveal cards, and marks `trend-source` as non-voter-scored (`pickVerb: "voted for"`).
+- `apps/web/src/play/guest-ballot.tsx`, `copy.ts`, `stage-play.tsx`: shows `(you)` instead of `(your answer)` on `guess` ballots, labels the submit button `Send vote` for `award: "nominees"`, updates phone reveal copy for nominee winners/non-winners, and uses `vote` / `player won` phrasing on the projector.
+- `scripts/content-export.ts` & `docs/content/birthday-*.md`, `docs/question-authoring.md`, `docs/night-of.md`: updated export reveal wording and documentation.
+- Tests: added unit and Durable Object room tests in `apps/api/test/vote-score.spec.ts` and `apps/api/test/best-dressed.spec.ts`, UI component tests in `apps/web/src/play/outcomes.test.tsx`, and updated `birthdayPack.order` / `admin-rooms-auth.spec.ts` end-of-order assertions.
+
+**Checks.** `npm run content:export`, `npm run content:check`, `npm run typecheck`, `npm run lint` (0 errors, 15 existing Fast Refresh warnings; structure check passed), `npm run test:release`, `npm run test -w @26/api`, and `npm run build` (within gzip budgets) passed. `npm run test:unit` passed 213/214 files (988/989 tests); `src/play/designs/where-are-we.test.tsx` ("Place pin at map centre") failed locally as on this environment's baseline (untouched files).
+
+**Next stage.** Review and test live in a local or staging lobby with multiple phones.

@@ -73,7 +73,7 @@ it("keeps the requested match-ups and explicit pull/leave consequences", () => {
     });
   }
   expect(birthdayPack.release).toBe("draft");
-  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
+  expect(birthdayPack.order.at(-1)).toBe("best-dressed");
   expect(validatePack(birthdayPack).filter((issue) => issue.level === "error")).toEqual(
     [],
   );

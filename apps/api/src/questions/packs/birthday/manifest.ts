@@ -53,6 +53,7 @@ import { dialBritishPolitics } from "./dial-british-politics.ts";
 import { chessBattle } from "./chess-battle.ts";
 import { trumpMadeUpCountry } from "./trump-made-up-country.ts";
 import { esportsTag } from "./esports-tag.ts";
+import { bestDressed } from "./best-dressed.ts";
 
 /**
  * Working catalogue for Humza's questions.
@@ -120,8 +121,10 @@ export const birthdayPack: QuestionPack = {
     "kart-park-grand-prix",
     "ed-or-humza",
     "kart-sprint",
+    "best-dressed",
   ],
   catalogue: withPointsTrolls([
+    bestDressed,
     whereAreWe,
     edOrHumza,
     accommodation01,

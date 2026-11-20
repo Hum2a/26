@@ -41,6 +41,10 @@ export function GuestBallot({
         candidateMode={
           play.question.kind === "vote" ? play.question.candidateMode : "all"
         }
+        isGuess={play.question.kind === "guess"}
+        isNomineeVote={
+          play.question.kind === "guess" && play.question.award === "nominees"
+        }
         search={search}
         onSubmit={onSubmit}
       />
@@ -57,6 +61,8 @@ function BallotCards({
   pending,
   reason,
   candidateMode,
+  isGuess,
+  isNomineeVote,
   search,
   onSubmit,
 }: {
@@ -68,6 +74,8 @@ function BallotCards({
   pending: boolean;
   reason: NonNullable<PlaySnapshot["ballot"]>["reason"];
   candidateMode: "all" | "shortlist";
+  isGuess: boolean;
+  isNomineeVote: boolean;
   search: boolean;
   onSubmit: (candidateId: string) => void;
 }) {
@@ -122,7 +130,9 @@ function BallotCards({
               <OptionText
                 text={
                   card.own
-                    ? `${card.label} (your answer)`
+                    ? isGuess
+                      ? `${card.label} (you)`
+                      : `${card.label} (your answer)`
                     : card.author
                       ? `${card.label} — ${card.author}`
                       : card.label
@@ -138,7 +148,7 @@ function BallotCards({
         </p>
       ) : null}
       <SubmitButton
-        label={search ? "Send guess" : "Send vote"}
+        label={search && !isNomineeVote ? "Send guess" : "Send vote"}
         state={accepted ? "locked" : pending ? "sending" : "idle"}
         disabled={!accepted && (blocked || !selected)}
         onClick={() => selected && onSubmit(selected)}
