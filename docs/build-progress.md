@@ -7470,8 +7470,8 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 
 **Status.** `apology-video-auction` (after `mock-election`) and `heathrow-search-query` (after `guess-airport-lounge`) are back in the default birthday order (#68), now that the phone round (#63) takes about 3 minutes per question instead of about 25.
 
-**Saved orders.** `readBirthdayOrder` (`apps/api/src/questions/birthday-order.ts`) adds both rounds to a running order saved in Admin before 20 November 2026 02:28 UTC, at the same anchors (or before the first kart round when the anchor is missing). The stored revision is unchanged. An order the host saves after that time is taken as their choice and left alone, so removing them again in Admin still works.
+**Saved orders.** `readBirthdayOrder` (`apps/api/src/questions/birthday-order.ts`) adds both rounds to a running order saved in Admin before 20 November 2026 02:28 UTC, after the round each follows in the default order, when that round is in the saved order (a short custom order without those rounds is left alone). The stored revision is unchanged. An order the host saves after that time is taken as their choice and left alone, so removing them again in Admin still works.
 
-**Checks.** `npm run typecheck` passed. `party-rounds.spec.ts` covers an old saved order gaining both rounds in place and a newer one staying as saved; the retired-rounds test now expects the bracket rounds too.
+**Checks.** `npm run typecheck` passed. `party-rounds.spec.ts` covers an old saved order gaining both rounds in place and a newer one staying as saved.
 
 **Next.** Try one bracket round on staging with a few real phones.

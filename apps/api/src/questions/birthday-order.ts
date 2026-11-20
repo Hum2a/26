@@ -45,8 +45,9 @@ export function readBirthdayOrder(sql: SqlStorage): BirthdayOrder {
 /**
  * The two bracket rounds were left out of the order while a knockout of 80
  * entries took about 25 minutes. The phone round (20 November 2026) fixed
- * that, so an order saved before then gets them back automatically. An order
- * the host saves afterwards is taken as their choice and left alone.
+ * that, so an order saved before then gets each one back after the round it
+ * follows in the default order, when that round is in the saved order. An
+ * order the host saves afterwards is taken as their choice and left alone.
  */
 const bracketsRestoredAt = Date.UTC(2026, 10, 20, 2, 28);
 const restoredBrackets = [
@@ -60,9 +61,7 @@ function restoreBrackets(ids: string[], updatedAt: number | null): string[] {
   for (const { id, after } of restoredBrackets) {
     if (next.includes(id)) continue;
     const anchor = next.indexOf(after);
-    const kart = next.findIndex((other) => other.startsWith("kart-"));
-    const at = anchor >= 0 ? anchor + 1 : kart >= 0 ? kart : next.length;
-    next.splice(at, 0, id);
+    if (anchor >= 0) next.splice(anchor + 1, 0, id);
   }
   return next;
 }

@@ -119,7 +119,7 @@ it("removes retired rounds from old saved orders without changing already-frozen
   );
   expect(await registry.birthdayOrder()).toMatchObject({
     revision: 7,
-    ids: ["car-name", "apology-video-auction", "heathrow-search-query", "kart-sprint"],
+    ids: ["car-name", "kart-sprint"],
   });
 });
 
