@@ -444,6 +444,22 @@ describe("ChessGame engine lifecycle", () => {
       />,
     );
     expect(getByRole("button", { name: "e2 White Pawn" })).toBeTruthy();
+
+    // Next move clears error back to rejectedNonce=0 while pending; decreasing nonce must NOT wipe the new move
+    fireEvent.click(getByRole("button", { name: "d2 White Pawn" }));
+    fireEvent.click(getByRole("button", { name: "d4" }));
+    expect(onMove).toHaveBeenCalledWith("d2", "d4", undefined, 0);
+    rerender(
+      <ChessGame
+        snapshot={startSnap}
+        onMove={onMove}
+        onResign={vi.fn()}
+        disabled={false}
+        pending={true}
+        rejectedNonce={0}
+      />,
+    );
+    expect(getByRole("button", { name: "d4 White Pawn" })).toBeTruthy();
   });
 
   it("pauses Stockfish search when paused and resumes when unpaused on bot turn", async () => {

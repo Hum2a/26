@@ -41,7 +41,9 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
     case "kart":
       return "Accelerate to drive — race on your phone";
     case "chess":
-      return "Play 1-minute blitz against Stockfish";
+      return play.chess && "fen" in play.chess && play.chess.isGameOver
+        ? "Game finished — watch the stage"
+        : "Play 1-minute blitz against Stockfish";
     case "choice":
       return play.question.outcome === "multiple"
         ? "Select all that apply, then send"

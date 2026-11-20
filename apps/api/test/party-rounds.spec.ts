@@ -145,7 +145,10 @@ it("plays a live chess round over WebSocket: human move, bot reply, pause guard,
   ) => {
     const requestId = crypto.randomUUID();
     return new Promise<{ accepted: boolean; error?: string }>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error("Timed out waiting for ack")), 5000);
+      const timer = setTimeout(
+        () => reject(new Error("Timed out waiting for ack")),
+        5000,
+      );
       const onMessage = (event: MessageEvent) => {
         const message = JSON.parse(String(event.data)) as {
           kind?: string;

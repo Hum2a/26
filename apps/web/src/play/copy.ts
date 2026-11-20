@@ -43,7 +43,10 @@ export function guestRoundCopy(snapshot: LobbySnapshot): string {
     const chess = play.chess && "fen" in play.chess ? play.chess : undefined;
     if (snapshot.phase === "reveal" || snapshot.phase === "scores") {
       if (!chess) return "You watched this round.";
-      const result = `You scored ${play.selfAward ?? chess.score} on chess.`;
+      const result =
+        play.selfAward === null
+          ? "Chess round complete."
+          : `You scored ${play.selfAward} on chess.`;
       return standing
         ? `${result} You are ${ordinal(standing.place)} with ${standing.points} points.`
         : result;

@@ -1124,7 +1124,8 @@ export function GuestPage({
                       if (id) {
                         chessRequest.current = id;
                         chessSentRevision.current =
-                          snapshot.play?.chess && "positionRevision" in snapshot.play.chess
+                          snapshot.play?.chess &&
+                          "positionRevision" in snapshot.play.chess
                             ? snapshot.play.chess.positionRevision
                             : null;
                         setChessPending(true);

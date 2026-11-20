@@ -244,13 +244,7 @@ export function ChessGame({
   // Bot move trigger - when bot's turn and engine ready
   useEffect(() => {
     const engine = engineInstanceRef.current;
-    if (
-      !engine ||
-      !engineReady ||
-      snapshot.isGameOver ||
-      snapshot.paused ||
-      disabled
-    ) {
+    if (!engine || !engineReady || snapshot.isGameOver || snapshot.paused || disabled) {
       if (engine && searchStateRef.current) {
         engine.stop();
         searchStateRef.current = null;
@@ -392,8 +386,9 @@ export function ChessGame({
     setShowPromotionChooser(false);
   }
 
-  const rejectedNow = rejectedNonce !== undefined && trackedRejectedNonce !== rejectedNonce;
-  if (rejectedNow) {
+  const rejectedNow =
+    rejectedNonce !== undefined && rejectedNonce > trackedRejectedNonce;
+  if (rejectedNonce !== undefined && trackedRejectedNonce !== rejectedNonce) {
     setTrackedRejectedNonce(rejectedNonce);
   }
 

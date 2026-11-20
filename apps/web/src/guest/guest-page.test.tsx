@@ -449,7 +449,9 @@ it("submits chess moves in quiz mode without quiz pending banners and shows the 
 
   act(() => options.onAck({ requestId: "chess-move-1", accepted: true }));
   expect(screen.queryByText("That answer was not accepted.")).toBeNull();
-  expect(within(collectScope).getByRole("button", { name: "e4 White Pawn" })).toBeTruthy();
+  expect(
+    within(collectScope).getByRole("button", { name: "e4 White Pawn" }),
+  ).toBeTruthy();
 
   // 2. Snapshot advances to revision 1; resigning sends chess-resign and surfaces chess-specific rejection.
   act(() =>
