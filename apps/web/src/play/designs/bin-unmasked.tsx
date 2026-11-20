@@ -55,6 +55,8 @@ function Candidate({
             unmasked && !motionSet.reduce
               ? { y: 0, rotate: 0, opacity: 1 }
               : false
+          }
+          animate={
             unmasked
               ? {
                   y: motionSet.move(size === "stage" ? -240 : -160),
