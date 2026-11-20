@@ -156,4 +156,15 @@ it("adds the bracket rounds back to orders saved before the phone round, but not
 
   await save(old, Date.UTC(2026, 10, 20, 12, 0));
   expect((await registry.birthdayOrder()).ids).toEqual(old);
+
+  const nearlyFull = [...old, ...Array.from({ length: 73 }, () => "car-name")];
+  await save(nearlyFull, Date.UTC(2026, 10, 19, 21, 0));
+  const capped = (await registry.birthdayOrder()).ids;
+  expect(capped).toHaveLength(80);
+  expect(capped.slice(0, 3)).toEqual([
+    "car-name",
+    "mock-election",
+    "apology-video-auction",
+  ]);
+  expect(capped).not.toContain("heathrow-search-query");
 });

@@ -48,7 +48,10 @@ export function readBirthdayOrder(sql: SqlStorage): BirthdayOrder {
  * that, so an order saved before then gets each one back after the round it
  * follows in the default order, when that round is in the saved order. An
  * order the host saves afterwards is taken as their choice and left alone.
+ * A full order stays within the saved order's 80-round limit
+ * (`birthdayOrderSchema`), so it can still be saved and started.
  */
+const maxOrderRounds = 80;
 const bracketsRestoredAt = Date.UTC(2026, 10, 20, 2, 28);
 const restoredBrackets = [
   { id: "apology-video-auction", after: "mock-election" },
@@ -59,7 +62,7 @@ function restoreBrackets(ids: string[], updatedAt: number | null): string[] {
   if (updatedAt !== null && updatedAt >= bracketsRestoredAt) return ids;
   const next = [...ids];
   for (const { id, after } of restoredBrackets) {
-    if (next.includes(id)) continue;
+    if (next.includes(id) || next.length >= maxOrderRounds) continue;
     const anchor = next.indexOf(after);
     if (anchor >= 0) next.splice(anchor + 1, 0, id);
   }
