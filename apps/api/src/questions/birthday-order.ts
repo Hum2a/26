@@ -36,7 +36,35 @@ export function readBirthdayOrder(sql: SqlStorage): BirthdayOrder {
   const retired =
     /^(?:who-said-it-|subculture-|council-|trolley-your-mum$|trolley-mamdani-africa$|trolley-freddo-multiverse$|ai-turing-test$|tribunal-reddit$)/;
   const ids = saved.ids.filter((id) => !retired.test(id));
-  return { ...saved, ids: ids.length ? ids : [...birthdayPack.order] };
+  return {
+    ...saved,
+    ids: ids.length ? restoreBrackets(ids, saved.updatedAt) : [...birthdayPack.order],
+  };
+}
+
+/**
+ * The two bracket rounds were left out of the order while a knockout of 80
+ * entries took about 25 minutes. The phone round (20 November 2026) fixed
+ * that, so an order saved before then gets them back automatically. An order
+ * the host saves afterwards is taken as their choice and left alone.
+ */
+const bracketsRestoredAt = Date.UTC(2026, 10, 20, 2, 28);
+const restoredBrackets = [
+  { id: "apology-video-auction", after: "mock-election" },
+  { id: "heathrow-search-query", after: "guess-airport-lounge" },
+] as const;
+
+function restoreBrackets(ids: string[], updatedAt: number | null): string[] {
+  if (updatedAt !== null && updatedAt >= bracketsRestoredAt) return ids;
+  const next = [...ids];
+  for (const { id, after } of restoredBrackets) {
+    if (next.includes(id)) continue;
+    const anchor = next.indexOf(after);
+    const kart = next.findIndex((other) => other.startsWith("kart-"));
+    const at = anchor >= 0 ? anchor + 1 : kart >= 0 ? kart : next.length;
+    next.splice(at, 0, id);
+  }
+  return next;
 }
 
 /** Called within the registry's synchronous transaction, including the receipt. */

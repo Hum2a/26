@@ -119,6 +119,41 @@ it("removes retired rounds from old saved orders without changing already-frozen
   );
   expect(await registry.birthdayOrder()).toMatchObject({
     revision: 7,
-    ids: ["car-name", "kart-sprint"],
+    ids: ["car-name", "apology-video-auction", "heathrow-search-query", "kart-sprint"],
   });
+});
+
+it("adds the bracket rounds back to orders saved before the phone round, but not to later ones", async () => {
+  const registry = env.ROOM_CODE_REGISTRY.getByName("codes");
+  const save = (ids: string[], updatedAt: number) =>
+    runInDurableObject(registry, (_instance, state) =>
+      state.storage.sql.exec(
+        "INSERT INTO pack_order (id, payload) VALUES ('birthday', ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload",
+        JSON.stringify({ revision: 4, ids, updatedAt, history: [] }),
+      ),
+    );
+  const old = [
+    "car-name",
+    "mock-election",
+    "trolley-problem",
+    "guess-airport-lounge",
+    "property-price-roulette",
+    "kart-sprint",
+  ];
+  await save(old, Date.UTC(2026, 10, 19, 21, 0));
+  const restored = await registry.birthdayOrder();
+  expect(restored.ids).toEqual([
+    "car-name",
+    "mock-election",
+    "apology-video-auction",
+    "trolley-problem",
+    "guess-airport-lounge",
+    "heathrow-search-query",
+    "property-price-roulette",
+    "kart-sprint",
+  ]);
+  expect(restored.revision).toBe(4);
+
+  await save(old, Date.UTC(2026, 10, 20, 12, 0));
+  expect((await registry.birthdayOrder()).ids).toEqual(old);
 });
