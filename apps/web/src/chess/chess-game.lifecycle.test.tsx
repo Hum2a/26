@@ -378,4 +378,109 @@ describe("ChessGame engine lifecycle", () => {
       expect(onMove).toHaveBeenCalledWith("e7", "e8", "q", 2);
     });
   });
+
+  it("keeps optimistic move across ack-before-snapshot when rejectedNonce is supplied, and reverts on rejection", async () => {
+    const onMove = vi.fn();
+    const startSnap = createSnapshot({ positionRevision: 0 });
+    const { getByRole, queryByRole, queryByText, rerender } = render(
+      <ChessGame
+        snapshot={startSnap}
+        onMove={onMove}
+        onResign={vi.fn()}
+        disabled={false}
+        pending={false}
+        rejectedNonce={0}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(engineControl.instances.length).toBe(1);
+      expect(queryByText(/Loading chess engine/i)).toBeNull();
+    });
+
+    // Player clicks e2 -> e4
+    fireEvent.click(getByRole("button", { name: "e2 White Pawn" }));
+    fireEvent.click(getByRole("button", { name: "e4" }));
+    expect(onMove).toHaveBeenCalledWith("e2", "e4", undefined, 0);
+    expect(getByRole("button", { name: "e4 White Pawn" })).toBeTruthy();
+
+    // Pending flips true while command is in flight
+    rerender(
+      <ChessGame
+        snapshot={startSnap}
+        onMove={onMove}
+        onResign={vi.fn()}
+        disabled={false}
+        pending={true}
+        rejectedNonce={0}
+      />,
+    );
+    expect(getByRole("button", { name: "e4 White Pawn" })).toBeTruthy();
+
+    // Ack(accepted: true) arrives 30ms before snapshot: pending -> false while fen/revision unchanged
+    rerender(
+      <ChessGame
+        snapshot={startSnap}
+        onMove={onMove}
+        onResign={vi.fn()}
+        disabled={false}
+        pending={false}
+        rejectedNonce={0}
+      />,
+    );
+    // Piece MUST stay on e4 instead of snapping back to e2!
+    expect(getByRole("button", { name: "e4 White Pawn" })).toBeTruthy();
+    expect(queryByRole("button", { name: "e2 White Pawn" })).toBeNull();
+
+    // Now simulate server rejecting a move via rejectedNonce incrementing
+    rerender(
+      <ChessGame
+        snapshot={startSnap}
+        onMove={onMove}
+        onResign={vi.fn()}
+        disabled={false}
+        pending={false}
+        rejectedNonce={1}
+      />,
+    );
+    expect(getByRole("button", { name: "e2 White Pawn" })).toBeTruthy();
+  });
+
+  it("pauses Stockfish search when paused and resumes when unpaused on bot turn", async () => {
+    const onMove = vi.fn();
+    const botTurnPaused = createSnapshot({
+      sideToMove: "black",
+      positionRevision: 1,
+      paused: true,
+    });
+    const { rerender } = render(
+      <ChessGame
+        snapshot={botTurnPaused}
+        onMove={onMove}
+        onResign={vi.fn()}
+        disabled={false}
+        pending={false}
+        rejectedNonce={0}
+      />,
+    );
+
+    await waitFor(() => expect(engineControl.instances.length).toBe(1));
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(onMove).not.toHaveBeenCalled();
+
+    // Host resumes with same positionRevision
+    rerender(
+      <ChessGame
+        snapshot={{ ...botTurnPaused, paused: false }}
+        onMove={onMove}
+        onResign={vi.fn()}
+        disabled={false}
+        pending={false}
+        rejectedNonce={0}
+      />,
+    );
+    await waitFor(() => {
+      expect(onMove).toHaveBeenCalledWith("e7", "e5", undefined, 1);
+    });
+  });
 });

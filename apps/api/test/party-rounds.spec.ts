@@ -1,5 +1,6 @@
 import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
+import { withClientApiQuery } from "./client-api-key.ts";
 
 async function startQuestion(id: string) {
   const registry = env.ROOM_CODE_REGISTRY.getByName("codes");
@@ -102,6 +103,160 @@ it("creates chess on manual advance and settles once under the actual question i
       state.storage.sql.exec("SELECT question_id FROM score_ledger").toArray(),
     ).toHaveLength(1),
   );
+});
+
+it("plays a live chess round over WebSocket: human move, bot reply, pause guard, resign and final standings", async () => {
+  const { stub, guest, advance, control, now } = await startQuestion("chess-battle");
+  await advance(); // prompt
+  await advance(); // collect
+
+  const initial = await stub.snapshotFor("guest", guest.playerId);
+  const chessStart = initial.play?.chess;
+  if (!chessStart || !("gameId" in chessStart)) {
+    throw new Error("Expected chess guest snapshot");
+  }
+
+  const response = await stub.fetch(
+    new Request(
+      withClientApiQuery(`http://example.com/ws/${guest.gameId}?role=guest`),
+      {
+        headers: {
+          Upgrade: "websocket",
+          Connection: "Upgrade",
+          Origin: "http://example.com",
+          Cookie: `26_guest=${guest.gameId}.${guest.playerId}.${guest.secret}`,
+        },
+      },
+    ),
+  );
+  const socket = response.webSocket!;
+  socket.accept();
+
+  const sendChess = (
+    payload:
+      | {
+          name: "chess-move";
+          gameId: string;
+          from: string;
+          to: string;
+          positionRevision: number;
+        }
+      | { name: "chess-resign"; gameId: string },
+  ) => {
+    const requestId = crypto.randomUUID();
+    return new Promise<{ accepted: boolean; error?: string }>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Timed out waiting for ack")), 5000);
+      const onMessage = (event: MessageEvent) => {
+        const message = JSON.parse(String(event.data)) as {
+          kind?: string;
+          requestId?: string;
+          accepted?: boolean;
+          error?: string;
+        };
+        if (message.kind === "ack" && message.requestId === requestId) {
+          clearTimeout(timer);
+          socket.removeEventListener("message", onMessage);
+          resolve({ accepted: message.accepted === true, error: message.error });
+        }
+      };
+      socket.addEventListener("message", onMessage);
+      socket.send(JSON.stringify({ kind: "command", requestId, ...payload }));
+    });
+  };
+
+  // Human move: 1. e4
+  const move1 = await sendChess({
+    name: "chess-move",
+    gameId: chessStart.gameId,
+    from: "e2",
+    to: "e4",
+    positionRevision: chessStart.positionRevision,
+  });
+  expect(move1).toEqual({ accepted: true, error: undefined });
+
+  const afterE4 = await stub.snapshotFor("guest", guest.playerId);
+  expect(afterE4.play?.chess).toMatchObject({
+    sideToMove: "black",
+    plyCount: 1,
+    positionRevision: chessStart.positionRevision + 1,
+  });
+
+  // Bot move: 1... d5
+  const bot1 = await sendChess({
+    name: "chess-move",
+    gameId: chessStart.gameId,
+    from: "d7",
+    to: "d5",
+    positionRevision: chessStart.positionRevision + 1,
+  });
+  expect(bot1).toEqual({ accepted: true, error: undefined });
+
+  // Human capture: 2. exd5 (scores 1 point)
+  const move2 = await sendChess({
+    name: "chess-move",
+    gameId: chessStart.gameId,
+    from: "e4",
+    to: "d5",
+    positionRevision: chessStart.positionRevision + 2,
+  });
+  expect(move2).toEqual({ accepted: true, error: undefined });
+
+  // Pause refuses moves even with the post-pause positionRevision
+  await stub.pauseRound({
+    ...control,
+    requestId: crypto.randomUUID(),
+    nowMs: now + 50,
+  });
+  const pausedSnap = await stub.snapshotFor("guest", guest.playerId);
+  const pausedRev =
+    pausedSnap.play?.chess && "positionRevision" in pausedSnap.play.chess
+      ? pausedSnap.play.chess.positionRevision
+      : -1;
+  const pausedMove = await sendChess({
+    name: "chess-move",
+    gameId: chessStart.gameId,
+    from: "d8",
+    to: "d5",
+    positionRevision: pausedRev,
+  });
+  expect(pausedMove.accepted).toBe(false);
+
+  // Resume and resign: keeps captured pawn point
+  await stub.resumeRound({
+    ...control,
+    requestId: crypto.randomUUID(),
+    nowMs: now + 100,
+  });
+  const resignAck = await sendChess({
+    name: "chess-resign",
+    gameId: chessStart.gameId,
+  });
+  expect(resignAck).toEqual({ accepted: true, error: undefined });
+  socket.close();
+
+  const resigned = await stub.snapshotFor("guest", guest.playerId);
+  expect(resigned.play?.chess).toMatchObject({
+    status: "resignation",
+    isGameOver: true,
+    capturedPoints: 1,
+    score: 1,
+  });
+
+  // Reveal and scores attach standings and selfStanding
+  await advance(); // reveal
+  await advance(); // scores
+  const stageScores = await stub.snapshotFor("stage");
+  expect(stageScores.phase).toBe("scores");
+  expect(stageScores.play?.standings).toEqual([
+    { place: 1, nickname: "Rehearsal guest", points: 1 },
+  ]);
+  const guestScores = await stub.snapshotFor("guest", guest.playerId);
+  expect(guestScores.play?.selfAward).toBe(1);
+  expect(guestScores.play?.selfStanding).toEqual({
+    place: 1,
+    points: 1,
+    players: 1,
+  });
 });
 
 it("removes retired rounds from old saved orders without changing already-frozen games", async () => {

@@ -147,6 +147,7 @@ import {
   resume,
   skipQuestion,
   startRound,
+  submissionGate,
   type GameStore,
   type RoomPhase,
 } from "./lifecycle.ts";
@@ -2921,6 +2922,24 @@ export class PartyRoom extends DurableObject<Env> {
       });
       return;
     }
+    if (command.name === "chess-move") {
+      await this.acceptGuestValue(ws, attachment, command.requestId, {
+        name: "chess-move",
+        gameId: command.gameId,
+        from: command.from,
+        to: command.to,
+        ...(command.promotion ? { promotion: command.promotion } : {}),
+        positionRevision: command.positionRevision,
+      });
+      return;
+    }
+    if (command.name === "chess-resign") {
+      await this.acceptGuestValue(ws, attachment, command.requestId, {
+        name: "chess-resign",
+        gameId: command.gameId,
+      });
+      return;
+    }
     if (command.name === "troll") {
       await this.acceptGuestValue(ws, attachment, command.requestId, {
         name: "troll",
@@ -3873,6 +3892,15 @@ export class PartyRoom extends DurableObject<Env> {
       | { name: "duel"; value: unknown }
       | { name: "troll"; kind: unknown; targetId: unknown; mediaId?: string }
       | { name: "troll-escape"; effectId: unknown }
+      | {
+          name: "chess-move";
+          gameId: string;
+          from: string;
+          to: string;
+          promotion?: string;
+          positionRevision: number;
+        }
+      | { name: "chess-resign"; gameId: string }
       | WallCommand,
   ): Promise<void> {
     if (attachment.role !== "guest") {
@@ -5463,6 +5491,13 @@ function acceptRoundCommand(
     if (!question || question.kind !== "chess") {
       return { ok: false, message: "Not a chess round" };
     }
+    const gate = submissionGate(store, now);
+    if (!gate.ok) {
+      return { ok: false, message: answerMessage(gate.reason) };
+    }
+    if (store.readRoom().phase !== "collect") {
+      return { ok: false, message: answerClosedMessage };
+    }
 
     // CRITICAL: Player can ONLY submit moves for their OWN game.
     // Server determines human vs bot path from game.sideToMove.
@@ -5487,6 +5522,13 @@ function acceptRoundCommand(
   if (command.name === "chess-resign") {
     if (!question || question.kind !== "chess") {
       return { ok: false, message: "Not a chess round" };
+    }
+    const gate = submissionGate(store, now);
+    if (!gate.ok) {
+      return { ok: false, message: answerMessage(gate.reason) };
+    }
+    if (store.readRoom().phase !== "collect") {
+      return { ok: false, message: answerClosedMessage };
     }
     const chessResignCommand = {
       kind: "chess-resign" as const,
@@ -5702,7 +5744,7 @@ function readCommand(body: unknown):
       return null;
     }
     if (
-      record.promotion &&
+      record.promotion !== undefined &&
       !["q", "r", "b", "n"].includes(record.promotion as string)
     ) {
       return null;

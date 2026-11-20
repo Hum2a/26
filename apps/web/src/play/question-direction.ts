@@ -6,7 +6,8 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
   if (snapshot.paused) return "Paused — hang tight";
   if (snapshot.held) return "Waiting for the host";
   if (snapshot.phase === "facts") return "Watch the stage";
-  if (pending && play?.question.kind !== "wordle") return "Sending your answer…";
+  if (pending && play?.question.kind !== "wordle" && play?.question.kind !== "chess")
+    return "Sending your answer…";
   if (!play) return "Watch the stage";
   if (snapshot.phase === "reveal" || snapshot.phase === "scores")
     return "The results are in";
@@ -40,7 +41,7 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
     case "kart":
       return "Accelerate to drive — race on your phone";
     case "chess":
-      return "Play your move, then send";
+      return "Play 1-minute blitz against Stockfish";
     case "choice":
       return play.question.outcome === "multiple"
         ? "Select all that apply, then send"
