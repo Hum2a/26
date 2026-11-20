@@ -51,11 +51,16 @@ function Candidate({
         <motion.span
           className="bin-lid"
           aria-hidden="true"
+          initial={
+            unmasked && !motionSet.reduce
+              ? { y: 0, rotate: 0, opacity: 1 }
+              : false
+          }
           animate={
             unmasked
               ? {
-                  y: motionSet.move(size === "stage" ? -420 : -160),
-                  rotate: motionSet.reduce ? 0 : 38,
+                  y: motionSet.move(size === "stage" ? -240 : -160),
+                  rotate: motionSet.reduce ? 0 : 32,
                   opacity: motionSet.reduce ? 0 : [1, 1, 0],
                 }
               : { y: motionSet.reduce ? 0 : [0, -6, 0], rotate: 0, opacity: 1 }
@@ -63,7 +68,7 @@ function Candidate({
           transition={
             unmasked
               ? {
-                  duration: motionSet.reduce ? 0.2 : 1.2,
+                  duration: motionSet.reduce ? 0.2 : 1,
                   ease: [0.3, 0, 0.2, 1],
                   delay: motionSet.delay(0.2),
                 }

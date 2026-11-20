@@ -377,14 +377,19 @@ function GlyphStage({ play }: Extract<PresentationProps, { surface: "stage" }>) 
       <StagePrompt text={play.question.prompt} />
       <div
         className="glyph-stage-word"
+        data-revealed={reveal ? "" : undefined}
         aria-label={reveal ? `The word was ${reveal.answer}` : "Five mystery letters"}
       >
         {[...(reveal?.answer ?? "?????")].map((letter, index) => (
           <motion.span
             key={`${index}-${letter}`}
-            initial={{ opacity: 0.4, y: motionSet.move(12) }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...motionSet.soft, delay: motionSet.delay(index * 0.1) }}
+            initial={{
+              opacity: reveal ? 0 : 0.4,
+              y: motionSet.move(12),
+              scale: reveal && !motionSet.reduce ? 0.85 : 1,
+            }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ ...motionSet.soft, delay: motionSet.delay(index * 0.09) }}
           >
             {letter}
           </motion.span>

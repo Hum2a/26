@@ -198,9 +198,9 @@ function BallotStage({
       <StagePrompt text={play.question.prompt} />
       <motion.p
         className="ballot-banner"
-        initial={{ opacity: 0, scale: motionSet.reduce ? 1 : 0.9 }}
+        initial={{ opacity: 0, scale: motionSet.reduce ? 1 : 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ ...motionSet.spring, delay: motionSet.delay(1.6) }}
+        transition={{ ...motionSet.spring, delay: motionSet.delay(0.95) }}
       >
         {leaders.length === 0
           ? "No votes were cast."
@@ -217,9 +217,9 @@ function BallotStage({
               key={row.id}
               className="ballot-result"
               data-leading={leading || undefined}
-              initial={{ opacity: 0, x: motionSet.move(-30) }}
+              initial={{ opacity: 0, x: motionSet.move(-20) }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ ...motionSet.soft, delay: motionSet.delay(index * 0.08) }}
+              transition={{ ...motionSet.soft, delay: motionSet.delay(index * 0.05) }}
             >
               <span className="ballot-result-name">{row.label}</span>
               <span className="ballot-result-track">
@@ -229,7 +229,7 @@ function BallotStage({
                   animate={{ scaleX: top > 0 ? row.votes / top : 0 }}
                   transition={{
                     ...motionSet.slow,
-                    delay: motionSet.delay(0.4 + index * 0.08),
+                    delay: motionSet.delay(0.25 + index * 0.05),
                   }}
                 />
               </span>

@@ -302,7 +302,82 @@
   font-size: clamp(28px, min(1.6vw, 2.5vh), 30px);
   line-height: 1.14;
 }
-/* Stage VoteBoard: 4-option rows become a 2x2 grid so labels and artwork never crush. */
+/* Standard slider reveal guesses: 2-column grid so top-5 guesses and explanation fit 16:9. */
+.stage-presentation
+  .skin-panel
+  > div
+  > .grid:has(> p.stage-prompt + p + p.stage-answer)
+  > ul.grid {
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 0.35rem 0.85rem;
+  font-size: clamp(28px, min(1.6vw, 2.5vh), 30px);
+  line-height: 1.15;
+}
+/* Awards vote reveal (e.g. dating-exit-excuse): place award cards side by side so 3 awards fit. */
+.stage-presentation .skin-panel > div > div > .grid:has(> section > h2.stage-answer) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.45rem, 1vh, 0.85rem) clamp(0.65rem, 1.4vw, 1.1rem);
+  align-items: start;
+}
+.stage-presentation
+  .skin-panel
+  > div
+  > div
+  > .grid:has(> section > h2.stage-answer)
+  > p.stage-prompt {
+  grid-column: 1 / -1;
+  font-size: clamp(30px, min(2.35vw, 3.9vh), 44px);
+  line-height: 1.1;
+}
+.stage-presentation
+  .skin-panel
+  > div
+  > div
+  > .grid:has(> section > h2.stage-answer)
+  > :not(section) {
+  grid-column: 1 / -1;
+}
+.stage-presentation
+  .skin-panel
+  > div
+  > div
+  > .grid:has(> section > h2.stage-answer)
+  > section {
+  display: grid;
+  gap: 0.35rem;
+  padding: clamp(0.5rem, 1vh, 0.8rem) 0.85rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-panel, 1rem);
+  background: color-mix(in srgb, var(--background) 55%, var(--surface));
+}
+.stage-presentation
+  .skin-panel
+  > div
+  > div
+  > .grid:has(> section > h2.stage-answer)
+  > section
+  > h2.stage-answer {
+  font-size: clamp(28px, min(1.85vw, 3.1vh), 36px);
+}
+/* Guess / ballot reveal lists: 2-column grid so ballot cards and tally fit cleanly. */
+.stage-presentation
+  .skin-panel
+  > div
+  > div
+  > .grid:has(> div.grid > p.stage-option)
+  > div.grid,
+.stage-presentation
+  .skin-panel
+  > div
+  > div
+  > .grid:has(> div.grid > p.stage-option)
+  > ul.grid {
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 0.35rem 0.85rem;
+  font-size: clamp(28px, min(1.6vw, 2.5vh), 30px);
+  line-height: 1.15;
+}
+/* Stage VoteBoard: single-row 4-option boards become a 2x2 grid; multi-row boards stay 2 compact rows. */
 .stage-presentation .vote-board {
   gap: clamp(0.35rem, 0.9vh, 0.65rem);
 }
@@ -312,15 +387,33 @@
 .stage-presentation .vote-board-row {
   gap: clamp(0.45rem, 1.1vw, 0.9rem);
 }
-.stage-presentation .vote-board-row:has(> :nth-child(4)) {
+.stage-presentation
+  .vote-board-rows:not(:has(> :nth-child(2)))
+  .vote-board-row:has(> :nth-child(4)) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.stage-presentation .vote-board-rows:has(> :nth-child(2)) .vote-board-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+}
+.stage-presentation .vote-board-rows:has(> :nth-child(2)) .vote-option {
+  min-height: clamp(3.6rem, 9vh, 6.75rem);
+  padding: clamp(0.35rem, min(0.9vw, 1.2vh), 0.7rem) clamp(0.55rem, 1.1vw, 0.9rem);
 }
 .stage-presentation .vote-option {
   min-width: 0;
   min-height: clamp(4.6rem, 12vh, 9.25rem);
   padding: clamp(0.45rem, min(1.1vw, 1.5vh), 0.9rem) clamp(0.65rem, 1.3vw, 1.1rem);
   gap: clamp(0.2rem, 0.55vh, 0.45rem);
+  /* Prefer compositor-only transitions on stage: avoid per-frame flex-grow reflow on reveal. */
+  transition:
+    border-color 0.4s var(--vote-ease),
+    box-shadow 0.4s var(--vote-ease),
+    opacity 0.4s var(--vote-ease),
+    filter 0.4s var(--vote-ease),
+    transform 0.4s var(--vote-ease);
+  will-change: transform, opacity;
 }
 .stage-presentation .vote-board[data-revealed] .vote-option {
   min-height: clamp(4.2rem, 10.5vh, 8.25rem);
@@ -411,6 +504,7 @@
 .stage-safe .projector-trends {
   gap: clamp(0.35rem, 0.9vh, 0.7rem);
   padding: clamp(0.65rem, min(1.2vw, 1.7vh), 1.2rem);
+  contain: layout style;
 }
 .stage-safe .projector-trends .trends-eyebrow,
 .stage-safe .projector-trends .trends-count,
@@ -477,6 +571,7 @@
   gap: 0.65rem;
   min-height: clamp(2rem, 4vh, 2.75rem);
   padding: 0.15rem 0.5rem;
+  contain: layout style;
 }
 .stage-safe .stage-presentation .scoreboard-player {
   gap: 0.4rem;
@@ -570,6 +665,10 @@
 @media (prefers-reduced-motion: reduce) {
   .projector-setup-return {
     transition-duration: 0.12s;
+  }
+  .stage-presentation .vote-option {
+    transition-duration: 0.15s;
+    will-change: auto;
   }
 }
 

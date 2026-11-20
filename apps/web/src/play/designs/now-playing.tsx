@@ -179,20 +179,25 @@ function NowPlayingStage({
         <ol className="np-stage-list">
           {view.question.options.map((option, index) => {
             const isWinner = winner?.id === option.id;
+            const liveMeter = !winner || isWinner;
             return (
               <motion.li
                 key={option.id}
                 className="np-stage-track"
                 data-winner={isWinner || undefined}
-                initial={{ opacity: 0, x: motionSet.move(40) }}
+                initial={
+                  winner
+                    ? { opacity: 1, x: 0, scale: 1 }
+                    : { opacity: 0, x: motionSet.move(40) }
+                }
                 animate={{
                   opacity: winner && !isWinner ? 0.35 : 1,
                   x: 0,
-                  scale: isWinner ? 1.06 : 1,
+                  scale: isWinner && !motionSet.reduce ? 1.02 : 1,
                 }}
                 transition={{
                   ...motionSet.spring,
-                  delay: motionSet.delay(0.2 + index * 0.12),
+                  delay: motionSet.delay(winner ? 0.08 : 0.2 + index * 0.12),
                 }}
               >
                 <span className="np-number">{trackNumber(index)}</span>
@@ -200,8 +205,10 @@ function NowPlayingStage({
                   <Icon icon={sleeve(option.id)} />
                 </span>
                 <span className="np-title">{option.label}</span>
-                <StageVoters play={play} optionId={option.id} />
-                <span className="np-meter np-meter-live" aria-hidden="true">
+                <span
+                  className={liveMeter ? "np-meter np-meter-live" : "np-meter"}
+                  aria-hidden="true"
+                >
                   {[0, 1, 2, 3].map((bar) => (
                     <span
                       key={bar}
@@ -210,6 +217,7 @@ function NowPlayingStage({
                     />
                   ))}
                 </span>
+                <StageVoters play={play} optionId={option.id} />
               </motion.li>
             );
           })}

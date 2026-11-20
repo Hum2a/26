@@ -215,10 +215,15 @@
 .ballot-result {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(4.5rem, 0.9fr) auto;
-  gap: 0.65rem;
+  gap: 0.3rem 0.65rem;
   align-items: center;
+  min-width: 0;
   font-size: clamp(28px, min(1.65vw, 2.7vh), 32px);
   font-weight: 700;
+}
+
+.ballot-result .design-voters {
+  margin-top: 0.15rem;
 }
 
 .ballot-result-name {

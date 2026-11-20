@@ -109,14 +109,14 @@
 }
 
 .trolley-stage .trolley-scene {
-  max-height: 22vh;
+  max-height: 24vh;
   margin: 0 auto;
   width: auto;
   max-width: 100%;
 }
 
 .trolley-stage .trolley-label {
-  font-size: 62px;
+  font-size: 46px;
 }
 
 .trolley-stage {

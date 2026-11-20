@@ -84,9 +84,9 @@
 }
 
 .deed-stamp[data-size="stage"] {
-  top: auto;
-  right: 2rem;
-  bottom: clamp(5.25rem, 11.5vh, 7.25rem);
+  top: clamp(0.85rem, 1.8vh, 1.35rem);
+  right: clamp(1.25rem, 2.2vw, 2rem);
+  bottom: auto;
   gap: 0.6rem;
   border-width: 5px;
   border-radius: 0.85rem;

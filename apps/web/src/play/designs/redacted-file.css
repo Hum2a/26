@@ -150,10 +150,13 @@
 .dossier-redaction {
   position: relative;
   justify-self: start;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .dossier-name {
   color: var(--highlight);
+  overflow-wrap: anywhere;
 }
 
 .dossier-bar {
@@ -161,4 +164,11 @@
   inset: -0.15em -0.3em;
   background: var(--redaction-ink);
   transform-origin: right center;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dossier-bar {
+    will-change: auto;
+  }
 }

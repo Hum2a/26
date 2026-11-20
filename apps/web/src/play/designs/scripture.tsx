@@ -125,10 +125,14 @@ function ScriptureStage({
             key={side}
             className="scr-leaf"
             data-side={side === 0 ? "left" : "right"}
-            initial={{
-              rotateY: motionSet.reduce ? 0 : side === 0 ? 70 : -70,
-              opacity: 0,
-            }}
+            initial={
+              revealed
+                ? false
+                : {
+                    rotateY: motionSet.reduce ? 0 : side === 0 ? 70 : -70,
+                    opacity: 0,
+                  }
+            }
             animate={{ rotateY: 0, opacity: 1 }}
             transition={{ ...motionSet.slow, delay: motionSet.delay(0.1) }}
           >
@@ -142,20 +146,20 @@ function ScriptureStage({
                   data-answer={answer || undefined}
                   animate={{
                     opacity: revealed && !answer ? 0.28 : 1,
-                    scale: answer ? 1.04 : 1,
+                    scale: answer && !motionSet.reduce ? 1.02 : 1,
                   }}
                   transition={{
                     ...motionSet.soft,
-                    delay: motionSet.delay(answer ? 0.6 : 0),
+                    delay: motionSet.delay(answer ? 0.35 : 0),
                   }}
                 >
                   {answer ? (
                     <motion.span
                       className="scr-halo"
                       aria-hidden="true"
-                      initial={{ opacity: 0, scale: motionSet.reduce ? 1 : 0.6 }}
+                      initial={{ opacity: 0, scale: motionSet.reduce ? 1 : 0.85 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ ...motionSet.slow, delay: motionSet.delay(0.4) }}
+                      transition={{ ...motionSet.soft, delay: motionSet.delay(0.25) }}
                     />
                   ) : null}
                   <span className="scr-drop">{verseLetter(index)}</span>

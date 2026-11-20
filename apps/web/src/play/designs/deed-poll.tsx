@@ -41,15 +41,17 @@ function Typewriter({ text, start }: { text: string; start: number }) {
       </motion.span>
     );
   }
+  const chars = [...text];
+  const step = chars.length > 0 ? Math.min(0.06, 0.9 / chars.length) : 0.06;
   return (
     <span aria-label={text}>
-      {[...text].map((letter, index) => (
+      {chars.map((letter, index) => (
         <motion.span
           key={`${letter}-${index}`}
           aria-hidden="true"
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.05, delay: start + index * 0.08 }}
+          transition={{ duration: 0.05, delay: start + index * step }}
         >
           {letter}
         </motion.span>
@@ -145,11 +147,15 @@ function DeedStage({ play }: Extract<PresentationProps, { surface: "stage" }>) {
       <StagePrompt text={play.question.prompt} />
       <motion.div
         className="deed-paper deed-paper-stage"
-        initial={{
-          opacity: 0,
-          rotate: motionSet.reduce ? 0 : -2,
-          y: motionSet.move(30),
-        }}
+        initial={
+          reveal
+            ? false
+            : {
+                opacity: 0,
+                rotate: motionSet.reduce ? 0 : -2,
+                y: motionSet.move(30),
+              }
+        }
         animate={{ opacity: 1, rotate: motionSet.reduce ? 0 : -1, y: 0 }}
         transition={motionSet.slow}
       >
@@ -160,13 +166,13 @@ function DeedStage({ play }: Extract<PresentationProps, { surface: "stage" }>) {
         <p className="deed-body">Formerly known as:</p>
         <p className="deed-former">
           {reveal ? (
-            <Typewriter text={reveal.answer} start={motionSet.delay(0.9)} />
+            <Typewriter text={reveal.answer} start={motionSet.delay(0.3)} />
           ) : (
             "· · · · · · · · · ·"
           )}
         </p>
         <AnimatePresence>
-          {reveal ? <Stamp text="Renounced" delay={0.2} size="stage" /> : null}
+          {reveal ? <Stamp text="Renounced" delay={1.05} size="stage" /> : null}
         </AnimatePresence>
       </motion.div>
       <p className="design-stage-line">
@@ -174,7 +180,7 @@ function DeedStage({ play }: Extract<PresentationProps, { surface: "stage" }>) {
           <motion.span
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ ...motionSet.soft, delay: motionSet.delay(2) }}
+            transition={{ ...motionSet.soft, delay: motionSet.delay(1.35) }}
           >
             {typedTally(reveal)}
             {reveal.correctNames && reveal.correctNames.length > 0
