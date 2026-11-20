@@ -1,5 +1,8 @@
 import { accommodation01 } from "./accommodation-01.ts";
 import { edOrHumza } from "./ed-or-humza.ts";
+import { humzaBodyCount } from "./humza-body-count.ts";
+import { humzaBodyCountBodies } from "./humza-body-count-bodies.ts";
+import { humzaDeportation } from "./humza-deportation.ts";
 import { accommodation02 } from "./accommodation-02.ts";
 import { accommodation03 } from "./accommodation-03.ts";
 import { guessemotionalsupport } from "./guess-emotional-support.ts";
@@ -172,6 +175,9 @@ export const birthdayPack: QuestionPack = {
     chessBattle,
     trumpMadeUpCountry,
     esportsTag,
+    humzaDeportation,
+    humzaBodyCount,
+    humzaBodyCountBodies,
   ]),
 };
 
