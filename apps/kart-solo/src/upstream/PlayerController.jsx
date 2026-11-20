@@ -28,12 +28,24 @@ import {
   recoverKartTrial,
   createKartTrial,
   kartTrialRecord,
+  createPracticeBots,
+  stepPracticeBots,
+  practiceBotSlipstreamActors,
+  practiceStandings,
+  createPracticePlayerLap,
+  recoverPracticePlayerLap,
+  stepPracticePlayerLap,
+  practiceTrialPlayerSummary,
+  stepSlipstream,
+  slipstreamPhase,
+  slipstreamTuning,
 } from "@26/shared";
 import {
   addKartRecord,
   browserKartRecordStorage,
   writeKartRecords,
 } from "../../../web/src/kart/kart-records";
+import { soloBotFrame } from "../bots-state";
 import { nearbySoloWalls } from "../track/collision-world";
 import { useGameStore } from "./store";
 
@@ -57,6 +69,20 @@ export const PlayerController = () => {
       ? { x: practice.x, z: practice.z + 12 }
       : { x: 0, z: 0 };
   const body = useRef(createDrivingBody(start.x, start.z, -Math.PI / 2));
+  const bots = useRef(
+    createPracticeBots({
+      count: useGameStore.getState().soloBots,
+      mode: useGameStore.getState().soloMode,
+      practiceFeatureId: useGameStore.getState().soloPractice,
+    }),
+  );
+  const freeLap = useRef(createPracticePlayerLap(start.x, start.z));
+  const slipstream = useRef({ draftMs: 0, slipstreamMs: 0 });
+  const botTravel = useRef(new Map());
+  const lastBotPoses = useRef(new Map());
+  const lastStandingsKey = useRef("");
+  const lastSlipstream = useRef(undefined);
+  const playerFinishTimeMs = useRef(null);
   const powers = useRef(createKartPowers()),
     oils = useRef([]),
     usedItem = useRef(useGameStore.getState().soloItemUse);
@@ -64,7 +90,7 @@ export const PlayerController = () => {
   const safe = useRef({
     ...start,
     heading: -Math.PI / 2,
-    cursor: trial.current?.cursor,
+    cursor: trial.current?.cursor ?? freeLap.current.cursor,
     lap: 0,
   });
   const elapsed = useRef(0),
@@ -86,9 +112,79 @@ export const PlayerController = () => {
   useEffect(
     () => () => {
       meshes.current = [];
+      soloBotFrame.poses = [];
     },
     [],
   );
+
+  function publishBots(alpha) {
+    if (!bots.current.length) {
+      soloBotFrame.poses = [];
+      return;
+    }
+    soloBotFrame.poses = bots.current.map((bot) => {
+      const b = bot.body;
+      const old = bot.previous;
+      const turn = Math.atan2(
+        Math.sin(b.heading - old.heading),
+        Math.cos(b.heading - old.heading),
+      );
+      const x = old.x + (b.x - old.x) * alpha;
+      const z = old.z + (b.z - old.z) * alpha;
+      const heading = old.heading + turn * alpha;
+      const height = (old.height ?? 0) + ((b.height ?? 0) - (old.height ?? 0)) * alpha;
+      const prev = lastBotPoses.current.get(bot.playerId);
+      let travel = botTravel.current.get(bot.playerId) ?? 0;
+      if (prev) {
+        const dx = x - prev.x;
+        const dz = z - prev.z;
+        if (Math.hypot(dx, dz) < 8)
+          travel += dx * Math.cos(heading) + dz * Math.sin(heading);
+      }
+      lastBotPoses.current.set(bot.playerId, { x, z });
+      botTravel.current.set(bot.playerId, travel);
+      return {
+        playerId: bot.playerId,
+        name: bot.name,
+        number: bot.number,
+        style: bot.style,
+        x,
+        z,
+        heading,
+        height,
+        speed: b.vx * Math.cos(b.heading) + b.vz * Math.sin(b.heading),
+        turnRate: b.turn,
+        travel,
+        drifting: b.wasDrifting,
+        finished: bot.finished,
+      };
+    });
+  }
+
+  function currentPlayerSummary() {
+    return trial.current
+      ? practiceTrialPlayerSummary(trial.current, playerFinishTimeMs.current)
+      : {
+          progress: freeLap.current.progress,
+          lapsDone: freeLap.current.lapsDone,
+          finished: false,
+          timeMs: null,
+        };
+  }
+
+  useEffect(() => {
+    publishBots(0);
+    if (bots.current.length) {
+      const standings = practiceStandings(currentPlayerSummary(), bots.current);
+      lastStandingsKey.current = standings
+        .map(
+          (row) =>
+            `${row.playerId}:${row.place}:${row.lapsDone}:${row.finished ? 1 : 0}`,
+        )
+        .join("|");
+      useGameStore.setState({ soloStandings: standings });
+    }
+  }, []);
 
   function surfaceAt(x, z) {
     if (!meshes.current.length)
@@ -141,6 +237,8 @@ export const PlayerController = () => {
         body.current = createDrivingBody(anchor.x, anchor.z, anchor.heading);
         if (trial.current)
           trial.current = recoverKartTrial(trial.current, anchor.cursor);
+        else if (anchor.cursor)
+          freeLap.current = recoverPracticePlayerLap(anchor.cursor, anchor.lap ?? 0);
         previous.current = body.current;
         accumulator.current = 0;
         lastRecovery.current = elapsed.current;
@@ -176,11 +274,32 @@ export const PlayerController = () => {
       previous.current = body.current;
       body.current = { ...body.current, courseMs: elapsed.current };
       body.current = powerDrivingBody(body.current, powers.current, elapsed.current);
+      if (bots.current.length) {
+        const fwd =
+          body.current.vx * Math.cos(body.current.heading) +
+          body.current.vz * Math.sin(body.current.heading);
+        slipstream.current = stepSlipstream(
+          slipstream.current,
+          {
+            playerId: "solo",
+            x: body.current.x,
+            z: body.current.z,
+            heading: body.current.heading,
+            speed: fwd,
+          },
+          practiceBotSlipstreamActors(bots.current),
+          20,
+        );
+      }
+      const drivingProfile =
+        slipstream.current.slipstreamMs > 0
+          ? { ...soloDriving, drag: soloDriving.drag * slipstreamTuning.dragScale }
+          : soloDriving;
       body.current = stepDriving(
         body.current,
         effective,
         20,
-        soloDriving,
+        drivingProfile,
         nearbySoloWalls(
           body.current.x,
           body.current.z,
@@ -191,6 +310,16 @@ export const PlayerController = () => {
         soloCourse.filter((f) => courseEnabled(f, store.soloCourseSettings)),
         store.soloHandling,
       );
+      if (bots.current.length) {
+        bots.current = stepPracticeBots(bots.current, {
+          stepMs: 20,
+          elapsedMs: elapsed.current,
+          mode: store.soloMode,
+          handling: store.soloHandling,
+          courseSettings: store.soloCourseSettings,
+          oils: oils.current,
+        });
+      }
       const effect = stepKartPowers(
         powers.current,
         "solo",
@@ -230,7 +359,9 @@ export const PlayerController = () => {
           activeMs: elapsed.current,
         });
         if (trial.current.finished) {
-          const record = kartTrialRecord(trial.current);
+          playerFinishTimeMs.current = elapsed.current;
+          const record =
+            bots.current.length === 0 ? kartTrialRecord(trial.current) : undefined;
           const records = record
             ? addKartRecord(store.soloRecords, record)
             : store.soloRecords;
@@ -238,15 +369,27 @@ export const PlayerController = () => {
             record && records.enabled
               ? writeKartRecords(browserKartRecordStorage, records)
               : store.soloRecordNotice;
+          const finalStandings = bots.current.length
+            ? practiceStandings(currentPlayerSummary(), bots.current)
+            : store.soloStandings;
           useGameStore.setState({
             soloPaused: true,
             soloControls: { ...kartNeutral },
             soloRecords: records,
             soloRecordNotice: notice,
+            soloStandings: finalStandings,
+            soloSlipstream: undefined,
           });
           accumulator.current = 0;
           break;
         }
+      } else if (bots.current.length) {
+        freeLap.current = stepPracticePlayerLap(freeLap.current, {
+          x: body.current.x,
+          z: body.current.z,
+          speed: Math.hypot(body.current.vx, body.current.vz),
+          stepMs: 20,
+        });
       }
       surface = surfaceAt(body.current.x, body.current.z);
       if (
@@ -264,14 +407,15 @@ export const PlayerController = () => {
           x: body.current.x,
           z: body.current.z,
           heading: body.current.heading,
-          cursor: trial.current?.cursor,
-          lap: trial.current?.laps.length ?? 0,
+          cursor: trial.current?.cursor ?? freeLap.current.cursor,
+          lap: trial.current?.laps.length ?? freeLap.current.lapsDone,
         };
     }
     const d = body.current,
       player = playerRef.current;
     const alpha = accumulator.current / 20,
       old = previous.current;
+    publishBots(alpha);
     const turn = Math.atan2(
       Math.sin(d.heading - old.heading),
       Math.cos(d.heading - old.heading),
@@ -332,12 +476,36 @@ export const PlayerController = () => {
       1 - Math.exp(-8 * Math.min(delta, 0.1)),
     );
     camera.lookAt(cameraLookAtRef.current.getWorldPosition(look.current));
+    const nextSlipstream = bots.current.length
+      ? slipstreamPhase(slipstream.current)
+      : undefined;
+    let standingsPatch = {};
+    if (bots.current.length) {
+      const nextStandings = practiceStandings(currentPlayerSummary(), bots.current);
+      const standingsKey = nextStandings
+        .map(
+          (row) =>
+            `${row.playerId}:${row.place}:${row.lapsDone}:${row.finished ? 1 : 0}`,
+        )
+        .join("|");
+      if (standingsKey !== lastStandingsKey.current) {
+        lastStandingsKey.current = standingsKey;
+        standingsPatch = { soloStandings: nextStandings };
+      }
+    }
+    const slipstreamPatch =
+      nextSlipstream !== lastSlipstream.current
+        ? { soloSlipstream: nextSlipstream }
+        : {};
+    lastSlipstream.current = nextSlipstream;
     useGameStore.setState({
       playerPosition: new Vector3(d.x, 0, d.z),
       soloPowers: powers.current,
       soloOils: oils.current,
       soloElapsed: elapsed.current,
       soloTrial: trial.current,
+      ...standingsPatch,
+      ...slipstreamPatch,
       speed: speedRef.current,
       isBoosting: d.boostMs > 0,
       soloSurface: surface,

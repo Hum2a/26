@@ -82,7 +82,7 @@ export const soloItemBoxes: readonly ItemBox[] = [-16, -36, -56].map((z, i) => (
   x: 0,
   z,
 }));
-function nearSegment(
+export function nearSegment(
   from: { x: number; z: number },
   to: { x: number; z: number },
   target: { x: number; z: number },

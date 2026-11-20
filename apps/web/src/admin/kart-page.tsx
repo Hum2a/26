@@ -87,9 +87,10 @@ export function AdminKartPage() {
               </div>
               <div className="admin-card-body space-y-3">
                 <p>
-                  Press Start driving below. Use the arrow keys and Space, or the
-                  on-screen phone controls. Solo practice has no room connection or
-                  party points.
+                  Press Start driving below (and choose Solo or up to 7 CPU bots on the
+                  starting screen or in Course set-up). Use the arrow keys and Space, or
+                  the on-screen phone controls. Practice has no room connection or party
+                  points.
                 </p>
                 <p>
                   Graphics are local to each screen. Inside Course set-up, compare Auto,

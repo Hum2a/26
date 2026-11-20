@@ -18,6 +18,8 @@ export * from "./kart/kart-contacts.ts";
 export * from "./kart/kart-handling.ts";
 export * from "./kart/kart-laps.ts";
 export * from "./kart/kart-time-trial.ts";
+export * from "./kart/kart-practice-bots.ts";
+export * from "./kart/kart-slipstream.ts";
 export * from "./kart/kart-recap.ts";
 export { importedWalls, importedRoute } from "./kart/kart-track.ts";
 export * from "./kart/kart-nearby.ts";

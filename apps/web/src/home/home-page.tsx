@@ -73,7 +73,7 @@ export function HomePage() {
             <div>
               <p className="entry-eyebrow">While you wait</p>
               <h2>Fancy a lap?</h2>
-              <p>Drive the 26 Grand Prix on your own. No code needed.</p>
+              <p>Drive the 26 Grand Prix solo or with CPU bots. No code needed.</p>
             </div>
             <LinkButton to="/kart" variant="secondary">
               Practise kart solo →
