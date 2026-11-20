@@ -754,9 +754,11 @@ export function GuestPage({
   const selfPlayer = snapshot?.players.find(
     (player) => player.playerId === session.playerId,
   );
+  // The room's view at the last broadcast. The badge does not tick, so the
+  // whole page never re-renders for a cooldown; the Troll tab counts down.
   const trollReady =
     snapshot?.trolls.token === "ready" &&
-    (snapshot.play?.question.index ?? 0) >= 2 &&
+    snapshot.phase !== "lobby" &&
     !["final", "facts", "podium"].includes(snapshot.phase);
   const badges: Partial<Record<PhoneTab, string>> = {};
   if (trollReady && tab !== "troll") badges.troll = "1";

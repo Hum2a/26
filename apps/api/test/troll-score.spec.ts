@@ -4,7 +4,6 @@ import { pointsFor } from "../src/questions/multiple-choice.ts";
 import {
   applyScoreModifiers,
   modifierOrder,
-  nextTokenState,
   slotDecision,
 } from "../src/troll/catalogue.ts";
 import {
@@ -69,25 +68,7 @@ describe("troll scoring rules", () => {
     ).toBe(shape.points + shape.speedBonus.maxPoints);
   });
 
-  it("refunds a token once and keeps a later spend spent", () => {
-    expect(
-      nextTokenState({ token: "spent", effectRefunded: false, started: false }),
-    ).toEqual({
-      token: "ready",
-      refunded: true,
-    });
-    expect(
-      nextTokenState({ token: "spent", effectRefunded: true, started: false }),
-    ).toEqual({
-      token: "spent",
-      refunded: true,
-    });
-    expect(
-      nextTokenState({ token: "spent", effectRefunded: false, started: true }),
-    ).toEqual({
-      token: "spent",
-      refunded: false,
-    });
+  it("queues one effect per slot and refuses a third", () => {
     expect(slotDecision({ active: true, queued: false })).toBe("queue");
     expect(slotDecision({ active: true, queued: true })).toBe("occupied");
     expect(slotDecision({ active: false, queued: false })).toBe("start");

@@ -21,11 +21,7 @@ export function trollChoices(
     .sort((left, right) => left.nickname.localeCompare(right.nickname, "en-GB"));
 }
 
-/** The public question index is 1 for round one. The token unlocks on round two. */
-export function trollPickerLocked(roundIndex: number, used: boolean): boolean {
-  return used || roundIndex < 2;
-}
-
-export function trollTokenLabel(used: boolean): string {
-  return used ? "Troll used" : "1 troll left";
+/** The line above the target list: ready to send, or still recharging. */
+export function trollTokenLabel(cooling: boolean): string {
+  return cooling ? "Recharging" : "Troll ready";
 }

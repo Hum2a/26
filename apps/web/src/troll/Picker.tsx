@@ -1,36 +1,33 @@
 import { useState } from "react";
 import { PlayerAvatar } from "../ui/player-avatar";
-import {
-  trollChoices,
-  trollPickerLocked,
-  trollTokenLabel,
-  type TrollPlayer,
-} from "./players";
+import { trollChoices, trollTokenLabel, type TrollPlayer } from "./players";
 
 export function TrollPicker({
   players,
   selfId,
-  roundIndex,
-  used,
+  locked: closed,
+  cooling,
   pending = false,
   selectedId,
   onSelect,
 }: {
   players: readonly TrollPlayer[];
   selfId: string;
-  roundIndex: number;
-  used: boolean;
+  /** Trolls are not open yet. */
+  locked: boolean;
+  /** Open, but this guest's cooldown is still running. A target can be chosen. */
+  cooling: boolean;
   pending?: boolean;
   selectedId?: string;
   onSelect: (playerId: string) => void;
 }) {
   const [query, setQuery] = useState("");
-  const locked = pending || trollPickerLocked(roundIndex, used);
+  const locked = pending || closed;
   const choices = trollChoices(players, selfId, query);
 
   return (
     <div className="troll-picker">
-      <p className="troll-picker-token">{trollTokenLabel(used)}</p>
+      <p className="troll-picker-token">{trollTokenLabel(cooling)}</p>
       <label className="troll-picker-search">
         Find a player
         <input

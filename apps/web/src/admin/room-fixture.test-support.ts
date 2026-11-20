@@ -19,6 +19,12 @@ export const roomFixture: LobbySnapshot = {
   finishAfterRound: false,
   revealNonce: 0,
   media: [],
-  trolls: { token: "locked", offers: [], active: [], announcement: null },
+  trolls: {
+    token: "locked",
+    cooldownUntil: null,
+    offers: [],
+    active: [],
+    announcement: null,
+  },
   connections: { guests: 0, stage: 0, control: 1 },
 };

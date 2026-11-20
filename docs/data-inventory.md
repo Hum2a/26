@@ -86,7 +86,7 @@ Every answer table, plus `name_reaction` and `troll_effect`, also stores the `de
 
 | Table          | Holds                                                                                                      |
 | -------------- | ---------------------------------------------------------------------------------------------------------- |
-| `troll_token`  | Whether each player has used their one troll                                                               |
+| `troll_token`  | Legacy: whether a player used the old one-per-game troll. No longer written; cooldowns read `troll_effect` |
 | `troll_effect` | Each troll: who sent it, who it targeted, the kind, when it started and ended, and whether it was refunded |
 | `troll_switch` | Trolls the host has switched off for this room                                                             |
 | `stage_cue`    | Announcements shown on the projector                                                                       |

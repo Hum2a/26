@@ -46,6 +46,7 @@ const ready: LobbySnapshot = {
   },
   trolls: {
     token: "ready",
+    cooldownUntil: null,
     offers: [{ kind: "swap", label: "Nickname swap", enabled: true }],
     active: [],
     announcement: null,
