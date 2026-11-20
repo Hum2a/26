@@ -8,8 +8,8 @@ runs **Live controls** at https://26.humza.website/admin. Baseer presents on
 in the [event runbook](event-runbook.md).
 
 This sheet matches the birthday `order` in
-`apps/api/src/questions/packs/birthday/manifest.ts` as of 19 November 2026
-(**42 rounds**). Drafts `where-are-we` and `ed-or-humza` stay out of the order.
+`apps/api/src/questions/packs/birthday/manifest.ts` as of 20 November 2026
+(**43 rounds**). Drafts `where-are-we` and `ed-or-humza` stay out of the order.
 `tribunal-reddit` and `council-ferrier-sector` were retired on 16 November.
 
 Do not put this sheet’s operator notes, transfer codes, or the private
@@ -122,7 +122,7 @@ opened at all. Full steps: [event runbook](event-runbook.md).
 | Typed or vote line should not be seen | Live controls → Responses → **Hide {nickname}'s answer**. It leaves phones and the stage; scores do not change. Restore brings it back. Votes already cast for a hidden ballot line stop counting until restore.                                                                      |
 | Hide the whole projector              | `H` (Hide stage content). `R` shows the reveal again on reveal/scores/final/podium.                                                                                                                                                                                                   |
 | Kart stuck off the road               | Guest presses **Back to track** on the phone (two-second cooldown; paused races cannot recover). Host: Pause/Resume for the whole race clock; **Stop item spawning** / **Clear track items** if items are the problem.                                                                |
-| Need another kart race                | Kart-only lobby: after the podium, **Race again** (same join code), then **Start kart race**. Birthday order: this is the last round; do not invent a second Grand Prix unless you already created a separate kart lobby.                                                             |
+| Need another kart race                | Kart-only lobby: after the podium, **Race again** (same join code), then **Start kart race**. Birthday order: `kart-sprint` is followed by `best-dressed` (the final round); do not invent a second Grand Prix unless you already created a separate kart lobby.                      |
 | One phone tapping too fast            | The room tells them to wait a moment. Nothing for Humza.                                                                                                                                                                                                                              |
 | Control tab died                      | Reopen production `/admin`, sign in, leave the tab open. It holds the control connection.                                                                                                                                                                                             |
 

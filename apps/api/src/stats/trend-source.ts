@@ -428,10 +428,7 @@ function readResponses(
       )
       .toArray();
     const window = question.kind === "vote" ? question.voteMs : question.collectMs;
-    const scored =
-      question.kind === "guess" &&
-      question.scoring !== "none" &&
-      question.award !== "nominees";
+    const scored = hasRightAndWrong(question);
     return {
       question: {
         ...base,
@@ -671,7 +668,7 @@ export function hasRightAndWrong(question: Question): boolean {
         question.outcome.kind === "push"
       );
     case "guess":
-      return question.scoring !== "none";
+      return question.scoring !== "none" && question.award !== "nominees";
     case "typed":
     case "slider":
     case "wordle":

@@ -220,7 +220,7 @@ function answerFor(
             status: "not-applicable",
             lines: [
               question.award === "nominees"
-                ? "Most-voted player wins (ties share the points)."
+                ? "Most-voted player receives the full points; each tied winner receives the full points (not split)."
                 : `Scoring follows the ${question.scoring} rule.`,
             ],
           };

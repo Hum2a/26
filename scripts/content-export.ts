@@ -181,7 +181,7 @@ function revealLine(question: Question): string {
     case "guess":
       if (question.scoring === "majority") {
         if (question.award === "nominees") {
-          return "Reveal who got the most votes. The most-voted player wins (ties share the points).";
+          return "Reveal who got the most votes. Each most-voted player receives the full points; tied winners are not split.";
         }
         const bonus =
           question.selfVoteBonus === "double"

@@ -367,4 +367,4 @@ Say at the reveal: Fastest completed lap wins. Finishers share place on equal fi
 Who is best dressed tonight?
 
 30s to answer. Attribution: after.
-Say at the reveal: Reveal who got the most votes. The most-voted player wins (ties share the points).
+Say at the reveal: Reveal who got the most votes. Each most-voted player receives the full points; tied winners are not split.

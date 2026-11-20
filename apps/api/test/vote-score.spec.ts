@@ -103,17 +103,25 @@ describe("room-wide vote and guess scoring", () => {
       { playerId: "bilal", points: 0, detail: "miss" },
       { playerId: "chen", points: 0, detail: "miss" },
     ]);
-    // Tied nominees each receive the full award.
+    // Tied nominees are both selected by winningIds and each receives the full award.
+    const tiedBallots = [
+      { playerId: "amina", candidateId: "amina" },
+      { playerId: "bilal", candidateId: "bilal" },
+    ];
+    const tiedWinners = winningIds({
+      scoring: "majority",
+      truthId: null,
+      candidates: candidates.map((c) => ({ id: c.id, eligible: true, included: true })),
+      ballots: tiedBallots,
+    });
+    expect(tiedWinners).toEqual(["amina", "bilal"]);
     expect(
       awardsForBallot({
         points: 100,
         mode: "authors",
-        winners: ["amina", "bilal"],
+        winners: tiedWinners,
         candidates,
-        ballots: [
-          { playerId: "amina", candidateId: "amina" },
-          { playerId: "bilal", candidateId: "bilal" },
-        ],
+        ballots: tiedBallots,
         playerIds: ["amina", "bilal", "chen"],
       }),
     ).toEqual([

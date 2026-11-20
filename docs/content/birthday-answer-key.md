@@ -315,4 +315,4 @@ Reveal: Fastest completed lap wins. Finishers share place on equal finish times;
 
 Who is best dressed tonight?
 
-Reveal: Reveal who got the most votes. The most-voted player wins (ties share the points).
+Reveal: Reveal who got the most votes. Each most-voted player receives the full points; tied winners are not split.

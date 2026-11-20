@@ -59,8 +59,9 @@ import { bestDressed } from "./best-dressed.ts";
  * Working catalogue for Humza's questions.
  * `birthday-draft` is not a playable version. Rooms keep the version they started with.
  * Add new questions to `catalogue` as drafts. The default order includes completed
- * rounds with kart last. Admin saves an override for new games; starting a birthday
- * game freezes its server-side script under a content hash.
+ * rounds with `kart-sprint` second to last and `best-dressed` last. Admin saves an
+ * override for new games; starting a birthday game freezes its server-side script
+ * under a content hash.
  */
 export const birthdayPack: QuestionPack = {
   packId: "birthday",

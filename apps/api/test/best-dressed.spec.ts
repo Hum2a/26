@@ -38,7 +38,9 @@ async function connectGuest(
   expect(response.status).toBe(101);
   const socket = response.webSocket;
   if (!socket) throw new Error("Expected a guest socket.");
+  const initial = nextMatching(socket, (message) => message.kind === "snapshot");
   socket.accept();
+  await initial;
   return socket;
 }
 
@@ -97,7 +99,7 @@ describe("best dressed round", () => {
       ]),
     );
     expect(detail?.question.answer.lines).toContain(
-      "Most-voted player wins (ties share the points).",
+      "Most-voted player receives the full points; each tied winner receives the full points (not split).",
     );
     const preview = questionPreview(birthdayPack, bestDressed);
     expect(preview.interactive).toBe(true);
@@ -187,10 +189,6 @@ describe("best dressed round", () => {
     const chenSock = await connectGuest(stub, made.result.gameId, guestCookie(chen));
 
     try {
-      await nextMatching(aminaSock, (m) => m.kind === "snapshot");
-      await nextMatching(bilalSock, (m) => m.kind === "snapshot");
-      await nextMatching(chenSock, (m) => m.kind === "snapshot");
-
       // Amina self-votes for Amina; Bilal votes for Amina; Chen votes for Bilal.
       expect(
         (
