@@ -72,7 +72,7 @@ export const edOrHumzaQuotes: readonly EdOrHumzaQuote[] = [
   {
     id: "quote-18",
     quote: "Smaller but firm can outperform larger but drippy",
-    speaker: "humza",
+    speaker: "neither",
   },
   {
     id: "quote-19",
@@ -178,7 +178,7 @@ export function makeEdOrHumza(quotes: readonly EdOrHumzaQuote[] = edOrHumzaQuote
             .filter((group) => group.itemIds.length > 0),
         },
     notes:
-      "Quotes from Humza, 17 Nov 2026, wording preserved; speakers confirmed 19 Nov, five more Humza lines 21 Nov; quote-05, quote-06 and quote-17 marked Neither the same night. Sort into Ed, Humza or Neither. Private photos. Card-stack ed-or-humza. Whole-list submit; 80 points by placements, two minutes. Keys stay server-side. Ready in the catalogue; adding it to the running order is a separate host action.",
+      "Quotes from Humza, 17 Nov 2026, wording preserved; speakers confirmed 19 Nov, five more Humza lines 21 Nov; quote-05, quote-06, quote-17 and quote-18 marked Neither the same night. Sort into Ed, Humza or Neither. Private photos. Card-stack ed-or-humza. Whole-list submit; 80 points by placements, two minutes. Keys stay server-side. Ready in the catalogue; adding it to the running order is a separate host action.",
   });
 }
 

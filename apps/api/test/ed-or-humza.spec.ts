@@ -49,7 +49,6 @@ const humzaIds = [
   "quote-01",
   "quote-02",
   "quote-04",
-  "quote-18",
   "quote-19",
   "quote-20",
   "quote-21",
@@ -69,7 +68,7 @@ const edIds = [
   "quote-15",
   "quote-16",
 ];
-const neitherIds = ["quote-05", "quote-06", "quote-17"];
+const neitherIds = ["quote-05", "quote-06", "quote-17", "quote-18"];
 
 describe("Ed or Humza whole-list sorting", () => {
   it("keeps all 23 supplied quotes, confirmed speakers, and the ready round in the running order", () => {
@@ -188,13 +187,13 @@ describe("Ed or Humza whole-list sorting", () => {
         question,
         question.items.map((item) => ({ itemId: item.id, tierId: "humza" })),
       ),
-    ).toEqual({ points: 31, detail: "placed-9/23" });
+    ).toEqual({ points: 27, detail: "placed-8/23" });
     expect(
       pointsForRanking(
         question,
         question.items.map((item) => ({ itemId: item.id, tierId: "neither" })),
       ),
-    ).toEqual({ points: 10, detail: "placed-3/23" });
+    ).toEqual({ points: 13, detail: "placed-4/23" });
     const publicQuestion = publicRankQuestion(question, 1, 1);
     expect(publicQuestion).not.toHaveProperty("truth");
     expect(JSON.stringify(publicQuestion)).not.toContain('"speaker"');
