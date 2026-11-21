@@ -3,6 +3,7 @@ import {
   commonnessResults,
   consensusRanking,
   estimateAwards,
+  multipleChoiceScore,
   passwordKey,
   sameAnswerSet,
 } from "../../../packages/shared/src/party-scoring.ts";
@@ -208,4 +209,69 @@ it("preserves consensus ties and requires the whole correct answer set", () => {
   expect(sameAnswerSet(["b", "a"], ["a", "b"])).toBe(true);
   expect(sameAnswerSet(["a"], ["a", "b"])).toBe(false);
   expect(sameAnswerSet(["a", "a"], ["a", "b"])).toBe(false);
+});
+
+it("scores multi-select choices with exact-set or net partial credit", () => {
+  expect(multipleChoiceScore(["a", "b"], ["a", "b"], 100)).toEqual({
+    points: 100,
+    detail: "correct-set",
+  });
+  expect(multipleChoiceScore(["a"], ["a", "b"], 100, "exact")).toEqual({
+    points: 0,
+    detail: "wrong-set",
+  });
+  expect(
+    multipleChoiceScore(
+      ["pakistan", "tanzania"],
+      ["pakistan", "tanzania"],
+      100,
+      "partial",
+    ),
+  ).toEqual({
+    points: 100,
+    detail: "correct-set",
+  });
+  expect(
+    multipleChoiceScore(["pakistan"], ["pakistan", "tanzania"], 100, "partial"),
+  ).toEqual({
+    points: 50,
+    detail: "partial-set",
+  });
+  expect(
+    multipleChoiceScore(
+      ["pakistan", "tanzania", "india"],
+      ["pakistan", "tanzania"],
+      100,
+      "partial",
+    ),
+  ).toEqual({
+    points: 50,
+    detail: "partial-set",
+  });
+  expect(
+    multipleChoiceScore(
+      ["pakistan", "india"],
+      ["pakistan", "tanzania"],
+      100,
+      "partial",
+    ),
+  ).toEqual({
+    points: 0,
+    detail: "wrong-set",
+  });
+  expect(
+    multipleChoiceScore(
+      ["pakistan", "tanzania", "india", "kenya", "iran", "egypt"],
+      ["pakistan", "tanzania"],
+      100,
+      "partial",
+    ),
+  ).toEqual({
+    points: 0,
+    detail: "wrong-set",
+  });
+  expect(multipleChoiceScore([], ["pakistan", "tanzania"], 100, "partial")).toEqual({
+    points: 0,
+    detail: "missing",
+  });
 });

@@ -7559,3 +7559,22 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Cubic follow-up (PR #72).** Registered `test/best-dressed.spec.ts` in `apps/api/vitest.config.ts` (`room` project), excluded `award === "nominees"` in `hasRightAndWrong` (`apps/api/src/stats/trend-source.ts`, updated `trends.spec.ts`), routed the nominee tie test through `winningIds` in `vote-score.spec.ts`, clarified full-points-per-tied-winner wording in `admin-question.ts` and `scripts/content-export.ts` (and re-exported `docs/content/birthday-*.md`), updated the doc comment in `manifest.ts` and round counts/notes in `docs/night-of.md`, and corrected the `test:unit` status above.
 
 **Next stage.** Review and test live in a local or staging lobby with multiple phones.
+
+## 20 November 2026 — Humza ethnicity guessing round (`humza-ethnicity`)
+
+**Status:** ready in the birthday catalogue on branch `ethnicity_guessing_round` (not in the default running `order`; not deployed).
+
+**What changed.** Added `humza-ethnicity` (`apps/api/src/questions/packs/birthday/humza-ethnicity.ts`) and partial-credit multi-select scoring:
+
+- **Question (`humza-ethnicity`):** 8-option multi-select `choice` round (`Pakistan`, `India`, `Tanzania`, `Kenya`, `Bangladesh`, `Uganda`, `Iran`, `Egypt`), with `outcome: { kind: "multiple", optionIds: ["pakistan", "tanzania"], scoring: "partial" }`. Registered in `birthdayPack.catalogue` (`manifest.ts`) only so the host can include it via Admin → Question packs → Running order.
+- **Partial-credit multi-select (`packages/shared/src/party-scoring.ts`):** Added `multipleChoiceScore` supporting `"exact"` (default, preserving `christianity-branches` and `trump-made-up-country`) and `"partial"` (`max(0, round(points * (hits - misses) / correct.length))`), wired through `definition.ts`, `multiple-choice.ts`, `validate.ts`, `admin-question.ts`, `scripts/content-export.ts`, and `docs/question-authoring.md`.
+- **Phone reveal copy (`apps/web/src/play/copy.ts`):** Handled `multiple` self-answers in `revealResult` so full or partial multi-select scores display `You scored <award> on this question.` instead of falling through to `"That was not the answer."`.
+
+**Decisions / defaults.**
+
+- Net partial credit (`+50` per right country, `-50` per wrong pick, clamped at `0`) prevents ticking all eight options from scoring points while rewarding partial knowledge (`Pakistan` alone = 50, `Pakistan + Tanzania` = 100, `Pakistan + Tanzania + decoy` = 50, `Pakistan + decoy` = 0).
+- Used six default decoy countries (`India`, `Kenya`, `Bangladesh`, `Uganda`, `Iran`, `Egypt`) alongside `Pakistan` and `Tanzania`; these can be swapped in `humza-ethnicity.ts` at any time.
+
+**Tests & checks.** Covered by new unit/room/component tests in `party-scoring.spec.ts`, `party-polish-room.spec.ts`, `question-authoring.spec.ts`, and `outcomes.test.tsx`. Verification commands ran after the final edit (`typecheck`, `content:check`, `check:structure`, ESLint on touched files, `test:unit`, `test -w @26/api` targeted specs, `build`).
+
+**Next.** Review or swap the decoy countries in `humza-ethnicity.ts` if desired, and add `humza-ethnicity` to the running order in Admin → Question packs → Running order when ready to play.

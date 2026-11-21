@@ -446,7 +446,10 @@ function outcomeIssues(question: {
     return outcome.optionIds.length > 0 &&
       outcome.optionIds.length <= 6 &&
       new Set(outcome.optionIds).size === outcome.optionIds.length &&
-      outcome.optionIds.every((id) => ids.has(id))
+      outcome.optionIds.every((id) => ids.has(id)) &&
+      (outcome.scoring === undefined ||
+        outcome.scoring === "exact" ||
+        outcome.scoring === "partial")
       ? []
       : [
           issue(

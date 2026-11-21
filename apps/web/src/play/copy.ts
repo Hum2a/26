@@ -235,6 +235,14 @@ function revealResult(
   if (!answer) {
     return "No answer was received.";
   }
+  if (reveal?.kind === "choice" && answer.kind === "multiple") {
+    if (award === undefined || award === null) {
+      return "Answer accepted.";
+    }
+    return award > 0
+      ? `You scored ${award} on this question.`
+      : "That was not the answer.";
+  }
   if (reveal?.kind === "choice" && answer.kind === "choice") {
     if (reveal.outcome === "poll") {
       return "Your vote is in the count.";

@@ -28,7 +28,12 @@ export function adminQuestion(
     add("Track", question.trackId);
     add("Race", "One lap, 45-second server cutoff; DNF scores zero. Ties share place.");
   } else if (question.kind === "choice") {
-    add("Outcome", question.outcome.kind);
+    add(
+      "Outcome",
+      question.outcome.kind === "multiple" && question.outcome.scoring === "partial"
+        ? "multiple (partial credit)"
+        : question.outcome.kind,
+    );
     add(
       "Speed bonus",
       question.speedBonus ? `Up to ${question.speedBonus.maxPoints} points` : "Off",
@@ -157,8 +162,13 @@ function answerFor(
   if (question.kind === "choice") {
     const label = (id: string) =>
       question.options.find((option) => option.id === id)?.label ?? id;
-    if (question.outcome.kind === "multiple")
-      return recorded(question.outcome.optionIds.map(label));
+    if (question.outcome.kind === "multiple") {
+      const rule =
+        question.outcome.scoring === "partial"
+          ? "Partial credit: each right pick adds a share; each wrong pick subtracts a share (min 0)."
+          : "Exact set only: all right picks with no decoys.";
+      return recorded([...question.outcome.optionIds.map(label), rule]);
+    }
     if (question.outcome.kind === "poll")
       return {
         status: "not-applicable",

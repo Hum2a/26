@@ -26,6 +26,7 @@ import { inflationPetrol } from "../src/questions/packs/birthday/inflation-petro
 import { commonPassword } from "../src/questions/packs/birthday/common-password.ts";
 import { completeAWordle } from "../src/questions/packs/birthday/complete-a-wordle.ts";
 import { trumpMadeUpCountry } from "../src/questions/packs/birthday/trump-made-up-country.ts";
+import { humzaEthnicity } from "../src/questions/packs/birthday/humza-ethnicity.ts";
 import { questionPreview } from "../src/room/question-preview.ts";
 
 const fixtureOptions = [
@@ -50,6 +51,26 @@ it("projects the Trump exact-set question with valid option ids and no public an
     preview.question?.kind === "choice" &&
       preview.question.options.map((option) => option.label),
   ).toEqual(trumpMadeUpCountry.options.map((option) => option.label));
+  expect(JSON.stringify(preview)).not.toContain('"optionIds"');
+});
+
+it("keeps humza-ethnicity ready in the birthday catalogue without adding it to the default order", () => {
+  expect(
+    humzaEthnicity.options.every((option) => contentLimits.optionId.test(option.id)),
+  ).toBe(true);
+  expect(humzaEthnicity.status).toBe("ready");
+  expect(humzaEthnicity.outcome).toEqual({
+    kind: "multiple",
+    optionIds: ["pakistan", "tanzania"],
+    scoring: "partial",
+  });
+  expect(birthdayPack.catalogue.some((item) => item.id === humzaEthnicity.id)).toBe(
+    true,
+  );
+  expect(birthdayPack.order).not.toContain(humzaEthnicity.id);
+  const preview = questionPreview(birthdayPack, humzaEthnicity);
+  expect(preview.interactive).toBe(true);
+  expect(preview.question).toMatchObject({ kind: "choice", outcome: "multiple" });
   expect(JSON.stringify(preview)).not.toContain('"optionIds"');
 });
 

@@ -145,6 +145,30 @@ describe("choice outcomes on the phone and stage", () => {
     });
     expect(guestRoundCopy(lobby("reveal", lost))).toBe("Your side scored 0.");
   });
+
+  it("reports full, partial, and zero scores for multi-select reveals", () => {
+    const multi = { ...pills, outcome: "multiple" };
+    const reveal = {
+      kind: "choice" as const,
+      correctOptionId: null,
+      outcome: "multiple" as const,
+      correctOptionIds: ["red"],
+    };
+    const partial = play(multi, {
+      selfAnswer: { kind: "multiple", optionIds: ["red"] },
+      reveal,
+      selfAward: 50,
+    });
+    expect(guestRoundCopy(lobby("reveal", partial))).toBe(
+      "You scored 50 on this question.",
+    );
+    const missed = play(multi, {
+      selfAnswer: { kind: "multiple", optionIds: ["blue"] },
+      reveal,
+      selfAward: 0,
+    });
+    expect(guestRoundCopy(lobby("reveal", missed))).toBe("That was not the answer.");
+  });
 });
 
 describe("typed answers", () => {
