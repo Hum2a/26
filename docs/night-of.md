@@ -9,7 +9,7 @@ in the [event runbook](event-runbook.md).
 
 This sheet lists the 43-round operator script with `best-dressed` added as the
 final round. The full default `order` in
-`apps/api/src/questions/packs/birthday/manifest.ts` currently holds **52
+`apps/api/src/questions/packs/birthday/manifest.ts` currently holds **53
 rounds** (see [birthday-running-order.md](content/birthday-running-order.md)
 for the generated full sequence). `tribunal-reddit` and
 `council-ferrier-sector` were retired on 16 November.
