@@ -21,8 +21,8 @@ awards points.
 
 In `edOrHumzaQuotes`, each entry has `speaker: "ed"`, `speaker: "humza"` or
 `speaker: "neither"`. The server derives its private answer key from that list.
-No supplied quote is marked Neither yet; the third bucket is there so Humza can
-mark one later. Existing rooms keep their frozen question script.
+`quote-05`, `quote-06` and `quote-17` are Neither. Existing rooms keep their frozen
+question script.
 
 This follows the existing versioned TypeScript content workflow; there is no new
 CMS or browser answer-key editor.

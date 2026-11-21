@@ -28,13 +28,13 @@ export const edOrHumzaQuotes: readonly EdOrHumzaQuote[] = [
   {
     id: "quote-05",
     quote: "Sometimes bad men have to do bad things to teach women a lesson",
-    speaker: "humza",
+    speaker: "neither",
   },
   {
     id: "quote-06",
     quote:
       "If jensan can bang all those baddies with a 1 incher imagine what I can do with a 9mm",
-    speaker: "humza",
+    speaker: "neither",
   },
   { id: "quote-07", quote: "Biblically accurate breasts on that one", speaker: "ed" },
   {
@@ -67,7 +67,7 @@ export const edOrHumzaQuotes: readonly EdOrHumzaQuote[] = [
   {
     id: "quote-17",
     quote: "If they don't want a dick they can give the inches to me",
-    speaker: "ed",
+    speaker: "neither",
   },
   {
     id: "quote-18",
@@ -178,7 +178,7 @@ export function makeEdOrHumza(quotes: readonly EdOrHumzaQuote[] = edOrHumzaQuote
             .filter((group) => group.itemIds.length > 0),
         },
     notes:
-      "Quotes from Humza, 17 Nov 2026, wording preserved; speakers confirmed 19 Nov, five more Humza lines 21 Nov. Sort into Ed, Humza or Neither (none marked Neither yet). Private photos. Card-stack ed-or-humza. Whole-list submit; 80 points by placements, two minutes. Keys stay server-side. Ready in the catalogue; adding it to the running order is a separate host action.",
+      "Quotes from Humza, 17 Nov 2026, wording preserved; speakers confirmed 19 Nov, five more Humza lines 21 Nov; quote-05, quote-06 and quote-17 marked Neither the same night. Sort into Ed, Humza or Neither. Private photos. Card-stack ed-or-humza. Whole-list submit; 80 points by placements, two minutes. Keys stay server-side. Ready in the catalogue; adding it to the running order is a separate host action.",
   });
 }
 
