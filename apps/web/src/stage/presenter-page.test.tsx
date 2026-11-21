@@ -61,8 +61,10 @@ it("pairs with a presenter code and pins each action and retry to the cue on scr
       phase: "prompt",
       deadlineAt: null,
       phaseGeneration: 3,
+      nextQuestion: { title: "Guess the tab", kind: "slider" },
     }),
   );
+  expect(screen.getByText(/Question 1 of 2 · Coming up: Guess the tab/)).toBeTruthy();
   vi.mocked(advancePresenter)
     .mockResolvedValueOnce({ error: "Receipt lost", uncertain: true })
     .mockResolvedValueOnce({

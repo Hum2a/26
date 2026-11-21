@@ -137,6 +137,26 @@
   border-top: 1px solid var(--line);
   padding-top: 1rem;
   margin-top: auto;
+  align-items: end;
+}
+.projector-progress {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 1.1rem;
+  margin: 0;
+  max-width: min(72rem, 100%);
+  color: var(--muted);
+  font-size: clamp(22px, min(1.35vw, 2.2vh), 28px);
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.projector-progress span {
+  white-space: nowrap;
+}
+.projector-progress span:nth-child(n + 5) {
+  white-space: normal;
 }
 .projector-pause {
   border-inline-start: 4px solid var(--highlight);

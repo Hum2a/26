@@ -19,6 +19,7 @@ import { SafeArea } from "./SafeArea";
 import { StageFullscreen } from "./fullscreen";
 import { StageCountdown } from "./Countdown";
 import { WaitingLine } from "./WaitingLine";
+import { ProgressStrip } from "./progress-strip";
 import { AnimatePresence, motion } from "motion/react";
 
 /** What guests do with the code. Every theme keeps it; its own invite sits above. */
@@ -233,6 +234,7 @@ export function StagePresentation({
           {connected && !lobby ? (
             <footer className="projector-footer">
               <p>Join {snapshot.joinCode}</p>
+              <ProgressStrip snapshot={snapshot} observedAt={observedAt} />
               <p>{snapshot.players.length} players</p>
             </footer>
           ) : null}

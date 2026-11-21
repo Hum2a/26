@@ -283,7 +283,7 @@ describe("slider and ranking rounds", () => {
   });
 });
 
-it("previews the next round for the live desk only", async () => {
+it("previews the next round for the live desk and projector, not guest phones", async () => {
   const created = await createRoom();
   const stub = room(created.gameId);
   await stub.startDemo({
@@ -300,7 +300,7 @@ it("previews the next round for the live desk only", async () => {
   const host = await stub.snapshotFor("control");
   expect(host.nextQuestion?.title).toBeTruthy();
   expect(host.nextQuestion?.title).not.toBe(host.play?.question.prompt);
-  expect((await stub.snapshotFor("stage")).nextQuestion).toBeUndefined();
+  expect((await stub.snapshotFor("stage")).nextQuestion).toEqual(host.nextQuestion);
   expect(
     (await stub.snapshotFor("guest", joined.playerId)).nextQuestion,
   ).toBeUndefined();

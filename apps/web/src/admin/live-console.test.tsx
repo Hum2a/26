@@ -360,6 +360,50 @@ it("previews the next round for the operator", async () => {
   expect(screen.getByText("Round 1 of 2 · Next: Guess the tab")).toBeTruthy();
 });
 
+it("shows talking points for who is waiting and the live lead", async () => {
+  setupControls({
+    ...playingFixture,
+    nextQuestion: { title: "Guess the tab", kind: "slider" },
+    players: [
+      { playerId, nickname: "Amina" },
+      { playerId: secondId, nickname: "Sam" },
+    ],
+    adminPlayers: [
+      {
+        playerId,
+        nickname: "Amina",
+        points: 80,
+        connected: true,
+        removed: false,
+        answered: true,
+      },
+      {
+        playerId: secondId,
+        nickname: "Sam",
+        points: 40,
+        connected: true,
+        removed: false,
+        answered: false,
+      },
+    ],
+    play: {
+      ...playingFixture.play!,
+      submissionCount: 1,
+    },
+  });
+  await mountControls(<LiveConsole />);
+  const panel = screen.getByRole("region", { name: "Talking points" });
+  expect(within(panel).getByText("Guess the tab")).toBeTruthy();
+  expect(within(panel).getByText("1 of 2 answered")).toBeTruthy();
+  expect(
+    within(panel).getByRole("region", { name: "Still thinking" }).textContent,
+  ).toContain("Sam");
+  expect(within(panel).getByText("Live top three")).toBeTruthy();
+  expect(
+    within(panel).getByText(/Closest race: Amina leads Sam by 40 points/),
+  ).toBeTruthy();
+});
+
 function voteFixture(
   phase: "collect" | "vote" | "reveal",
   question: { candidateMode: "all" | "shortlist"; flow?: "tournament" },

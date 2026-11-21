@@ -6,6 +6,7 @@ import { Button, TextField } from "../ui/primitives";
 import { advancePresenter, pairProjector } from "../live/room-api";
 import { openRoomSocket } from "../live/room-socket";
 import { nextPhaseLabel } from "../live/phase-controls";
+import { talkingPoints } from "../live/talking-points";
 import { usePhaseCountdown } from "../live/use-phase-countdown";
 import { cleanPairingCode, pairingCodePattern } from "./pairing-code";
 
@@ -149,6 +150,7 @@ function PresenterControls({
 
   const snapshot = live?.snapshot;
   const countdown = usePhaseCountdown(snapshot, live?.observedAt ?? 0);
+  const points = snapshot ? talkingPoints(snapshot) : null;
   const generation = snapshot?.phaseGeneration;
   const actionable =
     snapshot && snapshot.phase !== "lobby" && snapshot.phase !== "podium";
@@ -189,7 +191,12 @@ function PresenterControls({
             : snapshot?.paused
               ? "Humza has paused the room."
               : snapshot?.play
-                ? `Question ${snapshot.play.question.index} of ${snapshot.play.question.total}`
+                ? [
+                    `Question ${snapshot.play.question.index} of ${snapshot.play.question.total}`,
+                    points?.nextLine,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
                 : "Connecting to the room…"}
       </EntryHeading>
       <EntryNotice
@@ -203,6 +210,14 @@ function PresenterControls({
           {countdown ? (
             <p role="timer" aria-label={countdown.label}>
               {countdown.value}
+            </p>
+          ) : null}
+          {points?.answeredLine ? <p>{points.answeredLine}</p> : null}
+          {points?.phaseLine ? <p>{points.phaseLine}</p> : null}
+          {points?.top.length ? (
+            <p>
+              Lead:{" "}
+              {points.top.map((row) => `${row.nickname} ${row.points}`).join(" · ")}
             </p>
           ) : null}
           <Button

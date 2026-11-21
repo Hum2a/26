@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
+import edOrHumzaCss from "./ed-or-humza.css?raw";
 import type { LobbySnapshot, PlaySnapshot } from "@26/shared";
 import { GuestPlay } from "../guest-play";
 import { StagePlay } from "../stage-play";
@@ -264,6 +265,12 @@ it("expands a long stand-in quote without using a real attribution", () => {
   expect(screen.getByRole("button", { name: "Show full quote" })).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Show full quote" }));
   expect(screen.getByRole("button", { name: "Show less" })).toBeTruthy();
+});
+
+it("keeps a longer quote list scrollable on a 360px phone and the projector reveal", () => {
+  expect(edOrHumzaCss).toMatch(/\.ed-reveal-phone \{[\s\S]*overflow-y:\s*auto/);
+  expect(edOrHumzaCss).toMatch(/\.ed-stage-column ul \{[\s\S]*overflow-y:\s*auto/);
+  expect(edOrHumzaCss).toMatch(/@media \(max-width: 360px\)[\s\S]*\.ed-reveal-phone/);
 });
 
 it("shows the stand-in speaker groups on the projector only after reveal", () => {

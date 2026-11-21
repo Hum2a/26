@@ -4679,7 +4679,7 @@ export class PartyRoom extends DurableObject<Env> {
         ? {
             phaseGeneration: stored.phaseGeneration,
             presenterAccess: this.presenterAccess(nowMs),
-            // Control only: what follows the current round, for the live desk.
+            // Host desk: what follows the current round.
             nextQuestion: play ? nextQuestionPreview(stored) : null,
             connections: {
               guests: this.ctx.getWebSockets("guest").length,
@@ -4762,7 +4762,9 @@ export class PartyRoom extends DurableObject<Env> {
               play,
             ),
           }
-        : {}),
+        : audience === "stage" && play
+          ? { nextQuestion: nextQuestionPreview(stored) }
+          : {}),
       ...(highlights && highlights.length > 0 ? { highlights } : {}),
       ...(recap && recap.length > 0 ? { recap } : {}),
       ...(trends ? { trends } : {}),
@@ -5107,6 +5109,7 @@ export class PartyRoom extends DurableObject<Env> {
     );
     if (attachment.role === "presenter") {
       snapshot.phaseGeneration = parts.stored.phaseGeneration;
+      snapshot.nextQuestion = snapshot.play ? nextQuestionPreview(parts.stored) : null;
     }
     if (
       !this.kartClientAllowed(
