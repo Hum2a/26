@@ -7,10 +7,12 @@ runs **Live controls** at https://26.humza.website/admin. Baseer presents on
 `/host`. Guests play on their own phones. Detail and rehearsal checklists stay
 in the [event runbook](event-runbook.md).
 
-This sheet matches the birthday `order` in
-`apps/api/src/questions/packs/birthday/manifest.ts` as of 19 November 2026
-(**42 rounds**). Drafts `where-are-we` and `ed-or-humza` stay out of the order.
-`tribunal-reddit` and `council-ferrier-sector` were retired on 16 November.
+This sheet lists the 43-round operator script with `best-dressed` added as the
+final round. The full default `order` in
+`apps/api/src/questions/packs/birthday/manifest.ts` currently holds **52
+rounds** (see [birthday-running-order.md](content/birthday-running-order.md)
+for the generated full sequence). `tribunal-reddit` and
+`council-ferrier-sector` were retired on 16 November.
 
 Do not put this sheet’s operator notes, transfer codes, or the private
 [answer key](content/birthday-answer-key.md) on the projector.
@@ -99,6 +101,7 @@ show-length estimate (about 60–80 minutes plus Baseer’s talking).
 | 40  | `group-chat-figurine`      | Who’s in the group chat?                   | guess (room majority)           | ~55 s     | Secret vote for who in **this room** would do it. Self-votes score double only if the room also picks that person.                                                       | Ordinary.                                                                                                                                                                                       |
 | 41  | `cursed-search-history`    | Cursed search history: scrub or post?      | push your luck                  | ~65 s     | Lines escalate on a timer. Guests BAIL or keep going. Do not invent extra search text.                                                                                   | Ordinary; 30 s collect.                                                                                                                                                                         |
 | 42  | `kart-sprint`              | The 26 Grand Prix: one-lap sprint          | kart (device timing)            | ~3.5 min  | Phones sideways. Grid freezes at start; late arrivals watch. **Workers Paid must already be confirmed.** If someone is stuck, they press **Back to track** on the phone. | Advance through get-ready and prompt. Advance ends an active race early (unfinished drivers DNF). After a **kart-only** lobby podium, **Race again** keeps the join code; then Start kart race. |
+| 43  | `best-dressed`             | Best dressed                               | guess (room nominee award)      | ~65 s     | Whole-room vote for best dressed. Self-votes allowed. Most-voted player(s) win 100 points.                                                                               | Ordinary; 30 s collect.                                                                                                                                                                         |
 
 Trolls: each guest gets one from question two. Steal, Robin Hood and Shared
 score are allowed on scored choice questions. Cancel effect from Live controls
@@ -126,7 +129,7 @@ opened at all. Full steps: [event runbook](event-runbook.md).
 | Typed or vote line should not be seen | Live controls → Responses → **Hide {nickname}'s answer**. It leaves phones and the stage; scores do not change. Restore brings it back. Votes already cast for a hidden ballot line stop counting until restore.                                                                      |
 | Hide the whole projector              | `H` (Hide stage content). `R` shows the reveal again on reveal/scores/final/podium.                                                                                                                                                                                                   |
 | Kart stuck off the road               | Guest presses **Back to track** on the phone (two-second cooldown; paused races cannot recover). Host: Pause/Resume for the whole race clock; **Stop item spawning** / **Clear track items** if items are the problem.                                                                |
-| Need another kart race                | Kart-only lobby: after the podium, **Race again** (same join code), then **Start kart race**. Birthday order: this is the last round; do not invent a second Grand Prix unless you already created a separate kart lobby.                                                             |
+| Need another kart race                | Kart-only lobby: after the podium, **Race again** (same join code), then **Start kart race**. Birthday order: `kart-sprint` is followed by `best-dressed` (the final round); do not invent a second Grand Prix unless you already created a separate kart lobby.                      |
 | One phone tapping too fast            | The room tells them to wait a moment. Nothing for Humza.                                                                                                                                                                                                                              |
 | Control tab died                      | Reopen production `/admin`, sign in, leave the tab open. It holds the control connection.                                                                                                                                                                                             |
 

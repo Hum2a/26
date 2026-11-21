@@ -140,7 +140,7 @@ it("registers the imported birthday race at the end without inventing a preview 
   });
   expect(questionPreview(birthdayPack, q).question).not.toHaveProperty("kart");
   expect(validatePack(birthdayPack).filter((i) => i.level === "error")).toEqual([]);
-  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
+  expect(birthdayPack.order.slice(-2)).toEqual(["kart-sprint", "best-dressed"]);
   expect(birthdayPack.release).toBe("draft");
 });
 

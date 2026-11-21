@@ -849,6 +849,20 @@ function checkPlayable(question: Question): ContentIssue[] {
     if (question.roster === "shortlist" && question.shortlist.length === 0) {
       return [issue("error", "guess", `${question.id} shortlist is empty.`)];
     }
+    if (
+      question.award === "nominees" &&
+      (question.scoring !== "majority" ||
+        question.roster !== "room" ||
+        Boolean(question.selfVoteBonus))
+    ) {
+      return [
+        issue(
+          "error",
+          "guess",
+          `${question.id} nominee awards need room-roster majority scoring without a self-vote bonus.`,
+        ),
+      ];
+    }
     return [];
   }
   if (question.kind === "chess") {

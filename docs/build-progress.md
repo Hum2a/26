@@ -7541,3 +7541,21 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Full web run.** 988 of 990 tests passed. The map-centre control timed out in `where-are-we.test.tsx`, and that failure also reproduced on the unchanged checkout. The kart tennis-slot test failed the pedal readiness assertion in the full run and passed in the focused run.
 
 **Next stage.** In a disposable birthday rehearsal room, pair Baseer’s physical phone and a projector, join as a guest on another phone, and cue a question through listening, reading, answering and standings. Repeat with the one-option-at-a-time round and the birthday kart grid, then revoke the presenter session and verify the phone loses controls.
+
+## 20 November 2026 — Best dressed finale round
+
+**Status.** Added the `best-dressed` round at the end of the default birthday running order (after `kart-sprint`), and merged `origin/master` (PR #71, PR #73, PR #74). Not deployed.
+
+**What was added.**
+
+- `apps/api/src/questions/packs/birthday/best-dressed.ts` & `manifest.ts`: `guessQuestion` with `id: "best-dressed"`, `roster: "room"`, `scoring: "majority"`, `award: "nominees"`, `selfVote: "allowed"`, `points: 100`, `collectMs: 30_000`, placed last in `birthdayPack.order`.
+- `packages/shared/src/index.ts`, `apps/api/src/questions/definition.ts`, `authoring.ts`, `validate.ts`, `vote.ts`, `apps/api/src/room/admin-question.ts`, `question-preview.ts`, `apps/api/src/stats/trend-source.ts`: added optional `award?: "voters" | "nominees"` on `guess` rounds. `nominees` requires majority scoring over the room roster without a voter self-vote bonus, settles points onto the most-voted candidate(s) (shared on ties), suppresses `"wrote it"` author labels on `guess` reveal cards, and marks `trend-source` as non-voter-scored (`pickVerb: "voted for"`).
+- `apps/web/src/play/guest-ballot.tsx`, `copy.ts`, `stage-play.tsx`: shows `(you)` instead of `(your answer)` on `guess` ballots, labels the submit button `Send vote` for `award: "nominees"`, updates phone reveal copy for nominee winners/non-winners, and uses `vote` / `player won` phrasing on the projector.
+- `scripts/content-export.ts` & `docs/content/birthday-*.md`, `docs/question-authoring.md`, `docs/night-of.md`: updated export reveal wording and documentation.
+- Tests: added unit and Durable Object room tests in `apps/api/test/vote-score.spec.ts` and `apps/api/test/best-dressed.spec.ts`, UI component tests in `apps/web/src/play/outcomes.test.tsx`, and updated `birthdayPack.order` / `admin-rooms-auth.spec.ts` end-of-order assertions.
+
+**Checks.** `npm run content:export`, `npm run content:check`, `npm run typecheck`, `npm run lint` (0 errors, 15 existing Fast Refresh warnings; structure check passed), `npm run test:release` (77 tests), `npm run test -w @26/api` (147 files, 855 tests on first commit; targeted suite after Cubic follow-up and post-merge), and `npm run build` (within gzip budgets) passed. `npm run test:unit` ran before the Cubic follow-up and failed on 1 file: 213/214 files (988/989 tests) passed, with an unresolved failure in `src/play/designs/where-are-we.test.tsx` ("Place pin at map centre").
+
+**Cubic follow-up (PR #72).** Registered `test/best-dressed.spec.ts` in `apps/api/vitest.config.ts` (`room` project), excluded `award === "nominees"` in `hasRightAndWrong` (`apps/api/src/stats/trend-source.ts`, updated `trends.spec.ts`), routed the nominee tie test through `winningIds` in `vote-score.spec.ts`, clarified full-points-per-tied-winner wording in `admin-question.ts` and `scripts/content-export.ts` (and re-exported `docs/content/birthday-*.md`), updated the doc comment in `manifest.ts` and round counts/notes in `docs/night-of.md`, and corrected the `test:unit` status above.
+
+**Next stage.** Review and test live in a local or staging lobby with multiple phones.

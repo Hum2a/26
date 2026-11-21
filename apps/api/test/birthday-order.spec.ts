@@ -17,8 +17,8 @@ import {
 } from "../src/questions/birthday-order.ts";
 import { questionFor, unavailableContentMessage } from "../src/questions/registry.ts";
 
-it("defaults to completed rounds with kart last, and refuses drafts, unknowns, duplicates and oversized orders", () => {
-  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
+it("defaults to completed rounds with kart and best dressed at the end, and refuses drafts, unknowns, duplicates and oversized orders", () => {
+  expect(birthdayPack.order.slice(-2)).toEqual(["kart-sprint", "best-dressed"]);
   expect(validateBirthdayOrder(birthdayPack.order)).toHaveLength(
     birthdayPack.order.length,
   );
