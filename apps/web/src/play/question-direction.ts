@@ -6,8 +6,10 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
   if (snapshot.paused) return "Paused — hang tight";
   if (snapshot.held) return "Waiting for the host";
   if (snapshot.phase === "facts") return "Watch the stage";
-  if (pending && play?.question.kind !== "wordle" && play?.question.kind !== "chess")
-    return "Sending your answer…";
+  if (pending && play?.question.kind !== "chess")
+    return play?.question.kind === "wordle"
+      ? "Checking your word…"
+      : "Sending your answer…";
   if (!play) return "Watch the stage";
   if (snapshot.phase === "reveal" || snapshot.phase === "scores")
     return "The results are in";
@@ -28,8 +30,11 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
       : play.selfAnswer
   )
     return "Locked in — watch the stage";
-  if (snapshot.phase === "prompt" || snapshot.phase === "intro")
-    return "Get ready — listen to the question";
+  if (snapshot.phase === "intro") return "Listen to Baseer for the next cue.";
+  if (snapshot.phase === "prompt")
+    return play.question.kind === "kart"
+      ? "Wait for Baseer to start the race."
+      : "Read along. Wait for the signal to play.";
   if (snapshot.phase === "vote") return "Pick a line, then send your vote";
   if (snapshot.phase === "predict")
     return play.duel?.role === "spectator"
@@ -37,8 +42,11 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
       : "You’re playing — wait for predictions to close";
   if (snapshot.phase !== "collect") return "Watch the stage";
   if (play.duel?.role === "spectator") return "Watch the duel on the stage";
+  if (play.ballot && play.ballot.reason !== "open") return "Watch the stage";
   switch (play.question.kind) {
     case "kart":
+      if (play.kart?.ended) return "Race complete. Watch the stage.";
+      if (play.kart && !play.kart.selfPlayerId) return "Watch the race on the stage.";
       return "Accelerate to drive — race on your phone";
     case "chess":
       return play.chess && "fen" in play.chess && play.chess.isGameOver
@@ -72,6 +80,43 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
   }
 }
 
+export function questionBeat(snapshot: LobbySnapshot, pending: boolean): string {
+  if (snapshot.paused) return "Paused";
+  if (snapshot.held) return "Waiting for a cue";
+  const { phase, play } = snapshot;
+  if (phase === "intro") return "Listen";
+  if (phase === "prompt")
+    return play?.question.kind === "kart" ? "Get ready to race" : "Read the question";
+  if (phase === "reveal") return "Answers closed";
+  if (phase === "scores") return "Standings";
+  if (!play || !["collect", "vote", "predict"].includes(phase))
+    return "Watch the stage";
+  if (play.question.kind === "chess") {
+    if (!play.chess || !("fen" in play.chess) || play.chess.isGameOver)
+      return "Watch the stage";
+    return pending ? "Waiting for move" : "Play chess";
+  }
+  const status = answerStatus(snapshot, pending);
+  if (status === "sending") return "Sending";
+  if (status === "accepted") return "Locked in";
+  if (
+    (play.duel &&
+      (play.duel.role === "late" ||
+        (phase === "predict"
+          ? play.duel.role !== "spectator"
+          : play.duel.role === "spectator"))) ||
+    (play.ballot && play.ballot.reason !== "open")
+  )
+    return "Watch the stage";
+  if (phase === "vote" || phase === "predict") return "Vote now";
+  if (play.question.kind === "kart") {
+    if (play.kart?.ended || (play.kart && !play.kart.selfPlayerId))
+      return "Watch the stage";
+    return "Race time";
+  }
+  return "Answer now";
+}
+
 /**
  * Where this phone's answer stands, from the server's own record only:
  * "accepted" once the snapshot carries it, "sending" while a request is in
@@ -99,5 +144,9 @@ export function answerStatus(
   if (answer && !stillPlaying) {
     return "accepted";
   }
-  return ["collect", "vote", "predict"].includes(snapshot.phase) ? "open" : "closed";
+  return !snapshot.paused &&
+    !snapshot.held &&
+    ["collect", "vote", "predict"].includes(snapshot.phase)
+    ? "open"
+    : "closed";
 }

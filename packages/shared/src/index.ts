@@ -197,7 +197,11 @@ export const gameIdSchema = z
 export type GameId = z.infer<typeof gameIdSchema>;
 
 /** Control may issue live commands later. Presentation is read-only. */
-export const roomCredentialRoleSchema = z.enum(["control", "presentation"]);
+export const roomCredentialRoleSchema = z.enum([
+  "control",
+  "presentation",
+  "presenter",
+]);
 
 export type RoomCredentialRole = z.infer<typeof roomCredentialRoleSchema>;
 
@@ -1164,12 +1168,19 @@ export const lobbySnapshotSchema = z
     remainingMs: z.number().int().nullable(),
     serverNow: z.number().int(),
     stateVersion: z.number().int().nonnegative(),
-    /** Host intent guard; absent from guest and stage projections. */
+    /** Operator intent guard; absent from guest and projector projections. */
     phaseGeneration: z
       .number()
       .int()
       .positive()
       .max(Number.MAX_SAFE_INTEGER)
+      .optional(),
+    presenterAccess: z
+      .object({
+        pairedAt: z.number().int().nonnegative().nullable(),
+        connected: z.boolean(),
+      })
+      .strict()
       .optional(),
     questionSetVersion: contentVersionSchema,
     scoringVersion: contentVersionSchema,

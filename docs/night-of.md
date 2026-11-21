@@ -42,8 +42,13 @@ transfers.
 
 ## Running order
 
-Clocks still auto-advance. Humza presses **Advance** (or Right arrow) when
-Baseer is done with a beat, and **Pause** (`P`) to hold a clock. Skip (`S`)
+Pair Baseer’s phone from **Live controls → Baseer’s presenter phone**. He selects
+**Join as presenter** on the join page and enters the room code and private presenter
+code. Humza starts the game. Either operator can tap **Show question**, then
+**Open answering**, and **Next question** from the standings. The listening, reading
+and standings beats wait for a cue. Answer clocks start when answering opens, and
+either operator can close answering early. Humza can use Right arrow to advance
+and **Pause** (`P`) to hold a clock. Skip (`S`)
 and finish (`F`) do not invent points. Hide (`H`) covers the stage. Do not
 read answer keys from this table.
 

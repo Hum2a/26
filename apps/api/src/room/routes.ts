@@ -459,6 +459,7 @@ export function registerRoomRoutes(app: Hono<{ Bindings: Env }>): void {
       "pause",
       "resume",
       "advance",
+      "presenter-revoke",
       "skip",
       "finish",
       "end-now",

@@ -54,7 +54,12 @@ export function createSqliteRoomCredentialDirectory(
           credentialId,
         )
         .toArray()[0];
-      if (!row || (row.principal !== "control" && row.principal !== "presentation")) {
+      if (
+        !row ||
+        (row.principal !== "control" &&
+          row.principal !== "presentation" &&
+          row.principal !== "presenter")
+      ) {
         return null;
       }
       const room = sql

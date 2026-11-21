@@ -1,4 +1,4 @@
-import type { RateLimit } from "@26/shared";
+import type { RateLimit, RoomCredentialRole } from "@26/shared";
 import { hashCredentialSecret } from "./verify.ts";
 
 /**
@@ -36,8 +36,13 @@ export const pairingUsedMessage =
 /** What a retried issue request gets once its code is no longer open. */
 export const pairingSpentMessage =
   "That pairing code is no longer open. Show a new code.";
-/** Receipt principal for issued codes; spent codes are scrubbed from it. */
-export const pairingIssuePrincipal = "projector-pairing-issue";
+export type PairingRole = Extract<RoomCredentialRole, "presentation" | "presenter">;
+
+export function pairingStorage(role: PairingRole) {
+  return role === "presenter"
+    ? { table: "presenter_pairing", principal: "presenter-pairing" }
+    : { table: "projector_pairing", principal: "projector-pairing" };
+}
 export const pairingExpiredMessage =
   "That pairing code has expired. Show a new code in Live controls.";
 export const pairingRateMessage = "Too many attempts. Wait a minute, then try again.";
@@ -60,16 +65,18 @@ export function normalisePairingCode(value: unknown): string | undefined {
   return code;
 }
 
-export function hashPairingCode(code: string): Promise<string> {
-  return hashCredentialSecret(`pairing:${code}`);
+export function hashPairingCode(code: string, role: PairingRole): Promise<string> {
+  return hashCredentialSecret(
+    `${role === "presenter" ? "presenter-pairing" : "pairing"}:${code}`,
+  );
 }
 
 /**
  * Created on first use so existing rooms need no schema version change. The
  * table stays tiny: one row per issued code.
  */
-function ensurePairingTable(sql: SqlStorage): void {
-  sql.exec(`CREATE TABLE IF NOT EXISTS projector_pairing (
+function ensurePairingTable(sql: SqlStorage, role: PairingRole): void {
+  sql.exec(`CREATE TABLE IF NOT EXISTS ${pairingStorage(role).table} (
     code_hash TEXT PRIMARY KEY,
     issued_at TEXT NOT NULL,
     expires_at TEXT NOT NULL,
@@ -84,10 +91,11 @@ function ensurePairingTable(sql: SqlStorage): void {
  * retried request can show it again. Once the code is used, voided or
  * expired, its receipt is replaced with a refusal and only the hash remains.
  */
-function scrubSpentReceipts(sql: SqlStorage, now: string): void {
+function scrubSpentReceipts(sql: SqlStorage, now: string, role: PairingRole): void {
+  const { table, principal } = pairingStorage(role);
   const spent = sql
     .exec<{ issue_request_id: string }>(
-      `SELECT issue_request_id FROM projector_pairing
+      `SELECT issue_request_id FROM ${table}
        WHERE issue_request_id IS NOT NULL AND (consumed_at IS NOT NULL OR expires_at <= ?)`,
       now,
     )
@@ -102,12 +110,12 @@ function scrubSpentReceipts(sql: SqlStorage, now: string): void {
     sql.exec(
       `UPDATE receipt SET result_json = ? WHERE principal = ? AND request_id = ?`,
       refusal,
-      pairingIssuePrincipal,
+      `${principal}-issue`,
       row.issue_request_id,
     );
   }
   sql.exec(
-    `UPDATE projector_pairing SET issue_request_id = NULL
+    `UPDATE ${table} SET issue_request_id = NULL
      WHERE issue_request_id IS NOT NULL AND (consumed_at IS NOT NULL OR expires_at <= ?)`,
     now,
   );
@@ -116,16 +124,17 @@ function scrubSpentReceipts(sql: SqlStorage, now: string): void {
 /** Runs inside the caller's transaction. Voids any open code first. */
 export function storePairingCode(
   sql: SqlStorage,
-  input: { codeHash: string; now: string; expiresAt: string; requestId: string },
+  input: {
+    codeHash: string;
+    now: string;
+    expiresAt: string;
+    requestId: string;
+    role: PairingRole;
+  },
 ): void {
-  ensurePairingTable(sql);
+  voidPairingCode(sql, input.now, input.role);
   sql.exec(
-    `UPDATE projector_pairing SET consumed_at = ? WHERE consumed_at IS NULL`,
-    input.now,
-  );
-  scrubSpentReceipts(sql, input.now);
-  sql.exec(
-    `INSERT INTO projector_pairing
+    `INSERT INTO ${pairingStorage(input.role).table}
        (code_hash, issued_at, expires_at, consumed_at, failures, issue_request_id)
      VALUES (?, ?, ?, NULL, 0, ?)`,
     input.codeHash,
@@ -133,6 +142,15 @@ export function storePairingCode(
     input.expiresAt,
     input.requestId,
   );
+}
+
+export function voidPairingCode(sql: SqlStorage, now: string, role: PairingRole): void {
+  ensurePairingTable(sql, role);
+  sql.exec(
+    `UPDATE ${pairingStorage(role).table} SET consumed_at = ? WHERE consumed_at IS NULL`,
+    now,
+  );
+  scrubSpentReceipts(sql, now, role);
 }
 
 export type PairingClaim =
@@ -144,30 +162,29 @@ export type PairingClaim =
  */
 export function claimPairingCode(
   sql: SqlStorage,
-  input: { codeHash: string; now: string },
+  input: { codeHash: string; now: string; role: PairingRole },
 ): PairingClaim {
-  ensurePairingTable(sql);
+  ensurePairingTable(sql, input.role);
   const claim = consumeOrCount(sql, input);
-  scrubSpentReceipts(sql, input.now);
+  scrubSpentReceipts(sql, input.now, input.role);
   return claim;
 }
 
 function consumeOrCount(
   sql: SqlStorage,
-  input: { codeHash: string; now: string },
+  input: { codeHash: string; now: string; role: PairingRole },
 ): PairingClaim {
+  const { table } = pairingStorage(input.role);
   const row = sql
     .exec<{ expires_at: string; consumed_at: string | null }>(
-      `SELECT expires_at, consumed_at FROM projector_pairing WHERE code_hash = ?`,
+      `SELECT expires_at, consumed_at FROM ${table} WHERE code_hash = ?`,
       input.codeHash,
     )
     .toArray()[0];
   if (!row) {
+    sql.exec(`UPDATE ${table} SET failures = failures + 1 WHERE consumed_at IS NULL`);
     sql.exec(
-      `UPDATE projector_pairing SET failures = failures + 1 WHERE consumed_at IS NULL`,
-    );
-    sql.exec(
-      `UPDATE projector_pairing SET consumed_at = ?
+      `UPDATE ${table} SET consumed_at = ?
        WHERE consumed_at IS NULL AND failures >= ?`,
       input.now,
       maxPairingFailures,
@@ -179,7 +196,7 @@ function consumeOrCount(
     return { ok: false, reason: "expired" };
   }
   sql.exec(
-    `UPDATE projector_pairing SET consumed_at = ? WHERE code_hash = ?`,
+    `UPDATE ${table} SET consumed_at = ? WHERE code_hash = ?`,
     input.now,
     input.codeHash,
   );

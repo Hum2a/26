@@ -8,6 +8,7 @@ An authenticated administrator can issue a short-lived credential for a room id.
 | -------------- | ---------------------- | ---- | -------- |
 | `control`      | `26_room_control`      | `/`  | 12 hours |
 | `presentation` | `26_room_presentation` | `/`  | 14 hours |
+| `presenter`    | `26_room_presenter`    | `/`  | 12 hours |
 
 The cookie is `HttpOnly` and `SameSite=Strict`. It is `Secure` in staging and production. A local guest cookie omits `Secure` so a phone on the same Wi-Fi can join over HTTP. The administrator session stays `Secure`, so Humza signs in on the laptop at `localhost`. The secret is not returned in JSON, placed in a URL, or written to logs. Mutating routes require the request `Origin` to match the request URL.
 
@@ -28,3 +29,9 @@ A presentation credential is rejected for the command stub. A control credential
 - Redeem attempts are limited per room in memory (burst five, then one every twelve seconds). Wrong guesses are also counted durably against the open code, which is voided after ten. Issuing is limited to a burst of five per room.
 - A retry with the same `requestId` replays the stored result, so a lost response does not burn the code, and a refused guess is not counted twice. The issue receipt keeps the plain code only while the code is open; once it is used, voided or expired, the receipt is replaced with a refusal.
 - There is no revoke control for a paired projector. Its credential lasts fourteen hours, like the admin-issued one.
+
+## Presenter pairing
+
+Live controls issues a separate code through `POST /api/admin/rooms/:gameId/presenter-pairing`. Baseer redeems it at `POST /api/presenter/pair`. The code, receipt and rate limits are separate from projector pairing. A successful pairing replaces the room’s previous presenter credential.
+
+The presenter socket receives the public room view without a guest identity, plus the current phase generation. The phone sends that generation and a request id to `POST /api/presenter/:gameId/advance`. The room checks the credential again and applies the cue once. Humza can revoke the session and any unused code from Live controls.

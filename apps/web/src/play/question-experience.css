@@ -47,8 +47,31 @@
   transition: width 0.6s var(--ease-party);
 }
 .question-cue {
+  flex: 1;
   min-width: 0;
   line-height: 1.25;
+  border-inline-start: 3px solid var(--muted);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  padding: 0.45rem 0.7rem;
+  transition:
+    background-color 0.2s var(--ease-party),
+    border-color 0.2s var(--ease-party);
+}
+.question-cue[data-open="true"] {
+  border-color: var(--highlight);
+  background: color-mix(in srgb, var(--highlight) 24%, transparent);
+}
+.question-cue strong,
+.question-cue span {
+  display: block;
+}
+.question-cue strong {
+  font-size: clamp(1rem, 4vw, 1.25rem);
+}
+.question-cue span {
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 /* Locked in / sending: unmistakable, under the header. */

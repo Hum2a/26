@@ -71,6 +71,7 @@ import { returnToLobby, startRound } from "./lifecycle.ts";
 import { changeVoterDisplay } from "../questions/voters.ts";
 import { clearAvatar } from "../media/avatar.ts";
 import { changeTrendSettings } from "../stats/trend-settings.ts";
+import { voidPairingCode } from "../credentials/pairing.ts";
 import type { TrendChange } from "@26/shared";
 
 const shownPhases = new Set(["reveal", "scores", "final", "podium"]);
@@ -120,6 +121,15 @@ export function applyHostAction(
   input: HostActionInput,
 ): { transferCode?: string; released?: number } {
   assertKartLobbyAction(sql, input.action);
+  if (input.action === "presenter-revoke") {
+    voidPairingCode(sql, input.now, "presenter");
+    sql.exec(
+      "UPDATE credential SET revoked_at = ? WHERE principal = 'presenter' AND revoked_at IS NULL",
+      input.now,
+    );
+    touch(sql);
+    return {};
+  }
   if (input.action === "kart-track") {
     chooseKartLobbyTrack(
       sql,
