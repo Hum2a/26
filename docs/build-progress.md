@@ -7542,6 +7542,43 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 
 **Next stage.** In a disposable birthday rehearsal room, pair Baseer’s physical phone and a projector, join as a guest on another phone, and cue a question through listening, reading, answering and standings. Repeat with the one-option-at-a-time round and the birthday kart grid, then revoke the presenter session and verify the phone loses controls.
 
+## 20 November 2026 — Best dressed finale round
+
+**Status.** Added the `best-dressed` round at the end of the default birthday running order (after `kart-sprint`), and merged `origin/master` (PR #71, PR #73, PR #74). Not deployed.
+
+**What was added.**
+
+- `apps/api/src/questions/packs/birthday/best-dressed.ts` & `manifest.ts`: `guessQuestion` with `id: "best-dressed"`, `roster: "room"`, `scoring: "majority"`, `award: "nominees"`, `selfVote: "allowed"`, `points: 100`, `collectMs: 30_000`, placed last in `birthdayPack.order`.
+- `packages/shared/src/index.ts`, `apps/api/src/questions/definition.ts`, `authoring.ts`, `validate.ts`, `vote.ts`, `apps/api/src/room/admin-question.ts`, `question-preview.ts`, `apps/api/src/stats/trend-source.ts`: added optional `award?: "voters" | "nominees"` on `guess` rounds. `nominees` requires majority scoring over the room roster without a voter self-vote bonus, settles points onto the most-voted candidate(s) (shared on ties), suppresses `"wrote it"` author labels on `guess` reveal cards, and marks `trend-source` as non-voter-scored (`pickVerb: "voted for"`).
+- `apps/web/src/play/guest-ballot.tsx`, `copy.ts`, `stage-play.tsx`: shows `(you)` instead of `(your answer)` on `guess` ballots, labels the submit button `Send vote` for `award: "nominees"`, updates phone reveal copy for nominee winners/non-winners, and uses `vote` / `player won` phrasing on the projector.
+- `scripts/content-export.ts` & `docs/content/birthday-*.md`, `docs/question-authoring.md`, `docs/night-of.md`: updated export reveal wording and documentation.
+- Tests: added unit and Durable Object room tests in `apps/api/test/vote-score.spec.ts` and `apps/api/test/best-dressed.spec.ts`, UI component tests in `apps/web/src/play/outcomes.test.tsx`, and updated `birthdayPack.order` / `admin-rooms-auth.spec.ts` end-of-order assertions.
+
+**Checks.** `npm run content:export`, `npm run content:check`, `npm run typecheck`, `npm run lint` (0 errors, 15 existing Fast Refresh warnings; structure check passed), `npm run test:release` (77 tests), `npm run test -w @26/api` (147 files, 855 tests on first commit; targeted suite after Cubic follow-up and post-merge), and `npm run build` (within gzip budgets) passed. `npm run test:unit` ran before the Cubic follow-up and failed on 1 file: 213/214 files (988/989 tests) passed, with an unresolved failure in `src/play/designs/where-are-we.test.tsx` ("Place pin at map centre").
+
+**Cubic follow-up (PR #72).** Registered `test/best-dressed.spec.ts` in `apps/api/vitest.config.ts` (`room` project), excluded `award === "nominees"` in `hasRightAndWrong` (`apps/api/src/stats/trend-source.ts`, updated `trends.spec.ts`), routed the nominee tie test through `winningIds` in `vote-score.spec.ts`, clarified full-points-per-tied-winner wording in `admin-question.ts` and `scripts/content-export.ts` (and re-exported `docs/content/birthday-*.md`), updated the doc comment in `manifest.ts` and round counts/notes in `docs/night-of.md`, and corrected the `test:unit` status above.
+
+**Next stage.** Review and test live in a local or staging lobby with multiple phones.
+
+## 20 November 2026 — Humza ethnicity guessing round (`humza-ethnicity`)
+
+**Status:** ready in the birthday catalogue on branch `ethnicity_guessing_round` (not in the default running `order`; not deployed).
+
+**What changed.** Added `humza-ethnicity` (`apps/api/src/questions/packs/birthday/humza-ethnicity.ts`) and partial-credit multi-select scoring:
+
+- **Question (`humza-ethnicity`):** 8-option multi-select `choice` round (`Pakistan`, `India`, `Tanzania`, `Kenya`, `Bangladesh`, `Uganda`, `Iran`, `Egypt`), with `outcome: { kind: "multiple", optionIds: ["pakistan", "tanzania"], scoring: "partial" }`. Registered in `birthdayPack.catalogue` (`manifest.ts`) only so the host can include it via Admin → Question packs → Running order.
+- **Partial-credit multi-select (`packages/shared/src/party-scoring.ts`):** Added `multipleChoiceScore` supporting `"exact"` (default, preserving `christianity-branches` and `trump-made-up-country`) and `"partial"` (`max(0, round(points * (hits - misses) / correct.length))`), wired through `definition.ts`, `multiple-choice.ts`, `validate.ts`, `admin-question.ts`, `scripts/content-export.ts`, and `docs/question-authoring.md`.
+- **Phone reveal copy (`apps/web/src/play/copy.ts`):** Handled `multiple` self-answers in `revealResult` so full or partial multi-select scores display `You scored <award> on this question.` instead of falling through to `"That was not the answer."`.
+
+**Decisions / defaults.**
+
+- Net partial credit (`+50` per right country, `-50` per wrong pick, clamped at `0`) prevents ticking all eight options from scoring points while rewarding partial knowledge (`Pakistan` alone = 50, `Pakistan + Tanzania` = 100, `Pakistan + Tanzania + decoy` = 50, `Pakistan + decoy` = 0).
+- Used six default decoy countries (`India`, `Kenya`, `Bangladesh`, `Uganda`, `Iran`, `Egypt`) alongside `Pakistan` and `Tanzania`; these can be swapped in `humza-ethnicity.ts` at any time.
+
+**Tests & checks.** Covered by new unit/room/component tests in `party-scoring.spec.ts`, `party-polish-room.spec.ts`, `question-authoring.spec.ts`, and `outcomes.test.tsx`. Verification commands ran after the final edit (`typecheck`, `content:check`, `check:structure`, ESLint on touched files, `test:unit`, `test -w @26/api` targeted specs, `build`).
+
+**Next.** Review or swap the decoy countries in `humza-ethnicity.ts` if desired, and add `humza-ethnicity` to the running order in Admin → Question packs → Running order when ready to play.
+
 ## 21 November 2026 — Chess board scaling on guest phones
 
 **Status.** Fixed locally and checked in a phone-width browser.

@@ -129,7 +129,9 @@ function revealLine(question: Question): string {
           return `If more than ${Math.round(outcome.above * 100)}% pick ${label(outcome.optionId)}, ${who(outcome.met)} scores. Otherwise ${who(outcome.otherwise)} scores.`;
         }
         case "multiple":
-          return `Correct answers are ${outcome.optionIds.map(label).join(", ")}. Only that exact set earns points.`;
+          return outcome.scoring === "partial"
+            ? `Correct answers are ${outcome.optionIds.map(label).join(", ")}. Partial credit applies: each right pick adds a share, and each wrong pick subtracts a share (minimum 0).`
+            : `Correct answers are ${outcome.optionIds.map(label).join(", ")}. Only that exact set earns points.`;
         case "push":
           return `Players who bailed before the Raid keep their banked points. Players caught by the Raid score zero. If there was no Raid, players still in bank keep ${outcome.banks.at(-1) ?? 0} points.`;
         case "correct":
@@ -180,6 +182,9 @@ function revealLine(question: Question): string {
       return question.explanation ?? "Reveal the outcome of the room's vote.";
     case "guess":
       if (question.scoring === "majority") {
+        if (question.award === "nominees") {
+          return "Reveal who got the most votes. Each most-voted player receives the full points; tied winners are not split.";
+        }
         const bonus =
           question.selfVoteBonus === "double"
             ? " A winning self-vote scores double."

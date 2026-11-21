@@ -70,7 +70,7 @@ A threshold outcome names an option, a share, and who scores either way. `{ kind
 
 A push outcome lists `lines` (two to eight), `lineMs` between them, a rising `banks` value for each line, and `raidAfter`, the possible Raid points drawn evenly (`null` means no Raid). It needs a `bail` option, `speedBonus: null`, and a `collectMs` long enough for every line. The Raid is drawn and stored when answering opens and is only shown at the reveal. A bail keeps the bank for the line showing when the room received it, if the Raid had not hit; anyone still in when the Raid hits scores 0; with no Raid, everyone still in keeps the last bank. See `cursed-search-history.ts`.
 
-A guess can set `selfVoteBonus: "double"` with majority scoring and self-votes allowed: a voter who picked themselves scores double when they are also the room's pick.
+A guess can set `selfVoteBonus: "double"` with majority scoring and self-votes allowed: a voter who picked themselves scores double when they are also the room's pick. Or set `award: "nominees"` with majority scoring and `roster: "room"` to award the round's points to the most-voted player(s) instead of the voters (used by `best-dressed`).
 
 A typed question lists its accepted spellings. The first is shown at the reveal. Matching ignores case, accents, punctuation, hyphens and spacing, and forgives a small typo: none up to 4 letters, one up to 9, two beyond that. Wrong answers stay off the stage.
 
@@ -133,7 +133,7 @@ The catalogue may hold more than 80 entries; that limit applies to the live runn
 
 Use the existing helper/mechanic rather than a note that asks for a different interaction:
 
-- Choice exact set: `outcome: { kind: "multiple", optionIds: [...] }`. No separate `correctOption` is needed. Phones select several, then send one set; all correct and no decoys scores the question's points.
+- Choice multi-select: `outcome: { kind: "multiple", optionIds: [...] }`. No separate `correctOption` is needed. Phones select several, then send one set; by default (`scoring: "exact"`), all correct and no decoys scores the question's points. Setting `scoring: "partial"` awards a share per right pick and subtracts a share per wrong pick (minimum 0).
 - Typed crowd match: `scoring: "commonness", accepted: { known: [] }`. There is deliberately no fixed password answer. Normalised room-frequency scoring freezes at reveal.
 - Price bid: slider helper with `scoring: "under", input: "number"`, an actual supplied/sourced truth and explicit bounds/step. Phones enter decimal pounds. Tied highest underbids share the win; all over means no winner.
 - Subjective dial: slider helper with `scoring: "consensus", truth: { known: null }`. The room median is derived from accepted eligible responses; no dummy personal answer is stored.

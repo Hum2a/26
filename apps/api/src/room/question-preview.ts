@@ -121,6 +121,7 @@ export function questionPreview(
         selfVote: q.selfVote,
         tie: q.tie,
         scoring: q.scoring,
+        ...(q.award ? { award: q.award } : {}),
         lateJoin: q.lateJoin,
         search: true,
       };

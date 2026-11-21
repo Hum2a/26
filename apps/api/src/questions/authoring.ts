@@ -324,6 +324,7 @@ export function guessQuestion(
     shortlist?: string[];
     selfVote?: "forbidden" | "allowed";
     scoring?: "named" | "majority" | "none";
+    award?: "voters" | "nominees";
     truth?: Answer<string | null>;
     selfVoteBonus?: "double";
   },
@@ -338,6 +339,7 @@ export function guessQuestion(
       selfVote: input.selfVote ?? ordinaryDefaults.selfVote,
       tie: ordinaryDefaults.tie,
       scoring,
+      ...(input.award ? { award: input.award } : {}),
       lateJoin: ordinaryDefaults.lateJoin,
       ...(input.selfVoteBonus ? { selfVoteBonus: input.selfVoteBonus } : {}),
       truth:
@@ -621,6 +623,7 @@ export function toPlayable(
       selfVote: question.selfVote,
       tie: question.tie,
       scoring: question.scoring,
+      ...(question.award ? { award: question.award } : {}),
       lateJoin: question.lateJoin,
       truthNickname: question.truth.known,
       ...(question.selfVoteBonus ? { selfVoteBonus: question.selfVoteBonus } : {}),

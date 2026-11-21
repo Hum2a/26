@@ -361,3 +361,10 @@ One lap. Three minutes. Who can actually drive?
 
 180s to answer. Attribution: live.
 Say at the reveal: Fastest completed lap wins. Finishers share place on equal finish times; DNF scores zero. Ghost karts mean nobody can blame traffic.
+
+## 52. guess · best-dressed
+
+Who is best dressed tonight?
+
+30s to answer. Attribution: after.
+Say at the reveal: Reveal who got the most votes. Each most-voted player receives the full points; tied winners are not split.

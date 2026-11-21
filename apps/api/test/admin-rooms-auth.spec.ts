@@ -200,6 +200,9 @@ it("protects a read-only content projection and excludes answer/reveal fields", 
   const birthday = content!.packs.find((pack) => pack.id === "birthday")!;
   expect(birthday.release).toBe("draft");
   expect(birthday.questions.find((q) => q.id === "kart-sprint")?.order).toBe(
+    birthdayPack.order.length - 1,
+  );
+  expect(birthday.questions.find((q) => q.id === "best-dressed")?.order).toBe(
     birthdayPack.order.length,
   );
   for (const pack of content!.packs)

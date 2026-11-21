@@ -446,7 +446,10 @@ function outcomeIssues(question: {
     return outcome.optionIds.length > 0 &&
       outcome.optionIds.length <= 6 &&
       new Set(outcome.optionIds).size === outcome.optionIds.length &&
-      outcome.optionIds.every((id) => ids.has(id))
+      outcome.optionIds.every((id) => ids.has(id)) &&
+      (outcome.scoring === undefined ||
+        outcome.scoring === "exact" ||
+        outcome.scoring === "partial")
       ? []
       : [
           issue(
@@ -848,6 +851,20 @@ function checkPlayable(question: Question): ContentIssue[] {
   if (question.kind === "guess") {
     if (question.roster === "shortlist" && question.shortlist.length === 0) {
       return [issue("error", "guess", `${question.id} shortlist is empty.`)];
+    }
+    if (
+      question.award === "nominees" &&
+      (question.scoring !== "majority" ||
+        question.roster !== "room" ||
+        Boolean(question.selfVoteBonus))
+    ) {
+      return [
+        issue(
+          "error",
+          "guess",
+          `${question.id} nominee awards need room-roster majority scoring without a self-vote bonus.`,
+        ),
+      ];
     }
     return [];
   }

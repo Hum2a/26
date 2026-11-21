@@ -69,6 +69,7 @@ export function guestRoundCopy(snapshot: LobbySnapshot): string {
       award,
       snapshot.play?.selfBallot,
       snapshot.play?.duel?.role,
+      snapshot.play?.question,
     );
     return standing
       ? `${result} You are ${ordinal(standing.place)} with ${standing.points} points.`
@@ -192,6 +193,7 @@ function revealResult(
   award: number | null | undefined,
   ballot: NonNullable<LobbySnapshot["play"]>["selfBallot"] | undefined,
   role: NonNullable<NonNullable<LobbySnapshot["play"]>["duel"]>["role"] | undefined,
+  question?: NonNullable<LobbySnapshot["play"]>["question"],
 ): string {
   if (reveal?.kind === "finale" && role === "spectator") {
     if (!ballot) {
@@ -214,6 +216,14 @@ function revealResult(
     return award > 0 ? `You scored ${award} for that duel.` : "That duel scored 0.";
   }
   if (reveal?.kind === "guess") {
+    if (question?.kind === "guess" && question.award === "nominees") {
+      if (award === undefined || award === null) {
+        return ballot ? "Vote accepted." : "No vote was received.";
+      }
+      return award > 0
+        ? `You topped the vote! You scored ${award}.`
+        : "You scored 0 this round.";
+    }
     if (!ballot) {
       return "No answer was received.";
     }
@@ -224,6 +234,14 @@ function revealResult(
   }
   if (!answer) {
     return "No answer was received.";
+  }
+  if (reveal?.kind === "choice" && answer.kind === "multiple") {
+    if (award === undefined || award === null) {
+      return "Answer accepted.";
+    }
+    return award > 0
+      ? `You scored ${award} on this question.`
+      : "That was not the answer.";
   }
   if (reveal?.kind === "choice" && answer.kind === "choice") {
     if (reveal.outcome === "poll") {

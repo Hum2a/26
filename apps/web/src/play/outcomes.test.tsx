@@ -145,6 +145,30 @@ describe("choice outcomes on the phone and stage", () => {
     });
     expect(guestRoundCopy(lobby("reveal", lost))).toBe("Your side scored 0.");
   });
+
+  it("reports full, partial, and zero scores for multi-select reveals", () => {
+    const multi = { ...pills, outcome: "multiple" };
+    const reveal = {
+      kind: "choice" as const,
+      correctOptionId: null,
+      outcome: "multiple" as const,
+      correctOptionIds: ["red"],
+    };
+    const partial = play(multi, {
+      selfAnswer: { kind: "multiple", optionIds: ["red"] },
+      reveal,
+      selfAward: 50,
+    });
+    expect(guestRoundCopy(lobby("reveal", partial))).toBe(
+      "You scored 50 on this question.",
+    );
+    const missed = play(multi, {
+      selfAnswer: { kind: "multiple", optionIds: ["blue"] },
+      reveal,
+      selfAward: 0,
+    });
+    expect(guestRoundCopy(lobby("reveal", missed))).toBe("That was not the answer.");
+  });
 });
 
 describe("typed answers", () => {
@@ -193,5 +217,92 @@ describe("typed answers", () => {
       selfAward: 0,
     });
     expect(guestRoundCopy(lobby("reveal", wrong))).toBe("That was not the answer.");
+  });
+});
+
+describe("best dressed nominee voting", () => {
+  const bestDressedQuestion = {
+    kind: "guess",
+    prompt: "Who is best dressed tonight?",
+    roster: "room",
+    selfVote: "allowed",
+    tie: "shared",
+    scoring: "majority",
+    award: "nominees",
+    lateJoin: "ineligible",
+    search: true,
+  };
+
+  it("renders self-selectable player cards with (you) and a Send vote button", () => {
+    const onBallot = vi.fn();
+    render(
+      <GuestPlay
+        snapshot={lobby(
+          "collect",
+          play(bestDressedQuestion, {
+            ballot: {
+              total: 2,
+              reason: "open",
+              cards: [
+                { id: "p1", label: "Amina", own: true, selectable: true, author: null },
+                {
+                  id: "p2",
+                  label: "Bilal",
+                  own: false,
+                  selectable: true,
+                  author: null,
+                },
+              ],
+            },
+          }),
+        )}
+        pending={false}
+        onSelect={vi.fn()}
+        onSubmit={vi.fn()}
+        onEstimate={vi.fn()}
+        onRank={vi.fn()}
+        onText={vi.fn()}
+        onBallot={onBallot}
+        onDuel={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Amina (you)" }));
+    fireEvent.click(screen.getByRole("button", { name: /send vote/i }));
+    expect(onBallot).toHaveBeenCalledWith("p1");
+  });
+
+  it("tells the winning nominee they topped the vote even if they did not vote", () => {
+    const reveal = {
+      kind: "guess" as const,
+      totalBallots: 2,
+      featured: false,
+      winnerCount: 1,
+      winners: [{ id: "p1", label: "Amina" }],
+      truthLabel: null,
+      cards: [
+        {
+          id: "p1",
+          label: "Amina",
+          votes: 2,
+          winning: true,
+          author: null,
+          voters: ["Bilal", "Chen"],
+        },
+      ],
+    };
+    const won = play(bestDressedQuestion, {
+      selfBallot: null,
+      reveal,
+      selfAward: 100,
+    });
+    expect(guestRoundCopy(lobby("reveal", won))).toBe(
+      "You topped the vote! You scored 100.",
+    );
+    const lost = play(bestDressedQuestion, {
+      selfBallot: { candidateId: "p1" },
+      reveal,
+      selfAward: 0,
+    });
+    expect(guestRoundCopy(lobby("reveal", lost))).toBe("You scored 0 this round.");
   });
 });

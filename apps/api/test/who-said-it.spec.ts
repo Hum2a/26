@@ -81,5 +81,5 @@ it("uses sourced excerpts while retaining stable ids, question count and release
   ).toHaveLength(10);
   expect(validatePack(birthdayPack).filter((i) => i.level === "error")).toEqual([]);
   expect(birthdayPack.release).toBe("draft");
-  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
+  expect(birthdayPack.order.at(-1)).toBe("best-dressed");
 });

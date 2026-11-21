@@ -164,6 +164,19 @@ export function assertVoteQuestion(question: VoteQuestion): void {
 }
 
 export function assertGuessQuestion(question: GuessQuestion): void {
+  if (question.award === "nominees") {
+    if (question.scoring !== "majority") {
+      throw new Error("Awarding the nominated player needs majority scoring.");
+    }
+    if (question.roster !== "room") {
+      throw new Error("Awarding nominees needs the room roster.");
+    }
+    if (question.selfVoteBonus) {
+      throw new Error(
+        "A double self-vote bonus needs voter scoring with self-votes allowed.",
+      );
+    }
+  }
   if (
     question.selfVoteBonus !== undefined &&
     (question.selfVoteBonus !== "double" ||
@@ -837,7 +850,9 @@ export function scoreBallotQuestion(
         ? question.award
         : question.scoring === "none"
           ? "none"
-          : "voters",
+          : question.award === "nominees"
+            ? "authors"
+            : "voters",
     winners,
     candidates: candidates.map((candidate) => ({
       id: candidate.candidate_id,
@@ -1002,7 +1017,10 @@ export function ballotPlayFields(
         label: candidate.label,
         votes: counts.get(candidate.candidate_id) ?? 0,
         winning: winners.includes(candidate.candidate_id),
-        author: showAuthor ? nicknameOf(sql, candidate.owner_id) : null,
+        author:
+          question.kind === "vote" && showAuthor
+            ? nicknameOf(sql, candidate.owner_id)
+            : null,
         voters: showAuthor ? voterNames(sql, ballots, candidate.candidate_id) : null,
       },
     ];
@@ -1032,6 +1050,7 @@ export function ballotPlayFields(
           selfVote: question.selfVote,
           tie: "shared" as const,
           scoring: question.scoring,
+          ...(question.award ? { award: question.award } : {}),
           lateJoin: "ineligible" as const,
           search: true as const,
         };

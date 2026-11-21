@@ -428,12 +428,15 @@ function readResponses(
       )
       .toArray();
     const window = question.kind === "vote" ? question.voteMs : question.collectMs;
-    const scored = question.kind === "guess" && question.scoring !== "none";
+    const scored = hasRightAndWrong(question);
     return {
       question: {
         ...base,
         options: candidates.map((row) => ({ id: row.candidate_id, label: row.label })),
-        pickVerb: question.kind === "vote" ? "voted for" : "pointed at",
+        pickVerb:
+          question.kind === "vote" || question.award === "nominees"
+            ? "voted for"
+            : "pointed at",
         numeric: null,
         scored,
         success: "backed the room's pick",
@@ -665,7 +668,7 @@ export function hasRightAndWrong(question: Question): boolean {
         question.outcome.kind === "push"
       );
     case "guess":
-      return question.scoring !== "none";
+      return question.scoring !== "none" && question.award !== "nominees";
     case "typed":
     case "slider":
     case "wordle":

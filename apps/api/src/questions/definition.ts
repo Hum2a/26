@@ -82,7 +82,7 @@ export type ChoiceOutcome =
   | { kind: "correct" }
   | PushOutcome
   | { kind: "poll" }
-  | { kind: "multiple"; optionIds: readonly string[] }
+  | { kind: "multiple"; optionIds: readonly string[]; scoring?: "exact" | "partial" }
   | {
       kind: "threshold";
       optionId: string;
@@ -181,6 +181,11 @@ export type GuessBody = {
   selfVote: "forbidden" | "allowed";
   tie: "shared";
   scoring: "named" | "majority" | "none";
+  /**
+   * `nominees`: the most-voted player(s) receive the points (shared on a tie).
+   * Omit or `voters` to pay the voters instead. Majority scoring with the room roster only.
+   */
+  award?: "voters" | "nominees";
   lateJoin: "ineligible";
   /**
    * `double`: a voter who picked themselves scores twice the points when they

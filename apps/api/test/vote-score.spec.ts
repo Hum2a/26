@@ -72,6 +72,88 @@ describe("room-wide vote and guess scoring", () => {
     ).toThrow("A double self-vote bonus needs majority scoring");
   });
 
+  it("awards the most-voted nominee(s) and rejects invalid nominee-award configurations", () => {
+    const candidates = [
+      { id: "amina", ownerId: "amina" },
+      { id: "bilal", ownerId: "bilal" },
+      { id: "chen", ownerId: "chen" },
+    ];
+    const winners = winningIds({
+      scoring: "majority",
+      truthId: null,
+      candidates: candidates.map((c) => ({ id: c.id, eligible: true, included: true })),
+      ballots: [{ candidateId: "amina" }, { candidateId: "amina" }],
+    });
+    expect(winners).toEqual(["amina"]);
+    // Winner scores even if they did not vote or voted for someone else.
+    expect(
+      awardsForBallot({
+        points: 100,
+        mode: "authors",
+        winners,
+        candidates,
+        ballots: [
+          { playerId: "bilal", candidateId: "amina" },
+          { playerId: "chen", candidateId: "amina" },
+        ],
+        playerIds: ["amina", "bilal", "chen"],
+      }),
+    ).toEqual([
+      { playerId: "amina", points: 100, detail: "win" },
+      { playerId: "bilal", points: 0, detail: "miss" },
+      { playerId: "chen", points: 0, detail: "miss" },
+    ]);
+    // Tied nominees are both selected by winningIds and each receives the full award.
+    const tiedBallots = [
+      { playerId: "amina", candidateId: "amina" },
+      { playerId: "bilal", candidateId: "bilal" },
+    ];
+    const tiedWinners = winningIds({
+      scoring: "majority",
+      truthId: null,
+      candidates: candidates.map((c) => ({ id: c.id, eligible: true, included: true })),
+      ballots: tiedBallots,
+    });
+    expect(tiedWinners).toEqual(["amina", "bilal"]);
+    expect(
+      awardsForBallot({
+        points: 100,
+        mode: "authors",
+        winners: tiedWinners,
+        candidates,
+        ballots: tiedBallots,
+        playerIds: ["amina", "bilal", "chen"],
+      }),
+    ).toEqual([
+      { playerId: "amina", points: 100, detail: "tie" },
+      { playerId: "bilal", points: 100, detail: "tie" },
+      { playerId: "chen", points: 0, detail: "miss" },
+    ]);
+    expect(() =>
+      assertGuessQuestion({ ...who, scoring: "named", award: "nominees" }),
+    ).toThrow(/majority scoring/);
+    expect(() =>
+      assertGuessQuestion({
+        ...who,
+        scoring: "majority",
+        roster: "shortlist",
+        shortlist: ["Amina", "Bilal"],
+        truthNickname: null,
+        award: "nominees",
+      }),
+    ).toThrow(/room roster/);
+    expect(() =>
+      assertGuessQuestion({
+        ...who,
+        scoring: "majority",
+        truthNickname: null,
+        selfVote: "allowed",
+        selfVoteBonus: "double",
+        award: "nominees",
+      }),
+    ).toThrow(/double self-vote bonus/);
+  });
+
   it("scores a named guess without using the majority", () => {
     const winners = winningIds({
       scoring: "named",

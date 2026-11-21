@@ -600,6 +600,7 @@ export const publicQuestionSchema = z.discriminatedUnion("kind", [
       selfVote: z.enum(["forbidden", "allowed"]),
       tie: z.literal("shared"),
       scoring: z.enum(["named", "majority", "none"]),
+      award: z.enum(["voters", "nominees"]).optional(),
       lateJoin: z.literal("ineligible"),
       search: z.literal(true),
     })

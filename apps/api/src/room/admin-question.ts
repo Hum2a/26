@@ -28,7 +28,12 @@ export function adminQuestion(
     add("Track", question.trackId);
     add("Race", "One lap, 45-second server cutoff; DNF scores zero. Ties share place.");
   } else if (question.kind === "choice") {
-    add("Outcome", question.outcome.kind);
+    add(
+      "Outcome",
+      question.outcome.kind === "multiple" && question.outcome.scoring === "partial"
+        ? "multiple (partial credit)"
+        : question.outcome.kind,
+    );
     add(
       "Speed bonus",
       question.speedBonus ? `Up to ${question.speedBonus.maxPoints} points` : "Off",
@@ -98,6 +103,7 @@ export function adminQuestion(
   } else if (question.kind === "guess") {
     add("Roster", question.roster);
     add("Scoring", question.scoring);
+    if (question.award) add("Award", question.award);
     add("Self vote", question.selfVote);
     if (question.shortlist.length) add("Shortlist", question.shortlist.join(", "));
   }
@@ -156,8 +162,13 @@ function answerFor(
   if (question.kind === "choice") {
     const label = (id: string) =>
       question.options.find((option) => option.id === id)?.label ?? id;
-    if (question.outcome.kind === "multiple")
-      return recorded(question.outcome.optionIds.map(label));
+    if (question.outcome.kind === "multiple") {
+      const rule =
+        question.outcome.scoring === "partial"
+          ? "Partial credit: each right pick adds a share; each wrong pick subtracts a share (min 0)."
+          : "Exact set only: all right picks with no decoys.";
+      return recorded([...question.outcome.optionIds.map(label), rule]);
+    }
     if (question.outcome.kind === "poll")
       return {
         status: "not-applicable",
@@ -217,7 +228,11 @@ function answerFor(
         ? missing
         : {
             status: "not-applicable",
-            lines: [`Scoring follows the ${question.scoring} rule.`],
+            lines: [
+              question.award === "nominees"
+                ? "Most-voted player receives the full points; each tied winner receives the full points (not split)."
+                : `Scoring follows the ${question.scoring} rule.`,
+            ],
           };
   if (question.kind === "duel" || question.kind === "finale")
     return Number.isFinite(question.target)

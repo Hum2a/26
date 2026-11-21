@@ -121,7 +121,7 @@ import {
   scoreBallotQuestion,
 } from "./vote.ts";
 
-import { sameAnswerSet } from "../../../../packages/shared/src/party-scoring.ts";
+import { multipleChoiceScore } from "../../../../packages/shared/src/party-scoring.ts";
 
 const scoredPhases: readonly RoomPhase[] = ["reveal", "scores", "final", "podium"];
 
@@ -175,13 +175,12 @@ export function pointsFor(
   settlement: ChoiceSettlement = settleChoice(question, []),
 ): { points: number; detail: string } {
   if (question.outcome.kind === "multiple") {
-    const correct = Boolean(
-      answer && sameAnswerSet(answer.optionId.split(","), question.outcome.optionIds),
+    return multipleChoiceScore(
+      answer ? answer.optionId.split(",") : [],
+      question.outcome.optionIds,
+      question.points,
+      question.outcome.scoring ?? "exact",
     );
-    return {
-      points: correct ? question.points : 0,
-      detail: correct ? "correct-set" : answer ? "wrong-set" : "missing",
-    };
   }
   if (!answer || !choiceWins(settlement, answer.optionId)) {
     return applyScoreModifiers(
