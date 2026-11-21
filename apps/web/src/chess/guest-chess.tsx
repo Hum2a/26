@@ -8,11 +8,15 @@ import type { ChessMoveParams, ChessResignParams } from "../live/room-socket";
 export function GuestChess({
   snapshot,
   pending,
+  moveError,
+  rejectedNonce,
   onChessMove,
   onChessResign,
 }: {
   snapshot: LobbySnapshot;
   pending: boolean;
+  moveError?: string;
+  rejectedNonce?: number;
   onChessMove: (params: ChessMoveParams) => void;
   onChessResign: (params: ChessResignParams) => void;
 }) {
@@ -22,10 +26,11 @@ export function GuestChess({
   const pendingMoveRef = useRef<string | null>(null);
   const snapshotFen = chessSnapshot?.fen;
   const snapshotStatus = chessSnapshot?.status;
+  const snapshotRevision = chessSnapshot?.positionRevision;
 
   useEffect(() => {
     pendingMoveRef.current = null;
-  }, [snapshotFen, snapshotStatus, pending]);
+  }, [snapshotFen, snapshotStatus, snapshotRevision, rejectedNonce, pending]);
 
   // Block play if no chess snapshot yet (backend not ready)
   if (!chessSnapshot) {
@@ -52,6 +57,12 @@ export function GuestChess({
     positionRevision?: number,
   ) {
     if (!chessSnapshot || !open || pending) return;
+    if (
+      positionRevision !== undefined &&
+      positionRevision !== chessSnapshot.positionRevision
+    ) {
+      return;
+    }
 
     const revision = positionRevision ?? chessSnapshot.positionRevision;
     // Prevent duplicate submissions for the same position revision
@@ -92,12 +103,19 @@ export function GuestChess({
           </div>
         ) : null}
 
+        {moveError ? (
+          <p className="chess-status text-destructive" role="status">
+            {moveError}
+          </p>
+        ) : null}
+
         <ChessGame
           snapshot={chessSnapshot}
           onMove={handleMove}
           onResign={handleResign}
           disabled={!open}
           pending={pending}
+          rejectedNonce={rejectedNonce}
           onEngineError={setEngineError}
         />
 

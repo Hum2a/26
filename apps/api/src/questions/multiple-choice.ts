@@ -690,7 +690,7 @@ export function preparePlayShared(
   }
   const scored = scoredPhases.includes(room.phase);
   const needsStandings =
-    question.kind !== "chess" && (question.kind !== "kart" || scored);
+    (question.kind !== "chess" && question.kind !== "kart") || scored;
   const totals = needsStandings ? standings(sql) : [];
   const totalsById = new Map<string, StandingRow>();
   let anyPoints = false;
@@ -935,9 +935,12 @@ export function projectPlay(
     );
 
     const totals = shared ? shared.totals : scored ? standings(sql) : [];
-    const selfRow = selfPlayerId
-      ? totals.find((row) => row.playerId === selfPlayerId)
-      : undefined;
+    const selfRow =
+      scored && audience === "guest" && selfPlayerId
+        ? shared
+          ? shared.totalsById.get(selfPlayerId)
+          : totals.find((row) => row.playerId === selfPlayerId)
+        : undefined;
     const index = room.questionIndex + 1;
     const total = room.questionCount;
 

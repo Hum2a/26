@@ -30,9 +30,14 @@ export function QuestionExperience({
   const revealed = snapshot.phase === "reveal" || snapshot.phase === "scores";
   const award = play.selfAward;
   const showAnswerState =
-    play.question.kind !== "wordle" && (status === "accepted" || status === "sending");
+    play.question.kind !== "wordle" &&
+    play.question.kind !== "chess" &&
+    (status === "accepted" || status === "sending");
+  const chessActive =
+    play.question.kind === "chess" && Boolean(play.chess && "fen" in play.chess);
+  const effectiveStatus = chessActive ? "accepted" : status;
   const result =
-    revealed && status === "accepted" && award !== null
+    revealed && effectiveStatus === "accepted" && award !== null
       ? award > 0
         ? {
             tone: "won",
@@ -47,14 +52,17 @@ export function QuestionExperience({
                 ? "That was the last one. Watch the stage for the podium."
                 : voice.missed,
           }
-      : revealed && status === "accepted" && play.question.kind !== "kart"
+      : revealed && effectiveStatus === "accepted" && play.question.kind !== "kart"
         ? // The room gives no award for a round that cannot score, such as a poll.
           {
             tone: "fun",
             title: "Just for fun",
             line: "No points on this one. See what the room picked.",
           }
-        : revealed && status === "closed" && play.question.kind !== "kart"
+        : revealed &&
+            effectiveStatus === "closed" &&
+            play.question.kind !== "kart" &&
+            play.question.kind !== "chess"
           ? {
               tone: "missed",
               title: "No answer from you",

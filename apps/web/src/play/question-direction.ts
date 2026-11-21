@@ -6,7 +6,7 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
   if (snapshot.paused) return "Paused — hang tight";
   if (snapshot.held) return "Waiting for the host";
   if (snapshot.phase === "facts") return "Watch the stage";
-  if (pending)
+  if (pending && play?.question.kind !== "chess")
     return play?.question.kind === "wordle"
       ? "Checking your word…"
       : "Sending your answer…";
@@ -49,7 +49,9 @@ export function questionDirection(snapshot: LobbySnapshot, pending: boolean): st
       if (play.kart && !play.kart.selfPlayerId) return "Watch the race on the stage.";
       return "Accelerate to drive — race on your phone";
     case "chess":
-      return "Play your move, then send";
+      return play.chess && "fen" in play.chess && play.chess.isGameOver
+        ? "Game finished — watch the stage"
+        : "Play 1-minute blitz against Stockfish";
     case "choice":
       return play.question.outcome === "multiple"
         ? "Select all that apply, then send"
@@ -89,6 +91,11 @@ export function questionBeat(snapshot: LobbySnapshot, pending: boolean): string 
   if (phase === "scores") return "Standings";
   if (!play || !["collect", "vote", "predict"].includes(phase))
     return "Watch the stage";
+  if (play.question.kind === "chess") {
+    if (!play.chess || !("fen" in play.chess) || play.chess.isGameOver)
+      return "Watch the stage";
+    return pending ? "Waiting for move" : "Play chess";
+  }
   const status = answerStatus(snapshot, pending);
   if (status === "sending") return "Sending";
   if (status === "accepted") return "Locked in";
@@ -107,7 +114,6 @@ export function questionBeat(snapshot: LobbySnapshot, pending: boolean): string 
       return "Watch the stage";
     return "Race time";
   }
-  if (play.question.kind === "chess") return "Play chess";
   return "Answer now";
 }
 

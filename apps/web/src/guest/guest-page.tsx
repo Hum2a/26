@@ -127,6 +127,10 @@ export function GuestPage({
   const kartItemRequest = useRef<string | null>(null);
   const [kartItemPending, setKartItemPending] = useState(false);
   const [kartItemNotice, setKartItemNotice] = useState("");
+  const chessRequest = useRef<string | null>(null);
+  const chessSentRevision = useRef<number | null>(null);
+  const [chessPending, setChessPending] = useState(false);
+  const [chessError, setChessError] = useState<{ nonce: number; message: string }>();
   const recoveryRace = useRef<string | undefined>(undefined);
   const hapticBaseline = useRef<HapticView | null>(null);
   useWakeLock(session !== undefined);
@@ -224,6 +228,25 @@ export function GuestPage({
           wordleRound = nextWordleRound;
           clearWordle();
         }
+        if (
+          question?.kind !== "chess" ||
+          next.phase !== "collect" ||
+          !next.play?.chess ||
+          !("positionRevision" in next.play.chess)
+        ) {
+          chessRequest.current = null;
+          chessSentRevision.current = null;
+          setChessPending(false);
+          setChessError(undefined);
+        } else if (
+          chessSentRevision.current !== null &&
+          next.play.chess.positionRevision !== chessSentRevision.current
+        ) {
+          chessRequest.current = null;
+          chessSentRevision.current = null;
+          setChessPending(false);
+          setChessError(undefined);
+        }
         if (recoveryRace.current !== next.play?.kart?.raceId) {
           recoveryRace.current = next.play?.kart?.raceId;
           kartFinishRequest.current = null;
@@ -316,6 +339,20 @@ export function GuestPage({
           );
           return;
         }
+        if (ack.requestId === chessRequest.current) {
+          chessRequest.current = null;
+          chessSentRevision.current = null;
+          setChessPending(false);
+          if (!ack.accepted) {
+            setChessError((current) => ({
+              nonce: (current?.nonce ?? 0) + 1,
+              message: ack.error ?? "That move was not accepted.",
+            }));
+          } else {
+            setChessError(undefined);
+          }
+          return;
+        }
         if (ack.requestId === reactionRequest.current) {
           reactionRequest.current = null;
           if (!ack.accepted) {
@@ -376,6 +413,10 @@ export function GuestPage({
         kartItemRequest.current = null;
         setKartItemPending(false);
         setKartRecoveryPending(false);
+        chessRequest.current = null;
+        chessSentRevision.current = null;
+        setChessPending(false);
+        setChessError(undefined);
         hapticBaseline.current = null;
         setSnapshot(undefined);
         setNotice(message);
@@ -468,6 +509,10 @@ export function GuestPage({
       setBusy(false);
     }
     clearWordle();
+    chessRequest.current = null;
+    chessSentRevision.current = null;
+    setChessPending(false);
+    setChessError(undefined);
     setSnapshot(undefined);
     setPending(false);
     pendingRequest.current = null;
@@ -521,6 +566,10 @@ export function GuestPage({
     transferRequest.current = null;
     setTransferCode("");
     clearWordle();
+    chessRequest.current = null;
+    chessSentRevision.current = null;
+    setChessPending(false);
+    setChessError(undefined);
     setSnapshot(undefined);
     setPending(false);
     pendingRequest.current = null;
@@ -1065,15 +1114,31 @@ export function GuestPage({
                     kartItemNotice={kartItemNotice}
                     kartRecoveryPending={kartRecoveryPending}
                     kartRecoveryNotice={kartRecoveryNotice}
+                    chessPending={chessPending}
+                    chessError={chessError}
                     onChessMove={(params) => {
-                      if (!beginSend(true)) return;
-                      pendingRequest.current =
-                        socketRef.current?.submitChessMove(params) ?? null;
+                      if (chessRequest.current || deadlinePassed(snapshot)) return;
+                      const id = socketRef.current?.submitChessMove(params) ?? null;
+                      if (id) {
+                        chessRequest.current = id;
+                        chessSentRevision.current = params.positionRevision;
+                        setChessPending(true);
+                        setChessError(undefined);
+                      }
                     }}
                     onChessResign={(params) => {
-                      if (!beginSend(true)) return;
-                      pendingRequest.current =
-                        socketRef.current?.submitChessResign(params) ?? null;
+                      if (chessRequest.current || deadlinePassed(snapshot)) return;
+                      const id = socketRef.current?.submitChessResign(params) ?? null;
+                      if (id) {
+                        chessRequest.current = id;
+                        chessSentRevision.current =
+                          snapshot.play?.chess &&
+                          "positionRevision" in snapshot.play.chess
+                            ? snapshot.play.chess.positionRevision
+                            : null;
+                        setChessPending(true);
+                        setChessError(undefined);
+                      }
                     }}
                     snapshot={snapshot}
                     selectedId={selectedId}

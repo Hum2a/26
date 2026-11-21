@@ -63,6 +63,8 @@ export function GuestPlay({
   kartItemNotice,
   kartRecoveryPending,
   kartRecoveryNotice,
+  chessPending,
+  chessError,
   onChessMove,
   onChessResign,
   connected,
@@ -83,6 +85,8 @@ export function GuestPlay({
   kartItemNotice?: string;
   kartRecoveryPending?: boolean;
   kartRecoveryNotice?: string;
+  chessPending?: boolean;
+  chessError?: { nonce: number; message: string };
   onChessMove?: (params: ChessMoveParams) => void;
   onChessResign?: (params: ChessResignParams) => void;
   connected?: boolean;
@@ -146,7 +150,9 @@ export function GuestPlay({
       <Suspense fallback={<p role="status">Loading chess engine…</p>}>
         <GuestChess
           snapshot={snapshot}
-          pending={pending}
+          pending={chessPending ?? pending}
+          moveError={chessError?.message}
+          rejectedNonce={chessError?.nonce ?? 0}
           onChessMove={onChessMove ?? (() => {})}
           onChessResign={onChessResign ?? (() => {})}
         />
