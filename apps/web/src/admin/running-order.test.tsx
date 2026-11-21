@@ -83,6 +83,7 @@ it("shows the show length, flags clusters and suggests a mixed order without sav
     "council-c",
     "trolley-a",
     "trolley-b",
+    "best-dressed",
     "kart-sprint",
   ];
   const questions = ids.map((id) => ({
@@ -90,7 +91,8 @@ it("shows the show length, flags clusters and suggests a mixed order without sav
     title: id,
     status: "ready" as const,
     prompt: "Fixture",
-    mechanic: id === "kart-sprint" ? "kart" : "choice",
+    mechanic:
+      id === "kart-sprint" ? "kart" : id === "best-dressed" ? "guess" : "choice",
     presentation: "standard" as const,
     estimatedSeconds: 60,
     order: null,
@@ -110,11 +112,15 @@ it("shows the show length, flags clusters and suggests a mixed order without sav
       />
     </MemoryRouter>,
   );
-  expect(screen.getByText(/Show length about 6 min/)).toBeTruthy();
+  expect(screen.getByText(/Show length about 7 min/)).toBeTruthy();
   expect(screen.getByText(/3 “council” rounds run back to back/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Suggest a mixed order" }));
   await screen.findByText(/Suggested a mixed order/);
   expect(screen.queryByText(/run back to back/)).toBeNull();
+  const rows = screen.getAllByRole("link").map((link) => link.textContent ?? "");
+  expect(
+    rows.slice(-2).map((text) => text.replace(/^(kart-sprint|best-dressed).*/, "$1")),
+  ).toEqual(["kart-sprint", "best-dressed"]);
   expect(screen.getByText(/Unsaved changes/)).toBeTruthy();
   expect(saveRunningOrder).not.toHaveBeenCalled();
 });

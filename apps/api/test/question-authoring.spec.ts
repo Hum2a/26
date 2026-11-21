@@ -27,6 +27,9 @@ import { commonPassword } from "../src/questions/packs/birthday/common-password.
 import { completeAWordle } from "../src/questions/packs/birthday/complete-a-wordle.ts";
 import { trumpMadeUpCountry } from "../src/questions/packs/birthday/trump-made-up-country.ts";
 import { humzaEthnicity } from "../src/questions/packs/birthday/humza-ethnicity.ts";
+import { realNameCountBinface } from "../src/questions/packs/birthday/real-name-count-binface.ts";
+import { realNameTommyRobinson } from "../src/questions/packs/birthday/real-name-tommy-robinson.ts";
+import { realNameZackPolanski } from "../src/questions/packs/birthday/real-name-zack-polanski.ts";
 import { questionPreview } from "../src/room/question-preview.ts";
 
 const fixtureOptions = [
@@ -73,6 +76,33 @@ it("keeps humza-ethnicity ready in the birthday catalogue without adding it to t
   expect(preview.question).toMatchObject({ kind: "choice", outcome: "multiple" });
   expect(JSON.stringify(preview)).not.toContain('"optionIds"');
 });
+
+it.each([
+  [realNameCountBinface, "jon-harvey", "bin-unmasked"],
+  [realNameZackPolanski, "david-paulden", "deed-poll"],
+  [realNameTommyRobinson, "yaxley-lennon", "redacted-file"],
+] as const)(
+  "$0.id is a ready multiple-choice question with private answer key",
+  (authored, correctId, presentation) => {
+    expect(authored.kind).toBe("choice");
+    expect(authored.status).toBe("ready");
+    expect(authored.presentation).toBe(presentation);
+    expect(authored.options).toHaveLength(4);
+    expect(authored.options.every((o) => contentLimits.optionId.test(o.id))).toBe(true);
+    expect(authored.correctOption).toEqual({ known: correctId });
+    const entry = birthdayPack.catalogue.find((q) => q.id === authored.id);
+    expect(entry?.kind === "choice" && entry.modifiers).toEqual([
+      "steal",
+      "robin-hood",
+      "share",
+    ]);
+    const preview = questionPreview(birthdayPack, authored);
+    expect(preview.interactive).toBe(true);
+    expect(preview.question).toMatchObject({ kind: "choice", presentation });
+    expect(preview.question).not.toHaveProperty("correctOptionId");
+    expect(preview.question).not.toHaveProperty("explanation");
+  },
+);
 
 function partyPack(overrides: Partial<QuestionPack> = {}): QuestionPack {
   return {
@@ -533,7 +563,7 @@ describe("October birthday question additions", () => {
     [favouritePokemon, "mudkip", ["Turtwig", "Mudkip", "Tepig", "Osama bin laden"]],
     [
       howItalianIsHumza,
-      "half-percent",
+      "one-percent",
       [
         "1%",
         "pineapple belongs on pizza",

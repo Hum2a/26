@@ -75,12 +75,12 @@ Rank these conversational triggers by what type of ignorance pisses Humza off th
 20s to answer. Attribution: after.
 Say at the reveal: Fastest Apple; 2nd Palm Beach Pete; 3rd Politics; Slowest Conspiracy theories
 
-## 11. typed · real-name-count-binface
+## 11. choice · real-name-count-binface
 
 What was their real name? Count Binface
 
-20s to answer. Attribution: after.
-Say at the reveal: Jon Harvey / Jonathan Harvey (close spellings count)
+20s to answer. Attribution: live.
+Say at the reveal: Jon Harvey
 
 ## 12. choice · mock-election
 
@@ -124,12 +124,12 @@ A train is heading for 5 people. You can derail it to kill only 1. Do you?
 20s to answer. Attribution: live.
 Say at the reveal: No right answer. Read out the room's split.
 
-## 18. typed · real-name-zack-polanski
+## 18. choice · real-name-zack-polanski
 
 What was their real name? Zack Polanski
 
-20s to answer. Attribution: after.
-Say at the reveal: David Paulden (close spellings count)
+20s to answer. Attribution: live.
+Say at the reveal: David Paulden
 
 ## 19. map-guess · where-are-we
 
@@ -152,12 +152,12 @@ Petrol: guess the price in 2026
 20s to answer. Attribution: after.
 Say at the reveal: 175 p/litre
 
-## 22. typed · real-name-tommy-robinson
+## 22. choice · real-name-tommy-robinson
 
 What was their real name? Tommy Robinson
 
-20s to answer. Attribution: after.
-Say at the reveal: Stephen Yaxley-Lennon / Stephen Lennon / Stephen Yaxley (close spellings count)
+20s to answer. Attribution: live.
+Say at the reveal: Stephen Yaxley-Lennon
 
 ## 23. typed · common-password
 
@@ -178,7 +178,7 @@ Say at the reveal: Reveal who got the most votes. Guests who picked them score.
 Guess how Italian Humza is
 
 20s to answer. Attribution: live.
-Say at the reveal: 0.5%
+Say at the reveal: 1%
 
 ## 26. choice · club-kicked-out
 

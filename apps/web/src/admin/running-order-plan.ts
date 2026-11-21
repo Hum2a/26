@@ -21,17 +21,26 @@ export function longestRun(ids: readonly string[]): { series: string; length: nu
 
 /**
  * Spreads each series through the show. Rounds keep their order within a
- * series; rounds marked `last` (the kart race) stay at the end; at each step
- * the series with the most rounds left that differs from the previous round
- * goes next, so clusters break up wherever there is another series to use.
+ * series; rounds marked `last` (kart near the end, then best dressed) stay at
+ * the end ordered by rank then original position; at each step the series with
+ * the most rounds left that differs from the previous round goes next, so
+ * clusters break up wherever there is another series to use.
  */
 export function suggestMixedOrder(
   ids: readonly string[],
-  isLast: (id: string) => boolean = () => false,
+  isLast: (id: string) => boolean | number = () => false,
 ): string[] {
-  const tail = ids.filter(isLast);
+  const tailRank = (id: string): number => {
+    const rank = isLast(id);
+    return typeof rank === "number" ? rank : rank ? 1 : 0;
+  };
+  const tail = ids
+    .map((id, index) => ({ id, index, rank: tailRank(id) }))
+    .filter((item) => item.rank > 0)
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .map((item) => item.id);
   const queues = new Map<string, string[]>();
-  for (const id of ids.filter((id) => !isLast(id))) {
+  for (const id of ids.filter((id) => tailRank(id) === 0)) {
     const key = seriesOf(id);
     queues.set(key, [...(queues.get(key) ?? []), id]);
   }

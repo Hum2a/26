@@ -6,7 +6,7 @@ import {
   matchTyped,
   normaliseTyped,
 } from "../src/questions/typed-match.ts";
-import { realNameTommyRobinson } from "../src/questions/packs/birthday/real-name-tommy-robinson.ts";
+import { realNameVinDiesel } from "../src/questions/packs/birthday/real-name-vin-diesel.ts";
 
 function playable() {
   const question = toPlayable(
@@ -85,14 +85,14 @@ describe("typed answer scoring", () => {
     }
   });
 
-  it("accepts the party spellings for Tommy Robinson", () => {
-    const question = toPlayable(realNameTommyRobinson);
+  it("accepts the party spellings for Vin Diesel", () => {
+    const question = toPlayable(realNameVinDiesel);
     if (!question || question.kind !== "typed") {
-      throw new Error("The Tommy Robinson question is ready.");
+      throw new Error("The Vin Diesel question is ready.");
     }
-    for (const body of ["Stephen Yaxley-Lennon", "stephen lennon", "Stephen Yaxley"]) {
+    for (const body of ["Mark Sinclair", "mark sinclair vincent", "Mark Vincent"]) {
       expect(pointsForTyped(question, body).points).toBe(question.points);
     }
-    expect(pointsForTyped(question, "Tommy Robinson").points).toBe(0);
+    expect(pointsForTyped(question, "Vin Diesel").points).toBe(0);
   });
 });
