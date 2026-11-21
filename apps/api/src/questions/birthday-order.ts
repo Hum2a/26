@@ -55,7 +55,7 @@ export function readBirthdayOrder(sql: SqlStorage): BirthdayOrder {
  * so it can still be saved and started.
  */
 const maxOrderRounds = 80;
-const firstSavedOrderAt = Date.UTC(2026, 9, 1);
+const firstSavedOrderAt = Date.UTC(2026, 0, 1);
 const bracketsRestoredAt = Date.UTC(2026, 10, 20, 2, 28);
 const bestDressedRestoredAt = Date.UTC(2026, 10, 21, 14, 8);
 const restoredBrackets = [

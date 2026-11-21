@@ -354,7 +354,7 @@ it("removes retired rounds from old saved orders without changing already-frozen
 
 it("adds the bracket rounds and best-dressed back to older saved orders, but leaves later host saves alone", async () => {
   const registry = env.ROOM_CODE_REGISTRY.getByName("codes");
-  const save = (ids: string[], updatedAt: number) =>
+  const save = (ids: string[], updatedAt: number | null) =>
     runInDurableObject(registry, (_instance, state) =>
       state.storage.sql.exec(
         "INSERT INTO pack_order (id, payload) VALUES ('birthday', ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload",
@@ -383,6 +383,9 @@ it("adds the bracket rounds and best-dressed back to older saved orders, but lea
     "best-dressed",
   ]);
   expect(restored.revision).toBe(4);
+
+  await save(old, null);
+  expect((await registry.birthdayOrder()).ids).toEqual(restored.ids);
 
   await save(old, Date.UTC(2026, 10, 20, 12, 0));
   expect((await registry.birthdayOrder()).ids).toEqual([...old, "best-dressed"]);
