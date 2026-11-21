@@ -130,6 +130,9 @@ function SortPhone({
   useEffect(() => {
     if (!editable) return;
     function onKey(event: KeyboardEvent) {
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
       if (event.key === "ArrowLeft" || event.key.toLowerCase() === "e") {
         event.preventDefault();
         if (leftId && currentId) {
@@ -140,9 +143,12 @@ function SortPhone({
         if (rightId && currentId) {
           place(rightId, currentId);
         }
-      } else if (event.key === "ArrowDown" || event.key.toLowerCase() === "n") {
+      } else if (
+        extraId &&
+        (event.key === "ArrowDown" || event.key.toLowerCase() === "n")
+      ) {
         event.preventDefault();
-        if (extraId && currentId) {
+        if (currentId) {
           place(extraId, currentId);
         }
       } else if (event.key === "Backspace" && canUndo) {
@@ -564,8 +570,9 @@ function QuoteStack({
       ) : null}
       {editable ? (
         <p className="ed-help">
-          Swipe towards {left?.label ?? "Ed"} or {right?.label ?? "Humza"}, tap{" "}
-          {extra?.label ?? "Neither"}, or tap a name. Arrow keys, E / H / N work too.
+          {extra
+            ? `Swipe towards ${left?.label ?? "Ed"} or ${right?.label ?? "Humza"}, tap ${extra.label}, or tap a name. Arrow keys, E / H / N work too.`
+            : `Swipe towards ${left?.label ?? "Ed"} or ${right?.label ?? "Humza"}, or tap a name. Arrow keys, E / H work too.`}
         </p>
       ) : null}
     </figure>

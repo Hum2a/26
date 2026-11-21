@@ -23,12 +23,14 @@ export function TrollTab({
   gameId,
   selfId,
   pending,
+  error,
   onSend,
 }: {
   snapshot: LobbySnapshot;
   gameId: string;
   selfId: string;
   pending: boolean;
+  error?: string;
   onSend: (kind: string, targetId: string, mediaId?: string) => void;
 }) {
   const reduce = useReducedMotion();
@@ -38,6 +40,9 @@ export function TrollTab({
   const [voiceStatus, setVoiceStatus] = useState("");
   const [shownGroup, setShownGroup] = useState<TrollGroupId | null>(null);
   const [sentPulse, setSentPulse] = useState(false);
+  const [dispatching, setDispatching] = useState(false);
+  const [sawPending, setSawPending] = useState(false);
+  const [confirmNonce, setConfirmNonce] = useState(0);
   const locked = snapshot.trolls.token === "locked" || snapshot.phase === "lobby";
   const resting = ["final", "facts", "podium"].includes(snapshot.phase);
   const secondsLeft = useCooldownSeconds(snapshot.trolls.cooldownUntil ?? null);
@@ -51,18 +56,19 @@ export function TrollTab({
   const outgoing = snapshot.trolls.active.filter((effect) => effect.role === "actor");
   const blocked = locked || resting;
   const voiceReady = kind !== "voice" || Boolean(clip);
-  const canSend = ready && !pending && Boolean(kind && targetId) && voiceReady;
+  const sending = pending || dispatching;
+  const canSend = ready && !sending && Boolean(kind && targetId) && voiceReady;
   const status = sentPulse
-    ? pending
+    ? "Sent. Watch their phone."
+    : sending
       ? "Sending your troll…"
-      : "Sent. Watch their phone."
-    : locked
-      ? "Trolls open once the questions start."
-      : resting
-        ? "Trolls are resting for this part of the show."
-        : cooling
-          ? `Next troll in ${countdown}.`
-          : "Troll ready. Send one whenever you like.";
+      : locked
+        ? "Trolls open once the questions start."
+        : resting
+          ? "Trolls are resting for this part of the show."
+          : cooling
+            ? `Next troll in ${countdown}.`
+            : "Troll ready. Send one whenever you like.";
   const step = sentPulse ? 4 : !kind ? 1 : !targetId ? 2 : 3;
   const stepName = step === 4 ? "Sent" : (STEP_LABELS[step - 1] ?? STEP_LABELS[0]);
   const groupsOffered = trollGroups
@@ -87,7 +93,7 @@ export function TrollTab({
       ? "Trolls are resting for this part of the show."
       : cooling
         ? `Recharging — ready in ${countdown}.`
-        : pending
+        : sending
           ? "Sending…"
           : undefined;
 
@@ -96,6 +102,14 @@ export function TrollTab({
     setTargetId(undefined);
     setClip(null);
     setSentPulse(false);
+    setDispatching(false);
+    setSawPending(false);
+  }
+
+  function failConfirm() {
+    setDispatching(false);
+    setSawPending(false);
+    setConfirmNonce((value) => value + 1);
   }
 
   function fire() {
@@ -108,27 +122,44 @@ export function TrollTab({
       }
       const body = clip;
       setVoiceStatus("Checking the file.");
+      setDispatching(true);
       void uploadVoiceClip(gameId, body, setVoiceStatus).then((mediaId) => {
         if (mediaId) {
-          buzz([16, 40, 28, 40, 48]);
-          setSentPulse(true);
           onSend(kind, targetId, mediaId);
+        } else {
+          failConfirm();
         }
       });
       return;
     }
-    buzz([16, 40, 28, 40, 48]);
-    setSentPulse(true);
+    setDispatching(true);
     onSend(kind, targetId);
   }
 
+  if (dispatching && error) {
+    failConfirm();
+  } else if (dispatching && pending && !sawPending) {
+    setSawPending(true);
+  } else if (dispatching && sawPending && !pending && !error) {
+    setDispatching(false);
+    setSawPending(false);
+    setSentPulse(true);
+  }
+
   useEffect(() => {
-    if (!sentPulse || pending) return;
+    if (!sentPulse) {
+      return;
+    }
+    buzz([16, 40, 28, 40, 48]);
+  }, [sentPulse]);
+
+  useEffect(() => {
+    if (!sentPulse || sending) return;
     const timer = window.setTimeout(() => {
       restart();
     }, 2_200);
     return () => window.clearTimeout(timer);
-  }, [sentPulse, pending]);
+  }, [sentPulse, sending]);
 
   return (
     <div className="troll-tab">
@@ -137,14 +168,14 @@ export function TrollTab({
         <h1 className="phone-tab-title">Mischief</h1>
         <p
           className="troll-token glass"
-          data-ready={ready && !sentPulse ? "" : undefined}
+          data-ready={ready && !sentPulse && !sending ? "" : undefined}
           data-cooling={cooling || undefined}
           data-blocked={blocked || undefined}
           aria-live="polite"
         >
           <CooldownMark
             cooling={cooling}
-            ready={ready && !sentPulse}
+            ready={ready && !sentPulse && !sending}
             secondsLeft={secondsLeft}
           />
           {status}
@@ -222,7 +253,7 @@ export function TrollTab({
             </p>
             <p className="troll-sent-title">Troll sent</p>
             <p>
-              {pending
+              {sending
                 ? "On its way."
                 : cooling
                   ? `Next one in ${countdown}.`
@@ -244,7 +275,7 @@ export function TrollTab({
                   className="troll-filter-chip glass"
                   data-hue={group.hue}
                   aria-pressed={activeGroup?.id === group.id}
-                  disabled={pending}
+                  disabled={sending}
                   onClick={() => setShownGroup(group.id)}
                 >
                   <Icon icon={group.icon} aria-hidden="true" />
@@ -273,7 +304,7 @@ export function TrollTab({
                   </h2>
                   <div className="troll-cards">
                     {offers.map((item) => {
-                      const pressable = !pending && !blocked && item.enabled;
+                      const pressable = !sending && !blocked && item.enabled;
                       const why = blocked
                         ? lockReason
                         : item.enabled
@@ -323,12 +354,12 @@ export function TrollTab({
               selfId={selfId}
               locked={blocked}
               cooling={cooling}
-              pending={pending}
+              pending={sending}
               selectedId={targetId}
               onSelect={setTargetId}
             />
             {kind === "voice" ? (
-              <VoiceTake disabled={pending || blocked} onClip={setClip} />
+              <VoiceTake disabled={sending || blocked} onClip={setClip} />
             ) : null}
             {voiceStatus ? <p aria-live="polite">{voiceStatus}</p> : null}
             {kind === "voice" && !clip ? (
@@ -356,22 +387,34 @@ export function TrollTab({
               </Button>
             </div>
             {target ? (
-              <TrollConfirm
-                nickname={target.nickname}
-                troll={offer.label}
-                disabled={!canSend}
-                reason={
-                  cooling
-                    ? `Ready in ${countdown}`
-                    : blocked
-                      ? lockReason
-                      : pending
-                        ? "Sending…"
-                        : undefined
-                }
-                onCancel={() => setTargetId(undefined)}
-                onConfirm={fire}
-              />
+              <>
+                {kind === "voice" && !clip ? (
+                  <VoiceTake disabled={sending || blocked} onClip={setClip} />
+                ) : null}
+                {kind === "voice" && !clip ? (
+                  <p className="troll-lock-banner" role="status">
+                    Record a clip, then confirm.
+                  </p>
+                ) : null}
+                <TrollConfirm
+                  key={`${target.playerId}-${confirmNonce}`}
+                  nickname={target.nickname}
+                  troll={offer.label}
+                  disabled={!canSend}
+                  announce={sending || blocked}
+                  reason={
+                    cooling
+                      ? `Ready in ${countdown}`
+                      : blocked
+                        ? lockReason
+                        : sending
+                          ? "Sending…"
+                          : undefined
+                  }
+                  onCancel={() => setTargetId(undefined)}
+                  onConfirm={fire}
+                />
+              </>
             ) : null}
           </motion.div>
         )}

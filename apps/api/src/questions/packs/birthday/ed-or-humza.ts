@@ -151,7 +151,7 @@ export function makeEdOrHumza(quotes: readonly EdOrHumzaQuote[] = edOrHumzaQuote
             .filter((group) => group.itemIds.length > 0),
         },
     notes:
-      "Quotes from Humza, 17 Nov 2026; speakers confirmed 19 Nov. Sort into Ed, Humza or Neither (none marked Neither yet). Private photos. Card-stack ed-or-humza. Whole-list submit; 80 points by placements, two minutes. Keys stay server-side. Ready in the catalogue.",
+      "Quotes from Humza, 17 Nov 2026, wording preserved; speakers confirmed 19 Nov. Sort into Ed, Humza or Neither (none marked Neither yet). Private photos. Card-stack ed-or-humza. Whole-list submit; 80 points by placements, two minutes. Keys stay server-side. Ready in the catalogue; adding it to the running order is a separate host action.",
   });
 }
 

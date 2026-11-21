@@ -21,7 +21,8 @@
   padding: 0.75rem 1rem;
   font-weight: 700;
 }
-.troll-token > span {
+.troll-token > span,
+.troll-token > .troll-cooldown {
   display: grid;
   flex: none;
   place-items: center;
@@ -50,8 +51,8 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 2.15rem;
-  height: 2.15rem;
+  width: 2rem;
+  height: 2rem;
   flex: none;
 }
 .troll-cooldown > span {
@@ -65,8 +66,8 @@
 .troll-cooldown-ring {
   position: absolute;
   inset: 0;
-  width: 2.15rem;
-  height: 2.15rem;
+  width: 2rem;
+  height: 2rem;
   transform: rotate(-90deg);
 }
 .troll-cooldown-ring circle {

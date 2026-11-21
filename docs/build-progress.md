@@ -7599,12 +7599,12 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 
 **Ed or Humza.** Guests sort every quote into Ed, Humza or **Neither**. Existing quote speakers are unchanged (none marked Neither). Scoring, phone piles, reveal and projector columns handle three buckets. Swipe still assigns Ed/Humza; tap (or N) assigns Neither.
 
-**Photo wall.** Approved photos overlay the projector as a tilted framed card, animate in and out, then leave. They no longer sit under the display. New rooms default to 5 seconds on screen. `breaks` vs `corner` still controls *when* a photo may start.
+**Photo wall.** Approved photos overlay the projector as a tilted framed card, animate in and out, then leave. They no longer sit under the display. New rooms default to 5 seconds on screen. `breaks` vs `corner` still controls _when_ a photo may start.
 
-**Troll tab.** Steps are always visible (pick a troll → pick a victim → confirm). Disabled controls are greyed with a reason; ready confirm glows. Cooldown uses a live ring and countdown. Sent feedback buzzes the phone when `navigator.vibrate` exists.
+**Troll tab.** Steps are always visible (pick a troll → pick a victim → confirm). Disabled controls are greyed with a reason; ready confirm glows. Cooldown uses a live ring and countdown. Sent feedback and haptic buzz wait until the room accepts the troll. A refused send stays on confirm so the guest can try again.
 
 **Master CI.** Formatted `apps/web/src/play/designs/bin-unmasked.tsx` so `format:check` passes.
 
-**Checks.** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run content:check` passed. `npm run test -w @26/api` 148 files / 864 tests passed (`XDG_CONFIG_HOME` set). `npm run test:unit` 1002 of 1005 tests passed on the first full run (guest troll helper still said “Send to Sam”); after updating `guest-page.test.tsx` those 8 tests passed. Remaining known master failure: `chess-stage.test.tsx` stale Humza-bot copy. `where-are-we.test.tsx` did not fail in this run (still treated as flaky on CI). `npm run build` passed (gzip entry JS 223,033 / 260,000; entry CSS 28,209 / 34,000; total JS 1,500,090 / 1,650,000). Playwright was not run.
+**Checks.** After Cubic review: `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed (including `docs/build-progress.md`). `npm run content:check` passed. Targeted web tests 84 passed; targeted API ed-or-humza/wall 49 passed. Full `npm run test -w @26/api` 148 files / 864 tests passed (`XDG_CONFIG_HOME` set). Full `npm run test:unit` 1005 of 1006 passed; remaining known master failure: `chess-stage.test.tsx` stale Humza-bot copy. `where-are-we.test.tsx` did not fail in this run (still treated as flaky on CI). `npm run build` passed (gzip entry JS 223,029 / 260,000; entry CSS 28,209 / 34,000; total JS 1,500,246 / 1,650,000). Playwright was not run.
 
 **Next.** Rehearse Ed or Humza, a wall approval on the projector, and a troll send on a real phone.

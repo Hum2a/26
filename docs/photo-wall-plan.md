@@ -109,7 +109,7 @@ CREATE TABLE wall_setting (
   enabled       INTEGER NOT NULL,        -- default 1
   moderation    TEXT NOT NULL,           -- 'approve' | 'direct'
   placement     TEXT NOT NULL,           -- 'breaks' | 'corner'
-  show_ms       INTEGER NOT NULL,        -- default 8000, from 4000 to 20000
+  show_ms       INTEGER NOT NULL,        -- default 5000, from 4000 to 20000
   captions      INTEGER NOT NULL,        -- 1 shows captions
   muted_json    TEXT NOT NULL            -- player ids the host has blocked from sending
 );
@@ -140,7 +140,7 @@ nextWall(state: WallState, now: number): { state: WallState; effects: WallEffect
 
 - **Fair order.** Photos take turns by player (round-robin), oldest first within each player. Someone with three queued photos waits for each other guest's next one.
 - **Placement.** With `placement: 'breaks'`, nothing starts during the prompt, collect, vote, predict or reveal phases. The photo currently showing finishes; queued photos wait.
-- **Timing.** Each photo shows for `show_ms`. When the queue is longer than 6, that drops to 5 seconds so the queue drains during a break.
+- **Timing.** Each photo shows for `show_ms` (new rooms default 5 seconds, 4–20). When the queue is longer than 6, that drops to 5 seconds so the queue drains during a break.
 - **Effects.** `schedule` (the next change, using the existing scheduler's job, `wall-advance`) and `broadcast`.
 - **Host overrides.** Skip, pull and "show next now" are events into the same function.
 

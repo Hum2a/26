@@ -942,6 +942,7 @@ export function GuestPage({
                   gameId={session.gameId}
                   selfId={session.playerId}
                   pending={trollPending}
+                  error={rejection}
                   onSend={onTroll}
                 />
               ) : null,

@@ -9,6 +9,7 @@ export function TrollConfirm({
   onConfirm,
   disabled = false,
   reason,
+  announce = false,
 }: {
   nickname: string;
   troll: string;
@@ -16,6 +17,8 @@ export function TrollConfirm({
   onConfirm: () => void;
   disabled?: boolean;
   reason?: string;
+  /** Live region for one-shot status, not a ticking cooldown. */
+  announce?: boolean;
 }) {
   const sent = useRef(false);
 
@@ -26,7 +29,7 @@ export function TrollConfirm({
         Troll {nickname} with {troll}?
       </p>
       {reason ? (
-        <p className="troll-confirm-reason" role="status">
+        <p className="troll-confirm-reason" role={announce ? "status" : undefined}>
           {reason}
         </p>
       ) : (

@@ -27,17 +27,25 @@ const ready: LobbySnapshot = {
   },
 };
 
-it("groups trolls, then picks a target and confirms before sending", async () => {
-  const onSend = vi.fn();
-  render(
+function renderTab(
+  onSend: (kind: string, targetId: string, mediaId?: string) => void,
+  extra: { pending?: boolean; snapshot?: LobbySnapshot; error?: string } = {},
+) {
+  return (
     <TrollTab
-      snapshot={ready}
+      snapshot={extra.snapshot ?? ready}
       gameId="ABCDEFGH"
       selfId={playerId}
-      pending={false}
+      pending={extra.pending ?? false}
+      error={extra.error}
       onSend={onSend}
-    />,
+    />
   );
+}
+
+it("groups trolls, then picks a target and confirms before sending", async () => {
+  const onSend = vi.fn();
+  const view = render(renderTab(onSend));
   const groups = screen.getByRole("group", { name: "Troll groups" });
   expect(within(groups).getByRole("button", { name: /Phone chaos/ })).toBeTruthy();
   expect(
@@ -59,12 +67,45 @@ it("groups trolls, then picks a target and confirms before sending", async () =>
   );
   fireEvent.click(within(confirm).getByRole("button", { name: "Confirm" }));
   expect(onSend).toHaveBeenCalledWith("swap", secondId);
+  expect(navigator.vibrate).not.toHaveBeenCalled();
+  expect(screen.queryByText("Sent. Watch their phone.")).toBeNull();
+  view.rerender(renderTab(onSend, { pending: true }));
+  expect(screen.getByText("Sending your troll…")).toBeTruthy();
+  view.rerender(renderTab(onSend, { pending: false }));
   expect(navigator.vibrate).toHaveBeenCalled();
   expect(screen.getByText("Sent. Watch their phone.")).toBeTruthy();
 });
 
+it("does not celebrate a troll the room refused", async () => {
+  const onSend = vi.fn();
+  const view = render(renderTab(onSend));
+  fireEvent.click(
+    within(screen.getByRole("group", { name: "Troll groups" })).getByRole("button", {
+      name: /Identity/,
+    }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: /Nickname swap/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Troll Sam" }));
+  fireEvent.click(
+    within(await screen.findByRole("dialog", { name: "Confirm troll" })).getByRole(
+      "button",
+      { name: "Confirm" },
+    ),
+  );
+  view.rerender(renderTab(onSend, { pending: true }));
+  view.rerender(renderTab(onSend, { pending: false, error: "Trolls are closed." }));
+  expect(navigator.vibrate).not.toHaveBeenCalled();
+  expect(screen.queryByText("Sent. Watch their phone.")).toBeNull();
+  expect(
+    within(screen.getByRole("dialog", { name: "Confirm troll" })).getByRole("button", {
+      name: "Confirm",
+    }),
+  ).toHaveProperty("disabled", false);
+});
+
 afterEach(() => {
   vi.useRealTimers();
+  vi.mocked(navigator.vibrate).mockClear();
 });
 
 it("explains when trolls are not open yet", () => {

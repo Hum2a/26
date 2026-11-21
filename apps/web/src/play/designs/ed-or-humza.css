@@ -143,7 +143,7 @@
 
 .ed-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
   gap: 0.5rem;
 }
 
@@ -210,11 +210,15 @@
 }
 
 .ed-stage-photo.ed-face-neither {
+  display: grid;
+  place-items: center;
   width: clamp(3.5rem, 6.5vh, 5.25rem);
   height: auto;
   aspect-ratio: 3 / 4;
   border-radius: var(--radius-panel);
   font-size: 2rem;
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--muted) 28%, var(--surface));
 }
 
 .ed-pile .ed-face {
