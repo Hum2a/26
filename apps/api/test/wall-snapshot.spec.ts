@@ -49,7 +49,7 @@ it("shows a pending photo only to the host and its owner", async () => {
   ]);
   expect(host?.settings).toEqual({
     moderation: "approve",
-    showMs: 8_000,
+    showMs: 5_000,
     captions: true,
   });
 });

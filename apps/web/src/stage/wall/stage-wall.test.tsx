@@ -36,13 +36,15 @@ describe("projector photo wall", () => {
   it("puts the photo in the spotlight in a break, with its frame, caption and reactions", () => {
     render(<StageWall wall={wall({ now })} gameId="ROOM" phase="scores" />);
     expect(screen.getByRole("region", { name: "Photo wall: Amina" })).toBeTruthy();
+    expect(document.querySelector(".wall-popup-layer")).toBeTruthy();
+    expect(document.querySelector(".wall-corner")).toBeNull();
     const image = screen.getByRole("img", { name: "Cake o'clock, a photo from Amina" });
     expect(image.getAttribute("src")).toBe(`/api/rooms/ROOM/media/${id(2)}`);
     expect(screen.getByText("THE DAILY 26 · EXCLUSIVE")).toBeTruthy();
     expect(screen.getByLabelText("Reactions").textContent).toContain("3");
   });
 
-  it("uses the corner during a question when the host chose corner placement", () => {
+  it("pops the photo over the question instead of parking it under the display", () => {
     render(
       <StageWall
         wall={wall({ now, placement: "corner", waiting: 2 })}
@@ -50,7 +52,9 @@ describe("projector photo wall", () => {
         phase="collect"
       />,
     );
-    expect(screen.queryByRole("region", { name: /Photo wall/ })).toBeNull();
+    expect(screen.getByRole("region", { name: "Photo wall: Amina" })).toBeTruthy();
+    expect(document.querySelector(".wall-popup")).toBeTruthy();
+    expect(document.querySelector(".wall-corner")).toBeNull();
     expect(screen.getByRole("img", { name: /a photo from Amina/ })).toBeTruthy();
     expect(screen.getByRole("status").textContent).toContain("2 waiting");
   });
@@ -288,8 +292,8 @@ describe("a photo that fails to load on the projector", () => {
     );
     expect(onImageFailed).toHaveBeenCalledTimes(1);
     view.unmount();
-    // The room moves on to another post, which is broken too. (Corner placement:
-    // jsdom cannot run the spotlight's keyframed spring, so its exit never ends.)
+    // The room moves on to another post, which is broken too. (jsdom cannot
+    // finish the overlay exit, so unmount first.)
     const corner = render(
       <StageWall
         wall={wall({ now, placement: "corner" })}

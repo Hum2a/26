@@ -18,7 +18,7 @@ describe("TrollConfirm", () => {
     expect(screen.getByRole("dialog", { name: "Confirm troll" }).textContent).toContain(
       "Troll Sam with Fake Call?",
     );
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(useTroll).not.toHaveBeenCalled();
 

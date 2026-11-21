@@ -52,9 +52,7 @@ function Candidate({
           className="bin-lid"
           aria-hidden="true"
           initial={
-            unmasked && !motionSet.reduce
-              ? { y: 0, rotate: 0, opacity: 1 }
-              : false
+            unmasked && !motionSet.reduce ? { y: 0, rotate: 0, opacity: 1 } : false
           }
           animate={
             unmasked

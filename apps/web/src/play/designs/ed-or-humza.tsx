@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@iconify/react/dist/offline";
 import undo from "@iconify-icons/lucide/undo-2";
 import chevronLeft from "@iconify-icons/lucide/chevron-left";
+import circleSlash from "@iconify-icons/lucide/circle-slash";
 import type { PlaySnapshot } from "@26/shared";
 import { SubmitButton } from "../controls/SubmitButton";
 import { roundSubmitState } from "../controls/submit-state";
@@ -39,7 +40,7 @@ import "./ed-or-humza.css";
 type RankQuestion = Extract<PlaySnapshot["question"], { kind: "rank" }>;
 type RankReveal = Extract<NonNullable<PlaySnapshot["reveal"]>, { kind: "rank" }>;
 
-/** One quote at a time, swipe or tap into Ed or Humza, then send the whole list. */
+/** One quote at a time, swipe or tap into Ed, Humza or Neither, then send the whole list. */
 export function EdOrHumza(props: PresentationProps) {
   const question = props.play.question;
   if (question.kind !== "rank" || question.input !== "buckets") {
@@ -85,8 +86,10 @@ function SortPhone({
   );
   const left = question.tiers[0];
   const right = question.tiers[1];
+  const extra = question.tiers[2];
   const leftId = left?.id;
   const rightId = right?.id;
+  const extraId = extra?.id;
   const currentId = current?.id;
   const canUndo = history.length > 1;
 
@@ -127,6 +130,9 @@ function SortPhone({
   useEffect(() => {
     if (!editable) return;
     function onKey(event: KeyboardEvent) {
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
       if (event.key === "ArrowLeft" || event.key.toLowerCase() === "e") {
         event.preventDefault();
         if (leftId && currentId) {
@@ -137,6 +143,14 @@ function SortPhone({
         if (rightId && currentId) {
           place(rightId, currentId);
         }
+      } else if (
+        extraId &&
+        (event.key === "ArrowDown" || event.key.toLowerCase() === "n")
+      ) {
+        event.preventDefault();
+        if (currentId) {
+          place(extraId, currentId);
+        }
       } else if (event.key === "Backspace" && canUndo) {
         event.preventDefault();
         undoLast();
@@ -144,7 +158,7 @@ function SortPhone({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [canUndo, currentId, editable, leftId, place, rightId, undoLast]);
+  }, [canUndo, currentId, editable, extraId, leftId, place, rightId, undoLast]);
 
   return (
     <section className="design-phone ed-or-humza" aria-label="Ed or Humza?">
@@ -164,6 +178,7 @@ function SortPhone({
             onExpand={() => setExpanded((open) => !open)}
             left={left}
             right={right}
+            extra={extra}
             reduce={motionSet.reduce}
             onSwipe={(side) => {
               const tier = side === "left" ? left : right;
@@ -182,7 +197,7 @@ function SortPhone({
                   type="button"
                   className="ed-bucket motion-press"
                   data-tier={tier.id}
-                  data-side={index === 0 ? "left" : "right"}
+                  data-side={index === 0 ? "left" : index === 1 ? "right" : "extra"}
                   onClick={() => place(tier.id)}
                 >
                   <PersonPhoto person={tier.id} size="avatar" decorative />
@@ -209,7 +224,7 @@ function SortPhone({
                 type="button"
                 className="ed-pile motion-press"
                 data-tier={tier.id}
-                data-side={index === 0 ? "left" : "right"}
+                data-side={index === 0 ? "left" : index === 1 ? "right" : "extra"}
                 data-open={review === tier.id ? "" : undefined}
                 aria-expanded={review === tier.id}
                 onClick={() =>
@@ -317,6 +332,7 @@ function QuoteStack({
   onExpand,
   left,
   right,
+  extra,
   reduce,
   onSwipe,
 }: {
@@ -326,6 +342,7 @@ function QuoteStack({
   onExpand: () => void;
   left?: { id: string; label: string };
   right?: { id: string; label: string };
+  extra?: { id: string; label: string };
   reduce: boolean;
   onSwipe: (side: "left" | "right") => void;
 }) {
@@ -553,8 +570,9 @@ function QuoteStack({
       ) : null}
       {editable ? (
         <p className="ed-help">
-          Swipe towards {left?.label ?? "the first person"} or{" "}
-          {right?.label ?? "the second"}, or tap a name. Arrow keys and E / H work too.
+          {extra
+            ? `Swipe towards ${left?.label ?? "Ed"} or ${right?.label ?? "Humza"}, tap ${extra.label}, or tap a name. Arrow keys, E / H / N work too.`
+            : `Swipe towards ${left?.label ?? "Ed"} or ${right?.label ?? "Humza"}, or tap a name. Arrow keys, E / H work too.`}
         </p>
       ) : null}
     </figure>
@@ -578,7 +596,7 @@ function AssignedList({
 }) {
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
   const tier = question.tiers.find((entry) => entry.id === tierId);
-  const other = question.tiers.find((entry) => entry.id !== tierId);
+  const others = question.tiers.filter((entry) => entry.id !== tierId);
   const rows = placements.filter((entry) => entry.tierId === tierId);
 
   function toggleRow(itemId: string) {
@@ -625,15 +643,16 @@ function AssignedList({
                   <Icon icon={chevronLeft} aria-hidden="true" />
                   <span>Move back</span>
                 </button>
-                {other ? (
+                {others.map((destination) => (
                   <button
+                    key={destination.id}
                     type="button"
                     className="motion-press"
-                    onClick={() => onMove(item.id, other.id)}
+                    onClick={() => onMove(item.id, destination.id)}
                   >
-                    Move to {other.label}
+                    Move to {destination.label}
                   </button>
-                ) : null}
+                ))}
               </span>
             ) : null}
           </li>
@@ -708,7 +727,11 @@ function SortStage({
     preloadImages(edOrHumzaPreloadPaths("stage"));
   }, []);
   return (
-    <section className="design-stage ed-or-humza-stage" aria-label="Ed or Humza?">
+    <section
+      className="design-stage ed-or-humza-stage"
+      aria-label="Ed or Humza?"
+      data-tiers={question.tiers.length}
+    >
       <QuestionTag play={play}>Quote sort</QuestionTag>
       <StagePrompt text={question.prompt} />
       {!reveal ? (
@@ -721,7 +744,7 @@ function SortStage({
           />
         </p>
       ) : null}
-      <div className="ed-stage-columns">
+      <div className="ed-stage-columns" data-count={question.tiers.length}>
         {question.tiers.map((tier, column) => {
           const ids =
             reveal?.order.find((group) => group.tierId === tier.id)?.itemIds ?? [];
@@ -766,6 +789,21 @@ function PersonPhoto({
   size: "avatar" | "portrait";
   decorative?: boolean;
 }) {
+  if (person === "neither") {
+    return (
+      <span
+        className={
+          size === "portrait"
+            ? "ed-stage-photo ed-face-neither"
+            : "ed-face ed-face-neither"
+        }
+        aria-hidden={decorative ? true : undefined}
+        aria-label={decorative ? undefined : "Neither"}
+      >
+        <Icon icon={circleSlash} aria-hidden="true" />
+      </span>
+    );
+  }
   if (!isEdOrHumzaPerson(person)) {
     return null;
   }

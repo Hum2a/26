@@ -25,5 +25,6 @@ it("keeps Ed and Humza on distinct local files with guest-safe alt text", () => 
     edOrHumzaPhotos.humza.portrait.src,
   ]);
   expect(isEdOrHumzaPerson("ed")).toBe(true);
+  expect(isEdOrHumzaPerson("neither")).toBe(false);
   expect(isEdOrHumzaPerson("quote-01")).toBe(false);
 });

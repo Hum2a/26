@@ -23,7 +23,12 @@ function fixture(count = 18): RankQuestion {
     Array.from({ length: count }, (_, index) => ({
       id: `quote-${index + 1}`,
       quote: `Stand-in quotation ${index + 1}. `.repeat(5),
-      speaker: index % 2 === 0 ? ("ed" as const) : ("humza" as const),
+      speaker:
+        index % 3 === 0
+          ? ("ed" as const)
+          : index % 3 === 1
+            ? ("humza" as const)
+            : ("neither" as const),
     })),
   );
   const question = toPlayable(authored, false);
@@ -73,7 +78,10 @@ describe("Ed or Humza whole-list sorting", () => {
     );
     expect(
       edOrHumzaQuotes.every(
-        (entry) => entry.speaker === "ed" || entry.speaker === "humza",
+        (entry) =>
+          entry.speaker === "ed" ||
+          entry.speaker === "humza" ||
+          entry.speaker === "neither",
       ),
     ).toBe(true);
     expect(edOrHumza.items.map((entry) => entry.label)).toEqual(
@@ -118,6 +126,7 @@ describe("Ed or Humza whole-list sorting", () => {
       tiers: [
         { id: "ed", label: "Ed" },
         { id: "humza", label: "Humza" },
+        { id: "neither", label: "Neither" },
       ],
     });
     expect(preview.question?.kind === "rank" && preview.question.items).toHaveLength(
@@ -192,13 +201,32 @@ describe("Ed or Humza whole-list sorting", () => {
         question,
         question.items.map((item) => ({ itemId: item.id, tierId: "ed" })),
       ),
-    ).toEqual({ points: 40, detail: "placed-9/18" });
+    ).toEqual({ points: 26, detail: "placed-6/18" });
     expect(
       pointsForRanking(
         question,
         correct.map((entry) => ({
           ...entry,
-          tierId: entry.tierId === "ed" ? "humza" : "ed",
+          tierId:
+            entry.tierId === "ed"
+              ? "humza"
+              : entry.tierId === "humza"
+                ? "ed"
+                : "neither",
+        })),
+      ),
+    ).toEqual({ points: 26, detail: "placed-6/18" });
+    expect(
+      pointsForRanking(
+        question,
+        correct.map((entry) => ({
+          ...entry,
+          tierId:
+            entry.tierId === "ed"
+              ? "humza"
+              : entry.tierId === "humza"
+                ? "neither"
+                : "ed",
         })),
       ).points,
     ).toBe(0);
@@ -223,6 +251,42 @@ describe("Ed or Humza whole-list sorting", () => {
         ),
       ).ok,
     ).toBe(false);
+  });
+
+  it("accepts Neither as a speaker key and scores a placement there", () => {
+    const authored = makeEdOrHumza([
+      { id: "quote-1", quote: "Stand-in from Ed.", speaker: "ed" },
+      { id: "quote-2", quote: "Stand-in from Humza.", speaker: "humza" },
+      { id: "quote-3", quote: "Stand-in from neither.", speaker: "neither" },
+    ]);
+    const question = toPlayable(authored, false);
+    if (!question || question.kind !== "rank") {
+      throw new Error("Expected a ready sorting question");
+    }
+    assertRankQuestion(question);
+    expect(question.tiers.map((tier) => tier.id)).toEqual(["ed", "humza", "neither"]);
+    expect(question.truth).toEqual([
+      { tierId: "ed", itemIds: ["quote-1"] },
+      { tierId: "humza", itemIds: ["quote-2"] },
+      { tierId: "neither", itemIds: ["quote-3"] },
+    ]);
+    const correct = [
+      { itemId: "quote-1", tierId: "ed" },
+      { itemId: "quote-2", tierId: "humza" },
+      { itemId: "quote-3", tierId: "neither" },
+    ];
+    expect(checkRanking(question, correct).ok).toBe(true);
+    expect(pointsForRanking(question, correct)).toEqual({
+      points: 80,
+      detail: "placed-3/3",
+    });
+    expect(
+      pointsForRanking(question, [
+        { itemId: "quote-1", tierId: "ed" },
+        { itemId: "quote-2", tierId: "humza" },
+        { itemId: "quote-3", tierId: "ed" },
+      ]),
+    ).toEqual({ points: 53, detail: "placed-2/3" });
   });
 
   it("supports more quotes with bounded payloads while ordinary rankings retain their limits", () => {

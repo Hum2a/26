@@ -143,8 +143,8 @@
 
 .ed-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 0.5rem;
 }
 
 .ed-bucket,
@@ -201,6 +201,26 @@
   background: var(--muted);
 }
 
+.ed-face-neither {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 1.15rem;
+  background: color-mix(in srgb, var(--muted) 22%, var(--surface));
+}
+
+.ed-stage-photo.ed-face-neither {
+  display: grid;
+  place-items: center;
+  width: clamp(3.5rem, 6.5vh, 5.25rem);
+  height: auto;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-panel);
+  font-size: 2rem;
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--muted) 28%, var(--surface));
+}
+
 .ed-pile .ed-face {
   width: 1.85rem;
   height: 1.85rem;
@@ -230,6 +250,13 @@
   border-color: color-mix(in srgb, var(--highlight) 60%, var(--line));
 }
 
+.ed-bucket[data-side="extra"],
+.ed-bucket[data-tier="neither"],
+.ed-pile[data-side="extra"],
+.ed-pile[data-tier="neither"] {
+  border-color: color-mix(in srgb, var(--muted) 55%, var(--line));
+}
+
 .ed-pile[data-open][data-side="left"],
 .ed-pile[data-open][data-tier="ed"] {
   background: var(--accent);
@@ -242,6 +269,13 @@
   background: var(--highlight);
   color: var(--highlight-foreground);
   border-color: var(--highlight);
+}
+
+.ed-pile[data-open][data-side="extra"],
+.ed-pile[data-open][data-tier="neither"] {
+  background: color-mix(in srgb, var(--muted) 35%, var(--surface));
+  color: var(--foreground);
+  border-color: var(--muted);
 }
 
 .ed-pile-count {
@@ -348,7 +382,7 @@
 
 .ed-assigned-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
   gap: 0.4rem;
 }
 
@@ -441,6 +475,14 @@
   align-items: start;
 }
 
+.ed-stage-columns[data-count="3"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ed-or-humza-stage[data-tiers="3"] .ed-stage-column ul {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .ed-stage-column {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -507,8 +549,11 @@
   }
   .ed-bucket {
     min-height: 3rem;
-    font-size: 1.02rem;
-    padding: 0.5rem 0.55rem;
+    font-size: 0.92rem;
+    padding: 0.45rem 0.35rem;
+  }
+  .ed-actions {
+    gap: 0.35rem;
   }
   .ed-undo,
   .ed-pile {

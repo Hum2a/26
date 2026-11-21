@@ -125,7 +125,7 @@ it("renders chess prompt on the projector during intro and prompt before boards 
   const { rerender } = render(
     <StagePlay snapshot={{ ...chessPrompt, phase: "intro" }} />,
   );
-  expect(screen.getByText("Play 1-minute blitz against the Humza bot!")).toBeTruthy();
+  expect(screen.getByText("Listen to Baseer")).toBeTruthy();
   expect(screen.queryByText(/Unsupported question type/i)).toBeNull();
 
   rerender(<StagePlay snapshot={chessPrompt} />);
