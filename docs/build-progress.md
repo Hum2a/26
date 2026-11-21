@@ -7640,3 +7640,13 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Checks.** `npm run content:check` passed. `npm run typecheck` passed. `npx vitest run test/party-concepts.spec.ts` 18 tests passed. Prettier check on the changed files passed. Full `npm run test:unit`, `npm run lint` and the full API suite were left to CI. Playwright was not run.
 
 **Next.** Preview `club-kicked-out` in Admin → Question packs → Phone preview and confirm the long options wrap cleanly at 320px.
+
+## 21 November 2026 — One more Humza quote for Ed or Humza
+
+**Status.** Implemented on `worktree-club-kicked-out-question` (PR 81). Not deployed.
+
+**Ed or Humza.** Appended `quote-24`, "Idc if your tits are falling out wear the red dress", as a Humza line with wording preserved. The list is now 24 quotes: 11 Ed, 9 Humza, 4 Neither. Scoring is still 80 points by placements, rounded down, so sorting everything into one pile now scores 36 (Ed), 30 (Humza) or 13 (Neither). `apps/api/test/ed-or-humza.spec.ts` was updated to match. `npm run content:export` rewrote the birthday answer key and running order. Merged the latest `master` and kept both sides of the progress-log conflict.
+
+**Checks.** `npm run content:check` passed. `npm run typecheck` passed. `apps/api` `test/ed-or-humza.spec.ts` 6 tests passed. Prettier check on the changed files passed. Full unit, lint and API suites were left to CI. Playwright was not run.
+
+**Next.** Run Ed or Humza in a rehearsal room and confirm the new card appears in the stack.
