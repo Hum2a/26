@@ -590,7 +590,7 @@ describe("October birthday question additions", () => {
     [favouritePokemon, "mudkip", ["Turtwig", "Mudkip", "Tepig", "Osama bin laden"]],
     [
       howItalianIsHumza,
-      "half-percent",
+      "one-percent",
       [
         "1%",
         "pineapple belongs on pizza",
