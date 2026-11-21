@@ -69,7 +69,7 @@ Reveal: Fastest Apple; 2nd Palm Beach Pete; 3rd Politics; Slowest Conspiracy the
 
 What was their real name? Count Binface
 
-Reveal: Jon Harvey / Jonathan Harvey (close spellings count)
+Reveal: Jon Harvey
 
 ## 12. mock-election
 
@@ -111,7 +111,7 @@ Reveal: No right answer. Read out the room's split.
 
 What was their real name? Zack Polanski
 
-Reveal: David Paulden (close spellings count)
+Reveal: David Paulden
 
 ## 19. where-are-we
 
@@ -135,7 +135,7 @@ Reveal: 175 p/litre
 
 What was their real name? Tommy Robinson
 
-Reveal: Stephen Yaxley-Lennon / Stephen Lennon / Stephen Yaxley (close spellings count)
+Reveal: Stephen Yaxley-Lennon
 
 ## 23. common-password
 
