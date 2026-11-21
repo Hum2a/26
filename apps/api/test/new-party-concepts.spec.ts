@@ -79,5 +79,5 @@ it("saves all eight concepts without inventing a Reddit ending, local post, list
   ).toMatchObject({ correctOptionId: "dystopia" });
   expect(validatePack(birthdayPack).filter((i) => i.level === "error")).toEqual([]);
   expect(birthdayPack.release).toBe("draft");
-  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
+  expect(birthdayPack.order.at(-1)).toBe("best-dressed");
 });

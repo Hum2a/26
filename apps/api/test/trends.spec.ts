@@ -287,7 +287,16 @@ describe("answer trends", () => {
     for (const kind of ["chess", "kart", "wordle", "slider", "typed"]) {
       expect(byKind(kind).every(hasRightAndWrong), kind).toBe(true);
     }
-    expect(byKind("guess").every(hasRightAndWrong)).toBe(true);
+    const voterGuesses = byKind("guess").filter(
+      (question) => question.kind === "guess" && question.award !== "nominees",
+    );
+    expect(voterGuesses.length).toBeGreaterThan(0);
+    expect(voterGuesses.every(hasRightAndWrong)).toBe(true);
+    const nomineeGuesses = byKind("guess").filter(
+      (question) => question.kind === "guess" && question.award === "nominees",
+    );
+    expect(nomineeGuesses.length).toBeGreaterThan(0);
+    expect(nomineeGuesses.some(hasRightAndWrong)).toBe(false);
     expect(byKind("vote").some(hasRightAndWrong)).toBe(false);
     expect(byKind("rank").some(hasRightAndWrong)).toBe(false);
     const polls = scored.filter(

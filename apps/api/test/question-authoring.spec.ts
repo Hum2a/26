@@ -325,7 +325,7 @@ describe("question authoring", () => {
       "birthday-draft",
     ]);
     expect(birthdayPack.release).toBe("draft");
-    expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
+    expect(birthdayPack.order.at(-1)).toBe("best-dressed");
     expect(resolveContent(birthdayPack.version)).toEqual({
       status: "unavailable",
       version: birthdayPack.version,
@@ -610,7 +610,7 @@ describe("October birthday question additions", () => {
     const ids = birthdayPack.catalogue.map((question) => question.id);
     for (const question of entries) expect(ids).toContain(question.id);
     expect(birthdayPack.release).toBe("draft");
-    expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
+    expect(birthdayPack.order.at(-1)).toBe("best-dressed");
     for (const question of entries) expect(birthdayPack.order).toContain(question.id);
     expect(resolveContent("birthday-draft").status).toBe("unavailable");
     expect(resolveContent(demoQuestionSetVersion).status).toBe("playable");

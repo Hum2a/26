@@ -54,13 +54,15 @@ import { dialBritishPolitics } from "./dial-british-politics.ts";
 import { chessBattle } from "./chess-battle.ts";
 import { trumpMadeUpCountry } from "./trump-made-up-country.ts";
 import { esportsTag } from "./esports-tag.ts";
+import { bestDressed } from "./best-dressed.ts";
 
 /**
  * Working catalogue for Humza's questions.
  * `birthday-draft` is not a playable version. Rooms keep the version they started with.
  * Add new questions to `catalogue` as drafts. The default order includes completed
- * rounds with kart last. Admin saves an override for new games; starting a birthday
- * game freezes its server-side script under a content hash.
+ * rounds with `kart-sprint` second to last and `best-dressed` last. Admin saves an
+ * override for new games; starting a birthday game freezes its server-side script
+ * under a content hash.
  */
 export const birthdayPack: QuestionPack = {
   packId: "birthday",
@@ -121,8 +123,10 @@ export const birthdayPack: QuestionPack = {
     "kart-park-grand-prix",
     "ed-or-humza",
     "kart-sprint",
+    "best-dressed",
   ],
   catalogue: withPointsTrolls([
+    bestDressed,
     whereAreWe,
     edOrHumza,
     accommodation01,

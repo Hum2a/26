@@ -103,6 +103,7 @@ export function adminQuestion(
   } else if (question.kind === "guess") {
     add("Roster", question.roster);
     add("Scoring", question.scoring);
+    if (question.award) add("Award", question.award);
     add("Self vote", question.selfVote);
     if (question.shortlist.length) add("Shortlist", question.shortlist.join(", "));
   }
@@ -227,7 +228,11 @@ function answerFor(
         ? missing
         : {
             status: "not-applicable",
-            lines: [`Scoring follows the ${question.scoring} rule.`],
+            lines: [
+              question.award === "nominees"
+                ? "Most-voted player receives the full points; each tied winner receives the full points (not split)."
+                : `Scoring follows the ${question.scoring} rule.`,
+            ],
           };
   if (question.kind === "duel" || question.kind === "finale")
     return Number.isFinite(question.target)

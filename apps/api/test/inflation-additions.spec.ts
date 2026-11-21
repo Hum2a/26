@@ -50,7 +50,7 @@ it("defines which dated price guests should estimate, with source limitations", 
   expect(inflationCheeseburger.instructions).toContain("September 2026 menu-guide");
   expect(inflationCheeseburger.notes).toContain("independent fan guide");
   expect(birthdayPack.release).toBe("draft");
-  expect(birthdayPack.order.at(-1)).toBe("kart-sprint");
+  expect(birthdayPack.order.at(-1)).toBe("best-dressed");
   expect(validatePack(birthdayPack).filter((issue) => issue.level === "error")).toEqual(
     [],
   );

@@ -70,7 +70,7 @@ A threshold outcome names an option, a share, and who scores either way. `{ kind
 
 A push outcome lists `lines` (two to eight), `lineMs` between them, a rising `banks` value for each line, and `raidAfter`, the possible Raid points drawn evenly (`null` means no Raid). It needs a `bail` option, `speedBonus: null`, and a `collectMs` long enough for every line. The Raid is drawn and stored when answering opens and is only shown at the reveal. A bail keeps the bank for the line showing when the room received it, if the Raid had not hit; anyone still in when the Raid hits scores 0; with no Raid, everyone still in keeps the last bank. See `cursed-search-history.ts`.
 
-A guess can set `selfVoteBonus: "double"` with majority scoring and self-votes allowed: a voter who picked themselves scores double when they are also the room's pick.
+A guess can set `selfVoteBonus: "double"` with majority scoring and self-votes allowed: a voter who picked themselves scores double when they are also the room's pick. Or set `award: "nominees"` with majority scoring and `roster: "room"` to award the round's points to the most-voted player(s) instead of the voters (used by `best-dressed`).
 
 A typed question lists its accepted spellings. The first is shown at the reveal. Matching ignores case, accents, punctuation, hyphens and spacing, and forgives a small typo: none up to 4 letters, one up to 9, two beyond that. Wrong answers stay off the stage.
 
