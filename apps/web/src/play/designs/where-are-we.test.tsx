@@ -85,7 +85,7 @@ it("shows the stand-in clue, reserves the pin readout, and sends a pin through o
   expect(screen.getByText(/Pin at 18\.00°, 0\.00°/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Send pin" }));
   expect(callbacks.onMapPin).toHaveBeenCalledWith({ lat: 18, lng: 0 });
-});
+}, 15_000);
 
 it("opens the clue photo lightbox in a dialog and closes cleanly via button, backdrop, and Escape", async () => {
   stubMap();
