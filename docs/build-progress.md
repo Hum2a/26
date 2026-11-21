@@ -7694,3 +7694,15 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Merge from `master`.** Kept both progress-log entries and both room tests. Typecheck, lint, formatting on the merged files, the build and bundle budget, and all 33 targeted API tests passed again.
 
 **Next.** In a fresh birthday rehearsal room, open an inflation slider and send a nearby estimate to see the partial award on the phone and projector.
+
+## 21 November 2026 — Leviticus 18:7 wording
+
+**Status.** Updated locally in the birthday catalogue and regenerated both birthday presenter exports.
+
+**Question.** The prompt asks which statement paraphrases Leviticus 18:7. The correct choice uses Humza’s exact wording. The other three choices follow the same sentence structure and refer to a stepmother, a mother’s sister and a brother’s wife, drawing on verses 8, 13 and 16.
+
+**Checks.** `npm run content:check`, `npm run typecheck`, `npm run lint` and Prettier on changed files passed. After merging `master` at `d8ef57c`, the two targeted API suites passed all 44 tests. A direct check of the playable question confirmed the exact correct label and parallel wording across all four choices.
+
+**Web suite.** `npm run test:unit` passed 1,017 of 1,020 tests. The two kart failures passed when their files were rerun in isolation. The guest Wordle transfer test still failed to find the game region on rerun.
+
+**Next.** Preview the updated round in Admin → Question packs → Phone preview.
