@@ -33,7 +33,9 @@ export function RunningOrder({
   const dirty = JSON.stringify(ids) !== JSON.stringify(saved.ids);
   const showSeconds = totalSeconds(ids, (id) => byId.get(id)?.estimatedSeconds);
   const cluster = longestRun(ids);
-  const mixed = suggestMixedOrder(ids, (id) => byId.get(id)?.mechanic === "kart");
+  const mixed = suggestMixedOrder(ids, (id) =>
+    id === "best-dressed" ? 2 : byId.get(id)?.mechanic === "kart" ? 1 : false,
+  );
   const available = pack.questions.filter(
     (q) =>
       !ids.includes(q.id) &&
@@ -108,7 +110,7 @@ export function RunningOrder({
             onClick={() => {
               setIds(mixed);
               setNotice(
-                "Suggested a mixed order: same-series rounds are spread out and the kart race stays last. Review it, then save or discard.",
+                "Suggested a mixed order: same-series rounds are spread out, the kart race stays near the end and Best dressed stays last. Review it, then save or discard.",
               );
             }}
           >

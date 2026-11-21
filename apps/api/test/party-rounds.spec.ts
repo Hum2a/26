@@ -352,7 +352,7 @@ it("removes retired rounds from old saved orders without changing already-frozen
   });
 });
 
-it("adds the bracket rounds back to orders saved before the phone round, but not to later ones", async () => {
+it("adds the bracket rounds and best-dressed back to older saved orders, but leaves later host saves alone", async () => {
   const registry = env.ROOM_CODE_REGISTRY.getByName("codes");
   const save = (ids: string[], updatedAt: number) =>
     runInDurableObject(registry, (_instance, state) =>
@@ -380,10 +380,14 @@ it("adds the bracket rounds back to orders saved before the phone round, but not
     "heathrow-search-query",
     "property-price-roulette",
     "kart-sprint",
+    "best-dressed",
   ]);
   expect(restored.revision).toBe(4);
 
   await save(old, Date.UTC(2026, 10, 20, 12, 0));
+  expect((await registry.birthdayOrder()).ids).toEqual([...old, "best-dressed"]);
+
+  await save(old, Date.UTC(2026, 10, 21, 15, 0));
   expect((await registry.birthdayOrder()).ids).toEqual(old);
 
   const nearlyFull = [...old, ...Array.from({ length: 73 }, () => "car-name")];
@@ -396,4 +400,5 @@ it("adds the bracket rounds back to orders saved before the phone round, but not
     "apology-video-auction",
   ]);
   expect(capped).not.toContain("heathrow-search-query");
+  expect(capped).not.toContain("best-dressed");
 });

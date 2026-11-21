@@ -25,15 +25,28 @@ it("finds series and the longest back-to-back run", () => {
   expect(longestRun(ids)).toEqual({ series: "council", length: 4 });
 });
 
-it("spreads series out, keeps their inner order and the kart race last", () => {
-  const mixed = suggestMixedOrder(ids, (id) => id.startsWith("kart"));
-  expect([...mixed].sort()).toEqual([...ids].sort());
-  expect(mixed.at(-1)).toBe("kart-sprint");
+it("spreads series out, keeps their inner order and keeps kart then best dressed last", () => {
+  const withFinale = [...ids, "best-dressed"];
+  const mixed = suggestMixedOrder(withFinale, (id) =>
+    id === "best-dressed" ? 2 : id.startsWith("kart") ? 1 : false,
+  );
+  expect([...mixed].sort()).toEqual([...withFinale].sort());
+  expect(mixed.slice(-2)).toEqual(["kart-sprint", "best-dressed"]);
   expect(longestRun(mixed).length).toBe(1);
   const councils = mixed.filter((id) => id.startsWith("council"));
   expect(councils).toEqual(["council-a", "council-b", "council-c", "council-d"]);
   // Deterministic: the same input gives the same suggestion.
-  expect(suggestMixedOrder(ids, (id) => id.startsWith("kart"))).toEqual(mixed);
+  expect(
+    suggestMixedOrder(withFinale, (id) =>
+      id === "best-dressed" ? 2 : id.startsWith("kart") ? 1 : false,
+    ),
+  ).toEqual(mixed);
+
+  const reordered = suggestMixedOrder(
+    ["best-dressed", "warm-up", "kart-sprint"],
+    (id) => (id === "best-dressed" ? 2 : id.startsWith("kart") ? 1 : false),
+  );
+  expect(reordered).toEqual(["warm-up", "kart-sprint", "best-dressed"]);
 });
 
 it("still places everything when one series dominates", () => {

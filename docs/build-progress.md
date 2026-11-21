@@ -7666,3 +7666,19 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Checks.** `npm run typecheck` passed. ESLint on the changed folders: 0 errors. Web: `src/troll`, `src/live`, `src/kart`, `src/device` (68 files) passed after fixes, plus `question-direction` and `question-phone-preview`. API: `test/troll*`, `test/kart*`, `party-concepts` and the updated kart lobby, track and room specs passed. A local dev page (not committed) showed the preview at 390px: the invasion flood and Australia mode stay inside the stand-in phone. Full `npm run test:unit`, the full API suite, `npm run build` and the bundle budget are left to CI. Playwright was not run.
 
 **Next.** Rehearse a kart race with two phones and end it from the presenter phone; send a few trolls from the confirm-step preview on a real phone.
+
+## 21 November 2026 — Restore `best-dressed` into saved birthday running orders
+
+**Status.** Implemented on `best_dressed_question_order`. Not deployed.
+
+**Cause.** `best-dressed` was already last in `birthdayPack.order` (`apps/api/src/questions/packs/birthday/manifest.ts`), but environments with a previously saved `pack_order` row in `RoomCodeRegistry` keep reading that saved list instead of the default `order`. In addition, the admin **Suggest a mixed order** planner only pinned `mechanic === "kart"` to the tail, which would move `best-dressed` ahead of the kart race instead of keeping it last.
+
+**What changed.**
+
+- `apps/api/src/questions/birthday-order.ts`: replaced `restoreBrackets` with `restoreSavedOrder` so saved orders with a real 2026 timestamp before `2026-11-21T14:08:00Z` (or `null`) append `"best-dressed"` at the end when missing and within the 80-round cap, while leaving later host saves (including explicit removals) and pre-2026 synthetic test timestamps untouched.
+- `apps/web/src/admin/running-order-plan.ts` & `apps/web/src/admin/running-order.tsx`: extended `suggestMixedOrder` to accept numeric tail ranks so `mechanic === "kart"` stays near the end (`1`) and `"best-dressed"` stays at the very end (`2`).
+- Tests: updated `apps/api/test/party-rounds.spec.ts`, `apps/web/src/admin/running-order-plan.test.ts`, and `apps/web/src/admin/running-order.test.tsx`.
+
+**Checks.** `npm run format:check`, `npm run typecheck`, `npm run lint` (0 errors, 15 existing Fast Refresh warnings; structure check passed), and `npm run build` (within gzip budgets; `content:check` passed for `demo` and `birthday`) all passed. Targeted web tests (`running-order.test.tsx`, `running-order-plan.test.ts`, `content-page.test.tsx`, `features.test.ts`: 4 files / 14 tests) and targeted API specs (`birthday-order.spec.ts`, `party-rounds.spec.ts`, `birthday-room.spec.ts`, `best-dressed.spec.ts`: 4 files / 17 tests) passed. Full `npm run test:unit`, the full `@26/api` suite, and Playwright were left to CI / not run.
+
+**Next.** Open Admin → Question packs after deployment to confirm `best-dressed` sits at the end of the running order, and save if making further edits.
