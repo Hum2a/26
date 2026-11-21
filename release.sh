@@ -4,6 +4,8 @@
 #
 #   ./release.sh                 next patch (0.0.1 -> 0.0.2), deploy to staging
 #   ./release.sh patch           the same
+#   ./release.sh minor           next minor (0.0.1 -> 0.1.0), deploy to staging
+#   ./release.sh major --v1      next major (0.0.1 -> 1.0.0), deploy to staging
 #   ./release.sh 0.0.1           an exact version
 #   ./release.sh current         print the current version and stop
 #
@@ -43,7 +45,7 @@ for arg in "$@"; do
     --override-freeze) ;; # ignored; the party freeze was removed on 18 Nov 2026
     --no-github) github=false ;;
     --v1) allow_v1=true ;;
-    -h|--help) sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) echo "Unknown option: $arg" >&2; exit 2 ;;
     *) bump="$arg" ;;
   esac
@@ -64,13 +66,24 @@ if [[ "$bump" == "current" ]]; then
   exit 0
 fi
 
-if [[ "$bump" == "patch" ]]; then
-  next="$(node -p "const [a,b,c]='$current'.split('.').map(Number); [a,b,c+1].join('.')")"
-elif [[ "$bump" =~ ^v?([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-  next="${BASH_REMATCH[1]}"
-else
-  fail "Use patch, an exact version like 0.0.1, or current. Got: $bump"
-fi
+case "$bump" in
+  patch)
+    next="$(node -p "const [a,b,c]='$current'.split('.').map(Number); [a,b,c+1].join('.')")"
+    ;;
+  minor)
+    next="$(node -p "const [a,b]='$current'.split('.').map(Number); [a,b+1,0].join('.')")"
+    ;;
+  major)
+    next="$(node -p "const [a]='$current'.split('.').map(Number); [a+1,0,0].join('.')")"
+    ;;
+  *)
+    if [[ "$bump" =~ ^v?([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+      next="${BASH_REMATCH[1]}"
+    else
+      fail "Use major, minor, patch, an exact version like 0.0.1, or current. Got: $bump"
+    fi
+    ;;
+esac
 
 major="${next%%.*}"
 if (( major >= 1 )) && [[ "$allow_v1" != true ]]; then
@@ -78,7 +91,7 @@ if (( major >= 1 )) && [[ "$allow_v1" != true ]]; then
 fi
 
 if [[ "$next" == "$current" && "$current" != "0.0.0" ]]; then
-  fail "Already at v$current. Use patch or a higher version."
+  fail "Already at v$current. Use major, minor, patch, or a higher version."
 fi
 
 say "Release v$current -> v$next (deploy: $deploy)"

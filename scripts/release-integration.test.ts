@@ -844,4 +844,60 @@ describe("release.sh wrapper", () => {
       });
     }
   });
+
+  it("bumps minor and resets patch to zero", () => {
+    withFixture((fixture) => {
+      const result = runReleaseSh(
+        fixture,
+        ["minor", "--deploy=none", "--no-github", "--skip-checks"],
+      );
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(fixtureVersion(fixture), "0.1.0");
+      assert.match(
+        readFileSync(path.join(fixture.work, "packages/shared/src/version.ts"), "utf8"),
+        /appVersion = "0\.1\.0"/,
+      );
+      assert.equal(git(fixture.work, ["log", "-1", "--format=%s"]), "Release v0.1.0");
+      assert.equal(git(fixture.origin, ["tag", "--list"]), "v0.1.0");
+    });
+  });
+
+  it("refuses a major bump to 1.0.0 without --v1", () => {
+    withFixture((fixture) => {
+      const head = git(fixture.work, ["rev-parse", "HEAD"]);
+      const result = runReleaseSh(fixture, ["major", "--deploy=none", "--no-github"]);
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /pass --v1 when it is/);
+      assertUntouched(fixture, head, result.log);
+    });
+  });
+
+  it("bumps major with --v1 and resets minor and patch to zero", () => {
+    withFixture((fixture) => {
+      const minorResult = runReleaseSh(fixture, [
+        "minor",
+        "--deploy=none",
+        "--no-github",
+        "--skip-checks",
+      ]);
+      assert.equal(minorResult.status, 0, minorResult.stderr);
+      assert.equal(fixtureVersion(fixture), "0.1.0");
+
+      const majorResult = runReleaseSh(fixture, [
+        "major",
+        "--v1",
+        "--deploy=none",
+        "--no-github",
+        "--skip-checks",
+      ]);
+      assert.equal(majorResult.status, 0, majorResult.stderr);
+      assert.equal(fixtureVersion(fixture), "1.0.0");
+      assert.match(
+        readFileSync(path.join(fixture.work, "packages/shared/src/version.ts"), "utf8"),
+        /appVersion = "1\.0\.0"/,
+      );
+      assert.equal(git(fixture.work, ["log", "-1", "--format=%s"]), "Release v1.0.0");
+      assert.equal(git(fixture.origin, ["tag", "--list"]), "v0.1.0\nv1.0.0");
+    });
+  });
 });
