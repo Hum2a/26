@@ -84,13 +84,9 @@ test("analyseLines preserves code + comment + blank === total across languages",
   assert.equal(sql.comment, 2);
   assert.equal(sql.blank, 1);
 
-  const ymlSource = [
-    "# workflow",
-    "",
-    "name: Check",
-    "  # indented comment",
-    "",
-  ].join("\n");
+  const ymlSource = ["# workflow", "", "name: Check", "  # indented comment", ""].join(
+    "\n",
+  );
   const yml = analyseLines(ymlSource, ".yml");
   assert.equal(yml.code + yml.comment + yml.blank, yml.total);
   assert.equal(yml.code, 1);

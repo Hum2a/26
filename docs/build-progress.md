@@ -7620,3 +7620,13 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Checks.** After also marking quote-18 as Neither (Neither set: quote-05, quote-06, quote-17, quote-18; 11 Ed, 8 Humza, 4 Neither): `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run content:check` passed. `npm run test:unit` 218 files / 1010 tests passed. `npm run test -w @26/api` 148 files / 864 tests passed (`XDG_CONFIG_HOME` set). `npm run build` passed (gzip entry JS 223,073 / 260,000; entry CSS 28,209 / 34,000; total JS 1,502,646 / 1,650,000). Playwright was not run.
 
 **Next.** Try Live controls talking points and the projector progress strip in a rehearsal room, then run Ed or Humza with the longer list.
+
+## 21 November 2026 — Master CI formatting
+
+**Status.** Implemented on `fix/master-ci-format-and-chess-copy`. Not deployed.
+
+**Change.** Master CI failed `format:check` on `scripts/loc.test.ts` after the `npm run loc` merge. Ran Prettier on that file only; no behaviour change. The earlier `bin-unmasked.tsx` and stale `chess-stage.test.tsx` failures were already fixed on master.
+
+**Checks.** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run test:release` 82 passed. `npm run test:unit` 218 files / 1010 tests passed. `npm run test -w @26/api` 148 files / 864 tests passed. `npm run build` passed. Playwright was not run.
+
+**Next.** Confirm the master Check run goes green after merge.
