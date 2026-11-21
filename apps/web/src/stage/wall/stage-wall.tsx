@@ -6,7 +6,7 @@ import {
   useReducedMotion,
 } from "motion/react";
 import { animate } from "motion";
-import { wallQuestionPhases, type LobbySnapshot, type WallReaction } from "@26/shared";
+import { type LobbySnapshot, type WallReaction } from "@26/shared";
 import { FramedPhoto, reactionEmoji } from "../../wall/framed-photo";
 import { serverOffset } from "../../live/server-clock";
 import { withClientApiKey } from "../../api/client-key";
@@ -17,14 +17,15 @@ import {
   supportsBlobMediaCache,
   useCachedMediaSrc,
 } from "../../media/media-cache";
+import { wallPopupPose } from "./wall-popup-pose";
 
 type Wall = NonNullable<LobbySnapshot["wall"]>;
 type Now = NonNullable<Wall["now"]>;
 
 /**
- * The photo wall on the projector. In a break the photo takes the screen
- * (spotlight); with corner placement during a question it sits small in a
- * corner. Nothing here decides what shows or for how long: that is the room.
+ * The photo wall on the projector. Approved photos pop up as a framed overlay
+ * on top of whatever the stage is showing, then leave after the room's timer.
+ * Nothing here decides what shows or for how long: that is the room.
  *
  * `onImageFailed` tells the room the photo on screen did not load, once per
  * post. Only the projector passes it, and the room accepts it only from the
@@ -66,8 +67,6 @@ export function StageWall({
   const failed = nowId && onImageFailed ? () => report(nowId) : undefined;
   const src = (mediaId: string) =>
     withClientApiKey(`/api/rooms/${gameId}/media/${mediaId}`);
-  const inQuestion = (wallQuestionPhases as readonly string[]).includes(phase);
-  const corner = Boolean(wall.now) && inQuestion && wall.placement === "corner";
   return (
     <>
       {wall.next ? <Preload src={src(wall.next.mediaId)} /> : null}
@@ -75,35 +74,18 @@ export function StageWall({
         <Reel reel={wall.reel} src={src} />
       ) : null}
       <AnimatePresence mode="wait">
-        {wall.now && !corner ? (
-          <Spotlight
+        {wall.now ? (
+          <Popup
             key={wall.now.postId}
             now={wall.now}
-            src={src(wall.now.mediaId)}
+            next={wall.next}
+            src={src}
             onFailed={failed}
           />
         ) : null}
-        {wall.now && corner ? (
-          <motion.div
-            key={`corner-${wall.now.postId}`}
-            className="wall-corner"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-          >
-            <FramedPhoto
-              src={src(wall.now.mediaId)}
-              frame={wall.now.frame}
-              nickname={wall.now.nickname}
-              caption={wall.now.caption}
-              size="corner"
-              onFailed={failed}
-            />
-          </motion.div>
-        ) : null}
       </AnimatePresence>
       <AnimatePresence>
-        {wall.waiting > 0 && (!wall.now || corner) ? (
+        {wall.waiting > 0 ? (
           <motion.p
             key="waiting"
             className="wall-waiting"
@@ -120,16 +102,19 @@ export function StageWall({
   );
 }
 
-function Spotlight({
+function Popup({
   now,
+  next,
   src,
   onFailed,
 }: {
   now: Now;
-  src: string;
+  next: Wall["next"];
+  src: (mediaId: string) => string;
   onFailed?: () => void;
 }) {
   const reduce = useReducedMotion();
+  const pose = wallPopupPose(now.postId);
   const meter = useMotionValue(1);
   useEffect(() => {
     if (reduce) return;
@@ -138,77 +123,85 @@ function Spotlight({
       0,
       now.untilAt - (localNow + (serverOffset(localNow) ?? 0)),
     );
+    meter.set(1);
     const animation = animate(meter, 0, {
       duration: remaining / 1_000,
       ease: "linear",
     });
     return () => animation.stop();
-  }, [now.untilAt, meter, reduce]);
+  }, [now.untilAt, now.postId, meter, reduce]);
+  const restRotate = pose.rotate;
   return (
     <motion.section
-      className="wall-stage"
+      className="wall-popup-layer"
       aria-label={`Photo wall: ${now.nickname}`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.35 }}
+      transition={{ duration: reduce ? 0.18 : 0.32 }}
     >
+      {next ? (
+        <div
+          className="wall-popup wall-popup-stack"
+          data-side={pose.side}
+          style={{
+            [pose.side]: `${pose.x + 3}%`,
+            top: `calc(${pose.y}% + 1.4rem)`,
+            transform: `rotate(${pose.stackRotate}deg)`,
+          }}
+          aria-hidden="true"
+        >
+          <FramedPhoto
+            src={src(next.mediaId)}
+            frame="polaroid"
+            nickname=""
+            caption={null}
+            size="popup"
+          />
+        </div>
+      ) : null}
       <motion.div
+        className="wall-popup"
+        data-side={pose.side}
+        style={{
+          [pose.side]: `${pose.x}%`,
+          top: `${pose.y}%`,
+        }}
         initial={
           reduce
             ? { opacity: 0 }
-            : {
-                opacity: 0,
-                y: -80,
-                rotate: -8,
-                scale: 1.08,
-                filter: "brightness(3) saturate(0)",
-              }
+            : { opacity: 0, y: 48, scale: 0.86, rotate: restRotate - 8 }
         }
         animate={
-          reduce
-            ? { opacity: 1 }
-            : {
-                opacity: 1,
-                y: 0,
-                rotate: [-8, 3, -1.5, 0],
-                scale: 1,
-                filter: "brightness(1) saturate(1)",
-              }
+          reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1, rotate: restRotate }
         }
+        exit={{ opacity: 0, y: reduce ? 0 : -24, scale: reduce ? 1 : 0.94 }}
         transition={
           reduce
-            ? { duration: 0.3 }
+            ? { duration: 0.18 }
             : {
                 type: "spring",
-                stiffness: 140,
-                damping: 14,
-                filter: { duration: 1.6 },
-                // A spring takes two keyframes only; the wobble is a timed tween.
-                rotate: {
-                  type: "tween",
-                  duration: 0.9,
-                  ease: "easeOut",
-                  times: [0, 0.45, 0.75, 1],
-                },
+                stiffness: 220,
+                damping: 18,
+                opacity: { duration: 0.22 },
               }
         }
       >
         <FramedPhoto
-          src={src}
+          src={src(now.mediaId)}
           frame={now.frame}
           nickname={now.nickname}
           caption={now.caption}
-          size="stage"
+          size="popup"
           onFailed={onFailed}
+        />
+        <motion.div
+          className="wall-popup-meter"
+          aria-hidden="true"
+          style={{ scaleX: reduce ? 1 : meter }}
         />
       </motion.div>
       <Reactions now={now} reduce={Boolean(reduce)} />
-      <motion.div
-        className="wall-stage-meter"
-        aria-hidden="true"
-        style={{ scaleX: reduce ? 1 : meter }}
-      />
     </motion.section>
   );
 }

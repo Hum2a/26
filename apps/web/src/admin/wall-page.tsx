@@ -10,7 +10,7 @@ import { useAdminRoom, type AdminCommand } from "./room-provider";
 type Wall = NonNullable<LobbySnapshot["wall"]>;
 type Queued = NonNullable<Wall["queue"]>[number];
 
-const showOptions = [4, 6, 8, 10, 12, 15, 20];
+const showOptions = [4, 5, 6, 8, 10, 12, 15, 20];
 
 /** Commands for the photo wall, shared by this page and the live desk panel. */
 export function useWallCommands() {
@@ -400,7 +400,7 @@ function WallSettings({
             checked={wall.placement === "corner"}
             onChange={() => onChange({ placement: "corner" })}
           />
-          Also in a corner during questions
+          Over the projector during questions
         </label>
       </fieldset>
       <label className="grid gap-1">

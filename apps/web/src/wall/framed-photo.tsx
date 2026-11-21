@@ -60,7 +60,7 @@ export function FramedPhoto({
   frame: WallFrame;
   nickname: string;
   caption: string | null;
-  size?: "phone" | "stage" | "corner" | "thumb";
+  size?: "phone" | "stage" | "corner" | "thumb" | "popup";
   onFailed?: () => void;
 }) {
   const displaySrc = useCachedMediaSrc(src, { preload: false }) ?? src;

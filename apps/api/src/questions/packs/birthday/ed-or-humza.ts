@@ -1,6 +1,6 @@
 import { rankQuestion } from "../../authoring.ts";
 
-export type QuoteSpeaker = "ed" | "humza";
+export type QuoteSpeaker = "ed" | "humza" | "neither";
 export type EdOrHumzaQuote = {
   id: string;
   quote: string;
@@ -81,15 +81,16 @@ export function makeEdOrHumza(quotes: readonly EdOrHumzaQuote[] = edOrHumzaQuote
   const tiers = [
     { id: "ed", label: "Ed" },
     { id: "humza", label: "Humza" },
+    { id: "neither", label: "Neither" },
   ];
   const unassigned = quotes.filter((entry) => entry.speaker === null);
   return rankQuestion({
     id: "ed-or-humza",
     title: "Ed or Humza?",
-    prompt: "Who said it? Sort every quote into Ed or Humza.",
+    prompt: "Who said it? Sort every quote into Ed, Humza or Neither.",
     presentation: "ed-or-humza",
     instructions:
-      "Pick Ed or Humza for every quote. You can change your picks before sending the whole list.",
+      "Pick Ed, Humza or Neither for every quote. You can change your picks before sending the whole list.",
     input: "buckets",
     scoring: "placement",
     mode: "complete",
@@ -150,7 +151,7 @@ export function makeEdOrHumza(quotes: readonly EdOrHumzaQuote[] = edOrHumzaQuote
             .filter((group) => group.itemIds.length > 0),
         },
     notes:
-      "Personal quotes supplied by Humza, 17 November 2026; wording preserved. Speakers confirmed by Humza, 19 November 2026. Photos of Ed and Humza supplied by Humza for private party use (avatars plus projector portraits). Card-stack presentation ed-or-humza. One whole-list submission; 80 points proportional to correct placements, rounded down; two minutes, no speed bonus. Speaker keys stay server-side. Ready in the catalogue; adding it to the running order is a separate host action.",
+      "Quotes from Humza, 17 Nov 2026; speakers confirmed 19 Nov. Sort into Ed, Humza or Neither (none marked Neither yet). Private photos. Card-stack ed-or-humza. Whole-list submit; 80 points by placements, two minutes. Keys stay server-side. Ready in the catalogue.",
   });
 }
 

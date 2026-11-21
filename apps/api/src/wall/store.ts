@@ -39,7 +39,7 @@ export const defaultWallSettings: WallSettings = {
   enabled: true,
   moderation: "approve",
   placement: "breaks",
-  showMs: 8_000,
+  showMs: 5_000,
   captions: true,
   muted: [],
 };

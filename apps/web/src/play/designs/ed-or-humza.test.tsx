@@ -60,14 +60,19 @@ it("sorts fixture quotes one at a time and sends the whole list once", () => {
   ).toBeGreaterThan(0);
   fireEvent.click(screen.getByRole("button", { name: "Ed" }));
   fireEvent.click(screen.getByRole("button", { name: "Humza" }));
-  expect(screen.getByText(/2 of 8 sorted/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Neither" }));
+  expect(screen.getByText(/3 of 8 sorted/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: /Undo/ }));
-  expect(screen.getByText(/1 of 8 sorted/)).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Humza" }));
+  expect(screen.getByText(/2 of 8 sorted/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Neither" }));
   const send = screen.getByRole("button", { name: "Send assignments" });
   expect(send).toHaveProperty("disabled", true);
-  for (let i = 0; i < 6; i += 1) {
-    fireEvent.click(screen.getByRole("button", { name: i % 2 ? "Humza" : "Ed" }));
+  for (let i = 0; i < 5; i += 1) {
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: i % 3 === 0 ? "Ed" : i % 3 === 1 ? "Humza" : "Neither",
+      }),
+    );
   }
   fireEvent.click(send);
   fireEvent.click(send);
@@ -220,6 +225,8 @@ it("lets a guest expand long quotes in a review pile, move between piles, or mov
   fireEvent.click(screen.getByRole("button", { name: "Ed" }));
   fireEvent.click(screen.getByRole("button", { name: "Ed" }));
 
+  fireEvent.click(screen.getByRole("button", { name: "Neither" }));
+  expect(screen.getByRole("button", { name: "Neither 1" })).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Ed 3" }));
   expect(screen.getByText("Ed", { selector: ".ed-assigned-head span" })).toBeTruthy();
   expect(
@@ -246,7 +253,7 @@ it("lets a guest expand long quotes in a review pile, move between piles, or mov
   // Move quote 1 back to the deck.
   const moveBack = screen.getAllByRole("button", { name: /Move back/ })[0]!;
   fireEvent.click(moveBack);
-  expect(screen.getByText(/2 of 8 sorted/)).toBeTruthy();
+  expect(screen.getByText(/3 of 8 sorted/)).toBeTruthy();
   expect(screen.getByText(/Stand-in: I only came for the crisps/)).toBeTruthy();
 });
 
@@ -278,6 +285,7 @@ it("shows the stand-in speaker groups on the projector only after reveal", () =>
   expect(screen.getByText(/Stand-in: I only came for the crisps/)).toBeTruthy();
   expect(screen.getByRole("heading", { name: "Ed" })).toBeTruthy();
   expect(screen.getByRole("heading", { name: "Humza" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Neither" })).toBeTruthy();
   expect(screen.getByRole("img", { name: "Ed" }).getAttribute("src")).toBe(
     "/assets/questions/ed-or-humza/ed-portrait.webp",
   );

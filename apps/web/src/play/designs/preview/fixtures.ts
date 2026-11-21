@@ -261,7 +261,7 @@ export const previewQuestions: Record<BenchId, PublicQuestion> = {
     scoring: "placement",
     input: "buckets",
     ties: "shared",
-    prompt: "Who said it? Sort every quote into Ed or Humza.",
+    prompt: "Who said it? Sort every quote into Ed, Humza or Neither.",
     items: [
       { id: "quote-01", label: "Stand-in: I only came for the crisps." },
       { id: "quote-02", label: "Stand-in: Put the kettle on before the quiz starts." },
@@ -282,6 +282,7 @@ export const previewQuestions: Record<BenchId, PublicQuestion> = {
     tiers: [
       { id: "ed", label: "Ed" },
       { id: "humza", label: "Humza" },
+      { id: "neither", label: "Neither" },
     ],
   },
   // Stand-ins from the existing starter pictures; the party question is a draft.

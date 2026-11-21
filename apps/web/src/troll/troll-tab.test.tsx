@@ -45,15 +45,22 @@ it("groups trolls, then picks a target and confirms before sending", async () =>
       .disabled,
   ).toBe(true);
 
+  expect(screen.getByRole("list", { name: "Steps" })).toBeTruthy();
+  expect(screen.getByText("Pick a troll")).toBeTruthy();
   fireEvent.click(within(groups).getByRole("button", { name: /Identity/ }));
   fireEvent.click(screen.getByRole("button", { name: /Nickname swap/ }));
   fireEvent.click(await screen.findByRole("button", { name: "Troll Sam" }));
   expect(screen.queryByRole("button", { name: "Troll Amina" })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Send to Sam" }));
   expect(onSend).not.toHaveBeenCalled();
   const confirm = await screen.findByRole("dialog", { name: "Confirm troll" });
+  expect(within(confirm).getByRole("button", { name: "Confirm" })).toHaveProperty(
+    "disabled",
+    false,
+  );
   fireEvent.click(within(confirm).getByRole("button", { name: "Confirm" }));
   expect(onSend).toHaveBeenCalledWith("swap", secondId);
+  expect(navigator.vibrate).toHaveBeenCalled();
+  expect(screen.getByText("Sent. Watch their phone.")).toBeTruthy();
 });
 
 afterEach(() => {
@@ -75,7 +82,14 @@ it("explains when trolls are not open yet", () => {
     />,
   );
   expect(screen.getByText("Trolls open once the questions start.")).toBeTruthy();
-  expect(screen.queryByRole("group", { name: "Troll groups" })).toBeNull();
+  expect(screen.getByRole("list", { name: "Steps" })).toBeTruthy();
+  expect(
+    (screen.getByRole("button", { name: /Cracked screen/ }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  expect(screen.getAllByText("Waiting for the first question.").length).toBeGreaterThan(
+    0,
+  );
 });
 
 it("counts down the cooldown and flips to ready on its own when it ends", () => {
@@ -127,11 +141,13 @@ it("holds the send button until the cooldown ends", async () => {
   );
   fireEvent.click(screen.getByRole("button", { name: /Nickname swap/ }));
   fireEvent.click(await screen.findByRole("button", { name: "Troll Sam" }));
-  const waiting = screen.getByRole("button", {
-    name: /^Ready in /,
+  const confirm = await screen.findByRole("dialog", { name: "Confirm troll" });
+  const waiting = within(confirm).getByRole("button", {
+    name: "Confirm",
   }) as HTMLButtonElement;
   expect(waiting.disabled).toBe(true);
-  expect(screen.getByText("Recharging")).toBeTruthy();
+  expect(waiting.getAttribute("aria-disabled")).toBe("true");
+  expect(screen.getByText(/^Ready in /)).toBeTruthy();
 
   // A stale "cooling" snapshot whose time has passed is ready on the phone.
   view.rerender(
@@ -143,10 +159,10 @@ it("holds the send button until the cooldown ends", async () => {
       onSend={onSend}
     />,
   );
-  const send = screen.getByRole("button", { name: "Send to Sam" }) as HTMLButtonElement;
+  const send = within(confirm).getByRole("button", {
+    name: "Confirm",
+  }) as HTMLButtonElement;
   expect(send.disabled).toBe(false);
   fireEvent.click(send);
-  const confirm = await screen.findByRole("dialog", { name: "Confirm troll" });
-  fireEvent.click(within(confirm).getByRole("button", { name: "Confirm" }));
   expect(onSend).toHaveBeenCalledWith("swap", secondId);
 });

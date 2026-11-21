@@ -382,15 +382,56 @@
 
 /* ---- Projector ---- */
 
-.wall-stage {
+.wall-popup-layer {
   position: fixed;
   inset: 0;
-  z-index: 40;
-  display: grid;
-  place-items: center;
-  padding: 4vh 4vw;
-  background: color-mix(in oklab, var(--color-background) 82%, transparent);
-  backdrop-filter: blur(6px);
+  z-index: 45;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.wall-popup {
+  position: absolute;
+  width: min(32vw, 24rem);
+  max-width: calc(100vw - 3.5rem);
+  max-height: min(72vh, 34rem);
+  filter: drop-shadow(
+    0 1.4rem 2.2rem color-mix(in oklab, var(--color-background) 55%, #000)
+  );
+}
+
+.wall-popup[data-side="left"] {
+  right: auto;
+}
+
+.wall-popup[data-side="right"] {
+  left: auto;
+}
+
+.wall-popup-stack {
+  width: min(28vw, 20rem);
+  opacity: 0.55;
+  filter: drop-shadow(
+    0 0.8rem 1.4rem color-mix(in oklab, var(--color-background) 40%, #000)
+  );
+}
+
+.wall-popup-meter {
+  position: absolute;
+  inset: auto 12% 0.55rem 12%;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--color-accent);
+  transform-origin: left;
+}
+
+.wall-frame--popup {
+  font-size: 1.05rem;
+  max-height: min(68vh, 32rem);
+}
+
+.wall-frame--popup .wall-frame-image img {
+  max-height: min(42vh, 22rem);
 }
 
 .wall-stage-meter {
@@ -399,15 +440,6 @@
   height: 0.5vh;
   background: var(--color-accent);
   transform-origin: left;
-}
-
-.wall-corner {
-  position: fixed;
-  right: 2vw;
-  bottom: 3vh;
-  z-index: 30;
-  width: min(22vw, 22rem);
-  pointer-events: none;
 }
 
 .wall-waiting {
@@ -442,8 +474,9 @@
   bottom: 3vh;
   display: flex;
   gap: 1.2em;
-  font-size: clamp(1.4rem, 2.4vw, 3rem);
+  font-size: clamp(1.1rem, 1.8vw, 2.2rem);
   font-weight: 800;
+  pointer-events: none;
 }
 
 .wall-reel {
@@ -482,6 +515,13 @@
   .wall-chip,
   .wall-progress span {
     transition: none;
+  }
+
+  .wall-popup,
+  .wall-popup-stack {
+    filter: drop-shadow(
+      0 0.6rem 1rem color-mix(in oklab, var(--color-background) 40%, #000)
+    );
   }
 
   .wall-frame--polaroid {

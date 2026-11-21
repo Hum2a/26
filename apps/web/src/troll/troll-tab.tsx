@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Icon } from "@iconify/react/dist/offline";
-import { formatPhaseClock, type LobbySnapshot } from "@26/shared";
+import { formatPhaseClock, trollCooldownMs, type LobbySnapshot } from "@26/shared";
+import { buzz } from "../device/haptics";
 import { useCooldownSeconds } from "../live/use-cooldown";
 import { uploadVoiceClip } from "../media/media-transfer";
 import { VoiceTake } from "../media/voice-take";
@@ -10,6 +11,8 @@ import { TrollConfirm } from "./Confirm";
 import { TrollPicker } from "./Picker";
 import { trollGroupOf, trollGroups, trollMeta, type TrollGroupId } from "./troll-meta";
 import "./troll-tab.css";
+
+const STEP_LABELS = ["Pick a troll", "Pick a victim", "Confirm"] as const;
 
 /**
  * The Troll tab: pick a troll, pick a target, confirm. A guest can send
@@ -33,8 +36,8 @@ export function TrollTab({
   const [targetId, setTargetId] = useState<string>();
   const [clip, setClip] = useState<Blob | null>(null);
   const [voiceStatus, setVoiceStatus] = useState("");
-  const [confirming, setConfirming] = useState(false);
   const [shownGroup, setShownGroup] = useState<TrollGroupId | null>(null);
+  const [sentPulse, setSentPulse] = useState(false);
   const locked = snapshot.trolls.token === "locked" || snapshot.phase === "lobby";
   const resting = ["final", "facts", "podium"].includes(snapshot.phase);
   const secondsLeft = useCooldownSeconds(snapshot.trolls.cooldownUntil ?? null);
@@ -46,14 +49,22 @@ export function TrollTab({
   const ready = !locked && !resting && !cooling;
   const countdown = formatPhaseClock(secondsLeft * 1_000);
   const outgoing = snapshot.trolls.active.filter((effect) => effect.role === "actor");
-  const status = locked
-    ? "Trolls open once the questions start."
-    : resting
-      ? "Trolls are resting for this part of the show."
-      : cooling
-        ? `Next troll in ${countdown}.`
-        : "Troll ready. Send one whenever you like.";
-  const step = !kind ? 1 : !targetId ? 2 : 3;
+  const blocked = locked || resting;
+  const voiceReady = kind !== "voice" || Boolean(clip);
+  const canSend = ready && !pending && Boolean(kind && targetId) && voiceReady;
+  const status = sentPulse
+    ? pending
+      ? "Sending your troll…"
+      : "Sent. Watch their phone."
+    : locked
+      ? "Trolls open once the questions start."
+      : resting
+        ? "Trolls are resting for this part of the show."
+        : cooling
+          ? `Next troll in ${countdown}.`
+          : "Troll ready. Send one whenever you like.";
+  const step = sentPulse ? 4 : !kind ? 1 : !targetId ? 2 : 3;
+  const stepName = step === 4 ? "Sent" : (STEP_LABELS[step - 1] ?? STEP_LABELS[0]);
   const groupsOffered = trollGroups
     .map((group) => ({
       ...group,
@@ -70,19 +81,27 @@ export function TrollTab({
     exit: { opacity: 0, x: reduce ? 0 : from },
     transition: { duration: 0.2, ease: [0.2, 0, 0, 1] as const },
   });
+  const lockReason = locked
+    ? "Waiting for the first question."
+    : resting
+      ? "Trolls are resting for this part of the show."
+      : cooling
+        ? `Recharging — ready in ${countdown}.`
+        : pending
+          ? "Sending…"
+          : undefined;
 
   function restart() {
     setKind(undefined);
     setTargetId(undefined);
-    setConfirming(false);
     setClip(null);
+    setSentPulse(false);
   }
 
   function fire() {
-    if (!kind || !targetId) {
+    if (!kind || !targetId || !canSend) {
       return;
     }
-    setConfirming(false);
     if (kind === "voice") {
       if (!clip) {
         return;
@@ -91,13 +110,25 @@ export function TrollTab({
       setVoiceStatus("Checking the file.");
       void uploadVoiceClip(gameId, body, setVoiceStatus).then((mediaId) => {
         if (mediaId) {
+          buzz([16, 40, 28, 40, 48]);
+          setSentPulse(true);
           onSend(kind, targetId, mediaId);
         }
       });
       return;
     }
+    buzz([16, 40, 28, 40, 48]);
+    setSentPulse(true);
     onSend(kind, targetId);
   }
+
+  useEffect(() => {
+    if (!sentPulse || pending) return;
+    const timer = window.setTimeout(() => {
+      restart();
+    }, 2_200);
+    return () => window.clearTimeout(timer);
+  }, [sentPulse, pending]);
 
   return (
     <div className="troll-tab">
@@ -106,11 +137,20 @@ export function TrollTab({
         <h1 className="phone-tab-title">Mischief</h1>
         <p
           className="troll-token glass"
-          data-ready={ready || undefined}
+          data-ready={ready && !sentPulse ? "" : undefined}
           data-cooling={cooling || undefined}
+          data-blocked={blocked || undefined}
+          aria-live="polite"
         >
-          <span aria-hidden="true">{cooling ? "◔" : ready ? "✓" : "·"}</span>
+          <CooldownMark
+            cooling={cooling}
+            ready={ready && !sentPulse}
+            secondsLeft={secondsLeft}
+          />
           {status}
+        </p>
+        <p className="sr-only" aria-live="polite">
+          {stepName}. {status}
         </p>
       </header>
       <AnimatePresence initial={false}>
@@ -132,158 +172,240 @@ export function TrollTab({
           </motion.p>
         ))}
       </AnimatePresence>
-      {locked || resting ? null : (
-        <>
-          <ol className="troll-steps" aria-label="Steps">
-            {["Pick a troll", "Pick a target", "Send it"].map((label, index) => (
-              <li
-                key={label}
-                data-state={
-                  index + 1 < step ? "done" : index + 1 === step ? "current" : undefined
-                }
-                aria-current={index + 1 === step ? "step" : undefined}
-              >
-                <span aria-hidden="true">{index + 1}</span>
-                {label}
-              </li>
-            ))}
-          </ol>
-          <AnimatePresence initial={false} mode="wait">
-            {step === 1 || !offer ? (
-              <motion.div key="kinds" className="troll-groups" {...slide(-16)}>
-                <div className="troll-filter" role="group" aria-label="Troll groups">
-                  {groupsOffered.map((group) => (
-                    <button
-                      key={group.id}
-                      type="button"
-                      className="troll-filter-chip glass"
-                      data-hue={group.hue}
-                      aria-pressed={activeGroup?.id === group.id}
-                      onClick={() => setShownGroup(group.id)}
-                    >
-                      <Icon icon={group.icon} aria-hidden="true" />
-                      {group.label}
-                      <small>{group.offers.length}</small>
-                    </button>
-                  ))}
-                </div>
-                {(activeGroup ? [activeGroup] : []).map((group) => {
-                  const offers = group.offers;
-                  return (
-                    <section
-                      key={group.id}
-                      className="troll-group"
-                      data-hue={group.hue}
-                      aria-label={group.label}
-                    >
-                      <h2>
-                        <span className="troll-group-icon" aria-hidden="true">
-                          <Icon icon={group.icon} />
-                        </span>
-                        <span>
-                          {group.label}
-                          <small>{group.blurb}</small>
-                        </span>
-                      </h2>
-                      <div className="troll-cards">
-                        {offers.map((item) => (
-                          <button
-                            key={item.kind}
-                            type="button"
-                            className="troll-card glass"
-                            aria-pressed={kind === item.kind}
-                            disabled={pending || !item.enabled}
-                            onClick={() => setKind(item.kind)}
-                          >
-                            <span className="troll-card-icon" aria-hidden="true">
-                              <Icon icon={trollMeta[item.kind]?.icon ?? group.icon} />
-                            </span>
-                            <span className="troll-card-name">{item.label}</span>
-                            <span className="troll-card-blurb">
-                              {item.enabled
-                                ? (trollMeta[item.kind]?.blurb ?? "")
-                                : "Not on this question"}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </section>
-                  );
-                })}
-              </motion.div>
-            ) : (
-              <motion.div key="target" className="troll-target" {...slide(16)}>
-                <div
-                  className="troll-chosen glass"
-                  data-hue={trollGroupOf(offer.kind).hue}
-                >
-                  <span className="troll-card-icon" aria-hidden="true">
-                    <Icon
-                      icon={
-                        trollMeta[offer.kind]?.icon ?? trollGroupOf(offer.kind).icon
-                      }
-                    />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="troll-card-name">{offer.label}</p>
-                    <p className="troll-card-blurb">{trollMeta[offer.kind]?.blurb}</p>
-                  </div>
-                  <Button variant="secondary" onClick={restart}>
-                    Change
-                  </Button>
-                </div>
-                <TrollPicker
-                  players={snapshot.players}
-                  selfId={selfId}
-                  locked={false}
-                  cooling={cooling}
-                  pending={pending}
-                  selectedId={targetId}
-                  onSelect={setTargetId}
-                />
-                {kind === "voice" ? (
-                  <VoiceTake disabled={pending} onClip={setClip} />
-                ) : null}
-                {voiceStatus ? <p aria-live="polite">{voiceStatus}</p> : null}
-                <Button
+      <ol className="troll-steps" aria-label="Steps">
+        {STEP_LABELS.map((label, index) => {
+          const number = index + 1;
+          const state =
+            step === 4 || number < step
+              ? "done"
+              : number === step
+                ? "current"
+                : undefined;
+          return (
+            <li
+              key={label}
+              data-state={state}
+              aria-current={number === step ? "step" : undefined}
+            >
+              <span aria-hidden="true">{number}</span>
+              {label}
+            </li>
+          );
+        })}
+      </ol>
+      <div
+        className="troll-progress"
+        role="progressbar"
+        aria-valuemin={1}
+        aria-valuemax={3}
+        aria-valuenow={Math.min(step, 3)}
+        aria-label="Troll steps"
+      >
+        <span
+          style={{
+            width: `${step >= 4 ? 100 : ((step - 1) / 2) * 100}%`,
+          }}
+        />
+      </div>
+      <AnimatePresence initial={false}>
+        {sentPulse ? (
+          <motion.div
+            key="sent"
+            className="troll-sent glass"
+            initial={{ opacity: 0, scale: reduce ? 1 : 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            role="status"
+          >
+            <p className="troll-sent-mark" aria-hidden="true">
+              ✓
+            </p>
+            <p className="troll-sent-title">Troll sent</p>
+            <p>
+              {pending
+                ? "On its way."
+                : cooling
+                  ? `Next one in ${countdown}.`
+                  : "Line up another whenever you like."}
+            </p>
+          </motion.div>
+        ) : step === 1 || !offer ? (
+          <motion.div key="kinds" className="troll-groups" {...slide(-16)}>
+            {blocked ? (
+              <p className="troll-lock-banner" role="status">
+                {lockReason}
+              </p>
+            ) : null}
+            <div className="troll-filter" role="group" aria-label="Troll groups">
+              {groupsOffered.map((group) => (
+                <button
+                  key={group.id}
                   type="button"
-                  className="troll-send"
-                  disabled={
-                    pending || !ready || !targetId || (kind === "voice" && !clip)
-                  }
-                  onClick={() => setConfirming(true)}
+                  className="troll-filter-chip glass"
+                  data-hue={group.hue}
+                  aria-pressed={activeGroup?.id === group.id}
+                  disabled={pending}
+                  onClick={() => setShownGroup(group.id)}
                 >
-                  {cooling
+                  <Icon icon={group.icon} aria-hidden="true" />
+                  {group.label}
+                  <small>{group.offers.length}</small>
+                </button>
+              ))}
+            </div>
+            {(activeGroup ? [activeGroup] : []).map((group) => {
+              const offers = group.offers;
+              return (
+                <section
+                  key={group.id}
+                  className="troll-group"
+                  data-hue={group.hue}
+                  aria-label={group.label}
+                >
+                  <h2>
+                    <span className="troll-group-icon" aria-hidden="true">
+                      <Icon icon={group.icon} />
+                    </span>
+                    <span>
+                      {group.label}
+                      <small>{group.blurb}</small>
+                    </span>
+                  </h2>
+                  <div className="troll-cards">
+                    {offers.map((item) => {
+                      const pressable = !pending && !blocked && item.enabled;
+                      const why = blocked
+                        ? lockReason
+                        : item.enabled
+                          ? (trollMeta[item.kind]?.blurb ?? "")
+                          : "Not on this question";
+                      return (
+                        <button
+                          key={item.kind}
+                          type="button"
+                          className="troll-card glass"
+                          aria-pressed={kind === item.kind}
+                          disabled={!pressable}
+                          aria-disabled={!pressable}
+                          onClick={() => setKind(item.kind)}
+                        >
+                          <span className="troll-card-icon" aria-hidden="true">
+                            <Icon icon={trollMeta[item.kind]?.icon ?? group.icon} />
+                          </span>
+                          <span className="troll-card-name">{item.label}</span>
+                          <span className="troll-card-blurb">{why}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+          </motion.div>
+        ) : step === 2 ? (
+          <motion.div key="target" className="troll-target" {...slide(16)}>
+            <div className="troll-chosen glass" data-hue={trollGroupOf(offer.kind).hue}>
+              <span className="troll-card-icon" aria-hidden="true">
+                <Icon
+                  icon={trollMeta[offer.kind]?.icon ?? trollGroupOf(offer.kind).icon}
+                />
+              </span>
+              <div className="min-w-0">
+                <p className="troll-card-name">{offer.label}</p>
+                <p className="troll-card-blurb">{trollMeta[offer.kind]?.blurb}</p>
+              </div>
+              <Button variant="secondary" onClick={restart}>
+                Back
+              </Button>
+            </div>
+            <TrollPicker
+              players={snapshot.players}
+              selfId={selfId}
+              locked={blocked}
+              cooling={cooling}
+              pending={pending}
+              selectedId={targetId}
+              onSelect={setTargetId}
+            />
+            {kind === "voice" ? (
+              <VoiceTake disabled={pending || blocked} onClip={setClip} />
+            ) : null}
+            {voiceStatus ? <p aria-live="polite">{voiceStatus}</p> : null}
+            {kind === "voice" && !clip ? (
+              <p className="troll-lock-banner" role="status">
+                Record a clip, then confirm.
+              </p>
+            ) : null}
+          </motion.div>
+        ) : (
+          <motion.div key="confirm" className="troll-target" {...slide(16)}>
+            <div className="troll-chosen glass" data-hue={trollGroupOf(offer.kind).hue}>
+              <span className="troll-card-icon" aria-hidden="true">
+                <Icon
+                  icon={trollMeta[offer.kind]?.icon ?? trollGroupOf(offer.kind).icon}
+                />
+              </span>
+              <div className="min-w-0">
+                <p className="troll-card-name">{offer.label}</p>
+                <p className="troll-card-blurb">
+                  Victim: {target?.nickname ?? "someone"}
+                </p>
+              </div>
+              <Button variant="secondary" onClick={() => setTargetId(undefined)}>
+                Back
+              </Button>
+            </div>
+            {target ? (
+              <TrollConfirm
+                nickname={target.nickname}
+                troll={offer.label}
+                disabled={!canSend}
+                reason={
+                  cooling
                     ? `Ready in ${countdown}`
-                    : kind === "voice"
-                      ? "Send this clip"
-                      : target
-                        ? `Send to ${target.nickname}`
-                        : "Send troll"}
-                </Button>
-                <AnimatePresence>
-                  {confirming && target ? (
-                    <motion.div
-                      key="confirm"
-                      initial={{ opacity: 0, y: reduce ? 0 : 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: reduce ? 0 : 10 }}
-                      transition={{ duration: 0.18 }}
-                    >
-                      <TrollConfirm
-                        nickname={target.nickname}
-                        troll={offer.label}
-                        onCancel={() => setConfirming(false)}
-                        onConfirm={fire}
-                      />
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </>
-      )}
+                    : blocked
+                      ? lockReason
+                      : pending
+                        ? "Sending…"
+                        : undefined
+                }
+                onCancel={() => setTargetId(undefined)}
+                onConfirm={fire}
+              />
+            ) : null}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function CooldownMark({
+  cooling,
+  ready,
+  secondsLeft,
+}: {
+  cooling: boolean;
+  ready: boolean;
+  secondsLeft: number;
+}) {
+  const total = trollCooldownMs / 1_000;
+  const fraction = cooling ? Math.max(0, Math.min(1, 1 - secondsLeft / total)) : 1;
+  const radius = 11;
+  return (
+    <span className="troll-cooldown" aria-hidden="true">
+      <svg viewBox="0 0 28 28" className="troll-cooldown-ring">
+        <circle cx="14" cy="14" r={radius} pathLength="100" />
+        <circle
+          cx="14"
+          cy="14"
+          r={radius}
+          pathLength="100"
+          strokeDasharray={`${fraction * 100} 100`}
+          data-ready={ready ? "" : undefined}
+        />
+      </svg>
+      <span>{cooling ? "◔" : ready ? "✓" : "·"}</span>
+    </span>
   );
 }

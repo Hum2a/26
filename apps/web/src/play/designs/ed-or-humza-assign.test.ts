@@ -19,6 +19,9 @@ describe("Ed or Humza assignment helpers", () => {
     expect(first).toEqual([{ itemId: "quote-01", tierId: "ed" }]);
     const moved = assignQuote(first, "quote-01", "humza");
     expect(moved).toEqual([{ itemId: "quote-01", tierId: "humza" }]);
+    expect(assignQuote(moved, "quote-01", "neither")).toEqual([
+      { itemId: "quote-01", tierId: "neither" },
+    ]);
     expect(countForTier(moved, "humza")).toBe(1);
     expect(unassignQuote(moved, "quote-01")).toEqual([]);
     expect(nextUnassigned(items, first)?.id).toBe("quote-02");

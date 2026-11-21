@@ -95,8 +95,7 @@ async function sendTroll() {
   fireEvent.click(
     await screen.findByRole("button", { name: "Troll Sam" }, { timeout: 15_000 }),
   );
-  fireEvent.click(screen.getByRole("button", { name: "Send to Sam" }));
-  const confirm = await screen.findByRole("dialog");
+  const confirm = await screen.findByRole("dialog", { name: "Confirm troll" });
   fireEvent.click(within(confirm).getByRole("button", { name: "Confirm" }));
 }
 
