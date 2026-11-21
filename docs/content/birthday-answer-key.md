@@ -155,163 +155,169 @@ Guess how Italian Humza is
 
 Reveal: 0.5%
 
-## 26. rank-driving-sins
+## 26. club-kicked-out
+
+Humza's been kicked out of a club 1 time in his life, what was the reason?
+
+Reveal: He unapologetically elbowed a midget who punched him first
+
+## 27. rank-driving-sins
 
 Rank these UK driving offenses from ‘mildly annoying’ to ‘immediate revocation of human rights’.
 
 Reveal: The room’s order comes from each item’s mean position. Tied mean positions stay tied. Score up to 80 for agreeing with the room’s ordered pairs.
 
-## 27. inflation-meal-deal
+## 28. inflation-meal-deal
 
 The student tasting menu: a Tesco meal deal
 
 Reveal: 385 p
 
-## 28. whos-that-pokemon
+## 29. whos-that-pokemon
 
 Who’s that Pokémon?
 
 Reveal: Jigglypuff
 
-## 29. real-name-vin-diesel
+## 30. real-name-vin-diesel
 
 What was their original name? Vin Diesel
 
 Reveal: Mark Sinclair / Mark Sinclair Vincent / Mark Vincent (close spellings count)
 
-## 30. guess-tab-car-insurance
+## 31. guess-tab-car-insurance
 
 Newly qualified and aged 25+: what was the median annual car insurance price paid through Go.Compare in June 2026?
 
 Reveal: 1002 £
 
-## 31. dating-exit-excuse
+## 32. dating-exit-excuse
 
 You're 10 minutes into a first date in Central London and they say: ‘Honestly, I think astrology has more predictive validity than peer-reviewed economics.’ What is your exact exit excuse?
 
 Reveal: One line, three awards. Each category is worth 60 points to its winning author or tied authors. The same line can win more than one award; no self-votes.
 
-## 32. christianity-branches
+## 33. christianity-branches
 
 Which of these ARE branches of Christianity?
 
 Reveal: Correct answers are Muggletonians, The Jumpers, Ranters. Only that exact set earns points.
 
-## 33. inflation-sausage-roll
+## 34. inflation-sausage-roll
 
 The Greggs gold standard: one sausage roll
 
 Reveal: 135 p
 
-## 34. trump-made-up-country
+## 35. trump-made-up-country
 
 Which of these countries has Trump made up?
 
 Reveal: Correct answers are The United States of Israel, The Islamic Republic of Japan. Only that exact set earns points.
 
-## 35. complete-a-wordle
+## 36. complete-a-wordle
 
 Complete a wordle
 
 Reveal: VULGY (six guesses, 120 seconds; 100 points for solving)
 
-## 36. real-name-jamie-foxx
+## 37. real-name-jamie-foxx
 
 What was their original name? Jamie Foxx
 
 Reveal: Eric Marlon Bishop / Eric Bishop (close spellings count)
 
-## 37. guess-airport-lounge
+## 38. guess-airport-lounge
 
 Who would miss their flight because they were arguing that the airport lounge buffet counts as an all-inclusive holiday?
 
 Reveal: Reveal who got the most votes. Guests who picked them score.
 
-## 38. heathrow-search-query
+## 39. heathrow-search-query
 
 Write the worst possible search query to find on someone’s phone right before going through UK border control.
 
 Reveal: The worst search wins the bracket and 60 points. No self-votes. Odd entries get a bye; tied matches use the random draw fixed before voting. No votes in the entire bracket means no prize.
 
-## 39. property-price-roulette
+## 40. property-price-roulette
 
 How much is this London “studio flat” per month? Winkworth listing, February 2026.
 
 Reveal: 750 £
 
-## 40. dial-pop-culture
+## 41. dial-pop-culture
 
 Predict the room’s middle ground: Pop Culture Snobbery.
 
 Reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
-## 41. guess-tab-soho-pint
+## 42. guess-tab-soho-pint
 
 What does a standard pint of Camden Hells cost at The Roxy, Soho? Menu checked October 2026.
 
 Reveal: 7.3 £
 
-## 42. inflation-cheeseburger
+## 43. inflation-cheeseburger
 
 The 99p nostalgia tax: a Maccies cheeseburger
 
 Reveal: 139 p
 
-## 43. dial-london-geography
+## 44. dial-london-geography
 
 Predict the room’s middle ground: London Geography.
 
 Reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
-## 44. guess-tab-ev-charge
+## 45. guess-tab-ev-charge
 
 Charge a 62 kWh battery from empty to full at the Jan–Mar 2026 GB average capped electricity rate. What is the energy cost?
 
 Reveal: 17.17 £
 
-## 45. dial-british-politics
+## 46. dial-british-politics
 
 Predict the room’s middle ground: British Politics.
 
 Reveal: Reveal the room's median. The closer a guess is to the median, the more it scores.
 
-## 46. chess-battle
+## 47. chess-battle
 
 Play 1-minute blitz against the Humza bot!
 
 Reveal: Capturing Black pieces scores 10 for a queen, 5 for a rook, 3 for a bishop, 3 for a knight and 1 for a pawn. Checkmating the bot earns at least 40 points. Winning on time adds 15 points to captures. Other results score captures only.
 
-## 47. group-chat-figurine
+## 48. group-chat-figurine
 
 I just dropped £400 on a Japanese imported figurine and told my mum it was an educational tax deduction.
 
 Reveal: Reveal who got the most votes. Guests who picked them score. A winning self-vote scores double.
 
-## 48. cursed-search-history
+## 49. cursed-search-history
 
 Hold your nerve as the search history gets worse. Hit BAIL to bank points before the Raid.
 
 Reveal: Players who bailed before the Raid keep their banked points. Players caught by the Raid score zero. If there was no Raid, players still in bank keep 700 points.
 
-## 49. kart-park-grand-prix
+## 50. kart-park-grand-prix
 
 One lap of 26 Park. Three minutes. Who can actually drive?
 
 Reveal: Fastest completed lap wins. Finishers share place on equal server times; DNF scores zero. Ghost karts mean nobody can blame traffic.
 
-## 50. ed-or-humza
+## 51. ed-or-humza
 
 Who said it? Sort every quote into Ed, Humza or Neither.
 
 Reveal: Ed You're ass is in grabbing distance, Biblically accurate breasts on that one, Internally I feel external and externally I feel internal, A creampie. His cum in your vagina., No exchange of bodily fluids occurred, (In response to how was your Christmas) It was good. Busted one out in your memory, You know Belinda asked me if I wanted to get a fleshlight and I said only if it came inside a doll of the main character from zootopia, I’ve decided that I’m going to bust to the thought of you tonight, The classic - I’m going to touch you, you're tits are looking great today, You would've been worth the jail time; Humza I'd baptise a baby with a water pressure jet just to make the local news, I sense Israel in your general direction, You're talking a lot of shit for a washing machine, It's a good thing you removed him from the GC before I was starused to say the N word, If n***a is feminine then n***o would be masculine wouldn't it, Make no mistake I also love beating women, if we make prostitution a charity action, it's no longer illegal, let's go digging for diamonds or whatever else crystalised in that forgotten cave; Neither Sometimes bad men have to do bad things to teach women a lesson, If jensan can bang all those baddies with a 1 incher imagine what I can do with a 9mm, If they don't want a dick they can give the inches to me, Smaller but firm can outperform larger but drippy
 
-## 51. kart-sprint
+## 52. kart-sprint
 
 One lap. Three minutes. Who can actually drive?
 
 Reveal: Fastest completed lap wins. Finishers share place on equal finish times; DNF scores zero. Ghost karts mean nobody can blame traffic.
 
-## 52. best-dressed
+## 53. best-dressed
 
 Who is best dressed tonight?
 
