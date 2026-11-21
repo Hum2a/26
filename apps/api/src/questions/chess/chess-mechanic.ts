@@ -235,6 +235,10 @@ export function executeResignation(
     return { success: false, error: "Not your game" };
   }
 
+  if (game.status !== "in-progress") {
+    return { success: false, error: "Game is not in progress" };
+  }
+
   const resigned = resignGame(game, now);
   persistGame(sql, resigned);
   scoreGameOnce(sql, resigned, now);

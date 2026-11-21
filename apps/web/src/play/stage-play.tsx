@@ -219,6 +219,17 @@ function QuestionView({ play, omitBoard }: { play: PlaySnapshot; omitBoard: bool
   if (play.question.kind === "duel" || play.question.kind === "finale") {
     return <DuelView play={play} omitBoard={omitBoard} />;
   }
+  if (play.question.kind === "chess") {
+    return (
+      <div className="grid gap-4">
+        <p className="stage-prompt">{play.question.prompt}</p>
+        {play.question.instructions ? (
+          <p className="stage-answer">{play.question.instructions}</p>
+        ) : null}
+        {omitBoard ? null : <Standings play={play} />}
+      </div>
+    );
+  }
 
   // Only choice questions have options
   if (play.question.kind !== "choice") {
