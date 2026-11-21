@@ -183,7 +183,8 @@ roulette, Nextdoor paranoia, the extra guess rounds, `esports-tag` and
 `kart-park-grand-prix` stay catalogue-only until added to the saved order.
 The spoken debate round has been dropped. Steal, Robin Hood and Shared score are
 permitted on scored birthday choice questions; polls and other mechanics retain
-their existing restrictions. Each guest gets one troll, from question two.
+their existing restrictions. Each guest can send a troll whenever their own
+90-second cooldown has run out, from the first question.
 
 ## Physical-device and venue sign-off
 

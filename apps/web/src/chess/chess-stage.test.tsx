@@ -1,7 +1,9 @@
 import { render, screen, within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
-import type { ChessStageSnapshot } from "@26/shared";
+import type { ChessStageSnapshot, LobbySnapshot } from "@26/shared";
 import { ChessStage } from "./chess-stage";
+import { StagePlay } from "../play/stage-play";
+import { playingFixture } from "../admin/controls.test-support";
 
 vi.mock("@number-flow/react", () => ({
   default: ({ value }: { value: number }) => <span>{value}</span>,
@@ -95,4 +97,39 @@ it("shows highlights and every board's progress when the room sends them", () =>
   const tiles = within(boards).getAllByRole("listitem");
   expect(tiles[1]!.textContent).toContain("11 moves");
   expect(tiles[1]!.getAttribute("data-low")).toBe("true");
+});
+
+it("renders chess prompt on the projector during intro and prompt before boards open", () => {
+  const chessPrompt: LobbySnapshot = {
+    ...playingFixture,
+    phase: "prompt",
+    play: {
+      ...playingFixture.play!,
+      question: {
+        kind: "chess",
+        id: "chess-battle",
+        index: 1,
+        total: 1,
+        prompt: "Play 1-minute blitz against the Humza bot!",
+        instructions: "Capture Black pieces for points.",
+        points: 40,
+        illustrative: false,
+        attribution: "never",
+        presentation: "default",
+        playerTimeMs: 60_000,
+        botTimeMs: 60_000,
+      },
+      chess: undefined,
+    },
+  };
+  const { rerender } = render(
+    <StagePlay snapshot={{ ...chessPrompt, phase: "intro" }} />,
+  );
+  expect(screen.getByText("Play 1-minute blitz against the Humza bot!")).toBeTruthy();
+  expect(screen.queryByText(/Unsupported question type/i)).toBeNull();
+
+  rerender(<StagePlay snapshot={chessPrompt} />);
+  expect(screen.getByText("Play 1-minute blitz against the Humza bot!")).toBeTruthy();
+  expect(screen.getByText("Capture Black pieces for points.")).toBeTruthy();
+  expect(screen.queryByText(/Unsupported question type/i)).toBeNull();
 });

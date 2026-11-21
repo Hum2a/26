@@ -20,6 +20,21 @@ vi.mock("../live/room-api", async (original) => ({
   redeemTransfer: vi.fn(),
 }));
 vi.mock("../live/room-socket", () => ({ openRoomSocket: vi.fn() }));
+vi.mock("../chess/stockfish-worker", () => ({
+  StockfishEngine: class {
+    private callbacks: { onReady: () => void };
+    constructor(callbacks: { onReady: () => void }) {
+      this.callbacks = callbacks;
+    }
+    async initialize() {
+      this.callbacks.onReady();
+    }
+    setPosition() {}
+    go() {}
+    stop() {}
+    terminate() {}
+  },
+}));
 import { leaveLobby, redeemTransfer } from "../live/room-api";
 
 type Options = Parameters<typeof openRoomSocket>[0];
@@ -31,6 +46,8 @@ const socket = {
   submitTroll: vi.fn(() => "troll-1"),
   submitTrollEscape: vi.fn(() => "escape-1"),
   submitDraft: vi.fn(),
+  submitChessMove: vi.fn(() => "chess-move-1"),
+  submitChessResign: vi.fn(() => "chess-resign-1"),
 };
 
 const ready: LobbySnapshot = {
@@ -46,6 +63,7 @@ const ready: LobbySnapshot = {
   },
   trolls: {
     token: "ready",
+    cooldownUntil: null,
     offers: [{ kind: "swap", label: "Nickname swap", enabled: true }],
     active: [],
     announcement: null,
@@ -345,4 +363,153 @@ it("clears a Wordle rejection when a transfer replaces the same phone session", 
   const board = await screen.findByRole("region", { name: "Wordle game" });
   expect(within(board).getByRole("status").textContent).toContain("Guess 1 of 6");
   await waitFor(() => expect(screen.queryByText("Old rejection")).toBeNull());
+}, 20_000);
+
+it("submits chess moves in quiz mode without quiz pending banners and shows the score on reveal", async () => {
+  await import("../chess/guest-chess");
+  const chessCollect: LobbySnapshot = {
+    ...ready,
+    phase: "collect",
+    deadlineAt: Date.now() + 120_000,
+    play: {
+      ...ready.play!,
+      question: {
+        kind: "chess",
+        id: "chess-battle",
+        index: 1,
+        total: 1,
+        prompt: "Play 1-minute blitz against the Humza bot!",
+        points: 40,
+        illustrative: false,
+        attribution: "never",
+        presentation: "default",
+        playerTimeMs: 60_000,
+        botTimeMs: 60_000,
+      },
+      chess: {
+        gameId: "ABCDEFGH-chess",
+        fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        pgn: "",
+        status: "in-progress",
+        playerColor: "white",
+        botColor: "black",
+        playerTimeMs: 60_000,
+        botTimeMs: 60_000,
+        sideToMove: "white",
+        plyCount: 0,
+        positionRevision: 0,
+        lastMoveAt: Date.now(),
+        paused: false,
+        inCheck: false,
+        isGameOver: false,
+        capturedPoints: 0,
+        score: 0,
+      },
+      selfAnswer: null,
+      selfBallot: null,
+      selfAward: null,
+      selfStanding: null,
+    },
+  };
+
+  render(
+    <MemoryRouter>
+      <GuestPage rehearsalSession={wordleSession} />
+    </MemoryRouter>,
+  );
+  await waitFor(() => expect(openRoomSocket).toHaveBeenCalled());
+  act(() => {
+    options.onConnection("open");
+    options.onSnapshot(chessCollect);
+  });
+  await act(async () => {
+    await vi.dynamicImportSettled();
+  });
+  const collectScope = await waitFor(
+    () => {
+      const node = document.querySelector('[data-phase="collect"]');
+      expect(node).toBeTruthy();
+      expect(node?.textContent).toContain("Your move");
+      return node as HTMLElement;
+    },
+    { timeout: 5_000 },
+  );
+
+  // 1. Play e2 -> e4 and confirm ack-before-snapshot keeps the move on board without quiz banners.
+  fireEvent.click(within(collectScope).getByRole("button", { name: "e2 White Pawn" }));
+  fireEvent.click(within(collectScope).getByRole("button", { name: "e4" }));
+  expect(socket.submitChessMove).toHaveBeenCalledWith({
+    gameId: "ABCDEFGH-chess",
+    from: "e2",
+    to: "e4",
+    promotion: undefined,
+    positionRevision: 0,
+  });
+  expect(screen.queryByText("Sending your answer.")).toBeNull();
+  expect(screen.queryByText("Sending…")).toBeNull();
+
+  act(() => options.onAck({ requestId: "chess-move-1", accepted: true }));
+  expect(screen.queryByText("That answer was not accepted.")).toBeNull();
+  expect(
+    within(collectScope).getByRole("button", { name: "e4 White Pawn" }),
+  ).toBeTruthy();
+
+  // 2. Snapshot advances to revision 1; resigning sends chess-resign and surfaces chess-specific rejection.
+  act(() =>
+    options.onSnapshot({
+      ...chessCollect,
+      play: {
+        ...chessCollect.play!,
+        chess: {
+          ...chessCollect.play!.chess!,
+          fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+          pgn: "1. e4",
+          sideToMove: "black",
+          plyCount: 1,
+          positionRevision: 1,
+        },
+      },
+    }),
+  );
+
+  const resign = within(collectScope).getByRole("button", { name: /Resign/i });
+  fireEvent.click(resign);
+  expect(socket.submitChessResign).toHaveBeenCalledWith({
+    gameId: "ABCDEFGH-chess",
+  });
+  expect(screen.queryByText("Sending your answer.")).toBeNull();
+  expect(screen.queryByText("Sending…")).toBeNull();
+
+  act(() =>
+    options.onAck({
+      requestId: "chess-resign-1",
+      accepted: false,
+      error: "Rejected resignation",
+    }),
+  );
+  expect(screen.getByText("Rejected resignation")).toBeTruthy();
+  expect(screen.queryByText("That answer was not accepted.")).toBeNull();
+
+  act(() =>
+    options.onSnapshot({
+      ...chessCollect,
+      phase: "reveal",
+      play: {
+        ...chessCollect.play!,
+        selfAward: 40,
+        selfStanding: { place: 1, points: 40, players: 2 },
+        chess: {
+          ...chessCollect.play!.chess!,
+          status: "checkmate",
+          winner: "player",
+          isGameOver: true,
+          score: 40,
+        } as never,
+      },
+    }),
+  );
+
+  expect(await screen.findByText("+40 points")).toBeTruthy();
+  expect(screen.queryByText("Rejected resignation")).toBeNull();
+  expect(screen.queryByText("No answer from you")).toBeNull();
 }, 20_000);

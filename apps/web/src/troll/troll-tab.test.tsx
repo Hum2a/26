@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { expect, it, vi } from "vitest";
-import type { LobbySnapshot } from "@26/shared";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
+import { trollCooldownMs, type LobbySnapshot } from "@26/shared";
 import { playingFixture, playerId, secondId } from "../admin/controls.test-support";
 import { TrollTab } from "./troll-tab";
 
@@ -16,6 +16,7 @@ const ready: LobbySnapshot = {
   },
   trolls: {
     token: "ready",
+    cooldownUntil: null,
     offers: [
       { kind: "crack", label: "Cracked screen", enabled: true },
       { kind: "mirror", label: "Mirror world", enabled: false },
@@ -55,8 +56,12 @@ it("groups trolls, then picks a target and confirms before sending", async () =>
   expect(onSend).toHaveBeenCalledWith("swap", secondId);
 });
 
-it("explains when the troll is locked or used", () => {
-  const view = render(
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+it("explains when trolls are not open yet", () => {
+  render(
     <TrollTab
       snapshot={{
         ...ready,
@@ -69,16 +74,79 @@ it("explains when the troll is locked or used", () => {
       onSend={vi.fn()}
     />,
   );
-  expect(screen.getByText("Your troll unlocks from question 2.")).toBeTruthy();
-  view.rerender(
+  expect(screen.getByText("Trolls open once the questions start.")).toBeTruthy();
+  expect(screen.queryByRole("group", { name: "Troll groups" })).toBeNull();
+});
+
+it("counts down the cooldown and flips to ready on its own when it ends", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(100_000);
+  render(
     <TrollTab
-      snapshot={{ ...ready, trolls: { ...ready.trolls, token: "spent" } }}
+      snapshot={{
+        ...ready,
+        trolls: { ...ready.trolls, token: "cooling", cooldownUntil: 165_000 },
+      }}
       gameId="ABCDEFGH"
       selfId={playerId}
       pending={false}
       onSend={vi.fn()}
     />,
   );
-  expect(screen.getByText("You have used your troll for tonight.")).toBeTruthy();
-  expect(screen.queryByRole("group", { name: "Troll groups" })).toBeNull();
+  expect(screen.getByText("Next troll in 1:05.")).toBeTruthy();
+  // The guest can still browse and line up a troll while recharging.
+  expect(
+    (screen.getByRole("button", { name: /Cracked screen/ }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(false);
+  act(() => vi.advanceTimersByTime(5_000));
+  expect(screen.getByText("Next troll in 1:00.")).toBeTruthy();
+  act(() => vi.advanceTimersByTime(60_000));
+  expect(screen.getByText("Troll ready. Send one whenever you like.")).toBeTruthy();
+});
+
+it("holds the send button until the cooldown ends", async () => {
+  const onSend = vi.fn();
+  const cooling = (cooldownUntil: number): LobbySnapshot => ({
+    ...ready,
+    trolls: { ...ready.trolls, token: "cooling", cooldownUntil },
+  });
+  const view = render(
+    <TrollTab
+      snapshot={cooling(Date.now() + trollCooldownMs)}
+      gameId="ABCDEFGH"
+      selfId={playerId}
+      pending={false}
+      onSend={onSend}
+    />,
+  );
+  fireEvent.click(
+    within(screen.getByRole("group", { name: "Troll groups" })).getByRole("button", {
+      name: /Identity/,
+    }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: /Nickname swap/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Troll Sam" }));
+  const waiting = screen.getByRole("button", {
+    name: /^Ready in /,
+  }) as HTMLButtonElement;
+  expect(waiting.disabled).toBe(true);
+  expect(screen.getByText("Recharging")).toBeTruthy();
+
+  // A stale "cooling" snapshot whose time has passed is ready on the phone.
+  view.rerender(
+    <TrollTab
+      snapshot={cooling(Date.now() - 1_000)}
+      gameId="ABCDEFGH"
+      selfId={playerId}
+      pending={false}
+      onSend={onSend}
+    />,
+  );
+  const send = screen.getByRole("button", { name: "Send to Sam" }) as HTMLButtonElement;
+  expect(send.disabled).toBe(false);
+  fireEvent.click(send);
+  const confirm = await screen.findByRole("dialog", { name: "Confirm troll" });
+  fireEvent.click(within(confirm).getByRole("button", { name: "Confirm" }));
+  expect(onSend).toHaveBeenCalledWith("swap", secondId);
 });

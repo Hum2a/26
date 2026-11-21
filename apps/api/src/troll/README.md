@@ -2,9 +2,9 @@
 
 [Home](../../../../README.md) · [Documentation](../../../../docs/README.md) · [Event runbook](../../../../docs/event-runbook.md)
 
-One token per guest for the whole game. It unlocks on the second question. Spending the token and accepting the effect are one stored action. The same request returns that result. A different request cannot spend a second token.
+Each guest has their own cooldown, `trollCooldownMs` in `packages/shared/src/troll-cooldown.ts` (90 seconds). Trolls open when the questions start, from the first question; there is no unlock. The send time of the guest's latest accepted troll (`troll_effect.created_at`) is the stamp, stored in the same action that accepts the effect. A send inside the window is refused with `trollCooldownMessage` and stores nothing. The same request returns its stored result and does not restamp. A refunded troll does not count, so its cooldown ends with the refund. Snapshots carry `trolls.token` (`locked`, `ready` or `cooling`) and `trolls.cooldownUntil` on the room clock; the phone counts down to it and treats a passed time as ready without waiting for a broadcast.
 
-Each target has one transient slot and one persistent slot. A second effect for a full slot waits. A third is rejected and does not spend the token. A waiting effect that cannot start before its phase ends expires, and its token is refunded once. An effect that already started is not refunded. Pause freezes the effect timer with the other gameplay timers. Skip and advance settle effects whose phase has ended. The host can cancel a running troll. Reconnecting reads the stored effect and does not start it again.
+Each target has one transient slot and one persistent slot. A second effect for a full slot waits. A third is rejected and does not start a cooldown. A waiting effect that cannot start before its phase ends expires and is refunded once, which clears that send from the cooldown. An effect that already started is not refunded. Pause freezes the effect timer with the other gameplay timers. Skip and advance settle effects whose phase has ended. The host can cancel a running troll. Reconnecting reads the stored effect and does not start it again.
 
 Stage announcements wait in one short queue of three. A further announcement is dropped. The host can dismiss the announcement that is showing. Demo cues carry a label and, when they have sound, a short file or an accepted voice clip.
 
@@ -29,11 +29,11 @@ Presentation effects do not change the player id or the score ledger. A nickname
 
 The stage has Start show and a mute control. Browsers will not play audio until Start show runs from a click on that screen. A refresh asks again. M toggles mute, and the small icon shows when the stage is muted. Mute is remembered for the tab and stops the sound that is playing.
 
-Entertainment audio is not exactly-once if the browser crashes. A cue that is already on screen when the stage loads, already played, muted, or left over from an earlier question is dropped. A cue that arrives while sound is locked waits for Start show, then plays once. The played cue id is stored in the tab. Score changes and the troll token stay exactly-once in the room.
+Entertainment audio is not exactly-once if the browser crashes. A cue that is already on screen when the stage loads, already played, muted, or left over from an earlier question is dropped. A cue that arrives while sound is locked waits for Start show, then plays once. The played cue id is stored in the tab. Score changes and accepted trolls stay exactly-once in the room.
 
 Live typing keeps only the latest draft, in memory, and only the stage snapshot includes it. Closing the phone, hiding it, changing phase, or restarting the room clears that draft. The sent answer is still the normal stored answer. The effect is offered only when the question's attribution is `live`.
 
-A voice troll records on the phone, plays a preview, and can be recorded again. The clip is checked through the media pipeline, then held until that question's reveal. Skipping the question drops it. A missing microphone does not spend the token and does not block the question.
+A voice troll records on the phone, plays a preview, and can be recorded again. The clip is checked through the media pipeline, then held until that question's reveal. Skipping the question drops it. A missing microphone does not start a cooldown and does not block the question.
 
 A theme song uses the persistent slot and keeps going across questions until the podium, or until four score cues have been queued. Each scores phase queues one sting. The cue id is stored, so a reconnect does not treat an old reveal as a new one. Pause and resume keep the same cue id.
 
@@ -148,7 +148,7 @@ Built on the stage cue queue. The stage reads a cue as "<label> <asset>.", so as
 | Fake exit        | Straight away                      | "Amina has left the party.", then "Only joking." The phone plays along            |
 | Zoom and enhance | Straight away                      | The target's latest photo the stage may show, zooming slowly in                   |
 
-Replay and speech use the persistent slot, wait for their phase in `enqueueTheatreCues` (run by `settleTrolls`), play once and end. `zoomPhotoFor` takes a question photo, driver face, or a wall photo that has been on screen, never a hidden or pending one; with none, the room refuses the troll and the token is not spent.
+Replay and speech use the persistent slot, wait for their phase in `enqueueTheatreCues` (run by `settleTrolls`), play once and end. `zoomPhotoFor` takes a question photo, driver face, or a wall photo that has been on screen, never a hidden or pending one; with none, the room refuses the troll and no cooldown starts.
 
 ## Scoring
 
