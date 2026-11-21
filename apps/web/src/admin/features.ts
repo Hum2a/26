@@ -215,7 +215,7 @@ export const adminFeatures: readonly AdminFeature[] = [
     group: "screens",
     scope: "room",
     path: "trolls",
-    summary: "Switch trolls on or off and see every troll sent.",
+    summary: "Switch trolls on or off, see every troll sent and who is recharging.",
     rehearsal:
       "Preview each phone gag; for points, identity and big-screen trolls, open “Rehearse this troll” to see the target banner and step through a bot test with a second tab.",
     owns: ["apps/api/src/troll", "apps/web/src/troll"],

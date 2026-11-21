@@ -38,6 +38,27 @@ export function guestRoundCopy(snapshot: LobbySnapshot): string {
         ? "Accelerate and follow the circuit. Race on your phone; the stage follows everyone."
         : "You’re watching this race. Join the next round.";
   }
+  if (snapshot.play?.question.kind === "chess") {
+    const play = snapshot.play;
+    const chess = play.chess && "fen" in play.chess ? play.chess : undefined;
+    if (snapshot.phase === "reveal" || snapshot.phase === "scores") {
+      if (!chess) return "You watched this round.";
+      const result =
+        play.selfAward === null
+          ? "Chess round complete."
+          : `You scored ${play.selfAward} on chess.`;
+      return standing
+        ? `${result} You are ${ordinal(standing.place)} with ${standing.points} points.`
+        : result;
+    }
+    if (snapshot.phase !== "collect") {
+      return "Get ready. Your chess board opens on this phone.";
+    }
+    if (!chess) return "You’re watching this round.";
+    return chess.isGameOver
+      ? "Game finished — watch the stage."
+      : "Play 1-minute blitz against Stockfish.";
+  }
   if (snapshot.phase === "reveal" || snapshot.phase === "scores") {
     const answer = snapshot.play?.selfAnswer;
     const reveal = snapshot.play?.reveal;

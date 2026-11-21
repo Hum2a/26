@@ -56,7 +56,13 @@ it("replaces old HTTP readers before returning new private course metadata, and 
     finishAfterRound: false,
     revealNonce: 0,
     media: [],
-    trolls: { token: "locked", offers: [], active: [], announcement: null },
+    trolls: {
+      token: "locked",
+      cooldownUntil: null,
+      offers: [],
+      active: [],
+      announcement: null,
+    },
     connections: { guests: 0, stage: 0, control: 1 },
     kartLobby: { createdAt: 1, trackId: "26-park-v1", history: [] },
   };

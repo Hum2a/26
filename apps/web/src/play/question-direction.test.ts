@@ -96,4 +96,43 @@ it("only calls an answer accepted once the room's snapshot carries it", async ()
     ),
   ).toBe("accepted");
   expect(answerStatus(snapshot("choice", { phase: "reveal" }), false)).toBe("closed");
+  expect(
+    questionDirection(
+      snapshot("chess", {}, { chess: { fen: "start", isGameOver: false } }),
+      false,
+    ),
+  ).toBe("Play 1-minute blitz against Stockfish");
+  expect(
+    questionDirection(
+      snapshot("chess", {}, { chess: { fen: "start", isGameOver: true } }),
+      false,
+    ),
+  ).toBe("Game finished — watch the stage");
+  const { guestRoundCopy } = await import("./copy");
+  expect(
+    guestRoundCopy(
+      snapshot(
+        "chess",
+        { phase: "reveal" },
+        {
+          selfAward: null,
+          selfStanding: null,
+          chess: { fen: "start", isGameOver: true, score: 40 },
+        },
+      ),
+    ),
+  ).toBe("Chess round complete.");
+  expect(
+    guestRoundCopy(
+      snapshot(
+        "chess",
+        { phase: "reveal" },
+        {
+          selfAward: 40,
+          selfStanding: null,
+          chess: { fen: "start", isGameOver: true, score: 40 },
+        },
+      ),
+    ),
+  ).toBe("You scored 40 on chess.");
 });

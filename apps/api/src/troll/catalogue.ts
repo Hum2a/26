@@ -473,21 +473,6 @@ export function slotDecision(input: {
 }
 
 /**
- * A refund returns the one token only when the effect never started and has
- * not already been refunded. A later spend stays spent.
- */
-export function nextTokenState(input: {
-  token: "ready" | "spent";
-  effectRefunded: boolean;
-  started: boolean;
-}): { token: "ready" | "spent"; refunded: boolean } {
-  if (input.effectRefunded || input.started) {
-    return { token: input.token, refunded: input.effectRefunded };
-  }
-  return { token: "ready", refunded: true };
-}
-
-/**
  * Modifiers run in `modifierOrder`. A modifier applies only when the question
  * lists it and an accepted effect of that kind is still active. Zero stays zero.
  */

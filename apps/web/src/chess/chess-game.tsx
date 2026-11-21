@@ -51,6 +51,8 @@ export type ChessGameProps = {
   disabled?: boolean;
   /** The player's move is on its way to the room. */
   pending?: boolean;
+  /** Increments when the room rejects a chess move or resignation. */
+  rejectedNonce?: number;
 };
 
 type PendingMove = {
@@ -72,6 +74,7 @@ export function ChessGame({
   onResign,
   disabled = false,
   pending = false,
+  rejectedNonce,
 }: ChessGameProps) {
   const reduce = useReducedMotion() ?? false;
   // The move this phone last sent, and the position it was sent from.
@@ -86,6 +89,7 @@ export function ChessGame({
   const [premoves, setPremoves] = useState<Premove[]>([]);
   const [processedRevision, setProcessedRevision] = useState<number | null>(null);
   const [trackedGameId, setTrackedGameId] = useState(snapshot.gameId);
+  const [trackedRejectedNonce, setTrackedRejectedNonce] = useState(rejectedNonce ?? 0);
   const [engineReady, setEngineReady] = useState(false);
   const [engineError, setEngineError] = useState<string | null>(null);
   const [retryAttempt, setRetryAttempt] = useState(0);
@@ -240,7 +244,11 @@ export function ChessGame({
   // Bot move trigger - when bot's turn and engine ready
   useEffect(() => {
     const engine = engineInstanceRef.current;
-    if (!engine || !engineReady || snapshot.isGameOver) {
+    if (!engine || !engineReady || snapshot.isGameOver || snapshot.paused || disabled) {
+      if (engine && searchStateRef.current) {
+        engine.stop();
+        searchStateRef.current = null;
+      }
       return;
     }
 
@@ -248,8 +256,8 @@ export function ChessGame({
       // Cancel any previous search
       if (searchStateRef.current) {
         engine.stop();
-        searchGenerationRef.current += 1;
       }
+      searchGenerationRef.current += 1;
 
       // Calculate remaining time for bot (bounded)
       const botTimeRemaining = snapshot.botTimeMs;
@@ -268,8 +276,9 @@ export function ChessGame({
       engine.go(moveTime);
 
       // Watchdog: cancel if no response within reasonable time
+      const generation = searchGenerationRef.current;
       const watchdog = setTimeout(() => {
-        if (searchStateRef.current?.generation === searchGenerationRef.current) {
+        if (searchStateRef.current?.generation === generation) {
           console.warn("[Chess] Search watchdog timeout");
           engine.stop();
           searchStateRef.current = null;
@@ -286,7 +295,10 @@ export function ChessGame({
     snapshot.sideToMove,
     snapshot.botColor,
     snapshot.isGameOver,
+    snapshot.paused,
     snapshot.botTimeMs,
+    disabled,
+    rejectedNonce,
     engineReady,
   ]);
 
@@ -374,6 +386,12 @@ export function ChessGame({
     setShowPromotionChooser(false);
   }
 
+  const rejectedNow =
+    rejectedNonce !== undefined && rejectedNonce > trackedRejectedNonce;
+  if (rejectedNonce !== undefined && trackedRejectedNonce !== rejectedNonce) {
+    setTrackedRejectedNonce(rejectedNonce);
+  }
+
   if (snapshot.isGameOver && (premoves.length > 0 || showPromotionChooser)) {
     setPremoves([]);
     setPendingMove(null);
@@ -384,9 +402,18 @@ export function ChessGame({
     setSent({ ...sent, sawPending: true });
   }
 
-  if (sent && sent.sawPending && !pending && sent.base === snapshot.fen) {
+  if (
+    sent &&
+    (sent.base !== snapshot.fen ||
+      sent.revision !== snapshot.positionRevision ||
+      rejectedNow ||
+      (rejectedNonce === undefined && sent.sawPending && !pending))
+  ) {
     setSent(null);
-    if (premoves.length > 0) {
+    if (
+      (rejectedNow || (rejectedNonce === undefined && sent.sawPending && !pending)) &&
+      premoves.length > 0
+    ) {
       setPremoves([]);
     }
   }
@@ -398,7 +425,7 @@ export function ChessGame({
     sent.fen !== null &&
     sent.base === snapshot.fen &&
     sent.revision === snapshot.positionRevision &&
-    (pending || sent.fromPremove);
+    (rejectedNonce !== undefined || pending || sent.fromPremove);
 
   const canExecutePremove =
     !disabled &&

@@ -1,3 +1,4 @@
+import { trollCooldown, trollCooldownMs } from "@26/shared";
 import { questionFor } from "../questions/registry.ts";
 import { quotableAnswer } from "../questions/hidden-answers.ts";
 import {
@@ -19,7 +20,7 @@ import {
   trollSelfMessage,
   trollSlotMessage,
   trollAttributionMessage,
-  trollSpentMessage,
+  trollCooldownMessage,
   trollSwitchedOffMessage,
   trollTargetMessage,
   trollVoiceMessage,
@@ -67,7 +68,7 @@ export function acceptTroll(
   mediaId?: unknown,
 ): { ok: true } | { ok: false; message: string } {
   const room = store.readRoom();
-  if (room.questionCount <= 0 || room.questionIndex < 1) {
+  if (trollsLocked(room)) {
     return { ok: false, message: trollLockedMessage };
   }
   if (room.paused) {
@@ -111,8 +112,9 @@ export function acceptTroll(
   if (kind === "voice" && !voiceMedia) {
     return { ok: false, message: trollVoiceMessage };
   }
-  if (tokenState(sql, actorId) === "spent") {
-    return { ok: false, message: trollSpentMessage };
+  // The stored send time of the actor's latest counted troll is the stamp.
+  if (!trollCooldown({ lastSentAt: lastTrollAt(sql, actorId), now }).ready) {
+    return { ok: false, message: trollCooldownMessage };
   }
   const sameSlot = effectsFor(sql, targetId, definition.slot);
   const decision = slotDecision({
@@ -142,11 +144,6 @@ export function acceptTroll(
     now,
     starting ? now : null,
     starting && definition.durationMs !== null ? now + definition.durationMs : null,
-    actorId,
-  );
-  sql.exec(
-    `INSERT INTO troll_token (player_id, state) VALUES (?, 'spent')
-     ON CONFLICT (player_id) DO UPDATE SET state = 'spent'`,
     actorId,
   );
   if (starting) {
@@ -525,8 +522,10 @@ type TrollAnnouncement = {
   mediaKind?: "photo" | "voice";
   audioAsset?: string;
 } | null;
+type TrollToken = "locked" | "ready" | "cooling";
 type TrollSnapshotValue = {
-  token: "locked" | "ready" | "spent";
+  token: TrollToken;
+  cooldownUntil: number | null;
   offers: TrollOffer[];
   disabled?: TrollKind[];
   active: TrollActiveItem[];
@@ -535,33 +534,38 @@ type TrollSnapshotValue = {
 
 export type TrollSnapshotShared = {
   room: RoomClock;
+  now: number;
   locked: boolean;
   disabled: TrollKind[];
-  tokenStates: Map<string, "ready" | "spent">;
+  /** Latest counted send per guest, only for guests still cooling down. */
+  lastSent: Map<string, number>;
   openEffects: EffectRow[];
   hiddenScores: Set<string>;
   announcement: TrollAnnouncement;
-  offersReady: TrollOffer[] | null;
-  offersSpent: TrollOffer[] | null;
-  guestIdleCache: Map<"locked" | "ready" | "spent", TrollSnapshotValue>;
+  offers: TrollOffer[] | null;
+  guestIdleCache: Map<string, TrollSnapshotValue>;
 };
 
 export function prepareTrollShared(
   sql: SqlStorage,
   store: GameStore,
+  now: number,
 ): TrollSnapshotShared {
   const room = store.readRoom();
-  const locked = room.questionCount <= 0 || room.questionIndex < 1;
+  const locked = trollsLocked(room);
   const disabled = disabledTrollKinds(sql);
   const openEffects = readOpen(sql);
-  const tokenRows = sql
-    .exec<{ player_id: string; state: string }>(
-      `SELECT player_id, state FROM troll_token`,
+  // One grouped read per broadcast, limited to sends still inside the window.
+  const lastSent = new Map<string, number>();
+  for (const row of sql
+    .exec<{ actor_id: string; last: number }>(
+      `SELECT actor_id, MAX(created_at) AS last FROM troll_effect
+       WHERE refunded = 0 AND created_at > ?
+       GROUP BY actor_id`,
+      now - trollCooldownMs,
     )
-    .toArray();
-  const tokenStates = new Map<string, "ready" | "spent">();
-  for (const row of tokenRows) {
-    tokenStates.set(row.player_id, row.state === "spent" ? "spent" : "ready");
+    .toArray()) {
+    lastSent.set(row.actor_id, row.last);
   }
   const hiddenScores = hiddenPersonalScoreSet(sql);
   const playing = readCues(sql).find((cue) => cue.status === "playing");
@@ -584,23 +588,29 @@ export function prepareTrollShared(
       };
   return {
     room,
+    now,
     locked,
     disabled,
-    tokenStates,
+    lastSent,
     openEffects,
     hiddenScores,
     announcement,
-    offersReady: null,
-    offersSpent: null,
+    offers: null,
     guestIdleCache: new Map(),
   };
 }
 
-function buildTrollOffers(
-  room: RoomClock,
-  disabled: TrollKind[],
-  tokenReady: boolean,
-): TrollOffer[] {
+/** Trolls open once the questions start. There is no per-question unlock. */
+function trollsLocked(room: RoomClock): boolean {
+  return room.questionCount <= 0 || room.phase === "lobby";
+}
+
+/**
+ * What fits this phase and question. The guest's cooldown is not part of it:
+ * the phone gates on `cooldownUntil`, so an offer is usable the moment the
+ * window ends without another broadcast. The room still refuses an early send.
+ */
+function buildTrollOffers(room: RoomClock, disabled: TrollKind[]): TrollOffer[] {
   return Object.values(trollDefinitions)
     .filter((definition) => !disabled.includes(definition.kind))
     .map((definition) => ({
@@ -611,8 +621,7 @@ function buildTrollOffers(
         ((definition.kind !== "double" && !definition.modifier) ||
           questionAllowsModifier(room, definition.kind)) &&
         (definition.kind !== "typing" || questionAllowsTyping(room)) &&
-        questionFits(definition, room) &&
-        tokenReady,
+        questionFits(definition, room),
     }));
 }
 
@@ -621,34 +630,31 @@ export function trollSnapshot(
   store: GameStore,
   audience: "guest" | "stage" | "control",
   selfPlayerId: string | undefined,
+  now: number,
   shared?: TrollSnapshotShared,
 ): TrollSnapshotValue {
   const room = shared ? shared.room : store.readRoom();
-  const locked = shared
-    ? shared.locked
-    : room.questionCount <= 0 || room.questionIndex < 1;
-  const token = !selfPlayerId
-    ? "locked"
-    : locked
-      ? "locked"
-      : (shared
-            ? (shared.tokenStates.get(selfPlayerId) ?? "ready")
-            : tokenState(sql, selfPlayerId)) === "spent"
-        ? "spent"
-        : "ready";
+  const at = shared ? shared.now : now;
+  const locked = shared ? shared.locked : trollsLocked(room);
+  const cooldown =
+    selfPlayerId && !locked
+      ? trollCooldown({
+          lastSentAt: shared
+            ? (shared.lastSent.get(selfPlayerId) ?? null)
+            : lastTrollAt(sql, selfPlayerId),
+          now: at,
+        })
+      : null;
+  const token: TrollToken = !cooldown ? "locked" : cooldown.ready ? "ready" : "cooling";
+  const cooldownUntil = cooldown?.until ?? null;
   const disabled = shared ? shared.disabled : disabledTrollKinds(sql);
   let offers: TrollOffer[];
   if (audience === "guest" && selfPlayerId && !locked) {
     if (shared) {
-      if (token === "ready") {
-        shared.offersReady ??= buildTrollOffers(room, disabled, true);
-        offers = shared.offersReady;
-      } else {
-        shared.offersSpent ??= buildTrollOffers(room, disabled, false);
-        offers = shared.offersSpent;
-      }
+      shared.offers ??= buildTrollOffers(room, disabled);
+      offers = shared.offers;
     } else {
-      offers = buildTrollOffers(room, disabled, token === "ready");
+      offers = buildTrollOffers(room, disabled);
     }
   } else {
     offers = EMPTY_TROLL_OFFERS;
@@ -694,15 +700,17 @@ export function trollSnapshot(
           .slice(0, 4)
       : EMPTY_TROLL_ACTIVE;
   if (shared && audience === "guest" && active.length === 0) {
-    const cached = shared.guestIdleCache.get(token);
+    const key = `${token}:${cooldownUntil ?? ""}`;
+    const cached = shared.guestIdleCache.get(key);
     if (cached) return cached;
     const result: TrollSnapshotValue = {
       token,
+      cooldownUntil,
       offers,
       active,
       announcement: null,
     };
-    shared.guestIdleCache.set(token, result);
+    shared.guestIdleCache.set(key, result);
     return result;
   }
   let announcement: TrollAnnouncement = null;
@@ -732,6 +740,7 @@ export function trollSnapshot(
   }
   return {
     token,
+    cooldownUntil,
     offers,
     active,
     ...(audience === "control" ? { disabled } : {}),
@@ -927,14 +936,16 @@ function voiceMediaFor(sql: SqlStorage, effectId: string): string | null {
   );
 }
 
-function tokenState(sql: SqlStorage, playerId: string): "ready" | "spent" {
+/** Send time of a guest's latest troll that counts: refunded ones do not. */
+function lastTrollAt(sql: SqlStorage, playerId: string): number | null {
   const row = sql
-    .exec<{ state: string }>(
-      `SELECT state FROM troll_token WHERE player_id = ?`,
+    .exec<{ last: number | null }>(
+      `SELECT MAX(created_at) AS last FROM troll_effect
+       WHERE actor_id = ? AND refunded = 0`,
       playerId,
     )
     .toArray()[0];
-  return row?.state === "spent" ? "spent" : "ready";
+  return typeof row?.last === "number" ? row.last : null;
 }
 
 function activePlayer(sql: SqlStorage, playerId: string): boolean {
@@ -991,11 +1002,6 @@ function refundEffect(sql: SqlStorage, effect: EffectRow): void {
   sql.exec(
     `UPDATE troll_effect SET refunded = 1, status = 'expired' WHERE effect_id = ?`,
     effect.effect_id,
-  );
-  sql.exec(
-    `INSERT INTO troll_token (player_id, state) VALUES (?, 'ready')
-     ON CONFLICT (player_id) DO UPDATE SET state = 'ready'`,
-    effect.actor_id,
   );
 }
 

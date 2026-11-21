@@ -7507,9 +7507,30 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 
 **Checks.** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run test:unit` 214 files / 987 tests passed (`where-are-we.test.tsx` "Place pin at map centre" passed locally). `npm run test -w @26/api` 147 files / 854 tests passed (`XDG_CONFIG_HOME` set). `npm run content:check` passed for demo and birthday. `npm run build` passed (1018 files scanned; gzip entry JS 222,782 / 260,000; entry CSS 28,208 / 34,000; total JS 1,494,215 / 1,650,000). Playwright was not run. Cubic review comments on PR #67 were not addressed in this merge. `bin-unmasked.tsx` had a pre-existing syntax error from the last branch commit (missing `animate={`); the `animate` prop was restored so typecheck could pass.
 
+## 20 November 2026 — Troll cooldown replaces the one-per-game token
+
+**Status.** Guests no longer get one troll for the whole game, unlocked on question 2. Each guest can send a troll whenever their own cooldown has run out. Not deployed.
+
+**Decision.** The default cooldown is **90 seconds**, `trollCooldownMs` in `packages/shared/src/troll-cooldown.ts`. That is roughly one troll per question or two per guest, so trolls stay frequent without one guest flooding the room. The per-target slot rule (one transient, one persistent, one waiting) still limits how much lands on any one phone. Trolls open once the questions start, including the first question; the lobby stays locked.
+
+**How it works.**
+
+- `trollCooldown({ lastSentAt, now, cooldownMs? })` is the pure rule. Time is passed in.
+- The room stamps nothing extra: the send time of the guest's latest accepted troll, `troll_effect.created_at`, is the stamp. It is written in the same action that accepts the effect, so it is persisted before the ack. A refunded troll (`refunded = 1`, never started) does not count. A refusal stores nothing and starts no cooldown. A retry with the same request id returns the stored result and does not restamp. New index `troll_effect_actor (actor_id, created_at)`.
+- `acceptTroll` refuses inside the window with `trollCooldownMessage` ("Your next troll is still recharging."). `trollSpentMessage` and the `troll_token` writes are gone; the table is left in the schema as legacy and is no longer read or written. `nextTokenState` was removed with its test.
+- Snapshot: `trolls.token` is `locked` | `ready` | `cooling`, plus `trolls.cooldownUntil` (room clock, null when ready). Broadcasts read the latest counted send per guest with one grouped query limited to the window, inside `prepareTrollShared`. Offers no longer carry the cooldown, so an offer is usable the moment the window ends without another broadcast; the room still refuses an early send.
+- Phone: `TrollTab` shows "Next troll in m:ss." and the send button reads "Ready in m:ss" while recharging. Guests can browse and line up a troll and a target during the countdown. `useCooldownSeconds` (`apps/web/src/live/use-cooldown.ts`) re-renders once a second, on the second, and stops at zero. The tab badge uses the room's last view and does not tick.
+- Admin: Room → Trolls has a **Recharging** list (who is cooling down and for how long), derived from the existing `trollHistory` with the same shared rule. The host did not manage unlocks before, so there is no new host command; switches, cancel (which refunds a queued troll and so clears its cooldown) and rehearsal are unchanged. The catalogue intro and rehearsal steps name the cooldown.
+
+**Tests.** `apps/api/test/troll-cooldown.spec.ts` (pure rule, boundaries). `apps/api/test/troll.spec.ts` now covers locked lobby, ready from the first question, the stamp, refusal inside the window, same-request replay without restamp, the stamp surviving a restart, a refused troll not starting a cooldown, refund clearing it, and a send after the window (stored time moved back). `apps/web/src/troll/troll-tab.test.tsx` covers the countdown ticking and flipping to ready, and the send button held until the cooldown ends. `Picker.test.tsx` follows the new `locked`/`cooling` props.
+
+**Checks (local).** `tsc -b` passed. ESLint on the changed files passed; `check-structure` passed after allowlisting `troll-cooldown.ts`. Prettier check passed on the changed files. Web Vitest `src/troll`, `src/admin`, `src/live`, `guest-page` and `ranks-tab`: 64 files / 332 tests passed. API (workers pool, `XDG_CONFIG_HOME` set): `troll`, `troll-cooldown`, `troll-score`, `admin-rooms-auth`, `troll-catalogue`, `troll-hidden-answers`, `troll-theatre`, `stage-effects`, `stats`, `load`, `wall-upload`: 11 files / 64 tests passed. The full `test:unit`, full API suite and `npm run build` were not run locally; CI runs them on the PR. Not checked in a browser.
+
+**Next.** Try a few trolls from two phones on staging and judge whether 90 seconds feels right; change `trollCooldownMs` if not.
+
 ## 20 November 2026 — Best dressed finale round
 
-**Status.** Added the `best-dressed` round at the end of the default birthday running order (after `kart-sprint`). Not deployed.
+**Status.** Added the `best-dressed` round at the end of the default birthday running order (after `kart-sprint`), and merged `origin/master` (PR #71, PR #73). Not deployed.
 
 **What was added.**
 
@@ -7519,7 +7540,7 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 - `scripts/content-export.ts` & `docs/content/birthday-*.md`, `docs/question-authoring.md`, `docs/night-of.md`: updated export reveal wording and documentation.
 - Tests: added unit and Durable Object room tests in `apps/api/test/vote-score.spec.ts` and `apps/api/test/best-dressed.spec.ts`, UI component tests in `apps/web/src/play/outcomes.test.tsx`, and updated `birthdayPack.order` / `admin-rooms-auth.spec.ts` end-of-order assertions.
 
-**Checks.** `npm run content:export`, `npm run content:check`, `npm run typecheck`, `npm run lint` (0 errors, 15 existing Fast Refresh warnings; structure check passed), `npm run test:release` (77 tests), `npm run test -w @26/api` (147 files, 855 tests on first commit; 5 targeted files / 44 tests including `test/best-dressed.spec.ts` after Cubic follow-up), and `npm run build` (within gzip budgets) passed. `npm run test:unit` ran before the Cubic follow-up and failed on 1 file: 213/214 files (988/989 tests) passed, with an unresolved failure in `src/play/designs/where-are-we.test.tsx` ("Place pin at map centre").
+**Checks.** `npm run content:export`, `npm run content:check`, `npm run typecheck`, `npm run lint` (0 errors, 15 existing Fast Refresh warnings; structure check passed), `npm run test:release` (77 tests), `npm run test -w @26/api` (147 files, 855 tests on first commit; targeted suite after Cubic follow-up and post-merge), and `npm run build` (within gzip budgets) passed. `npm run test:unit` ran before the Cubic follow-up and failed on 1 file: 213/214 files (988/989 tests) passed, with an unresolved failure in `src/play/designs/where-are-we.test.tsx` ("Place pin at map centre").
 
 **Cubic follow-up (PR #72).** Registered `test/best-dressed.spec.ts` in `apps/api/vitest.config.ts` (`room` project), excluded `award === "nominees"` in `hasRightAndWrong` (`apps/api/src/stats/trend-source.ts`, updated `trends.spec.ts`), routed the nominee tie test through `winningIds` in `vote-score.spec.ts`, clarified full-points-per-tied-winner wording in `admin-question.ts` and `scripts/content-export.ts` (and re-exported `docs/content/birthday-*.md`), updated the doc comment in `manifest.ts` and round counts/notes in `docs/night-of.md`, and corrected the `test:unit` status above.
 

@@ -26,6 +26,7 @@ export * from "./kart/kart-nearby.ts";
 export * from "./kart/kart-settings.ts";
 export * from "./moderation.ts";
 export * from "./rate-limit.ts";
+export * from "./troll-cooldown.ts";
 export * from "./voters.ts";
 import { voterDisplayModes } from "./voters.ts";
 import { z } from "zod";
@@ -1274,7 +1275,12 @@ export const lobbySnapshotSchema = z
       .optional(),
     trolls: z
       .object({
-        token: z.enum(["locked", "ready", "spent"]),
+        /**
+         * `cooling` while the guest's own cooldown runs. The phone counts down to
+         * `cooldownUntil` (room clock) and treats a passed time as ready.
+         */
+        token: z.enum(["locked", "ready", "cooling"]),
+        cooldownUntil: z.number().int().nonnegative().nullable(),
         offers: z.array(
           z
             .object({

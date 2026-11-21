@@ -1,25 +1,25 @@
-import { env, evictDurableObject } from "cloudflare:test";
+import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
+import { trollCooldownMs } from "@26/shared";
 import { withClientApiQuery } from "./client-api-key.ts";
 import { payloadDigest } from "../src/room/digest.ts";
 import {
+  trollCooldownMessage,
   trollLockedMessage,
   trollModifierMessage,
   trollSlotMessage,
-  trollSpentMessage,
 } from "../src/room/limits.ts";
 
 describe("troll engine", () => {
-  it("spends one token once, queues one slot, and refunds a troll that never starts", async () => {
+  it("stamps a cooldown, refuses inside it, replays a retry, and refunds a troll that never starts", async () => {
     const created = await createRoom();
     const stub = room(created.gameId);
-    await start(stub, created);
     const amina = await join(stub, "Amina");
     const bilal = await join(stub, "Bilal");
     const chen = await join(stub, "Chen");
-    expect((await stub.snapshotFor("guest", amina.playerId)).trolls.token).toBe(
-      "locked",
-    );
+    const lobby = await stub.snapshotFor("guest", amina.playerId);
+    expect(lobby.trolls.token).toBe("locked");
+    expect(lobby.trolls.cooldownUntil).toBeNull();
     const early = await connect(stub, created.gameId, guestCookie(amina));
     await nextMatching(early, (message) => message.kind === "snapshot");
     expect(
@@ -28,12 +28,18 @@ describe("troll engine", () => {
     ).toBe(trollLockedMessage);
     early.close();
 
+    await start(stub, created);
+    // No unlock: a guest who has not sent one is ready from the first question.
+    expect((await stub.snapshotFor("guest", amina.playerId)).trolls.token).toBe(
+      "ready",
+    );
     await skipTo(stub, created, "colour");
     await reach(stub, created, "colour", "collect");
     const options = (await stub.snapshotFor("guest", bilal.playerId)).play?.question;
     const requestId = crypto.randomUUID();
     const socket = await connect(stub, created.gameId, guestCookie(amina));
     await nextMatching(socket, (message) => message.kind === "snapshot");
+    const sentAt = Date.now();
     expect(
       (
         await send(
@@ -43,6 +49,13 @@ describe("troll engine", () => {
         )
       ).accepted,
     ).toBe(true);
+    const stamped = (await stub.snapshotFor("guest", amina.playerId)).trolls;
+    expect(stamped.token).toBe("cooling");
+    expect(stamped.cooldownUntil).toBeGreaterThanOrEqual(sentAt + trollCooldownMs);
+    expect(stamped.cooldownUntil).toBeLessThanOrEqual(Date.now() + trollCooldownMs);
+
+    // A retry of the same request returns the stored result. It neither sends a
+    // second troll nor restamps the cooldown.
     expect(
       (
         await send(
@@ -52,18 +65,31 @@ describe("troll engine", () => {
         )
       ).accepted,
     ).toBe(true);
+    expect((await stub.snapshotFor("guest", amina.playerId)).trolls.cooldownUntil).toBe(
+      stamped.cooldownUntil,
+    );
+    expect(
+      (await stub.snapshotFor("guest", bilal.playerId)).trolls.active.filter(
+        (effect) => effect.kind === "crack",
+      ),
+    ).toHaveLength(1);
+
+    // A new request inside the window is refused and stores nothing.
     expect(
       (await send(socket, { name: "troll", effect: "call", targetId: chen.playerId }))
         .error,
-    ).toBe(trollSpentMessage);
+    ).toBe(trollCooldownMessage);
+    expect((await stub.snapshotFor("guest", chen.playerId)).trolls.active).toEqual([]);
     socket.close();
     expect((await stub.snapshotFor("guest", bilal.playerId)).play?.question).toEqual(
       options,
     );
-    expect((await stub.snapshotFor("guest", amina.playerId)).trolls.token).toBe(
-      "spent",
-    );
+
+    // The stamp is stored, so a restart keeps both the effect and the cooldown.
     await evictDurableObject(stub);
+    const restarted = await stub.snapshotFor("guest", amina.playerId);
+    expect(restarted.trolls.token).toBe("cooling");
+    expect(restarted.trolls.cooldownUntil).toBe(stamped.cooldownUntil);
     expect(
       (await stub.snapshotFor("guest", bilal.playerId)).trolls.active.some(
         (effect) => effect.kind === "crack",
@@ -95,13 +121,20 @@ describe("troll engine", () => {
       ).error,
     ).toBe(trollSlotMessage);
     daraSocket.close();
-    expect((await stub.snapshotFor("guest", dara.playerId)).trolls.token).toBe("ready");
+    // A refused troll does not start a cooldown.
+    const daraTrolls = (await stub.snapshotFor("guest", dara.playerId)).trolls;
+    expect(daraTrolls.token).toBe("ready");
+    expect(daraTrolls.cooldownUntil).toBeNull();
     expect(
       (await stub.snapshotFor("guest", chen.playerId)).trolls.active.some(
         (effect) => effect.status === "queued",
       ),
     ).toBe(true);
+    expect((await stub.snapshotFor("guest", chen.playerId)).trolls.token).toBe(
+      "cooling",
+    );
 
+    // Chen's troll never started, so skipping refunds it and clears the cooldown.
     expect(
       (
         await stub.skipRound({
@@ -111,9 +144,11 @@ describe("troll engine", () => {
         })
       ).ok,
     ).toBe(true);
-    expect((await stub.snapshotFor("guest", chen.playerId)).trolls.token).toBe("ready");
+    const refunded = (await stub.snapshotFor("guest", chen.playerId)).trolls;
+    expect(refunded.token).toBe("ready");
+    expect(refunded.cooldownUntil).toBeNull();
     expect((await stub.snapshotFor("guest", amina.playerId)).trolls.token).toBe(
-      "spent",
+      "cooling",
     );
     await reach(stub, created, "candles", "collect");
     const again = await connect(stub, created.gameId, guestCookie(chen));
@@ -125,8 +160,32 @@ describe("troll engine", () => {
     expect(
       (await send(again, { name: "troll", effect: "crack", targetId: bilal.playerId }))
         .error,
-    ).toBe(trollSpentMessage);
+    ).toBe(trollCooldownMessage);
     again.close();
+
+    // Once the window has passed, Amina can send again. The stored send time is
+    // moved back rather than waiting the real cooldown out.
+    await runInDurableObject(stub, (_instance, state) => {
+      state.storage.sql.exec(
+        `UPDATE troll_effect SET created_at = created_at - ? WHERE actor_id = ?`,
+        trollCooldownMs,
+        amina.playerId,
+      );
+    });
+    expect((await stub.snapshotFor("guest", amina.playerId)).trolls).toMatchObject({
+      token: "ready",
+      cooldownUntil: null,
+    });
+    const later = await connect(stub, created.gameId, guestCookie(amina));
+    await nextMatching(later, (message) => message.kind === "snapshot");
+    expect(
+      (await send(later, { name: "troll", effect: "mirror", targetId: chen.playerId }))
+        .accepted,
+    ).toBe(true);
+    later.close();
+    expect((await stub.snapshotFor("guest", amina.playerId)).trolls.token).toBe(
+      "cooling",
+    );
   });
 
   it("pauses an effect across a restart and keeps nickname ownership on the player", async () => {
@@ -286,7 +345,7 @@ describe("troll engine", () => {
     ).toBe(true);
     denied.close();
     expect((await speedRoom.snapshotFor("guest", fast.playerId)).trolls.token).toBe(
-      "spent",
+      "cooling",
     );
     const before = (await speedRoom.snapshotFor("guest", slowed.playerId)).play
       ?.question;
