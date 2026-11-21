@@ -217,6 +217,7 @@ export const previewQuestions: Record<BenchId, PublicQuestion> = {
     ...choice,
     id: "real-name-count-binface",
     presentation: "bin-unmasked",
+    attribution: "live",
     prompt: "What was their real name? Count Binface",
     options: [
       { id: "graham-ellis", label: "Graham Ellis" },
@@ -230,12 +231,13 @@ export const previewQuestions: Record<BenchId, PublicQuestion> = {
     ...choice,
     id: "real-name-zack-polanski",
     presentation: "deed-poll",
+    attribution: "live",
     prompt: "What was their real name? Zack Polanski",
     options: [
-      { id: "david-paulden", label: "David Paulden" },
       { id: "daniel-rosen", label: "Daniel Rosen" },
       { id: "joshua-marks", label: "Joshua Marks" },
       { id: "oliver-grant", label: "Oliver Grant" },
+      { id: "david-paulden", label: "David Paulden" },
     ],
   },
   "redacted-file": {
