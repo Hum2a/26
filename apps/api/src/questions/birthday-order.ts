@@ -38,7 +38,7 @@ export function readBirthdayOrder(sql: SqlStorage): BirthdayOrder {
   const ids = saved.ids.filter((id) => !retired.test(id));
   return {
     ...saved,
-    ids: ids.length ? restoreBrackets(ids, saved.updatedAt) : [...birthdayPack.order],
+    ids: ids.length ? restoreSavedOrder(ids, saved.updatedAt) : [...birthdayPack.order],
   };
 }
 
@@ -46,25 +46,39 @@ export function readBirthdayOrder(sql: SqlStorage): BirthdayOrder {
  * The two bracket rounds were left out of the order while a knockout of 80
  * entries took about 25 minutes. The phone round (20 November 2026) fixed
  * that, so an order saved before then gets each one back after the round it
- * follows in the default order, when that round is in the saved order. An
- * order the host saves afterwards is taken as their choice and left alone.
- * A full order stays within the saved order's 80-round limit
- * (`birthdayOrderSchema`), so it can still be saved and started.
+ * follows in the default order, when that round is in the saved order.
+ * Likewise, `best-dressed` was added on 20 November 2026 as the finale after
+ * `kart-sprint`, so an order saved before this restoration gets it back at the
+ * end if it is missing (ignoring synthetic pre-2026 test timestamps). An order
+ * the host saves afterwards is taken as their choice and left alone. A full
+ * order stays within the saved order's 80-round limit (`birthdayOrderSchema`),
+ * so it can still be saved and started.
  */
 const maxOrderRounds = 80;
+const firstSavedOrderAt = Date.UTC(2026, 0, 1);
 const bracketsRestoredAt = Date.UTC(2026, 10, 20, 2, 28);
+const bestDressedRestoredAt = Date.UTC(2026, 10, 21, 14, 8);
 const restoredBrackets = [
   { id: "apology-video-auction", after: "mock-election" },
   { id: "heathrow-search-query", after: "guess-airport-lounge" },
 ] as const;
 
-function restoreBrackets(ids: string[], updatedAt: number | null): string[] {
-  if (updatedAt !== null && updatedAt >= bracketsRestoredAt) return ids;
+function restoreSavedOrder(ids: string[], updatedAt: number | null): string[] {
   const next = [...ids];
-  for (const { id, after } of restoredBrackets) {
-    if (next.includes(id) || next.length >= maxOrderRounds) continue;
-    const anchor = next.indexOf(after);
-    if (anchor >= 0) next.splice(anchor + 1, 0, id);
+  if (updatedAt === null || updatedAt < bracketsRestoredAt) {
+    for (const { id, after } of restoredBrackets) {
+      if (next.includes(id) || next.length >= maxOrderRounds) continue;
+      const anchor = next.indexOf(after);
+      if (anchor >= 0) next.splice(anchor + 1, 0, id);
+    }
+  }
+  if (
+    (updatedAt === null ||
+      (updatedAt >= firstSavedOrderAt && updatedAt < bestDressedRestoredAt)) &&
+    !next.includes("best-dressed") &&
+    next.length < maxOrderRounds
+  ) {
+    next.push("best-dressed");
   }
   return next;
 }
