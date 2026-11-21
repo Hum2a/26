@@ -24,13 +24,48 @@ import {
 } from "./controls.test-support";
 beforeEach(() => setupControls());
 
+it("pairs or revokes Baseer’s phone from Live controls", async () => {
+  setupControls({
+    ...playingFixture,
+    phase: "prompt",
+    deadlineAt: null,
+    presenterAccess: { pairedAt: 123, connected: true },
+  });
+  vi.mocked(issueProjectorPairing).mockResolvedValueOnce({
+    code: "ABCDEFGH",
+    expiresAt: new Date(Date.now() + 30_000).toISOString(),
+  });
+  await mountControls(<LiveConsole />);
+  expect(screen.getByRole("button", { name: "Open answering" })).toBeTruthy();
+  const card = screen.getByLabelText("Baseer’s presenter phone");
+  expect(within(card).getByText("Presenter connected")).toBeTruthy();
+  fireEvent.click(within(card).getByRole("button", { name: "Show pairing code" }));
+  await within(card).findByText("ABCD-EFGH");
+  expect(issueProjectorPairing).toHaveBeenCalledWith(
+    expect.objectContaining({ kind: "presenter" }),
+  );
+  expect(
+    within(card)
+      .getByRole("link", { name: /Open presenter page/ })
+      .getAttribute("href"),
+  ).toBe(`/presenter?code=${playingFixture.joinCode}`);
+  fireEvent.click(
+    within(card).getByRole("button", { name: "Revoke presenter access" }),
+  );
+  await waitFor(() =>
+    expect(playRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "presenter-revoke" }),
+    ),
+  );
+});
+
 it("pins an advance and its uncertain retry to the phase the host saw", async () => {
   setupControls({ ...playingFixture, phaseGeneration: 4 });
   vi.mocked(playRoom)
     .mockResolvedValueOnce({ error: "Receipt lost", uncertain: true })
     .mockResolvedValueOnce(success);
   await mountControls(<LiveConsole />);
-  fireEvent.click(screen.getByRole("button", { name: "Advance" }));
+  fireEvent.click(screen.getByRole("button", { name: "Close answering" }));
   await screen.findByText("Receipt lost");
   expect(playRoom).toHaveBeenCalledWith(
     expect.objectContaining({ action: "advance", expectedPhaseGeneration: 4 }),

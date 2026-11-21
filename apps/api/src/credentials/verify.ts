@@ -13,7 +13,7 @@ export const presentationCredentialTtlMs = 14 * 60 * 60 * 1000;
 export const guestCredentialTtlMs = 12 * 60 * 60 * 1000;
 
 export function credentialLifetimeMs(role: RoomCredentialRole): number {
-  return role === "control" ? controlCredentialTtlMs : presentationCredentialTtlMs;
+  return role === "presentation" ? presentationCredentialTtlMs : controlCredentialTtlMs;
 }
 
 export type CredentialCheck =
@@ -54,7 +54,7 @@ export async function verifyRoomCredential(input: {
   return { ok: true };
 }
 
-/** Guest recovery uses the same hash comparison. The shared role enum stays control and presentation. */
+/** Guest recovery uses the same hash comparison. */
 export async function verifyGuestSecret(input: {
   secret: string;
   secretHash: string;

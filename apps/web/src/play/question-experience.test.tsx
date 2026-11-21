@@ -16,6 +16,26 @@ function revealed(selfAward: number | null): LobbySnapshot {
   } as LobbySnapshot;
 }
 
+it("gives listening, reading, open and closed phases distinct phone cues", () => {
+  const show = (phase: LobbySnapshot["phase"]) => (
+    <QuestionExperience snapshot={{ ...playingFixture, phase }} pending={false}>
+      <p>Round</p>
+    </QuestionExperience>
+  );
+  const view = render(show("intro"));
+  expect(screen.getByRole("status").textContent).toContain("Listen to Baseer");
+  expect(screen.getByRole("status").dataset.open).toBe("false");
+  view.rerender(show("prompt"));
+  expect(screen.getByRole("status").textContent).toContain("Read the question");
+  expect(screen.getByRole("status").dataset.open).toBe("false");
+  view.rerender(show("collect"));
+  expect(screen.getByRole("status").textContent).toContain("Answer now");
+  expect(screen.getByRole("status").dataset.open).toBe("true");
+  view.rerender(show("reveal"));
+  expect(screen.getByRole("status").textContent).toContain("Answers closed");
+  expect(screen.getByRole("status").dataset.open).toBe("false");
+});
+
 it("says a round that could not score was just for fun, not a miss", () => {
   render(
     <QuestionExperience snapshot={revealed(null)} pending={false}>

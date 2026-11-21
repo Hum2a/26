@@ -211,6 +211,7 @@ export type PlayAction =
   | "pause"
   | "resume"
   | "advance"
+  | "presenter-revoke"
   | "skip"
   | "finish"
   | "reveal-names"
@@ -297,10 +298,28 @@ export type PlayIntent = {
 export async function playRoom(
   input: PlayIntent,
 ): Promise<PlayCommand | { error: string; uncertain?: boolean }> {
+  return postPhaseCommand("/api/rooms/play", input);
+}
+
+export async function advancePresenter(input: {
+  gameId: string;
+  requestId: string;
+  expectedPhaseGeneration: number;
+}): Promise<PlayCommand | { error: string; uncertain?: boolean }> {
+  return postPhaseCommand(
+    `/api/presenter/${encodeURIComponent(input.gameId)}/advance`,
+    input,
+  );
+}
+
+async function postPhaseCommand(
+  path: string,
+  input: { requestId: string },
+): Promise<PlayCommand | { error: string; uncertain?: boolean }> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 12_000);
   try {
-    const response = await fetch("/api/rooms/play", {
+    const response = await fetch(path, {
       method: "POST",
       credentials: "same-origin",
       headers: clientApiHeaders({ "content-type": "application/json" }),
@@ -425,12 +444,13 @@ export async function redeemTransfer(input: {
 export async function issueProjectorPairing(input: {
   gameId: string;
   requestId: string;
+  kind?: "projector" | "presenter";
 }): Promise<ProjectorPairingIssued | { error: string }> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 12_000);
   try {
     const response = await fetch(
-      `/api/admin/rooms/${encodeURIComponent(input.gameId)}/projector-pairing`,
+      `/api/admin/rooms/${encodeURIComponent(input.gameId)}/${input.kind ?? "projector"}-pairing`,
       {
         method: "POST",
         credentials: "same-origin",
@@ -452,15 +472,18 @@ export async function issueProjectorPairing(input: {
 }
 
 /** Projector: redeems a pairing code; the room sets the presentation cookie. */
-export async function pairProjector(input: {
-  joinCode: string;
-  code: string;
-  requestId: string;
-}): Promise<ProjectorPaired | { error: string }> {
+export async function pairProjector(
+  input: {
+    joinCode: string;
+    code: string;
+    requestId: string;
+  },
+  surface: "stage" | "presenter" = "stage",
+): Promise<ProjectorPaired | { error: string }> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 12_000);
   try {
-    const response = await fetch("/api/stage/pair", {
+    const response = await fetch(`/api/${surface}/pair`, {
       method: "POST",
       credentials: "same-origin",
       headers: clientApiHeaders({ "content-type": "application/json" }),

@@ -135,6 +135,16 @@ export function GuestPlay({
         </KartDriversProvider>
       </QuestionExperience>
     );
+  if (
+    snapshot.phase === "intro" &&
+    snapshot.deadlineAt === null &&
+    snapshot.remainingMs === null
+  )
+    return (
+      <QuestionExperience snapshot={snapshot} pending={false}>
+        {null}
+      </QuestionExperience>
+    );
   if (play.question.kind === "chess")
     return (
       <Suspense fallback={<p role="status">Loading chess engine…</p>}>
@@ -294,7 +304,8 @@ export function GuestPlay({
             onSubmit={onBallot}
           />
         ) : null}
-        {play.question.kind === "guess" ? (
+        {play.question.kind === "guess" &&
+        (snapshot.phase === "collect" || play.selfBallot) ? (
           <GuestBallot
             play={play}
             blocked={snapshot.paused || snapshot.held || pending}

@@ -37,10 +37,8 @@ export function GuestChess({
     return (
       <QuestionExperience snapshot={snapshot} pending={false}>
         <div className="chess-blocked">
-          <h2>Waiting for game to start</h2>
-          <p className="text-muted">
-            The server is preparing your chess game. This will only take a moment.
-          </p>
+          <h2>{play?.question.prompt ?? "Waiting for chess"}</h2>
+          <p className="text-muted">The board opens when chess starts.</p>
         </div>
       </QuestionExperience>
     );

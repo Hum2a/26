@@ -321,6 +321,7 @@ export function advance(store: GameStore, now: number): boolean {
     if (count > 0 && room.funFactIndex + 1 < count) {
       return store.casRoom(room.phaseGeneration, {
         ...room,
+        phaseGeneration: room.phaseGeneration + 1,
         funFactIndex: room.funFactIndex + 1,
       });
     }
@@ -650,6 +651,7 @@ function changePhase(
   reason: "deadline" | "advance",
 ): boolean {
   const room = store.readRoom();
+  if (reason === "deadline" && store.manualPhase?.(room)) return false;
   const following = store.nextPhaseOverride?.(room, now) ?? nextPhase(room);
   if (!following || room.phase === "lobby" || room.phase === "podium") {
     return false;

@@ -27,7 +27,7 @@ import {
 import { readDeviceReport } from "../device/source";
 import { noteServerTime } from "./server-clock";
 
-export type RoomSocketRole = "guest" | "stage" | "control";
+export type RoomSocketRole = "guest" | "stage" | "control" | "presenter";
 
 const heartbeatMs = 20_000;
 /** Round trips taken on connect, so the clock is right before the first question. */

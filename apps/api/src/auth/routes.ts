@@ -31,7 +31,7 @@ import {
   serializeCredentialCookie,
 } from "../credentials/cookies.ts";
 import { credentialLifetimeMs, verifyRoomCredential } from "../credentials/verify.ts";
-import { registerProjectorPairingRoutes } from "../credentials/pairing-routes.ts";
+import { registerRoomPairingRoutes } from "../credentials/pairing-routes.ts";
 
 type ReadyAuth = {
   bindings: AuthBindings;
@@ -245,7 +245,8 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>): void {
     const role = roomCredentialRoleSchema.safeParse(
       body && typeof body === "object" && "role" in body ? body.role : undefined,
     );
-    if (!roomId.success || !role.success) {
+    // The presenter role is issued and revoked only by the live room.
+    if (!roomId.success || !role.success || role.data === "presenter") {
       return authFailure("invalid", 400);
     }
     const issued = await issueRoomCredential({
@@ -388,7 +389,7 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>): void {
   });
 
   // Projector pairing reuses the room's presentation credential; see pairing.ts.
-  registerProjectorPairingRoutes(app);
+  registerRoomPairingRoutes(app);
 }
 
 function rejectCrossSite(request: Request): Response | undefined {
