@@ -7578,3 +7578,17 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Tests & checks.** Covered by new unit/room/component tests in `party-scoring.spec.ts`, `party-polish-room.spec.ts`, `question-authoring.spec.ts`, and `outcomes.test.tsx`. Verification commands ran after the final edit (`typecheck`, `content:check`, `check:structure`, ESLint on touched files, `test:unit`, `test -w @26/api` targeted specs, `build`).
 
 **Next.** Review or swap the decoy countries in `humza-ethnicity.ts` if desired, and add `humza-ethnicity` to the running order in Admin → Question packs → Running order when ready to play.
+
+## 21 November 2026 — Chess board scaling on guest phones
+
+**Status.** Fixed locally and checked in a phone-width browser.
+
+**Cause.** On `/play` the board sits inside `ControllerRoot`, whose `.controller-root button` rule gives every button a 48px minimum width and height for tap targets. Each of the 64 squares is a `<button>`, so on a phone the square grid grew to 8 × 48px = 384px while the board was about 310px wide. The pieces layer is sized at 12.5% of the board, so pieces and squares drifted apart and rank 1 was pushed off the board. The standalone `/chess` page has no controller root, so it looked correct there.
+
+**Change (`apps/web/src/chess/chess.css` only).** `.chess-board .chess-square` resets `min-width`/`min-height` to 0. This outranks the controller rule regardless of stylesheet order. The board is the tap target, so squares follow its size. The square grid uses `repeat(8, minmax(0, 1fr))` tracks. `.chess-game` is a single `minmax(0, 1fr)` column, so a wide foot row can no longer widen the board. `.chess-controls` wraps on narrow phones when "Cancel premove" is showing. `.chess-table` is capped at `max(15rem, 100dvh - 8rem)`, which keeps the whole board on a short landscape screen. The controller's 48px floor is unchanged for every other button.
+
+**Tests.** New `apps/web/src/chess/chess-layout.test.ts` checks the stylesheet. It asserts that the controller floor still exists, that the square opt-out exists and outranks it, that the tracks use `minmax(0, 1fr)`, that the game column cannot grow, that the controls wrap and that the board has a height cap.
+
+**Checks (local).** `npm run typecheck` passed. `npm run lint` passed with 0 errors (existing warnings only) and the structure check passed. `npm run test:unit` passed 1000 of 1001 tests. The single failure is `chess-stage.test.tsx` › "renders chess prompt on the projector…". It expects the old "Play 1-minute blitz against the Humza bot!" copy and already fails on master after the presenter-cues merge (57458b7). This change does not touch it. Manual check: a temporary, uncommitted dev route mounted the real `PhoneShell` with `ChessRehearsal`. At 320, 375 and 430px each square measured exactly one eighth of the board and matched the piece size. No horizontal overflow occurred, and tap-to-move landed on the right square. In 740×360 landscape the board shrank to 221px.
+
+**Next.** Fix or update the stale stage copy assertion in `chess-stage.test.tsx`. Then try chess on a physical phone in a rehearsal room.

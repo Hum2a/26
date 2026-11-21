@@ -13,8 +13,11 @@
 .chess-game {
   position: relative;
   display: grid;
+  /* One column that never grows past the phone, whatever sits in the foot. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.6rem;
   width: 100%;
+  min-width: 0;
   max-width: 34rem;
   margin-inline: auto;
   padding: 0.75rem;
@@ -126,6 +129,15 @@
 /* The board in its frame. */
 .chess-table {
   position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  /*
+   * A short landscape phone: shrink the board towards the screen height, but
+   * never below 15rem, so squares stay big enough to tap. Below about 23rem of
+   * height the board is held at that floor and the page scrolls instead.
+   */
+  max-width: max(15rem, calc(100dvh - 8rem));
+  margin-inline: auto;
   padding: clamp(0.3rem, 1.6vw, 0.6rem);
   border-radius: 0.8rem;
   background:
@@ -150,12 +162,26 @@
   user-select: none;
   -webkit-user-select: none;
 }
+/*
+ * Every square is exactly an eighth of the board, matching the pieces layer.
+ * minmax(0, …) stops any square's content from widening its track.
+ */
 .chess-squares {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  grid-template-rows: repeat(8, 1fr);
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+}
+/*
+ * The phone controller gives every button a 48px tap-target floor. A square
+ * is sized by the board instead (the whole board is the target), so it opts
+ * out; otherwise eight 48px squares overflow a phone-width board and stop
+ * lining up with the pieces.
+ */
+.chess-board .chess-square {
+  min-width: 0;
+  min-height: 0;
 }
 .chess-square {
   position: relative;
@@ -425,6 +451,8 @@
 }
 .chess-controls {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 .chess-tool,
