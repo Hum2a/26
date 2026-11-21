@@ -215,15 +215,28 @@ describe("custom question designs", () => {
         { id: "craig-thornton", label: "Craig Thornton" },
       ],
     };
-    for (const [question, optionId, label, submitLabel] of [
+    for (const [question, optionId, label, submitLabel, revealLine] of [
       [
         previewQuestions["bin-unmasked"],
         "graham-ellis",
         "Graham Ellis",
         /submit nomination/i,
+        "Unmasked: Graham Ellis.",
       ],
-      [previewQuestions["deed-poll"], "daniel-rosen", "Daniel Rosen", /sign the deed/i],
-      [choiceRedacted, "wayne-henderson", "Wayne Henderson", /submit to the file/i],
+      [
+        previewQuestions["deed-poll"],
+        "daniel-rosen",
+        "Daniel Rosen",
+        /sign the deed/i,
+        "Renounced: Daniel Rosen.",
+      ],
+      [
+        choiceRedacted,
+        "wayne-henderson",
+        "Wayne Henderson",
+        /submit to the file/i,
+        "Declassified: Wayne Henderson.",
+      ],
     ] as const) {
       const onSelect = vi.fn();
       const onSubmit = vi.fn();
@@ -253,7 +266,12 @@ describe("custom question designs", () => {
         <StagePlay snapshot={lobby("reveal", play(question, { reveal }))} />,
       );
       expect(stage.container.querySelector(".design-stage")).not.toBeNull();
-      expect(stage.container.textContent).toContain(label);
+      expect(
+        stage.container.querySelector('[data-winner="true"]')?.textContent,
+      ).toContain(label);
+      expect(stage.container.querySelector(".design-stage-line")?.textContent).toBe(
+        revealLine,
+      );
       stage.unmount();
     }
   });

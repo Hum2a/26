@@ -7667,13 +7667,29 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 
 **Next.** Rehearse a kart race with two phones and end it from the presenter phone; send a few trolls from the confirm-step preview on a real phone.
 
+## 21 November 2026 — Restore `best-dressed` into saved birthday running orders
+
+**Status.** Implemented on `best_dressed_question_order`. Not deployed.
+
+**Cause.** `best-dressed` was already last in `birthdayPack.order` (`apps/api/src/questions/packs/birthday/manifest.ts`), but environments with a previously saved `pack_order` row in `RoomCodeRegistry` keep reading that saved list instead of the default `order`. In addition, the admin **Suggest a mixed order** planner only pinned `mechanic === "kart"` to the tail, which would move `best-dressed` ahead of the kart race instead of keeping it last.
+
+**What changed.**
+
+- `apps/api/src/questions/birthday-order.ts`: replaced `restoreBrackets` with `restoreSavedOrder` so saved orders with a real 2026 timestamp before `2026-11-21T14:08:00Z` (or `null`) append `"best-dressed"` at the end when missing and within the 80-round cap, while leaving later host saves (including explicit removals) and pre-2026 synthetic test timestamps untouched.
+- `apps/web/src/admin/running-order-plan.ts` & `apps/web/src/admin/running-order.tsx`: extended `suggestMixedOrder` to accept numeric tail ranks so `mechanic === "kart"` stays near the end (`1`) and `"best-dressed"` stays at the very end (`2`).
+- Tests: updated `apps/api/test/party-rounds.spec.ts`, `apps/web/src/admin/running-order-plan.test.ts`, and `apps/web/src/admin/running-order.test.tsx`.
+
+**Checks.** `npm run format:check`, `npm run typecheck`, `npm run lint` (0 errors, 15 existing Fast Refresh warnings; structure check passed), and `npm run build` (within gzip budgets; `content:check` passed for `demo` and `birthday`) all passed. Targeted web tests (`running-order.test.tsx`, `running-order-plan.test.ts`, `content-page.test.tsx`, `features.test.ts`: 4 files / 14 tests) and targeted API specs (`birthday-order.spec.ts`, `party-rounds.spec.ts`, `birthday-room.spec.ts`, `best-dressed.spec.ts`: 4 files / 17 tests) passed. Full `npm run test:unit`, the full `@26/api` suite, and Playwright were left to CI / not run.
+
+**Next.** Open Admin → Question packs after deployment to confirm `best-dressed` sits at the end of the running order, and save if making further edits.
+
 ## 21 November 2026 — Leviticus 18:7 wording
 
 **Status.** Updated locally in the birthday catalogue and regenerated both birthday presenter exports.
 
 **Question.** The prompt asks which statement paraphrases Leviticus 18:7. The correct choice uses Humza’s exact wording. The other three choices follow the same sentence structure and refer to a stepmother, a mother’s sister and a brother’s wife, drawing on verses 8, 13 and 16.
 
-**Checks.** `npm run content:check`, `npm run typecheck`, `npm run lint` and Prettier on changed files passed. The two targeted API suites passed all 41 tests. A direct check of the playable question confirmed the exact correct label and parallel wording across all four choices.
+**Checks.** `npm run content:check`, `npm run typecheck`, `npm run lint` and Prettier on changed files passed. After merging `master` at `d8ef57c`, the two targeted API suites passed all 44 tests. A direct check of the playable question confirmed the exact correct label and parallel wording across all four choices.
 
 **Web suite.** `npm run test:unit` passed 1,017 of 1,020 tests. The two kart failures passed when their files were rerun in isolation. The guest Wordle transfer test still failed to find the game region on rerun.
 

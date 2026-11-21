@@ -178,7 +178,7 @@ Say at the reveal: Reveal who got the most votes. Guests who picked them score.
 Guess how Italian Humza is
 
 20s to answer. Attribution: live.
-Say at the reveal: 0.5%
+Say at the reveal: 1%
 
 ## 26. choice · club-kicked-out
 

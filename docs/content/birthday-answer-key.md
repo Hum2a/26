@@ -153,7 +153,7 @@ Reveal: Reveal who got the most votes. Guests who picked them score.
 
 Guess how Italian Humza is
 
-Reveal: 0.5%
+Reveal: 1%
 
 ## 26. club-kicked-out
 

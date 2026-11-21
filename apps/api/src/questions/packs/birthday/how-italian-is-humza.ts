@@ -10,5 +10,5 @@ export const howItalianIsHumza = choiceQuestion({
     { id: "dominos", label: "dominos pizza is better than rome pizza" },
     { id: "half-percent", label: "0.5%" },
   ],
-  correctOption: { known: "half-percent" },
+  correctOption: { known: "one-percent" },
 });
