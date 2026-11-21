@@ -391,6 +391,7 @@ export function TrollTab({
                 {kind === "voice" && !clip ? (
                   <VoiceTake disabled={sending || blocked} onClip={setClip} />
                 ) : null}
+                {voiceStatus ? <p aria-live="polite">{voiceStatus}</p> : null}
                 {kind === "voice" && !clip ? (
                   <p className="troll-lock-banner" role="status">
                     Record a clip, then confirm.

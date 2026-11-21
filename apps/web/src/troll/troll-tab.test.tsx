@@ -92,6 +92,7 @@ it("does not celebrate a troll the room refused", async () => {
       { name: "Confirm" },
     ),
   );
+  expect(onSend).toHaveBeenCalledWith("swap", secondId);
   view.rerender(renderTab(onSend, { pending: true }));
   view.rerender(renderTab(onSend, { pending: false, error: "Trolls are closed." }));
   expect(navigator.vibrate).not.toHaveBeenCalled();
