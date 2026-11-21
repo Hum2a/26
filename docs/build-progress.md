@@ -7621,6 +7621,16 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 
 **Next.** Try Live controls talking points and the projector progress strip in a rehearsal room, then run Ed or Humza with the longer list.
 
+## 21 November 2026 — Master CI formatting
+
+**Status.** Implemented on `fix/master-ci-format-and-chess-copy`. Not deployed.
+
+**Change.** Master CI failed `format:check` on `scripts/loc.test.ts` after the `npm run loc` merge. Ran Prettier on that file only; no behaviour change. The earlier `bin-unmasked.tsx` and stale `chess-stage.test.tsx` failures were already fixed on master.
+
+**Checks.** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run test:release` 82 passed. `npm run test:unit` 218 files / 1010 tests passed. `npm run test -w @26/api` 148 files / 864 tests passed. `npm run build` passed. Playwright was not run.
+
+**Next.** Confirm the master Check run goes green after merge.
+
 ## 21 November 2026 — Kicked out of a club question
 
 **Status.** Implemented on `worktree-club-kicked-out-question`. Not deployed.
