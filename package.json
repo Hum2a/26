@@ -49,7 +49,7 @@
     "archive:retain": "node --experimental-strip-types scripts/archive-retain.ts",
     "auth:seed": "node --experimental-strip-types scripts/auth-seed.ts",
     "auth:agent": "node --experimental-strip-types scripts/auth-agent.ts",
-    "test:release": "node --experimental-strip-types --test scripts/test-safe-env.test.mjs scripts/release-support.test.ts scripts/release-guards.test.ts scripts/release-integration.test.ts scripts/github-actions-check.test.ts scripts/git-clear-lock.test.ts scripts/git-drop-ignored.test.ts scripts/git-sync.test.ts scripts/setup.test.ts scripts/check-bundle-budget.test.ts scripts/check-structure.test.ts scripts/content-export.test.ts",
+    "test:release": "node --experimental-strip-types --test scripts/test-safe-env.test.mjs scripts/release-support.test.ts scripts/release-guards.test.ts scripts/release-integration.test.ts scripts/github-actions-check.test.ts scripts/git-clear-lock.test.ts scripts/git-drop-ignored.test.ts scripts/git-sync.test.ts scripts/setup.test.ts scripts/check-bundle-budget.test.ts scripts/check-structure.test.ts scripts/content-export.test.ts scripts/loc.test.ts",
     "secrets-sync:staging": "node --experimental-strip-types scripts/release.ts secrets-sync --env staging",
     "secrets-sync:prod": "node --experimental-strip-types scripts/release.ts secrets-sync --env production",
     "secrets-sync:both": "node --experimental-strip-types scripts/release.ts secrets-sync --env both",
