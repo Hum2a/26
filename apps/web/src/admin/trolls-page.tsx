@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import type { AdminTrolls } from "@26/shared";
+import {
+  formatPhaseClock,
+  trollCooldown,
+  trollCooldownMs,
+  type AdminTrolls,
+} from "@26/shared";
+import {
+  cooldownSecondsLeft,
+  serverNowMs,
+  useCooldownSeconds,
+} from "../live/use-cooldown";
 import { Button, Disclosure } from "../ui/primitives";
 import { TrollRehearsal } from "./troll-rehearsal";
 import { EntryNotice } from "../ui/entry-frame";
@@ -20,9 +30,9 @@ export function TrollsPage() {
       eyebrow="Catalogue"
       intro={
         <>
-          Every troll guests can send. Each guest gets one, unlocked from the second
-          question. Open a room and choose <strong>Trolls</strong> to switch them on or
-          off for that room.{" "}
+          Every troll guests can send. A guest can send one whenever their own{" "}
+          {trollCooldownMs / 1_000}-second cooldown has run out. Open a room and choose{" "}
+          <strong>Trolls</strong> to switch them on or off for that room.{" "}
           <Link className="entry-text-link" to="/admin/rooms">
             Choose a room
           </Link>
@@ -51,6 +61,7 @@ export function RoomTrollsPage() {
       feedback={
         <>
           <CommandFeedback scope="trolls" />
+          <TrollCooldowns />
           <TrollHistory locked={locked} />
         </>
       }
@@ -70,6 +81,63 @@ const historyStatus = {
   cancelled: "Cancelled",
   refunded: "Refunded",
 } as const;
+
+/**
+ * Who is still recharging, from the history the room already sends. A refunded
+ * troll never started, so it does not count, matching the room's own check.
+ */
+function TrollCooldowns() {
+  const { snapshot } = useAdminRoom();
+  const history = snapshot.trollHistory ?? [];
+  const lastSent = new Map<string, number>();
+  for (const item of history) {
+    if (item.status === "refunded") continue;
+    const previous = lastSent.get(item.actorNickname);
+    if (previous === undefined || item.createdAt > previous) {
+      lastSent.set(item.actorNickname, item.createdAt);
+    }
+  }
+  const latest = Math.max(-Infinity, ...lastSent.values());
+  // Ticks once a second until the last guest is ready, then stops.
+  useCooldownSeconds(Number.isFinite(latest) ? latest + trollCooldownMs : null);
+  const now = serverNowMs();
+  const cooling = [...lastSent]
+    .map(([nickname, lastSentAt]) => ({
+      nickname,
+      until: trollCooldown({ lastSentAt, now }).until,
+    }))
+    .filter((row): row is { nickname: string; until: number } => row.until !== null)
+    .sort((left, right) => left.until - right.until);
+  return (
+    <section className="admin-task-section" aria-label="Cooldowns">
+      <h2>
+        Recharging ({cooling.length}) · {trollCooldownMs / 1_000} s per guest
+      </h2>
+      {cooling.length === 0 ? (
+        <p>Every guest can send a troll now.</p>
+      ) : (
+        <ul className="admin-data-list">
+          {cooling.map((row) => (
+            <li key={row.nickname} className="admin-data-row">
+              <span className="flex items-center gap-2">
+                <span
+                  className="admin-status-dot"
+                  data-tone="warn"
+                  aria-hidden="true"
+                />
+                <strong>{row.nickname}</strong>
+              </span>
+              <span className="admin-mono-tag">
+                Next troll in{" "}
+                {formatPhaseClock(cooldownSecondsLeft(row.until, now) * 1_000)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
 
 /** Every troll sent this game, newest first, with Cancel for unfinished ones. */
 function TrollHistory({ locked }: { locked: boolean }) {

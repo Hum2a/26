@@ -4385,7 +4385,7 @@ export class PartyRoom extends DurableObject<Env> {
       ...(rehearsal ? { rehearsalRevision: rehearsal.revision } : {}),
       isKartMode: Boolean(readKartLobby(sql)),
       playShared: preparePlayShared(sql, stored),
-      trollShared: prepareTrollShared(sql, store),
+      trollShared: prepareTrollShared(sql, store, nowMs),
       wallShared: prepareWallShared(sql),
       voterReactionsMap: allVoterReactions(sql),
       trends: this.trendCache.read(sql, stored),
@@ -4500,6 +4500,7 @@ export class PartyRoom extends DurableObject<Env> {
       store,
       audience,
       selfPlayerId,
+      roomWide?.nowMs ?? Date.now(),
       roomWide?.trollShared,
     );
     const highlights =

@@ -1,4 +1,9 @@
-import type { AdminTrolls, LobbySnapshot, TrollKindName } from "@26/shared";
+import {
+  trollCooldownMs,
+  type AdminTrolls,
+  type LobbySnapshot,
+  type TrollKindName,
+} from "@26/shared";
 import { Link } from "react-router";
 import { GuestTrolls } from "../troll/guest-troll";
 import { trollGroupOf, trollMeta } from "../troll/troll-meta";
@@ -33,7 +38,8 @@ export function TrollRehearsal({ troll }: { troll: Troll }) {
     phase: "collect",
     players: [{ playerId: samplePlayerId, nickname: "Sample troller" }],
     trolls: {
-      token: "spent",
+      token: "ready",
+      cooldownUntil: null,
       offers: [],
       active: [
         {
@@ -77,7 +83,7 @@ export function TrollRehearsal({ troll }: { troll: Troll }) {
           join as yourself.
         </li>
         <li>
-          Start the game and reach question 2 or later
+          Start the game and open a question
           {troll.modifier
             ? " on a scored multiple-choice question (points trolls only run there)"
             : troll.questionKinds.length > 0
@@ -87,7 +93,8 @@ export function TrollRehearsal({ troll }: { troll: Troll }) {
         </li>
         <li>
           On that phone open <strong>Troll</strong> → <strong>{group.label}</strong> →{" "}
-          <strong>{troll.label}</strong>, pick a bot and confirm.
+          <strong>{troll.label}</strong>, pick a bot and confirm. That phone then waits{" "}
+          {trollCooldownMs / 1_000} seconds before it can send another troll.
         </li>
         <li>{whatToWatch[group.id] ?? whatToWatch.chaos}</li>
       </ol>

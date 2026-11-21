@@ -9,19 +9,19 @@ const players = [
 ];
 
 describe("TrollPicker", () => {
-  it("filters the list, drops this phone, and locks before round two and after use", () => {
+  it("filters the list, drops this phone, locks while closed and stays open while recharging", () => {
     const onSelect = vi.fn();
     const { rerender } = render(
       <TrollPicker
         players={players}
         selfId="self"
-        roundIndex={3}
-        used={false}
+        locked={false}
+        cooling={false}
         onSelect={onSelect}
       />,
     );
 
-    expect(screen.getByText("1 troll left")).toBeTruthy();
+    expect(screen.getByText("Troll ready")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Troll Amina" })).toBeNull();
     expect(screen.getByRole("button", { name: "Troll Sam" })).toBeTruthy();
 
@@ -38,8 +38,8 @@ describe("TrollPicker", () => {
       <TrollPicker
         players={players}
         selfId="self"
-        roundIndex={1}
-        used={false}
+        locked
+        cooling={false}
         onSelect={onSelect}
       />,
     );
@@ -50,21 +50,20 @@ describe("TrollPicker", () => {
     expect((screen.getByLabelText("Find a player") as HTMLInputElement).disabled).toBe(
       true,
     );
-    expect(screen.getByText("1 troll left")).toBeTruthy();
 
     rerender(
       <TrollPicker
         players={players}
         selfId="self"
-        roundIndex={3}
-        used
+        locked={false}
+        cooling
         onSelect={onSelect}
       />,
     );
-    const spent = screen.getByRole("button", {
+    const recharging = screen.getByRole("button", {
       name: "Troll Sam",
     }) as HTMLButtonElement;
-    expect(spent.disabled).toBe(true);
-    expect(screen.getByText("Troll used")).toBeTruthy();
+    expect(recharging.disabled).toBe(false);
+    expect(screen.getByText("Recharging")).toBeTruthy();
   });
 });

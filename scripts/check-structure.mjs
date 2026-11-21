@@ -78,6 +78,7 @@ export const sharedFiles = [
   "rate-limit.ts",
   "results.ts",
   "stats.ts",
+  "troll-cooldown.ts",
   "version.ts",
   "voters.ts",
   "wall.ts",

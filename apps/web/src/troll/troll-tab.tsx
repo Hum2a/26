@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Icon } from "@iconify/react/dist/offline";
-import type { LobbySnapshot } from "@26/shared";
+import { formatPhaseClock, type LobbySnapshot } from "@26/shared";
+import { useCooldownSeconds } from "../live/use-cooldown";
 import { uploadVoiceClip } from "../media/media-transfer";
 import { VoiceTake } from "../media/voice-take";
 import { Button } from "../ui/primitives";
@@ -10,7 +11,10 @@ import { TrollPicker } from "./Picker";
 import { trollGroupOf, trollGroups, trollMeta, type TrollGroupId } from "./troll-meta";
 import "./troll-tab.css";
 
-/** The Troll tab: pick a troll, pick a target, confirm. One per game. */
+/**
+ * The Troll tab: pick a troll, pick a target, confirm. A guest can send
+ * whenever their own cooldown has run out; the room refuses an early send.
+ */
 export function TrollTab({
   snapshot,
   gameId,
@@ -31,21 +35,24 @@ export function TrollTab({
   const [voiceStatus, setVoiceStatus] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [shownGroup, setShownGroup] = useState<TrollGroupId | null>(null);
-  const used = snapshot.trolls.token === "spent";
-  const roundIndex = snapshot.play?.question.index ?? 0;
+  const locked = snapshot.trolls.token === "locked" || snapshot.phase === "lobby";
+  const resting = ["final", "facts", "podium"].includes(snapshot.phase);
+  const secondsLeft = useCooldownSeconds(snapshot.trolls.cooldownUntil ?? null);
+  const cooling = !locked && secondsLeft > 0;
   const target = snapshot.players.find(
     (player) => player.playerId === targetId && player.playerId !== selfId,
   );
   const offer = snapshot.trolls.offers.find((item) => item.kind === kind);
-  const ready = snapshot.trolls.token === "ready" && roundIndex >= 2;
+  const ready = !locked && !resting && !cooling;
+  const countdown = formatPhaseClock(secondsLeft * 1_000);
   const outgoing = snapshot.trolls.active.filter((effect) => effect.role === "actor");
-  const status = used
-    ? "You have used your troll for tonight."
-    : snapshot.phase === "lobby" || roundIndex < 2
-      ? "Your troll unlocks from question 2."
-      : ready
-        ? "You have one troll. Use it wisely."
-        : "Trolls are resting for this part of the show.";
+  const status = locked
+    ? "Trolls open once the questions start."
+    : resting
+      ? "Trolls are resting for this part of the show."
+      : cooling
+        ? `Next troll in ${countdown}.`
+        : "Troll ready. Send one whenever you like.";
   const step = !kind ? 1 : !targetId ? 2 : 3;
   const groupsOffered = trollGroups
     .map((group) => ({
@@ -97,8 +104,12 @@ export function TrollTab({
       <header className="phone-tab-head">
         <p className="entry-eyebrow">Troll a player</p>
         <h1 className="phone-tab-title">Mischief</h1>
-        <p className="troll-token glass" data-ready={ready || undefined}>
-          <span aria-hidden="true">{used ? "✓" : ready ? "1" : "·"}</span>
+        <p
+          className="troll-token glass"
+          data-ready={ready || undefined}
+          data-cooling={cooling || undefined}
+        >
+          <span aria-hidden="true">{cooling ? "◔" : ready ? "✓" : "·"}</span>
           {status}
         </p>
       </header>
@@ -121,7 +132,7 @@ export function TrollTab({
           </motion.p>
         ))}
       </AnimatePresence>
-      {used ? null : (
+      {locked || resting ? null : (
         <>
           <ol className="troll-steps" aria-label="Steps">
             {["Pick a troll", "Pick a target", "Send it"].map((label, index) => (
@@ -181,7 +192,7 @@ export function TrollTab({
                             type="button"
                             className="troll-card glass"
                             aria-pressed={kind === item.kind}
-                            disabled={pending || !ready || !item.enabled}
+                            disabled={pending || !item.enabled}
                             onClick={() => setKind(item.kind)}
                           >
                             <span className="troll-card-icon" aria-hidden="true">
@@ -224,14 +235,14 @@ export function TrollTab({
                 <TrollPicker
                   players={snapshot.players}
                   selfId={selfId}
-                  roundIndex={roundIndex}
-                  used={used}
+                  locked={false}
+                  cooling={cooling}
                   pending={pending}
                   selectedId={targetId}
                   onSelect={setTargetId}
                 />
                 {kind === "voice" ? (
-                  <VoiceTake disabled={pending || !ready} onClip={setClip} />
+                  <VoiceTake disabled={pending} onClip={setClip} />
                 ) : null}
                 {voiceStatus ? <p aria-live="polite">{voiceStatus}</p> : null}
                 <Button
@@ -242,11 +253,13 @@ export function TrollTab({
                   }
                   onClick={() => setConfirming(true)}
                 >
-                  {kind === "voice"
-                    ? "Send this clip"
-                    : target
-                      ? `Send to ${target.nickname}`
-                      : "Send troll"}
+                  {cooling
+                    ? `Ready in ${countdown}`
+                    : kind === "voice"
+                      ? "Send this clip"
+                      : target
+                        ? `Send to ${target.nickname}`
+                        : "Send troll"}
                 </Button>
                 <AnimatePresence>
                   {confirming && target ? (

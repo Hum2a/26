@@ -341,6 +341,8 @@ const scheduleStatements = [
     expires_at INTEGER,
     refunded INTEGER NOT NULL
   )`,
+  // Each guest's troll cooldown reads their latest counted send.
+  `CREATE INDEX IF NOT EXISTS troll_effect_actor ON troll_effect (actor_id, created_at)`,
   `CREATE TABLE IF NOT EXISTS stage_cue (
     cue_id TEXT PRIMARY KEY,
     effect_id TEXT,

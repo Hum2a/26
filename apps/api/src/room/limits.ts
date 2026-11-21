@@ -87,8 +87,9 @@ export const predictionContestantMessage =
   "Contestants play the duel. They do not back a winner.";
 export const predictionUnknownMessage = "That player is not in this duel.";
 export const demoScoringVersion = "demo-rounds-v4";
-export const trollLockedMessage = "Trolls unlock on the second question.";
-export const trollSpentMessage = "You have used your troll.";
+export const trollLockedMessage = "Trolls open once the game starts.";
+/** Each guest waits `trollCooldownMs` (in `@26/shared`) between trolls. */
+export const trollCooldownMessage = "Your next troll is still recharging.";
 export const trollKindMessage = "That troll is not in this game.";
 export const trollSwitchedOffMessage = "The host has switched that troll off.";
 export const trollQuestionMessage = "That troll does nothing on this question.";
