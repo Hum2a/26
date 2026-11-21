@@ -4,7 +4,7 @@ import { expect, it, vi } from "vitest";
 import { payloadDigest } from "../src/room/digest.ts";
 import { createSqlStore } from "../src/room/sql-store.ts";
 import { createGameStore } from "../src/questions/multiple-choice.ts";
-import { onAlarm, pause, resume, publicClock } from "../src/room/lifecycle.ts";
+import { advance, onAlarm, pause, resume, publicClock } from "../src/room/lifecycle.ts";
 import {
   acceptKartInput,
   readKart,
@@ -20,7 +20,7 @@ import {
   readRoomKartHandling,
 } from "../src/questions/kart/kart.ts";
 import { questionFor } from "../src/questions/registry.ts";
-import { kartNeutral, createDrivingBody, reduceKart } from "@26/shared";
+import { kartNeutral, kartOpenRaceMs, createDrivingBody, reduceKart } from "@26/shared";
 
 it("keeps accepted recap private while racing, then persists a receipted host end across eviction", async () => {
   const { stub, players, now, credential } = await setup();
@@ -912,7 +912,7 @@ it("accepts authenticated-driver controls, rejects stale/forged/late inputs and 
     onAlarm(createGameStore(sql), now + 200);
     expect(readKart(sql, q.id)!.drivers[0]!.speed).toBeGreaterThan(0);
     const clock = publicClock(store);
-    expect(clock.deadlineAt).toBe(now + 45_000);
+    expect(clock.deadlineAt).toBe(now + kartOpenRaceMs);
     pause(store, now + 250);
     onAlarm(createGameStore(sql), now + 5000);
     expect(readKart(sql, q.id)!.elapsedMs).toBe(200);
@@ -938,7 +938,7 @@ it("accepts authenticated-driver controls, rejects stale/forged/late inputs and 
     if (q?.kind !== "kart") throw new Error("Kart required");
     expect(readKart(sql, q.id)!.elapsedMs).toBe(450);
     const deadline = publicClock(store).deadlineAt!;
-    expect(deadline).toBe(now + 54_750);
+    expect(deadline).toBe(now + kartOpenRaceMs + 9_750);
     expect(
       acceptKartInput(
         sql,
@@ -986,9 +986,10 @@ it("persists legacy server-timed lap winners once and continues to scores and th
     const legacy = readKart(sql, q.id)!;
     delete legacy.timingMode;
     writeRoundState(sql, q.id, "kart-race", legacy);
+    let elapsed = 0;
     for (
-      let elapsed = 0;
-      elapsed < 45_000 && store.readRoom().phase === "collect";
+      ;
+      elapsed < 45_000 && readKart(sql, q.id)!.drivers[0]!.status === "RACING";
       elapsed += 100
     ) {
       acceptKartInput(
@@ -1008,6 +1009,12 @@ it("persists legacy server-timed lap winners once and continues to scores and th
       onAlarm(createGameStore(sql), now + elapsed + 100);
     }
     expect(readKart(sql, q.id)!.drivers[0]!.status).toBe("FINISHED");
+    // The first finish does not end a party race: the other driver keeps racing.
+    onAlarm(createGameStore(sql), now + elapsed + 1_000);
+    expect(store.readRoom().phase).toBe("collect");
+    expect(readKart(sql, q.id)!.drivers[1]!.status).toBe("RACING");
+    // The host ends it when they see fit; the unfinished driver gets a DNF.
+    expect(advance(createGameStore(sql), now + elapsed + 2_000)).toBe(true);
     expect(store.readRoom().phase).toBe("reveal");
     const rows = sql
       .exec<{ points: number }>(

@@ -305,7 +305,11 @@ export const PlayerController = () => {
           body.current.z,
           soloDriving.radius + Math.hypot(body.current.vx, body.current.vz) * 0.02,
         ),
-        surface !== "road" || powers.current.slowedUntil > elapsed.current,
+        powers.current.slowedUntil > elapsed.current
+          ? true
+          : surface !== "road"
+            ? "sand"
+            : false,
         true,
         soloCourse.filter((f) => courseEnabled(f, store.soloCourseSettings)),
         store.soloHandling,

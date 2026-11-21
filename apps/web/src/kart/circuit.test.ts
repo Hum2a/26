@@ -9,7 +9,12 @@ import {
   parkWalls,
 } from "@26/shared";
 import { vfxRehearsalRace } from "./vfx-rehearsal";
-import { createCircuit, kartTagName } from "./circuit";
+import {
+  createCircuit,
+  kartTagFullSizeGap,
+  kartTagName,
+  kartTagScale,
+} from "./circuit";
 import { kartCameraPose, smoothKartPose, kartVehiclePose } from "./presentation";
 import { driftEffectDescription } from "./drift-effects";
 
@@ -533,6 +538,14 @@ describe("kart name tags", () => {
     expect(kartTagName("  Chen ")).toBe("Chen");
     expect(kartTagName("Bartholomew the Great")).toBe("Bartholomew…");
     expect(kartTagName("Twelve chars")).toBe("Twelve chars");
+  });
+
+  it("shrink a tag beside the camera so it never covers the phone screen", () => {
+    expect(kartTagScale(kartTagFullSizeGap)).toBe(1);
+    expect(kartTagScale(40)).toBe(1);
+    expect(kartTagScale(kartTagFullSizeGap / 2)).toBe(0.5);
+    expect(kartTagScale(0)).toBe(0.3);
+    expect(kartTagScale(Number.NaN)).toBe(1);
   });
 
   it("disposes driver label sprites, materials and textures when a driver leaves", () => {

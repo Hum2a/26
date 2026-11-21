@@ -18,7 +18,6 @@ import {
   trollQuestionMessage,
   trollPhotoMessage,
   trollSelfMessage,
-  trollSlotMessage,
   trollAttributionMessage,
   trollCooldownMessage,
   trollSwitchedOffMessage,
@@ -29,6 +28,7 @@ import { createSqlStore } from "../room/sql-store.ts";
 import {
   themeStingAsset,
   isTrollKind,
+  questionModifiers,
   slotDecision,
   speechApplauseMs,
   themeCueCap,
@@ -116,14 +116,12 @@ export function acceptTroll(
   if (!trollCooldown({ lastSentAt: lastTrollAt(sql, actorId), now }).ready) {
     return { ok: false, message: trollCooldownMessage };
   }
-  const sameSlot = effectsFor(sql, targetId, definition.slot);
+  // A busy slot queues the troll behind the others; nothing is refused.
   const decision = slotDecision({
-    active: sameSlot.some((row) => row.status === "active"),
-    queued: sameSlot.some((row) => row.status === "queued"),
+    active: effectsFor(sql, targetId, definition.slot).some(
+      (row) => row.status === "active",
+    ),
   });
-  if (decision === "occupied") {
-    return { ok: false, message: trollSlotMessage };
-  }
   const effectId = crypto.randomUUID();
   const stageBusy = kind === "typing" && roomHasActiveTyping(sql);
   const starting = decision === "start" && !stageBusy;
@@ -857,10 +855,7 @@ export function hostTrollRows(sql: SqlStorage): {
 /** A score troll needs the question to list it in `modifiers`. */
 function questionAllowsModifier(room: RoomClock, kind: string): boolean {
   const question = questionFor(room);
-  return (
-    question?.kind === "choice" &&
-    (question.modifiers as readonly string[] | undefined)?.includes(kind) === true
-  );
+  return (questionModifiers(question) as readonly string[]).includes(kind);
 }
 
 /** Points-moving trolls that are active for this question, for the reveal. */

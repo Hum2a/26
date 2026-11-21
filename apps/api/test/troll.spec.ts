@@ -3,12 +3,7 @@ import { describe, expect, it } from "vitest";
 import { trollCooldownMs } from "@26/shared";
 import { withClientApiQuery } from "./client-api-key.ts";
 import { payloadDigest } from "../src/room/digest.ts";
-import {
-  trollCooldownMessage,
-  trollLockedMessage,
-  trollModifierMessage,
-  trollSlotMessage,
-} from "../src/room/limits.ts";
+import { trollCooldownMessage, trollLockedMessage } from "../src/room/limits.ts";
 
 describe("troll engine", () => {
   it("stamps a cooldown, refuses inside it, replays a retry, and refunds a troll that never starts", async () => {
@@ -118,13 +113,16 @@ describe("troll engine", () => {
           effect: "invasion",
           targetId: bilal.playerId,
         })
-      ).error,
-    ).toBe(trollSlotMessage);
+      ).accepted,
+    ).toBe(true);
     daraSocket.close();
-    // A refused troll does not start a cooldown.
+    // There is no queue cap: a third troll queues behind the others and only
+    // the sender's own cooldown starts.
     const daraTrolls = (await stub.snapshotFor("guest", dara.playerId)).trolls;
-    expect(daraTrolls.token).toBe("ready");
-    expect(daraTrolls.cooldownUntil).toBeNull();
+    expect(daraTrolls.token).toBe("cooling");
+    expect(
+      daraTrolls.active.filter((effect) => effect.status === "queued"),
+    ).toHaveLength(1);
     expect(
       (await stub.snapshotFor("guest", chen.playerId)).trolls.active.some(
         (effect) => effect.status === "queued",
@@ -325,15 +323,6 @@ describe("troll engine", () => {
     await reach(speedRoom, speed, "candles", "collect");
     const denied = await connect(speedRoom, speed.gameId, guestCookie(fast));
     await nextMatching(denied, (message) => message.kind === "snapshot");
-    expect(
-      (
-        await send(denied, {
-          name: "troll",
-          effect: "double",
-          targetId: slowed.playerId,
-        })
-      ).error,
-    ).toBe(trollModifierMessage);
     expect(
       (
         await send(denied, {

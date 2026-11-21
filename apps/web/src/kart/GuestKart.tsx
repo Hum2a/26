@@ -8,7 +8,7 @@ import { PowerUpControl } from "./PowerUpControl";
 import { Button } from "../ui/primitives";
 import { DriftGauge } from "./DriftGauge";
 import { useCallback, useState, useEffect, useRef } from "react";
-import { kartNeutral, resolveKartSettings } from "@26/shared";
+import { isOpenKartRace, kartNeutral, resolveKartSettings } from "@26/shared";
 import { createSelfPrediction } from "./self-prediction";
 import { KartCountdown } from "./KartCountdown";
 import { useKartContactFeedback } from "./useKartContactFeedback";
@@ -57,6 +57,8 @@ export function GuestKart({
     (snapshot.play?.question.kind === "kart"
       ? snapshot.play.question.timeLimitMs
       : 45_000);
+  // A party race runs until everyone finishes, so it counts up, not down.
+  const openRace = isOpenKartRace({ timeLimitMs });
   const self = race?.participants.find((d) => d.playerId === race.selfPlayerId);
   const place = race?.leaderboard.find((d) => d.playerId === self?.playerId)?.place;
   const complete = self && self.status !== "RACING";
@@ -294,7 +296,7 @@ export function GuestKart({
       </AnimatePresence>
       <header className="kart-phone-heading">
         <p className="kart-eyebrow">
-          {lapWords(laps)} · {windowWords(timeLimitMs)}
+          {lapWords(laps)} · {openRace ? "EVERYONE FINISHES" : windowWords(timeLimitMs)}
         </p>
         <h1 className="phone-prompt">
           {complete
@@ -345,7 +347,9 @@ export function GuestKart({
                   ? self.status === "FINISHED"
                     ? `Position ${place ?? "—"}`
                     : `${Math.round(self.progress * 100)}% of the ${laps > 1 ? "race" : "lap"}`
-                  : `${Math.max(0, (timeLimitMs - (race?.elapsedMs ?? 0)) / 1000).toFixed(1)}s left`}
+                  : openRace
+                    ? `Race time ${((race?.elapsedMs ?? 0) / 1000).toFixed(1)}s`
+                    : `${Math.max(0, (timeLimitMs - (race?.elapsedMs ?? 0)) / 1000).toFixed(1)}s left`}
               </p>
               <p>
                 {complete

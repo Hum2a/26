@@ -1,5 +1,6 @@
 import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
+import { kartOpenRaceMs } from "@26/shared";
 import { payloadDigest } from "../src/room/digest.ts";
 import { applyHostAction } from "../src/room/host-actions.ts";
 import { assertKartLobbyAction } from "../src/room/kart/kart-lobby.ts";
@@ -96,7 +97,8 @@ it("authorises and replays the race start, freezes late arrivals and ends withou
     const snapshot = await room.snapshotFor("stage");
     phases.push(snapshot.phase);
     if (snapshot.phase === "collect") {
-      expect(snapshot.deadlineAt).toBe(now + n * 100 + 180_000);
+      // A party race stays open until everyone finishes or the host ends it.
+      expect(snapshot.deadlineAt).toBe(now + n * 100 + kartOpenRaceMs);
       expect(snapshot.play?.kart?.elapsedMs).toBe(0);
     }
   }

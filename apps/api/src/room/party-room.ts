@@ -291,6 +291,7 @@ import { acceptEstimate, wrongKindEstimate } from "../questions/slider.ts";
 import { acceptMapPin } from "../questions/map-guess.ts";
 import { acceptWordleGuess } from "../questions/wordle/wordle.ts";
 import { acceptTypedAnswer } from "../questions/typed.ts";
+import { answerWindowMs } from "../questions/answer-window.ts";
 import {
   acceptBallot,
   acceptText,
@@ -1678,7 +1679,7 @@ export class PartyRoom extends DurableObject<Env> {
         {
           ...multipleChoicePlugin(),
           questionCount: script.questions.length,
-          collectWindows: script.questions.map((q) => q.collectMs),
+          collectWindows: script.questions.map(answerWindowMs),
         },
         crypto.randomUUID(),
       );
@@ -1748,7 +1749,7 @@ export class PartyRoom extends DurableObject<Env> {
           {
             ...multipleChoicePlugin(),
             questionCount: pack.questions.length,
-            collectWindows: pack.questions.map((q) => q.collectMs),
+            collectWindows: pack.questions.map(answerWindowMs),
           },
           crypto.randomUUID(),
         );

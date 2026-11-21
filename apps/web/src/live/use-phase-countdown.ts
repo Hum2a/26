@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { formatPhaseClock, remainingUntil, type LobbySnapshot } from "@26/shared";
+import {
+  formatPhaseClock,
+  isOpenKartRace,
+  remainingUntil,
+  type LobbySnapshot,
+} from "@26/shared";
 import { serverOffset } from "./server-clock";
 
 export function usePhaseCountdown(
@@ -54,6 +59,21 @@ export function usePhaseCountdown(
     offset === undefined
       ? remainingUntil(deadlineAt, serverNow, observedAt, now)
       : deadlineAt - (now + offset);
+  const race = snapshot.play?.kart;
+  if (
+    snapshot.phase === "collect" &&
+    snapshot.play?.question.kind === "kart" &&
+    race &&
+    isOpenKartRace(race)
+  ) {
+    // A party race runs until everyone finishes: show race time, not a countdown.
+    return {
+      label: "Race time",
+      value: formatPhaseClock(Math.max(0, race.timeLimitMs - remainingMs)),
+      note: "The race ends when everyone finishes or the host ends it.",
+      remainingMs,
+    };
+  }
   return {
     label: "Time left",
     value: formatPhaseClock(remainingMs),

@@ -1,6 +1,6 @@
 import { assertPushOutcome, pushBailOptionId } from "./push-luck.ts";
 import { contentLimits, mapPinSchema, questionOptionImageSchema } from "@26/shared";
-import { implementedTrollKinds } from "../troll/catalogue.ts";
+import { implementedTrollKinds, questionModifiers } from "../troll/catalogue.ts";
 import { toPlayable } from "./authoring.ts";
 import {
   demoAnswerKeyMarker,
@@ -622,7 +622,7 @@ function illustrativeCoverage(questions: readonly Question[]): ContentIssue[] {
   if (
     !questions.some(
       (question) =>
-        question.kind === "choice" && question.modifiers?.includes("double"),
+        question.kind === "choice" && questionModifiers(question).includes("double"),
     )
   ) {
     issues.push(

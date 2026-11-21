@@ -20,6 +20,15 @@ export type KartLaps = z.infer<typeof kartLapsSchema>;
 export const kartCpuCountSchema = z.number().int().min(0).max(7);
 /** The longest race window: three laps of a three-minute course. */
 export const kartMaxLimitMs = importedTrackLimitMs * 3;
+/**
+ * Party races are open-ended: a race ends when every guest has finished or the
+ * host ends it, never at the first finish. The room clock still needs a ceiling,
+ * so a party race gets the longest window a race can hold.
+ */
+export const kartOpenRaceMs = kartMaxLimitMs;
+/** A race whose window is the open-race ceiling shows race time, not a countdown. */
+export const isOpenKartRace = (race: { timeLimitMs: number }) =>
+  race.timeLimitMs >= kartOpenRaceMs;
 export type KartTrackId =
   typeof kartTrackId | typeof importedTrackId | typeof parkTrackId;
 /** Optional host presentation choice; absence preserves the legacy renderer. */

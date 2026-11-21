@@ -60,7 +60,7 @@ export type TrollDefinition = {
   cueMs: number;
   /** Only offered on these question kinds, because it does nothing elsewhere. */
   questionKinds?: readonly string[];
-  /** A score modifier: only offered when the question lists it in `modifiers`. */
+  /** A score modifier: offered on every scored choice question (`questionModifiers`). */
   modifier?: boolean;
 };
 
@@ -70,8 +70,12 @@ const immediate = {
   cueMs: 4_000,
 };
 
-/** Phases where a changed name is seen: questions, reveals and scores. */
-const namePhases = [
+/**
+ * Every beat of a question, from its title card to the scores. The owner asked
+ * for trolls with no limit but the guest's own cooldown (21 November 2026), so a
+ * troll is open for every beat where it can still land.
+ */
+const showPhases = [
   "intro",
   "prompt",
   "collect",
@@ -80,6 +84,13 @@ const namePhases = [
   "reveal",
   "scores",
 ] as const;
+/** Phases where a changed name is seen: questions, reveals and scores. */
+const namePhases = showPhases;
+/**
+ * Before this question's reveal. A troll that acts on the answer, the score or
+ * the reveal itself counts for the question on screen when it is sent.
+ */
+const beforeReveal = ["intro", "prompt", "collect", "vote", "predict"] as const;
 
 /** Question kinds with option buttons, and with typed answers. */
 const optionKinds = ["choice", "vote", "guess", "duel", "finale", "rank"] as const;
@@ -92,7 +103,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     assetLabel: "Your face, everywhere",
     slot: "transient",
     durationMs: 8_000,
-    phases: ["prompt", "collect", "vote", "predict", "reveal"],
+    phases: showPhases,
     escape: "Dismiss",
     disruptsSubmission: false,
     ...immediate,
@@ -103,7 +114,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     assetLabel: "Benjamin Netanyahu",
     slot: "transient",
     durationMs: 4_000,
-    phases: ["prompt", "collect", "vote", "predict", "reveal"],
+    phases: showPhases,
     escape: null,
     disruptsSubmission: false,
     ...immediate,
@@ -114,7 +125,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     assetLabel: "Incoming call: Mum",
     slot: "transient",
     durationMs: 8_000,
-    phases: ["collect", "vote", "predict"],
+    phases: showPhases,
     escape: "Decline",
     disruptsSubmission: false,
     ...immediate,
@@ -125,7 +136,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     assetLabel: "Shattered screen",
     slot: "transient",
     durationMs: 12_000,
-    phases: ["prompt", "collect", "vote", "predict", "reveal"],
+    phases: showPhases,
     escape: "Dismiss",
     disruptsSubmission: false,
     ...immediate,
@@ -136,7 +147,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     assetLabel: "The send button runs away",
     slot: "transient",
     durationMs: 3_000,
-    phases: ["collect"],
+    phases: beforeReveal,
     escape: "Answer anyway",
     disruptsSubmission: true,
     ...immediate,
@@ -147,7 +158,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     assetLabel: "Names swapped",
     slot: "transient",
     durationMs: 15_000,
-    phases: ["intro", "prompt", "collect", "vote", "predict", "reveal", "scores"],
+    phases: showPhases,
     escape: null,
     disruptsSubmission: false,
     ...immediate,
@@ -158,7 +169,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     assetLabel: "Score hidden",
     slot: "transient",
     durationMs: 12_000,
-    phases: ["reveal", "scores", "final"],
+    phases: [...showPhases, "final"],
     escape: "Show my score",
     disruptsSubmission: false,
     ...immediate,
@@ -169,7 +180,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     assetLabel: "Double or nothing",
     slot: "persistent",
     durationMs: null,
-    phases: ["collect"],
+    phases: beforeReveal,
     escape: null,
     disruptsSubmission: false,
     ...immediate,
@@ -180,7 +191,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     assetLabel: "Typing live on the big screen",
     slot: "transient",
     durationMs: 12_000,
-    phases: ["collect"],
+    phases: beforeReveal,
     escape: null,
     disruptsSubmission: false,
     ...immediate,
@@ -191,7 +202,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     assetLabel: "A voice clip about you",
     slot: "persistent",
     durationMs: null,
-    phases: ["collect", "vote", "predict"],
+    phases: beforeReveal,
     escape: null,
     disruptsSubmission: false,
     announce: "reveal",
@@ -204,7 +215,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     assetLabel: "Theme jingle",
     slot: "persistent",
     durationMs: null,
-    phases: ["intro", "prompt", "collect", "vote", "predict", "reveal", "scores"],
+    phases: showPhases,
     escape: null,
     disruptsSubmission: false,
     announce: "scores",
@@ -217,7 +228,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     assetLabel: "A word from our sponsor",
     slot: "transient",
     durationMs: 4_000,
-    phases: ["intro", "prompt", "reveal", "scores"],
+    phases: showPhases,
     escape: null,
     disruptsSubmission: false,
     ...immediate,
@@ -343,30 +354,28 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
     ...screenTroll("guest-14", "Guest 14", "Nobody knows who you are", 45_000),
     phases: namePhases,
   },
-  "fake-last": {
-    ...screenTroll("fake-last", "Fake last place", "You are last. Apparently.", 8_000),
-    phases: ["intro", "prompt", "collect", "vote", "predict", "reveal", "scores"],
-  },
+  "fake-last": screenTroll(
+    "fake-last",
+    "Fake last place",
+    "You are last. Apparently.",
+    8_000,
+  ),
   replay: {
     ...screenTroll("replay", "Instant replay", "Your answer, on the big screen", null),
     slot: "persistent",
-    phases: ["collect", "vote", "predict"],
+    phases: beforeReveal,
     announce: "reveal",
     questionKinds: ["choice"],
   },
   speech: {
     ...screenTroll("speech", "Speech!", "The floor is yours at the scores", null),
     slot: "persistent",
-    phases: ["prompt", "collect", "vote", "predict", "reveal"],
+    phases: [...beforeReveal, "reveal"],
     announce: "scores",
   },
-  "fake-exit": {
-    ...screenTroll("fake-exit", "Fake exit", "You have left the party", 7_000),
-    phases: ["intro", "prompt", "collect", "vote", "predict", "reveal", "scores"],
-  },
+  "fake-exit": screenTroll("fake-exit", "Fake exit", "You have left the party", 7_000),
   "zoom-photo": {
     ...screenTroll("zoom-photo", "Zoom and enhance", zoomAssetLabel, 7_000),
-    phases: ["intro", "prompt", "collect", "vote", "predict", "reveal", "scores"],
   },
   steal: scoring("steal", "Steal", "Half your points, taken"),
   "robin-hood": scoring("robin-hood", "Robin Hood", "Your points go to last place"),
@@ -374,7 +383,7 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
   "public-vote": {
     ...screenTroll("public-vote", "Public vote", "Your vote, on the big screen", null),
     slot: "persistent",
-    phases: ["collect", "vote", "predict"],
+    phases: beforeReveal,
     announce: "reveal",
     questionKinds: ["vote"],
   },
@@ -386,25 +395,24 @@ export const trollDefinitions: Record<TrollKind, TrollDefinition> = {
       null,
     ),
     slot: "persistent",
-    phases: ["collect", "vote", "predict"],
+    phases: beforeReveal,
     announce: "reveal",
     questionKinds: ["typed", "vote"],
   },
   "haptic-storm": {
     ...screenTroll("haptic-storm", "Haptics storm", "Phone won't stop buzzing", 10_000),
-    phases: ["collect", "vote", "predict"],
   },
 };
 
 /**
- * A points-moving troll. It only runs on a choice question that lists its kind
- * in `modifiers`, lasts the question, and settles at the reveal.
+ * A points-moving troll. It runs on any scored choice question (see
+ * `questionModifiers`), lasts the question, and settles at the reveal.
  */
 function scoring(kind: TrollKind, label: string, assetLabel: string): TrollDefinition {
   return {
     ...screenTroll(kind, label, assetLabel, null),
     slot: "persistent",
-    phases: ["collect", "vote", "predict"],
+    phases: beforeReveal,
     questionKinds: ["choice"],
     modifier: true,
   };
@@ -424,7 +432,7 @@ function sabotage(
 ): TrollDefinition {
   return {
     ...screenTroll(kind, label, assetLabel, durationMs),
-    phases: ["collect", "vote", "predict"],
+    phases: beforeReveal,
     disruptsSubmission: true,
     questionKinds,
   };
@@ -448,7 +456,7 @@ function screenTroll(
     assetLabel,
     slot: "transient",
     durationMs,
-    phases: ["prompt", "collect", "vote", "predict", "reveal"],
+    phases: showPhases,
     escape,
     disruptsSubmission: false,
     ...immediate,
@@ -459,17 +467,26 @@ export function isTrollKind(value: unknown): value is TrollKind {
   return implementedTrollKinds.some((kind) => kind === value);
 }
 
-export function slotDecision(input: {
-  active: boolean;
-  queued: boolean;
-}): "start" | "queue" | "occupied" {
-  if (!input.active) {
-    return "start";
-  }
-  if (!input.queued) {
-    return "queue";
-  }
-  return "occupied";
+/**
+ * A free slot starts the troll now; a busy one queues it behind the others.
+ * There is no queue cap: the owner wants no limit but the guest's cooldown, and
+ * each guest can send at most one troll per cooldown anyway.
+ */
+export function slotDecision(input: { active: boolean }): "start" | "queue" {
+  return input.active ? "queue" : "start";
+}
+
+/**
+ * The score modifiers a question takes. Every scored choice question takes every
+ * points troll, so guests are never told a points troll is not on this question.
+ * A poll scores nothing, so a points troll there would have nothing to move.
+ */
+export function questionModifiers(
+  question: { kind: string; outcome?: { kind: string } } | undefined,
+): readonly ScoreModifier[] {
+  return question?.kind === "choice" && question.outcome?.kind !== "poll"
+    ? scoreModifiers
+    : [];
 }
 
 /**

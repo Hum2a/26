@@ -208,3 +208,43 @@ it("holds the send button until the cooldown ends", async () => {
   fireEvent.click(send);
   expect(onSend).toHaveBeenCalledWith("swap", secondId);
 });
+
+it("previews the troll on the victim's stand-in phone before confirming", async () => {
+  render(renderTab(vi.fn()));
+  fireEvent.click(screen.getByRole("button", { name: /Cracked screen/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Preview what it does" }));
+  expect(
+    screen.getByRole("region", { name: "Preview: what your victim sees" }),
+  ).toBeTruthy();
+  fireEvent.click(await screen.findByRole("button", { name: "Troll Sam" }));
+  const preview = await screen.findByRole("region", { name: "Preview: what Sam sees" });
+  expect(within(preview).getByText("Preview · what Sam will see")).toBeTruthy();
+  expect(within(preview).getByText("Cracked screen")).toBeTruthy();
+});
+
+it("says trolls wait while the game is paused and blocks the send", async () => {
+  const onSend = vi.fn();
+  render(renderTab(onSend, { snapshot: { ...ready, paused: true } }));
+  expect(
+    screen.getByText("The game is paused. Trolls wait until it resumes."),
+  ).toBeTruthy();
+  expect(
+    (screen.getByRole("button", { name: /Cracked screen/ }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  expect(onSend).not.toHaveBeenCalled();
+});
+
+it("shows the room's reason when a troll is refused", async () => {
+  const view = render(renderTab(vi.fn()));
+  fireEvent.click(screen.getByRole("button", { name: /Cracked screen/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Troll Sam" }));
+  view.rerender(renderTab(vi.fn(), { error: "The game is paused." }));
+  expect(await screen.findByText("Not sent: The game is paused.")).toBeTruthy();
+});
+
+it("explains a switched-off card by what the question lacks, not a vague limit", () => {
+  render(renderTab(vi.fn()));
+  const mirror = screen.getByRole("button", { name: /Mirror world/ });
+  expect(within(mirror).getByText("Opens again on the next question.")).toBeTruthy();
+});

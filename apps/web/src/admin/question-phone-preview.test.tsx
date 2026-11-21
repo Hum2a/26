@@ -70,7 +70,9 @@ it("disables answering before the round opens and while paused", async () => {
   expect(screen.getByText("Read along. Wait for the signal to play.")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Send answer" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Pause preview" }));
-  expect(await screen.findByText("Paused — hang tight")).toBeTruthy();
+  expect(
+    await screen.findByText("Hang tight — the host will carry on soon"),
+  ).toBeTruthy();
 });
 it("labels unsupported draft layouts and prevents the wrong interaction", async () => {
   vi.mocked(readQuestionPreview).mockResolvedValue({

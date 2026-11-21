@@ -3,7 +3,7 @@ import type { LobbySnapshot } from "@26/shared";
 /** Copy follows the server phase and this guest's role; it never advances a round. */
 export function questionDirection(snapshot: LobbySnapshot, pending: boolean): string {
   const play = snapshot.play;
-  if (snapshot.paused) return "Paused — hang tight";
+  if (snapshot.paused) return "Hang tight — the host will carry on soon";
   if (snapshot.held) return "Waiting for the host";
   if (snapshot.phase === "facts") return "Watch the stage";
   if (pending && play?.question.kind !== "chess")

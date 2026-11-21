@@ -4,6 +4,8 @@ import { pointsFor } from "../src/questions/multiple-choice.ts";
 import {
   applyScoreModifiers,
   modifierOrder,
+  questionModifiers,
+  scoreModifiers,
   slotDecision,
 } from "../src/troll/catalogue.ts";
 import {
@@ -68,10 +70,22 @@ describe("troll scoring rules", () => {
     ).toBe(shape.points + shape.speedBonus.maxPoints);
   });
 
-  it("queues one effect per slot and refuses a third", () => {
-    expect(slotDecision({ active: true, queued: false })).toBe("queue");
-    expect(slotDecision({ active: true, queued: true })).toBe("occupied");
-    expect(slotDecision({ active: false, queued: false })).toBe("start");
+  it("starts on a free slot and queues behind a busy one, with no cap", () => {
+    expect(slotDecision({ active: false })).toBe("start");
+    expect(slotDecision({ active: true })).toBe("queue");
+  });
+
+  it("lets every scored choice question take every points troll", () => {
+    expect(questionModifiers({ kind: "choice", outcome: { kind: "correct" } })).toEqual(
+      scoreModifiers,
+    );
+    expect(
+      questionModifiers({ kind: "choice", outcome: { kind: "multiple" } }),
+    ).toEqual(scoreModifiers);
+    expect(questionModifiers({ kind: "choice", outcome: { kind: "poll" } })).toEqual(
+      [],
+    );
+    expect(questionModifiers({ kind: "slider" })).toEqual([]);
   });
 
   it("freezes an effect timer while the room is paused", () => {

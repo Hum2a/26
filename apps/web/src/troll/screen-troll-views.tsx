@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useContext, useEffect, useRef, useState, type CSSProperties } from "react";
 import "./screen-trolls.css";
 import "./phone-gags.css";
 import {
@@ -27,6 +27,7 @@ import {
   TranslatedOptions,
 } from "./sabotage-trolls";
 import type { ScreenTrollKind } from "./screen-troll-kind";
+import { TrollPageScope } from "./troll-page-scope";
 import { trollAssets } from "./troll-assets";
 import { useTrollClip, useTrollLayer } from "./troll-sound";
 
@@ -171,12 +172,14 @@ function PageWarp({
   kind: "australia" | "mirror" | "jelly" | "comic-sans";
   label: string;
 }) {
+  const scope = useContext(TrollPageScope);
   useEffect(() => {
-    const root = document.documentElement;
+    const root = scope ? scope.current : document.documentElement;
+    if (!root) return;
     const name = `troll-page-${kind}`;
     root.classList.add(name);
     return () => root.classList.remove(name);
-  }, [kind]);
+  }, [kind, scope]);
   return (
     <p className="troll-pill" role="status">
       {label}

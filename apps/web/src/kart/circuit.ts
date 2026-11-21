@@ -634,6 +634,8 @@ export function createCircuit(
     }
     rig.begin(dt);
     const tagged = new Set<THREE.Sprite>();
+    // The followed kart comes first in chase view; its pose sizes nearby tags.
+    let focusX: number | undefined, focusZ: number | undefined;
     for (let i = 0; i < drivers.length; i++) {
       const driver = drivers[i]!,
         previous = poses.get(driver.playerId),
@@ -660,6 +662,10 @@ export function createCircuit(
       const { x, z, heading } = pose,
         c = Math.cos(heading),
         s = Math.sin(heading);
+      if (driver.playerId === focusPlayerId) {
+        focusX = x;
+        focusZ = z;
+      }
       const moved = previous ? Math.hypot(x - previous.x, z - previous.z) : 0;
       const distance =
         moved < 8 && previous ? (x - previous.x) * c + (z - previous.z) * s : 0;
@@ -765,6 +771,16 @@ export function createCircuit(
         driver.playerId === focusPlayerId ? undefined : label(driver, !!focusPlayerId);
       if (sprite) {
         sprite.position.set(x, 3.8 + height, z);
+        if (focusPlayerId) {
+          // A kart right beside the camera would get a screen-filling tag;
+          // shrink close tags so none grows past its size at a car length or so.
+          const gap =
+            focusX === undefined || focusZ === undefined
+              ? kartTagFullSizeGap
+              : Math.hypot(x - focusX, z - focusZ);
+          const fit = kartTagScale(gap);
+          sprite.scale.set(9 * fit, 2.25 * fit, 1);
+        }
         sprite.visible = true;
         tagged.add(sprite);
       }
@@ -1019,4 +1035,17 @@ export function createCircuit(
 export function kartTagName(name: string): string {
   const trimmed = name.trim();
   return trimmed.length > 12 ? `${trimmed.slice(0, 11)}…` : trimmed;
+}
+
+/** At this many units from the followed kart, or further, a tag is full size. */
+export const kartTagFullSizeGap = 14;
+
+/**
+ * How big a chase-view tag is drawn, from 0.3 to 1, by its kart's distance from
+ * the followed kart. A tag is a fixed-size sprite, so without this a kart right
+ * beside the camera would carry a label that covers the phone screen.
+ */
+export function kartTagScale(gap: number): number {
+  if (!Number.isFinite(gap)) return 1;
+  return Math.max(0.3, Math.min(1, gap / kartTagFullSizeGap));
 }

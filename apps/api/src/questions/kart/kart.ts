@@ -3,6 +3,7 @@ import {
   kartInputSchema,
   kartStageModeSchema,
   kartLimitMs,
+  kartOpenRaceMs,
   kartInputGapMs,
   kartTickMs,
   createKartRace,
@@ -439,6 +440,9 @@ export function enterKart(
         trackId: q.trackId,
         ...(q.laps ? { laps: q.laps } : {}),
         ...(q.cpuRacers ? { cpu: q.cpuRacers } : {}),
+        // Everyone gets to finish: the race ends when every guest is done or
+        // the host ends it, not at the authored race length.
+        timeLimitMs: kartOpenRaceMs,
       },
     );
     // The race starts with the room's chosen driving feel.
@@ -512,7 +516,7 @@ function catchUp(
 ): KartRace | undefined {
   const race = liveKart(sql, q.id);
   if (!race) return undefined;
-  const target = elapsed(sql, store, now, q.timeLimitMs);
+  const target = elapsed(sql, store, now, kartOpenRaceMs);
   const events = [...kartQueues(sql, q.id, race.raceId).values()]
     .flatMap((queue) => queue.pending)
     .filter((e) => e.elapsed <= target)
@@ -733,8 +737,8 @@ export function acceptKartInputs(
         parsed.data.sequence <= previous.lastSequence)
     )
       return false;
-    const at = elapsedAt(due, room.paused, now, q.timeLimitMs);
-    if (at >= q.timeLimitMs) return false;
+    const at = elapsedAt(due, room.paused, now, kartOpenRaceMs);
+    if (at >= kartOpenRaceMs) return false;
     queues.set(playerId, {
       at: now,
       lastSequence: parsed.data.sequence,

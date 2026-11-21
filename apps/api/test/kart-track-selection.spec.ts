@@ -1,5 +1,6 @@
 import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
+import { kartOpenRaceMs } from "@26/shared";
 import { payloadDigest } from "../src/room/digest.ts";
 import { chooseKartLobbyTrack } from "../src/room/kart/kart-lobby.ts";
 import { createSqlStore } from "../src/room/sql-store.ts";
@@ -123,7 +124,8 @@ it("validates again in the domain and uses the selected ring clock without accum
     ).toBe(true);
   const view = await room.snapshotFor("stage");
   expect(view.play?.kart?.trackId).toBe("party-ring-v1");
-  expect(view.deadlineAt).toBe(now + 4 + 45000);
+  // The ring race is open-ended too: its window is the open-race ceiling.
+  expect(view.deadlineAt).toBe(now + 4 + kartOpenRaceMs);
 });
 it("saves laps with the course, scales the race window, replays once and refuses a bad lap count", async () => {
   const { room, credential, now } = await lobby();
