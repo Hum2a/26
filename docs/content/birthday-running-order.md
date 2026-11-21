@@ -42,10 +42,10 @@ Say at the reveal: ㅤ
 
 ## 6. choice · leviticus-18-7
 
-Which of these is Leviticus 18:7?
+Which statement paraphrases Leviticus 18:7?
 
 20s to answer. Attribution: live.
-Say at the reveal: The nakedness of thy father, or the nakedness of thy mother…
+Say at the reveal: Do not dishonour your father by having sexual relations with your mother
 
 ## 7. guess · guess-emotional-support
 

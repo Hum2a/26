@@ -37,9 +37,9 @@ Reveal: ㅤ
 
 ## 6. leviticus-18-7
 
-Which of these is Leviticus 18:7?
+Which statement paraphrases Leviticus 18:7?
 
-Reveal: The nakedness of thy father, or the nakedness of thy mother…
+Reveal: Do not dishonour your father by having sexual relations with your mother
 
 ## 7. guess-emotional-support
 

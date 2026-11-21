@@ -7666,3 +7666,15 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Checks.** `npm run typecheck` passed. ESLint on the changed folders: 0 errors. Web: `src/troll`, `src/live`, `src/kart`, `src/device` (68 files) passed after fixes, plus `question-direction` and `question-phone-preview`. API: `test/troll*`, `test/kart*`, `party-concepts` and the updated kart lobby, track and room specs passed. A local dev page (not committed) showed the preview at 390px: the invasion flood and Australia mode stay inside the stand-in phone. Full `npm run test:unit`, the full API suite, `npm run build` and the bundle budget are left to CI. Playwright was not run.
 
 **Next.** Rehearse a kart race with two phones and end it from the presenter phone; send a few trolls from the confirm-step preview on a real phone.
+
+## 21 November 2026 — Leviticus 18:7 wording
+
+**Status.** Updated locally in the birthday catalogue and regenerated both birthday presenter exports.
+
+**Question.** The prompt asks which statement paraphrases Leviticus 18:7. The correct choice uses Humza’s exact wording. The other three choices follow the same sentence structure and refer to a stepmother, a mother’s sister and a brother’s wife, drawing on verses 8, 13 and 16.
+
+**Checks.** `npm run content:check`, `npm run typecheck`, `npm run lint` and Prettier on changed files passed. The two targeted API suites passed all 41 tests. A direct check of the playable question confirmed the exact correct label and parallel wording across all four choices.
+
+**Web suite.** `npm run test:unit` passed 1,017 of 1,020 tests. The two kart failures passed when their files were rerun in isolation. The guest Wordle transfer test still failed to find the game region on rerun.
+
+**Next.** Preview the updated round in Admin → Question packs → Phone preview.
