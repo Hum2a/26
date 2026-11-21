@@ -112,6 +112,48 @@ export function sameAnswerSet(
   );
 }
 
+/**
+ * Scores a multi-select choice answer.
+ * - `exact`: full points only when the picked set matches `correct` with no decoys.
+ * - `partial`: each right pick adds `points / correct.length`, each wrong pick
+ *   subtracts the same share, clamped at 0 so ticking every option scores 0.
+ */
+export function multipleChoiceScore(
+  picked: readonly string[],
+  correct: readonly string[],
+  points: number,
+  scoring: "exact" | "partial" = "exact",
+): { points: number; detail: string } {
+  const uniquePicked = [...new Set(picked)].filter(Boolean);
+  if (uniquePicked.length === 0) {
+    return { points: 0, detail: "missing" };
+  }
+  if (scoring === "exact") {
+    const exact = sameAnswerSet(uniquePicked, correct);
+    return {
+      points: exact ? points : 0,
+      detail: exact ? "correct-set" : "wrong-set",
+    };
+  }
+  if (correct.length === 0) {
+    return { points: 0, detail: "wrong-set" };
+  }
+  const hits = uniquePicked.filter((id) => correct.includes(id)).length;
+  const misses = uniquePicked.length - hits;
+  if (hits === correct.length && misses === 0) {
+    return { points, detail: "correct-set" };
+  }
+  const net = hits - misses;
+  if (net <= 0) {
+    return { points: 0, detail: "wrong-set" };
+  }
+  const awarded = Math.min(points, Math.round((points * net) / correct.length));
+  return {
+    points: awarded,
+    detail: awarded > 0 ? "partial-set" : "wrong-set",
+  };
+}
+
 export type PartyVoteFlow = {
   kind: "tournament" | "awards";
   step: number;

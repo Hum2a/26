@@ -133,7 +133,7 @@ The catalogue may hold more than 80 entries; that limit applies to the live runn
 
 Use the existing helper/mechanic rather than a note that asks for a different interaction:
 
-- Choice exact set: `outcome: { kind: "multiple", optionIds: [...] }`. No separate `correctOption` is needed. Phones select several, then send one set; all correct and no decoys scores the question's points.
+- Choice multi-select: `outcome: { kind: "multiple", optionIds: [...] }`. No separate `correctOption` is needed. Phones select several, then send one set; by default (`scoring: "exact"`), all correct and no decoys scores the question's points. Setting `scoring: "partial"` awards a share per right pick and subtracts a share per wrong pick (minimum 0).
 - Typed crowd match: `scoring: "commonness", accepted: { known: [] }`. There is deliberately no fixed password answer. Normalised room-frequency scoring freezes at reveal.
 - Price bid: slider helper with `scoring: "under", input: "number"`, an actual supplied/sourced truth and explicit bounds/step. Phones enter decimal pounds. Tied highest underbids share the win; all over means no winner.
 - Subjective dial: slider helper with `scoring: "consensus", truth: { known: null }`. The room median is derived from accepted eligible responses; no dummy personal answer is stored.

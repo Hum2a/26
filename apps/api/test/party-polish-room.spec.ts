@@ -394,3 +394,64 @@ it.each(["dating-exit-excuse", "heathrow-search-query", "apology-video-auction"]
     });
   },
 );
+
+it("scores partial multi-select choices across exact, one-right, and decoy picks", async () => {
+  const { stub, players } = await setup();
+  const q = question("humza-ethnicity");
+  if (q.kind !== "choice" || q.outcome.kind !== "multiple") {
+    throw new Error("Expected humza-ethnicity multiple round");
+  }
+  const now = Date.now();
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    const store = collect(sql, q, now);
+    expect(
+      acceptMultiple(sql, store, players[0]!, '["pakistan","tanzania"]', now, q).ok,
+    ).toBe(true);
+    expect(acceptMultiple(sql, store, players[1]!, '["pakistan"]', now, q).ok).toBe(
+      true,
+    );
+    expect(
+      acceptMultiple(sql, store, players[2]!, '["pakistan","tanzania","india"]', now, q)
+        .ok,
+    ).toBe(true);
+    expect(
+      acceptMultiple(sql, store, players[3]!, '["pakistan","india"]', now, q).ok,
+    ).toBe(true);
+    const rows = sql
+      .exec<{ player_id: string; option_id: string }>(
+        "SELECT player_id, option_id FROM choice_answer WHERE question_id = ?",
+        q.id,
+      )
+      .toArray();
+    const byPlayer = new Map(rows.map((r) => [r.player_id, r.option_id]));
+    expect(
+      pointsFor(q, {
+        optionId: byPlayer.get(players[0]!)!,
+        receivedAt: now,
+        deadlineAt: now + 20_000,
+      }).points,
+    ).toBe(100);
+    expect(
+      pointsFor(q, {
+        optionId: byPlayer.get(players[1]!)!,
+        receivedAt: now,
+        deadlineAt: now + 20_000,
+      }).points,
+    ).toBe(50);
+    expect(
+      pointsFor(q, {
+        optionId: byPlayer.get(players[2]!)!,
+        receivedAt: now,
+        deadlineAt: now + 20_000,
+      }).points,
+    ).toBe(50);
+    expect(
+      pointsFor(q, {
+        optionId: byPlayer.get(players[3]!)!,
+        receivedAt: now,
+        deadlineAt: now + 20_000,
+      }).points,
+    ).toBe(0);
+  });
+});

@@ -7506,3 +7506,22 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **What this kept.** Master's bracket-round running order (`apology-video-auction`, `heathrow-search-query`), saved-order restoration, phone-round projector progress (`StagePhoneRound`), kart checkpoints, and kart practice bots. This branch's projector reveal smoothing and containment (shared stage layouts, custom designs, overflow, reduced-motion). The only conflict was `docs/build-progress.md`; both histories were kept.
 
 **Checks.** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run test:unit` 214 files / 987 tests passed (`where-are-we.test.tsx` "Place pin at map centre" passed locally). `npm run test -w @26/api` 147 files / 854 tests passed (`XDG_CONFIG_HOME` set). `npm run content:check` passed for demo and birthday. `npm run build` passed (1018 files scanned; gzip entry JS 222,782 / 260,000; entry CSS 28,208 / 34,000; total JS 1,494,215 / 1,650,000). Playwright was not run. Cubic review comments on PR #67 were not addressed in this merge. `bin-unmasked.tsx` had a pre-existing syntax error from the last branch commit (missing `animate={`); the `animate` prop was restored so typecheck could pass.
+
+## 20 November 2026 — Humza ethnicity guessing round (`humza-ethnicity`)
+
+**Status:** ready in the birthday catalogue on branch `ethnicity_guessing_round` (not in the default running `order`; not deployed).
+
+**What changed.** Added `humza-ethnicity` (`apps/api/src/questions/packs/birthday/humza-ethnicity.ts`) and partial-credit multi-select scoring:
+
+- **Question (`humza-ethnicity`):** 8-option multi-select `choice` round (`Pakistan`, `India`, `Tanzania`, `Kenya`, `Bangladesh`, `Uganda`, `Iran`, `Egypt`), with `outcome: { kind: "multiple", optionIds: ["pakistan", "tanzania"], scoring: "partial" }`. Registered in `birthdayPack.catalogue` (`manifest.ts`) only so the host can include it via Admin → Question packs → Running order.
+- **Partial-credit multi-select (`packages/shared/src/party-scoring.ts`):** Added `multipleChoiceScore` supporting `"exact"` (default, preserving `christianity-branches` and `trump-made-up-country`) and `"partial"` (`max(0, round(points * (hits - misses) / correct.length))`), wired through `definition.ts`, `multiple-choice.ts`, `validate.ts`, `admin-question.ts`, `scripts/content-export.ts`, and `docs/question-authoring.md`.
+- **Phone reveal copy (`apps/web/src/play/copy.ts`):** Handled `multiple` self-answers in `revealResult` so full or partial multi-select scores display `You scored <award> on this question.` instead of falling through to `"That was not the answer."`.
+
+**Decisions / defaults.**
+
+- Net partial credit (`+50` per right country, `-50` per wrong pick, clamped at `0`) prevents ticking all eight options from scoring points while rewarding partial knowledge (`Pakistan` alone = 50, `Pakistan + Tanzania` = 100, `Pakistan + Tanzania + decoy` = 50, `Pakistan + decoy` = 0).
+- Used six default decoy countries (`India`, `Kenya`, `Bangladesh`, `Uganda`, `Iran`, `Egypt`) alongside `Pakistan` and `Tanzania`; these can be swapped in `humza-ethnicity.ts` at any time.
+
+**Tests & checks.** Covered by new unit/room/component tests in `party-scoring.spec.ts`, `party-polish-room.spec.ts`, `question-authoring.spec.ts`, and `outcomes.test.tsx`. Verification commands ran after the final edit (`typecheck`, `content:check`, `check:structure`, ESLint on touched files, `test:unit`, `test -w @26/api` targeted specs, `build`).
+
+**Next.** Review or swap the decoy countries in `humza-ethnicity.ts` if desired, and add `humza-ethnicity` to the running order in Admin → Question packs → Running order when ready to play.

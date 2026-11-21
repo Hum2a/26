@@ -82,7 +82,7 @@ export type ChoiceOutcome =
   | { kind: "correct" }
   | PushOutcome
   | { kind: "poll" }
-  | { kind: "multiple"; optionIds: readonly string[] }
+  | { kind: "multiple"; optionIds: readonly string[]; scoring?: "exact" | "partial" }
   | {
       kind: "threshold";
       optionId: string;

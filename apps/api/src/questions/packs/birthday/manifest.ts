@@ -3,6 +3,7 @@ import { edOrHumza } from "./ed-or-humza.ts";
 import { humzaBodyCount } from "./humza-body-count.ts";
 import { humzaBodyCountBodies } from "./humza-body-count-bodies.ts";
 import { humzaDeportation } from "./humza-deportation.ts";
+import { humzaEthnicity } from "./humza-ethnicity.ts";
 import { accommodation02 } from "./accommodation-02.ts";
 import { accommodation03 } from "./accommodation-03.ts";
 import { guessemotionalsupport } from "./guess-emotional-support.ts";
@@ -176,6 +177,7 @@ export const birthdayPack: QuestionPack = {
     trumpMadeUpCountry,
     esportsTag,
     humzaDeportation,
+    humzaEthnicity,
     humzaBodyCount,
     humzaBodyCountBodies,
   ]),
