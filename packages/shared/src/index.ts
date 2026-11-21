@@ -1379,7 +1379,10 @@ export const lobbySnapshotSchema = z
     /** Control only: next race choice, current frozen profile and host changes. */
     kartHandling: kartHandlingControlSchema.optional(),
     kartHandlingHistory: kartHandlingHistorySchema.optional(),
-    /** Control only: the round after the current one. */
+    /**
+     * Host desk, presenter phone and projector: the round after this one.
+     * Title and mechanic only. Never sent to guest phones.
+     */
     nextQuestion: z
       .object({ title: z.string().max(200), kind: z.string().max(40) })
       .strict()

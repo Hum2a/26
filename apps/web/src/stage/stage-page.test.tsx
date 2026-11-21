@@ -113,9 +113,15 @@ it("clears a failed lookup, preserves the entered code and allows a retry", asyn
   await waitFor(() => expect(openRoomSocket).toHaveBeenCalledOnce());
 });
 it("has display shortcuts only and returns to setup with Escape", async () => {
-  vi.mocked(lookupStage).mockResolvedValue(playingFixture);
+  vi.mocked(lookupStage).mockResolvedValue({
+    ...playingFixture,
+    nextQuestion: { title: "Guess the tab", kind: "slider" },
+  });
   await present();
   expect(screen.getByText("A test question?")).toBeTruthy();
+  expect(screen.getByLabelText("Game progress")).toBeTruthy();
+  expect(screen.getByText("Round 1 of 2")).toBeTruthy();
+  expect(screen.getByText("Coming up: Guess the tab")).toBeTruthy();
   expect(screen.queryByText("Private presenter detail")).toBeNull();
   for (const key of [" ", "p", "h", "d", "o"]) fireEvent.keyDown(window, { key });
   expect(playRoom).not.toHaveBeenCalled();

@@ -74,6 +74,33 @@ export const edOrHumzaQuotes: readonly EdOrHumzaQuote[] = [
     quote: "Smaller but firm can outperform larger but drippy",
     speaker: "humza",
   },
+  {
+    id: "quote-19",
+    quote:
+      "It's a good thing you removed him from the GC before I was starused to say the N word",
+    speaker: "humza",
+  },
+  {
+    id: "quote-20",
+    quote: "If n***a is feminine then n***o would be masculine wouldn't it",
+    speaker: "humza",
+  },
+  {
+    id: "quote-21",
+    quote: "Make no mistake I also love beating women",
+    speaker: "humza",
+  },
+  {
+    id: "quote-22",
+    quote: "if we make prostitution a charity action, it's no longer illegal",
+    speaker: "humza",
+  },
+  {
+    id: "quote-23",
+    quote:
+      "let's go digging for diamonds or whatever else crystalised in that forgotten cave",
+    speaker: "humza",
+  },
 ];
 
 /** Answer-key configuration stays server-side; previews receive only quote text and names. */
@@ -151,7 +178,7 @@ export function makeEdOrHumza(quotes: readonly EdOrHumzaQuote[] = edOrHumzaQuote
             .filter((group) => group.itemIds.length > 0),
         },
     notes:
-      "Quotes from Humza, 17 Nov 2026, wording preserved; speakers confirmed 19 Nov. Sort into Ed, Humza or Neither (none marked Neither yet). Private photos. Card-stack ed-or-humza. Whole-list submit; 80 points by placements, two minutes. Keys stay server-side. Ready in the catalogue; adding it to the running order is a separate host action.",
+      "Quotes from Humza, 17 Nov 2026, wording preserved; speakers confirmed 19 Nov, five more Humza lines 21 Nov. Sort into Ed, Humza or Neither (none marked Neither yet). Private photos. Card-stack ed-or-humza. Whole-list submit; 80 points by placements, two minutes. Keys stay server-side. Ready in the catalogue; adding it to the running order is a separate host action.",
   });
 }
 

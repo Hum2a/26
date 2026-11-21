@@ -5,9 +5,9 @@ then send the complete list. Picks can be changed before submission. Correct
 assignments earn a proportional share of 80 points, rounded down. The window is
 two minutes, with no speed bonus.
 
-The 18 supplied quotes live in
+The 23 supplied quotes live in
 `apps/api/src/questions/packs/birthday/ed-or-humza.ts`. Speakers were confirmed
-on 19 November 2026. The round is **ready** and is in the birthday running order
+on 19 November 2026, with five more Humza lines on 21 November 2026. The round is **ready** and is in the birthday running order
 (`ed-or-humza`). Humza can still move it in Admin → Running order.
 
 The phone uses the `ed-or-humza` presentation: one quote at a time (card stack),

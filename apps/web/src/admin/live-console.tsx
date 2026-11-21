@@ -22,6 +22,7 @@ import { KartCourseControls } from "./kart-course-controls";
 import { KartTrackControls } from "./kart-track-controls";
 import { KartDrivingFeel } from "./kart-driving-feel";
 import { DangerZone } from "./danger-zone";
+import { TalkingPointsPanel } from "./talking-points";
 
 const revealPhases = new Set<RoomPhaseName>(["reveal", "scores", "final", "podium"]);
 type Confirmation = {
@@ -438,6 +439,7 @@ export function LiveConsole() {
             ) : null}
             {snapshot.play?.explanation ? <p>{snapshot.play.explanation}</p> : null}
           </section>
+          <TalkingPointsPanel />
           <ChessControls />
           <LiveResponses locked={locked} />
           <WallQuickPanel />

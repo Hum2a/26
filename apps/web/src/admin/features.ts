@@ -133,7 +133,8 @@ export const adminFeatures: readonly AdminFeature[] = [
     group: "tonight",
     scope: "room",
     path: "live",
-    summary: "Cue the running game, pair Baseer’s phone and manage the room.",
+    summary:
+      "Cue the running game, pair Baseer’s phone, and read talking points while the room answers.",
     rehearsal:
       "Pair the presenter page in a second tab of a throwaway room. Start the show with no guests and try cueing the next beat from that tab.",
     owns: ["apps/api/src/room", "apps/web/src/live", "apps/web/src/stage"],

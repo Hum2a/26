@@ -7608,3 +7608,15 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Checks.** After Cubic review: `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed (including `docs/build-progress.md`). `npm run content:check` passed. Targeted web tests 84 passed; targeted API ed-or-humza/wall 49 passed. Full `npm run test -w @26/api` 148 files / 864 tests passed (`XDG_CONFIG_HOME` set). Full `npm run test:unit` 1005 of 1006 passed; remaining known master failure: `chess-stage.test.tsx` stale Humza-bot copy. `where-are-we.test.tsx` did not fail in this run (still treated as flaky on CI). `npm run build` passed (gzip entry JS 223,029 / 260,000; entry CSS 28,209 / 34,000; total JS 1,500,246 / 1,650,000). Playwright was not run.
 
 **Next.** Rehearse Ed or Humza, a wall approval on the projector, and a troll send on a real phone.
+
+## 21 November 2026 — Five more Humza quotes and live talking points
+
+**Status.** Implemented on `cursor/party-tonight-quotes-progress-1b34`. Not deployed.
+
+**Ed or Humza.** Appended five Humza quotes (`quote-19`–`quote-23`) with wording preserved. Scoring is still 80 points by placements (`12/23` Ed, `11/23` Humza). Phone reveal and projector quote columns stay scrollable on a 360px phone and 16:9 reveal. `npm run content:export` rewrote the birthday answer key.
+
+**Talking points.** The projector footer shows round N of total, phase, remaining time, answered/connected, and what is coming up. Live controls has a talking-points panel with waiting/answered avatars, live top three, closest race, and cached highlight lines. Baseer’s presenter phone gets the same next-round title (guest phones do not). Derived on the client from the existing snapshot; the 5s statistics cache is unchanged.
+
+**Checks.** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run content:check` passed. `npm run test:unit` 218 files / 1010 tests passed. `npm run test -w @26/api` 148 files / 864 tests passed (`XDG_CONFIG_HOME` set). `npm run build` passed (gzip entry JS 223,071 / 260,000; entry CSS 28,209 / 34,000; total JS 1,502,642 / 1,650,000). Playwright was not run.
+
+**Next.** Try Live controls talking points and the projector progress strip in a rehearsal room, then run Ed or Humza with the longer list.

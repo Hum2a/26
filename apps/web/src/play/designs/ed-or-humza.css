@@ -433,6 +433,11 @@
 .ed-reveal-phone {
   display: grid;
   gap: 1rem;
+  min-width: 0;
+  max-height: min(68dvh, 42rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 .ed-reveal-phone h2 {
@@ -521,8 +526,10 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
-  max-height: clamp(18rem, 56vh, 36rem);
+  max-height: clamp(16rem, 52vh, 34rem);
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 .ed-stage-column li {
@@ -564,6 +571,9 @@
   .ed-assigned-actions button {
     font-size: 0.84rem;
     padding: 0.4rem 0.45rem;
+  }
+  .ed-reveal-phone {
+    max-height: min(62dvh, 36rem);
   }
 }
 

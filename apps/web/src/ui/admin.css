@@ -807,6 +807,71 @@
   font-size: 1.1rem;
   font-weight: 700;
 }
+.talking-points {
+  gap: 0.85rem;
+}
+.talking-facts {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+}
+.talking-facts > div {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+  align-items: start;
+}
+.talking-facts dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.talking-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+.talking-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.75rem;
+  min-width: 0;
+}
+.talking-lists h3,
+.talking-points h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+.talking-lists ul,
+.talking-highlights,
+.talking-leaders {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+  max-height: 11rem;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+.talking-lists li,
+.talking-leaders li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}
+.talking-highlights li {
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
 .admin-private-notes {
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
   border-inline-start: 3px solid var(--accent);
