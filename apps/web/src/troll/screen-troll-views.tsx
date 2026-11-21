@@ -425,8 +425,11 @@ function DvdLogo({
       if (!logo) {
         return;
       }
-      const maxX = window.innerWidth - logo.offsetWidth;
-      const maxY = window.innerHeight - logo.offsetHeight;
+      // Bounce inside its own full-screen layer: the viewport on a phone, the
+      // stand-in screen in the troll tab's preview.
+      const area = logo.parentElement;
+      const maxX = (area?.clientWidth || window.innerWidth) - logo.offsetWidth;
+      const maxY = (area?.clientHeight || window.innerHeight) - logo.offsetHeight;
       x += dx;
       y += dy;
       if (x <= 0 || x >= maxX) {

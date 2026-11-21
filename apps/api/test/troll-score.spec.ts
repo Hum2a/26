@@ -85,6 +85,10 @@ describe("troll scoring rules", () => {
     expect(questionModifiers({ kind: "choice", outcome: { kind: "poll" } })).toEqual(
       [],
     );
+    // A push-your-luck round banks its own points outside the choice award.
+    expect(questionModifiers({ kind: "choice", outcome: { kind: "push" } })).toEqual(
+      [],
+    );
     expect(questionModifiers({ kind: "slider" })).toEqual([]);
   });
 

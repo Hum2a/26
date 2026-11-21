@@ -69,7 +69,9 @@ export function usePhaseCountdown(
     // A party race runs until everyone finishes: show race time, not a countdown.
     return {
       label: "Race time",
-      value: formatPhaseClock(Math.max(0, race.timeLimitMs - remainingMs)),
+      value: formatPhaseClock(
+        Math.min(race.timeLimitMs, Math.max(0, race.timeLimitMs - remainingMs)),
+      ),
       note: "The race ends when everyone finishes or the host ends it.",
       remainingMs,
     };

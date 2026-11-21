@@ -479,12 +479,15 @@ export function slotDecision(input: { active: boolean }): "start" | "queue" {
 /**
  * The score modifiers a question takes. Every scored choice question takes every
  * points troll, so guests are never told a points troll is not on this question.
- * A poll scores nothing, so a points troll there would have nothing to move.
+ * A poll scores nothing, and a push-your-luck round banks its own points outside
+ * the choice award, so neither takes a points troll.
  */
 export function questionModifiers(
   question: { kind: string; outcome?: { kind: string } } | undefined,
 ): readonly ScoreModifier[] {
-  return question?.kind === "choice" && question.outcome?.kind !== "poll"
+  return question?.kind === "choice" &&
+    question.outcome?.kind !== "poll" &&
+    question.outcome?.kind !== "push"
     ? scoreModifiers
     : [];
 }

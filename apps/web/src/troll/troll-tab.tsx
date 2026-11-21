@@ -480,10 +480,10 @@ export function TrollTab({
                   disabled={!canSend}
                   announce={sending || blocked || Boolean(error)}
                   reason={
-                    cooling
-                      ? `Ready in ${countdown}`
-                      : blocked
-                        ? lockReason
+                    blocked
+                      ? lockReason
+                      : cooling
+                        ? `Ready in ${countdown}`
                         : sending
                           ? "Sending…"
                           : error

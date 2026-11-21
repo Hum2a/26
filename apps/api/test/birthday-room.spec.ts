@@ -1,5 +1,6 @@
 import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
+import { kartOpenRaceMs } from "@26/shared";
 import { payloadDigest } from "../src/room/digest.ts";
 import { createSqlStore } from "../src/room/sql-store.ts";
 import { questionFor } from "../src/questions/registry.ts";
@@ -246,7 +247,8 @@ it("starts eighty racers on the imported circuit using ledger totals and adjustm
   const grid = (await stub.snapshotFor("stage")).play!.kart!;
   expect(grid).toMatchObject({
     trackId: "mario-circuit-v1",
-    timeLimitMs: 180000,
+    // Party races run until everyone finishes; the window is only a ceiling.
+    timeLimitMs: kartOpenRaceMs,
     participantCount: 80,
   });
   expect(grid.participants.slice(0, 3).map((d) => d.playerId)).toEqual([
@@ -287,5 +289,5 @@ it("starts eighty racers on the imported circuit using ledger totals and adjustm
   const guest = (await stub.snapshotFor("guest", ids[3])).play!.kart!;
   expect(guest.participants).toHaveLength(1);
   expect(guest.participants[0]!.gridPosition).toBe(1);
-  expect(guest.timeLimitMs).toBe(180000);
+  expect(guest.timeLimitMs).toBe(kartOpenRaceMs);
 });

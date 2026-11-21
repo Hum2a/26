@@ -59,3 +59,15 @@ it("stops after one run and replays on request", () => {
   expect(screen.getByRole("button", { name: "Playing…" })).toBeTruthy();
   expect(container.querySelector(".troll-preview-effect")).toBeTruthy();
 });
+
+it("describes sabotage instead of running it, so the troller's own controls stay put", () => {
+  const { container } = render(
+    <TrollPreview kind="reshuffle" label="Shuffled answers" victim="Sam" />,
+  );
+  const banner = container.querySelector(".troll-preview-banner");
+  expect(banner?.textContent).toContain("Their options keep moving.");
+  // The stand-in is inert: nothing inside it can take focus.
+  expect(container.querySelector(".troll-preview-frame")?.hasAttribute("inert")).toBe(
+    true,
+  );
+});

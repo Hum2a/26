@@ -248,10 +248,10 @@ const needs: Partial<Record<TrollKindName, string>> = {
   reshuffle: "Needs a question with answer options.",
   translate: "Needs a question with answer options.",
   "slider-drift": "Needs a slider question.",
-  "reverse-typing": "Needs a typed answer.",
-  autocorrect: "Needs a typed answer.",
-  "char-limit": "Needs a typed answer.",
-  misattributed: "Needs a typed answer.",
+  "reverse-typing": "Needs a typed or vote question.",
+  autocorrect: "Needs a typed or vote question.",
+  "char-limit": "Needs a typed or vote question.",
+  misattributed: "Needs a typed or vote question.",
   "public-vote": "Needs a vote question.",
   replay: "Needs a multiple-choice question.",
   typing: "Needs a question shown live on the big screen.",
@@ -274,8 +274,21 @@ const groupWhere: Record<TrollGroupId, string> = {
   stage: "Shows up on the big screen at the reveal or the scores.",
 };
 
+/** Trolls that land somewhere other than their group's usual place. */
+const kindWhere: Partial<Record<TrollKindName, string>> = {
+  "hide-score": "Hides their own score on their phone for a few seconds.",
+  misattributed:
+    "At the reveal, the big screen credits them with someone else's answer.",
+  sponsor: "Shows on the big screen straight away.",
+  typing: "Shows their typing on the big screen straight away.",
+  "zoom-photo": "Shows one of their photos on the big screen straight away.",
+  theme: "Plays on the big screen at every scores beat for the rest of the game.",
+  speech: "The big screen asks them for a speech at the scores.",
+  double: "Doubles their points for this question, or leaves a zero at zero.",
+};
+
 export function trollWhere(kind: string): string {
-  return groupWhere[trollGroupOf(kind).id];
+  return kindWhere[kind as TrollKindName] ?? groupWhere[trollGroupOf(kind).id];
 }
 
 export function trollGroupOf(kind: string) {

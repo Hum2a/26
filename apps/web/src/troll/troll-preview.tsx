@@ -21,6 +21,20 @@ const silent: TrollSound = {
   stop: () => {},
 };
 
+/**
+ * Sabotage gags act on the real answer controls and text fields of the page they
+ * run on, so in a preview they would scramble the troller's own troll tab. The
+ * preview describes them on the stand-in instead of running them.
+ */
+const actsOnRealControls = new Set([
+  "reshuffle",
+  "translate",
+  "slider-drift",
+  "reverse-typing",
+  "autocorrect",
+  "char-limit",
+]);
+
 const yieldLine =
   "The send button moves for at most three seconds. The answers stay in place.";
 
@@ -64,7 +78,7 @@ export function TrollPreview({
       data-hue={group.hue}
       aria-label={`Preview: what ${victim ?? "your victim"} sees`}
     >
-      <div className="troll-preview-frame" aria-hidden="true">
+      <div className="troll-preview-frame" aria-hidden="true" inert>
         <TrollSoundContext.Provider value={silent}>
           <TrollPageScope.Provider value={page}>
             <div className="troll-preview-screen">
@@ -90,7 +104,7 @@ export function TrollPreview({
                     exit={{ opacity: 0 }}
                     transition={{ duration: reduce ? 0.1 : 0.2 }}
                   >
-                    {isScreenTroll(kind) ? (
+                    {isScreenTroll(kind) && !actsOnRealControls.has(kind) ? (
                       <ScreenTroll
                         kind={kind}
                         label={label}
