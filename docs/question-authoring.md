@@ -118,7 +118,7 @@ When an ordinary setting is omitted, the helper uses `apps/api/src/questions/def
 - Choice: attribution `live`. The big screen shows who is picking what as it happens (the vote board): options grow with their share and fill with the voters' faces. Set `attribution: "after"` to keep picks hidden until the reveal, or `"never"` to keep them off the screen. Guest phones never receive other people's picks, and the host can hide picks for every question from Admin → Vote board.
 - Choice: 100 points, 2 to 6 options. A poll is 0 points, cannot have a speed bonus, and may list up to 16 options.
 - Typed: 100 points, a 60-character box (at most 80).
-- Slider: 100 points, with full points for an exact value.
+- Slider: 100 points for an exact value. Guesses within 5% of the slider range earn 75% of the available points, and guesses within 10% earn 40%. The narrowest matching band applies on either side of the answer, and partial awards round down. Guesses further away score zero. Supply `bands` to set custom distances and awards. `under` and `consensus` use their own scoring rules.
 - Rank: 80 points, complete order, ties forbidden.
 - Vote: 60 points, 20 seconds to vote, every line, no self-vote, the authors of the winning lines score, a tie shares the points.
 - Guess: 80 points, the whole room, named person.

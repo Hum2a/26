@@ -17,6 +17,10 @@ export const ordinaryDefaults = {
   choicePoints: 100,
   pollPoints: 0,
   sliderPoints: 100,
+  sliderPartialCredit: [
+    { rangeFraction: 0.05, pointsFraction: 0.75 },
+    { rangeFraction: 0.1, pointsFraction: 0.4 },
+  ],
   typedPoints: 100,
   wordlePoints: 100,
   mapGuessCollectMs: 40_000,

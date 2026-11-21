@@ -69,7 +69,7 @@ it("rejects non-local, non-PNG and traversal option-image URLs", () => {
   ).toBe(true);
 });
 
-it("makes dated inflation questions ready with reachable exact scoring answers", () => {
+it("gives dated inflation questions an exact answer and partial credit", () => {
   for (const [authored, truth] of [
     [inflationFreddo, 35],
     [inflationPetrol, 175],
@@ -86,7 +86,7 @@ it("makes dated inflation questions ready with reachable exact scoring answers",
       points: 100,
       detail: "exact",
     });
-    expect(pointsForEstimate(question, truth + 1).points).toBe(0);
+    expect(pointsForEstimate(question, truth + 1).points).toBe(75);
     const preview = questionPreview(birthdayPack, authored);
     expect(preview.interactive).toBe(true);
     expect(preview.question).not.toHaveProperty("truth");

@@ -178,17 +178,30 @@ export function sliderQuestion(
   },
 ): AuthoredSlider {
   const points = input.points ?? ordinaryDefaults.sliderPoints;
+  const minimum = input.minimum ?? Number.NaN;
+  const maximum = input.maximum ?? Number.NaN;
+  const range = maximum - minimum;
+  const partialCredit =
+    !input.scoring && Number.isFinite(range) && range > 0
+      ? ordinaryDefaults.sliderPartialCredit
+      : [];
   return finish(
     {
       ...shared(input, points),
       kind: "slider",
-      minimum: input.minimum ?? Number.NaN,
-      maximum: input.maximum ?? Number.NaN,
+      minimum,
+      maximum,
       step: input.step ?? 1,
       unit: input.unit ?? "",
       initial: input.initial ?? Number.NaN,
       truth: input.truth ?? { missing: missingTruth },
-      bands: input.bands ?? [{ within: 0, points }],
+      bands: input.bands ?? [
+        { within: 0, points },
+        ...partialCredit.map(({ rangeFraction, pointsFraction }) => ({
+          within: range * rangeFraction,
+          points: Math.floor(points * pointsFraction),
+        })),
+      ],
       scoring: input.scoring,
       input: input.input,
     },
