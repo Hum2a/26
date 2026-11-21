@@ -7528,6 +7528,20 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 
 **Next.** Try a few trolls from two phones on staging and judge whether 90 seconds feels right; change `trollCooldownMs` if not.
 
+## 20 November 2026 — Manual birthday cues and Baseer’s presenter phone
+
+**Status.** Implemented locally. Deployment and the physical-device rehearsal are pending.
+
+**Round flow.** Birthday listening, reading and standings phases wait for an operator. The room starts the answer clock when an operator opens answering. The room still owns deadlines, locks and scoring. Either operator can close a live phase early. The birthday race uses the manual Start race cue and shows GO. The standalone kart room retains its timed grid. The illustrative demo retains its automatic phase timings for rehearsals.
+
+**Interfaces.** `/presenter` opens the live lobby using a dedicated room credential, issued through a one-time code in the **Baseer’s presenter phone** card in Live controls. Pairing uses `POST /api/admin/rooms/:gameId/presenter-pairing` and `POST /api/presenter/pair`. The phone reconnects through the existing room socket and sends `POST /api/presenter/:gameId/advance` with the phase generation it displayed. Humza starts the birthday game, manages the room and can revoke presenter access including unused codes. Baseer can cue the next beat without a guest seat or an administrator session.
+
+**Verification.** Typecheck, lint and structure, production build, content preflight and bundle budget passed. The complete API suite passed 856 tests across 147 files. A final focused API run passed 39 tests across pairing, pacing, auth and credentials. The focused web suite passed 68 tests covering the presenter page, Live controls, the phone cue and preview, and kart UI. The local browser preview showed the presenter form and reported a missing code when submitted empty. The existing performance audit completed for the home, join, projector and admin sign-in routes, with no horizontal overflow.
+
+**Full web run.** 988 of 990 tests passed. The map-centre control timed out in `where-are-we.test.tsx`, and that failure also reproduced on the unchanged checkout. The kart tennis-slot test failed the pedal readiness assertion in the full run and passed in the focused run.
+
+**Next stage.** In a disposable birthday rehearsal room, pair Baseer’s physical phone and a projector, join as a guest on another phone, and cue a question through listening, reading, answering and standings. Repeat with the one-option-at-a-time round and the birthday kart grid, then revoke the presenter session and verify the phone loses controls.
+
 ## 20 November 2026 — Humza ethnicity guessing round (`humza-ethnicity`)
 
 **Status:** ready in the birthday catalogue on branch `ethnicity_guessing_round` (not in the default running `order`; not deployed).

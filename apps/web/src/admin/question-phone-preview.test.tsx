@@ -67,7 +67,7 @@ it("disables answering before the round opens and while paused", async () => {
   mount("?phase=prompt");
   const circle = await screen.findByRole("button", { name: "Test circle" });
   expect((circle as HTMLButtonElement).disabled).toBe(true);
-  expect(screen.getByText("Get ready — listen to the question")).toBeTruthy();
+  expect(screen.getByText("Read along. Wait for the signal to play.")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Send answer" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Pause preview" }));
   expect(await screen.findByText("Paused — hang tight")).toBeTruthy();

@@ -30,7 +30,7 @@ import { PlayerAvatar } from "../ui/player-avatar";
 function stagePhaseTitle(phase: RoomPhaseName): string {
   switch (phase) {
     case "intro":
-      return "Get ready";
+      return "Listen to Baseer";
     case "prompt":
       return "Read the question";
     case "collect":
@@ -117,6 +117,19 @@ function StageBeat({
   ) {
     return <ChessStage snapshot={play.chess} />;
   }
+  if (
+    snapshot.phase === "intro" &&
+    snapshot.deadlineAt === null &&
+    snapshot.remainingMs === null
+  )
+    return (
+      <Panel title="Listen to Baseer" display="stage">
+        <div data-phase="intro" hidden />
+        <p className="stage-question">
+          Question {play.question.index} of {play.question.total}
+        </p>
+      </Panel>
+    );
   const leadBoard =
     snapshot.phase === "scores" ||
     snapshot.phase === "final" ||

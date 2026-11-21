@@ -797,6 +797,12 @@ export function GuestPage({
         <Link className="entry-text-link mt-4" to="/">
           ← Back to the party
         </Link>
+        <Link
+          className="entry-text-link mt-4"
+          to={code ? `/presenter?code=${encodeURIComponent(code)}` : "/presenter"}
+        >
+          Join as presenter
+        </Link>
       </EntryFrame>
     );
 

@@ -5,7 +5,7 @@
 
 [Home](../README.md) · [Documentation](README.md) · [Night of](night-of.md) · [Event runbook](event-runbook.md)
 
-Baseer presents. Humza operates the administrator screen. Guests play on their own phones. This runbook matches the controls in the current build (updated 19 November 2026). The party plays the birthday running order in `apps/api/src/questions/packs/birthday/manifest.ts` (**42 rounds**; **Start birthday game** freezes the saved order into the room). The illustrative demo is for rehearsals only. The venue rehearsal, a physical phone, and a projector have not been checked from this environment; see [Physical-device and venue sign-off](#physical-device-and-venue-sign-off).
+Baseer presents and can cue rounds from his phone. Humza starts the show and operates the administrator screen. Guests play on their own phones. **Start birthday game** freezes the saved running order into the room. The illustrative demo is for rehearsals only. The physical-device and venue rehearsal is still pending. See [Physical-device and venue sign-off](#physical-device-and-venue-sign-off).
 
 <details>
 <summary>On this page</summary>
@@ -37,7 +37,8 @@ Baseer presents. Humza operates the administrator screen. Guests play on their o
    - **Projector laptop not signed in to admin?** Pair it instead (stretch feature; use it only after a staging rehearsal has passed). In **Live controls**, the **Projector pairing** card shows a one-time code such as `WXYZ-2345`. On the projector, open `/host`, type the room's join code, type the pairing code under _No admin login on this laptop?_ and press **Pair this screen**. The room gives that browser the same fourteen-hour stage cookie, for this room only, then connects; press **Present on this screen** as usual. A code works once and lasts ten minutes. **Show a new code** cancels the previous one. After five quick tries the room accepts only one more about every twelve seconds, and ten wrong tries cancel the open code. Read the code aloud or type it yourself: never put it on the projector or in the group chat. A paired projector replaces any other open stage tab, exactly as a second `/host` tab does. Live controls cannot revoke a paired projector: its stage cookie lasts fourteen hours, and closing the tab does not end that access. Pair only a laptop you trust for the night, and use **Hide stage content** if the screen must go blank.
 6. On the stage, press Start show once for sound. M mutes the stage. F requests full screen. Escape returns to projector setup. If full screen drops by accident the show stays up with a short hint; press F. A reload of the projector tab reconnects and keeps presenting. The stage deliberately has no operator readout: diagnostics stay on the admin screen.
 7. Press Refresh room health. Expect phase `lobby`, a control connection, and no failed scheduler jobs.
-8. When everyone is in, press **Start birthday game** and confirm. The confirmation says how many players are in; the running order freezes at that moment. The illustrative demo start is labelled as a rehearsal alternative and also asks first. Developer bots are refused in a room running the birthday game.
+8. In **Live controls → Baseer’s presenter phone**, choose **Show pairing code**. Baseer opens **Join as presenter** from the join page or goes directly to `/presenter`, enters the room’s join code and the private code, and sees the live lobby. The code works once and expires after ten minutes. A newly paired phone replaces the previous presenter session. **Revoke presenter access** also cancels any unused presenter code.
+9. When everyone is in, press **Start birthday game** and confirm. The confirmation says how many players are in. The running order freezes at that moment, and the phones display the listening cue.
 
 ## Joining
 
@@ -69,7 +70,9 @@ reopen entry. Try removal and recovery, and confirm an older transfer code fails
 
 ## Controls
 
-Buttons on `/admin` are the source of truth. Shortcuts work in that tab when focus is not in a text field, and they ignore Ctrl, Alt, and Meta.
+During the birthday game, **Listen**, **Read the question**, and **Standings** wait for a cue. Humza or Baseer taps **Show question**, then **Open answering** when guests have had time to read. That starts the full answer clock. Either can close answering early and cue the next beat with the button on their screen. For the one-option-at-a-time round, tap through the options before opening answering. The birthday kart round starts on the **Start race** cue with GO. The standalone kart lobby keeps its timed grid countdown.
+
+Humza can pause, resume, skip, and manage the room from `/admin`. Baseer uses the room’s next-step button from `/presenter`. Shortcuts on `/admin` work when focus is outside a text field and ignore Ctrl, Alt, and Meta.
 
 | Key           | When                                     | Action                 |
 | ------------- | ---------------------------------------- | ---------------------- |

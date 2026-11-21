@@ -90,6 +90,8 @@ export function playNotice(action: PlayAction, phase: RoomPhaseName): string {
   if (action === "resume") {
     return "The quiz has resumed.";
   }
+  if (action === "presenter-revoke")
+    return "Presenter access and open codes were revoked.";
   if (action === "skip") {
     return "The question was skipped.";
   }

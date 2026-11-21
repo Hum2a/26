@@ -1,6 +1,7 @@
 import {
   gameIdSchema,
   joinCodeSchema,
+  playCommandSchema,
   projectorPairingIssuedSchema,
   projectorPairedSchema,
   roomClientErrorSchema,
@@ -23,8 +24,51 @@ import { normalisePairingCode } from "./pairing.ts";
  * control credential. Redeeming needs only the code, which grants the
  * presentation role for that one room.
  */
-export function registerProjectorPairingRoutes(app: Hono<{ Bindings: Env }>): void {
-  app.post("/api/admin/rooms/:gameId/projector-pairing", async (c) => {
+export function registerRoomPairingRoutes(app: Hono<{ Bindings: Env }>): void {
+  registerPairing(app, "projector", "stage", "presentation");
+  registerPairing(app, "presenter", "presenter", "presenter");
+
+  app.post("/api/presenter/:gameId/advance", async (c) => {
+    if (sameOriginRejection(c.req.raw)) return authFailure("forbidden", 403);
+    const gameId = gameIdSchema.safeParse(c.req.param("gameId"));
+    const body = await readJson(c.req.raw);
+    const requestId = readRequestId(body);
+    const generation = field(body, "expectedPhaseGeneration");
+    if (
+      !gameId.success ||
+      !requestId ||
+      typeof generation !== "number" ||
+      !Number.isSafeInteger(generation) ||
+      generation <= 0
+    )
+      return failure(400, "invalid", "Choose the current cue before continuing.");
+    const credential = readCredentialCookie(c.req.header("cookie"), "presenter");
+    if (!credential)
+      return failure(
+        401,
+        "unauthenticated",
+        "Pair this phone to use presenter controls.",
+      );
+    const result = await c.env.PARTY_ROOM.getByName(gameId.data).advanceRound({
+      ...credential,
+      presenter: true,
+      requestId,
+      expectedPhaseGeneration: generation,
+      nowMs: Date.now(),
+    });
+    if (!result.ok)
+      return failure(statusFor(result.error), result.error, result.message);
+    return jsonData(playCommandSchema.parse(result));
+  });
+}
+
+function registerPairing(
+  app: Hono<{ Bindings: Env }>,
+  kind: "projector" | "presenter",
+  surface: "stage" | "presenter",
+  role: "presentation" | "presenter",
+): void {
+  app.post(`/api/admin/rooms/:gameId/${kind}-pairing`, async (c) => {
     const rejected = await rejectUnlessRoomCreator(c.req.raw, c.env);
     if (rejected) return rejected;
     const gameId = gameIdSchema.safeParse(c.req.param("gameId"));
@@ -40,6 +84,7 @@ export function registerProjectorPairingRoutes(app: Hono<{ Bindings: Env }>): vo
       ...control,
       requestId,
       nowMs: Date.now(),
+      role,
     });
     if (!issued.ok)
       return failure(statusFor(issued.error), issued.error, issued.message);
@@ -51,7 +96,7 @@ export function registerProjectorPairingRoutes(app: Hono<{ Bindings: Env }>): vo
     );
   });
 
-  app.post("/api/stage/pair", async (c) => {
+  app.post(`/api/${surface}/pair`, async (c) => {
     if (sameOriginRejection(c.req.raw)) return authFailure("forbidden", 403);
     const body = await readJson(c.req.raw);
     const joinCode = joinCodeSchema.safeParse(
@@ -74,14 +119,14 @@ export function registerProjectorPairingRoutes(app: Hono<{ Bindings: Env }>): vo
     if (!resolved) return failure(404, "not_found", roomMissingMessage);
     const paired = await c.env.PARTY_ROOM.getByName(
       resolved.gameId,
-    ).redeemProjectorPairing({ code, requestId, nowMs: Date.now() });
+    ).redeemProjectorPairing({ code, requestId, nowMs: Date.now(), role });
     if (!paired.ok)
       return failure(statusFor(paired.error), paired.error, paired.message);
     const headers = new Headers();
     headers.append(
       "set-cookie",
       serializeCredentialCookie({
-        role: "presentation",
+        role,
         credentialId: paired.presentation.credentialId,
         secret: paired.presentation.secret,
         maxAgeSeconds: Math.max(
