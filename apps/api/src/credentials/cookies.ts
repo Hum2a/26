@@ -1,12 +1,7 @@
 import type { RoomCredentialRole } from "@26/shared";
 
 export function credentialCookieName(role: RoomCredentialRole): string {
-  return role === "control" ? "26_room_control" : "26_room_presentation";
-}
-
-export function credentialCookiePath(role: RoomCredentialRole): string {
-  // Both roles use the site root so the browser sends them on /api and /ws.
-  return role === "control" || role === "presentation" ? "/" : "/";
+  return `26_room_${role}`;
 }
 
 export function serializeCredentialCookie(input: {
@@ -21,7 +16,7 @@ export function serializeCredentialCookie(input: {
     "HttpOnly",
     "Secure",
     "SameSite=Strict",
-    `Path=${credentialCookiePath(input.role)}`,
+    "Path=/",
     `Max-Age=${input.maxAgeSeconds}`,
   ];
   return parts.join("; ");

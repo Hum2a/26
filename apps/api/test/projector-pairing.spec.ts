@@ -1,18 +1,19 @@
 import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { Hono } from "hono";
 import { expect, it } from "vitest";
-import { registerProjectorPairingRoutes } from "../src/credentials/pairing-routes.ts";
+import { registerRoomPairingRoutes } from "../src/credentials/pairing-routes.ts";
 import {
   maxPairingFailures,
   normalisePairingCode,
   pairingCodeTtlMs,
-  pairingIssuePrincipal,
+  pairingStorage,
   pairingRedeemRateLimit,
   pairingSpentMessage,
 } from "../src/credentials/pairing.ts";
 import { readCredentialCookie } from "../src/credentials/cookies.ts";
 import { presentationCredentialTtlMs } from "../src/credentials/verify.ts";
 import { payloadDigest } from "../src/room/digest.ts";
+import { withClientApiQuery } from "./client-api-key.ts";
 import {
   localAdminProof,
   localAdminProofHeader,
@@ -209,7 +210,7 @@ it("keeps the plain code in its receipt only while the code is open", async () =
     state.storage.sql
       .exec<{ result_json: string }>(
         `SELECT result_json FROM receipt WHERE principal = ?`,
-        pairingIssuePrincipal,
+        `${pairingStorage("presentation").principal}-issue`,
       )
       .toArray()
       .map((row) => row.result_json),
@@ -220,7 +221,7 @@ it("keeps the plain code in its receipt only while the code is open", async () =
 
 it("serves issue to the signed-in admin and sets the presentation cookie on redeem", async () => {
   const app = new Hono<{ Bindings: Env }>();
-  registerProjectorPairingRoutes(app);
+  registerRoomPairingRoutes(app);
   const proofKey = "p".repeat(64);
   const bindings = { ...env, APP_ENV: "local", LOCAL_ADMIN_PROOF_KEY: proofKey } as Env;
   const origin = "https://example.com";
@@ -314,4 +315,167 @@ it("serves issue to the signed-in admin and sets the presentation cookie on rede
       })
     ).status,
   ).toBe(400);
+});
+
+it("pairs Baseer separately, lets his phone advance the visible beat and revokes access", async () => {
+  const { created, control, stub, issue } = await createRoom();
+  const app = new Hono<{ Bindings: Env }>();
+  registerRoomPairingRoutes(app);
+  const proofKey = "p".repeat(64);
+  const bindings = { ...env, APP_ENV: "local", LOCAL_ADMIN_PROOF_KEY: proofKey } as Env;
+  const origin = "https://example.com";
+  const post = (path: string, body: object, cookie?: string, admin = false) => {
+    const request = new Request(`${origin}${path}`, {
+      method: "POST",
+      headers: {
+        origin,
+        "content-type": "application/json",
+        ...(cookie ? { cookie } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    if (admin)
+      request.headers.set(
+        localAdminProofHeader,
+        localAdminProof(proofKey, request, Date.now()),
+      );
+    return app.request(request, undefined, bindings);
+  };
+  const controlCookie = `26_room_control=${control.credentialId}.${control.secret}`;
+  const issuePath = `/api/admin/rooms/${created.gameId}/presenter-pairing`;
+  const presenterCode = async () => {
+    const response = await post(
+      issuePath,
+      { requestId: crypto.randomUUID() },
+      controlCookie,
+      true,
+    );
+    expect(response.status).toBe(200);
+    return ((await response.json()) as { code: string }).code;
+  };
+  const pair = (code: string, path = "/api/presenter/pair") =>
+    post(path, {
+      joinCode: created.joinCode,
+      code,
+      requestId: crypto.randomUUID(),
+    });
+  expect(
+    (await post(issuePath, { requestId: crypto.randomUUID() }, controlCookie)).status,
+  ).toBe(401);
+  const code = await presenterCode();
+  const projector = await issue();
+  if (!projector.ok) throw new Error(projector.message);
+  expect((await pair(projector.code)).status).toBe(400);
+  expect((await pair(code, "/api/stage/pair")).status).toBe(400);
+  const paired = await pair(code);
+  expect(paired.status).toBe(200);
+  const cookie = paired.headers.get("set-cookie")?.split(";")[0];
+  expect(cookie).toMatch(/^26_room_presenter=/);
+  if (!cookie) throw new Error("Presenter cookie missing");
+  expect((await pair(code)).status).toBe(400);
+  const presenter = readCredentialCookie(cookie, "presenter")!;
+  expect(
+    (await stub.adminRoom({ ...presenter, now: new Date().toISOString() })).ok,
+  ).toBe(false);
+  const view = await stub.snapshotFor("control");
+  expect(view.players).toHaveLength(0);
+  expect(view.presenterAccess?.pairedAt).toBeTypeOf("number");
+  for (const audience of ["stage", "guest"] as const) {
+    expect(await stub.snapshotFor(audience)).not.toHaveProperty("presenterAccess");
+    expect(await stub.snapshotFor(audience)).not.toHaveProperty("phaseGeneration");
+  }
+  const advancePath = `/api/presenter/${created.gameId}/advance`;
+  const intent = (expectedPhaseGeneration: number) => ({
+    requestId: crypto.randomUUID(),
+    expectedPhaseGeneration,
+  });
+  expect((await post(advancePath, intent(view.phaseGeneration!))).status).toBe(401);
+  expect((await post(advancePath, intent(view.phaseGeneration!), cookie)).status).toBe(
+    400,
+  );
+  const response = await stub.fetch(
+    new Request(withClientApiQuery(`${origin}/ws/${created.gameId}?role=presenter`), {
+      headers: { origin, Upgrade: "websocket", Connection: "Upgrade", Cookie: cookie },
+    }),
+  );
+  expect(response.status).toBe(101);
+  const socket = response.webSocket!;
+  socket.accept();
+  const snapshots: Record<string, unknown>[] = [];
+  socket.addEventListener("message", (event) => {
+    const message = JSON.parse(String(event.data));
+    if (message.kind === "snapshot") snapshots.push(message.snapshot);
+  });
+  try {
+    await expect.poll(() => snapshots[0]?.phase).toBe("lobby");
+    expect(snapshots[0]?.phaseGeneration).toBe(view.phaseGeneration);
+    expect(snapshots[0]).not.toHaveProperty("presenterAccess");
+    expect(snapshots[0]).not.toHaveProperty("developerTools");
+    expect((await stub.snapshotFor("control")).presenterAccess?.connected).toBe(true);
+    await stub.startDemo({
+      ...control,
+      requestId: crypto.randomUUID(),
+      nowMs: Date.now(),
+    });
+    const intro = await stub.snapshotFor("control");
+    const show = intent(intro.phaseGeneration!);
+    const prompt = await post(advancePath, show, cookie);
+    expect(prompt.status).toBe(200);
+    const receipt = await prompt.json();
+    expect(receipt).toMatchObject({ phase: "prompt" });
+    expect(await (await post(advancePath, show, cookie)).json()).toEqual(receipt);
+    expect(
+      (await post(advancePath, intent(intro.phaseGeneration!), cookie)).status,
+    ).toBe(400);
+    expect((await stub.snapshotFor("control")).phase).toBe("prompt");
+    const open = intent((await stub.snapshotFor("control")).phaseGeneration!);
+    await stub.pauseRound({
+      ...control,
+      requestId: crypto.randomUUID(),
+      nowMs: Date.now(),
+    });
+    expect((await post(advancePath, open, cookie)).status).toBe(400);
+    await stub.resumeRound({
+      ...control,
+      requestId: crypto.randomUUID(),
+      nowMs: Date.now(),
+    });
+    expect((await post(advancePath, open, cookie)).status).toBe(200);
+    const collect = await stub.snapshotFor("control");
+    expect(collect.deadlineAt).toBeGreaterThan(Date.now());
+    const closed = await post(advancePath, intent(collect.phaseGeneration!), cookie);
+    expect(await closed.json()).toMatchObject({ phase: "reveal" });
+    await stub.hostAction({
+      ...control,
+      action: "hide",
+      requestId: crypto.randomUUID(),
+      nowMs: Date.now(),
+    });
+    expect((await stub.snapshotFor("stage")).play).toBeNull();
+    await expect
+      .poll(() => snapshots.at(-1))
+      .toMatchObject({
+        phase: "reveal",
+        stageHidden: true,
+        play: { question: expect.any(Object) },
+      });
+    const unused = await presenterCode();
+    const revoke = {
+      ...control,
+      action: "presenter-revoke",
+      requestId: crypto.randomUUID(),
+      nowMs: Date.now(),
+    };
+    expect((await stub.hostAction({ ...revoke, ...presenter })).ok).toBe(false);
+    const revoked = await stub.hostAction(revoke);
+    expect(revoked.ok).toBe(true);
+    expect(await stub.hostAction(revoke)).toEqual(revoked);
+    expect((await post(advancePath, open, cookie)).status).toBe(401);
+    expect((await pair(unused)).status).toBe(400);
+    await expect
+      .poll(async () => (await stub.snapshotFor("control")).presenterAccess?.connected)
+      .toBe(false);
+  } finally {
+    socket.close();
+  }
 });

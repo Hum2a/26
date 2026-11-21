@@ -220,6 +220,12 @@ export function createGameStore(sql: SqlStorage): GameStore {
   const gameStore: GameStore = {
     ...store,
     manualPhase(room) {
+      if (
+        room.questionScript?.version === room.questionSetVersion &&
+        room.questionSetVersion.startsWith("birthday-r") &&
+        (room.phase === "intro" || room.phase === "prompt" || room.phase === "scores")
+      )
+        return true;
       const question = questionFor(room);
       return (
         room.phase === "prompt" &&

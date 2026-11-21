@@ -36,6 +36,12 @@ const routes: RouteObject[] = [
     lazy: async () => ({ Component: (await import("./stage/stage-page")).StagePage }),
   },
   {
+    path: "/presenter",
+    lazy: async () => ({
+      Component: (await import("./stage/presenter-page")).PresenterPage,
+    }),
+  },
+  {
     path: "/admin/phone-preview/:version/:questionId",
     lazy: async () => ({
       Component: (await import("./admin/question-phone-preview")).QuestionPhonePreview,

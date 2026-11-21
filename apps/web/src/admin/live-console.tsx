@@ -13,6 +13,7 @@ import {
   LinkButton,
 } from "../ui/primitives";
 import { usePhaseCountdown } from "../live/use-phase-countdown";
+import { nextPhaseLabel } from "../live/phase-controls";
 import { useAdminRoom, type AdminCommand } from "./room-provider";
 import { CommandFeedback } from "./command-feedback";
 import { WallQuickPanel } from "./wall-page";
@@ -167,10 +168,6 @@ export function LiveConsole() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
-  const onLastFact =
-    phase === "facts" &&
-    snapshot.funFactList != null &&
-    snapshot.funFactList.index + 1 >= snapshot.funFactList.total;
   const primary =
     phase === "lobby"
       ? "start"
@@ -188,18 +185,7 @@ export function LiveConsole() {
           ? kartLobby
             ? "Show podium"
             : "Finish quiz"
-          : phase === "facts"
-            ? onLastFact
-              ? "Show the podium"
-              : "Next fact"
-            : phase === "prompt" &&
-                snapshot.play?.question.kind === "choice" &&
-                snapshot.play.question.optionSequence
-              ? snapshot.play.question.optionSequence.shown <
-                snapshot.play.question.optionSequence.total
-                ? `Reveal next option (${snapshot.play.question.optionSequence.shown}/${snapshot.play.question.optionSequence.total})`
-                : "Open answering"
-              : "Advance";
+          : nextPhaseLabel(snapshot);
   const shownFact =
     phase === "facts"
       ? snapshot.funFactList?.cards[snapshot.funFactList.index]
@@ -409,6 +395,8 @@ export function LiveConsole() {
                 <p className="admin-phase-clock" aria-label={countdown.label}>
                   {countdown.value}
                 </p>
+              ) : phase === "intro" || phase === "prompt" || phase === "scores" ? (
+                <p className="admin-meta">Waiting for your cue or Baseer’s.</p>
               ) : null}
             </div>
             <h2>
@@ -536,7 +524,18 @@ export function LiveConsole() {
               </a>
             </div>
           </div>
-          <ProjectorPairingCard key={snapshot.gameId} gameId={snapshot.gameId} />
+          <PairingCard key={`stage:${snapshot.gameId}`} gameId={snapshot.gameId} />
+          <PairingCard
+            key={`presenter:${snapshot.gameId}`}
+            gameId={snapshot.gameId}
+            presenter={{
+              joinCode: snapshot.joinCode,
+              access: snapshot.presenterAccess,
+              locked,
+              revoke: () =>
+                void execute({ action: "presenter-revoke" }, "Revoke presenter access"),
+            }}
+          />
           <div className="admin-card">
             <div className="admin-card-header">
               <p className="admin-card-title">Connections</p>
@@ -614,7 +613,18 @@ export function LiveConsole() {
  * Pairs the projector laptop without an admin login there. The code is shown
  * here only, works once, and lasts ten minutes; a new code cancels the last.
  */
-function ProjectorPairingCard({ gameId }: { gameId: string }) {
+function PairingCard({
+  gameId,
+  presenter,
+}: {
+  gameId: string;
+  presenter?: {
+    joinCode: string;
+    access: ReturnType<typeof useAdminRoom>["snapshot"]["presenterAccess"];
+    locked: boolean;
+    revoke: () => void;
+  };
+}) {
   const [issued, setIssued] = useState<{ code: string; expiresAt: string } | null>(
     null,
   );
@@ -640,7 +650,11 @@ function ProjectorPairingCard({ gameId }: { gameId: string }) {
     setIssued(null);
     const requestId = (pending.current ??= crypto.randomUUID());
     try {
-      const result = await issueProjectorPairing({ gameId, requestId });
+      const result = await issueProjectorPairing({
+        gameId,
+        requestId,
+        ...(presenter ? { kind: "presenter" } : {}),
+      });
       if ("error" in result) {
         setError(result.error);
         return;
@@ -651,19 +665,26 @@ function ProjectorPairingCard({ gameId }: { gameId: string }) {
       setBusy(false);
     }
   }
+  const title = presenter ? "Baseer’s presenter phone" : "Projector pairing";
   return (
-    <section className="admin-card" aria-label="Projector pairing">
+    <section className="admin-card" aria-label={title}>
       <div className="admin-card-header">
         <span
           className="admin-status-dot"
-          data-tone={issued ? "ok" : "muted"}
+          data-tone={issued || presenter?.access?.connected ? "ok" : "muted"}
           aria-hidden="true"
         />
-        <p className="admin-card-title">Projector pairing</p>
+        <p className="admin-card-title">{title}</p>
       </div>
       <div className="admin-card-body">
         <p className="admin-meta">
-          Lets the projector laptop show this room without signing in to admin.
+          {presenter
+            ? presenter.access?.connected
+              ? "Presenter connected"
+              : presenter.access?.pairedAt
+                ? `Last paired at ${new Date(presenter.access.pairedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} · offline`
+                : "Waiting to pair"
+            : "Lets the projector laptop show this room without signing in to admin."}
         </p>
         <AnimatePresence initial={false}>
           {issued ? (
@@ -683,8 +704,9 @@ function ProjectorPairingCard({ gameId }: { gameId: string }) {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
-                . On the projector laptop, open /host, type the join code and this code,
-                then choose Pair this screen.
+                {presenter
+                  ? ". Open the presenter page on Baseer’s phone and enter this code."
+                  : ". On the projector laptop, open /host, type the join code and this code, then choose Pair this screen."}
               </p>
             </motion.div>
           ) : null}
@@ -696,9 +718,36 @@ function ProjectorPairingCard({ gameId }: { gameId: string }) {
         ) : null}
       </div>
       <div className="admin-card-footer">
-        <Button variant="secondary" disabled={busy} onClick={() => void show()}>
+        <Button
+          variant="secondary"
+          disabled={busy || presenter?.locked}
+          onClick={() => void show()}
+        >
           {busy ? "Showing…" : issued ? "Show a new code" : "Show pairing code"}
         </Button>
+        {presenter ? (
+          <>
+            <a
+              className="entry-text-link"
+              href={`/presenter?code=${presenter.joinCode}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open presenter page ↗
+            </a>
+            <Button
+              variant="secondary"
+              disabled={busy || presenter.locked}
+              onClick={() => {
+                setIssued(null);
+                pending.current = null;
+                presenter.revoke();
+              }}
+            >
+              Revoke presenter access
+            </Button>
+          </>
+        ) : null}
       </div>
     </section>
   );

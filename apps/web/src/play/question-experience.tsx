@@ -2,7 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { CSSProperties, ReactNode } from "react";
 import type { LobbySnapshot } from "@26/shared";
 import "./question-experience.css";
-import { answerStatus, questionDirection } from "./question-direction";
+import { answerStatus, questionBeat, questionDirection } from "./question-direction";
 import { useThemeVoice } from "../theme/voices";
 import { Celebration } from "../anim/Celebration";
 
@@ -21,6 +21,7 @@ export function QuestionExperience({
   const play = snapshot.play;
   if (!play) return null;
   const cue = questionDirection(snapshot, pending);
+  const beat = questionBeat(snapshot, pending);
   const status = answerStatus(snapshot, pending);
   const answered = play.submissionCount;
   const players = snapshot.players?.length ?? 0;
@@ -78,19 +79,21 @@ export function QuestionExperience({
           <small aria-hidden="true">/{play.question.total}</small>
           <span className="sr-only"> of {play.question.total}</span>
         </span>
-        <AnimatePresence initial={false} mode="popLayout">
-          <motion.p
-            key={cue}
-            role="status"
-            className="question-cue"
+        <div
+          role="status"
+          className="question-cue"
+          data-open={status === "open" && beat !== "Watch the stage"}
+        >
+          <motion.div
+            key={`${beat}:${cue}`}
             initial={{ opacity: 0.5, y: reduce ? 0 : 5 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
-            {cue}
-          </motion.p>
-        </AnimatePresence>
+            <strong>{beat}</strong>
+            <span>{cue}</span>
+          </motion.div>
+        </div>
       </header>
       <AnimatePresence initial={false}>
         {showAnswerState || result ? (

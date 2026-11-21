@@ -89,12 +89,13 @@ import {
   hashPairingCode,
   pairingCodeTtlMs,
   pairingInvalidMessage,
-  pairingIssuePrincipal,
   pairingIssueRateLimit,
   pairingMessage,
   pairingRateMessage,
   pairingRedeemRateLimit,
+  pairingStorage,
   storePairingCode,
+  type PairingRole,
 } from "../credentials/pairing.ts";
 import { randomToken } from "./codes.ts";
 import { payloadDigest } from "./digest.ts";
@@ -306,7 +307,7 @@ type RoomRow = {
   created_at: string;
 };
 
-type SocketRole = "guest" | "control" | "presentation";
+type SocketRole = "guest" | RoomCredentialRole;
 
 type SocketAttachment = {
   role: SocketRole;
@@ -1020,6 +1021,7 @@ export class PartyRoom extends DurableObject<Env> {
     secret: string;
     requestId: string;
     nowMs: number;
+    role?: PairingRole;
   }): Promise<ProjectorPairingIssueResult> {
     if (!this.readRoom()) {
       return { ok: false, error: "not_found", message: roomMissingMessage };
@@ -1033,15 +1035,17 @@ export class PartyRoom extends DurableObject<Env> {
       input.nowMs,
     );
     if (!allowed.ok) return allowed;
-    const principal = pairingIssuePrincipal;
-    const digest = await payloadDigest({ action: "projector-pairing" });
+    const role = input.role ?? "presentation";
+    const { principal: pairing } = pairingStorage(role);
+    const principal = `${pairing}-issue`;
+    const digest = await payloadDigest({ action: pairing });
     const prior = this.readReceipt(principal, input.requestId);
     if (prior) return this.replay(prior, digest);
-    if (!this.allow("pairing-issue", pairingIssueRateLimit)) {
+    if (!this.allow(principal, pairingIssueRateLimit)) {
       return { ok: false, error: "rate_limited", message: pairingRateMessage };
     }
     const code = createPairingCode();
-    const codeHash = await hashPairingCode(code);
+    const codeHash = await hashPairingCode(code, role);
     const now = new Date(input.nowMs).toISOString();
     const expiresAt = new Date(input.nowMs + pairingCodeTtlMs).toISOString();
     let result: ProjectorPairingIssueResult = { ok: true, code, expiresAt };
@@ -1056,9 +1060,15 @@ export class PartyRoom extends DurableObject<Env> {
         now,
         expiresAt,
         requestId: input.requestId,
+        role,
       });
       this.writeReceipt(principal, input.requestId, digest, result);
-      this.writeAudit("projector_pairing_issued", "control", now, { expiresAt });
+      this.writeAudit(
+        role === "presenter" ? "presenter_pairing_issued" : "projector_pairing_issued",
+        "control",
+        now,
+        { expiresAt },
+      );
     });
     return result;
   }
@@ -1072,6 +1082,7 @@ export class PartyRoom extends DurableObject<Env> {
     code: string;
     requestId: string;
     nowMs: number;
+    role?: PairingRole;
   }): Promise<ProjectorPairingRedeemResult> {
     const room = this.readRoom();
     if (!room) {
@@ -1080,16 +1091,17 @@ export class PartyRoom extends DurableObject<Env> {
     if (!validRequestId(input.requestId)) {
       return { ok: false, error: "invalid", message: pairingInvalidMessage };
     }
-    const principal = "projector-pairing";
+    const role = input.role ?? "presentation";
+    const { principal } = pairingStorage(role);
     const digest = await payloadDigest({ code: input.code });
     const prior = this.readReceipt(principal, input.requestId);
     if (prior) return this.replay(prior, digest);
-    if (!this.allow("pairing-redeem", pairingRedeemRateLimit)) {
+    if (!this.allow(principal, pairingRedeemRateLimit)) {
       return { ok: false, error: "rate_limited", message: pairingRateMessage };
     }
-    const codeHash = await hashPairingCode(input.code);
+    const codeHash = await hashPairingCode(input.code, role);
     const now = new Date(input.nowMs);
-    const credential = await this.prepareCredential("presentation", now);
+    const credential = await this.prepareCredential(role, now);
     let result: ProjectorPairingRedeemResult = {
       ok: false,
       error: "invalid",
@@ -1104,6 +1116,7 @@ export class PartyRoom extends DurableObject<Env> {
       const claim = claimPairingCode(this.ctx.storage.sql, {
         codeHash,
         now: now.toISOString(),
+        role,
       });
       if (!claim.ok) {
         result = {
@@ -1115,9 +1128,15 @@ export class PartyRoom extends DurableObject<Env> {
         this.writeReceipt(principal, input.requestId, digest, result);
         return;
       }
+      if (role === "presenter") {
+        this.ctx.storage.sql.exec(
+          "UPDATE credential SET revoked_at = ? WHERE principal = 'presenter' AND revoked_at IS NULL",
+          now.toISOString(),
+        );
+      }
       insertCredential(this.ctx.storage.sql, {
         id: credential.credentialId,
-        principal: "presentation",
+        principal: role,
         playerId: null,
         secretHash: credential.secretHash,
         expiresAt: credential.expiresAt,
@@ -1129,10 +1148,16 @@ export class PartyRoom extends DurableObject<Env> {
         presentation: publicSecret(credential),
       };
       this.writeReceipt(principal, input.requestId, digest, result);
-      this.writeAudit("projector_paired", "presentation", now.toISOString(), {
-        credentialId: credential.credentialId,
-      });
+      this.writeAudit(
+        role === "presenter" ? "presenter_paired" : "projector_paired",
+        role,
+        now.toISOString(),
+        {
+          credentialId: credential.credentialId,
+        },
+      );
     });
+    if (role === "presenter" && result.ok) this.broadcastFacilitators();
     return result;
   }
 
@@ -1535,24 +1560,29 @@ export class PartyRoom extends DurableObject<Env> {
     requestId: string;
     nowMs: number;
     expectedPhaseGeneration?: number;
+    presenter?: true;
   }): Promise<PhaseCommandResult> {
     // Credential verification yields. An alarm can finish this phase while
     // the host's intent is being checked; that intent must not skip the next.
     const requestedGeneration = this.ctx.storage.sql
       .exec<{ phase_generation: number }>("SELECT phase_generation FROM room")
       .toArray()[0]?.phase_generation;
-    const allowed = await this.requireControl(
-      input.credentialId,
-      input.secret,
-      input.nowMs,
-    );
+    const allowed = input.presenter
+      ? await this.requireCredential(
+          "presenter",
+          input.credentialId,
+          input.secret,
+          input.nowMs,
+        )
+      : await this.requireControl(input.credentialId, input.secret, input.nowMs);
     if (!allowed.ok) {
       return allowed;
     }
     if (
-      input.expectedPhaseGeneration !== undefined &&
-      (!Number.isSafeInteger(input.expectedPhaseGeneration) ||
-        input.expectedPhaseGeneration <= 0)
+      (input.presenter && input.expectedPhaseGeneration === undefined) ||
+      (input.expectedPhaseGeneration !== undefined &&
+        (!Number.isSafeInteger(input.expectedPhaseGeneration) ||
+          input.expectedPhaseGeneration <= 0))
     )
       return {
         ok: false,
@@ -1569,12 +1599,36 @@ export class PartyRoom extends DurableObject<Env> {
       },
       (sql) => {
         const store = createGameStore(sql);
-        if (
-          store.readRoom().phaseGeneration ===
+        const current = store.readRoom();
+        if (input.presenter) {
+          const active =
+            sql
+              .exec(
+                "SELECT 1 FROM credential WHERE id = ? AND revoked_at IS NULL",
+                input.credentialId,
+              )
+              .toArray().length > 0;
+          if (!active) throw new Error("Presenter access has ended.");
+          if (current.paused) throw new Error("Humza has paused the room.");
+          if (current.phaseGeneration !== input.expectedPhaseGeneration)
+            throw new Error("The room has already moved. Check the current cue.");
+          if (!advance(store, input.nowMs))
+            throw new Error("There is no next step yet.");
+          this.writeAudit(
+            "presenter_advance",
+            "presenter",
+            new Date(input.nowMs).toISOString(),
+            { phase: current.phase },
+          );
+        } else if (
+          current.phaseGeneration ===
           (input.expectedPhaseGeneration ?? requestedGeneration)
-        )
+        ) {
           advance(store, input.nowMs);
+        }
       },
+      undefined,
+      input.presenter ? `presenter:${input.credentialId}` : "control",
     );
   }
 
@@ -2676,7 +2730,10 @@ export class PartyRoom extends DurableObject<Env> {
     });
     if (identity.attachment.role === "guest") {
       this.closeOlder(server, identity.attachment, newerTabMessage);
-    } else if (identity.attachment.role === "presentation") {
+    } else if (
+      identity.attachment.role === "presentation" ||
+      identity.attachment.role === "presenter"
+    ) {
       this.closeOlder(server, identity.attachment, newerTabMessage);
     }
     if (identity.attachment.role === "guest") {
@@ -3129,12 +3186,13 @@ export class PartyRoom extends DurableObject<Env> {
       released?: number;
       retried?: number;
     },
+    principal = "control",
   ): Promise<PhaseCommandResult> {
     if (!validRequestId(requestId)) {
       return { ok: false, error: "invalid", message: roundStartMessage };
     }
     const digest = await payloadDigest(payload);
-    const prior = this.readReceipt("control", requestId);
+    const prior = this.readReceipt(principal, requestId);
     if (prior) {
       return this.replay<PhaseCommandResult>(prior, digest);
     }
@@ -3145,7 +3203,7 @@ export class PartyRoom extends DurableObject<Env> {
     };
     try {
       await commitAndArm(this.ctx.storage, (sql) => {
-        const again = this.readReceipt("control", requestId);
+        const again = this.readReceipt(principal, requestId);
         if (again) {
           result = this.replay<PhaseCommandResult>(again, digest);
           return;
@@ -3173,7 +3231,7 @@ export class PartyRoom extends DurableObject<Env> {
           stateVersion: this.readRoom()?.state_version ?? 0,
           ...extra?.(),
         };
-        this.writeReceipt("control", requestId, digest, result);
+        this.writeReceipt(principal, requestId, digest, result);
         recordRehearsalEvent(sql, {
           kind: "host",
           detail: String(payload.action),
@@ -3403,7 +3461,7 @@ export class PartyRoom extends DurableObject<Env> {
   }
 
   private async requireCredential(
-    role: "control" | "presentation",
+    role: RoomCredentialRole,
     credentialId: string,
     secret: string,
     nowMs: number,
@@ -3482,7 +3540,9 @@ export class PartyRoom extends DurableObject<Env> {
     }
     const current = createSqlStore(this.ctx.storage.sql).readRoom();
     if (
-      current.controllerPresent === this.socketOpen("control", closing) &&
+      current.controllerPresent ===
+        (this.socketOpen("control", closing) ||
+          this.socketOpen("presenter", closing)) &&
       current.stagePresent === this.socketOpen("presentation", closing)
     ) {
       // Guest churn changes counts, not the durable game clock or its alarm.
@@ -3493,7 +3553,8 @@ export class PartyRoom extends DurableObject<Env> {
     await commitAndArm(this.ctx.storage, (sql) => {
       const store = createSqlStore(sql);
       const room = store.readRoom();
-      const controller = this.socketOpen("control", closing);
+      const controller =
+        this.socketOpen("control", closing) || this.socketOpen("presenter", closing);
       const stage = this.socketOpen("presentation", closing);
       if (room.controllerPresent === controller && room.stagePresent === stage) {
         return;
@@ -3575,14 +3636,14 @@ export class PartyRoom extends DurableObject<Env> {
         },
       };
     }
-    if (role === "stage" || role === "control") {
+    if (role === "stage" || role === "control" || role === "presenter") {
       if (
         role === "control" &&
         rehearsalOutage(this.ctx.storage.sql, "control", now.getTime())
       )
         return denied(503, "unauthenticated", "Rehearsal host disconnect is active.");
       const credentialRole: RoomCredentialRole =
-        role === "stage" ? "presentation" : "control";
+        role === "stage" ? "presentation" : role;
       const presented = readCredentialCookie(cookie, credentialRole);
       if (!presented) {
         return denied(401, "unauthenticated", "This screen needs its room session.");
@@ -4589,6 +4650,7 @@ export class PartyRoom extends DurableObject<Env> {
       ...(audience === "control"
         ? {
             phaseGeneration: stored.phaseGeneration,
+            presenterAccess: this.presenterAccess(nowMs),
             // Control only: what follows the current round, for the live desk.
             nextQuestion: play ? nextQuestionPreview(stored) : null,
             connections: {
@@ -4756,7 +4818,7 @@ export class PartyRoom extends DurableObject<Env> {
     const roles: SocketRole[] | undefined = scopes.has("all")
       ? undefined
       : scopes.has("facilitators")
-        ? ["presentation", "control"]
+        ? ["presentation", "control", "presenter"]
         : ["presentation"];
     this.meter.add(
       scopes.has("all")
@@ -4817,7 +4879,7 @@ export class PartyRoom extends DurableObject<Env> {
     this.meter.add("broadcast:kart", 0, serverNow);
     for (const socket of this.ctx.getWebSockets()) {
       const attachment = this.attachment(socket);
-      if (!attachment) {
+      if (!attachment || attachment.role === "presenter") {
         continue;
       }
       if (attachment.role !== "guest" && !this.facilitatorAllowed(socket, attachment)) {
@@ -4865,6 +4927,31 @@ export class PartyRoom extends DurableObject<Env> {
 
   private broadcastStage(): void {
     this.markDirty("stage");
+  }
+
+  private presenterAccess(now: number): NonNullable<LobbySnapshot["presenterAccess"]> {
+    const last = this.ctx.storage.sql
+      .exec<{ created_at: string }>(
+        "SELECT created_at FROM audit WHERE kind = 'presenter_paired' ORDER BY id DESC LIMIT 1",
+      )
+      .toArray()[0];
+    return {
+      pairedAt: last ? Date.parse(last.created_at) : null,
+      connected: this.ctx.getWebSockets("presenter").some((socket) => {
+        const attachment = this.attachment(socket);
+        return (
+          attachment &&
+          socket.readyState === WebSocket.OPEN &&
+          this.ctx.storage.sql
+            .exec(
+              "SELECT 1 FROM credential WHERE id = ? AND revoked_at IS NULL AND expires_at > ?",
+              attachment.principalId,
+              new Date(now).toISOString(),
+            )
+            .toArray().length > 0
+        );
+      }),
+    };
   }
 
   private publicDraft(audience: "guest" | "stage" | "control"): {
@@ -4965,7 +5052,7 @@ export class PartyRoom extends DurableObject<Env> {
       return;
     }
     const audience =
-      attachment.role === "guest"
+      attachment.role === "guest" || attachment.role === "presenter"
         ? "guest"
         : attachment.role === "control"
           ? "control"
@@ -4990,6 +5077,9 @@ export class PartyRoom extends DurableObject<Env> {
       parts,
       shared,
     );
+    if (attachment.role === "presenter") {
+      snapshot.phaseGeneration = parts.stored.phaseGeneration;
+    }
     if (
       !this.kartClientAllowed(
         ws,
@@ -5124,7 +5214,10 @@ export class PartyRoom extends DurableObject<Env> {
     ) {
       return true;
     }
-    const message = "Room access expired or changed. Reopen the room from admin.";
+    const message =
+      attachment.role === "presenter"
+        ? "Presenter access ended. Ask Humza for a new code."
+        : "Room access expired or changed. Reopen the room from admin.";
     this.send(ws, { kind: "replaced", scope: "private", message });
     ws.close(4000, message);
     this.views.delete(ws);
@@ -5240,7 +5333,8 @@ export class PartyRoom extends DurableObject<Env> {
     if (
       (record.role !== "guest" &&
         record.role !== "control" &&
-        record.role !== "presentation") ||
+        record.role !== "presentation" &&
+        record.role !== "presenter") ||
       typeof record.principalId !== "string" ||
       typeof record.deliverySeq !== "number"
     ) {

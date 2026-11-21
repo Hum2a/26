@@ -133,10 +133,9 @@ export const adminFeatures: readonly AdminFeature[] = [
     group: "tonight",
     scope: "room",
     path: "live",
-    summary:
-      "Start, pause, advance and fix the running game, end it early or destroy the room.",
+    summary: "Cue the running game, pair Baseer’s phone and manage the room.",
     rehearsal:
-      "Start the illustrative demo, or the kart rehearsal, with no guests. Try End game now and Destroy room on a throwaway lobby with bots.",
+      "Pair the presenter page in a second tab of a throwaway room. Start the show with no guests and try cueing the next beat from that tab.",
     owns: ["apps/api/src/room", "apps/web/src/live", "apps/web/src/stage"],
     status: (snapshot) =>
       snapshot.play

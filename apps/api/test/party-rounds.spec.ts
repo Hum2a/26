@@ -1,5 +1,7 @@
 import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
+import { createGameStore } from "../src/questions/multiple-choice.ts";
+import { onAlarm, submissionGate } from "../src/room/lifecycle.ts";
 
 async function startQuestion(id: string) {
   const registry = env.ROOM_CODE_REGISTRY.getByName("codes");
@@ -40,6 +42,75 @@ async function startQuestion(id: string) {
     stub.advanceRound({ ...control, requestId: crypto.randomUUID(), nowMs: now + 1 });
   return { stub, guest, advance, control, now };
 }
+
+it("holds listening, reading and standings for a cue, then opens the full answer window", async () => {
+  const { stub, advance, control, now } = await startQuestion("car-name");
+  for (const phase of ["intro", "prompt"] as const) {
+    expect(await stub.snapshotFor("guest")).toMatchObject({ phase, deadlineAt: null });
+    await runInDurableObject(stub, (_instance, state) => {
+      const store = createGameStore(state.storage.sql);
+      expect(
+        store.jobs().some((job) => job.phase === phase && job.status === "pending"),
+      ).toBe(false);
+      // An existing room may still have a phase alarm from before manual pacing.
+      const room = store.readRoom();
+      store.saveJob({
+        jobId: `old:${phase}`,
+        jobType: "gameplay",
+        payload: phase,
+        scopeGeneration: room.scopeGeneration,
+        phaseGeneration: room.phaseGeneration,
+        retryCount: 0,
+        phase,
+        status: "pending",
+        remainingMs: null,
+        dueAt: now,
+        createdAt: now,
+      });
+      onAlarm(store, now + 120_000);
+      expect(store.readRoom().phase).toBe(phase);
+      expect(submissionGate(store, now + 120_000)).toEqual({
+        ok: false,
+        reason: "phase",
+      });
+    });
+    if (phase === "intro") await advance();
+  }
+  const readyAt = now + 120_000;
+  await stub.advanceRound({
+    ...control,
+    requestId: crypto.randomUUID(),
+    nowMs: readyAt,
+  });
+  const collect = await stub.snapshotFor("guest");
+  expect(collect.phase).toBe("collect");
+  expect(collect.deadlineAt).toBeGreaterThan(readyAt);
+  await runInDurableObject(stub, (_instance, state) => {
+    const store = createGameStore(state.storage.sql);
+    expect(collect.deadlineAt).toBe(readyAt + store.readRoom().durations.collect!);
+    expect(submissionGate(store, readyAt)).toEqual({ ok: true });
+  });
+  await stub.advanceRound({
+    ...control,
+    requestId: crypto.randomUUID(),
+    nowMs: readyAt + 1,
+  });
+  await stub.advanceRound({
+    ...control,
+    requestId: crypto.randomUUID(),
+    nowMs: readyAt + 2,
+  });
+  expect(await stub.snapshotFor("stage")).toMatchObject({
+    phase: "scores",
+    deadlineAt: null,
+  });
+  await stub.advanceRound({
+    ...control,
+    requestId: crypto.randomUUID(),
+    nowMs: readyAt + 3,
+  });
+  expect((await stub.snapshotFor("stage")).phase).toBe("final");
+});
 
 it("reveals options durably one at a time, withholds future labels and opens answering afterwards", async () => {
   const { stub, advance, control, now } = await startQuestion("favourite-genre");
