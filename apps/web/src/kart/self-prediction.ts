@@ -170,7 +170,7 @@ function createLegacyPrediction() {
         ms,
         env!.profile,
         env!.walls(next.x, next.z, env!.profile.radius + speed * 0.02),
-        slowedUntil > elapsed || env!.offRoad(next.x, next.z),
+        slowedUntil > elapsed ? true : env!.offRoad(next.x, next.z) ? "sand" : false,
         true,
         env!.features,
         env!.handling,
@@ -357,14 +357,16 @@ function createRollbackPrediction() {
         stepMs,
         env.profile,
         env.walls(body.x, body.z, env.profile.radius + speed * 0.02),
-        env.offRoad(body.x, body.z) ||
-          (race.powers?.effects.some(
-            (effect) =>
-              effect.playerId === race!.selfPlayerId &&
-              effect.slowedMs > 0 &&
-              simulatedAt < race!.elapsedMs + effect.slowedMs,
-          ) ??
-            false),
+        race.powers?.effects.some(
+          (effect) =>
+            effect.playerId === race!.selfPlayerId &&
+            effect.slowedMs > 0 &&
+            simulatedAt < race!.elapsedMs + effect.slowedMs,
+        )
+          ? true
+          : env.offRoad(body.x, body.z)
+            ? "sand"
+            : false,
         true,
         env.features,
         env.handling,

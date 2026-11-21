@@ -213,7 +213,7 @@ export function stepPracticeBots(
         body.z,
         soloDriving.radius + Math.hypot(body.vx, body.vz) * 0.02,
       ),
-      slowed || surface !== "road",
+      slowed ? true : surface !== "road" ? "sand" : false,
       true,
       features,
       handling,

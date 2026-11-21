@@ -90,6 +90,16 @@ export function drivingDriftLevel(chargeMs: number): 0 | 1 | 2 | 3 {
 export const driftTierNames = ["Charging", "Mini", "Super", "Ultra"] as const;
 export const driftThresholds = [700, 1400, 2400] as const;
 
+/**
+ * How rough ground slows a kart. `"sand"` is off the road (sand and dirt): it
+ * keeps about 60% of road top speed, so a wide line costs time without a crawl.
+ * `true` is an item slowdown (an oil slick or a hit) and keeps the heavier
+ * penalty. Either one stops a drift from charging.
+ */
+export type DrivingSlowdown = boolean | "sand";
+export const sandSlowdown = { engineScale: 0.8, speedDrag: 0.3 } as const;
+export const itemSlowdown = { engineScale: 0.58, speedDrag: 1.1 } as const;
+
 /** First contact with a segment expanded by the kart radius, including round ends. */
 function sweep(
   x: number,
@@ -203,12 +213,14 @@ export function stepDriving(
   ms: number,
   profile: DrivingProfile,
   walls: readonly Wall[],
-  offRoad = false,
+  slowdown: DrivingSlowdown = false,
   fresh = true,
   features: readonly CourseFeature[] = [],
   handling: KartHandling = "slide-v1",
 ): DrivingBody {
   if (!Number.isFinite(ms) || ms <= 0 || ms > 20) return body;
+  const offRoad = slowdown !== false;
+  const rough = slowdown === "sand" ? sandSlowdown : itemSlowdown;
   const dt = ms / 1000,
     next = { ...body, offRoad };
   if (handling === "bounce-v1") {
@@ -269,7 +281,7 @@ export function stepDriving(
     profile.rollingResistance +
     profile.drag * forward * forward +
     (!fresh ? Math.abs(forward) * 1.5 : 0) +
-    (offRoad && !airborne ? Math.abs(forward) * 1.1 : 0);
+    (offRoad && !airborne ? Math.abs(forward) * rough.speedDrag : 0);
   let speed = forward;
   if (input.brake && !airborne) {
     speed =
@@ -278,7 +290,9 @@ export function stepDriving(
         : Math.max(-profile.reverseSpeed, forward - profile.acceleration * dt);
   } else {
     const engine =
-      input.gas && fresh ? thrust * boost * (airborne ? 0.15 : offRoad ? 0.58 : 1) : 0;
+      input.gas && fresh
+        ? thrust * boost * (airborne ? 0.15 : offRoad ? rough.engineScale : 1)
+        : 0;
     speed += (engine - Math.sign(forward) * resistance) * dt;
     if (!engine && Math.sign(speed) !== Math.sign(forward)) speed = 0;
   }

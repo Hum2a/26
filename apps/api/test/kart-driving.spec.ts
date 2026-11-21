@@ -469,6 +469,25 @@ it("brakes before reversing, slows off-road and cannot spin while stationary", (
       .heading,
   ).toBe(0);
 });
+it("keeps sand quicker than an item slowdown but slower than the road", () => {
+  const gas = { ...kartNeutral, gas: true };
+  const topSpeed = (slowdown: false | true | "sand") => {
+    let body = createDrivingBody();
+    for (let step = 0; step < 1_500; step += 1)
+      body = stepDriving(body, gas, 20, soloDriving, [], slowdown);
+    return Math.hypot(body.vx, body.vz);
+  };
+  const road = topSpeed(false);
+  const sand = topSpeed("sand");
+  const slowed = topSpeed(true);
+  expect(sand).toBeLessThan(road);
+  expect(sand).toBeGreaterThan(slowed * 1.6);
+  // Sand keeps a little over half the road's top speed; the old drag kept a third.
+  expect(sand / road).toBeGreaterThan(0.55);
+  expect(sand / road).toBeLessThan(0.7);
+  const onSand = stepDriving(createDrivingBody(), gas, 20, soloDriving, [], "sand");
+  expect(onSand.offRoad).toBe(true);
+});
 it("blocks either ring boundary at the body's radius", () => {
   for (const [x, vx, low, high] of [
     [48, 100, 48, 49.201],

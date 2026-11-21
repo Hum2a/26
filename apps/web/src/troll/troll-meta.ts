@@ -240,7 +240,80 @@ export const trollMeta: Record<TrollKindName, TrollMeta> = {
   },
 };
 
+/**
+ * Why a troll card is switched off. Only the guest's cooldown limits trolls; a
+ * card is off only when this question has nothing for the troll to act on.
+ */
+const needs: Partial<Record<TrollKindName, string>> = {
+  reshuffle: "Needs a question with answer options.",
+  translate: "Needs a question with answer options.",
+  "slider-drift": "Needs a slider question.",
+  "reverse-typing": "Needs a typed or vote question.",
+  autocorrect: "Needs a typed or vote question.",
+  "char-limit": "Needs a typed or vote question.",
+  misattributed: "Needs a typed or vote question.",
+  "public-vote": "Needs a vote question.",
+  replay: "Needs a multiple-choice question.",
+  typing: "Needs a question shown live on the big screen.",
+  double: "Needs a scored multiple-choice question.",
+  steal: "Needs a scored multiple-choice question.",
+  "robin-hood": "Needs a scored multiple-choice question.",
+  share: "Needs a scored multiple-choice question.",
+};
+
+export function trollUnavailable(kind: string): string {
+  return needs[kind as TrollKindName] ?? "Opens again on the next question.";
+}
+
+/** Where the troll lands, by group, for the troll tab's preview. */
+const groupWhere: Record<TrollGroupId, string> = {
+  chaos: "Lands on their phone straight away and clears itself in a few seconds.",
+  sabotage: "Messes with their answer controls while this question is open.",
+  identity: "Changes their name on every screen for a while. Points are safe.",
+  points: "Settles at this question's reveal, when the points are counted.",
+  stage: "Shows up on the big screen at the reveal or the scores.",
+};
+
+/** Trolls that land somewhere other than their group's usual place. */
+const kindWhere: Partial<Record<TrollKindName, string>> = {
+  "hide-score": "Hides their own score on their phone for a few seconds.",
+  misattributed:
+    "At the reveal, the big screen credits them with someone else's answer.",
+  sponsor: "Shows on the big screen straight away.",
+  typing: "Shows their typing on the big screen straight away.",
+  "zoom-photo": "Shows one of their photos on the big screen straight away.",
+  theme: "Plays on the big screen at every scores beat for the rest of the game.",
+  speech: "The big screen asks them for a speech at the scores.",
+  double: "Doubles their points for this question, or leaves a zero at zero.",
+};
+
+export function trollWhere(kind: string): string {
+  return kindWhere[kind as TrollKindName] ?? groupWhere[trollGroupOf(kind).id];
+}
+
 export function trollGroupOf(kind: string) {
   const meta = trollMeta[kind as TrollKindName];
   return trollGroups.find((group) => group.id === meta?.group) ?? trollGroups[0]!;
 }
+
+/** What the target is told for trolls that are not drawn as a screen gag. */
+export const targetLine: Partial<Record<string, string>> = {
+  swap: "Your name has swapped with someone else's on every screen.",
+  "hide-score": "Your score is hidden from you for now.",
+  double: "Your points for this question are double or nothing.",
+  typing: "The big screen can see what you type. Sending still stores the answer.",
+  voice: "A voice clip about you will play at the reveal.",
+  theme: "You have a theme tune now. It plays whenever the scores come up.",
+  "temp-nickname":
+    "You have a new name on every screen for a while. Your points are safe.",
+  "guest-14": "You are Guest 14 on every screen for a while. Your points are safe.",
+  replay: "Your answer will be replayed on the big screen at the reveal.",
+  speech: "Get ready: the big screen will ask you for a speech at the scores.",
+  "zoom-photo": "One of your photos is on the big screen. Up close.",
+  steal: "Someone is stealing half your points for this question.",
+  "robin-hood": "Your points for this question go to whoever is in last place.",
+  share: "You are splitting your points for this question with someone.",
+  "public-vote": "Your vote will be shown on the big screen at the reveal.",
+  misattributed:
+    "At the reveal, the big screen will say you wrote someone else's answer.",
+};

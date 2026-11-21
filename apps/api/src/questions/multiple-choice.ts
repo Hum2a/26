@@ -96,7 +96,11 @@ import {
   sliderReveal,
   sliderScores,
 } from "./slider.ts";
-import { applyPointTransfers, applyScoreModifiers } from "../troll/catalogue.ts";
+import {
+  applyPointTransfers,
+  applyScoreModifiers,
+  questionModifiers,
+} from "../troll/catalogue.ts";
 import {
   activeModifierKinds,
   activeTransfers,
@@ -122,6 +126,7 @@ import {
 } from "./vote.ts";
 
 import { multipleChoiceScore } from "../../../../packages/shared/src/party-scoring.ts";
+import { answerWindowMs } from "./answer-window.ts";
 
 const scoredPhases: readonly RoomPhase[] = ["reveal", "scores", "final", "podium"];
 
@@ -140,9 +145,7 @@ export type ChoiceAnswer = {
 };
 
 export function multipleChoicePlugin(): RoundPlugin {
-  const windows = requirePlayable(demoQuestionSetVersion).questions.map(
-    (question) => question.collectMs,
-  );
+  const windows = requirePlayable(demoQuestionSetVersion).questions.map(answerWindowMs);
   return {
     kind: "multiple-choice",
     phases: ["intro", "prompt", "collect", "reveal", "scores"],
@@ -175,18 +178,24 @@ export function pointsFor(
   settlement: ChoiceSettlement = settleChoice(question, []),
 ): { points: number; detail: string } {
   if (question.outcome.kind === "multiple") {
-    return multipleChoiceScore(
+    const scored = multipleChoiceScore(
       answer ? answer.optionId.split(",") : [],
       question.outcome.optionIds,
       question.points,
       question.outcome.scoring ?? "exact",
+    );
+    return applyScoreModifiers(
+      scored.points,
+      scored.detail,
+      questionModifiers(question),
+      troll?.modifiers ?? [],
     );
   }
   if (!answer || !choiceWins(settlement, answer.optionId)) {
     return applyScoreModifiers(
       0,
       settlement.outcome === "poll" && answer ? "poll" : "miss",
-      question.modifiers ?? [],
+      questionModifiers(question),
       troll?.modifiers ?? [],
     );
   }
@@ -197,7 +206,7 @@ export function pointsFor(
   return applyScoreModifiers(
     question.points + bonus,
     bonus > 0 ? `correct+${bonus}` : "correct",
-    question.modifiers ?? [],
+    questionModifiers(question),
     troll?.modifiers ?? [],
   );
 }
@@ -541,9 +550,8 @@ export function recordRevealScores(
       ),
     );
   }
-  // Points-moving trolls run once every award is known, and only when the
-  // question opts in to that kind.
-  const allowed = (question.modifiers ?? []) as readonly string[];
+  // Points-moving trolls run once every award is known, on any scored choice.
+  const allowed = questionModifiers(question) as readonly string[];
   const transfers = activeTransfers(sql, room.questionIndex).filter(
     (transfer) => allowed.includes(transfer.kind) && awards.has(transfer.targetId),
   );
@@ -836,7 +844,7 @@ function buildChoicePublicQuestion(
         }
       : {}),
     speedBonus: question.speedBonus !== null,
-    modifiers: [...(question.modifiers ?? [])],
+    modifiers: [...questionModifiers(question)],
     suppressSpeedBonus: question.suppressSpeedBonus === true,
   };
 }

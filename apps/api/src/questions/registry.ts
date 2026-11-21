@@ -8,6 +8,7 @@ import { toPlayable } from "./authoring.ts";
 import type { PackProfile, Question, QuestionPack } from "./definition.ts";
 import { birthdayPack } from "./packs/birthday/manifest.ts";
 import { demoPack } from "./packs/demo/manifest.ts";
+import { answerWindowMs } from "./answer-window.ts";
 import type { BirthdayScript } from "./birthday-order.ts";
 
 export type ResolvedPack = {
@@ -190,5 +191,5 @@ export function demoQuestionAt(index: number): Question | undefined {
 }
 
 export function demoCollectWindows(): number[] {
-  return demoQuestions.map((question) => question.collectMs);
+  return demoQuestions.map(answerWindowMs);
 }

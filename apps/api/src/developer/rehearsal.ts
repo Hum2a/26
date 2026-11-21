@@ -16,6 +16,7 @@ import {
 import { createSqlStore } from "../room/sql-store.ts";
 import { resolveContent, questionFor } from "../questions/registry.ts";
 import { developerDetails, setBotCount } from "./bots.ts";
+import { answerWindowMs } from "../questions/answer-window.ts";
 
 type Stored = Omit<RehearsalState, "questions" | "events" | "checks"> & {
   generation: number;
@@ -145,7 +146,7 @@ export function configureRehearsal(
     store.writeRoom({
       ...room,
       questionCount: content.pack.questions.length,
-      collectWindows: content.pack.questions.map((q) => q.collectMs),
+      collectWindows: content.pack.questions.map(answerWindowMs),
       phases: [...plugin.phases],
       durations: { ...plugin.durations },
     });

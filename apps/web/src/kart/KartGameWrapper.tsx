@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { KartCompletion, KartRaceView } from "@26/shared";
+import { isOpenKartRace, type KartCompletion, type KartRaceView } from "@26/shared";
 import { KartStageView } from "./KartStageView";
 import { KartLeaderboard } from "./KartLeaderboard";
 import { KartRecapPanel } from "./KartRecapPanel";
@@ -59,7 +59,12 @@ export default function KartGameWrapper({
                     : "One lap. No excuses."}
           </h2>
         </div>
-        {!race.ended ? (
+        {!race.ended && isOpenKartRace(race) ? (
+          <p className="kart-time" aria-label="Race time">
+            {(race.elapsedMs / 1000).toFixed(1)}
+            <small>RACE TIME</small>
+          </p>
+        ) : !race.ended ? (
           <p className="kart-time" aria-label="Race time remaining">
             {Math.max(0, (race.timeLimitMs - race.elapsedMs) / 1000).toFixed(1)}
             <small>SECONDS LEFT</small>

@@ -304,7 +304,7 @@ function TrollCatalogue({
                   {troll.questionKinds.length > 0
                     ? troll.questionKinds.join(", ")
                     : "Any"}
-                  {troll.modifier ? " · only where the question allows it" : ""}
+                  {troll.modifier ? " · every scored multiple-choice question" : ""}
                 </dd>
               </dl>
               {isScreenTroll(troll.kind) ? (

@@ -72,6 +72,7 @@ import { changeVoterDisplay } from "../questions/voters.ts";
 import { clearAvatar } from "../media/avatar.ts";
 import { changeTrendSettings } from "../stats/trend-settings.ts";
 import { voidPairingCode } from "../credentials/pairing.ts";
+import { answerWindowMs } from "../questions/answer-window.ts";
 import type { TrendChange } from "@26/shared";
 
 const shownPhases = new Set(["reveal", "scores", "final", "podium"]);
@@ -165,7 +166,7 @@ export function applyHostAction(
       {
         ...multipleChoicePlugin(),
         questionCount: 1,
-        collectWindows: [script.questions[0].collectMs],
+        collectWindows: [answerWindowMs(script.questions[0])],
       },
       crypto.randomUUID(),
     );

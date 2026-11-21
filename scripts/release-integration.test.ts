@@ -847,10 +847,12 @@ describe("release.sh wrapper", () => {
 
   it("bumps minor and resets patch to zero", () => {
     withFixture((fixture) => {
-      const result = runReleaseSh(
-        fixture,
-        ["minor", "--deploy=none", "--no-github", "--skip-checks"],
-      );
+      const result = runReleaseSh(fixture, [
+        "minor",
+        "--deploy=none",
+        "--no-github",
+        "--skip-checks",
+      ]);
       assert.equal(result.status, 0, result.stderr);
       assert.equal(fixtureVersion(fixture), "0.1.0");
       assert.match(

@@ -36,7 +36,7 @@ it("distinguishes pending, accepted, paused and waiting states", () => {
     ),
   ).toBe("Locked in — watch the stage");
   expect(questionDirection(snapshot("choice", { paused: true }), false)).toBe(
-    "Paused — hang tight",
+    "Hang tight — the host will carry on soon",
   );
   expect(questionDirection(snapshot("choice", { held: true }), false)).toBe(
     "Waiting for the host",

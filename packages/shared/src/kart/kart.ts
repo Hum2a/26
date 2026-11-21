@@ -31,6 +31,7 @@ import {
 } from "./kart-powers.ts";
 import {
   kartLimitMs,
+  kartMaxLimitMs,
   kartNeutral,
   kartRaceSchema,
   kartTrackId,
@@ -207,6 +208,8 @@ export function createKartRace(
     laps?: KartLaps;
     /** CPU racers to add behind the guests (0–7). */
     cpu?: number;
+    /** A room race passes `kartOpenRaceMs` so it runs until everyone finishes. */
+    timeLimitMs?: number;
   } = {},
 ): KartRace {
   const laps = options.laps ?? 1;
@@ -214,6 +217,15 @@ export function createKartRace(
   const cpu = options.cpu ?? 0;
   if (!Number.isInteger(cpu) || cpu < 0 || cpu > kartCpuMax)
     throw new Error(`Choose between 0 and ${kartCpuMax} CPU racers.`);
+  if (
+    options.timeLimitMs !== undefined &&
+    (!Number.isInteger(options.timeLimitMs) ||
+      options.timeLimitMs <= 0 ||
+      options.timeLimitMs > kartMaxLimitMs)
+  )
+    throw new Error(
+      "A race window is a whole number of milliseconds up to nine minutes.",
+    );
   if (players.length + cpu > 100)
     throw new Error("A race supports at most 100 karts, CPU racers included.");
   if (players.some((p) => isKartCpuId(p.playerId)))
@@ -252,6 +264,7 @@ export function createKartRace(
     raceId,
     trackId: options.trackId ?? kartTrackId,
     timeLimitMs:
+      options.timeLimitMs ??
       (options.trackId === importedTrackId || options.trackId === parkTrackId
         ? importedTrackLimitMs
         : kartLimitMs) * laps,
@@ -966,8 +979,11 @@ function stepDriver(
         ? { ...profile, drag: profile.drag * slipstreamTuning.dragScale }
         : profile,
       nearbyWalls(body.x, body.z, profile.radius + Math.hypot(body.vx, body.vz) * 0.02),
-      Boolean(d.power && d.power.slowedUntil > elapsed) ||
-        (polyline && surfaceAt(body.x, body.z) !== "road"),
+      d.power && d.power.slowedUntil > elapsed
+        ? true
+        : polyline && surfaceAt(body.x, body.z) !== "road"
+          ? "sand"
+          : false,
       fresh,
       courseEnabled ? (park ? parkCourse : imported ? soloCourse : ringCourse) : [],
       race?.handling,

@@ -9,7 +9,15 @@ import { VoiceTake } from "../media/voice-take";
 import { Button } from "../ui/primitives";
 import { TrollConfirm } from "./Confirm";
 import { TrollPicker } from "./Picker";
-import { trollGroupOf, trollGroups, trollMeta, type TrollGroupId } from "./troll-meta";
+import { withClientApiKey } from "../api/client-key";
+import { TrollPreview } from "./troll-preview";
+import {
+  trollGroupOf,
+  trollGroups,
+  trollMeta,
+  trollUnavailable,
+  type TrollGroupId,
+} from "./troll-meta";
 import "./troll-tab.css";
 
 const STEP_LABELS = ["Pick a troll", "Pick a victim", "Confirm"] as const;
@@ -43,7 +51,9 @@ export function TrollTab({
   const [dispatching, setDispatching] = useState(false);
   const [sawPending, setSawPending] = useState(false);
   const [confirmNonce, setConfirmNonce] = useState(0);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const locked = snapshot.trolls.token === "locked" || snapshot.phase === "lobby";
+  const paused = snapshot.paused;
   const resting = ["final", "facts", "podium"].includes(snapshot.phase);
   const secondsLeft = useCooldownSeconds(snapshot.trolls.cooldownUntil ?? null);
   const cooling = !locked && secondsLeft > 0;
@@ -51,10 +61,10 @@ export function TrollTab({
     (player) => player.playerId === targetId && player.playerId !== selfId,
   );
   const offer = snapshot.trolls.offers.find((item) => item.kind === kind);
-  const ready = !locked && !resting && !cooling;
+  const ready = !locked && !resting && !cooling && !paused;
   const countdown = formatPhaseClock(secondsLeft * 1_000);
   const outgoing = snapshot.trolls.active.filter((effect) => effect.role === "actor");
-  const blocked = locked || resting;
+  const blocked = locked || resting || paused;
   const voiceReady = kind !== "voice" || Boolean(clip);
   const sending = pending || dispatching;
   const canSend = ready && !sending && Boolean(kind && targetId) && voiceReady;
@@ -66,9 +76,11 @@ export function TrollTab({
         ? "Trolls open once the questions start."
         : resting
           ? "Trolls are resting for this part of the show."
-          : cooling
-            ? `Next troll in ${countdown}.`
-            : "Troll ready. Send one whenever you like.";
+          : paused
+            ? "The game is paused. Trolls wait until it resumes."
+            : cooling
+              ? `Next troll in ${countdown}.`
+              : "Troll ready. Send one whenever you like.";
   const step = sentPulse ? 4 : !kind ? 1 : !targetId ? 2 : 3;
   const stepName = step === 4 ? "Sent" : (STEP_LABELS[step - 1] ?? STEP_LABELS[0]);
   const groupsOffered = trollGroups
@@ -91,13 +103,30 @@ export function TrollTab({
     ? "Waiting for the first question."
     : resting
       ? "Trolls are resting for this part of the show."
-      : cooling
-        ? `Recharging — ready in ${countdown}.`
-        : sending
-          ? "Sending…"
-          : undefined;
+      : paused
+        ? "Paused — trolls wait until the game resumes."
+        : cooling
+          ? `Recharging — ready in ${countdown}.`
+          : sending
+            ? "Sending…"
+            : undefined;
+  // The troller, so a preview of a face flood shows their own face like the real one.
+  const selfPlayer = snapshot.players.find((player) => player.playerId === selfId);
+  const selfFace = selfPlayer?.driver?.faceMediaId;
+  const sender = selfPlayer
+    ? {
+        nickname: selfPlayer.nickname,
+        faceSrc: selfFace
+          ? withClientApiKey(`/api/rooms/${gameId}/media/${selfFace}`)
+          : null,
+      }
+    : undefined;
+  const bystanders = snapshot.players
+    .filter((player) => player.playerId !== targetId)
+    .map((player) => player.nickname);
 
   function restart() {
+    setPreviewOpen(false);
     setKind(undefined);
     setTargetId(undefined);
     setClip(null);
@@ -151,7 +180,8 @@ export function TrollTab({
     if (!sentPulse) {
       return;
     }
-    buzz([16, 40, 28, 40, 48]);
+    // The sender's own "sent" buzz, even while the preview fades out.
+    buzz([16, 40, 28, 40, 48], { evenWhileMuted: true });
   }, [sentPulse]);
 
   useEffect(() => {
@@ -310,7 +340,7 @@ export function TrollTab({
                         ? lockReason
                         : item.enabled
                           ? (trollMeta[item.kind]?.blurb ?? "")
-                          : "Not on this question";
+                          : trollUnavailable(item.kind);
                       return (
                         <button
                           key={item.kind}
@@ -354,6 +384,35 @@ export function TrollTab({
                 Back
               </Button>
             </div>
+            <Button
+              type="button"
+              variant="secondary"
+              className="troll-preview-toggle"
+              aria-expanded={previewOpen}
+              onClick={() => setPreviewOpen((open) => !open)}
+            >
+              {previewOpen ? "Hide preview" : "Preview what it does"}
+            </Button>
+            <AnimatePresence initial={false}>
+              {previewOpen ? (
+                <motion.div
+                  key="preview"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: reduce ? 0.1 : 0.22, ease: [0.2, 0, 0, 1] }}
+                  style={{ overflow: "hidden" }}
+                >
+                  <TrollPreview
+                    key={offer.kind}
+                    kind={offer.kind}
+                    label={offer.label}
+                    sender={sender}
+                    others={bystanders}
+                  />
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
             <TrollPicker
               players={snapshot.players}
               selfId={selfId}
@@ -395,6 +454,14 @@ export function TrollTab({
             </div>
             {target ? (
               <>
+                <TrollPreview
+                  key={`${offer.kind}:${target.playerId}`}
+                  kind={offer.kind}
+                  label={offer.label}
+                  victim={target.nickname}
+                  sender={sender}
+                  others={bystanders}
+                />
                 {kind === "voice" && !clip ? (
                   <VoiceTake disabled={sending || blocked} onClip={setClip} />
                 ) : null}
@@ -411,15 +478,17 @@ export function TrollTab({
                   nickname={target.nickname}
                   troll={offer.label}
                   disabled={!canSend}
-                  announce={sending || blocked}
+                  announce={sending || blocked || Boolean(error)}
                   reason={
-                    cooling
-                      ? `Ready in ${countdown}`
-                      : blocked
-                        ? lockReason
+                    blocked
+                      ? lockReason
+                      : cooling
+                        ? `Ready in ${countdown}`
                         : sending
                           ? "Sending…"
-                          : undefined
+                          : error
+                            ? `Not sent: ${error}`
+                            : undefined
                   }
                   onCancel={() => setTargetId(undefined)}
                   onConfirm={fire}

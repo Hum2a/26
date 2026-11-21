@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useContext, useEffect, useRef, useState, type CSSProperties } from "react";
 import "./screen-trolls.css";
 import "./phone-gags.css";
 import {
@@ -27,6 +27,7 @@ import {
   TranslatedOptions,
 } from "./sabotage-trolls";
 import type { ScreenTrollKind } from "./screen-troll-kind";
+import { TrollPageScope } from "./troll-page-scope";
 import { trollAssets } from "./troll-assets";
 import { useTrollClip, useTrollLayer } from "./troll-sound";
 
@@ -171,12 +172,14 @@ function PageWarp({
   kind: "australia" | "mirror" | "jelly" | "comic-sans";
   label: string;
 }) {
+  const scope = useContext(TrollPageScope);
   useEffect(() => {
-    const root = document.documentElement;
+    const root = scope ? scope.current : document.documentElement;
+    if (!root) return;
     const name = `troll-page-${kind}`;
     root.classList.add(name);
     return () => root.classList.remove(name);
-  }, [kind]);
+  }, [kind, scope]);
   return (
     <p className="troll-pill" role="status">
       {label}
@@ -422,8 +425,11 @@ function DvdLogo({
       if (!logo) {
         return;
       }
-      const maxX = window.innerWidth - logo.offsetWidth;
-      const maxY = window.innerHeight - logo.offsetHeight;
+      // Bounce inside its own full-screen layer: the viewport on a phone, the
+      // stand-in screen in the troll tab's preview.
+      const area = logo.parentElement;
+      const maxX = (area?.clientWidth || window.innerWidth) - logo.offsetWidth;
+      const maxY = (area?.clientHeight || window.innerHeight) - logo.offsetHeight;
       x += dx;
       y += dy;
       if (x <= 0 || x >= maxX) {

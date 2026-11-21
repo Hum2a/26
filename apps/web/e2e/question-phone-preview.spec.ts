@@ -80,7 +80,9 @@ test("pack phone rehearsal draws real designs, isolates inputs and explains draf
   await page.getByRole("button", { name: "Reset preview" }).click();
   await expect(phone.getByRole("button", { name: "Send answer" })).toBeDisabled();
   await phone.getByRole("button", { name: "Pause preview" }).click();
-  await expect(phone.getByText("Paused — hang tight")).toBeVisible();
+  await expect(
+    phone.getByText("Hang tight — the host will carry on soon"),
+  ).toBeVisible();
   await expect(phone.locator(".question-choice-grid button").first()).toBeDisabled();
   await page.getByRole("button", { name: "Get ready", exact: true }).click();
   await expect(phone.getByText("Get ready — listen to the question")).toBeVisible();
