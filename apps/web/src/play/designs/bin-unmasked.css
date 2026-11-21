@@ -102,6 +102,21 @@
   color: var(--surface-foreground);
 }
 
+.bin-form-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--foreground);
+  padding-bottom: 0.4rem;
+}
+
+.bin-form-bar .bin-form-head {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
 .bin-form-head {
   margin: 0;
   border-bottom: 2px solid var(--foreground);
@@ -110,6 +125,65 @@
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+}
+
+.bin-options {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bin-option {
+  display: grid;
+  grid-template-columns: 2.1rem 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  min-height: 3.35rem;
+  border: 2px solid color-mix(in srgb, var(--foreground) 25%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--background) 55%, var(--surface));
+  padding: 0.55rem 0.85rem;
+  color: inherit;
+  font: inherit;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  text-align: left;
+}
+
+.bin-option[data-chosen] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+}
+
+.bin-option[data-winner] {
+  border-color: var(--highlight);
+  background: color-mix(in srgb, var(--highlight) 24%, var(--surface));
+}
+
+.bin-option:disabled {
+  cursor: default;
+}
+
+.bin-mark {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 2px solid var(--foreground);
+  border-radius: 0.3rem;
+  background: var(--background);
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.bin-option-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .bin-field {
@@ -142,6 +216,11 @@
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+}
+
+.bin-received-inline {
+  position: static;
+  font-size: 0.8rem;
 }
 
 /* Stage */
@@ -188,4 +267,41 @@
   font-family: var(--font-display);
   font-size: clamp(36px, min(2.6vw, 4.5vh), 48px);
   color: var(--surface-foreground);
+}
+
+.bin-stage-candidates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.65rem, 1.4vh, 1rem) clamp(1rem, 2vw, 1.5rem);
+  width: min(100%, 66rem);
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.bin-stage-candidate {
+  display: grid;
+  gap: 0.35rem;
+  border: 2px solid color-mix(in srgb, var(--line) 80%, transparent);
+  border-radius: 1rem;
+  background: var(--surface);
+  padding: clamp(0.6rem, 1.4vh, 0.9rem) clamp(0.9rem, 1.8vw, 1.35rem);
+  color: var(--surface-foreground);
+}
+
+.bin-stage-candidate[data-winner] {
+  border-color: var(--highlight);
+  box-shadow: 0 0 1.5rem color-mix(in srgb, var(--highlight) 35%, transparent);
+}
+
+.bin-stage-candidate-name {
+  font-family: var(--font-display);
+  font-size: clamp(28px, min(2vw, 3.4vh), 38px);
+  line-height: 1.15;
+}
+
+@media (max-width: 800px) {
+  .bin-stage-candidates {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

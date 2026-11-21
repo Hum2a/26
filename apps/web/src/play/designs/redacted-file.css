@@ -55,6 +55,61 @@
   font-weight: 700;
 }
 
+.dossier-options {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dossier-option {
+  display: grid;
+  grid-template-columns: 2.25rem 1fr;
+  gap: 0.65rem;
+  align-items: center;
+  width: 100%;
+  min-height: 3.25rem;
+  border: 2px solid color-mix(in srgb, var(--redaction-ink) 35%, transparent);
+  border-radius: 0.35rem;
+  background: var(--redaction-ink);
+  padding: 0.5rem 0.75rem;
+  color: var(--redaction-text);
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: left;
+}
+
+.dossier-option[data-chosen] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.dossier-option[data-winner] {
+  border-color: var(--highlight);
+  background: color-mix(in srgb, var(--highlight) 25%, var(--redaction-ink));
+}
+
+.dossier-option:disabled {
+  cursor: default;
+}
+
+.dossier-option-tag {
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--redaction-text) 40%, transparent);
+  border-radius: 0.2rem;
+  padding: 0.15rem 0.25rem;
+  font-size: 0.8rem;
+}
+
+.dossier-option-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .dossier-field .typed-field-label {
   font-family: ui-monospace, "Cascadia Mono", monospace;
   font-size: 0.8rem;
@@ -165,6 +220,47 @@
   background: var(--redaction-ink);
   transform-origin: right center;
   will-change: transform;
+}
+
+.dossier-stage-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.5rem, 1.2vh, 0.85rem) clamp(1rem, 2vw, 1.5rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dossier-stage-option {
+  display: grid;
+  gap: 0.25rem;
+  border: 2px solid color-mix(in srgb, var(--redaction-ink) 35%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+  padding: clamp(0.5rem, 1.1vh, 0.75rem) clamp(0.75rem, 1.5vw, 1.15rem);
+  transition: opacity 0.35s ease;
+}
+
+.dossier-stage-option[data-winner] {
+  border-color: var(--highlight);
+  background: color-mix(in srgb, var(--highlight) 20%, var(--surface));
+}
+
+.dossier-stage-option[data-dimmed] {
+  opacity: 0.35;
+}
+
+.dossier-stage-option-name {
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: clamp(28px, min(1.85vw, 3vh), 34px);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+@media (max-width: 800px) {
+  .dossier-stage-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
