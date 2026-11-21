@@ -3,9 +3,12 @@ import trash from "@iconify-icons/mdi/trash-can";
 import { AnimatePresence, motion } from "motion/react";
 import type { PresentationProps } from "../presentation";
 import {
+  ChoiceSend,
+  choiceView,
   LiveCount,
   QuestionTag,
   StagePrompt,
+  StageVoters,
   subjectFromPrompt,
   TypedField,
   TypedSend,
@@ -16,11 +19,30 @@ import {
 } from "./kit";
 import "./bin-unmasked.css";
 
+type ChoiceView = NonNullable<ReturnType<typeof choiceView>>;
+type TypedView = NonNullable<ReturnType<typeof typedView>>;
+
 export function BinUnmasked(props: PresentationProps) {
-  if (!typedView(props.play)) {
+  const choice = choiceView(
+    props.play,
+    props.surface === "phone" ? props.controls.selectedId : undefined,
+  );
+  if (choice) {
+    return props.surface === "phone" ? (
+      <BinChoicePhone {...props} view={choice} />
+    ) : (
+      <BinChoiceStage {...props} view={choice} />
+    );
+  }
+  const typed = typedView(props.play);
+  if (!typed) {
     return undefined;
   }
-  return props.surface === "phone" ? <BinPhone {...props} /> : <BinStage {...props} />;
+  return props.surface === "phone" ? (
+    <BinPhone {...props} view={typed} />
+  ) : (
+    <BinStage {...props} view={typed} />
+  );
 }
 
 function Candidate({
@@ -91,21 +113,151 @@ function Candidate({
   );
 }
 
+function BinChoicePhone({
+  play,
+  controls,
+  view,
+}: Extract<PresentationProps, { surface: "phone" }> & { view: ChoiceView }) {
+  const motionSet = useDesignMotion();
+  const subject = subjectFromPrompt(play.question.prompt);
+  const winner = view.question.options.find((option) => view.isAnswer(option.id));
+  const revealed = view.reveal !== undefined;
+  const locked = view.sent !== undefined;
+  return (
+    <section className="design-phone bin" aria-label="Your question">
+      <QuestionTag play={play}>Election count</QuestionTag>
+      <h1 className="phone-prompt">{play.question.prompt}</h1>
+      <Candidate unmasked={revealed} name={winner?.label} size="phone" />
+      <div className="bin-form">
+        <div className="bin-form-bar">
+          <p className="bin-form-head">Nomination paper · {subject}</p>
+          <AnimatePresence>
+            {locked && !revealed ? (
+              <motion.span
+                className="bin-received bin-received-inline"
+                initial={{ opacity: 0, scale: motionSet.reduce ? 1 : 1.5, rotate: -10 }}
+                animate={{ opacity: 1, scale: 1, rotate: -4 }}
+                exit={{ opacity: 0 }}
+                transition={motionSet.spring}
+              >
+                Received
+              </motion.span>
+            ) : null}
+          </AnimatePresence>
+        </div>
+        <ul className="bin-options" aria-label="Candidates">
+          {view.question.options.map((option, index) => {
+            const chosen = view.chosen === option.id;
+            const isWinner = view.isAnswer(option.id);
+            return (
+              <motion.li
+                key={option.id}
+                initial={{ opacity: 0, y: motionSet.move(10) }}
+                animate={{ opacity: revealed && !isWinner ? 0.45 : 1, y: 0 }}
+                transition={{ ...motionSet.soft, delay: motionSet.delay(index * 0.05) }}
+              >
+                <button
+                  type="button"
+                  className="bin-option motion-press"
+                  data-chosen={chosen || undefined}
+                  data-winner={isWinner || undefined}
+                  aria-pressed={chosen}
+                  disabled={!controls.open}
+                  onClick={() => controls.onSelect(option.id)}
+                >
+                  <span className="bin-mark" aria-hidden="true">
+                    {chosen ? "✗" : ""}
+                  </span>
+                  <span className="bin-option-label">{option.label}</span>
+                </button>
+              </motion.li>
+            );
+          })}
+        </ul>
+      </div>
+      <ChoiceSend play={play} controls={controls} label="Submit nomination" />
+    </section>
+  );
+}
+
+function BinChoiceStage({
+  play,
+  view,
+}: Extract<PresentationProps, { surface: "stage" }> & { view: ChoiceView }) {
+  const motionSet = useDesignMotion();
+  const winner = view.question.options.find((option) => view.isAnswer(option.id));
+  const revealed = view.reveal !== undefined;
+  return (
+    <div className="design-stage bin-stage">
+      <QuestionTag play={play}>Declaration of the poll</QuestionTag>
+      <StagePrompt text={play.question.prompt} />
+      <div className="bin-hall">
+        <div
+          className="bin-spotlight"
+          data-on={revealed ? true : undefined}
+          aria-hidden="true"
+        />
+        <Candidate unmasked={revealed} name={winner?.label} size="stage" />
+        <div className="bin-podium">
+          <span className="bin-podium-name">
+            {subjectFromPrompt(play.question.prompt)}
+          </span>
+        </div>
+      </div>
+      <ul className="bin-stage-candidates" aria-label="Candidates">
+        {view.question.options.map((option, index) => {
+          const isWinner = winner?.id === option.id;
+          return (
+            <motion.li
+              key={option.id}
+              className="bin-stage-candidate"
+              data-winner={isWinner || undefined}
+              initial={revealed ? false : { opacity: 0, y: motionSet.move(16) }}
+              animate={{ opacity: revealed && !isWinner ? 0.35 : 1, y: 0 }}
+              transition={{ ...motionSet.soft, delay: motionSet.delay(index * 0.06) }}
+            >
+              <span className="bin-stage-candidate-name">{option.label}</span>
+              <StageVoters play={play} optionId={option.id} />
+            </motion.li>
+          );
+        })}
+      </ul>
+      <p className="design-stage-line">
+        {winner ? (
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ ...motionSet.soft, delay: motionSet.delay(1.1) }}
+          >
+            Unmasked: {winner.label}.
+          </motion.span>
+        ) : (
+          <LiveCount
+            value={play.submissionCount}
+            one="nomination received"
+            many="nominations received"
+          />
+        )}
+      </p>
+    </div>
+  );
+}
+
 function BinPhone({
   play,
   controls,
-}: Extract<PresentationProps, { surface: "phone" }>) {
+  view,
+}: Extract<PresentationProps, { surface: "phone" }> & { view: TypedView }) {
   const motionSet = useDesignMotion();
   const typed = useTypedDraft(play, controls);
-  const view = typedView(play);
   const subject = subjectFromPrompt(play.question.prompt);
   return (
     <section className="design-phone bin" aria-label="Your question">
       <QuestionTag play={play}>Election count</QuestionTag>
       <h1 className="phone-prompt">{play.question.prompt}</h1>
       <Candidate
-        unmasked={view?.reveal !== undefined}
-        name={view?.reveal?.answer}
+        unmasked={view.reveal !== undefined}
+        name={view.reveal?.answer}
         size="phone"
       />
       <div className="bin-form">
@@ -135,10 +287,12 @@ function BinPhone({
   );
 }
 
-function BinStage({ play }: Extract<PresentationProps, { surface: "stage" }>) {
+function BinStage({
+  play,
+  view,
+}: Extract<PresentationProps, { surface: "stage" }> & { view: TypedView }) {
   const motionSet = useDesignMotion();
-  const view = typedView(play);
-  const reveal = view?.reveal;
+  const reveal = view.reveal;
   const subject = subjectFromPrompt(play.question.prompt);
   return (
     <div className="design-stage bin-stage">

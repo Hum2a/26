@@ -198,8 +198,68 @@ describe("custom question designs", () => {
     expect(screen.getByText("Over half took blue. Everyone lives.")).toBeTruthy();
   });
 
+  it("selects and sends a choice for bin-unmasked, deed-poll and redacted-file", () => {
+    const choiceRedacted: PlaySnapshot["question"] = {
+      ...previewQuestions["bin-unmasked"],
+      id: "real-name-tommy-robinson",
+      presentation: "redacted-file",
+      prompt: "What was their real name? Tommy Robinson",
+      kind: "choice",
+      speedBonus: false,
+      modifiers: [],
+      suppressSpeedBonus: false,
+      options: [
+        { id: "wayne-henderson", label: "Wayne Henderson" },
+        { id: "darren-clarke-j", label: "Darren Clarke-Jones" },
+        { id: "yaxley-lennon", label: "Stephen Yaxley-Lennon" },
+        { id: "craig-thornton", label: "Craig Thornton" },
+      ],
+    };
+    for (const [question, optionId, label, submitLabel] of [
+      [
+        previewQuestions["bin-unmasked"],
+        "graham-ellis",
+        "Graham Ellis",
+        /submit nomination/i,
+      ],
+      [previewQuestions["deed-poll"], "daniel-rosen", "Daniel Rosen", /sign the deed/i],
+      [choiceRedacted, "wayne-henderson", "Wayne Henderson", /submit to the file/i],
+    ] as const) {
+      const onSelect = vi.fn();
+      const onSubmit = vi.fn();
+      const view = phone(lobby("collect", play(question)), { onSelect, onSubmit });
+      fireEvent.click(screen.getByRole("button", { name: new RegExp(label, "i") }));
+      expect(onSelect).toHaveBeenCalledWith(optionId);
+      view.rerender(
+        <GuestPlay
+          snapshot={lobby("collect", play(question))}
+          selectedId={optionId}
+          pending={false}
+          onSelect={onSelect}
+          onSubmit={onSubmit}
+          onEstimate={vi.fn()}
+          onRank={vi.fn()}
+          onText={vi.fn()}
+          onBallot={vi.fn()}
+          onDuel={vi.fn()}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: submitLabel }));
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      view.unmount();
+
+      const reveal = previewReveal(question, optionId, 2);
+      const stage = render(
+        <StagePlay snapshot={lobby("reveal", play(question, { reveal }))} />,
+      );
+      expect(stage.container.querySelector(".design-stage")).not.toBeNull();
+      expect(stage.container.textContent).toContain(label);
+      stage.unmount();
+    }
+  });
+
   it("falls back to the standard view when a design meets the wrong kind", () => {
-    const typed = { ...previewQuestions["deed-poll"], presentation: "now-playing" };
+    const typed = { ...previewQuestions["redacted-file"], presentation: "now-playing" };
     const view = phone(lobby("collect", play(typed)));
     expect(view.container.querySelector(".design-phone")).toBeNull();
     expect(screen.getByLabelText("Your answer")).toBeTruthy();
