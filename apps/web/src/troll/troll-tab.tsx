@@ -101,6 +101,7 @@ export function TrollTab({
     setKind(undefined);
     setTargetId(undefined);
     setClip(null);
+    setVoiceStatus("");
     setSentPulse(false);
     setDispatching(false);
     setSawPending(false);
@@ -318,7 +319,11 @@ export function TrollTab({
                           aria-pressed={kind === item.kind}
                           disabled={!pressable}
                           aria-disabled={!pressable}
-                          onClick={() => setKind(item.kind)}
+                          onClick={() => {
+                            setKind(item.kind);
+                            setClip(null);
+                            setVoiceStatus("");
+                          }}
                         >
                           <span className="troll-card-icon" aria-hidden="true">
                             <Icon icon={trollMeta[item.kind]?.icon ?? group.icon} />
@@ -361,7 +366,9 @@ export function TrollTab({
             {kind === "voice" ? (
               <VoiceTake disabled={sending || blocked} onClip={setClip} />
             ) : null}
-            {voiceStatus ? <p aria-live="polite">{voiceStatus}</p> : null}
+            {kind === "voice" && voiceStatus ? (
+              <p aria-live="polite">{voiceStatus}</p>
+            ) : null}
             {kind === "voice" && !clip ? (
               <p className="troll-lock-banner" role="status">
                 Record a clip, then confirm.
@@ -391,7 +398,9 @@ export function TrollTab({
                 {kind === "voice" && !clip ? (
                   <VoiceTake disabled={sending || blocked} onClip={setClip} />
                 ) : null}
-                {voiceStatus ? <p aria-live="polite">{voiceStatus}</p> : null}
+                {kind === "voice" && voiceStatus ? (
+                  <p aria-live="polite">{voiceStatus}</p>
+                ) : null}
                 {kind === "voice" && !clip ? (
                   <p className="troll-lock-banner" role="status">
                     Record a clip, then confirm.
