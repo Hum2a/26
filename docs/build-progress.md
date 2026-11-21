@@ -7630,3 +7630,23 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Checks.** `npm run typecheck` passed. `npm run lint` 0 errors, 15 existing Fast Refresh warnings; structure check passed. `npm run format:check` passed. `npm run test:release` 82 passed. `npm run test:unit` 218 files / 1010 tests passed. `npm run test -w @26/api` 148 files / 864 tests passed. `npm run build` passed. Playwright was not run.
 
 **Next.** Confirm the master Check run goes green after merge.
+
+## 21 November 2026 — Kicked out of a club question
+
+**Status.** Implemented on `worktree-club-kicked-out-question`. Not deployed.
+
+**Question.** Added `club-kicked-out`, a single-answer choice question (defaults: 100 points, 20 seconds, live attribution, points trolls). The correct answer is "He unapologetically elbowed a midget who punched him first". It sits in the catalogue and in the running order straight after `how-italian-is-humza`, as round 26. Humza's wording is kept apart from the welfare option, where "medical assistance" became "medical help" to fit the 80-character option label limit. `npm run content:export` rewrote the birthday running order and answer key.
+
+**Checks.** `npm run content:check` passed. `npm run typecheck` passed. `npx vitest run test/party-concepts.spec.ts` 18 tests passed. Prettier check on the changed files passed. Full `npm run test:unit`, `npm run lint` and the full API suite were left to CI. Playwright was not run.
+
+**Next.** Preview `club-kicked-out` in Admin → Question packs → Phone preview and confirm the long options wrap cleanly at 320px.
+
+## 21 November 2026 — One more Humza quote for Ed or Humza
+
+**Status.** Implemented on `worktree-club-kicked-out-question` (PR 81). Not deployed.
+
+**Ed or Humza.** Appended `quote-24`, "Idc if your tits are falling out wear the red dress", as a Humza line with wording preserved. The list is now 24 quotes: 11 Ed, 9 Humza, 4 Neither. Scoring is still 80 points by placements, rounded down, so sorting everything into one pile now scores 36 (Ed), 30 (Humza) or 13 (Neither). `apps/api/test/ed-or-humza.spec.ts` was updated to match. `npm run content:export` rewrote the birthday answer key and running order. Merged the latest `master` and kept both sides of the progress-log conflict.
+
+**Checks.** `npm run content:check` passed. `npm run typecheck` passed. `apps/api` `test/ed-or-humza.spec.ts` 6 tests passed. Prettier check on the changed files passed. Full unit, lint and API suites were left to CI. Playwright was not run.
+
+**Next.** Run Ed or Humza in a rehearsal room and confirm the new card appears in the stack.

@@ -74,13 +74,18 @@ it("shows the stand-in clue, reserves the pin readout, and sends a pin through o
   expect(screen.getByAltText(/Stand-in clue photo/)).toBeTruthy();
   expect(screen.getByText(/not the party clue/)).toBeTruthy();
   expect(screen.getByText("No pin placed yet")).toBeTruthy();
+  // The map is a lazy() chunk; its first load can exceed the 1s default on a busy CI runner.
   fireEvent.click(
-    await screen.findByRole("button", { name: "Place pin at map centre" }),
+    await screen.findByRole(
+      "button",
+      { name: "Place pin at map centre" },
+      { timeout: 5_000 },
+    ),
   );
   expect(screen.getByText(/Pin at 18\.00°, 0\.00°/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Send pin" }));
   expect(callbacks.onMapPin).toHaveBeenCalledWith({ lat: 18, lng: 0 });
-});
+}, 15_000);
 
 it("opens the clue photo lightbox in a dialog and closes cleanly via button, backdrop, and Escape", async () => {
   stubMap();

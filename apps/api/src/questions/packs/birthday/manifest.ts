@@ -1,4 +1,5 @@
 import { accommodation01 } from "./accommodation-01.ts";
+import { clubKickedOut } from "./club-kicked-out.ts";
 import { edOrHumza } from "./ed-or-humza.ts";
 import { humzaBodyCount } from "./humza-body-count.ts";
 import { humzaBodyCountBodies } from "./humza-body-count-bodies.ts";
@@ -97,6 +98,7 @@ export const birthdayPack: QuestionPack = {
     "common-password",
     "guess-council-coup",
     "how-italian-is-humza",
+    "club-kicked-out",
     "rank-driving-sins",
     "inflation-meal-deal",
     "whos-that-pokemon",
@@ -184,6 +186,7 @@ export const birthdayPack: QuestionPack = {
     humzaEthnicity,
     humzaBodyCount,
     humzaBodyCountBodies,
+    clubKickedOut,
   ]),
 };
 
