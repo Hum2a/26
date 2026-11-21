@@ -7666,3 +7666,13 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Checks.** `npm run typecheck` passed. ESLint on the changed folders: 0 errors. Web: `src/troll`, `src/live`, `src/kart`, `src/device` (68 files) passed after fixes, plus `question-direction` and `question-phone-preview`. API: `test/troll*`, `test/kart*`, `party-concepts` and the updated kart lobby, track and room specs passed. A local dev page (not committed) showed the preview at 390px: the invasion flood and Australia mode stay inside the stand-in phone. Full `npm run test:unit`, the full API suite, `npm run build` and the bundle budget are left to CI. Playwright was not run.
 
 **Next.** Rehearse a kart race with two phones and end it from the presenter phone; send a few trolls from the confirm-step preview on a real phone.
+
+## 21 November 2026 — Partial credit for slider estimates
+
+**Status.** Implemented locally for new birthday games. Each room stores its scoring bands with the frozen question script.
+
+**Scoring.** `apps/api/src/questions/authoring.ts` uses the bands in `defaults.ts` for fixed-answer sliders. Exact guesses earn full points. Guesses on either side of the answer earn 75% within 5% of the slider's range, or 40% within 10%. The narrower band wins, awards round down, and guesses beyond both bands earn zero. The five inflation sliders pick up the defaults. Explicit bands and the median and closest-under scoring modes retain their configured rules.
+
+**Checks.** Typecheck, lint and structure (15 existing Fast Refresh warnings), content preflight, all 1,020 web unit tests and 33 targeted API tests passed. The room test verified scoring from the frozen birthday script, projector and guest awards at reveal, and recovery without duplicate points. Manual phone rehearsal is pending.
+
+**Next.** In a fresh birthday rehearsal room, open an inflation slider and send a nearby estimate to see the partial award on the phone and projector.

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  sliderQuestion as authorSlider,
+  toPlayable,
+} from "../src/questions/authoring.ts";
+import {
   demoQuestions,
   type RankQuestion,
   type SliderQuestion,
@@ -28,6 +32,29 @@ const letters = sliderQuestion("letters");
 const lineup = rankQuestion("lineup");
 
 describe("slider and ranking scores", () => {
+  it("gives default partial credit on both sides of the target, up to the band limits", () => {
+    const question = toPlayable(
+      authorSlider({
+        id: "estimate",
+        title: "Estimate",
+        prompt: "Guess the number",
+        minimum: 100,
+        maximum: 200,
+        initial: 150,
+        unit: "units",
+        truth: { known: 150 },
+        points: 81,
+      }),
+    );
+    if (question?.kind !== "slider") throw new Error("Ready slider required");
+    expect(() => assertSliderQuestion(question)).not.toThrow();
+    expect(
+      [139, 140, 144, 145, 150, 155, 156, 160, 161, undefined].map(
+        (guess) => pointsForEstimate(question, guess).points,
+      ),
+    ).toEqual([0, 32, 32, 60, 81, 60, 32, 32, 0, 0]);
+  });
+
   it("scores an estimate from the narrowest matching band", () => {
     expect(pointsForEstimate(letters, 8)).toEqual({ points: 100, detail: "exact" });
     expect(pointsForEstimate(letters, 10)).toEqual({ points: 40, detail: "within-2" });

@@ -28,7 +28,7 @@ it.each([
       points: 100,
       detail: "exact",
     });
-    expect(pointsForEstimate(question, target + 1).points).toBe(0);
+    expect(pointsForEstimate(question, target + 1).points).toBe(75);
     expect(checkEstimate(question, question.maximum + 1).ok).toBe(false);
     expect(question.collectMs).toBe(20_000);
     const preview = questionPreview(birthdayPack, authored);

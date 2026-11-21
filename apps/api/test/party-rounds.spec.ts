@@ -1,6 +1,8 @@
 import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
 import { createGameStore } from "../src/questions/multiple-choice.ts";
+import { questionFor } from "../src/questions/registry.ts";
+import { acceptEstimate } from "../src/questions/slider.ts";
 import { onAlarm, submissionGate } from "../src/room/lifecycle.ts";
 import { withClientApiQuery } from "./client-api-key.ts";
 
@@ -142,6 +144,35 @@ it("reveals options durably one at a time, withholds future labels and opens ans
   expect((await stub.snapshotFor("stage")).phase).toBe("prompt");
   await advance();
   expect((await stub.snapshotFor("stage")).phase).toBe("collect");
+});
+
+it("settles a close estimate from the frozen birthday script and reveals the award", async () => {
+  const { stub, guest, advance, now } = await startQuestion("inflation-freddo");
+  await advance();
+  await advance();
+  await evictDurableObject(stub);
+  const guess = 32;
+  await runInDurableObject(stub, (_instance, state) => {
+    const sql = state.storage.sql;
+    const store = createGameStore(sql);
+    const question = questionFor(store.readRoom());
+    if (question?.kind !== "slider") throw new Error("Expected a slider round");
+    expect(
+      acceptEstimate(sql, store, guest.playerId, guess, now + 1, question),
+    ).toEqual({
+      ok: true,
+    });
+  });
+
+  expect((await stub.snapshotFor("guest", guest.playerId)).play?.selfAward).toBeNull();
+  await advance();
+  expect(await stub.snapshotFor("stage")).toMatchObject({
+    phase: "reveal",
+    play: { reveal: { kind: "slider", guesses: [{ value: guess, points: 75 }] } },
+  });
+  await evictDurableObject(stub);
+  expect((await stub.snapshotFor("guest", guest.playerId)).play?.selfAward).toBe(75);
+  expect(await stub.rescoreCurrent()).toEqual({ total: 75, rows: 1 });
 });
 
 it("creates chess on manual advance and settles once under the actual question id", async () => {
