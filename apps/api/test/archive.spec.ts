@@ -59,6 +59,7 @@ describe("archive database", () => {
       },
       purgeDeviceDetails: (nowMs) => inner.purgeDeviceDetails(nowMs),
       readPublic: (id) => inner.readPublic(id),
+      readFacts: (id, revision) => inner.readFacts(id, revision),
       readPersonal: (id, playerId) => inner.readPersonal(id, playerId),
     };
     const document = sample(2, "final", "ACKGAME15");
@@ -134,6 +135,8 @@ describe("archive database", () => {
     );
     expect(devices).toHaveLength(0);
     expect(facts).toHaveLength(1);
+    expect(await writer.readFacts(id, 1)).toEqual(document.facts);
+    expect(await writer.readFacts(id, 2)).toEqual([]);
     expect(standings).toHaveLength(1);
   });
 

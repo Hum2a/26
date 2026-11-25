@@ -216,6 +216,7 @@ import {
 } from "../device/store.ts";
 import { aggregateFacts, presentStats } from "../stats/aggregate.ts";
 import { TrendCache, type RoomTrends } from "../stats/trend-room.ts";
+import { readAnalyticsTrends, readRoomAnalytics } from "../stats/room-analytics.ts";
 import { readStatsSource } from "../stats/source.ts";
 import { funFactApplies } from "../stats/fun-facts.ts";
 import { readFunFactSelection } from "../stats/fun-source.ts";
@@ -2269,6 +2270,46 @@ export class PartyRoom extends DurableObject<Env> {
       realtime: this.meter.summary(Date.now()),
     });
     return { ok: true, report };
+  }
+
+  async adminAnalytics(input: {
+    credentialId: string;
+    secret: string;
+    nowMs: number;
+    questionId?: string;
+    archive?: boolean;
+  }) {
+    const allowed = await this.requireControl(
+      input.credentialId,
+      input.secret,
+      input.nowMs,
+    );
+    if (!allowed.ok) return allowed;
+    const sql = this.ctx.storage.sql;
+    if (input.archive) {
+      const revision = readRoomArchive(sql)?.verifiedRevision;
+      const room = this.readRoom();
+      if (!room || revision == null) {
+        return { ok: true as const, json: '{"state":"unavailable"}' };
+      }
+      let writer: ArchiveWriter | undefined;
+      try {
+        writer = await this.resultsWriter();
+        const facts = await writer.readFacts(room.game_id, revision);
+        return {
+          ok: true as const,
+          json: JSON.stringify({ state: "ready", revision, facts }),
+        };
+      } catch {
+        return { ok: false as const, error: "archive_unavailable" as const };
+      } finally {
+        await writer?.close?.().catch(() => undefined);
+      }
+    }
+    const data = input.questionId
+      ? readAnalyticsTrends(sql, input.questionId)
+      : readRoomAnalytics(sql);
+    return { ok: true as const, json: JSON.stringify(data) };
   }
 
   async scoreSummary(input: {

@@ -1,3 +1,4 @@
+import { analyticsFactSchema } from "@26/shared";
 import type { AppDatabase, SqlQuery } from "../auth/create-database.ts";
 import { applyArchiveSchema } from "./schema.ts";
 import type {
@@ -13,6 +14,7 @@ export type ArchiveWriter = {
   write(document: ArchiveDocument): Promise<ArchiveWriteResult>;
   purgeDeviceDetails(nowMs: number): Promise<number>;
   readPublic(gameId: string): Promise<PublicArchive | null>;
+  readFacts(gameId: string, revision: number): Promise<ArchiveDocument["facts"]>;
   readPersonal(gameId: string, playerId: string): Promise<PersonalArchive | null>;
   /** Releases the connection a writer opened for one attempt. */
   close?(): Promise<void>;
@@ -52,6 +54,16 @@ export function postgresArchive(database: AppDatabase): ArchiveWriter {
       await ready;
       return readPublicArchive(database.executor.query, gameId);
     },
+    async readFacts(gameId, revision) {
+      await ready;
+      const rows = await database.executor.query(
+        `SELECT fact_json FROM archive_stat_fact WHERE game_id = $1 AND revision = $2 ORDER BY fact_id`,
+        [gameId, revision],
+      );
+      return rows.map((row) =>
+        analyticsFactSchema.parse(JSON.parse(String(row.fact_json))),
+      );
+    },
     async readPersonal(gameId, playerId) {
       await ready;
       return readPersonalArchive(database.executor.query, gameId, playerId);
@@ -68,6 +80,9 @@ export function unavailableArchive(): ArchiveWriter {
       throw new ArchiveUnavailable();
     },
     async readPublic() {
+      throw new ArchiveUnavailable();
+    },
+    async readFacts() {
       throw new ArchiveUnavailable();
     },
     async readPersonal() {

@@ -495,3 +495,26 @@ New room races store `timingMode: device-v1` and a monotonic checkpoint revision
 **Where are we?** The room stores submitted guess coordinates in the existing `round_response` table and distance and points in the score ledger. The coordinates describe a pin chosen on a map. The browser does not request the device's location. The host sees submissions, the phone sees its own pin, and the projector sees anonymous pins and permitted names for the three closest after reveal. Existing room retention applies. The admin phone preview saves its practice pin only in component state.
 
 **Bracket phone round.** A tournament vote with a phone round adds `round_state` `<question>` / `vote-heat`: the frozen list of head-to-head pairs dealt to each player (player id to candidate id pairs). Phone-round votes use the existing `vote_ballot` table under the key `<question>:heat:<pair>`. A phone sees only its own current pair; the projector sees only a vote count; the host sees per-entry wins in the existing response list. No new table, personal data or service. Existing room retention applies.
+
+## Admin response explorer
+
+The room analytics read under `/api/admin/rooms/:gameId/analytics` requires both an
+administrator session and the selected room's control credential. Responses use
+`Cache-Control: no-store`. The explorer reads existing guest records from SQLite on
+demand, including accepted answer content and hidden or excluded entries, server
+receipt times and deadlines, linked device-context IDs, per-question scores, score
+adjustments, retained game outcomes and connection and upload summaries. Its JSON
+download contains those records and current aggregate inputs. Device-context IDs may
+remain after the detailed device data expires under the existing retention policy.
+
+Question trend cards are rebuilt on request from retained inputs. The archive stores
+published podium highlights and fun facts, and the explorer can privately read the
+stored aggregate metrics for the verified publication revision. Local development's
+archive mirror stores those same aggregate rows in `dev_archive_stat_fact` for new
+exports. The production archive schema and room retention rules are unchanged.
+
+The explorer introduces no new guest collection or live socket messages. A missing
+record can reflect a skipped question, a guest who never submitted, or data that no
+longer exists. Wordle retains the final board and last guess receipt. Chess game
+details cover games still in the room, with earlier games represented by any retained
+score entries. The historical per-question projector carousel has no playback log.

@@ -243,6 +243,13 @@ async function bindWriter(
       async readPublic() {
         return null;
       },
+      async readFacts(gameId, revision) {
+        return (
+          box.documents.find(
+            (document) => document.gameId === gameId && document.revision === revision,
+          )?.facts ?? []
+        );
+      },
       async readPersonal() {
         return null;
       },
