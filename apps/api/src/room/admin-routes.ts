@@ -1,4 +1,9 @@
-import { adminRoomListSchema, gameIdSchema, lobbySnapshotSchema } from "@26/shared";
+import {
+  adminRoomListSchema,
+  analyticsQuestionIdSchema,
+  gameIdSchema,
+  lobbySnapshotSchema,
+} from "@26/shared";
 import type { Hono } from "hono";
 import { z } from "zod";
 import {
@@ -119,6 +124,37 @@ export function registerAdminRoomRoutes(app: Hono<{ Bindings: Env }>): void {
     });
     return result.ok
       ? jsonData(result.page)
+      : failure(401, "Open this room to renew its access.");
+  });
+  app.get("/api/admin/rooms/:gameId/analytics", async (c) => {
+    const gameId = gameIdSchema.safeParse(c.req.param("gameId"));
+    const question = c.req.query("question");
+    const archive = c.req.query("archive");
+    const questionId = analyticsQuestionIdSchema.optional().safeParse(question);
+    if (
+      (archive !== undefined && (archive !== "1" || question !== undefined)) ||
+      !questionId.success
+    )
+      return failure(400, "Choose a valid analytics view.");
+    if (
+      !gameId.success ||
+      !(await c.env.ROOM_CODE_REGISTRY.getByName("codes").hasGame(gameId.data))
+    )
+      return failure(404, "This room could not be found.");
+    const credential = readCredentialCookie(c.req.header("cookie"), "control");
+    if (!credential) return failure(401, "Open this room to renew its access.");
+    const result = await c.env.PARTY_ROOM.getByName(gameId.data).adminAnalytics({
+      ...credential,
+      nowMs: Date.now(),
+      questionId: questionId.data,
+      archive: archive === "1",
+    });
+    if (!result.ok && result.error === "archive_unavailable")
+      return failure(503, "Archived metrics are unavailable. Try again.");
+    return result.ok
+      ? new Response(result.json, {
+          headers: { "content-type": "application/json", "cache-control": "no-store" },
+        })
       : failure(401, "Open this room to renew its access.");
   });
   app.get("/api/admin/rooms/:gameId/media/:mediaId", async (c) => {

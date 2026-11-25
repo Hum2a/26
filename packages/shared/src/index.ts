@@ -103,6 +103,7 @@ export type {
 export type { FunFactCard, StatCard } from "./stats.ts";
 export * from "./trends/trend-schema.ts";
 export * from "./trends/trend-engine.ts";
+export * from "./room-analytics.ts";
 import {
   questionTrendsSchema,
   selfTrendsSchema,

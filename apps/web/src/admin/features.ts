@@ -229,9 +229,9 @@ export const adminFeatures: readonly AdminFeature[] = [
     scope: "room",
     path: "analytics",
     summary:
-      "Per-question answer trends, room statistics, podium highlights, fun facts and activity totals.",
+      "Guest responses, scores and timings, question trends, podium highlights and fun facts.",
     rehearsal:
-      "Answer trends rehearse on stand-in players with the real projector and phone cards (choice, price guess, kart); highlights preview live, including ones held back as too small.",
+      "Open Explore responses and try sample data to inspect both question and guest views. Live analytics rehearses trends with the real projector and phone cards.",
     owns: ["apps/api/src/stats"],
     status: (snapshot) => {
       const trends = snapshot.trendControl;

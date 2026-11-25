@@ -94,6 +94,24 @@ describe("completed games become an archive", () => {
     expect(rows).toHaveLength(1);
     expect((await stub.snapshotFor("stage")).phase).toBe("podium");
     expect((await stub.snapshotFor("control")).archive?.status).toBe("completed");
+
+    const readFacts = async () => {
+      const archived = await stub.adminAnalytics({
+        ...control(created),
+        nowMs: Date.now(),
+        archive: true,
+      });
+      if (!archived.ok) throw new Error("Archive read failed");
+      return JSON.parse(archived.json);
+    };
+    expect(await readFacts()).toMatchObject({
+      state: "ready",
+      facts: expect.arrayContaining([expect.any(Object)]),
+    });
+    await runInDurableObject(stub, (_instance, state) => {
+      state.storage.sql.exec("DELETE FROM dev_archive_stat_fact");
+    });
+    expect(await readFacts()).toEqual({ state: "unavailable" });
   });
 
   it("writes a correction revision and leaves the earlier media flag frozen", async () => {
@@ -242,6 +260,13 @@ async function bindWriter(
       },
       async readPublic() {
         return null;
+      },
+      async readFacts(gameId, revision) {
+        return (
+          box.documents.find(
+            (document) => document.gameId === gameId && document.revision === revision,
+          )?.facts ?? []
+        );
       },
       async readPersonal() {
         return null;

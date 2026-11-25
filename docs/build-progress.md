@@ -7706,3 +7706,19 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 **Web suite.** `npm run test:unit` passed 1,017 of 1,020 tests. The two kart failures passed when their files were rerun in isolation. The guest Wordle transfer test still failed to find the game region on rerun.
 
 **Next.** Preview the updated round in Admin → Question packs → Phone preview.
+
+## 25 November 2026 — Admin response explorer
+
+**Status.** Implemented for existing and new rooms. Open **Admin → Rooms → Analytics → Explore responses**. Results & exports links to the same view. **Try sample data** uses the real explorer with stand-ins for rehearsal.
+
+**Room data.** The private, on-demand analytics endpoint reads SQLite response and score records using the room's frozen question script. Questions and guests link to each other. The explorer shows recorded choices, ballots, guesses, game outcomes, receipt timing, scoring details and adjustments, and distinguishes missing responses from recorded zero scores. The room JSON download contains the retained records and current aggregate inputs.
+
+**Historical analytics.** The Room view reads published highlights, fun facts and the original aggregate inputs from Neon for the verified archive revision. Question trends use the existing analysis engine on retained room data and identify themselves as reconstructed. A read-only production archive check confirmed the 21 November final publication and that standings, score entries, highlights, fun facts and aggregate inputs were written. Raw production room reads through the new route require a release.
+
+**Storage.** The local SQLite archive mirror preserves aggregate metric rows in new publications. Older local publications without metric rows report those metrics as unavailable. The explorer follows existing room retention and moderator visibility. Individual Wordle guess timestamps and expired telemetry cannot be recovered from the retained inputs.
+
+**Checks.** Typecheck, lint and structure (15 existing Fast Refresh warnings), and the production build with content and bundle-budget checks passed. The focused admin web tests passed all 9 tests. The Worker and archive checks passed all 45 tests, including room restart, guest and stage isolation, historical ballot and map records, and archive revision reads. The full local web rerun passed 1,022 of 1,023 tests. The remaining kart view-readiness test passed in isolation.
+
+**Review.** The archived cards and metric inputs refresh when the room confirms a publication. The local archive read distinguishes a publication with missing metric rows from a populated one.
+
+**Next.** After an authorised release, open the 21 November room in Admin and compare its question responses and published report with the production archive. Manual production verification is pending.

@@ -1,3 +1,4 @@
+import { analyticsFactSchema } from "@26/shared";
 import type { ScheduleStorage } from "../room/scheduler.ts";
 import type { ArchiveDocument, PersonalArchive, PublicArchive } from "./document.ts";
 import type { ArchiveWriteResult, ArchiveWriter } from "./store.ts";
@@ -42,6 +43,17 @@ export function sqliteMirror(storage: ScheduleStorage): ArchiveWriter {
       ensureMirror(storage.sql);
       return readMirrorPublic(storage.sql, gameId);
     },
+    async readFacts(gameId, revision) {
+      ensureMirror(storage.sql);
+      return storage.sql
+        .exec<{ fact_json: string }>(
+          `SELECT fact_json FROM dev_archive_stat_fact WHERE game_id = ? AND revision = ? ORDER BY fact_id`,
+          gameId,
+          revision,
+        )
+        .toArray()
+        .map((row) => analyticsFactSchema.parse(JSON.parse(row.fact_json)));
+    },
     async readPersonal(gameId, playerId) {
       ensureMirror(storage.sql);
       return readMirrorPersonal(storage.sql, gameId, playerId);
@@ -50,6 +62,15 @@ export function sqliteMirror(storage: ScheduleStorage): ArchiveWriter {
 }
 
 function ensureMirror(sql: SqlStorage): void {
+  sql.exec(
+    `CREATE TABLE IF NOT EXISTS dev_archive_stat_fact (
+      game_id TEXT NOT NULL,
+      revision INTEGER NOT NULL,
+      fact_id TEXT NOT NULL,
+      fact_json TEXT NOT NULL,
+      PRIMARY KEY (game_id, revision, fact_id)
+    )`,
+  );
   sql.exec(
     `CREATE TABLE IF NOT EXISTS dev_archive_publication (
       game_id TEXT NOT NULL,
@@ -143,6 +164,15 @@ function insertMirror(sql: SqlStorage, document: ArchiveDocument): void {
     document.questionSetVersion,
     document.completedAt,
   );
+  for (const fact of document.facts) {
+    sql.exec(
+      `INSERT INTO dev_archive_stat_fact (game_id, revision, fact_id, fact_json) VALUES (?, ?, ?, ?)`,
+      document.gameId,
+      document.revision,
+      fact.id,
+      JSON.stringify(fact),
+    );
+  }
   for (const standing of document.standings) {
     sql.exec(
       `INSERT INTO dev_archive_standing (

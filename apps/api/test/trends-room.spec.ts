@@ -1,6 +1,10 @@
 import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, it } from "vitest";
-import { normaliseDeviceReport } from "@26/shared";
+import {
+  analyticsTrendsSchema,
+  normaliseDeviceReport,
+  roomAnalyticsSchema,
+} from "@26/shared";
 import { withClientApiQuery } from "./client-api-key.ts";
 import { payloadDigest } from "../src/room/digest.ts";
 
@@ -144,6 +148,99 @@ async function revealedRoom() {
   await untilPhase(stub, control, "reveal");
   return { gameId, stub, control, iphones, androids, firstLabel: first!.label };
 }
+
+it("reads named accepted choices and reconstructed trends after a restart only with room control", async () => {
+  const { stub, control, iphones, androids, firstLabel } = await revealedRoom();
+  const auth = { ...control, nowMs: Date.now() };
+  await evictDurableObject(stub);
+  expect((await stub.adminAnalytics({ ...auth, secret: "incorrect" })).ok).toBe(false);
+  const result = await stub.adminAnalytics(auth);
+  if (!result.ok) throw new Error("Analytics read failed");
+  const room = roomAnalyticsSchema.parse(JSON.parse(result.json));
+  const question = room.questions.find((item) => item.state === "current")!;
+  expect(room.players).toHaveLength(8);
+  expect(room.answers).toHaveLength(8);
+  expect(room.answers).toContainEqual(
+    expect.objectContaining({
+      playerId: iphones[0]!.playerId,
+      label: firstLabel,
+      questionId: question.id,
+      deviceContextId: expect.any(String),
+      receivedAt: expect.any(Number),
+      deadlineAt: expect.any(Number),
+    }),
+  );
+  expect(
+    room.answers.find((row) => row.playerId === androids[0]!.playerId)?.label,
+  ).not.toBe(firstLabel);
+  expect(room.scores).toHaveLength(8);
+  const trendResult = await stub.adminAnalytics({ ...auth, questionId: question.id });
+  if (!trendResult.ok) throw new Error("Trends read failed");
+  expect(analyticsTrendsSchema.parse(JSON.parse(trendResult.json))).toMatchObject({
+    source: "reconstructed",
+    responses: 8,
+    classified: 8,
+  });
+  for (const audience of ["stage", "guest"] as const) {
+    expect(await stub.snapshotFor(audience)).not.toHaveProperty("answers");
+  }
+});
+
+it("keeps mechanic details and repeated ballots for guests, including hidden answers and unknown question IDs", async () => {
+  const { stub, control } = await setup();
+  const guest = await join(stub, "QuizGuest", iphoneAgent);
+  const testPhone = await join(stub, "TestPhone", iphoneAgent);
+  await runInDurableObject(stub, (_room, state) => {
+    const { sql } = state.storage;
+    sql.exec(
+      "UPDATE player SET client_class = 'test' WHERE player_id = ?",
+      testPhone.playerId,
+    );
+    sql.exec(
+      "UPDATE player SET revoked_at = '2026-11-21T21:00:00.000Z' WHERE player_id = ?",
+      guest.playerId,
+    );
+    sql.exec(
+      "INSERT INTO text_response (player_id, question_id, body, received_at, deadline_at) VALUES (?, 'vote-example', 'Hidden entry', 1, 2)",
+      guest.playerId,
+    );
+    sql.exec(
+      "INSERT INTO round_state (question_id, state_key, payload) VALUES ('vote-example', 'hidden-authors', ?)",
+      JSON.stringify([guest.playerId]),
+    );
+    sql.exec(
+      "INSERT INTO vote_candidate (question_id, candidate_id, label, eligible, included, position) VALUES ('vote-example', 'candidate-one', 'First choice', 1, 1, 1)",
+    );
+    sql.exec(
+      "INSERT INTO vote_ballot (player_id, question_id, candidate_id, received_at, deadline_at) VALUES (?, 'vote-example:heat:0', 'candidate-one', 3, 8), (?, 'vote-example:ballot:1', 'candidate-one', 6, 8)",
+      guest.playerId,
+      guest.playerId,
+    );
+    sql.exec(
+      "INSERT INTO round_response (player_id, question_id, kind, payload, received_at, deadline_at) VALUES (?, 'old-map', 'map-guess', '{\"lat\":51.5,\"lng\":-0.1}', 4, 8), (?, 'old-map', 'map-guess', '{\"lat\":0,\"lng\":0}', 5, 8)",
+      guest.playerId,
+      testPhone.playerId,
+    );
+  });
+  const result = await stub.adminAnalytics({ ...control, nowMs: Date.now() });
+  if (!result.ok) throw new Error("Analytics read failed");
+  const data = roomAnalyticsSchema.parse(JSON.parse(result.json));
+  expect(data.players).toMatchObject([
+    { id: guest.playerId, removedAt: "2026-11-21T21:00:00.000Z" },
+  ]);
+  expect(data.questions.map((question) => question.id)).toEqual([
+    "vote-example",
+    "old-map",
+  ]);
+  expect(
+    data.answers.map((answer) => [answer.kind, answer.label, answer.hidden]),
+  ).toEqual([
+    ["entry", "Hidden entry", true],
+    ["ballot", "Phone pair 1 · First choice", false],
+    ["map-guess", "51.5, -0.1", false],
+    ["ballot", "Stage ballot 2 · First choice", false],
+  ]);
+});
 
 it("shows answer trends on the stage, a phone's own lines, and the full set to the host only", async () => {
   const { stub, iphones, firstLabel } = await revealedRoom();

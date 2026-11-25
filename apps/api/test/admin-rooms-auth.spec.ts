@@ -171,6 +171,7 @@ it("requires administrator authentication for listing, detail, current and resum
     "/current",
     "/ABCDEFGH",
     "/ABCDEFGH/resume",
+    "/ABCDEFGH/analytics",
     "/ABCDEFGH/media",
     "/ABCDEFGH/media/00000000-0000-4000-8000-000000000001",
   ]) {
@@ -238,6 +239,37 @@ it("protects a read-only content projection and excludes answer/reveal fields", 
       )
     ).status,
   ).toBe(404);
+});
+
+it("validates the analytics scope and requires the room control cookie", async () => {
+  const adminAnalytics = vi.fn().mockResolvedValue({ ok: true, json: '{"test":true}' });
+  const env = {
+    ...bindings,
+    ROOM_CODE_REGISTRY: { getByName: () => ({ hasGame: async () => true }) },
+    PARTY_ROOM: { getByName: () => ({ adminAnalytics }) },
+  } as unknown as Env;
+  const url = "https://example.com/api/admin/rooms/ABCDEFGH/analytics";
+  const headers = { cookie: "26_room_control=id.secret" };
+  expect((await app.request(url, {}, env)).status).toBe(401);
+  expect(
+    (await app.request(`${url}?question=invalid:query`, { headers }, env)).status,
+  ).toBe(400);
+  expect(
+    (await app.request(`${url}?question=valid&archive=1`, { headers }, env)).status,
+  ).toBe(400);
+  expect(adminAnalytics).not.toHaveBeenCalled();
+  const response = await app.request(`${url}?question=valid`, { headers }, env);
+  expect(response.status).toBe(200);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(await response.json()).toEqual({ test: true });
+  expect(adminAnalytics).toHaveBeenCalledWith(
+    expect.objectContaining({
+      credentialId: "id",
+      secret: "secret",
+      questionId: "valid",
+      archive: false,
+    }),
+  );
 });
 it("returns JSON 503 when administrator auth is misconfigured", async () => {
   vi.mocked(administratorForRequest).mockResolvedValue(

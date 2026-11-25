@@ -1,14 +1,173 @@
+import { useCallback, useState } from "react";
+import { Link, useSearchParams } from "react-router";
+import { publicResultsSchema, roomAnalyticsSchema } from "@26/shared";
+import { Button } from "../ui/primitives";
+import { AnalyticsExplorer } from "./analytics-explorer";
+import { ArchiveMetrics } from "./analytics-insights";
+import { analyticsRehearsal } from "./analytics-rehearsal";
 import { useAdminRoom } from "./room-provider";
+import { readSection } from "./sections-api";
 import { TrendsPanel } from "./trends-panel";
+import { useSection } from "./use-section";
 
-/**
- * Room analytics for the host: the statistics the room has already
- * calculated, shown before the guests see them. Highlights include the ones
- * held back because a group is too small (fewer than 5), so the host knows
- * why a card will not reach the stage. Nothing here is collected for this
- * page; it reads the host's snapshot.
- */
 export function AnalyticsPage() {
+  const [params] = useSearchParams();
+  const exploring = params.get("view") === "responses";
+  const { snapshot } = useAdminRoom();
+  return (
+    <section className="admin-section">
+      <header className="admin-page-heading">
+        <div>
+          <p className="entry-eyebrow">This room</p>
+          <h1>Analytics</h1>
+        </div>
+      </header>
+      <nav className="analytics-toolbar" aria-label="Analytics pages">
+        <Link
+          className="entry-text-link"
+          to="."
+          aria-current={exploring ? undefined : "page"}
+        >
+          Live analytics
+        </Link>
+        <Link
+          className="entry-text-link"
+          to="?view=responses"
+          aria-current={exploring ? "page" : undefined}
+        >
+          Explore responses
+        </Link>
+      </nav>
+      {exploring ? (
+        <RoomResponses key={snapshot.gameId} gameId={snapshot.gameId} />
+      ) : (
+        <LiveAnalytics />
+      )}
+    </section>
+  );
+}
+
+function RoomResponses({ gameId }: { gameId: string }) {
+  const [rehearsal, setRehearsal] = useState(false);
+  return (
+    <>
+      <div className="admin-page-heading">
+        <p>Browse retained answers and scores by question or guest.</p>
+        <Button
+          variant="secondary"
+          aria-pressed={rehearsal}
+          onClick={() => setRehearsal(!rehearsal)}
+        >
+          {rehearsal ? "Return to room data" : "Try sample data"}
+        </Button>
+      </div>
+      {rehearsal ? (
+        <AnalyticsExplorer data={analyticsRehearsal} rehearsal />
+      ) : (
+        <ReadRoomResponses gameId={gameId} />
+      )}
+    </>
+  );
+}
+
+function ReadRoomResponses({ gameId }: { gameId: string }) {
+  const { snapshot } = useAdminRoom();
+  const archiveKey = `${snapshot.archive?.revision}:${snapshot.archive?.status}`;
+  const read = useCallback(
+    () =>
+      readSection(
+        `/api/admin/rooms/${encodeURIComponent(gameId)}/analytics`,
+        roomAnalyticsSchema,
+      ),
+    [gameId],
+  );
+  const result = useSection(read);
+  return (
+    <>
+      <div className="analytics-toolbar">
+        <Button
+          variant="secondary"
+          disabled={result.loading}
+          onClick={() => void result.refresh()}
+        >
+          Refresh records
+        </Button>
+        {result.loading && <p role="status">Loading room records…</p>}
+        {result.error && <p role="alert">{result.error}</p>}
+      </div>
+      {result.data && (
+        <AnalyticsExplorer
+          data={result.data}
+          eventReport={
+            <>
+              <ArchivedCards gameId={gameId} archiveKey={archiveKey} />
+              <ArchiveMetrics data={result.data} archiveKey={archiveKey} />
+            </>
+          }
+        />
+      )}
+    </>
+  );
+}
+
+function ArchivedCards({ gameId, archiveKey }: { gameId: string; archiveKey: string }) {
+  const read = useCallback(
+    () =>
+      readSection(
+        `/api/rooms/${encodeURIComponent(gameId)}/results`,
+        publicResultsSchema,
+      ),
+    [gameId],
+  );
+  const result = useSection(read, archiveKey);
+  return (
+    <section className="admin-task-section" aria-label="Published report">
+      <h3>Published report</h3>
+      {result.loading ? (
+        <p role="status">Loading the published report…</p>
+      ) : result.error ? (
+        <p role="alert">
+          {result.error}{" "}
+          <Button variant="secondary" onClick={() => void result.refresh()}>
+            Retry
+          </Button>
+        </p>
+      ) : result.data?.state === "ready" ? (
+        <>
+          <h4>Archived podium highlights</h4>
+          {result.data.highlights?.length ? (
+            <ol className="admin-data-list">
+              {result.data.highlights.map((card) => (
+                <li key={card.id} className="analytics-fact">
+                  <strong>{card.stage}</strong>
+                  <span>{card.results}</span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p>No highlights were archived.</p>
+          )}
+          <h4>Archived fun facts</h4>
+          {result.data.funFacts?.length ? (
+            <ol className="admin-data-list">
+              {result.data.funFacts.map((card) => (
+                <li key={card.id} className="analytics-fact">
+                  {card.text}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p>No fun facts were archived.</p>
+          )}
+        </>
+      ) : (
+        <p>The published report is unavailable for this room.</p>
+      )}
+    </section>
+  );
+}
+
+function LiveAnalytics() {
   const { snapshot } = useAdminRoom();
   const highlights = snapshot.highlights ?? [];
   const eligible = highlights.filter((card) => card.display === "eligible");
@@ -22,13 +181,7 @@ export function AnalyticsPage() {
   const wallReactions = wallShown.reduce((sum, item) => sum + item.reactions, 0);
 
   return (
-    <section className="admin-section">
-      <header className="admin-page-heading">
-        <div>
-          <p className="entry-eyebrow">This room</p>
-          <h1>Analytics</h1>
-        </div>
-      </header>
+    <>
       <p>
         Live totals for this room, and the statistics the stage will show at the podium.
         Cards update as the game goes on.
@@ -162,7 +315,7 @@ export function AnalyticsPage() {
           </ul>
         )}
       </section>
-    </section>
+    </>
   );
 }
 

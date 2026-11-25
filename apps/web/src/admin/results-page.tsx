@@ -176,6 +176,9 @@ export function AdminResultsPage() {
             >
               Open public results ↗
             </Link>
+            <Link className="entry-text-link" to="../analytics?view=responses">
+              Explore guest responses →
+            </Link>
             <p>
               {result.data?.state === "ready"
                 ? "The public report is ready."
