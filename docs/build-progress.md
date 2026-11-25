@@ -7715,8 +7715,10 @@ Local tick cadence varied between runs (5.5–7.6 ticks a second) with machine l
 
 **Historical analytics.** The Room view reads the published highlights and fun facts and the original aggregate inputs for the verified archive revision. Question trends use the existing analysis engine on retained data and identify themselves as reconstructed. A read-only production archive check confirmed the 21 November final publication and that standings, score entries, highlights, fun facts and aggregate inputs were written. Raw production room reads through the new route require a release.
 
-**Storage.** The production archive schema and live message paths are unchanged. The local SQLite archive mirror now preserves aggregate metric rows in new publications. Room retention and existing moderator visibility remain in force. Individual Wordle guess timestamps and expired telemetry cannot be recovered from the retained inputs.
+**Storage.** The explorer reads the existing production archive outside the live message path. The local SQLite archive mirror preserves aggregate metric rows in new publications. Older local publications without metric rows report those metrics as unavailable. The explorer follows existing room retention and moderator visibility. Individual Wordle guess timestamps and expired telemetry cannot be recovered from the retained inputs.
 
 **Checks.** Typecheck, lint and structure (15 existing Fast Refresh warnings), and the production build with content and bundle-budget checks passed. The focused admin web tests passed all 9 tests. The Worker and archive checks passed all 45 tests, including room restart, guest and stage isolation, historical ballot and map records, and archive revision reads.
+
+**Review.** The archived cards and metric inputs refresh when the room confirms a publication. The local archive read distinguishes a publication with missing metric rows from a populated one.
 
 **Next.** After an authorised release, open the 21 November room in Admin and compare its question responses and published report with the production archive. Manual production verification is pending.

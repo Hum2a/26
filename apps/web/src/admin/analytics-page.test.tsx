@@ -6,7 +6,12 @@ vi.mock("../live/room-api", () => ({ playRoom: vi.fn(), issueTransfer: vi.fn() }
 import type { LobbySnapshot } from "@26/shared";
 import { AnalyticsPage } from "./analytics-page";
 import { analyticsRehearsal } from "./analytics-rehearsal";
-import { mountControls, playingFixture, setupControls } from "./controls.test-support";
+import {
+  mountControls,
+  playingFixture,
+  setupControls,
+  update,
+} from "./controls.test-support";
 
 const id = (n: number) => `00000000-0000-4000-8000-0000000000b${n}`;
 
@@ -79,8 +84,10 @@ it("shows podium highlights, the ones held back, and troll totals", async () => 
 });
 
 it("loads private records only in the explorer and reads published metrics on demand", async () => {
+  let published = false;
   const fetchData = vi.fn(async (path: string) => {
     if (path.endsWith("?archive=1")) {
+      if (!published) return Response.json({ state: "unavailable" });
       return Response.json({
         state: "ready",
         revision: 12,
@@ -88,7 +95,9 @@ it("loads private records only in the explorer and reads published metrics on de
       });
     }
     if (path.endsWith("/results"))
-      return Response.json({ state: "ready", standings: [] });
+      return Response.json(
+        published ? { state: "ready", standings: [] } : { state: "preparing" },
+      );
     return Response.json({ ...analyticsRehearsal, gameId: fixture.gameId });
   });
   vi.stubGlobal("fetch", fetchData);
@@ -103,8 +112,21 @@ it("loads private records only in the explorer and reads published metrics on de
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Room" }));
-  expect(await screen.findByText("Archived podium highlights")).toBeTruthy();
+  expect(
+    await screen.findByText("The published report is unavailable for this room."),
+  ).toBeTruthy();
   fireEvent.click(screen.getByText("Archived metric inputs and counts"));
+  expect(
+    await screen.findByText("No archived metric records are available."),
+  ).toBeTruthy();
+  published = true;
+  update({
+    ...fixture,
+    stateVersion: fixture.stateVersion + 1,
+    archive: { status: "completed", revision: 12, attempts: 1 },
+  });
+
+  expect(await screen.findByText("Archived podium highlights")).toBeTruthy();
   expect(
     await screen.findByText("1 retained metric from archive revision 12."),
   ).toBeTruthy();

@@ -511,7 +511,7 @@ Question trend cards are rebuilt on request from retained inputs. The archive st
 published podium highlights and fun facts, and the explorer can privately read the
 stored aggregate metrics for the verified publication revision. Local development's
 archive mirror stores those same aggregate rows in `dev_archive_stat_fact` for new
-exports. The production archive schema and room retention rules are unchanged.
+exports. Production uses the existing archive schema and room retention rules.
 
 The explorer introduces no new guest collection or live socket messages. A missing
 record can reflect a skipped question, a guest who never submitted, or data that no

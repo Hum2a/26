@@ -4,7 +4,6 @@ import { motion, useReducedMotion } from "motion/react";
 import type { AnalyticsAnswer, RoomAnalytics } from "@26/shared";
 import { Button } from "../ui/primitives";
 import {
-  ArchiveMetrics,
   ChoiceDistribution,
   Facts,
   Metric,
@@ -164,7 +163,6 @@ export function AnalyticsExplorer({
             </dl>
             {eventReport}
             <Facts facts={data.facts.filter((fact) => fact.scope === "game")} />
-            {!rehearsal && <ArchiveMetrics data={data} />}
           </>
         )}
       </motion.div>

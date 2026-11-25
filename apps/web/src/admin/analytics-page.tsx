@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import { publicResultsSchema, roomAnalyticsSchema } from "@26/shared";
 import { Button } from "../ui/primitives";
 import { AnalyticsExplorer } from "./analytics-explorer";
+import { ArchiveMetrics } from "./analytics-insights";
 import { analyticsRehearsal } from "./analytics-rehearsal";
 import { useAdminRoom } from "./room-provider";
 import { readSection } from "./sections-api";
@@ -70,6 +71,8 @@ function RoomResponses({ gameId }: { gameId: string }) {
 }
 
 function ReadRoomResponses({ gameId }: { gameId: string }) {
+  const { snapshot } = useAdminRoom();
+  const archiveKey = `${snapshot.archive?.revision}:${snapshot.archive?.status}`;
   const read = useCallback(
     () =>
       readSection(
@@ -95,14 +98,19 @@ function ReadRoomResponses({ gameId }: { gameId: string }) {
       {result.data && (
         <AnalyticsExplorer
           data={result.data}
-          eventReport={<ArchivedCards gameId={gameId} />}
+          eventReport={
+            <>
+              <ArchivedCards gameId={gameId} archiveKey={archiveKey} />
+              <ArchiveMetrics data={result.data} archiveKey={archiveKey} />
+            </>
+          }
         />
       )}
     </>
   );
 }
 
-function ArchivedCards({ gameId }: { gameId: string }) {
+function ArchivedCards({ gameId, archiveKey }: { gameId: string; archiveKey: string }) {
   const read = useCallback(
     () =>
       readSection(
@@ -111,7 +119,7 @@ function ArchivedCards({ gameId }: { gameId: string }) {
       ),
     [gameId],
   );
-  const result = useSection(read);
+  const result = useSection(read, archiveKey);
   return (
     <section className="admin-task-section" aria-label="Published report">
       <h3>Published report</h3>

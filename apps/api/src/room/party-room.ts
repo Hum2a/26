@@ -2289,13 +2289,15 @@ export class PartyRoom extends DurableObject<Env> {
     if (input.archive) {
       const revision = readRoomArchive(sql)?.verifiedRevision;
       const room = this.readRoom();
+      const unavailable = { ok: true as const, json: '{"state":"unavailable"}' };
       if (!room || revision == null) {
-        return { ok: true as const, json: '{"state":"unavailable"}' };
+        return unavailable;
       }
       let writer: ArchiveWriter | undefined;
       try {
         writer = await this.resultsWriter();
         const facts = await writer.readFacts(room.game_id, revision);
+        if (facts.length === 0) return unavailable;
         return {
           ok: true as const,
           json: JSON.stringify({ state: "ready", revision, facts }),

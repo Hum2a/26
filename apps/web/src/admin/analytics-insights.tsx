@@ -198,17 +198,29 @@ function TrendRead({
   );
 }
 
-export function ArchiveMetrics({ data }: { data: RoomAnalytics }) {
+export function ArchiveMetrics({
+  data,
+  archiveKey,
+}: {
+  data: RoomAnalytics;
+  archiveKey: string;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <details onToggle={(event) => setOpen(event.currentTarget.open)}>
       <summary>Archived metric inputs and counts</summary>
-      {open && <ReadArchiveMetrics data={data} />}
+      {open && <ReadArchiveMetrics data={data} archiveKey={archiveKey} />}
     </details>
   );
 }
 
-function ReadArchiveMetrics({ data }: { data: RoomAnalytics }) {
+function ReadArchiveMetrics({
+  data,
+  archiveKey,
+}: {
+  data: RoomAnalytics;
+  archiveKey: string;
+}) {
   const [scope, setScope] = useState("");
   const read = useCallback(
     () =>
@@ -218,7 +230,7 @@ function ReadArchiveMetrics({ data }: { data: RoomAnalytics }) {
       ),
     [data.gameId],
   );
-  const result = useSection(read, String(data.revision));
+  const result = useSection(read, archiveKey);
   if (result.loading) return <p role="status">Loading archived metrics…</p>;
   if (result.error)
     return (
